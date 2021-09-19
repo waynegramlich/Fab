@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+"""ShopFab: """
 from io import BytesIO
 import os
 from pathlib import Path
@@ -7,6 +7,9 @@ import shutil
 import subprocess
 import sys
 from typing import Any, Callable, Dict, IO, List, Optional, Tuple, Union
+
+print(f"{os.environ['PYTHONPATH']=}")
+print(f"{os.environ['PATH']=}")
 
 # Ensure that FreeCADGui package is imported:
 executable_name: str = "freecad19"
