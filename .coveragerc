@@ -1,0 +1,19 @@
+[report]
+# Regular expressions to exclude code blocks from reports:
+exclude_lines =
+    # Re-enable the standard pragma.
+    pragma: no cover
+
+    # A pragma to specify that the unit test suite does not yet cover something.
+    pragma: no unit cover
+
+
+    # Ignore disabled code blocks and tracing:
+    if false:
+    if tracing:
+
+    # Ignore the startard startup lines at the end.
+    if __name__ == \.__main__\.:
+
+    # Ignore various execption blocks.
+    raise NotImplementedError

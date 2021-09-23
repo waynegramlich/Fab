@@ -1,0 +1,10 @@
+*~
+.coverage
+squashfs-root
+__pycache__/
+#*
+FreeCAD_0.19*.AppImage
+freecad19
+.mypy_cache/
+PathScripts
+PathTests

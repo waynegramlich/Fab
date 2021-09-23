@@ -2,16 +2,12 @@
 '''
 `py2md`: Python document strings to Markdown.
 
-Another [Python](https://www.python.org/) to 
-[Markdown](https://daringfireball.net/projects/markdown/) converter?
-Why not use [Sphinx](https://www.sphinx-doc.org/)?
-Well Sphinx system was tried,
-but it really requires all of the code to be read in by the Python system.
+An attempt was made to use [Sphinx](https://www.sphinx-doc.org/),
+but it really requires all of the code to be pushed the Python system.
 Missing imports are a show stopper and configuring Sphinx to find all the
 missing imports is non-trivial.
-
-Instead `py2md` just reads a single Python file and generates a single markdown file.
-Done!
+`py2md` is much simpler and just reads the document strings from one
+Python file at a time and writes the corresponding Markdown file.
 
 Usage: `py2md [.py ...] [dir ...]`
 
@@ -20,7 +16,7 @@ The basic Python file format is shown immediately below (`##` is for information
      #!/usr/bin/env python3  ## Optional for executable files.
      """Module line description.   ## One SENTENCE that ends in a period.  Blank line is next.
 
-     More module description here.  Module attributes and constants are auto extracted.
+     More module description here.  Module constants are listed here.
      """
     
      # CLASS_NAME(PARENT_CLASS):   ## Class definition is preceded by a 1-line comment.
@@ -62,18 +58,32 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import IO, List, Tuple
 import re
+import sys
 
 
 @dataclass(frozen=True)
 # LineData:
 class LineData:
-    """Provide data about one file line."""
-    stripped: str  # The line stripped of indentation, and comment characters etc.
-    index: int  # Line index (starts at 0)
-    indent: int  # The number of preceding spaces (no tabs allowed!)
-    sharp_start: bool  # Line starts with a `#`
-    triple_start: str  # Line starts with `'''` or `"""` (set to "" if not present)
-    triple_end: str  # Line ends with `'''` or `"""` (set to "" if not present)
+    """Provides data about one file line.
+
+    * Attributes:
+      * *stripped* (str): The line stripped of any preceeding spaces and triple quotes.
+      * *index* (int): The line index of the line (0 for first line).
+      * *indent* (int): The number of preceding spaces stripped off the front.
+      * *sharp_start* (bool): True if first non-space character is sharp character.
+      * *triple_start* (str):
+         Set to first 3 non-space characters if they are triple quotes;
+         otherwise set to "".
+      * *triple_end* (str): Set to last 3 non-space characters are triple quotes;
+         otherwise set to "".
+    """
+
+    stripped: str
+    index: int
+    indent: int
+    sharp_start: bool
+    triple_start: str
+    triple_end: str
 
     @classmethod
     # LineData.line_parse():
@@ -85,46 +95,50 @@ class LineData:
           * *index* (int): The line index associated with *line*:
         * Returns:
           * Returns the LineData.
-        * Raises:
-          * ValueError for bad lines.
         """
         # Remove indentation and trailing white space:
-        if line.find("\t") >= 0:
-            raise ValueError(f"Embedded tab found in '{line}'")
         stripped: str = line.lstrip()
         indent: int = len(line) - len(stripped)
         stripped = stripped.rstrip()
 
         # Search for `# ...` and `""" ... """`.
         sharp_start: bool = stripped.startswith("#")
-        triple_start: str = (
-            stripped[:3] if stripped.startswith("'''") or stripped.startswith('"""') else "")
-        triple_end: str = line[-3:] if stripped.endswith("'''") or stripped.endswith('"""') else ""
+        triple_start: str = ""
+        if stripped.startswith("'''") or stripped.startswith('"""'):
+            triple_start = stripped[:3]
+        triple_end: str = ""
+        if stripped.endswith("'''") or stripped.endswith('"""'):
+            triple_end = stripped[-3:]
 
         if stripped[:3] == triple_start:
             stripped = stripped[3:]
         if stripped[-3:] == triple_end:
             stripped = stripped[:-3]
 
+        # print(f"{indent}\t{line}")
         return LineData(stripped, index, indent, sharp_start, triple_start, triple_end)
 
 
 # BlockComment:
 @dataclass(frozen=True, order=True)
 class BlockComment:
+    """Represents a sequence of lines constituting a single comment.
+
+    * Attributes:
+      * *index* (int):
+      * *indent* (int): The indentation of the first line.
+      * *is_triple* (bool): True if the first line started with a triple quote.
+      * *preceding* (Tuple[LineData, ...]):
+        The lines preceeding the first line up until a blank line.
+      * *body* (Tuple[LineData, ...] ): The lines that make up the actual comment.
+    """
+    
     index: int
     indent: int
     is_triple: bool    
     preceding: Tuple[LineData, ...]
     body: Tuple[LineData, ...] 
 
-
-def fix(text: str) -> str:
-    return text.replace("_", "\\_")
-
-def italicize(match_obj) -> str:
-    text: str = match_obj.group()
-    return f" *{text[1:]}*"
 
 # Markdown:
 class Markdown(object):
@@ -152,7 +166,7 @@ class Markdown(object):
 
         * Arguments:
           * *path* (Path): The Python file to read.
-        * Returns (Tuple[LineData, ...]) containing lines.
+        * Returns (Tuple[LineData, ...]) a tuple of LineData's for each line in the file.
         """
         line_datas: List[LineData] = []
         in_file: IO[str]
@@ -166,9 +180,10 @@ class Markdown(object):
         return tuple(line_datas)
 
     # Markdown.triples_extract():
-    def triples_extract(self, line_datas: Tuple[LineData, ...]
+    def triples_extract(self,
+                        line_datas: Tuple[LineData, ...]
     ) -> Tuple[Tuple[LineData, ...], Tuple[BlockComment, ...]]:
-        """Extract BlockComment's from lines.
+        """Extract BlockComment's containing Triples.
 
         * Arguments:
           * *line_datas* (Tuple[LineData, ...]): A tuple of LineData's from the file.
@@ -183,7 +198,7 @@ class Markdown(object):
         line_data: LineData
         index: int
         in_triple: str = ""
-        for index, line_data in enumerate(line_datas):
+        for index, line_data in enumerate(line_datas): # 
             tracing: bool = False
             if tracing:
                 print(f"line_datas[{index}]: s='{line_data.triple_start}' "
@@ -213,7 +228,7 @@ class Markdown(object):
             elif not in_triple and triple_start:
                 in_triple = triple_start
                 triple_line_datas.append(line_data)
-            elif in_triple and triple_end and triple_end == in_triple:
+            elif in_triple and triple_end and triple_end == in_triple:  # pragma: no unit cover
                 triple_line_datas.append(line_data)
                 in_triple = ""
             elif in_triple:
@@ -248,7 +263,9 @@ class Markdown(object):
 
     # Markdown.sharps_extract():
     def sharps_extract(
-            self, remaining_line_datas: Tuple[LineData, ...]) -> Tuple[BlockComment, ...]:
+            self,
+            remaining_line_datas: Tuple[LineData, ...]
+    ) -> Tuple[BlockComment, ...]:  # pragma: no unit cover
         """Return the CommentBlock's that start with `# ... `.
 
         * Arguments:
@@ -287,7 +304,6 @@ class Markdown(object):
     # Markdown.generate():
     def generate(self) -> None:
         """Generate Markdown file containing Python documentation."""
-
         # print("=>Markdown.generate()")
         # Output the file header (i.e. # FILE_NAME):
         path: Path = self._path
@@ -329,7 +345,7 @@ class Markdown(object):
                 is_class |= stripped.startswith("class ")
                 is_def |= stripped.startswith("def ")
 
-            # Scrap the useful information from *preceding_lines*:
+            # Scrape the useful information from *preceding_lines*:
             pieces: List[str] = []
             for line_data in class_or_module.preceding:
                 stripped = line_data.stripped
@@ -352,39 +368,70 @@ class Markdown(object):
                 elif not stripped.startswith("@"):
                     pieces.append(f" {stripped} ")
             if pieces:
+                # print(f"{pieces=}")
                 joined: str = " ".join(pieces)
-                joined = joined.replace("def", "")
-                joined = joined.replace("class", "")
-                joined = joined.replace(" ", "")
-                joined = joined.replace(",", ", ")
-                joined = joined.replace("->", " -> ")
+                # joined = joined.replace("def ", "")
+                # joined = joined.replace("class ", "")
+                joined = joined.replace("  ", " ")
+                joined = joined.replace("  ", " ")
+                joined = joined.replace("  ", " ")
+                joined = joined.replace(" ,", ",")
+                joined = joined.replace(" ,", ",")
+                joined = joined.replace("  ->", "-> ")
+                joined = joined.replace("  ->", "-> ")
+                joined = joined.replace("->  ", "-> ")
+                joined = joined.replace("->  ", "-> ")
                 joined = joined.replace(":", ": ")
                 joined = joined.strip()
-                joined = re.sub(r" [a-z][a-z0-9_]*", italicize, joined)
+                joined = " " + re.sub(r" [a-z][a-z0-9_]*", italicize, joined)
                 joined = joined.replace("_", "\\_")
+                if joined.startswith(" "):
+                    joined = joined[1:]
                 markdown_lines.append(joined)
                 markdown_lines.append("")
 
             indent = class_or_module.indent
             for line_data in class_or_module.body:
-                padding = max(0, line_data.indent - indent) * " "
+                padding: str = max(0, line_data.indent - indent) * " "
                 stripped = line_data.stripped
                 markdown_lines.append(f"{padding}{fix(stripped)}")
             markdown_lines.append("")
 
         # Output *markdown_lines*:
         markdown_path: Path = Path(f"{path.stem}.md")
-        markdown_path = Path("/tmp/py2md.md")  # Temporary kludge
         # print(f"{markdown_path=}")
         markdown_file: IO[str]
         with open(markdown_path, "w") as markdown_file:
             markdown_file.write("\n".join(markdown_lines + [""]))
         # print("<=Markdown.generate()")
 
+# fix():
+def fix(text: str) -> str:
+    """Fix underscores for markdown.
+
+    * Arguments:
+      * *text* (str): The text to fix.
+    * Returns:
+      * (str) the string with each underscore preceeded by backslash character.
+    """
+    return text.replace("_", "\\_")
+
+# italicize():
+def italicize(match_obj) -> str:
+    """Italicize words.
+    
+    * Arguments:
+      * *match_obj* (?): The regular expression match object.
+    * Returns:
+      * (str) the match object where each word has an asterisk in front and back.
+    """
+    text: str = match_obj.group()
+    return f" *{text[1:]}*"
+
 # main():
 def main() -> None:
-    """main program."""
-    arguments: Tuple[str, ...] = ("py2md.py",)
+    """Run the main program."""
+    arguments: Tuple[str, ...] = sys.argv[1:]
     
     line: str = '"""Generate Markdown file containing Python documentation."""'
     line_data: LineData = LineData.line_parse(line, 0)
@@ -395,10 +442,10 @@ def main() -> None:
     for argument in arguments:
         path: Path = Path(argument)
         if path.is_dir():
-            paths.extend(path.glob("*.py"))
+            paths.extend(path.glob("*.py"))  # pragma: no unit cover
         elif path.suffix == ".py":
             paths.append(path)
-        else:
+        else:  # pragma: no unit cover
             print(f"{path.name} does not have a suffix of `.py`")
     
     markdowns: Tuple[Markdown, ...] = tuple([Markdown(path) for path in paths])
