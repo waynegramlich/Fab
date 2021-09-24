@@ -113,7 +113,7 @@ def unit_test() -> None:
 
     # Generate RuntimeError if bad executable:
     try:
-        before, after = search("framus", "bogus", tracing=" ")
+        before, after = search("framus", "bogus")
         assert False, "Should generate RuntimeError and it did not."  # pragma: no unit cover
     except RuntimeError:
         pass
