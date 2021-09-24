@@ -428,33 +428,35 @@ def italicize(match_obj) -> str:
     text: str = match_obj.group()
     return f" *{text[1:]}*"
 
+
 # main():
 def main() -> None:
     """Run the main program."""
-    arguments: Tuple[str, ...] = sys.argv[1:]
+    arguments: Tuple[str, ...] = tuple(sys.argv[1:])  # Strip off program name
+    if "--unit-test" in arguments:
+        arguments = ("py2md.py", )
+    if not arguments:
+        print("Usage: py2md.py  PYFILE...")  # pragma: no unit cover
+    else:
+        # Expand directories in *arguments*:
+        paths: List[Path] = []
+        for argument in arguments:
+            path: Path = Path(argument)
+            if path.is_dir():
+                paths.extend(path.glob("*.py"))  # pragma: no unit cover
+            elif path.suffix == ".py":
+                paths.append(path)
+            else:  # pragma: no unit cover
+                print(f"{path.name} does not have a suffix of `.py`")
     
-    line: str = '"""Generate Markdown file containing Python documentation."""'
-    line_data: LineData = LineData.line_parse(line, 0)
-    # print(f"{line_data=}")
+        markdowns: Tuple[Markdown, ...] = tuple([Markdown(path) for path in paths])
+        markdown: Markdown
+        index: int
+        for index, markdown in enumerate(markdowns):
+            markdown.generate()
 
-    # Expand directories in *arguments*:
-    paths: List[Path] = []
-    for argument in arguments:
-        path: Path = Path(argument)
-        if path.is_dir():
-            paths.extend(path.glob("*.py"))  # pragma: no unit cover
-        elif path.suffix == ".py":
-            paths.append(path)
-        else:  # pragma: no unit cover
-            print(f"{path.name} does not have a suffix of `.py`")
-    
-    markdowns: Tuple[Markdown, ...] = tuple([Markdown(path) for path in paths])
-    markdown: Markdown
-    index: int
-    for index, markdown in enumerate(markdowns):
-        # print(f"generate[{index}]")
-        markdown.generate()
-    # print("Done")
 
 if __name__ == "__main__":
     main()
+
+        

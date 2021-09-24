@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-module_manager: Finding and importing Python modules.
+importer: Searches/imports Python modules.
 
 Ideally, all search paths for finding Python modules are pre-configured. Sometimes,
 the desired modules are placed elsewhere in the system and a little searching
@@ -22,8 +22,8 @@ from typing import Optional, List, Tuple
 # Ensure that FreeCADGui package is imported:
 
 
-# find_module():
-def find_module(
+# search():
+def search(
         module_name: str,
         executable_name: str = "",
         search_paths: Tuple[Path, ...] = (),
@@ -62,7 +62,7 @@ def find_module(
     if not search_paths:
         search_paths = (Path("squashfs-root") / "usr" / "lib", )
     if tracing:
-        print(f"=>find_module({tracing}embedded.import_module('{module_name}', "
+        print(f"{tracing}=>search({tracing}embedded.import_module('{module_name}', "
               f"'{str(executable_name)}', {search_paths}")
 
     # Attempt to import via a simple import.
@@ -70,8 +70,6 @@ def find_module(
     after_module: Optional[ModuleType] = None
     try:
         before_module = importlib.import_module(module_name)
-        if tracing:
-            print(f"{tracing}Initial import worked.")
     except ModuleNotFoundError:
         # Determine the absolute path of *executable_name*:
         executable_path: Optional[Path] = None
@@ -93,27 +91,45 @@ def find_module(
             search_path_text: str = str(search_path)
             if search_path_text not in sys_path:
                 sys.path.append(str(search_path))
-                after_module = importlib.import_module(module_name)
+                try:
+                    after_module = importlib.import_module(module_name)
+                except ModuleNotFoundError:
+                    pass
                 if after_module:
                     break
             sys_path.remove(search_path_text)
 
     if tracing:
-        print(f"<=find_module({tracing}embedded.import_module('{module_name}', "
-              f"'{str(executable_name)}', {search_paths}) => "
+        print(f"{tracing}<=search('{module_name}', '{str(executable_name)}', {search_paths}) => "
               f"{before_module}, {after_module}")
     return before_module, after_module
 
 
-# test():
-def test() -> None:
+# unit_test():
+def unit_test() -> None:
     """Test the module manager."""
     before: Optional[ModuleType] = None
     after: Optional[ModuleType] = None
-    before, after = find_module("FreeCADGui", "freecad19")
-    assert not before
-    assert after
 
+    # Generate RuntimeError if bad executable:
+    try:
+        before, after = search("framus", "bogus", tracing=" ")
+        assert False, "Should generate RuntimeError and it did not."  # pragma: no unit cover
+    except RuntimeError:
+        pass
+    
+    # Search for a bogus file:
+    before, after = search("bogus", "freecad19")
+    assert not before and not after, "bogus was found"
+
+    # Search for a module that is already in the path.
+    before, after = search("subprocess", "")
+    assert before and not after, "Should have found subprocess"
+
+    # Search for a module that needs searching
+    before, after = search("FreeCADGui", "freecad19")
+    assert not before and after, "FreeCADGUI not found"
 
 if __name__ == "__main__":
-    test()
+    if "--unit-test" in sys.argv:
+        unit_test()

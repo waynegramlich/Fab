@@ -15,9 +15,10 @@ performed on the stock material (e.g. contour outlines, drill holes, remove pock
 All of the individual parts are assembled into a final assembly which can be viewed
 using FreeCAD.
 
-With ShopFab, the machines/tooling for each different shop are specified.
+ShopFab supports the concept of multiple different shops, where the specific shop machines
+and tooling are specified.
 The ShopFab part design in conjunction with the ShopFab shop specification generates
 the various files (G-code, STL, DXF) needed to manufacture the part for the specific shop.
-Thus, one ShopFab design can be easily shared among multiple people with differing shops
-and still result in essentially the same physical object.
+Thus, one ShopFab design can be easily shared among multiple people with different shops
+and still get basically the same physical objects.
 

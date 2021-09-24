@@ -1,3 +1,8 @@
+[run]
+omit =
+    /usr/*
+    squashfs-root/usr/Mod/*
+
 [report]
 # Regular expressions to exclude code blocks from reports:
 exclude_lines =
