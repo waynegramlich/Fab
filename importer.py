@@ -10,11 +10,9 @@ is needed to find them.  This module provides a convenient searching mechanism.
 
 # <--------------------------------------- 100 characters ---------------------------------------> #
 
-import os
 import importlib
 from pathlib import Path
 import shutil
-import subprocess
 import sys
 from types import ModuleType
 from typing import Optional, List, Tuple
@@ -80,7 +78,7 @@ def search(
         for search_path in search_paths:
             # Ensure that *search_path* is an absolute path.
             if not search_path.is_absolute():
-                if not executable_path :
+                if not executable_path:
                     executable_which: Optional[str] = shutil.which(executable_name)
                     if not executable_which:
                         raise RuntimeError("Unable to find executable '{executable_name}'")
@@ -117,7 +115,7 @@ def unit_test() -> None:
         assert False, "Should generate RuntimeError and it did not."  # pragma: no unit cover
     except RuntimeError:
         pass
-    
+
     # Search for a bogus file:
     before, after = search("bogus", "freecad19")
     assert not before and not after, "bogus was found"
@@ -129,6 +127,7 @@ def unit_test() -> None:
     # Search for a module that needs searching
     before, after = search("FreeCADGui", "freecad19")
     assert not before and after, "FreeCADGUI not found"
+
 
 if __name__ == "__main__":
     if "--unit-test" in sys.argv:

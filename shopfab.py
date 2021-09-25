@@ -1,81 +1,19 @@
 #!/usr/bin/env python3
-"""ShopFab: """
-from io import BytesIO
-import os
-from pathlib import Path
-import shutil
-import subprocess
-import sys
-from typing import Any, Callable, Dict, IO, List, Optional, Tuple, Union
+"""ShopFab: A shop based design workflow."""
+import importer
+import math
+import numpy as np  # type: ignore
+from pathlib import Path  # type: ignore
+from typing import Any, Callable, List, Optional, Tuple, Union
 
-print(f"{os.environ['PYTHONPATH']=}")
-print(f"{os.environ['PATH']=}")
+App: Any
+Gui: Any  # Technically speaking: Optional[ModuleType]
+_, App = importer.search("FreeCAD", "freecad19")
+Gui, _ = importer.search("FreeCADGui", "freecad19")
 
-# Ensure that FreeCADGui package is imported:
-executable_name: str = "freecad19"
-executable_which: Optional[str] = shutil.which(executable_name)
-gui: bool = False
-try:
-    import FreeCADGui as Gui
-    gui = True
-except ModuleNotFoundError:
-    # Now try to run in embedded mode.  This code currently assumes that FreeCAD was shipped
-    # as an AppImage and is running on Linux.  Feel free to suggest improvements:
-    assert isinstance(executable_which, str)
-    usr_lib: Path = Path(executable_which).parent / "squashfs-root" / "usr" / "lib"
-    assert usr_lib.exists(), (
-        f"{str(usr_lib)} does not exist! Try running `{executable_name} --appimage-extract`")
-    sys.path.append(str(usr_lib))
-    import FreeCADGui as Gui  # type: ignore
-
-    # The following code checks for version mismatches between the Python interpreters and
-    # the underlying compiler used to compile the code.  The embedded code just needs to
-    # parse the value of `sys.version`.  Extracting the same value from the FreeCAD console
-    # requires running FreeCAD as subprocess, extracting the value of `sys.version` and
-    # parsing the results:
-    # 
-    # Step 1: Write out the needed lines of python code to `/tmp/python_version.py`:
-    python_file: IO[str]
-    python_file_name: str = "/tmp/python_version.py"
-    with open(python_file_name, "w") as python_file:
-        python_file.write("import sys\n"
-                          "print(sys.version)\n")
-
-    # Step 2: Execute "freecadXX -c" and pipe `/tmp/python_version.py` in as the input:
-    console_output: str
-    with open(python_file_name, "r") as python_file:
-        args: Tuple[str, ...] = (executable_which, "-c")
-        done: subprocess.CompletedProcess = (
-            subprocess.run(args, capture_output=True, stdin=python_file))
-        console_output = done.stdout.decode("latin-1")
-
-    # Step 3: The resulting output is annoying to extract:
-    def versions_extract(version_info: str) -> Tuple[str, str]:
-        """Return Python and GCC versions."""
-        version_info = "\n" + version_info
-        python_start: int = version_info.find("\n3")
-        version_info = version_info[python_start+1:]
-        python_version: str = "Python " + version_info[:version_info.find(" ")]
-        gcc_start: int = version_info.find("[GCC ")
-        version_info = version_info[gcc_start:]
-        gcc_version: str = "GCC " + version_info[:version_info.find("]")]  # Strip off brackets.
-        return (python_version, gcc_version)
-    desired_versions: Tuple[str, str] = versions_extract(console_output)
-    actual_versions: Tuple[str, str] = versions_extract(sys.version)
-
-    if actual_versions != desired_versions:
-        print(f"Versions Warning: Desired:{desired_versions} != Actual:{actual_versions}")
-
-print(f"{gui=}")
-
-import FreeCAD as App  # type: ignore
 import Part  # type: ignore
 import PartDesign  # type: ignore
 import Sketcher  # type: ignore
-
-from dataclasses import dataclass
-import math
-import numpy as np  # type: ignore
 
 
 class Point(object):
@@ -85,8 +23,8 @@ class Point(object):
     def __init__(self, x: float = 0.0, y: float = 0.0, z: float = 0.0,
                  name: str = "", radius: float = 0.0) -> None:
         """Initialize a Point."""
-        if radius < 0.0:
-            raise ValueError(f"negative radius {radius}")
+        if radius < 0.0:  # pragma: no unit test
+            raise ValueError(f"negative radius {radius}")  # pragma: no unit test
         vector: np.ndarray = np.array([x, y, z])
         vector.flags.writeable = False
         self._vector: np.ndarray = vector
@@ -114,14 +52,17 @@ class Point(object):
         return Point(-self.x, -self.y, -self.z, self.name, self.radius)
 
     # Point.__repr__():
-    def __repr__(self) -> str:
+    def __repr__(self) -> str:  # pragma: no unit test
         """Return a string representation of a Point."""
-        return f"Point({self.x}, {self.y}, {self.z}, '{self._name}', {self._radius})"
+        return (f"Point({self.x}, {self.y}, {self.z}, "  # pragma: no unit test
+                f"'{self._name}', {self._radius})")  # pragma: no unit test
 
     # Point.__str__():
-    def __str__(self) -> str:
+    def __str__(self) -> str:  # pragma: no unit test
         """Return a string representation of a Point."""
-        return f"Point({self.x}, {self.y}, {self.z}, '{self._name}', {self._radius})"
+        text: str = (f"Point({self.x}, {self.y}, {self.z}, "  # pragma: no unit test
+                     f"'{self._name}', {self._radius})")  # pragma: no unit test
+        return text  # pragma: no unit test
 
     # Point.__sub__():
     def __sub__(self, point: "Point") -> "Point":
@@ -160,7 +101,6 @@ class Point(object):
                   f"DistanceY('RootOrigin':(-1, 1), "
                   f"'{self.name}':({origin_index}, 1), {self.y:.2f})")
             print(f"{tracing}<=Point.constraints_append(*, |*|={len(constraints)})")
-        
 
     # PointFeature.features_get():
     def features_get(self, drawing: "Drawing", tracing: str = "") -> Tuple["Feature", ...]:
@@ -169,38 +109,44 @@ class Point(object):
 
     # Point.origin():
     @classmethod
-    def origin(cls) -> "Point":
+    def origin(cls) -> "Point":  # pragma: no unit test
         """Return an origin point."""
-        return Point(0.0, 0.0, 0.0, "origin", 0.0)
+        return Point(0.0, 0.0, 0.0, "origin", 0.0)  # pragma: no unit test
 
     # Point.x:
     @property
     def x(self) -> float:
+        """Return the x coordinate."""
         return self._vector[0]
 
     # Point.y:
     @property
     def y(self) -> float:
+        """Return the y coordinate."""
         return self._vector[1]
 
     # Point.z:
     @property
     def z(self) -> float:
+        """Return the z coordinate."""
         return self._vector[2]
 
     # Point.radius:
     @property
     def radius(self) -> float:
+        """Return the radius."""
         return self._radius
 
     # Point.name:
     @property
     def name(self) -> str:
+        """Return the name."""
         return self._name
 
     # Point.app_vector:
     @property
     def app_vector(self) -> App.Vector:
+        """Return Vector from the Point."""
         return App.Vector(self.x, self.y, self.z)
 
     # Point.magnitude():
@@ -216,7 +162,10 @@ class Point(object):
         """Return the normal of the point vector."""
         magnitude: float = self.magnitude()
         if magnitude <= 0.0:
-            raise ValueError(f"Can not normalize {self} because it has a magnitude of {magnitude}")
+            message: str = (f"Can not normalize {self} because "  # pragma: no unit test
+                            f"it has a magnitude of {magnitude}")  # pragma: no unit test
+            raise ValueError(message)  # pragma: no unit test
+                
         return Point(self.x / magnitude, self.y / magnitude, self.z / magnitude,
                      self.name, self.radius)
 
@@ -226,9 +175,9 @@ class Point(object):
         return transform.forward(self)
 
     # Point.reverse():
-    def reverse(self, transform: "Transform") -> "Point":
+    def reverse(self, transform: "Transform") -> "Point":  # pragma: no unit test
         """Perform a reverse transform of a point."""
-        return transform.reverse(self)
+        return transform.reverse(self)  # pragma: no unit test
 
 
 # BoundingBox:
@@ -236,22 +185,22 @@ class BoundingBox:
     """Bounding box for a set of Point's."""
 
     # BoundingBox.__init__():
-    def __init__(self, lower: Point, upper: Point, name: str ="") -> None:
+    def __init__(self, lower: Point, upper: Point, name: str = "") -> None:
         """Initiliaze a bounding box."""
         if lower.x > upper.x or lower.y > upper.y:
-            raise ValueError(f"{lower} is not less than {upper}")
+            raise ValueError(f"{lower} is not less than {upper}")  # pragma: no unit test
         center_x: float = (lower.x + upper.x) / 2.0
         center_y: float = (lower.y + upper.y) / 2.0
         self._center: Point = Point(center_x, center_y)
         self._lower: Point = lower
         self._name: str = ""
         self._upper: Point = upper
-        
+
     # BoundingBox.center():
     @property
-    def center(self) -> Point:
+    def center(self) -> Point:  # pragma: no unit test
         """Return center BoundingBox Point."""
-        return self._center
+        return self._center  # pragma: no unit test
 
     # BoundingBox.lower():
     @property
@@ -261,9 +210,9 @@ class BoundingBox:
 
     # BoundingBox.name():
     @property
-    def name(self) -> str:
+    def name(self) -> str:  # pragma: no unit test
         """Return BoundingBox name."""
-        return self._name
+        return self._name  # pragma: no unit test
 
     # BoundingBox.lower():
     @property
@@ -275,7 +224,7 @@ class BoundingBox:
     def from_points(points: Tuple[Point, ...]) -> "BoundingBox":
         """Compute BoundingBox from some Point's."""
         if not points:
-            raise ValueError("No points")
+            raise ValueError("No points")  # pragma: no unit test
         point0: Point = points[0]
         lower_x: float = point0.x
         lower_y: float = point0.y
@@ -297,7 +246,7 @@ class BoundingBox:
     def from_bounding_boxes(bounding_boxes: Tuple["BoundingBox", ...]) -> "BoundingBox":
         """Compute enclosing BoundingBox from some BoundingBox's."""
         if not bounding_boxes:
-            raise ValueError("No bounding boxes")
+            raise ValueError("No bounding boxes")  # pragma: no unit test
         bounding_box0: BoundingBox = bounding_boxes[0]
         lower_x: float = bounding_box0.lower.x
         lower_y: float = bounding_box0.lower.y
@@ -314,27 +263,28 @@ class BoundingBox:
             upper_y = max(upper_y, upper.y)
         return BoundingBox(Point(lower_x, lower_y), Point(upper_x, upper_y))
 
+
 class Transform:
     """A transform matrix using a 4x4 affine matrix.
 
     The matrix format is an affine 4x4 matrix in the following format:
-    
+
         [ r00 r01 r02 0 ]
         [ r10 r11 r12 0 ]
         [ r20 r21 r22 0 ]
         [ dx  dy  dz  1 ]
-    
+
     An affine point format is a 1x4 matrix of the following format:
-    
+
        [ x y z 1 ]
-    
+
     We multiply with the point on the left (1x4) and the matrix on the right (4x4).
     This yields a 1x4 point matrix of the same form.
-    
+
     Only two transforms are supported:
     * Transform.translate(Point)
     * Transform.rotate(Point, Angle)
-    
+
     A Transform object is immutable:
     It should have its inverse matrix computed.
     """
@@ -371,21 +321,22 @@ class Transform:
 
     def forward(self, point: Point) -> Point:
         """Apply a transform to a point."""
-        affine_point: np.ndarray = np.array([ [point.x, point.y, point.z, 1.0] ])
+        affine_point: np.ndarray = np.array([[point.x, point.y, point.z, 1.0]])
         forward_point: np.ndarray = affine_point.dot(self._forward)
         x: float = forward_point[0, 0]
         y: float = forward_point[0, 1]
         z: float = forward_point[0, 2]
         return Point(x, y, z, point.name, point.radius)
 
-    def reverse(self, point: Point) -> Point:
+    def reverse(self, point: Point) -> Point:  # pragma: no unit test
         """Apply a transform to a point."""
-        affine_point: np.ndarray = np.array([ [point.x, point.y, point, 1.0] ])
-        reverse_point: np.ndarray = affine_point.dot(self._reverse)
-        x: float = reverse_point[0, 0]
-        y: float = reverse_point[0, 1]
-        z: float = reverse_point[0, 2]
-        return Point(x, y, z, point.name, point.radius)
+        affine_point: np.ndarray = np.array(  # pragma: no unit test
+            [[point.x, point.y, point, 1.0]])  # pragma: no unit test
+        reverse_point: np.ndarray = affine_point.dot(self._reverse)  # pragma: no unit test
+        x: float = reverse_point[0, 0]  # pragma: no unit test
+        y: float = reverse_point[0, 1]  # pragma: no unit test
+        z: float = reverse_point[0, 2]  # pragma: no unit test
+        return Point(x, y, z, point.name, point.radius)  # pragma: no unit test
 
     @staticmethod
     def zero_fix(value: float) -> float:
@@ -393,16 +344,16 @@ class Transform:
         return 0.0 if abs(value) < 1.0e-10 else value
 
     @staticmethod
-    def zero_clean(matrix: np.ndarray) -> np.ndarray:
+    def zero_clean(matrix: np.ndarray) -> np.ndarray:  # pragma: no unit test
         """Round small numbers to zero."""
-        matrix = matrix.copy()
-        i: int
-        j: int
-        for i in range(4):
-            for j in range(4):
-                matrix[i, j] = Transform.zero_fix(matrix[i, j])
-        matrix.flags.writeable = False
-        return matrix
+        matrix = matrix.copy()  # pragma: no unit test
+        i: int  # pragma: no unit test
+        j: int  # pragma: no unit test
+        for i in range(4):  # pragma: no unit test
+            for j in range(4):  # pragma: no unit test
+                matrix[i, j] = Transform.zero_fix(matrix[i, j])  # pragma: no unit test
+        matrix.flags.writeable = False  # pragma: no unit test
+        return matrix  # pragma: no unit test
 
     # Transform.rotate():
     @staticmethod
@@ -435,21 +386,20 @@ class Transform:
         xs = nx * s
         ys = ny * s
         zs = nz * s
-    
+
         # Create the *forward_matrix*:
         matrix: np.ndarray = np.array([
             [zf(nx * x_omc + c), zf(nx * y_omc - zs), zf(nx * z_omc + ys), 0.0],
             [zf(ny * x_omc + zs), zf(ny * y_omc + c), zf(ny * z_omc - xs), 0.0],
-            [zf(nz * x_omc - ys), zf(nz * y_omc + xs), zf(nz * z_omc + c),  0.0],
-            [0.0, 0.0, 0.0,  1.0],
+            [zf(nz * x_omc - ys), zf(nz * y_omc + xs), zf(nz * z_omc + c), 0.0],
+            [0.0, 0.0, 0.0, 1.0],
         ])
         matrix.flags.writeable = False
         return matrix
 
     @staticmethod
     def translate(translate: Point) -> np.ndarray:
-        """ Return a 4x4 affine matrix to translate over by a point."""
-
+        """Return a 4x4 affine matrix to translate over by a point."""
         zf: Callable[[float], float] = Transform.zero_fix
         matrix: np.ndarray = np.array([
             [1.0, 0.0, 0.0, 0.0],
@@ -466,13 +416,13 @@ class Drawing(object):
     """Represents a 2D drawing."""
 
     # Drawing.__init__():
-    def __init__(self,
-                 circles: Tuple["Circle", ...],
-                 polygons: Tuple["Polygon", ...],
-                 name: str = ""
+    def __init__(
+            self,
+            circles: Tuple["Circle", ...],
+            polygons: Tuple["Polygon", ...],
+            name: str = ""
     ) -> None:
         """Initialize a drawing."""
-
         circle: Circle
         circle_bounding_boxes: Tuple[BoundingBox, ...] = tuple([circle.bounding_box
                                                                 for circle in circles])
@@ -496,9 +446,9 @@ class Drawing(object):
 
     # Drawing.circles():
     @property
-    def circles(self) -> Tuple["Circle", ...]:
+    def circles(self) -> Tuple["Circle", ...]:  # pragma: no unit test
         """Return the Drawing Circle's."""
-        return self._circles
+        return self._circles  # pragma: no unit test
 
     # Drawing.forward_transform():
     def forward_transform(self, transform: Transform) -> "Drawing":
@@ -523,14 +473,14 @@ class Drawing(object):
         """Return the Drawing origin index."""
         origin_index: int = self._origin_index
         if origin_index < -1:
-            raise ValueError(f"Origin Index not set.")
+            raise ValueError(f"Origin Index not set.")  # pragma: no unit test
         return self._origin_index
 
     # Drawing.polygons():
     @property
-    def polygons(self) -> Tuple["Polygon", ...]:
+    def polygons(self) -> Tuple["Polygon", ...]:  # pragma: no unit test
         """Return the Drawing Polygon's."""
-        return self._polygons
+        return self._polygons  # pragma: no unit test
 
     # Drawing.sketch():
     def sketch(self,
@@ -582,7 +532,7 @@ class Drawing(object):
         # Extract *part_features* from *features* and assign an *index* to each *feature*:
         part_features: List[PartFeature] = []
         for index, feature in enumerate(final_features):
-            part_feature: PartFeature = feature.part_feature
+            # part_feature: PartFeature = feature.part_feature
             # print(f"part_feature[{index}]: {part_feature}")
             part_features.append(feature.part_feature)
         sketcher.addGeometry(part_features, False)
@@ -602,8 +552,9 @@ class Drawing(object):
         if tracing:
             print(f"{tracing}<=Drawing.sketch(*, {lower_left})")
 
-        
+
 PartFeature = Union[Part.Circle, Part.LineSegment, Part.Point, Part.Arc]
+
 
 # Feature:
 class Feature(object):
@@ -623,18 +574,18 @@ class Feature(object):
         self._previous: Feature = self
         self._start: Point
         # print(f"<=>Feature.__init__(*, {self._part_feature}, '{self._name}')")
-    
+
     # Feature.drawing():
     @property
-    def drawing(self) -> Drawing:
+    def drawing(self) -> Drawing:  # pragma: no unit test
         """Return the Feature Drawing."""
-        return self._drawing
+        return self._drawing  # pragma: no unit test
 
     # Feature.finish():
     @property
-    def finish(self) -> Point:
+    def finish(self) -> Point:  # pragma: no unit test
         """Return the Feature finish point."""
-        return self._finish
+        return self._finish  # pragma: no unit test
 
     # Feature.index():
     @property
@@ -648,13 +599,13 @@ class Feature(object):
     def index(self, index: int) -> None:
         """Set the Feature index."""
         if self._index >= -1:
-            raise ValueError("index is already set")
+            raise ValueError("index is already set")  # pragma: no unit test
         if index < -1:
-            raise ValueError(f"index(={index} must >= -1")
+            raise ValueError(f"index(={index} must >= -1")  # pragma: no unit test
         self._index = index
 
     @property
-    def finish_key(self) -> int:
+    def finish_key(self) -> int:  # pragma: no unit test
         """Return the Feature Constraint key for the finish point."""
         raise NotImplementedError(f"{self}.finish_key() not implemented yet.")
 
@@ -666,9 +617,9 @@ class Feature(object):
 
     # Feature.next()
     @property
-    def next(self) -> "Feature":
+    def next(self) -> "Feature":  # pragma: no unit test
         """Return the next Feature in circular list."""
-        return self._next
+        return self._next  # pragma: no unit test
 
     # Feature.index.setter():
     @next.setter
@@ -684,9 +635,9 @@ class Feature(object):
 
     # Feature.previous():
     @property
-    def previous(self) -> "Feature":
+    def previous(self) -> "Feature":  # pragma: no unit test
         """Return the previous Part Feature in circular list."""
-        return self._previous
+        return self._previous  # pragma: no unit test
 
     # Feature.previous.setter():
     @previous.setter
@@ -696,9 +647,9 @@ class Feature(object):
 
     # Feature.start():
     @property
-    def start(self) -> Point:
+    def start(self) -> Point:  # pragma: no unit test
         """Return the Feature start point."""
-        return self._start
+        return self._start  # pragma: no unit test
 
     @property
     def start_key(self) -> int:
@@ -714,14 +665,13 @@ class Feature(object):
 
 # ArcFeature:
 class ArcFeature(Feature):
-    """Represents an an arc in a sketch"""
+    """Represents an an arc in a sketch."""
 
     # ArcFeature.__init__():
     def __init__(self, drawing: Drawing,
                  begin: Point, apex: Point, end: Point, name: str = "", tracing: str = "") -> None:
         """Initialize an ArcFeature."""
-
-        next_tracing: str = tracing + " " if tracing else ""
+        # next_tracing: str = tracing + " " if tracing else ""
         trace_level: int = 0
         if tracing:
             print(f"{tracing}=>ArcFeature('{begin.name}', '{apex.name}', '{end.name}', '{name}')")
@@ -756,8 +706,8 @@ class ArcFeature(Feature):
         # * The segments CJ and CN (not drawn) are of radius length (e.g. |CJ| = |CN| = r.)
         # * The angles <JBC and <CBN are equal.
         # * The angles <CBJ and <CNB are both 90 degrees.
-        # * The a M is somewhere on the line from A through C 
-        # 
+        # * The a M is somewhere on the line from A through C
+        #
         #     B             M
         #      \            |
         #       \         **|**
@@ -769,11 +719,11 @@ class ArcFeature(Feature):
         #             *     |     *
         #              \**  |  **/
         #               \ **|** /
-        #                \  |  /              
+        #                \  |  /
         #                 \ | /
         #                  \|/
         #                   A
-        # 
+        #
 
         # The call to the parent *__init__* can not occur until after the *start* and *finish*
         # points are determined.
@@ -784,13 +734,13 @@ class ArcFeature(Feature):
         pi: float = math.pi  # Pi constant (e.g. 3.14159...)
         r: float = apex.radius
         if r < epsilon:
-            raise ValueError("No Arc with zero radius.")
+            raise ValueError("No Arc with zero radius.")  # pragma: no unit test
 
         # Define some single letter variables for the Point's:
         b: Point = begin
         a: Point = apex
         e: Point = end
-        if trace_level >= 2:
+        if trace_level >= 2:  # pragma: no unit cover
             print(f"{tracing}{b=}")
             print(f"{tracing}{a=}")
             print(f"{tracing}{e=}")
@@ -801,8 +751,8 @@ class ArcFeature(Feature):
         unit_ab: Point = ab.normalize()  # <<AB>>
         unit_ae: Point = ae.normalize()  # <<AE>>
         unit_am: Point = ((unit_ab + unit_ae) / 2.0).normalize()  # <<AM>>
-        unit_ac: Point = unit_am  # <<C>> == <<BM>> because the are on the same line.
-        if trace_level >= 2:
+        # unit_ac: Point = unit_am  # <<C>> == <<BM>> because the are on the same line.
+        if trace_level >= 2:  # pragma: no unit cover
             print(f"{tracing}{ab=}")
             print(f"{tracing}{ae=}")
 
@@ -811,7 +761,7 @@ class ArcFeature(Feature):
         am_angle: float = unit_am.atan2()
         ae_angle: float = ae.atan2()
         sac_angle: float = abs(ab_angle - am_angle) % pi  # C is co-linear with M
-        if trace_level >= 2:
+        if trace_level >= 2:  # pragma: no unit cover
             print(f"{tracing}{deg(ab_angle)=:.2f}deg")
             print(f"{tracing}{deg(am_angle)=:.2f}deg")
             print(f"{tracing}{deg(ae_angle)=:.2f}deg")
@@ -827,8 +777,8 @@ class ArcFeature(Feature):
         # * |SC| = |AC| * sin(<SAC)
         # Solve for |AC| given |SC| and sin(<SAC):
         # * |AC| = |SC| / sin(<SAC) = r / sin(<SAC)
-        ac_length: float =  r / math.sin(sac_angle)  # |AC|
-        if trace_level >= 2:
+        ac_length: float = r / math.sin(sac_angle)  # |AC|
+        if trace_level >= 2:  # pragma: no unit cover
             print(f"{tracing}{ac_length=:.2f}")
 
         # From the Pythagorean theorem:
@@ -839,7 +789,7 @@ class ArcFeature(Feature):
         # * |AS| = sqrt(|AC|^2 - r^2)  # |SC| = r
         as_length: float = math.sqrt(ac_length * ac_length - r * r)
         af_length: float = as_length  # |AS| == |AF|
-        if trace_level >= 2:
+        if trace_level >= 2:  # pragma: no unit cover
             print(f"{tracing}{as_length=:.2f}")
             print(f"{tracing}{af_length=:.2f}")
 
@@ -847,7 +797,7 @@ class ArcFeature(Feature):
         c: Point = a + unit_am * ac_length
         s: Point = a + unit_ab * as_length
         f: Point = a + unit_ae * af_length
-        if trace_level >= 2:
+        if trace_level >= 2:  # pragma: no unit cover
             print(f"{tracing}{c=}")
             print(f"{tracing}{s=}")
             print(f"{tracing}{f=}")
@@ -862,9 +812,9 @@ class ArcFeature(Feature):
         if sweep_angle > degrees180:
             sweep_angle -= degrees360
         elif sweep_angle <= -degrees180:
-            sweep_angle += degrees360
+            sweep_angle += degrees360  # pragma: no unit test
         end_angle: float = start_angle + sweep_angle
-        if trace_level >= 2:
+        if trace_level >= 2:  # pragma: no unit cover
             print(f"{tracing}{deg(start_angle)=}deg")
             print(f"{tracing}{deg(finish_angle)=}deg")
             print(f"{tracing}{name}: {deg(finish_angle - start_angle)=}deg")
@@ -895,7 +845,7 @@ class ArcFeature(Feature):
         self._start_angle: float = start_angle
         self._start_length: float = as_length
 
-        if trace_level >= 2:
+        if trace_level >= 2:  # pragma: no unit cover
             print(f"{tracing}{self._apex=}")
             print(f"{tracing}{self._begin=}")
             print(f"{tracing}{self._center=}")
@@ -912,9 +862,9 @@ class ArcFeature(Feature):
             print(f"{tracing}<=ArcFeature('{begin.name}', '{apex.name}', '{end.name}', '{name}')")
 
     # ArcFeature.repr():
-    def __repr__(self) -> str:
+    def __repr__(self) -> str:  # pragma: no unit test
         """Return ArcFeature string representation."""
-        return f"ArcFeature({self._begin}, {self._apex}, {self._end})"
+        return f"ArcFeature({self._begin}, {self._apex}, {self._end})"  # pragma: no unit test
 
     # ArcFeature.apex():
     @property
@@ -924,9 +874,9 @@ class ArcFeature(Feature):
 
     # ArcFeature.begin():
     @property
-    def begin(self) -> Point:
+    def begin(self) -> Point:  # pragma: no unit test
         """Return the ArcFeature arc begin Point."""
-        return self._begin
+        return self._begin  # pragma: no unit test
 
     # ArcFeature.center():
     @property
@@ -936,9 +886,9 @@ class ArcFeature(Feature):
 
     # ArcFeature.end():
     @property
-    def end(self) -> Point:
+    def end(self) -> Point:  # pragma: no unit test
         """Return the initial ArcFeature end Point."""
-        return self._end
+        return self._end  # pragma: no unit test
 
     # ArcFeature.finish():
     @property
@@ -955,21 +905,21 @@ class ArcFeature(Feature):
 
     # ArcFeature.finish_angle():
     @property
-    def finish_angle(self) -> float:
+    def finish_angle(self) -> float:  # pragma: no unit test
         """Return the ArcFeature arc finish angle."""
-        return self._finish_angle
+        return self._finish_angle  # pragma: no unit test
 
     # ArcFeature.finish_length():
     @property
-    def finish_length(self) -> float:
+    def finish_length(self) -> float:  # pragma: no unit test
         """Return distance from arc finish Point to the apex Point."""
-        return self._finish_length
+        return self._finish_length  # pragma: no unit test
 
     # ArcFeature.input():
     @property
-    def input(self) -> Point:
+    def input(self) -> Point:  # pragma: no unit test
         """Return the initial ArcFeature arc start Point."""
-        return self._start
+        return self._start  # pragma: no unit test
 
     # ArcFeatrue.part_feature():
     @property
@@ -991,9 +941,9 @@ class ArcFeature(Feature):
 
     # ArcFeature.start_angle():
     @property
-    def start_angle(self) -> float:
+    def start_angle(self) -> float:  # pragma: no unit test
         """Return the ArcFeature arc start angle."""
-        return self._start_angle
+        return self._start_angle  # pragma: no unit test
 
     # ArcFeature.start_key():
     @property
@@ -1004,22 +954,22 @@ class ArcFeature(Feature):
 
     # ArcFeature.start_length():
     @property
-    def start_length(self) -> float:
+    def start_length(self) -> float:  # pragma: no unit test
         """Return the ArcFeature distance from start Point to apex Point."""
-        return 1
-        return self._start_length
+        return self._start_length  # pragma: no unit test
 
     # ArcFeature.sweep_angle():
     @property
-    def sweep_angle(self) -> float:
+    def sweep_angle(self) -> float:  # pragma: no unit cover
         """Return the ArcFeature sweep angle from start angle to end angle."""
         return self._sweep_angle
 
     # ArcFeature.type_name():
     @property
-    def type_name(self) -> str:
+    def type_name(self) -> str:  # pragma: no unit cover
         """Return the ArcFeature type name."""
         return "ArcFeature"
+
 
 # CircleFeature:
 class CircleFeature(Feature):
@@ -1033,28 +983,28 @@ class CircleFeature(Feature):
         self._drawing: Drawing = drawing
         self._part_circle: Part.Circle = Part.Circle(center.app_vector, App.Vector(0, 0, 1), radius)
         self._radius: float = radius
-        
+
     # CircleFeature.center():
     @property
-    def center(self) -> Point:
+    def center(self) -> Point:  # pragma: no unit cover
         """Return the CircleFeature center."""
         return self._center
 
     # CircleFeature.part_element():
     @property
     def part_feature(self) -> PartFeature:
-        """Return the CircleFeature PartFeature"""
+        """Return the CircleFeature PartFeature."""
         return self._part_circle
 
     # CircleFeature.radius():
     @property
-    def radius(self) -> float:
+    def radius(self) -> float:  # pragma: no unit cover
         """Return the CircleFeature radius."""
         return self._radius
 
     # CircleFeature.type_name():
     @property
-    def type_name(self) -> str:
+    def type_name(self) -> str:  # pragma: no unit cover
         """Return the CircleFeature type name."""
         return "CircleFeature"
 
@@ -1064,8 +1014,9 @@ class LineFeature(Feature):
     """Represents a line segment in a sketch."""
 
     # LineFeature.__init__():
-    def __init__(self, drawing: Drawing,
-                 start: Point, finish: Point, name: str = "", tracing = "") -> None:
+    def __init__(
+            self, drawing: Drawing, start: Point, finish: Point, name: str = "", tracing: str = ""
+    ) -> None:
         """Initialize a LineFeature."""
         if tracing:
             print(f"{tracing}=>LineFeature('{start.name}', '{finish.name}', '{name}')")
@@ -1079,7 +1030,7 @@ class LineFeature(Feature):
 
     # LineFeature.drawing():
     @property
-    def drawing(self) -> Drawing:
+    def drawing(self) -> Drawing:  # pragma: no unit cover
         """Return the LineFeature Drawing."""
         return self._drawing
 
@@ -1088,10 +1039,10 @@ class LineFeature(Feature):
     def part_feature(self) -> PartFeature:
         """Return the PartFeature associated with a LineFeature."""
         return self._line_segment
-        
+
     # LineFeature.finish():
     @property
-    def finish(self) -> Point:
+    def finish(self) -> Point:  # pragma: no unit cover
         """Return the LineFeature finish Point."""
         return self._finish
 
@@ -1115,7 +1066,7 @@ class LineFeature(Feature):
 
     # LineFeature.type_name():
     @property
-    def type_name(self) -> str:
+    def type_name(self) -> str:  # pragma: no unit cover
         """Return the LineFeature type name."""
         return "LineFeature"
 
@@ -1133,7 +1084,7 @@ class PointFeature(Feature):
         # print(f"PointFeature.__init__({point.app_vector=}): ")
 
     # PointFeature.__str__():
-    def __str__(self) -> str:
+    def __str__(self) -> str:  # pragma: no unit cover
         """Return PointFeature string ."""
         return f"PointFeature(point={self._point}, name='{self._name}', index={self._index})"
 
@@ -1145,32 +1096,33 @@ class PointFeature(Feature):
 
     # PointFeature.point():
     @property
-    def point(self) -> Point:
+    def point(self) -> Point:  # pragma: no unit cover
         """Return the PointFeature Point."""
         return self._point
 
     # PointFeature.type_name():
     @property
-    def type_name(self) -> str:
+    def type_name(self) -> str:  # pragma: no unit cover
         """Return the PointFeature type name."""
         return "PointFeature"
 
-        
+
 # Polygon:
 class Polygon(object):
     """Represents a polygon with possible rounded corners."""
 
     # Polygon.__init__():
-    def __init__(self,
-                 points: Tuple[Point, ...],
-                 depth: float = 0.0,
-                 flat: bool = False,
-                 name: str = ""
+    def __init__(
+            self,
+            points: Tuple[Point, ...],
+            depth: float = 0.0,
+            flat: bool = False,
+            name: str = ""
     ) -> None:
-        """Initialize a Polygon:"""
+        """Initialize a Polygon."""
         if not points:
-            raise ValueError("bounding box needs at least one point.")
-        
+            raise ValueError("bounding box needs at least one point.")  # pragma: no unit cover
+
         self._bounding_box: BoundingBox = BoundingBox.from_points(points)
         self._depth: float = depth
         self._features: Optional[Tuple[Feature, ...]] = None
@@ -1183,10 +1135,10 @@ class Polygon(object):
     def bounding_box(self) -> BoundingBox:
         """Return the Polygon BoundingBox."""
         return self._bounding_box
-    
+
     # Polygon.clockwise():
     @property
-    def clockwise(self) -> bool:
+    def clockwise(self) -> bool:    # pragma: no unit cover
         """Return whether the Polygon points are clockwise."""
         points: Tuple[Point, ...] = self._points
         points_size: int = len(points)
@@ -1203,7 +1155,7 @@ class Polygon(object):
                            tracing: str = "") -> None:
         """Return the Polygon constraints for a Drawing."""
         # Perform an requested *tracing*:
-        next_tracing: str = tracing + " " if tracing else ""
+        # next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>Polygon.contraints_append('{self.name}', *, {len(constraints)=}):")
 
@@ -1211,9 +1163,9 @@ class Polygon(object):
         features: Optional[Tuple[Feature, ...]] = self._features
         assert features, "Features not set"
         features_size: int = len(features)
-        degrees45: float = math.pi / 4.0
-        degrees135: float = 3.0 * degrees45
-        deg: Callable[[float], float] = math.degrees
+        # degrees45: float = math.pi / 4.0
+        # degrees135: float = 3.0 * degrees45
+        # deg: Callable[[float], float] = math.degrees
 
         at_index: int
         # Iterate through adjacent Feature pairs and apply constraints;
@@ -1226,7 +1178,7 @@ class Polygon(object):
             before_feature: Feature = features[(at_index - 1) % features_size]
             before_feature_index: int = before_feature.index
             before_name: str = before_feature.name
-            before_finish: Point = before_feature.finish
+            # before_finish: Point = before_feature.finish
             before_finish_key: int = before_feature.finish_key
             after_feature: Feature = features[(at_index + 1) % features_size]
             assert at_feature is not before_feature
@@ -1345,14 +1297,14 @@ class Polygon(object):
             print(f"{tracing}<=Polygon.contraints_append('{self.name}', *, , {len(constraints)=})")
 
     # Polygon.depth():
-    @property
+    @property  # pragma: no unit cover
     def depth(self) -> float:
         """Return the Polygon depth."""
         return self._depth
 
     # Polygon.flat():
     @property
-    def flat(self) -> bool:
+    def flat(self) -> bool:  # pragma: no unit cover
         """Return the flat flag."""
         return self._flat
 
@@ -1400,7 +1352,7 @@ class Polygon(object):
                 arc_feature = ArcFeature(drawing, before_point, at_point,
                                          after_point, at_name, next_tracing)
             arcs.append(arc_feature)
-        
+
         # Pass 2: Create any *lines* associated with a each point.
         # This list is 1-to-1 with the points.  Occasionally, a line is omitted when 2 arcs
         # connect with no intermediate line segment.
@@ -1431,7 +1383,7 @@ class Polygon(object):
                 if abs(arc_lengths - line_length) < epsilon:
                     # We have "exact" match, so the line segment is suppressed.
                     generate_at_line = False
-                elif arc_lengths > line_length:
+                elif arc_lengths > line_length:  # pragma: no unit cover
                     raise ValueError("Arcs are too big")
             line_feature: Optional[LineFeature] = None
             if generate_at_line:
@@ -1461,16 +1413,16 @@ class Polygon(object):
         if tracing:
             print(f"{tracing}<=Polygon.features_get(*)=>|*|={len(final_features)}")
         return final_features
-    
+
     # Polygon.name():
     @property
-    def name(self) -> str:
+    def name(self) -> str:  # pragma: no unit cover
         """Return the Polygon depth."""
         return self._name
 
     # Polygon.points():
     @property
-    def points(self) -> Tuple[Point, ...]:
+    def points(self) -> Tuple[Point, ...]:  # pragma: no unit cover
         """Return the Polygon points."""
         return self._points
 
@@ -1480,25 +1432,26 @@ class Polygon(object):
         points: Tuple[Point, ...] = tuple([point.forward(transform) for point in self._points])
         return Polygon(points, self._depth, self._flat, self._name)
 
+
 class Circle(object):
     """Represents a circle."""
 
     # Circle.__init():
-    def __init__(self,
-                 center: Point,
-                 depth: float = 0.0,
-                 flat: bool = False,
-                 name: str = ""
+    def __init__(
+            self,
+            center: Point,
+            depth: float = 0.0,
+            flat: bool = False,
+            name: str = ""
     ) -> None:
         """Initialize a circle."""
         if center.radius <= 0:
-            raise ValueError("Circle has no radius")
+            raise ValueError("Circle has no radius")  # pragma: no unit cover
 
         x: float = center.x
         y: float = center.y
         radius: float = center.radius
         name = name if name else center.name
-
 
         lower: Point = Point(x - radius, y - radius, 0.0, name, 0.0)
         upper: Point = Point(x + radius, y + radius, 0.0, name, 0.0)
@@ -1515,7 +1468,7 @@ class Circle(object):
     # CircleFeature.__repr__():
     def __repr__(self) -> str:
         """Return a string representation of Circle."""
-        return f"Circle({self._center}, {self._radius}, '{self._name}')"
+        return f"Circle({self._center}, {self._radius}, '{self._name}')"  # pragma: no unit cover
 
     # Circle.bounding_box():
     @property
@@ -1535,13 +1488,13 @@ class Circle(object):
         """Return the Circle CircleFeature."""
         circle_feature: Optional[CircleFeature] = self._circle_feature
         if not circle_feature:
-            raise ValueError(f"{self} does not have a feature yet.")
+            raise ValueError(f"{self} does not have a feature yet.")  # pragma: no unit cover
         return circle_feature
 
     # Circle.constraints_append():
     def constraints_append(self, drawing: Drawing, constraints: List[Sketcher.Constraint],
                            tracing: str = "") -> None:
-        """Return the CircleFeature constraints"""
+        """Return the CircleFeature constraints."""
         if tracing:
             print("{tracing}=>Circle.constraints_append(*, *): {len(constraints)=}")
         origin_index: int = drawing.origin_index
@@ -1568,7 +1521,6 @@ class Circle(object):
                   f"DistanceX(Origin:({origin_index}, 1), "
                   f"'{circle_name}':({circle_feature_index}, 3), "
                   f"{center.x:.2f})) # Circle Center X")
-
 
         # Append the DistanceY constraint:
         constraints.append(
@@ -1623,10 +1575,16 @@ class Circle(object):
 
 
 def visibility_set(element: Any, new_value: bool = True) -> None:
+    """Set the visibility of an element."""
     # print(f"=>visibility_set({element}, {new_value})")
-    if gui:
-        gui_document: Gui.Document = Gui.ActiveDocument
-        if hasattr(element, "Name"):
+    if Gui:   # pragma: no unit cover
+        print(f"{Gui=}")
+        print(f"{dir(Gui)=}")
+        print(f"{Gui.__file__=}")
+        print(f"{Gui.__name__=}")
+        gui_document: Optional[Any] = (
+            Gui.ActiveDocument() if hasattr(Gui, "ActiveDocument") else None)
+        if gui_document and hasattr(gui_document, "Name"):
             name: str = getattr(element, "Name")
             sub_element: Any = gui_document.getObject(name)
             if sub_element is not None and hasattr(sub_element, "Visibility"):
@@ -1634,25 +1592,30 @@ def visibility_set(element: Any, new_value: bool = True) -> None:
                     setattr(sub_element, "Visibility", new_value)
     # print(f"<=visibility_set({element}, {new_value})")
 
-    if False:
-        ### Begin command PartDesign_Plane
-        App.getDocument('Unnamed').getObject('Body').newObject('PartDesign::Plane','DatumPlane')
-        App.getDocument('Unnamed').getObject('DatumPlane').Support = [(App.getDocument('Unnamed').getObject('XY_Plane'),'')]
-        App.getDocument('Unnamed').getObject('DatumPlane').MapMode = 'FlatFace'
-        App.activeDocument().recompute()
-        Gui.getDocument('Unnamed').setEdit(App.getDocument('Unnamed').getObject('Body'),0,'DatumPlane.')
-        ### End command PartDesign_Plane
+    if False:  # pragma: no unit cover
+        pass
+        # App.getDocument('Unnamed').getObject('Body').newObject('PartDesign::Plane', 'DatumPlane')
+        # App.getDocument('Unnamed').getObject('DatumPlane').Support = [
+        #     (App.getDocument('Unnamed').getObject('XY_Plane'), '')]
+        # App.getDocument('Unnamed').getObject('DatumPlane').MapMode = 'FlatFace'
+        # App.activeDocument().recompute()
+        # Gui.getDocument('Unnamed').setEdit(
+        #     App.getDocument('Unnamed').getObject('Body'), 0, 'DatumPlane.')
         # Gui.Selection.clearSelection()
 
-    if False:
+    if False:  # pragma: no unit cover
         # Click on [Plane face]
-        App.getDocument('Unnamed').getObject('DatumPlane').AttachmentOffset = App.Placement(App.Vector(0.0000000000, 0.0000000000, 0.0000000000),  App.Rotation(0.0000000000, 0.0000000000, 0.0000000000))
-        App.getDocument('Unnamed').getObject('DatumPlane').MapReversed = False
-        App.getDocument('Unnamed').getObject('DatumPlane').Support = [(App.getDocument('Unnamed').getObject('XY_Plane'),'')]
-        App.getDocument('Unnamed').getObject('DatumPlane').MapPathParameter = 0.000000
-        App.getDocument('Unnamed').getObject('DatumPlane').MapMode = 'FlatFace'
-        App.getDocument('Unnamed').getObject('DatumPlane').recompute()
-        Gui.getDocument('Unnamed').resetEdit()
+        pass
+        # App.getDocument('Unnamed').getObject('DatumPlane').AttachmentOffset = (
+        #     App.Placement(App.Vector(0.0000000000, 0.0000000000, 0.0000000000),
+        #                   App.Rotation(0.0000000000, 0.0000000000, 0.0000000000)))
+        # App.getDocument('Unnamed').getObject('DatumPlane').MapReversed = False
+        # App.getDocument('Unnamed').getObject('DatumPlane').Support = [
+        #     (App.getDocument('Unnamed').getObject('XY_Plane'), '')]
+        # App.getDocument('Unnamed').getObject('DatumPlane').MapPathParameter = 0.000000
+        # App.getDocument('Unnamed').getObject('DatumPlane').MapMode = 'FlatFace'
+        # App.getDocument('Unnamed').getObject('DatumPlane').recompute()
+        # Gui.getDocument('Unnamed').resetEdit()
         # _tv_DatumPlane.restore()
         # del(_tv_DatumPlane)
 
@@ -1662,9 +1625,8 @@ def main() -> int:
     # Open *document_name* and get associated *app_document* and *gui_document*:
     print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> New")
     document_name: str = "bar"
-    
-    if gui:
-        gui_document: Gui.Document = Gui.ActiveDocument
+
+    # gui_document: Optional[Gui.Document] = Gui.ActiveDocument if Gui else None
 
     drawing: Drawing
     center_circle: Circle
@@ -1700,7 +1662,7 @@ def main() -> int:
         notch_y: float = 10.0
         lower_left_bottom: Point = Point(left_x + notch_x, lower_y, 0.0, "lower_left_bottom", 0.0)
         lower_right: Point = Point(right_x, lower_y, 0.0, "lower_right", 0.0)
-        upper_right: Point = Point(right_x, upper_y, 0.0, "upper_right", radius)
+        # upper_right: Point = Point(right_x, upper_y, 0.0, "upper_right", radius)
         notch1: Point = Point(right_x, upper_y - notch_y, 0.0, "notch1", radius)
         notch2: Point = Point(right_x - notch_x, upper_y - notch_y, 0.0, "notch2", radius)
         notch3: Point = Point(right_x - notch_x, upper_y, 0.0, "notch3", radius)
@@ -1717,7 +1679,7 @@ def main() -> int:
             lower_left_left,
         )
         box_polygon: Polygon = Polygon(box_points, 0.0, False, "box")
-        
+
         # Create the *hole_center*:
         center_hole: Point = Point(0.0, 0.0, 0.0, "center_hole", 10.0)
         center_circle = Circle(center_hole, 0.0, False, "center_hole")
@@ -1726,7 +1688,7 @@ def main() -> int:
         circles: Tuple[Circle, ...] = (center_circle,)
         polygons: Tuple[Polygon, ...] = (box_polygon,)
         drawing = Drawing(circles, polygons, "box_with_hole")
-        
+
         # Just for fun rotate everything by 60 degrees:
         # rotate30_transform: Transform = Transform(None, None, math.pi / 3.0, None)
         # drawing = drawing.forward_transform(rotate30_transform)
@@ -1752,30 +1714,35 @@ def main() -> int:
 
     # Close *document_name* and exit by closing the main window:
     App.closeDocument(document_name)
-    if gui:
+    if Gui and hasattr(Gui, "getMainWindow"):  # pragma: no unit cover
         Gui.getMainWindow().close()
     return 0
 
-def class_names_show(module_object: Any) -> None:
+
+def class_names_show(module_object: Any) -> None:  # pragma: no unit cover
+    """Show the the class name of an object."""
     print(f"module: {module_object.__name__}")
     name: str
     for name in dir(module_object):
-         attribute = getattr(module_object, name)
-         # if inspect.isclass(attribute):
-         #   print(f"  class: {name}")
+        pass
+        # attribute = getattr(module_object, name)
+        # if inspect.isclass(attribute):
+        #     print(f"  class: {name}")
 
 
-def attributes_show(some_object: Any) -> None:
-    name: str
-    for name in dir(some_object):
-        if name[0] != "_":
-            print(f"{name}: {getattr(some_object, name)}")
+def attributes_show(some_object: Any) -> None:  # pragma: no unit cover
+    """Show the attributes of an object."""
+    pass
+    # name: str
+    # for name in dir(some_object):
+    #     if name[0] != "_":
+    #         print(f"{name}: {getattr(some_object, name)}")
 
 
 if __name__ == "__main__":
     main()
 
-if False:
+
+if False:  # pragma: no unit cover
     Gui.activateWorkbench("PartDesignWorkbench")
-    App.activeDocument().addObject('PartDesign::Body','Body')
-    
+    App.activeDocument().addObject('PartDesign::Body', 'Body')

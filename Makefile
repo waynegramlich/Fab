@@ -1,4 +1,4 @@
-.PHONY: all clean tests documentation
+.PHONY: all clean lint tests documentation
 
 PYTHON := python3
 PIP := $(PYTHON) -m pip
@@ -7,14 +7,17 @@ PY2MD := py2md.py
 
 PYTHON_FILES := \
     importer.py \
-    py2md.py
-#     shopfab.py
+    py2md.py \
+    shopfab.py
 COVER_FILES := ${PYTHON_FILES:%.py=%.py,cover}
 MD_FILES := ${PYTHON_FILES:%.py=%.md}
+LINT_FILES := ${PYTHON_FILES:%.py=.%.lint}
 
-all: documentation tests
+all: documentation lint tests
 
 documentation: ${MD_FILES}  # Use *.py => *.md pattern rules
+
+lint: ${LINT_FILES}
 
 tests: .tests
 
@@ -27,7 +30,7 @@ tests: .tests
 	    $(COVERAGE) run --append "$${py_file}" --unit-test ; # --unit-test forces unit tests \
 	done
 	$(COVERAGE) annotate  # Generate annotated coverage files.
-	grep -n "^!" ${COVER_FILES} || true  # Highlight any uncovered lines.
+	grep -n "^!" ${COVER_FILES} | grep -v "pragma: no unit test" || true  # Flag missing coverage.
 	rm -f ${COVER_FILES}  # Remove annotated coverage files.
 	$(COVERAGE) report  # Generate the summary report.
 	$(COVERAGE) erase  # Do not leave around stale coverge information
@@ -37,6 +40,11 @@ tests: .tests
 # Pattern Rules:
 %.md: %.py
 	$(PY2MD) $<
+.%.lint: %.py
+	mypy  $<
+	flake8 --max-line-length=100 --ignore=E402 $<
+	pydocstyle $<
+	touch $@
 
 clean:
-	rm -f ${COVER_FILES} ${MD_FILES} .tests
+	rm -f ${COVER_FILES} ${MD_FILES} ${LINT_FILES} .tests

@@ -18,10 +18,10 @@ The basic Python file format is shown immediately below (`##` is for information
 
      More module description here.  Module constants are listed here.
      """
-    
+
      # CLASS_NAME(PARENT_CLASS):   ## Class definition is preceded by a 1-line comment.
      class CLASS_NAME(PARENT_CLASS):  ## Use `object` for base classes.
-         """Class line description.  
+         """Class line description.
 
          Additional class description goes here.
          """
@@ -45,7 +45,6 @@ The basic Python file format is shown immediately below (`##` is for information
                ...
                * exceptionN: ...
              """
-    
 
 Both `@property` and `@dataclass` decorators are encouraged and have special extra parsing to
 extract property names and the like.
@@ -132,12 +131,12 @@ class BlockComment:
         The lines preceeding the first line up until a blank line.
       * *body* (Tuple[LineData, ...] ): The lines that make up the actual comment.
     """
-    
+
     index: int
     indent: int
-    is_triple: bool    
+    is_triple: bool
     preceding: Tuple[LineData, ...]
-    body: Tuple[LineData, ...] 
+    body: Tuple[LineData, ...]
 
 
 # Markdown:
@@ -180,8 +179,9 @@ class Markdown(object):
         return tuple(line_datas)
 
     # Markdown.triples_extract():
-    def triples_extract(self,
-                        line_datas: Tuple[LineData, ...]
+    def triples_extract(
+            self,
+            line_datas: Tuple[LineData, ...]
     ) -> Tuple[Tuple[LineData, ...], Tuple[BlockComment, ...]]:
         """Extract BlockComment's containing Triples.
 
@@ -198,7 +198,7 @@ class Markdown(object):
         line_data: LineData
         index: int
         in_triple: str = ""
-        for index, line_data in enumerate(line_datas): # 
+        for index, line_data in enumerate(line_datas):
             tracing: bool = False
             if tracing:
                 print(f"line_datas[{index}]: s='{line_data.triple_start}' "
@@ -327,15 +327,15 @@ class Markdown(object):
         # Output the Markdown header followed by the module document string:
         markdown_lines.append(f"# {line_data.stripped}")
         markdown_lines.extend([f"{line_data.indent * ' '}{line_data.stripped}"
-                               for line_data in module.body[index+1:]])
+                               for line_data in module.body[index + 1:]])
 
         class_counter: int = 0
-        method_counter: int = 0        
+        method_counter: int = 0
         class_or_module: BlockComment
         for index, class_or_module in enumerate(triples[1:]):
             # print(f"triples[{index}]: |{len(markdown_lines)=}|")
             indent: int = class_or_module.indent
-            
+
             # Prescan *preceding_lines* looking for `class` or `def':
             is_class: bool = False
             is_def: bool = False
@@ -392,7 +392,7 @@ class Markdown(object):
 
             indent = class_or_module.indent
             for line_data in class_or_module.body:
-                padding: str = max(0, line_data.indent - indent) * " "
+                padding = max(0, line_data.indent - indent) * " "
                 stripped = line_data.stripped
                 markdown_lines.append(f"{padding}{fix(stripped)}")
             markdown_lines.append("")
@@ -405,6 +405,7 @@ class Markdown(object):
             markdown_file.write("\n".join(markdown_lines + [""]))
         # print("<=Markdown.generate()")
 
+
 # fix():
 def fix(text: str) -> str:
     """Fix underscores for markdown.
@@ -416,10 +417,11 @@ def fix(text: str) -> str:
     """
     return text.replace("_", "\\_")
 
+
 # italicize():
 def italicize(match_obj) -> str:
     """Italicize words.
-    
+
     * Arguments:
       * *match_obj* (?): The regular expression match object.
     * Returns:
@@ -448,7 +450,7 @@ def main() -> None:
                 paths.append(path)
             else:  # pragma: no unit cover
                 print(f"{path.name} does not have a suffix of `.py`")
-    
+
         markdowns: Tuple[Markdown, ...] = tuple([Markdown(path) for path in paths])
         markdown: Markdown
         index: int
@@ -458,5 +460,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-        
