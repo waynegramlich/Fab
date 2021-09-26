@@ -6,16 +6,18 @@ COVERAGE := $(PYTHON) -m coverage
 PY2MD := py2md.py
 
 PYTHON_FILES := \
+    fcstd_tar_sync.py \
     importer.py \
     py2md.py \
     shopfab.py
 COVER_FILES := ${PYTHON_FILES:%.py=%.py,cover}
 MD_FILES := ${PYTHON_FILES:%.py=%.md}
 LINT_FILES := ${PYTHON_FILES:%.py=.%.lint}
+HTML_FILES := ${PYTHON_FILES:%.py=/tmp/%.html}
 
 all: documentation lint tests
 
-documentation: ${MD_FILES}  # Use *.py => *.md pattern rules
+documentation: ${HTML_FILES}  # Use *.py => *.md pattern rules
 
 lint: ${LINT_FILES}
 
@@ -45,6 +47,8 @@ tests: .tests
 	flake8 --max-line-length=100 --ignore=E402 $<
 	pydocstyle $<
 	touch $@
+/tmp/%.html: %.md
+	cmark $< -o $@
 
 clean:
-	rm -f ${COVER_FILES} ${MD_FILES} ${LINT_FILES} .tests
+	rm -f ${COVER_FILES} ${MD_FILES} ${LINT_FILES} ${HTML_FILES} .tests

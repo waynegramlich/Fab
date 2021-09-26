@@ -165,7 +165,6 @@ class Point(object):
             message: str = (f"Can not normalize {self} because "  # pragma: no unit test
                             f"it has a magnitude of {magnitude}")  # pragma: no unit test
             raise ValueError(message)  # pragma: no unit test
-                
         return Point(self.x / magnitude, self.y / magnitude, self.z / magnitude,
                      self.name, self.radius)
 
