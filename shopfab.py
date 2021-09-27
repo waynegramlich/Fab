@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
 """ShopFab: A shop based design workflow."""
-import importer
+import os
+import sys
+
+assert sys.version_info.major == 3  # Python 3.x
+assert sys.version_info.minor == 8  # Python 3.8
+sys.path.append(os.path.join(os.getcwd(), "squashfs-root/usr/lib"))
+
+import FreeCAD as App  # type: ignore
+import FreeCADGui as Gui  # type: ignore
+gui: bool = hasattr(Gui, "getMainWindow")  # Only present when Gui is active
+
+# from shopfab import importer
 import math
 import numpy as np  # type: ignore
 from pathlib import Path  # type: ignore
 from typing import Any, Callable, List, Optional, Tuple, Union
-
-App: Any
-Gui: Any  # Technically speaking: Optional[ModuleType]
-_, App = importer.search("FreeCAD", "freecad19")
-Gui, _ = importer.search("FreeCADGui", "freecad19")
-
 import Part  # type: ignore
 import PartDesign  # type: ignore
 import Sketcher  # type: ignore
@@ -1576,13 +1581,9 @@ class Circle(object):
 def visibility_set(element: Any, new_value: bool = True) -> None:
     """Set the visibility of an element."""
     # print(f"=>visibility_set({element}, {new_value})")
-    if Gui:   # pragma: no unit cover
-        print(f"{Gui=}")
-        print(f"{dir(Gui)=}")
-        print(f"{Gui.__file__=}")
-        print(f"{Gui.__name__=}")
+    if gui:   # pragma: no unit cover
         gui_document: Optional[Any] = (
-            Gui.ActiveDocument() if hasattr(Gui, "ActiveDocument") else None)
+            Gui.ActiveDocument if hasattr(Gui, "ActiveDocument") else None)
         if gui_document and hasattr(gui_document, "Name"):
             name: str = getattr(element, "Name")
             sub_element: Any = gui_document.getObject(name)
@@ -1622,7 +1623,6 @@ def visibility_set(element: Any, new_value: bool = True) -> None:
 def main() -> int:
     """Run the program."""
     # Open *document_name* and get associated *app_document* and *gui_document*:
-    print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> New")
     document_name: str = "bar"
 
     # gui_document: Optional[Gui.Document] = Gui.ActiveDocument if Gui else None
@@ -1632,7 +1632,7 @@ def main() -> int:
 
     app_document: App.Document = App.newDocument("bar")
     if True:
-        print(f"{app_document=}")
+        # print(f"{app_document=}")
         # import PartDesign
         body: PartDesign.Body = app_document.addObject("PartDesign::Body", "Body")
         datum_plane: Part.Feature = body.newObject("PartDesign::Plane", "DatumPlane")
@@ -1713,8 +1713,8 @@ def main() -> int:
 
     # Close *document_name* and exit by closing the main window:
     App.closeDocument(document_name)
-    if Gui and hasattr(Gui, "getMainWindow"):  # pragma: no unit cover
-        Gui.getMainWindow().close()
+    if gui:
+        Gui.getMainWindow().close()  # pragma: no unit cover
     return 0
 
 
@@ -1740,8 +1740,3 @@ def attributes_show(some_object: Any) -> None:  # pragma: no unit cover
 
 if __name__ == "__main__":
     main()
-
-
-if False:  # pragma: no unit cover
-    Gui.activateWorkbench("PartDesignWorkbench")
-    App.activeDocument().addObject('PartDesign::Body', 'Body')
