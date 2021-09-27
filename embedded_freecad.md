@@ -145,7 +145,7 @@ This code looks as follows:
 	
      assert os.version_info.major == 3  # Python 3.x
      assert os.version_info.minor == 8  # Python 3.8
-     sys.path.append(os.path.join(os.getcwd(), "squashfs-root/usr/lib")
+     sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 
      import FreeCAD as App
      import FreeCADGui as Gui
