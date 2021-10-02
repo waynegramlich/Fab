@@ -6,10 +6,11 @@ COVERAGE := $(PYTHON) -m coverage
 PY2MD := py2md.py
 
 PYTHON_FILES := \
+    apex.py \
     fcstd_tar_sync.py \
-    importer.py \
-    py2md.py \
-    shopfab.py
+    py2md.py
+
+#    shopfab.py
 COVER_FILES := ${PYTHON_FILES:%.py=%.py,cover}
 MD_FILES := ${PYTHON_FILES:%.py=%.md}
 LINT_FILES := ${PYTHON_FILES:%.py=.%.lint}
@@ -32,7 +33,7 @@ tests: .tests
 	    $(COVERAGE) run --append "$${py_file}" --unit-test ; # --unit-test forces unit tests \
 	done
 	$(COVERAGE) annotate  # Generate annotated coverage files.
-	grep -n "^!" ${COVER_FILES} | grep -v "pragma: no unit test" || true  # Flag missing coverage.
+	grep -n "^!" ${COVER_FILES} | grep -v "pragma: no unit test" || true  # Flag coverage.
 	rm -f ${COVER_FILES}  # Remove annotated coverage files.
 	$(COVERAGE) report  # Generate the summary report.
 	$(COVERAGE) erase  # Do not leave around stale coverge information

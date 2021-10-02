@@ -11,7 +11,7 @@ This document is Linux focused, since the original author uses neither Windows n
 There are two top level modules in FreeCAD:
 * FreeCAD:
   This module is the top level module primarily for managing FreeCAD geometry.
-  This module is typically abbreviated as App (e.g. `import FreeCAD as App`.)
+  This module is typicxally abbreviated as App (e.g. `import FreeCAD as App`.)
 * FreeCADGui:
   This module is used for accessing the GUI (Graphical User Interface)
   presentation issues such as visibility, transparency, color, views, etc.
@@ -151,3 +151,4 @@ This code looks as follows:
      import FreeCADGui as Gui
      gui: bool = hasattr(Gui, "getMainWindow")  # Only present when Gui is active
 
+The following piece of code will exit the window system:<
