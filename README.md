@@ -24,13 +24,13 @@ and still get basically the same physical objects.
 
 ## Overview
 
-The overall strategy is that overall project is nested tree of ApexPart's.
-The ApexPart tree leaf nodes are individual physical parts and
+The overall strategy is that an overall project is nested tree of ApexPart's.
+The ApexPart tree leaf nodes are individual physical parts that can be purchased/manufactured and
 the interior nodes are sub-assemblies.
 The way that each physical part is developed to create a Python class
 that sub-classes ApexPart and provides a small number of required methods.
 
-The process of an ApexPart is as follows:
+The process of using an ApexPart is as follows:
 1. Various lengths and angles are defined.
 2. 3D points, called ApexVector's, are defined using the various lengths and angles.
 3. Subsets of the ApexVector's are projected onto a 2D plane to form lines, arcs,

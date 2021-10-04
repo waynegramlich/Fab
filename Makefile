@@ -18,7 +18,7 @@ HTML_FILES := ${PYTHON_FILES:%.py=/tmp/%.html}
 
 all: documentation lint tests
 
-documentation: ${HTML_FILES}  # Use *.py => *.md pattern rules
+documentation: ${MD_FILES} ${HTML_FILES}  # Use *.py => *.md pattern rules
 
 lint: ${LINT_FILES}
 
