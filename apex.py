@@ -273,6 +273,65 @@ class ApexBoundBox:
         """
         self._bound_box: BoundBox = bound_box
 
+    # ApexBoundBox.from_vectors():
+    @staticmethod
+    def from_vectors(vectors: Tuple[Union[Vector, "ApexVector"], ...]) -> "ApexBoundBox":
+        """Compute BoundingBox from some Point's."""
+        if not vectors:
+            raise ValueError("No vectors")  # pragma: no unit test
+        vector0: Vector = vectors[0]
+        x_min: float = vector0.x
+        y_min: float = vector0.y
+        z_min: float = vector0.z
+        x_max: float = x_min
+        y_max: float = y_min
+        z_max: float = z_min
+
+        vector: Union[Vector, ApexVector]
+        for vector in vectors[1:]:
+            x: float = vector.x
+            y: float = vector.y
+            z: float = vector.z
+            x_min = min(x_min, x)
+            y_min = min(y_min, y)
+            z_min = min(z_min, z)
+            x_max = max(x_max, x)
+            y_max = max(y_max, y)
+            z_max = max(z_max, z)
+
+        bound_box: BoundBox = BoundBox(x_min, y_min, z_min, x_max, y_max, z_max)
+        return ApexBoundBox(bound_box)
+
+    @staticmethod
+    def from_bound_boxes(
+            bound_boxes: Tuple[Union[BoundBox, "ApexBoundBox"], ...]) -> "ApexBoundBox":
+        """Compute enclosing ApexBoundingBox from some BoundingBox's."""
+        if not bound_boxes:
+            raise ValueError("No bounding boxes")  # pragma: no unit test
+
+        bound_box0: Union[BoundBox, "ApexBoundBox"] = bound_boxes[0]
+        bound_box0 = bound_box0 if isinstance(bound_box0, BoundBox) else bound_box0.BB
+        assert isinstance(bound_box0, BoundBox)
+        x_min: float = bound_box0.XMin
+        y_min: float = bound_box0.YMin
+        z_min: float = bound_box0.ZMin
+        x_max: float = x_min
+        y_max: float = y_min
+        z_max: float = z_min
+
+        bound_box: Union[BoundBox, "ApexBoundBox"]
+        for bound_box in bound_boxes[1:]:
+            bound_box = bound_box if isinstance(bound_box, BoundBox) else bound_box.BB
+            x_min = min(x_min, bound_box.XMin)
+            y_min = min(y_min, bound_box.YMin)
+            z_min = min(z_min, bound_box.ZMin)
+            x_max = min(x_max, bound_box.XMax)
+            y_max = min(y_max, bound_box.YMax)
+            z_max = min(z_max, bound_box.ZMax)
+
+        bound_box = BoundBox(x_min, y_min, z_min, x_max, y_max, z_max)
+        return ApexBoundBox(bound_box)
+
     # Standard BoundBox attributes:
 
     @property
@@ -447,6 +506,16 @@ class ApexBoundBox:
         """Center point."""
         return self._bound_box.Center
 
+    # ApexBoundBox.__repr__():
+    def __repr__(self) -> str:
+        """Return a representation of an ApexBoundBox."""
+        return self.__str__()
+
+    # ApexBoundBox.__str__():
+    def __str__(self) -> str:
+        """Return a representation of an ApexBoundBox."""
+        return f"ApexBoundBox({self.BB})"
+
     @staticmethod
     def unit_tests() -> None:
         """Perform ApexBoundBox unit tests."""
@@ -454,6 +523,10 @@ class ApexBoundBox:
         bound_box: BoundBox = BoundBox(-1, -2, -3, 1, 2, 3)
         apex_bound_box: ApexBoundBox = ApexBoundBox(bound_box)
         assert isinstance(apex_bound_box, ApexBoundBox)
+
+        # Verity __str__() and __repr():
+        want: str = f"ApexBoundBox({bound_box})"
+        assert f"{apex_bound_box}" == want, f"'{apex_bound_box}' != '{want}'"
 
         def check(vector: Vector, x: float, y: float, z: float) -> bool:
             assert vector.x == x, f"{vector.x} != {x}"
@@ -498,6 +571,16 @@ class ApexBoundBox:
         assert check(apex_bound_box.BB.Center, 0, 0, 0), "Center"
         assert apex_bound_box.BB is bound_box, "BB error"
         assert apex_bound_box.C == apex_bound_box.BB.Center, "C != Center"
+
+        vector: Vector = Vector(-1, -2, -3)
+        apex_vector: ApexVector = ApexVector(1, 2, 3)
+        new_apex_bound_box: ApexBoundBox = ApexBoundBox.from_vectors((vector, apex_vector))
+        assert f"{new_apex_bound_box.BB}" == f"{apex_bound_box.BB}"
+        next_apex_bound_box: ApexBoundBox = ApexBoundBox.from_bound_boxes(
+            (bound_box, new_apex_bound_box))
+        want = "ApexBoundBox(BoundBox (-1, -2, -3, -1, -2, -3))"
+        assert f"{next_apex_bound_box}" == want, f"'{next_apex_bound_box}' != '{want}'"
+        assert next_apex_bound_box.__repr__() == want
 
 
 # ApexVector:
@@ -598,9 +681,12 @@ class ApexMatrix:
                  axis: Optional[Union[ApexVector, Vector]] = None,  # Z axis
                  angle: Optional[float] = None,
                  translate: Optional[Union[ApexVector, Vector]] = None,
-                 name: Optional[str] = None) -> None:
+                 name: Optional[str] = None,
+                 tracing: str = "") -> None:
         """Create ApexMatrix rotation with point/axis/angle and a translate."""
-        # print(f"=>ApexMatrix.__new___({center}, {axis}, {angle}, {translate}, '{name}')")
+        if tracing:
+            print(f"{tracing}=>ApexMatrix.__new___("
+                  f"{center}, {axis}, {angle}, {translate}, '{name}')")
         # Arguments are only used for __str__():
         arguments: Tuple[Union[None, ApexVector, Vector], ...] = (
             center, axis, angle, translate, name)
@@ -624,8 +710,15 @@ class ApexMatrix:
         center_forward.move(center)
         center_reverse: Matrix = Matrix()
         center_reverse.move(-center)
-        rotate_forward: Matrix = ApexMatrix._rotate(axis, angle)
-        rotate_reverse: Matrix = ApexMatrix._rotate(axis, -angle)
+        rotate_forward: Matrix
+        rotate_reverse: Matrix
+        try:
+            rotate_forward = ApexMatrix._rotate(axis, angle)
+            rotate_reverse = ApexMatrix._rotate(axis, -angle)
+        except ValueError as value_error:
+            if tracing:
+                print(f"{tracing}<=Raising {value_error}")
+            raise ValueError(value_error)
         translate_forward: Matrix = Matrix()
         translate_forward.move(translate)
         translate_reverse: Matrix = Matrix()
@@ -636,8 +729,9 @@ class ApexMatrix:
         self._arguments: Tuple[Union[None, ApexVector, Vector], ...] = arguments
         self._forward: Matrix = forward
         self._reverse: Matrix = reverse
-
-        # print(f"<=ApexMatrix.__new___({center}, {axis}, {angle}, {translate}, '{name}')")
+        if tracing:
+            print(f"{tracing}<=ApexMatrix.__new___("
+                  f"{center}, {axis}, {angle}, {translate}, '{name}')")
 
     @staticmethod
     def zf(value: float) -> float:
@@ -848,8 +942,8 @@ class ApexMatrix:
 
         # Do some error tests:
         try:
-            ApexMatrix(axis=Vector(0, 0, 0), angle=1.0)
-            assert False, "Should have failed"
+            ApexMatrix(axis=Vector(0, 0, 0), angle=degrees90)
+            assert False, "Should have failed"  # pragma: no unit cover
         except ValueError as error:
             assert str(error) == "Axis has a length of 0.0"
 

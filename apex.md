@@ -148,6 +148,16 @@ Read about \_\_new\_\_() vs. \_\_init\_\_() at the URL below:
 * Arguments:
   *bound\_box* (BoundBox): The bounding box to wrap.
 
+### 2.2 ApexBoundBox.from\_vertices
+
+def *from\_points*(vectors:  Tuple[Union[Vector, "ApexVector"], ...]) -> "ApexBoundBox":
+
+Compute BoundingBox from some Point's.
+
+def *from\_bound\_boxes*( *bound\_boxes*:  Tuple[Union[BoundBox, "ApexBoundBox"], ...]) -> "ApexBoundBox":
+
+Compute enclosing ApexBoundingBox from some BoundingBox's.
+
 def B(self) -> Vector:
 
 Bottom face center.
