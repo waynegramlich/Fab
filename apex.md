@@ -148,15 +148,15 @@ Read about \_\_new\_\_() vs. \_\_init\_\_() at the URL below:
 * Arguments:
   *bound\_box* (BoundBox): The bounding box to wrap.
 
-### 2.2 ApexBoundBox.from\_vertices
+### 2.2 ApexBoundBox.from\_vectors
 
-def *from\_points*(vectors:  Tuple[Union[Vector, "ApexVector"], ...]) -> "ApexBoundBox":
+def *from\_vectors*(vectors:  Tuple[Union[Vector, "ApexVector"], ...]) -> "ApexBoundBox":
 
 Compute BoundingBox from some Point's.
 
 def *from\_bound\_boxes*( *bound\_boxes*:  Tuple[Union[BoundBox, "ApexBoundBox"], ...]) -> "ApexBoundBox":
 
-Compute enclosing ApexBoundingBox from some BoundingBox's.
+Create ApexBoundingBox from BoundingBox/ApexBoundBox tuple.
 
 def B(self) -> Vector:
 
@@ -270,6 +270,18 @@ def C(self) -> Vector:
 
 Center point.
 
+### 2.3 ApexBoundBox.\_\_repr\_\_
+
+def \_\_repr\_\_(self) -> *str*:
+
+Return a representation of an ApexBoundBox.
+
+### 2.4 ApexBoundBox.\_\_str\_\_
+
+def \_\_str\_\_(self) -> *str*:
+
+Return a representation of an ApexBoundBox.
+
 def *unit\_tests*() -> None:
 
 Perform ApexBoundBox unit tests.
@@ -314,6 +326,18 @@ def \_\_str\_\_(self) -> *str*:
 
 Return string representation of ApexVector.
 
+### 3.4 ApexVector.atan2
+
+def *atan2*(self) -> *float*:
+
+Return the atan2 of the x and y values.
+
+### 3.5 ApexVector.forward
+
+def *forward*(self, *matrix*:  "ApexMatrix") -> "ApexVector":
+
+Perform a forward matrix transform using an ApexMatrix.
+
 def *unit\_tests*() -> None:
 
 Perform ApexVector unit tests.
@@ -334,7 +358,7 @@ followed by a final translation.  It also computes the inverse matrix.
 
 ### 4.1 ApexMatrix.\_\_init\_\_
 
-def \_\_init\_\_(self, *center*:  Optional[Union[ApexVector, Vector]] = None, *axis*:  Optional[Union[ApexVector, Vector]] = None, # Z *axis* *angle*:  Optional[float] = None, *translate*:  Optional[Union[ApexVector, Vector]] = None, *name*:  Optional[str] = None) -> None:
+def \_\_init\_\_(self, *center*:  Optional[Union[ApexVector, Vector]] = None, *axis*:  Optional[Union[ApexVector, Vector]] = None, # Z *axis* *angle*:  Optional[float] = None, *translate*:  Optional[Union[ApexVector, Vector]] = None, *name*:  Optional[str] = None, *tracing*:  *str* = "") -> None:
 
 Create ApexMatrix rotation with point/axis/angle and a translate.
 

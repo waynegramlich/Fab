@@ -107,7 +107,7 @@ class ApexLength(float):
         name: Any = args[2] if args_size >= 3 else (
             kwargs["name"] if "name" in kwargs else "")
         if not isinstance(name, str):
-            raise ValueError(f"name ({name}) is not a str")  # pragma: no unit cover
+            raise ValueError(f"name ({name}) is not a str")
 
         # Install everything into *apex_length* and return.
         apex_length: ApexLength = super(ApexLength, cls).__new__(cls, value * scale)  # type: ignore
@@ -206,9 +206,12 @@ class ApexLength(float):
         # Do some error testing:
         try:
             ApexLength(units=7)
-            assert False, "ValueError not raised"  # pragma: no unit cover
-        except ValueError as error:
-            assert str(error) == "units (7) is not a str"
+        except ValueError as value_error:
+            assert str(value_error) == "units (7) is not a str"
+        try:
+            ApexLength(name=7)
+        except ValueError as value_error:
+            assert str(value_error) == "name (7) is not a str"
 
 
 # ApexBoundBox:
@@ -278,7 +281,7 @@ class ApexBoundBox:
     def from_vectors(vectors: Tuple[Union[Vector, "ApexVector"], ...]) -> "ApexBoundBox":
         """Compute BoundingBox from some Point's."""
         if not vectors:
-            raise ValueError("No vectors")  # pragma: no unit test
+            raise ValueError("No vectors")
         vector0: Vector = vectors[0]
         x_min: float = vector0.x
         y_min: float = vector0.y
@@ -305,29 +308,28 @@ class ApexBoundBox:
     @staticmethod
     def from_bound_boxes(
             bound_boxes: Tuple[Union[BoundBox, "ApexBoundBox"], ...]) -> "ApexBoundBox":
-        """Compute enclosing ApexBoundingBox from some BoundingBox's."""
+        """Create ApexBoundingBox from BoundingBox/ApexBoundBox tuple."""
         if not bound_boxes:
             raise ValueError("No bounding boxes")  # pragma: no unit test
 
-        bound_box0: Union[BoundBox, "ApexBoundBox"] = bound_boxes[0]
-        bound_box0 = bound_box0 if isinstance(bound_box0, BoundBox) else bound_box0.BB
-        assert isinstance(bound_box0, BoundBox)
-        x_min: float = bound_box0.XMin
-        y_min: float = bound_box0.YMin
-        z_min: float = bound_box0.ZMin
+        bound_box: Union[BoundBox, "ApexBoundBox"] = bound_boxes[0]
+        bound_box = bound_box if isinstance(bound_box, BoundBox) else bound_box.BB
+        assert isinstance(bound_box, BoundBox)
+        x_min: float = bound_box.XMin
+        y_min: float = bound_box.YMin
+        z_min: float = bound_box.ZMin
         x_max: float = x_min
         y_max: float = y_min
         z_max: float = z_min
 
-        bound_box: Union[BoundBox, "ApexBoundBox"]
         for bound_box in bound_boxes[1:]:
             bound_box = bound_box if isinstance(bound_box, BoundBox) else bound_box.BB
             x_min = min(x_min, bound_box.XMin)
             y_min = min(y_min, bound_box.YMin)
             z_min = min(z_min, bound_box.ZMin)
-            x_max = min(x_max, bound_box.XMax)
-            y_max = min(y_max, bound_box.YMax)
-            z_max = min(z_max, bound_box.ZMax)
+            x_max = max(x_max, bound_box.XMax)
+            y_max = max(y_max, bound_box.YMax)
+            z_max = max(z_max, bound_box.ZMax)
 
         bound_box = BoundBox(x_min, y_min, z_min, x_max, y_max, z_max)
         return ApexBoundBox(bound_box)
@@ -572,15 +574,24 @@ class ApexBoundBox:
         assert apex_bound_box.BB is bound_box, "BB error"
         assert apex_bound_box.C == apex_bound_box.BB.Center, "C != Center"
 
+        # Test *from_vector* and *from_bound_boxes* methods:
         vector: Vector = Vector(-1, -2, -3)
         apex_vector: ApexVector = ApexVector(1, 2, 3)
         new_apex_bound_box: ApexBoundBox = ApexBoundBox.from_vectors((vector, apex_vector))
         assert f"{new_apex_bound_box.BB}" == f"{apex_bound_box.BB}"
         next_apex_bound_box: ApexBoundBox = ApexBoundBox.from_bound_boxes(
             (bound_box, new_apex_bound_box))
-        want = "ApexBoundBox(BoundBox (-1, -2, -3, -1, -2, -3))"
+        want = "ApexBoundBox(BoundBox (-1, -2, -3, 1, 2, 3))"
         assert f"{next_apex_bound_box}" == want, f"'{next_apex_bound_box}' != '{want}'"
         assert next_apex_bound_box.__repr__() == want
+        try:
+            ApexBoundBox.from_vectors(())
+        except ValueError as value_error:
+            assert str(value_error) == "No vectors"
+        try:
+            ApexBoundBox.from_bound_boxes(())
+        except ValueError as value_error:
+            assert str(value_error) == "No bounding boxes"
 
 
 # ApexVector:
@@ -634,6 +645,17 @@ class ApexVector:
         name: str = f", '{self.name}'" if self.name else ""
         result: str = f"ApexVector({self.x}, {self.y}, {self.z}{diameter}{name})"
         return result
+
+    # ApexVector.atan2():
+    def atan2(self) -> float:
+        """Return the atan2 of the x and y values."""
+        return math.atan2(self.x, self.y)
+
+    # ApexVector.forward():
+    def forward(self, matrix: "ApexMatrix") -> "ApexVector":
+        """Perform a forward matrix transform using an ApexMatrix."""
+        vector: Vector = matrix.forward * self.vector
+        return ApexVector(vector.x, vector.y, vector.z, self.diameter, self.name)
 
     @staticmethod
     def unit_tests() -> None:
