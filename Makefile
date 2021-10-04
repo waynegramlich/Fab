@@ -8,7 +8,8 @@ PY2MD := py2md.py
 PYTHON_FILES := \
     apex.py \
     fcstd_tar_sync.py \
-    py2md.py
+    py2md.py \
+    shopfab.py
 
 #    shopfab.py
 COVER_FILES := ${PYTHON_FILES:%.py=%.py,cover}

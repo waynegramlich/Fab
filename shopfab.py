@@ -12,6 +12,8 @@ import FreeCADGui as Gui  # type: ignore
 gui: bool = hasattr(Gui, "getMainWindow")  # Only present when Gui is active
 
 # from shopfab import importer
+from apex import ApexMatrix
+from FreeCAD import Vector
 import math
 import numpy as np  # type: ignore
 from pathlib import Path  # type: ignore
@@ -174,14 +176,18 @@ class Point(object):
                      self.name, self.radius)
 
     # Point.forward():
-    def forward(self, transform: "Transform") -> "Point":
+    def forward(self, matrix: ApexMatrix) -> "Point":
         """Perform a forward transform of a point."""
-        return transform.forward(self)
+        vector: Vector = Vector(self.x, self.y, self.z)
+        vector = matrix.forward * vector
+        return Point(vector.x, vector.y, vector.z, self.name, self.radius)
 
     # Point.reverse():
-    def reverse(self, transform: "Transform") -> "Point":  # pragma: no unit test
+    def reverse(self, matrix: ApexMatrix) -> "Point":  # pragma: no unit test
         """Perform a reverse transform of a point."""
-        return transform.reverse(self)  # pragma: no unit test
+        vector: Vector = Vector(self.x, self.y, self.z)
+        vector = matrix.reverse * vector
+        return Point(vector.x, vector.y, vector.z)
 
 
 # BoundingBox:
@@ -268,153 +274,6 @@ class BoundingBox:
         return BoundingBox(Point(lower_x, lower_y), Point(upper_x, upper_y))
 
 
-class Transform:
-    """A transform matrix using a 4x4 affine matrix.
-
-    The matrix format is an affine 4x4 matrix in the following format:
-
-        [ r00 r01 r02 0 ]
-        [ r10 r11 r12 0 ]
-        [ r20 r21 r22 0 ]
-        [ dx  dy  dz  1 ]
-
-    An affine point format is a 1x4 matrix of the following format:
-
-       [ x y z 1 ]
-
-    We multiply with the point on the left (1x4) and the matrix on the right (4x4).
-    This yields a 1x4 point matrix of the same form.
-
-    Only two transforms are supported:
-    * Transform.translate(Point)
-    * Transform.rotate(Point, Angle)
-
-    A Transform object is immutable:
-    It should have its inverse matrix computed.
-    """
-
-    # Transform.__init__():
-    def __init__(self,
-                 center: Optional[Point] = None,
-                 axis: Optional[Point] = None,
-                 angle: float = 0.0,
-                 translate: Optional[Point] = None,
-                 name: str = "") -> None:
-        """Return the identity transform."""
-        center = center if center else Point()
-        axis = axis if axis else Point(0.0, 0.0, 1.0, "z_axis")
-        translate = translate if translate else Point()
-        # print(f"=>Transform.__init__({center}, {axis}, {angle}, {translate})")
-
-        # Create the various forward and reverse transform matrices:
-        forward_center: np.ndarray = Transform.translate(center)
-        reverse_center: np.ndarray = Transform.translate(-center)
-        forward_rotate: np.ndarray = Transform.rotate(axis, angle)
-        reverse_rotate: np.ndarray = Transform.rotate(axis, -angle)
-        forward_translate: np.ndarray = Transform.translate(translate)
-        reverse_translate: np.ndarray = Transform.translate(-translate)
-
-        # Compute *forward_center* X *forward_rotate* X *reverse_center* X *forward_translate*:
-        self._forward: np.ndarray = (
-            forward_center.dot(forward_rotate).dot(reverse_center).dot(forward_translate))
-
-        # Computer *reverse_translate* X *reverse_center* X *fo
-        self._reverse: np.ndarray = (
-            reverse_translate.dot(forward_center).dot(reverse_rotate).dot(reverse_center))
-        # print(f"<=Transform.__init__({center}, {axis}, {angle}, {translate})")
-
-    def forward(self, point: Point) -> Point:
-        """Apply a transform to a point."""
-        affine_point: np.ndarray = np.array([[point.x, point.y, point.z, 1.0]])
-        forward_point: np.ndarray = affine_point.dot(self._forward)
-        x: float = forward_point[0, 0]
-        y: float = forward_point[0, 1]
-        z: float = forward_point[0, 2]
-        return Point(x, y, z, point.name, point.radius)
-
-    def reverse(self, point: Point) -> Point:  # pragma: no unit test
-        """Apply a transform to a point."""
-        affine_point: np.ndarray = np.array(  # pragma: no unit test
-            [[point.x, point.y, point, 1.0]])  # pragma: no unit test
-        reverse_point: np.ndarray = affine_point.dot(self._reverse)  # pragma: no unit test
-        x: float = reverse_point[0, 0]  # pragma: no unit test
-        y: float = reverse_point[0, 1]  # pragma: no unit test
-        z: float = reverse_point[0, 2]  # pragma: no unit test
-        return Point(x, y, z, point.name, point.radius)  # pragma: no unit test
-
-    @staticmethod
-    def zero_fix(value: float) -> float:
-        """Convert small values to zero and also covnvert -0.0 to 0.0."""
-        return 0.0 if abs(value) < 1.0e-10 else value
-
-    @staticmethod
-    def zero_clean(matrix: np.ndarray) -> np.ndarray:  # pragma: no unit test
-        """Round small numbers to zero."""
-        matrix = matrix.copy()  # pragma: no unit test
-        i: int  # pragma: no unit test
-        j: int  # pragma: no unit test
-        for i in range(4):  # pragma: no unit test
-            for j in range(4):  # pragma: no unit test
-                matrix[i, j] = Transform.zero_fix(matrix[i, j])  # pragma: no unit test
-        matrix.flags.writeable = False  # pragma: no unit test
-        return matrix  # pragma: no unit test
-
-    # Transform.rotate():
-    @staticmethod
-    def rotate(axis: Point, angle: float) -> np.ndarray:
-        """Return a rotation matrix.
-
-        The matrix for rotating by *angle* around the normal *axis* is:
-            #
-            # [ xx(1-c)+c   yx(1-c)-zs  zx(1-c)+ys   0  ]
-            # [ xy(1-c)+zs  yy(1-c)+c   zy(1-c)-xs   0  ]
-            # [ xz(1-c)-ys  yz(1-c)+xs  zz(1-c)+c    0  ]
-            # [ 0           0           0            1  ]
-            #
-            # Where c = cos(*angle*), s = sin(*angle*), and *angle* is measured in radians.
-        """
-        normal: Point = axis.normalize()
-        zf: Callable[[float], float] = Transform.zero_fix
-        nx: float = zf(normal.x)
-        ny: float = zf(normal.y)
-        nz: float = zf(normal.z)
-
-        # Compute some sub expressions for the *forward_matrix*:
-        # Why is -*angle* used?
-        c = math.cos(-angle)
-        s = math.sin(-angle)
-        omc = 1.0 - c  # omc = One Minus *c*.
-        x_omc = nx * omc
-        y_omc = ny * omc
-        z_omc = nz * omc
-        xs = nx * s
-        ys = ny * s
-        zs = nz * s
-
-        # Create the *forward_matrix*:
-        matrix: np.ndarray = np.array([
-            [zf(nx * x_omc + c), zf(nx * y_omc - zs), zf(nx * z_omc + ys), 0.0],
-            [zf(ny * x_omc + zs), zf(ny * y_omc + c), zf(ny * z_omc - xs), 0.0],
-            [zf(nz * x_omc - ys), zf(nz * y_omc + xs), zf(nz * z_omc + c), 0.0],
-            [0.0, 0.0, 0.0, 1.0],
-        ])
-        matrix.flags.writeable = False
-        return matrix
-
-    @staticmethod
-    def translate(translate: Point) -> np.ndarray:
-        """Return a 4x4 affine matrix to translate over by a point."""
-        zf: Callable[[float], float] = Transform.zero_fix
-        matrix: np.ndarray = np.array([
-            [1.0, 0.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [zf(translate.x), zf(translate.y), zf(translate.z), 1.0],
-        ])
-        matrix.flags.writeable = False
-        return matrix
-
-
 # Drawing:
 class Drawing(object):
     """Represents a 2D drawing."""
@@ -455,13 +314,13 @@ class Drawing(object):
         return self._circles  # pragma: no unit test
 
     # Drawing.forward_transform():
-    def forward_transform(self, transform: Transform) -> "Drawing":
+    def forward_transform(self, matrix: ApexMatrix) -> "Drawing":
         """Return an Drawing that is offset via a forward transform."""
         circle: Circle
-        circles: Tuple[Circle, ...] = tuple([circle.forward_transform(transform)
+        circles: Tuple[Circle, ...] = tuple([circle.forward_transform(matrix)
                                              for circle in self._circles])
         polygon: Polygon
-        polygons: Tuple[Polygon, ...] = tuple([polygon.forward_transform(transform)
+        polygons: Tuple[Polygon, ...] = tuple([polygon.forward_transform(matrix)
                                                for polygon in self._polygons])
         return Drawing(circles, polygons, self._name)
 
@@ -1430,10 +1289,10 @@ class Polygon(object):
         """Return the Polygon points."""
         return self._points
 
-    def forward_transform(self, transform: Transform) -> "Polygon":
+    def forward_transform(self, matrix: ApexMatrix) -> "Polygon":
         """Return a forward transformed Polygon."""
         point: Point
-        points: Tuple[Point, ...] = tuple([point.forward(transform) for point in self._points])
+        points: Tuple[Point, ...] = tuple([point.forward(matrix) for point in self._points])
         return Polygon(points, self._depth, self._flat, self._name)
 
 
@@ -1561,9 +1420,13 @@ class Circle(object):
         return (circle_feature,)
 
     # Circle.forward_transform():
-    def forward_transform(self, transform: Transform) -> "Circle":
+    def forward_transform(self, matrix: ApexMatrix) -> "Circle":
         """Return a forward transformed Circle."""
-        return Circle(self.center.forward(transform), self.depth, self.flat, self.name)
+        center: Point = self.center
+        vector: Vector = Vector(center.x, center.y, center.z)
+        vector = matrix.forward * vector
+        new_center: Point = Point(vector.x, vector.y, vector.z, center.name, center.radius)
+        return Circle(new_center, self.depth, self.flat, self.name)
 
     # Circle.name():
     @property
@@ -1693,8 +1556,8 @@ def main() -> int:
         # drawing = drawing.forward_transform(rotate30_transform)
 
         drawing_origin: Point = drawing.bounding_box.lower
-        reorigin: Transform = Transform(None, None, 0.0, -drawing_origin,
-                                        f"{drawing.name} reorigin")
+        vector: Vector = Vector(drawing_origin.x, drawing_origin.y, drawing_origin.z)
+        reorigin: ApexMatrix = ApexMatrix(translate=-vector, name=f"{drawing.name} reorigin")
         drawing = drawing.forward_transform(reorigin)
         drawing.sketch(sketch, drawing_origin, tracing="")
 

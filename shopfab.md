@@ -125,13 +125,13 @@ Return the normal of the point vector.
 
 ### 0.21 Point.forward
 
-def *forward*(self, *transform*:  "Transform") -> "Point":
+def *forward*(self, *matrix*:  ApexMatrix) -> "Point":
 
 Perform a forward transform of a point.
 
 ### 0.22 Point.reverse
 
-def *reverse*(self, *transform*:  "Transform") -> "Point":  # *pragma*:  *no* *unit* *test*
+def *reverse*(self, *matrix*:  ApexMatrix) -> "Point":  # *pragma*:  *no* *unit* *test*
 
 Perform a reverse transform of a point.
 
@@ -179,72 +179,6 @@ def *from\_bounding\_boxes*(bounding\_boxes:  Tuple["BoundingBox", ...]) -> "Bou
 
 Compute enclosing BoundingBox from some BoundingBox's.
 
-class Transform:
-
-A transform matrix using a 4x4 affine matrix.
-
-The matrix format is an affine 4x4 matrix in the following format:
-
-    [ r00 r01 r02 0 ]
-    [ r10 r11 r12 0 ]
-    [ r20 r21 r22 0 ]
-    [ dx  dy  dz  1 ]
-
-An affine point format is a 1x4 matrix of the following format:
-
-   [ x y z 1 ]
-
-We multiply with the point on the left (1x4) and the matrix on the right (4x4).
-This yields a 1x4 point matrix of the same form.
-
-Only two transforms are supported:
-* Transform.translate(Point)
-* Transform.rotate(Point, Angle)
-
-A Transform object is immutable:
-It should have its inverse matrix computed.
-
-### 1.6 Transform.\_\_init\_\_
-
-def \_\_init\_\_(self, *center*:  Optional[Point] = None, *axis*:  Optional[Point] = None, *angle*:  *float* = 0.0, *translate*:  Optional[Point] = None, *name*:  *str* = "") -> None:
-
-Return the identity transform.
-
-def *forward*(self, *point*:  Point) -> Point:
-
-Apply a transform to a point.
-
-def *reverse*(self, *point*:  Point) -> Point:  # *pragma*:  *no* *unit* *test*
-
-Apply a transform to a point.
-
-def *zero\_fix*(value:  *float*) -> *float*:
-
-Convert small values to zero and also covnvert -0.0 to 0.0.
-
-def *zero\_clean*(matrix:  *np*.ndarray) -> *np*.ndarray:  # *pragma*:  *no* *unit* *test*
-
-Round small numbers to zero.
-
-### 1.7 Transform.rotate
-
-def *rotate*(axis:  Point, *angle*:  *float*) -> *np*.ndarray:
-
-Return a rotation matrix.
-
-The matrix for rotating by *angle* around the normal *axis* is:
-    #
-    # [ xx(1-c)+c   yx(1-c)-zs  zx(1-c)+ys   0  ]
-    # [ xy(1-c)+zs  yy(1-c)+c   zy(1-c)-xs   0  ]
-    # [ xz(1-c)-ys  yz(1-c)+xs  zz(1-c)+c    0  ]
-    # [ 0           0           0            1  ]
-    #
-    # Where c = cos(*angle*), s = sin(*angle*), and *angle* is measured in radians.
-
-def *translate*(translate:  Point) -> *np*.ndarray:
-
-Return a 4x4 affine matrix to translate over by a point.
-
 ## 2.0 Class Drawing
 
 class Drawing(object):
@@ -271,7 +205,7 @@ Return the Drawing Circle's.
 
 ### 2.4 Drawing.forward\_transform
 
-def *forward\_transform*(self, *transform*:  Transform) -> "Drawing":
+def *forward\_transform*(self, *matrix*:  ApexMatrix) -> "Drawing":
 
 Return an Drawing that is offset via a forward transform.
 
@@ -695,7 +629,7 @@ def *points*(self) -> Tuple[Point, ...]:  # *pragma*:  *no* *unit* *cover*
 
 Return the Polygon points.
 
-def *forward\_transform*(self, *transform*:  Transform) -> "Polygon":
+def *forward\_transform*(self, *matrix*:  ApexMatrix) -> "Polygon":
 
 Return a forward transformed Polygon.
 
@@ -759,7 +693,7 @@ Return the CircleFeature.
 
 ### 8.19 Circle.forward\_transform
 
-def *forward\_transform*(self, *transform*:  Transform) -> "Circle":
+def *forward\_transform*(self, *matrix*:  ApexMatrix) -> "Circle":
 
 Return a forward transformed Circle.
 
