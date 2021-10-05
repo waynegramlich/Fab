@@ -633,6 +633,21 @@ class ApexVector:
         self.radius: float = float(diameter) / 2.0
         self.name: str = name
 
+    # Point.__add__():
+    def __add__(self, vector: "ApexVector") -> "ApexVector":
+        """Return the sum of two ApexVector's."""
+        return ApexVector(self.x + vector.x, self.y + vector.y, self.z + vector.z)
+
+    # Point.__neg__():
+    def __neg__(self) -> "ApexVector":
+        """Return the negative of an ApexVector."""
+        return ApexVector(-self.x, -self.y, -self.z, self.radius, self.name)
+
+    # Point.__rmul__():
+    def __mul__(self, scale: float) -> "ApexVector":
+        """Return a Point that has been scaled."""
+        return ApexVector(self.x * scale, self.y * scale, self.z * scale)
+
     # ApexVector.__repr__():
     def __repr__(self) -> str:
         """Return representation of ApexVector."""
@@ -646,6 +661,16 @@ class ApexVector:
         result: str = f"ApexVector({self.x}, {self.y}, {self.z}{diameter}{name})"
         return result
 
+    # Point.__truediv__():
+    def __truediv__(self, divisor: float) -> "ApexVector":
+        """Return a Point that has been scaleddown."""
+        return ApexVector(self.x / divisor, self.y / divisor, self.z / divisor)
+
+    # ApexVector.__sub__():
+    def __sub__(self, vector: "ApexVector") -> "ApexVector":
+        """Return the difference of two Point's."""
+        return ApexVector(self.x - vector.x, self.y - vector.y, self.z - vector.z)
+
     # ApexVector.atan2():
     def atan2(self) -> float:
         """Return the atan2 of the x and y values."""
@@ -656,6 +681,14 @@ class ApexVector:
         """Perform a forward matrix transform using an ApexMatrix."""
         vector: Vector = matrix.forward * self.vector
         return ApexVector(vector.x, vector.y, vector.z, self.diameter, self.name)
+
+    # Point.magnitude():
+    def magnitude(self) -> float:
+        """Return the magnitude of the point vector."""
+        x: float = float(self.x)
+        y: float = float(self.y)
+        z: float = float(self.z)
+        return math.sqrt(x * x + y * y + z * z)
 
     @staticmethod
     def unit_tests() -> None:

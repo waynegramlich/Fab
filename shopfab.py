@@ -12,7 +12,7 @@ import FreeCADGui as Gui  # type: ignore
 gui: bool = hasattr(Gui, "getMainWindow")  # Only present when Gui is active
 
 # from shopfab import importer
-from apex import ApexMatrix
+from apex import ApexMatrix, ApexVector
 from FreeCAD import Vector
 import math
 import numpy as np  # type: ignore
@@ -22,8 +22,10 @@ import Part  # type: ignore
 import PartDesign  # type: ignore
 import Sketcher  # type: ignore
 
+Point = ApexVector
 
-class Point(object):
+
+class XPoint(object):
     """Represents a drawing point."""
 
     # Point.__init__():
@@ -39,86 +41,59 @@ class Point(object):
         self._name: str = name
 
     # Point.__sub__():
-    def __add__(self, point: "Point") -> "Point":
+    def __add__(self, point: "XPoint") -> "XPoint":
         """Return the difference of two Point's."""
-        return Point(self.x + point.x, self.y + point.y, self.z + point.z)
+        return XPoint(self.x + point.x, self.y + point.y, self.z + point.z)
 
     # Point.__truediv__():
-    def __truediv__(self, divisor: float) -> "Point":
+    def __truediv__(self, divisor: float) -> "XPoint":
         """Return a Point that has been scaleddown."""
-        return Point(self.x / divisor, self.y / divisor, self.z / divisor)
+        return XPoint(self.x / divisor, self.y / divisor, self.z / divisor)
 
     # Point.__rmul__():
-    def __mul__(self, scale: float) -> "Point":
+    def __mul__(self, scale: float) -> "XPoint":
         """Return a Point that has been scaled."""
-        return Point(self.x * scale, self.y * scale, self.z * scale)
+        return XPoint(self.x * scale, self.y * scale, self.z * scale)
 
     # Point.__neg__():
-    def __neg__(self) -> "Point":
+    def __neg__(self) -> "XPoint":
         """Return the negative of a Point."""
-        return Point(-self.x, -self.y, -self.z, self.name, self.radius)
+        return XPoint(-self.x, -self.y, -self.z, self.name, self.radius)
 
     # Point.__repr__():
     def __repr__(self) -> str:  # pragma: no unit test
-        """Return a string representation of a Point."""
-        return (f"Point({self.x}, {self.y}, {self.z}, "  # pragma: no unit test
+        """Return a string representation of a XPoint."""
+        return (f"XPoint({self.x}, {self.y}, {self.z}, "  # pragma: no unit test
                 f"'{self._name}', {self._radius})")  # pragma: no unit test
 
     # Point.__str__():
     def __str__(self) -> str:  # pragma: no unit test
         """Return a string representation of a Point."""
-        text: str = (f"Point({self.x}, {self.y}, {self.z}, "  # pragma: no unit test
+        text: str = (f"XPoint({self.x}, {self.y}, {self.z}, "  # pragma: no unit test
                      f"'{self._name}', {self._radius})")  # pragma: no unit test
         return text  # pragma: no unit test
 
     # Point.__sub__():
-    def __sub__(self, point: "Point") -> "Point":
+    def __sub__(self, point: "XPoint") -> "XPoint":
         """Return the difference of two Point's."""
-        return Point(self.x - point.x, self.y - point.y, self.z - point.z)
+        return XPoint(self.x - point.x, self.y - point.y, self.z - point.z)
 
     # Point.atan2():
-    def atan2(self) -> float:
+    def atan2(self) -> float:   # REMOVE
         """Return the Point arc tangent of y/x."""
         return math.atan2(self.y, self.x)
 
-    # Point.constraints_append():
-    def constraints_append(self, drawing: "Drawing", constraints: List[Sketcher.Constraint],
-                           tracing: str = "") -> None:
-        """Append Point constraints to a list."""
-        # Now that the *origin_index* is set, is is safe to assemble the *constraints*:
-        if tracing:
-            print(f"{tracing}=>Point.constraints_append(*, |*|={len(constraints)})")
-        origin_index: int = drawing.origin_index
-
-        # Set DistanceX constraint:
-        constraints.append(Sketcher.Constraint("DistanceX",
-                                               -1, 1,  # -1 => OriginRoot.
-                                               origin_index, 1, self.x))
-        if tracing:
-            print(f"{tracing}     [{len(constraints)}]: "
-                  f"DistanceX('RootOrigin':(-1, 1), "
-                  f"'{self.name}':({origin_index}, 1)), {self.x:.2f}")
-
-        # Set DistanceY constraint:
-        constraints.append(Sketcher.Constraint("DistanceY",
-                                               -1, 1,  # -1 => OriginRoot.
-                                               origin_index, 1, self.y))
-        if tracing:
-            print(f"{tracing}     [{len(constraints)}]: "
-                  f"DistanceY('RootOrigin':(-1, 1), "
-                  f"'{self.name}':({origin_index}, 1), {self.y:.2f})")
-            print(f"{tracing}<=Point.constraints_append(*, |*|={len(constraints)})")
-
-    # PointFeature.features_get():
+    # Point.features_get():
     def features_get(self, drawing: "Drawing", tracing: str = "") -> Tuple["Feature", ...]:
-        """Return the PointFeature Feature's."""
-        return (PointFeature(drawing, self, self._name),)
+        """Return the PointFeature Feature's."""  # REMOVE
+        apex_vector: ApexVector = ApexVector(self.x, self.y, self.z, name=self._name)
+        return (PointFeature(drawing, apex_vector, self._name),)
 
     # Point.origin():
     @classmethod
-    def origin(cls) -> "Point":  # pragma: no unit test
+    def origin(cls) -> "XPoint":  # pragma: no unit test   # REMOVE
         """Return an origin point."""
-        return Point(0.0, 0.0, 0.0, "origin", 0.0)  # pragma: no unit test
+        return XPoint(0.0, 0.0, 0.0, "origin", 0.0)  # pragma: no unit test
 
     # Point.x:
     @property
@@ -165,29 +140,29 @@ class Point(object):
         return np.sqrt(vector.dot(vector))
 
     # Point.normalize():
-    def normalize(self) -> "Point":
+    def normalize(self) -> "XPoint":
         """Return the normal of the point vector."""
         magnitude: float = self.magnitude()
         if magnitude <= 0.0:
             message: str = (f"Can not normalize {self} because "  # pragma: no unit test
                             f"it has a magnitude of {magnitude}")  # pragma: no unit test
             raise ValueError(message)  # pragma: no unit test
-        return Point(self.x / magnitude, self.y / magnitude, self.z / magnitude,
-                     self.name, self.radius)
+        return XPoint(self.x / magnitude, self.y / magnitude, self.z / magnitude,
+                      self.name, self.radius)
 
     # Point.forward():
-    def forward(self, matrix: ApexMatrix) -> "Point":
+    def forward(self, matrix: ApexMatrix) -> "XPoint":
         """Perform a forward transform of a point."""
         vector: Vector = Vector(self.x, self.y, self.z)
         vector = matrix.forward * vector
-        return Point(vector.x, vector.y, vector.z, self.name, self.radius)
+        return XPoint(vector.x, vector.y, vector.z, self.name, self.radius)
 
     # Point.reverse():
-    def reverse(self, matrix: ApexMatrix) -> "Point":  # pragma: no unit test
+    def reverse(self, matrix: ApexMatrix) -> "XPoint":  # pragma: no unit test
         """Perform a reverse transform of a point."""
         vector: Vector = Vector(self.x, self.y, self.z)
         vector = matrix.reverse * vector
-        return Point(vector.x, vector.y, vector.z)
+        return XPoint(vector.x, vector.y, vector.z)
 
 
 # BoundingBox:
@@ -339,6 +314,40 @@ class Drawing(object):
             raise ValueError(f"Origin Index not set.")  # pragma: no unit test
         return self._origin_index
 
+    # Drawing.point_constraints_append():
+    def point_constraints_append(self, point: Point, constraints: List[Sketcher.Constraint],
+                                 tracing: str = "") -> None:  # REMOVE
+        """Append Point constraints to a list."""
+        # Now that the *origin_index* is set, is is safe to assemble the *constraints*:
+        if tracing:
+            print(f"{tracing}=>Point.constraints_append(*, |*|={len(constraints)})")
+        origin_index: int = self.origin_index
+
+        # Set DistanceX constraint:
+        constraints.append(Sketcher.Constraint("DistanceX",
+                                               -1, 1,  # -1 => OriginRoot.
+                                               origin_index, 1, point.x))
+        if tracing:
+            print(f"{tracing}     [{len(constraints)}]: "
+                  f"DistanceX('RootOrigin':(-1, 1), "
+                  f"'{point.name}':({origin_index}, 1)), {point.x:.2f}")
+
+        # Set DistanceY constraint:
+        constraints.append(Sketcher.Constraint("DistanceY",
+                                               -1, 1,  # -1 => OriginRoot.
+                                               origin_index, 1, point.y))
+        if tracing:
+            print(f"{tracing}     [{len(constraints)}]: "
+                  f"DistanceY('RootOrigin':(-1, 1), "
+                  f"'{point.name}':({origin_index}, 1), {point.y:.2f})")
+            print(f"{tracing}<=Point.constraints_append(*, |*|={len(constraints)})")
+
+    # Drawing.features_get():
+    def point_features_get(self, point: Point, tracing: str = "") -> Tuple["Feature", ...]:
+        """Return the PointFeature Feature's."""
+        # apex_vector: ApexVector = ApexVector(point.x, point.y, point.z, name=point._name)
+        return (PointFeature(self, point, point.name),)
+
     # Drawing.polygons():
     @property
     def polygons(self) -> Tuple["Polygon", ...]:  # pragma: no unit test
@@ -363,7 +372,7 @@ class Drawing(object):
         # Extract the PointFeature's from *points* (this must be first):
         point: Point
         for point in points:
-            features.extend(point.features_get(self))
+            features.extend(self.point_features_get(point))
 
         # Extract the CircleFeature's from *circles*:
         circle: Circle
@@ -403,7 +412,7 @@ class Drawing(object):
         # The *points*, *circles* and *polygons* Constraint's are extracted next:
         constraints: List[Sketcher.Constraint] = []
         for point in points:
-            point.constraints_append(self, constraints, tracing=next_tracing)
+            self.point_constraints_append(point, constraints, tracing=next_tracing)
         for circle in circles:
             circle.constraints_append(self, constraints, tracing=next_tracing)
         for polygon in polygons:
@@ -608,12 +617,19 @@ class ArcFeature(Feature):
             print(f"{tracing}{a=}")
             print(f"{tracing}{e=}")
 
+        def normalize_2d(point: Point) -> Point:
+            """Return Point that is normalized in X and Y only."""
+            x: float = float(point.x)
+            y: float = float(point.y)
+            length: float = math.sqrt(x * x + y * y)
+            return Point(x / length, y / length)
+
         # Compute a bunch of values based on B, A, and E:
         ab: Point = b - a  # <AB>
         ae: Point = e - a  # <AE>
-        unit_ab: Point = ab.normalize()  # <<AB>>
-        unit_ae: Point = ae.normalize()  # <<AE>>
-        unit_am: Point = ((unit_ab + unit_ae) / 2.0).normalize()  # <<AM>>
+        unit_ab: Point = normalize_2d(ab)  # <<AB>>
+        unit_ae: Point = normalize_2d(ae)  # <<AE>>
+        unit_am: Point = normalize_2d(unit_ab + unit_ae)  # <<AM>>
         # unit_ac: Point = unit_am  # <<C>> == <<BM>> because the are on the same line.
         if trace_level >= 2:  # pragma: no unit cover
             print(f"{tracing}{ab=}")
@@ -687,7 +703,8 @@ class ArcFeature(Feature):
 
         # After a bunch of trial and error, it was discovered that the *start_angle* and *end_angle*
         # need to be swapped to deal with a negative sweep angle.  This causes the right arc
-        # to be rendered, but has now swapped the start/finish as far as constraints are concerned.
+        # to be rendered properly, but has now swapped the start/finish as far as constraints
+        # are concerned.
         if sweep_angle < 0.0:
             start_angle, end_angle = end_angle, start_angle
         part_arc: Part.Arc = Part.ArcOfCircle(part_circle, start_angle, end_angle)
@@ -764,7 +781,7 @@ class ArcFeature(Feature):
     def finish_key(self) -> int:
         """Return the ArcFeature finish Constraint key."""
         # return 2
-        return 2 if self._sweep_angle >= 0 else 1
+        return 2 if self._sweep_angle < 0 else 1
 
     # ArcFeature.finish_angle():
     @property
@@ -784,7 +801,7 @@ class ArcFeature(Feature):
         """Return the initial ArcFeature arc start Point."""
         return self._start  # pragma: no unit test
 
-    # ArcFeatrue.part_feature():
+    # ArcFeature.part_feature():
     @property
     def part_feature(self) -> PartFeature:
         """Return ArcFeature Part.Arc."""
@@ -813,7 +830,7 @@ class ArcFeature(Feature):
     def start_key(self) -> int:
         """Return the ArcFeature finish Constraint key."""
         # return 1
-        return 1 if self._sweep_angle >= 0.0 else 2
+        return 1 if self._sweep_angle < 0.0 else 2
 
     # ArcFeature.start_length():
     @property
@@ -844,7 +861,7 @@ class CircleFeature(Feature):
         super().__init__(drawing, center, center, name)
         self._center: Point = center
         self._drawing: Drawing = drawing
-        self._part_circle: Part.Circle = Part.Circle(center.app_vector, App.Vector(0, 0, 1), radius)
+        self._part_circle: Part.Circle = Part.Circle(center.vector, App.Vector(0, 0, 1), radius)
         self._radius: float = radius
 
     # CircleFeature.center():
@@ -885,7 +902,7 @@ class LineFeature(Feature):
             print(f"{tracing}=>LineFeature('{start.name}', '{finish.name}', '{name}')")
         super().__init__(drawing, start, finish, name)
         self._drawing: Drawing = drawing
-        self._line_segment: Part.LineSegment = Part.LineSegment(start.app_vector, finish.app_vector)
+        self._line_segment: Part.LineSegment = Part.LineSegment(start.vector, finish.vector)
         self._start: Point = start
         self._finish: Point = finish
         if tracing:
@@ -943,7 +960,7 @@ class PointFeature(Feature):
         """Initialize a PointFeature."""
         super().__init__(drawing, point, point, name)
         self._point: Point = point
-        self._part_point: Part.Point = Part.Point(point.app_vector)
+        self._part_point: Part.Point = Part.Point(point.vector)
         # print(f"PointFeature.__init__({point.app_vector=}): ")
 
     # PointFeature.__str__():
@@ -1113,13 +1130,10 @@ class Polygon(object):
             if before_arc or at_arc:
                 # Make coincident:
                 # Just force the two features to be tangent:
-                # Note: There is something weird going on here.  The feature index/key pairs
-                # should be insensitive to order, but they are.  Expect more problems here
-                # as additional sketches happen.
                 constraints.append(Sketcher.Constraint(
                     "Tangent",
-                    at_feature_index, at_start_key,
-                    before_feature_index, before_finish_key))
+                    before_feature_index, before_finish_key,
+                    at_feature_index, at_start_key))
                 if tracing:
                     print(f"{tracing}     [{len(constraints)}]: "
                           f"Tangent('{before_name}':({before_feature_index}, {before_finish_key}), "
@@ -1319,8 +1333,8 @@ class Circle(object):
         radius: float = center.radius
         name = name if name else center.name
 
-        lower: Point = Point(x - radius, y - radius, 0.0, name, 0.0)
-        upper: Point = Point(x + radius, y + radius, 0.0, name, 0.0)
+        lower: Point = Point(x - radius, y - radius, 0.0, name=name, diameter=0.0)
+        upper: Point = Point(x + radius, y + radius, 0.0, name=name, diameter=0.0)
 
         self._bounding_box: BoundingBox = BoundingBox(lower, upper, name)
         self._circle_feature: Optional[CircleFeature] = None
@@ -1428,7 +1442,8 @@ class Circle(object):
         center: Point = self.center
         vector: Vector = Vector(center.x, center.y, center.z)
         vector = matrix.forward * vector
-        new_center: Point = Point(vector.x, vector.y, vector.z, center.name, center.radius)
+        new_center: Point = Point(vector.x, vector.y, vector.z,
+                                  name=center.name, diameter=center.diameter)
         return Circle(new_center, self.depth, self.flat, self.name)
 
     # Circle.name():
@@ -1525,14 +1540,22 @@ def main() -> int:
         radius: float = 5.0
         notch_x: float = 10.0
         notch_y: float = 10.0
-        lower_left_bottom: Point = Point(left_x + notch_x, lower_y, 0.0, "lower_left_bottom", 0.0)
-        lower_right: Point = Point(right_x, lower_y, 0.0, "lower_right", 0.0)
+        lower_left_bottom: Point = Point(left_x + notch_x, lower_y, 0.0,
+                                         name="lower_left_bottom", diameter=0.0)
+        lower_right: Point = Point(right_x, lower_y, 0.0,
+                                   name="lower_right", diameter=0.0)
         # upper_right: Point = Point(right_x, upper_y, 0.0, "upper_right", radius)
-        notch1: Point = Point(right_x, upper_y - notch_y, 0.0, "notch1", radius)
-        notch2: Point = Point(right_x - notch_x, upper_y - notch_y, 0.0, "notch2", radius)
-        notch3: Point = Point(right_x - notch_x, upper_y, 0.0, "notch3", radius)
-        upper_left: Point = Point(left_x, upper_y, 0.0, "upper_left", 0.0)
-        lower_left_left: Point = Point(left_x, lower_y + notch_y, 0.0, "lower_left_left", 0.0)
+        diameter: float = 2.0 * radius
+        notch1: Point = Point(right_x, upper_y - notch_y, 0.0,
+                              name="notch1", diameter=diameter)
+        notch2: Point = Point(right_x - notch_x, upper_y - notch_y, 0.0,
+                              name="notch2", diameter=diameter)
+        notch3: Point = Point(right_x - notch_x, upper_y, 0.0,
+                              name="notch3", diameter=diameter)
+        upper_left: Point = Point(left_x, upper_y, 0.0,
+                                  name="upper_left", diameter=0.0)
+        lower_left_left: Point = Point(left_x, lower_y + notch_y, 0.0,
+                                       name="lower_left_left", diameter=0.0)
         box_points: Tuple[Point, ...] = (
             lower_left_bottom,
             lower_right,
@@ -1546,7 +1569,7 @@ def main() -> int:
         box_polygon: Polygon = Polygon(box_points, 0.0, False, "box")
 
         # Create the *hole_center*:
-        center_hole: Point = Point(0.0, 0.0, 0.0, "center_hole", 10.0)
+        center_hole: Point = Point(0.0, 0.0, 0.0, name="center_hole", diameter=10.0)
         center_circle = Circle(center_hole, 0.0, False, "center_hole")
 
         # Create the *drawing*:
