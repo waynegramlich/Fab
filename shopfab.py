@@ -15,7 +15,6 @@ gui: bool = hasattr(Gui, "getMainWindow")  # Only present when Gui is active
 from apex import ApexMatrix, ApexVector
 from FreeCAD import Vector
 import math
-import numpy as np  # type: ignore
 from pathlib import Path  # type: ignore
 from typing import Any, Callable, List, Optional, Tuple, Union
 import Part  # type: ignore
@@ -23,146 +22,6 @@ import PartDesign  # type: ignore
 import Sketcher  # type: ignore
 
 Point = ApexVector
-
-
-class XPoint(object):
-    """Represents a drawing point."""
-
-    # Point.__init__():
-    def __init__(self, x: float = 0.0, y: float = 0.0, z: float = 0.0,
-                 name: str = "", radius: float = 0.0) -> None:
-        """Initialize a Point."""
-        if radius < 0.0:  # pragma: no unit test
-            raise ValueError(f"negative radius {radius}")  # pragma: no unit test
-        vector: np.ndarray = np.array([x, y, z])
-        vector.flags.writeable = False
-        self._vector: np.ndarray = vector
-        self._radius: float = radius
-        self._name: str = name
-
-    # Point.__sub__():
-    def __add__(self, point: "XPoint") -> "XPoint":
-        """Return the difference of two Point's."""
-        return XPoint(self.x + point.x, self.y + point.y, self.z + point.z)
-
-    # Point.__truediv__():
-    def __truediv__(self, divisor: float) -> "XPoint":
-        """Return a Point that has been scaleddown."""
-        return XPoint(self.x / divisor, self.y / divisor, self.z / divisor)
-
-    # Point.__rmul__():
-    def __mul__(self, scale: float) -> "XPoint":
-        """Return a Point that has been scaled."""
-        return XPoint(self.x * scale, self.y * scale, self.z * scale)
-
-    # Point.__neg__():
-    def __neg__(self) -> "XPoint":
-        """Return the negative of a Point."""
-        return XPoint(-self.x, -self.y, -self.z, self.name, self.radius)
-
-    # Point.__repr__():
-    def __repr__(self) -> str:  # pragma: no unit test
-        """Return a string representation of a XPoint."""
-        return (f"XPoint({self.x}, {self.y}, {self.z}, "  # pragma: no unit test
-                f"'{self._name}', {self._radius})")  # pragma: no unit test
-
-    # Point.__str__():
-    def __str__(self) -> str:  # pragma: no unit test
-        """Return a string representation of a Point."""
-        text: str = (f"XPoint({self.x}, {self.y}, {self.z}, "  # pragma: no unit test
-                     f"'{self._name}', {self._radius})")  # pragma: no unit test
-        return text  # pragma: no unit test
-
-    # Point.__sub__():
-    def __sub__(self, point: "XPoint") -> "XPoint":
-        """Return the difference of two Point's."""
-        return XPoint(self.x - point.x, self.y - point.y, self.z - point.z)
-
-    # Point.atan2():
-    def atan2(self) -> float:   # REMOVE
-        """Return the Point arc tangent of y/x."""
-        return math.atan2(self.y, self.x)
-
-    # Point.features_get():
-    def features_get(self, drawing: "Drawing", tracing: str = "") -> Tuple["Feature", ...]:
-        """Return the PointFeature Feature's."""  # REMOVE
-        apex_vector: ApexVector = ApexVector(self.x, self.y, self.z, name=self._name)
-        return (PointFeature(drawing, apex_vector, self._name),)
-
-    # Point.origin():
-    @classmethod
-    def origin(cls) -> "XPoint":  # pragma: no unit test   # REMOVE
-        """Return an origin point."""
-        return XPoint(0.0, 0.0, 0.0, "origin", 0.0)  # pragma: no unit test
-
-    # Point.x:
-    @property
-    def x(self) -> float:
-        """Return the x coordinate."""
-        return self._vector[0]
-
-    # Point.y:
-    @property
-    def y(self) -> float:
-        """Return the y coordinate."""
-        return self._vector[1]
-
-    # Point.z:
-    @property
-    def z(self) -> float:
-        """Return the z coordinate."""
-        return self._vector[2]
-
-    # Point.radius:
-    @property
-    def radius(self) -> float:
-        """Return the radius."""
-        return self._radius
-
-    # Point.name:
-    @property
-    def name(self) -> str:
-        """Return the name."""
-        return self._name
-
-    # Point.app_vector:
-    @property
-    def app_vector(self) -> App.Vector:
-        """Return Vector from the Point."""
-        return App.Vector(self.x, self.y, self.z)
-
-    # Point.magnitude():
-    def magnitude(self) -> float:
-        """Return the magnitude of the point vector."""
-        vector: np.ndarray = self._vector
-        # https://stackoverflow.com/questions/9171158/
-        # how-do-you-get-the-magnitude-of-a-vector-in-numpy
-        return np.sqrt(vector.dot(vector))
-
-    # Point.normalize():
-    def normalize(self) -> "XPoint":
-        """Return the normal of the point vector."""
-        magnitude: float = self.magnitude()
-        if magnitude <= 0.0:
-            message: str = (f"Can not normalize {self} because "  # pragma: no unit test
-                            f"it has a magnitude of {magnitude}")  # pragma: no unit test
-            raise ValueError(message)  # pragma: no unit test
-        return XPoint(self.x / magnitude, self.y / magnitude, self.z / magnitude,
-                      self.name, self.radius)
-
-    # Point.forward():
-    def forward(self, matrix: ApexMatrix) -> "XPoint":
-        """Perform a forward transform of a point."""
-        vector: Vector = Vector(self.x, self.y, self.z)
-        vector = matrix.forward * vector
-        return XPoint(vector.x, vector.y, vector.z, self.name, self.radius)
-
-    # Point.reverse():
-    def reverse(self, matrix: ApexMatrix) -> "XPoint":  # pragma: no unit test
-        """Perform a reverse transform of a point."""
-        vector: Vector = Vector(self.x, self.y, self.z)
-        vector = matrix.reverse * vector
-        return XPoint(vector.x, vector.y, vector.z)
 
 
 # BoundingBox:
@@ -689,7 +548,7 @@ class ArcFeature(Feature):
         degrees180: float = pi
         degrees360: float = 2.0 * pi
         if sweep_angle > degrees180:
-            sweep_angle -= degrees360
+            sweep_angle -= degrees360  # pragma: no unit test
         elif sweep_angle <= -degrees180:
             sweep_angle += degrees360  # pragma: no unit test
         end_angle: float = start_angle + sweep_angle
