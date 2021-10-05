@@ -1113,10 +1113,13 @@ class Polygon(object):
             if before_arc or at_arc:
                 # Make coincident:
                 # Just force the two features to be tangent:
+                # Note: There is something weird going on here.  The feature index/key pairs
+                # should be insensitive to order, but they are.  Expect more problems here
+                # as additional sketches happen.
                 constraints.append(Sketcher.Constraint(
                     "Tangent",
-                    before_feature_index, before_finish_key,
-                    at_feature_index, at_start_key))
+                    at_feature_index, at_start_key,
+                    before_feature_index, before_finish_key))
                 if tracing:
                     print(f"{tracing}     [{len(constraints)}]: "
                           f"Tangent('{before_name}':({before_feature_index}, {before_finish_key}), "
