@@ -21,7 +21,7 @@ import Part  # type: ignore
 import PartDesign  # type: ignore
 import Sketcher  # type: ignore
 
-Point = ApexVector
+ApexVector = ApexVector
 BoundingBox = ApexBoundBox
 
 
@@ -91,12 +91,12 @@ class Drawing(object):
         return self._origin_index
 
     # Drawing.point_constraints_append():
-    def point_constraints_append(self, point: Point, constraints: List[Sketcher.Constraint],
+    def point_constraints_append(self, point: ApexVector, constraints: List[Sketcher.Constraint],
                                  tracing: str = "") -> None:  # REMOVE
-        """Append Point constraints to a list."""
+        """Append ApexVector constraints to a list."""
         # Now that the *origin_index* is set, is is safe to assemble the *constraints*:
         if tracing:
-            print(f"{tracing}=>Point.constraints_append(*, |*|={len(constraints)})")
+            print(f"{tracing}=>ApexVector.constraints_append(*, |*|={len(constraints)})")
         origin_index: int = self.origin_index
 
         # Set DistanceX constraint:
@@ -116,14 +116,12 @@ class Drawing(object):
             print(f"{tracing}     [{len(constraints)}]: "
                   f"DistanceY('RootOrigin':(-1, 1), "
                   f"'{point.name}':({origin_index}, 1), {point.y:.2f})")
-            print(f"{tracing}<=Point.constraints_append(*, |*|={len(constraints)})")
+            print(f"{tracing}<=ApexVector.constraints_append(*, |*|={len(constraints)})")
 
     # Drawing.features_get():
-    def point_features_get(self, point: Point, tracing: str = "") -> Tuple["Feature", ...]:
+    def point_features_get(self, point: ApexVector, tracing: str = "") -> Tuple["Feature", ...]:
         """Return the PointFeature Feature's."""
-        assert isinstance(point, Point)
         assert isinstance(point, ApexVector)
-        # apex_vector: ApexVector = ApexVector(point.x, point.y, point.z, name=point._name)
         return (PointFeature(self, point, point.name),)
 
     # Drawing.polygons():
@@ -133,8 +131,8 @@ class Drawing(object):
         return self._polygons  # pragma: no unit test
 
     # Drawing.sketch():
-    def sketch(self,
-               sketcher: "Sketcher.SketchObject", lower_left: Point, tracing: str = "") -> None:
+    def sketch(self, sketcher: "Sketcher.SketchObject",
+               lower_left: ApexVector, tracing: str = "") -> None:
         """Sketch a Drawing."""
         # Perform any requested *tracing*:
         assert isinstance(lower_left, ApexVector)
@@ -144,15 +142,15 @@ class Drawing(object):
 
         # Start to assemble *features from *circles*, *points*, and *polygons*:
         circles: Tuple[Circle, ...] = self._circles
-        points: Tuple[Point, ...] = (lower_left, )
+        points: Tuple[ApexVector, ...] = (lower_left, )
         polygons: Tuple[Polygon, ...] = self._polygons
         features: List[Feature] = []
 
-        # Extract the PointFeature's from *points* (this must be first):
-        point: Point
+        # Extract the VectorFeature's from *points* (this must be first):
+        point: ApexVector
         for point in points:
             assert isinstance(point, ApexVector)
-            assert isinstance(point, Point)
+            assert isinstance(point, ApexVector)
             features.extend(self.point_features_get(point))
 
         # Extract the CircleFeature's from *circles*:
@@ -214,18 +212,19 @@ class Feature(object):
     """Base class a schematic features."""
 
     # Feature.__init__():
-    def __init__(self, drawing: Drawing, start: Point, finish: Point, name: str = "") -> None:
+    def __init__(self, drawing: Drawing,
+                 start: ApexVector, finish: ApexVector, name: str = "") -> None:
         """Initialize a Feature."""
         if not name:
             name = start.name
         self._drawing: Drawing = drawing
-        self._finish: Point
+        self._finish: ApexVector
         self._index: int = -999
         self._origin_index: int = -999
         self._name: str = name
         self._next: Feature = self
         self._previous: Feature = self
-        self._start: Point
+        self._start: ApexVector
         # print(f"<=>Feature.__init__(*, {self._part_feature}, '{self._name}')")
 
     # Feature.drawing():
@@ -236,7 +235,7 @@ class Feature(object):
 
     # Feature.finish():
     @property
-    def finish(self) -> Point:  # pragma: no unit test
+    def finish(self) -> ApexVector:  # pragma: no unit test
         """Return the Feature finish point."""
         return self._finish  # pragma: no unit test
 
@@ -300,7 +299,7 @@ class Feature(object):
 
     # Feature.start():
     @property
-    def start(self) -> Point:  # pragma: no unit test
+    def start(self) -> ApexVector:  # pragma: no unit test
         """Return the Feature start point."""
         return self._start  # pragma: no unit test
 
@@ -322,7 +321,8 @@ class ArcFeature(Feature):
 
     # ArcFeature.__init__():
     def __init__(self, drawing: Drawing,
-                 begin: Point, apex: Point, end: Point, name: str = "", tracing: str = "") -> None:
+                 begin: ApexVector, apex: ApexVector, end: ApexVector,
+                 name: str = "", tracing: str = "") -> None:
         """Initialize an ArcFeature."""
         # next_tracing: str = tracing + " " if tracing else ""
         trace_level: int = 0
@@ -390,28 +390,28 @@ class ArcFeature(Feature):
             raise ValueError("No Arc with zero radius.")  # pragma: no unit test
 
         # Define some single letter variables for the Point's:
-        b: Point = begin
-        a: Point = apex
-        e: Point = end
+        b: ApexVector = begin
+        a: ApexVector = apex
+        e: ApexVector = end
         if trace_level >= 2:  # pragma: no unit cover
             print(f"{tracing}{b=}")
             print(f"{tracing}{a=}")
             print(f"{tracing}{e=}")
 
-        def normalize_2d(point: Point) -> Point:
-            """Return Point that is normalized in X and Y only."""
+        def normalize_2d(point: ApexVector) -> ApexVector:
+            """Return ApexVector that is normalized in X and Y only."""
             x: float = float(point.x)
             y: float = float(point.y)
             length: float = math.sqrt(x * x + y * y)
-            return Point(x / length, y / length)
+            return ApexVector(x / length, y / length)
 
         # Compute a bunch of values based on B, A, and E:
-        ab: Point = b - a  # <AB>
-        ae: Point = e - a  # <AE>
-        unit_ab: Point = normalize_2d(ab)  # <<AB>>
-        unit_ae: Point = normalize_2d(ae)  # <<AE>>
-        unit_am: Point = normalize_2d(unit_ab + unit_ae)  # <<AM>>
-        # unit_ac: Point = unit_am  # <<C>> == <<BM>> because the are on the same line.
+        ab: ApexVector = b - a  # <AB>
+        ae: ApexVector = e - a  # <AE>
+        unit_ab: ApexVector = normalize_2d(ab)  # <<AB>>
+        unit_ae: ApexVector = normalize_2d(ae)  # <<AE>>
+        unit_am: ApexVector = normalize_2d(unit_ab + unit_ae)  # <<AM>>
+        # unit_ac: ApexVector = unit_am  # <<C>> == <<BM>> because the are on the same line.
         if trace_level >= 2:  # pragma: no unit cover
             print(f"{tracing}{ab=}")
             print(f"{tracing}{ae=}")
@@ -454,9 +454,9 @@ class ArcFeature(Feature):
             print(f"{tracing}{af_length=:.2f}")
 
         # Compute C, S, and F:
-        c: Point = a + unit_am * ac_length
-        s: Point = a + unit_ab * as_length
-        f: Point = a + unit_ae * af_length
+        c: ApexVector = a + unit_am * ac_length
+        s: ApexVector = a + unit_ab * as_length
+        f: ApexVector = a + unit_ae * af_length
         if trace_level >= 2:  # pragma: no unit cover
             print(f"{tracing}{c=}")
             print(f"{tracing}{s=}")
@@ -492,16 +492,16 @@ class ArcFeature(Feature):
 
         # Now we can create the *ArcFeature*:
         super().__init__(drawing, s, f, name)
-        self._apex: Point = apex
-        self._begin: Point = begin
-        self._center: Point = c
-        self._end: Point = end
-        self._finish: Point = f
+        self._apex: ApexVector = apex
+        self._begin: ApexVector = begin
+        self._center: ApexVector = c
+        self._end: ApexVector = end
+        self._finish: ApexVector = f
         self._finish_angle: float = finish_angle
         self._finish_length: float = af_length
         self._part_arc: Part.Arc = part_arc
         self._radius: float = r
-        self._start: Point = s
+        self._start: ApexVector = s
         self._sweep_angle: float = sweep_angle
         self._start_angle: float = start_angle
         self._start_length: float = as_length
@@ -529,32 +529,32 @@ class ArcFeature(Feature):
 
     # ArcFeature.apex():
     @property
-    def apex(self) -> Point:
-        """Return the ArcFeature apex Point."""
+    def apex(self) -> ApexVector:
+        """Return the ArcFeature apex ApexVector."""
         return self._apex
 
     # ArcFeature.begin():
     @property
-    def begin(self) -> Point:  # pragma: no unit test
-        """Return the ArcFeature arc begin Point."""
+    def begin(self) -> ApexVector:  # pragma: no unit test
+        """Return the ArcFeature arc begin ApexVector."""
         return self._begin  # pragma: no unit test
 
     # ArcFeature.center():
     @property
-    def center(self) -> Point:
+    def center(self) -> ApexVector:
         """Return the ArcFeature arc center."""
         return self._center
 
     # ArcFeature.end():
     @property
-    def end(self) -> Point:  # pragma: no unit test
-        """Return the initial ArcFeature end Point."""
+    def end(self) -> ApexVector:  # pragma: no unit test
+        """Return the initial ArcFeature end ApexVector."""
         return self._end  # pragma: no unit test
 
     # ArcFeature.finish():
     @property
-    def finish(self) -> Point:
-        """Return the ArcFeature arc finish Point."""
+    def finish(self) -> ApexVector:
+        """Return the ArcFeature arc finish ApexVector."""
         return self._finish
 
     # ArcFeature.finish_key():
@@ -573,13 +573,13 @@ class ArcFeature(Feature):
     # ArcFeature.finish_length():
     @property
     def finish_length(self) -> float:  # pragma: no unit test
-        """Return distance from arc finish Point to the apex Point."""
+        """Return distance from arc finish ApexVector to the apex ApexVector."""
         return self._finish_length  # pragma: no unit test
 
     # ArcFeature.input():
     @property
-    def input(self) -> Point:  # pragma: no unit test
-        """Return the initial ArcFeature arc start Point."""
+    def input(self) -> ApexVector:  # pragma: no unit test
+        """Return the initial ArcFeature arc start ApexVector."""
         return self._start  # pragma: no unit test
 
     # ArcFeature.part_feature():
@@ -596,8 +596,8 @@ class ArcFeature(Feature):
 
     # ArcFeature.start():
     @property
-    def start(self) -> Point:
-        """Return the ArcFeature arc start Point."""
+    def start(self) -> ApexVector:
+        """Return the ArcFeature arc start ApexVector."""
         return self._start
 
     # ArcFeature.start_angle():
@@ -616,7 +616,7 @@ class ArcFeature(Feature):
     # ArcFeature.start_length():
     @property
     def start_length(self) -> float:  # pragma: no unit test
-        """Return the ArcFeature distance from start Point to apex Point."""
+        """Return the ArcFeature distance from start ApexVector to apex ApexVector."""
         return self._start_length  # pragma: no unit test
 
     # ArcFeature.sweep_angle():
@@ -637,17 +637,17 @@ class CircleFeature(Feature):
     """Represents a circle in a sketch."""
 
     # CircleFeature.__init__():
-    def __init__(self, drawing: Drawing, center: Point, radius: float, name: str = "") -> None:
+    def __init__(self, drawing: Drawing, center: ApexVector, radius: float, name: str = "") -> None:
         """Initialize a CircleFeature."""
         super().__init__(drawing, center, center, name)
-        self._center: Point = center
+        self._center: ApexVector = center
         self._drawing: Drawing = drawing
         self._part_circle: Part.Circle = Part.Circle(center.vector, App.Vector(0, 0, 1), radius)
         self._radius: float = radius
 
     # CircleFeature.center():
     @property
-    def center(self) -> Point:  # pragma: no unit cover
+    def center(self) -> ApexVector:  # pragma: no unit cover
         """Return the CircleFeature center."""
         return self._center
 
@@ -675,17 +675,16 @@ class LineFeature(Feature):
     """Represents a line segment in a sketch."""
 
     # LineFeature.__init__():
-    def __init__(
-            self, drawing: Drawing, start: Point, finish: Point, name: str = "", tracing: str = ""
-    ) -> None:
+    def __init__(self, drawing: Drawing,
+                 start: ApexVector, finish: ApexVector, name: str = "", tracing: str = "") -> None:
         """Initialize a LineFeature."""
         if tracing:
             print(f"{tracing}=>LineFeature('{start.name}', '{finish.name}', '{name}')")
         super().__init__(drawing, start, finish, name)
         self._drawing: Drawing = drawing
         self._line_segment: Part.LineSegment = Part.LineSegment(start.vector, finish.vector)
-        self._start: Point = start
-        self._finish: Point = finish
+        self._start: ApexVector = start
+        self._finish: ApexVector = finish
         if tracing:
             print(f"{tracing}<=LineFeature('{start.name}', '{finish.name}', '{name}')")
 
@@ -703,8 +702,8 @@ class LineFeature(Feature):
 
     # LineFeature.finish():
     @property
-    def finish(self) -> Point:  # pragma: no unit cover
-        """Return the LineFeature finish Point."""
+    def finish(self) -> ApexVector:  # pragma: no unit cover
+        """Return the LineFeature finish ApexVector."""
         return self._finish
 
     # LineFeature.finish_key():
@@ -715,8 +714,8 @@ class LineFeature(Feature):
 
     # LineFeature.start():
     @property
-    def start(self) -> Point:
-        """Return the LineFeature start Point."""
+    def start(self) -> ApexVector:
+        """Return the LineFeature start ApexVector."""
         return self._start
 
     # LineFeature.start_key():
@@ -737,12 +736,12 @@ class PointFeature(Feature):
     """Represents a point in a sketch."""
 
     # PointFeature.__init__():
-    def __init__(self, drawing: Drawing, point: Point, name: str = "") -> None:
+    def __init__(self, drawing: Drawing, point: ApexVector, name: str = "") -> None:
         """Initialize a PointFeature."""
         super().__init__(drawing, point, point, name)
-        self._point: Point = point
-        self._part_point: Part.Point = Part.Point(point.vector)
-        # print(f"PointFeature.__init__({point.app_vector=}): ")
+        self._point: ApexVector = point
+        self._part_point: Part.ApexVector = Part.Point(point.vector)
+        # print(f"PointFeature.__init__({point.vector=}): ")
 
     # PointFeature.__str__():
     def __str__(self) -> str:  # pragma: no unit cover
@@ -757,8 +756,8 @@ class PointFeature(Feature):
 
     # PointFeature.point():
     @property
-    def point(self) -> Point:  # pragma: no unit cover
-        """Return the PointFeature Point."""
+    def point(self) -> ApexVector:  # pragma: no unit cover
+        """Return the PointFeature ApexVector."""
         return self._point
 
     # PointFeature.type_name():
@@ -775,7 +774,7 @@ class Polygon(object):
     # Polygon.__init__():
     def __init__(
             self,
-            points: Tuple[Point, ...],
+            points: Tuple[ApexVector, ...],
             depth: float = 0.0,
             flat: bool = False,
             name: str = ""
@@ -789,7 +788,7 @@ class Polygon(object):
         self._features: Optional[Tuple[Feature, ...]] = None
         self._flat: bool = flat
         self._name: str = name
-        self._points: Tuple[Point, ...] = points
+        self._points: Tuple[ApexVector, ...] = points
 
     # Polygon.bounding_box():
     @property
@@ -801,13 +800,13 @@ class Polygon(object):
     @property
     def clockwise(self) -> bool:    # pragma: no unit cover
         """Return whether the Polygon points are clockwise."""
-        points: Tuple[Point, ...] = self._points
+        points: Tuple[ApexVector, ...] = self._points
         points_size: int = len(points)
         index: int
-        start: Point
+        start: ApexVector
         total_angle: float = 0.0
         for index, start in enumerate(points):
-            finish: Point = points[(index + 1) % points_size]
+            finish: ApexVector = points[(index + 1) % points_size]
             total_angle += math.atan2(finish.y - start.y, finish.x - start.x)
         return total_angle >= 0.0
 
@@ -834,12 +833,12 @@ class Polygon(object):
             # Grab a bunch of field from *at_feature* and *before_feature*
             at_feature_index: int = at_feature.index
             at_name: str = at_feature.name
-            at_start: Point = at_feature.start
+            at_start: ApexVector = at_feature.start
             at_start_key: int = at_feature.start_key
             before_feature: Feature = features[(at_index - 1) % features_size]
             before_feature_index: int = before_feature.index
             before_name: str = before_feature.name
-            # before_finish: Point = before_feature.finish
+            # before_finish: ApexVector = before_feature.finish
             before_finish_key: int = before_feature.finish_key
             after_feature: Feature = features[(at_index + 1) % features_size]
             assert at_feature is not before_feature
@@ -867,7 +866,7 @@ class Polygon(object):
             # coordinates are not needed since they will over constrain the drawing.
             if at_arc:
                 at_radius: float = at_arc.radius
-                at_center: Point = at_arc.center
+                at_center: ApexVector = at_arc.center
 
                 # Set Radius constraint:
                 constraints.append(Sketcher.Constraint(
@@ -990,18 +989,18 @@ class Polygon(object):
             print(f"{tracing}=>Polygon.features_get(*)")
 
         # Some variable declarations (re)used in the code below:
-        after_point: Point
+        after_point: ApexVector
         arc: Optional[ArcFeature]
         at_arc: Optional[ArcFeature]
         at_index: int
         at_line: Optional[LineFeature]
         at_name: str
-        at_point: Point
-        before_point: Point
+        at_point: ApexVector
+        before_point: ApexVector
 
         # Pass 1: Create a list of *arcs* for each point with a non-zero radius.
         # This list is 1-to-1 with the *points*.
-        points: Tuple[Point, ...] = self._points
+        points: Tuple[ApexVector, ...] = self._points
         points_size: int = len(points)
         arcs: List[Optional[ArcFeature]] = []
         for at_index, at_point in enumerate(points):
@@ -1027,8 +1026,8 @@ class Polygon(object):
             at_name = at_point.name
 
             # *start* and *finish* are the start and end points of the *line*:
-            start: Point = before_arc.finish if before_arc else before_point
-            finish: Point = at_arc.start if at_arc else at_point
+            start: ApexVector = before_arc.finish if before_arc else before_point
+            finish: ApexVector = at_arc.start if at_arc else at_point
 
             # There is possibility that the *before_arc* and *at_arc* could touch one another
             # without an intervening line segment.  Also, it is possible that the arc completely
@@ -1083,14 +1082,14 @@ class Polygon(object):
 
     # Polygon.points():
     @property
-    def points(self) -> Tuple[Point, ...]:  # pragma: no unit cover
+    def points(self) -> Tuple[ApexVector, ...]:  # pragma: no unit cover
         """Return the Polygon points."""
         return self._points
 
     def forward_transform(self, matrix: ApexMatrix) -> "Polygon":
         """Return a forward transformed Polygon."""
-        point: Point
-        points: Tuple[Point, ...] = tuple([point.forward(matrix) for point in self._points])
+        point: ApexVector
+        points: Tuple[ApexVector, ...] = tuple([point.forward(matrix) for point in self._points])
         return Polygon(points, self._depth, self._flat, self._name)
 
 
@@ -1100,7 +1099,7 @@ class Circle(object):
     # Circle.__init():
     def __init__(
             self,
-            center: Point,
+            center: ApexVector,
             depth: float = 0.0,
             flat: bool = False,
             name: str = ""
@@ -1114,13 +1113,13 @@ class Circle(object):
         radius: float = center.radius
         name = name if name else center.name
 
-        lower: Point = Point(x - radius, y - radius, 0.0, name=name, diameter=0.0)
-        upper: Point = Point(x + radius, y + radius, 0.0, name=name, diameter=0.0)
+        lower: ApexVector = ApexVector(x - radius, y - radius, 0.0, name=name, diameter=0.0)
+        upper: ApexVector = ApexVector(x + radius, y + radius, 0.0, name=name, diameter=0.0)
 
         self._bounding_box: BoundingBox = BoundingBox(BoundBox(lower.vector, upper.vector))
         self._circle_feature: Optional[CircleFeature] = None
         self._constraints: Tuple[Sketcher.Constraint, ...] = ()
-        self._center: Point = center
+        self._center: ApexVector = center
         self._depth: float = depth
         self._flat: bool = flat
         self._name: str = name
@@ -1139,8 +1138,8 @@ class Circle(object):
 
     # Circle.center():
     @property
-    def center(self) -> Point:
-        """Return the Circle center Point."""
+    def center(self) -> ApexVector:
+        """Return the Circle center ApexVector."""
         return self._center
 
     # Circle.circle_feature:
@@ -1159,7 +1158,7 @@ class Circle(object):
         if tracing:
             print("{tracing}=>Circle.constraints_append(*, *): {len(constraints)=}")
         origin_index: int = drawing.origin_index
-        center: Point = self._center
+        center: ApexVector = self._center
         circle_feature: CircleFeature = self.circle_feature
         circle_feature_index: int = circle_feature.index
         circle_name: str = self.name
@@ -1186,7 +1185,7 @@ class Circle(object):
         # Append the DistanceY constraint:
         constraints.append(
             Sketcher.Constraint("DistanceY",
-                                origin_index, 1,  # 1 => Start Point
+                                origin_index, 1,  # 1 => Start ApexVector
                                 circle_feature_index, 3,  # 3 => Circle Center
                                 center.y))
         if tracing:
@@ -1220,11 +1219,11 @@ class Circle(object):
     # Circle.forward_transform():
     def forward_transform(self, matrix: ApexMatrix) -> "Circle":
         """Return a forward transformed Circle."""
-        center: Point = self.center
+        center: ApexVector = self.center
         vector: Vector = Vector(center.x, center.y, center.z)
         vector = matrix.forward * vector
-        new_center: Point = Point(vector.x, vector.y, vector.z,
-                                  name=center.name, diameter=center.diameter)
+        new_center: ApexVector = ApexVector(vector.x, vector.y, vector.z,
+                                            name=center.name, diameter=center.diameter)
         return Circle(new_center, self.depth, self.flat, self.name)
 
     # Circle.name():
@@ -1321,23 +1320,23 @@ def main() -> int:
         radius: float = 5.0
         notch_x: float = 10.0
         notch_y: float = 10.0
-        lower_left_bottom: Point = Point(left_x + notch_x, lower_y, 0.0,
-                                         name="lower_left_bottom", diameter=0.0)
-        lower_right: Point = Point(right_x, lower_y, 0.0,
-                                   name="lower_right", diameter=0.0)
-        # upper_right: Point = Point(right_x, upper_y, 0.0, "upper_right", radius)
+        lower_left_bottom: ApexVector = ApexVector(left_x + notch_x, lower_y, 0.0,
+                                                   name="lower_left_bottom", diameter=0.0)
+        lower_right: ApexVector = ApexVector(right_x, lower_y, 0.0,
+                                             name="lower_right", diameter=0.0)
+        # upper_right: ApexVector = ApexVector(right_x, upper_y, 0.0, "upper_right", radius)
         diameter: float = 2.0 * radius
-        notch1: Point = Point(right_x, upper_y - notch_y, 0.0,
-                              name="notch1", diameter=diameter)
-        notch2: Point = Point(right_x - notch_x, upper_y - notch_y, 0.0,
-                              name="notch2", diameter=diameter)
-        notch3: Point = Point(right_x - notch_x, upper_y, 0.0,
-                              name="notch3", diameter=diameter)
-        upper_left: Point = Point(left_x, upper_y, 0.0,
-                                  name="upper_left", diameter=0.0)
-        lower_left_left: Point = Point(left_x, lower_y + notch_y, 0.0,
-                                       name="lower_left_left", diameter=0.0)
-        box_points: Tuple[Point, ...] = (
+        notch1: ApexVector = ApexVector(right_x, upper_y - notch_y, 0.0,
+                                        name="notch1", diameter=diameter)
+        notch2: ApexVector = ApexVector(right_x - notch_x, upper_y - notch_y, 0.0,
+                                        name="notch2", diameter=diameter)
+        notch3: ApexVector = ApexVector(right_x - notch_x, upper_y, 0.0,
+                                        name="notch3", diameter=diameter)
+        upper_left: ApexVector = ApexVector(left_x, upper_y, 0.0,
+                                            name="upper_left", diameter=0.0)
+        lower_left_left: ApexVector = ApexVector(left_x, lower_y + notch_y, 0.0,
+                                                 name="lower_left_left", diameter=0.0)
+        box_points: Tuple[ApexVector, ...] = (
             lower_left_bottom,
             lower_right,
             # upper_right,
@@ -1350,7 +1349,7 @@ def main() -> int:
         box_polygon: Polygon = Polygon(box_points, 0.0, False, "box")
 
         # Create the *hole_center*:
-        center_hole: Point = Point(0.0, 0.0, 0.0, name="center_hole", diameter=10.0)
+        center_hole: ApexVector = ApexVector(0.0, 0.0, 0.0, name="center_hole", diameter=10.0)
         center_circle = Circle(center_hole, 0.0, False, "center_hole")
 
         # Create the *drawing*:
@@ -1363,7 +1362,7 @@ def main() -> int:
         # drawing = drawing.forward_transform(rotate30_transform)
 
         origin_vector: Vector = drawing.bounding_box.BSW
-        drawing_origin: Point = Point(origin_vector.x, origin_vector.y, 0.0)
+        drawing_origin: ApexVector = ApexVector(origin_vector.x, origin_vector.y, 0.0)
         vector: Vector = Vector(drawing_origin.x, drawing_origin.y, drawing_origin.z)
         reorigin: ApexMatrix = ApexMatrix(translate=-vector, name=f"{drawing.name} reorigin")
         drawing = drawing.forward_transform(reorigin)
