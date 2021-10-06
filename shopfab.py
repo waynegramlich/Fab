@@ -12,8 +12,8 @@ import FreeCADGui as Gui  # type: ignore
 gui: bool = hasattr(Gui, "getMainWindow")  # Only present when Gui is active
 
 # from shopfab import importer
-from apex import ApexMatrix, ApexVector
-from FreeCAD import Vector
+from apex import ApexBoundBox, ApexMatrix, ApexVector
+from FreeCAD import BoundBox, Vector
 import math
 from pathlib import Path  # type: ignore
 from typing import Any, Callable, List, Optional, Tuple, Union
@@ -22,90 +22,7 @@ import PartDesign  # type: ignore
 import Sketcher  # type: ignore
 
 Point = ApexVector
-
-
-# BoundingBox:
-class BoundingBox:
-    """Bounding box for a set of Point's."""
-
-    # BoundingBox.__init__():
-    def __init__(self, lower: Point, upper: Point, name: str = "") -> None:
-        """Initiliaze a bounding box."""
-        if lower.x > upper.x or lower.y > upper.y:
-            raise ValueError(f"{lower} is not less than {upper}")  # pragma: no unit test
-        center_x: float = (lower.x + upper.x) / 2.0
-        center_y: float = (lower.y + upper.y) / 2.0
-        self._center: Point = Point(center_x, center_y)
-        self._lower: Point = lower
-        self._name: str = ""
-        self._upper: Point = upper
-
-    # BoundingBox.center():
-    @property
-    def center(self) -> Point:  # pragma: no unit test
-        """Return center BoundingBox Point."""
-        return self._center  # pragma: no unit test
-
-    # BoundingBox.lower():
-    @property
-    def lower(self) -> Point:
-        """Return lower left BoundingBox Point."""
-        return self._lower
-
-    # BoundingBox.name():
-    @property
-    def name(self) -> str:  # pragma: no unit test
-        """Return BoundingBox name."""
-        return self._name  # pragma: no unit test
-
-    # BoundingBox.lower():
-    @property
-    def upper(self) -> Point:
-        """Return upper right BoundingBox Point."""
-        return self._upper
-
-    @staticmethod
-    def from_points(points: Tuple[Point, ...]) -> "BoundingBox":
-        """Compute BoundingBox from some Point's."""
-        if not points:
-            raise ValueError("No points")  # pragma: no unit test
-        point0: Point = points[0]
-        lower_x: float = point0.x
-        lower_y: float = point0.y
-        upper_x: float = lower_x
-        upper_y: float = lower_y
-
-        point: Point
-        for point in points[1:]:
-            x: float = point.x
-            y: float = point.y
-            lower_x = min(lower_x, x)
-            upper_x = max(upper_x, x)
-            lower_y = min(lower_y, y)
-            upper_y = max(upper_y, y)
-
-        return BoundingBox(Point(lower_x, lower_y), Point(upper_x, upper_y))
-
-    @staticmethod
-    def from_bounding_boxes(bounding_boxes: Tuple["BoundingBox", ...]) -> "BoundingBox":
-        """Compute enclosing BoundingBox from some BoundingBox's."""
-        if not bounding_boxes:
-            raise ValueError("No bounding boxes")  # pragma: no unit test
-        bounding_box0: BoundingBox = bounding_boxes[0]
-        lower_x: float = bounding_box0.lower.x
-        lower_y: float = bounding_box0.lower.y
-        upper_x: float = bounding_box0.upper.x
-        upper_y: float = bounding_box0.upper.y
-
-        bounding_box: BoundingBox
-        for bounding_box in bounding_boxes[1:]:
-            lower: Point = bounding_box.lower
-            lower_x = min(lower_x, lower.x)
-            lower_y = min(lower_y, lower.y)
-            upper: Point = bounding_box.upper
-            upper_x = max(upper_x, upper.x)
-            upper_y = max(upper_y, upper.y)
-        return BoundingBox(Point(lower_x, lower_y), Point(upper_x, upper_y))
+BoundingBox = ApexBoundBox
 
 
 # Drawing:
@@ -125,7 +42,7 @@ class Drawing(object):
                                                                 for circle in circles])
         polygon_bounding_boxes: Tuple[BoundingBox, ...] = tuple([polygon.bounding_box
                                                                  for polygon in polygons])
-        bounding_box: BoundingBox = BoundingBox.from_bounding_boxes(
+        bounding_box: BoundingBox = BoundingBox.from_bound_boxes(
             circle_bounding_boxes + polygon_bounding_boxes)
 
         self._bounding_box: BoundingBox = bounding_box
@@ -204,6 +121,8 @@ class Drawing(object):
     # Drawing.features_get():
     def point_features_get(self, point: Point, tracing: str = "") -> Tuple["Feature", ...]:
         """Return the PointFeature Feature's."""
+        assert isinstance(point, Point)
+        assert isinstance(point, ApexVector)
         # apex_vector: ApexVector = ApexVector(point.x, point.y, point.z, name=point._name)
         return (PointFeature(self, point, point.name),)
 
@@ -218,6 +137,7 @@ class Drawing(object):
                sketcher: "Sketcher.SketchObject", lower_left: Point, tracing: str = "") -> None:
         """Sketch a Drawing."""
         # Perform any requested *tracing*:
+        assert isinstance(lower_left, ApexVector)
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>Drawing.sketch(*, {lower_left})")
@@ -231,6 +151,8 @@ class Drawing(object):
         # Extract the PointFeature's from *points* (this must be first):
         point: Point
         for point in points:
+            assert isinstance(point, ApexVector)
+            assert isinstance(point, Point)
             features.extend(self.point_features_get(point))
 
         # Extract the CircleFeature's from *circles*:
@@ -862,7 +784,7 @@ class Polygon(object):
         if not points:
             raise ValueError("bounding box needs at least one point.")  # pragma: no unit cover
 
-        self._bounding_box: BoundingBox = BoundingBox.from_points(points)
+        self._bounding_box: BoundingBox = BoundingBox.from_vectors(points)
         self._depth: float = depth
         self._features: Optional[Tuple[Feature, ...]] = None
         self._flat: bool = flat
@@ -1195,7 +1117,7 @@ class Circle(object):
         lower: Point = Point(x - radius, y - radius, 0.0, name=name, diameter=0.0)
         upper: Point = Point(x + radius, y + radius, 0.0, name=name, diameter=0.0)
 
-        self._bounding_box: BoundingBox = BoundingBox(lower, upper, name)
+        self._bounding_box: BoundingBox = BoundingBox(BoundBox(lower.vector, upper.vector))
         self._circle_feature: Optional[CircleFeature] = None
         self._constraints: Tuple[Sketcher.Constraint, ...] = ()
         self._center: Point = center
@@ -1440,7 +1362,8 @@ def main() -> int:
         # rotate30_transform: Transform = Transform(None, None, math.pi / 3.0, None)
         # drawing = drawing.forward_transform(rotate30_transform)
 
-        drawing_origin: Point = drawing.bounding_box.lower
+        origin_vector: Vector = drawing.bounding_box.BSW
+        drawing_origin: Point = Point(origin_vector.x, origin_vector.y, 0.0)
         vector: Vector = Vector(drawing_origin.x, drawing_origin.y, drawing_origin.z)
         reorigin: ApexMatrix = ApexMatrix(translate=-vector, name=f"{drawing.name} reorigin")
         drawing = drawing.forward_transform(reorigin)
