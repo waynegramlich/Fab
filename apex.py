@@ -38,7 +38,7 @@ from typing import Any, Callable, ClassVar, List, Dict, Optional, Tuple, Union
 from FreeCAD import BoundBox, Matrix, Vector
 
 
-# ApexLength(float):
+# ApexLength:
 class ApexLength(float):
     """ApexLength is a float with with optional name and units.
 
@@ -633,17 +633,17 @@ class ApexVector:
         self.radius: float = float(diameter) / 2.0
         self.name: str = name
 
-    # Point.__add__():
+    # ApexVector.__add__():
     def __add__(self, vector: "ApexVector") -> "ApexVector":
         """Return the sum of two ApexVector's."""
         return ApexVector(self.x + vector.x, self.y + vector.y, self.z + vector.z)
 
-    # Point.__neg__():
+    # ApexVector.__neg__():
     def __neg__(self) -> "ApexVector":
         """Return the negative of an ApexVector."""
         return ApexVector(-self.x, -self.y, -self.z, self.radius, self.name)
 
-    # Point.__rmul__():
+    # ApexVector.__rmul__():
     def __mul__(self, scale: float) -> "ApexVector":
         """Return a Point that has been scaled."""
         return ApexVector(self.x * scale, self.y * scale, self.z * scale)
@@ -661,7 +661,7 @@ class ApexVector:
         result: str = f"ApexVector({self.x}, {self.y}, {self.z}{diameter}{name})"
         return result
 
-    # Point.__truediv__():
+    # ApexVector.__truediv__():
     def __truediv__(self, divisor: float) -> "ApexVector":
         """Return a Point that has been scaleddown."""
         return ApexVector(self.x / divisor, self.y / divisor, self.z / divisor)
@@ -682,7 +682,7 @@ class ApexVector:
         vector: Vector = matrix.forward * self.vector
         return ApexVector(vector.x, vector.y, vector.z, self.diameter, self.name)
 
-    # Point.magnitude():
+    # ApexVector.magnitude():
     def magnitude(self) -> float:
         """Return the magnitude of the point vector."""
         x: float = float(self.x)

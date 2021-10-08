@@ -1,4 +1,15 @@
-# Synchronize .fcstd and .tar files.
+# fcstd_tar_sync.py: Synchronize .fcstd and .tar files.
+
+Table of Contents:
+* 1 [Introduction](#introduction):
+* 2 [Functions](#functions)
+  * 2.1 [Synchronize](#synchronize)
+  * 2.2 [main](#main)
+  * 2.3 [synchronize\_directories](#synchronize-directories)
+  * 2.4 [unit\_test](#unit-test)
+
+## 1 <a name="introduction"></a>Introduction
+
 
 Usage: fcstd_tar_sync [OPTIONS] [DIR] ...
 
@@ -46,31 +57,10 @@ ignore `.fcstd` files in your repository by adding `*.fcstd` to your
 `.gitignore` file.  Run this program before doing a `git commit`
 Whenever you update your git repository from a remote one, run this program
 to again, to keep the `.fcstd` files in sync with any updated `.tar` files.
-### 0.1 main
 
-def *main*() -> None:
+## 2 Functions <a name="functions"></a>
 
-Execute the main program.
-
-### 0.2 synchronize\_directories
-
-def *synchronize\_directories*(directory\_names:  Tuple[str, ...], *dry\_run*:  *bool*, *verbose*:  *bool*) -> Tuple[str, ...]:
-
-Synchronize some directories.
-
-* Arguments:
-  * *directory\_names* (Tuple[str, ...):
-    A list of directories to recursively synchronize.
-  * dry\_run (bool):
-    If False, the directories are scanned, but not synchronized.  If True, the directories
-    are both scanned and synchronized.
-  * verbose (bool):
-    If True, the a summary message is printed if for each (possible) synchronization.
-    The actual synchronization only occurs if *dry\_run* is False.
-* Returns
-  * (Tuple[str, ...]) containing the summar
-
-### 0.3 Synchronize
+### 2.1 Synchronize <a name="synchronize"></a>
 
 def *synchronize*(fcstd\_path:  Path, *dry\_run*:  *bool* = False) -> *str*:
 
@@ -88,9 +78,32 @@ Synchronize an .fcstd file with associated .tar file.
 Synchronizes an `.fcstd` file with an associated `.tar` file and.
 A summary is always returned even in *dry\_run* mode.
 
-### 0.4 unit\_test
+### 2.2 main <a name="main"></a>
+
+def *main*() -> None:
+
+Execute the main program.
+
+### 2.3 synchronize\_directories <a name="synchronize-directories"></a>
+
+def *synchronize\_directories*(directory\_names:  Tuple[str, ...], *dry\_run*:  *bool*, *verbose*:  *bool*) -> Tuple[str, ...]:
+
+Synchronize some directories.
+
+* Arguments:
+  * *directory\_names* (Tuple[str, ...):
+    A list of directories to recursively synchronize.
+  * dry\_run (bool):
+    If False, the directories are scanned, but not synchronized.  If True, the directories
+    are both scanned and synchronized.
+  * verbose (bool):
+    If True, the a summary message is printed if for each (possible) synchronization.
+    The actual synchronization only occurs if *dry\_run* is False.
+* Returns
+  * (Tuple[str, ...]) containing the summar
+
+### 2.4 unit\_test <a name="unit-test"></a>
 
 def *unit\_test*() -> None:
 
 Run the unit test.
-

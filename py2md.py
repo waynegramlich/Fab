@@ -2,14 +2,19 @@
 '''
 `py2md`: Python document strings to Markdown.
 
-An attempt was made to use [Sphinx](https://www.sphinx-doc.org/),
-but it really requires all of the code to be pushed the Python system.
-Missing imports are a show stopper and configuring Sphinx to find all the
-missing imports is non-trivial.
+This project attempted to use the [Sphinx](https://www.sphinx-doc.org/) documenation system,
+but it really requires all of the code to be pushed through the Python system.
+Missing imports are a show stopper and configuring Sphinx to find them all is non-trivial.
+The bottom line is that Sphinx is currently unworkable for this project.
+
 `py2md` is much simpler and just reads the document strings from one
 Python file at a time and writes the corresponding Markdown file.
 
 Usage: `py2md [.py ...] [dir ...]`
+
+The requirement is that each comment block that has a `# CLASS_NAME():`, `# FUNC_NAME():`,
+`# CLASS_NAME.METHOD_NAME():` at the front shows up in documentation.  In addition,
+the first comment in the file shows up as the introduction.
 
 The basic Python file format is shown immediately below (`##` is for informational comments):
 
@@ -46,8 +51,6 @@ The basic Python file format is shown immediately below (`##` is for information
                * exceptionN: ...
              """
 
-Both `@property` and `@dataclass` decorators are encouraged and have special extra parsing to
-extract property names and the like.
 '''
 
 # <--------------------------------------- 100 characters ---------------------------------------> #
@@ -60,13 +63,13 @@ import re
 import sys
 
 
-@dataclass(frozen=True)
 # LineData:
+@dataclass(frozen=True)
 class LineData:
-    """Provides data about one file line.
+    """Provides data about one file coment line.
 
     * Attributes:
-      * *stripped* (str): The line stripped of any preceeding spaces and triple quotes.
+      * *stripped* (str): The line stripped of any preceding spaces and triple quotes.
       * *index* (int): The line index of the line (0 for first line).
       * *indent* (int): The number of preceding spaces stripped off the front.
       * *sharp_start* (bool): True if first non-space character is sharp character.
@@ -84,8 +87,8 @@ class LineData:
     triple_start: str
     triple_end: str
 
-    @classmethod
     # LineData.line_parse():
+    @classmethod
     def line_parse(cls, line: str, index: int) -> "LineData":
         """Parse a line into LineData.
 
@@ -118,20 +121,53 @@ class LineData:
         return LineData(stripped, index, indent, sharp_start, triple_start, triple_end)
 
 
+# Tag:
+@dataclass(frozen=True, order=True)
+class Tag:
+    """Provides sort able tag for block comments.
+
+    * Attributes:
+      * *group* (str): The class name (or "~") for no class name.
+      * *name* (str): The function/method name.  Use empty for class name.
+      * *anchor* (str): The HTML anchor to use anchor Tag.
+    """
+
+    group: str
+    name: str
+
+    @property
+    def anchor(self) -> str:
+        """Return the HTML anchor value."""
+        group: str = self.group.lower()
+        name: str = self.name.lower()
+
+        anchor: str = ""
+        if group == "~" or group == "":
+            anchor = name
+        elif name == "~" or name == "":
+            anchor = group
+        else:
+            anchor = f"{group}-{name}"
+        anchor = anchor.replace("_", "-").replace("~", "")
+        return anchor
+
+
 # BlockComment:
 @dataclass(frozen=True, order=True)
 class BlockComment:
     """Represents a sequence of lines constituting a single comment.
 
     * Attributes:
+      * *tag* (str): The sorting key to use.
       * *index* (int):
       * *indent* (int): The indentation of the first line.
       * *is_triple* (bool): True if the first line started with a triple quote.
       * *preceding* (Tuple[LineData, ...]):
-        The lines preceeding the first line up until a blank line.
+        The lines preceding the first line up until a blank line.
       * *body* (Tuple[LineData, ...] ): The lines that make up the actual comment.
     """
 
+    tag: Tag
     index: int
     indent: int
     is_triple: bool
@@ -245,21 +281,70 @@ class Markdown(object):
                 while find_index >= 0:
                     line_data = line_datas[find_index]
                     if line_data.indent == 0 and line_data.stripped == "":
-                        break
+                        break  # Blank line found
                     preceding_line_datas.append(line_data)
                     find_index -= 1
+                preceding_line_datas = list(reversed(tuple(preceding_line_datas)))
 
+                # Distinguish between:
+                #    # CLASS_NAME:   # Class definition:
+                #    # CLASS_NAME.METHOD_NAME():   # Method definition
+                #    # FUNCTION_NAME():  # Top level function.
+                group: str = "~"
+                name: str = ""
+                if preceding_line_datas:
+                    line_data = preceding_line_datas[0]
+                    line: str = line_data.stripped
+                    # print(f"line0='{line}'")
+                    if line.startswith("# ") and line.endswith(":"):
+                        line = line[2:-1]
+                        # print(f"line1='{line}'")
+
+                        # Strip off "()":
+                        have_parenthesis: bool = False
+                        left_parenthesis_index: int = line.find("(")
+                        if left_parenthesis_index >= 0:
+                            have_parenthesis = True
+                            line = line[:left_parenthesis_index]
+                            # print(f"line2='{line}'")
+
+                        pattern: str = "^[_a-zA-Z0-9]+$"
+                        period_index: int = line.find(".")
+                        if period_index >= 0:
+                            method: Tuple[str, ...] = tuple(line.split("."))
+                            # print(f"{method=}")
+                            if (len(method) == 2 and bool(
+                                    re.match(pattern, method[0])) and bool(
+                                        re.match(pattern, method[1]))):
+                                group = method[0]
+                                name = method[1]
+                        elif bool(re.match(pattern, line)):
+                            if have_parenthesis:
+                                name = line
+                            else:
+                                group = line
+                    # print(f"{group=} {name=} {original_line=} {line=}")
+                    # print("")
+
+                # The first *triple* is the module comment and needs to sort to the front.
+                if not triples:
+                    group = ""
+                    name = ""
+
+                tag: Tag = Tag(group, name)
                 block_comment: BlockComment = BlockComment(
+                    tag,
                     first_line_data.index,
                     first_line_data.indent,
                     True,
-                    tuple(reversed(preceding_line_datas)),
+                    tuple(preceding_line_datas),
                     tuple(triple_line_datas))
+                # print(f"triples[{len(triples)}]:{tag}")
                 triples.append(block_comment)
                 # print(f"[{index}]:|{len(block_comment.body)=}| ")
                 triple_line_datas = []
         # print(f"<=triples_extract()=>|{len(triples)}|")
-        return tuple(remaining_line_datas), tuple(triples)
+        return tuple(remaining_line_datas), tuple(sorted(triples))
 
     # Markdown.sharps_extract():
     def sharps_extract(
@@ -291,6 +376,7 @@ class Markdown(object):
             elif line_datas:
                 first_line_data: LineData = line_datas[0]
                 block_comment = BlockComment(
+                    Tag("~", "~"),
                     first_line_data.index,
                     first_line_data.indent,
                     False,
@@ -304,105 +390,146 @@ class Markdown(object):
     # Markdown.generate():
     def generate(self) -> None:
         """Generate Markdown file containing Python documentation."""
-        # print("=>Markdown.generate()")
-        # Output the file header (i.e. # FILE_NAME):
-        path: Path = self._path
-        markdown_lines: List[str] = []
-
-        # Print out the comments:
-        padding: str
-        triples: Tuple[BlockComment, ...] = self._triples
-        # print(f"|{len(triples)=}|")
-
+        # Common variables
         block_comment: BlockComment
         line_data: LineData
         index: int
+        stripped: str
+        triples: Tuple[BlockComment, ...] = self._triples
 
-        # Find the first non-empty line in *module.body*:
+        # *triples* is sorted so that such that module comes first, followed by classes/methods,
+        # and followed by stand-alone functions.  In addition, the class always precedes its
+        # associated methods.  Sweep through triples building the *toc* (table of contents)
+        # and the *body* in one pass and combine them at the end.
+
+        # Start the *toc* (Table of Contents) and the *markdown* lines.
+        # They are output together at the end:
+        markdown: List[str] = []  # Body of Markdown lines
+        markdown.append('## 1 <a name="introduction"></a>Introduction')
+        markdown.append("")
+        toc: List[str] = []  # Table contents lines
+
+        # The *module* is first in *triples*.  Extract the title and put the rest into *markdown*:
         module: BlockComment = triples[0]
-        for index, line_data in enumerate(module.body):
-            if line_data.stripped != "":
-                break
+        for line_data in module.body:
+            stripped = line_data.stripped
+            if not toc and stripped:
+                toc.append(f"# {stripped}")  # Title
+                toc.append("")
+            else:
+                markdown.append(f"{line_data.indent * ' '}{line_data.stripped}")
 
-        # Output the Markdown header followed by the module document string:
-        markdown_lines.append(f"# {line_data.stripped}")
-        markdown_lines.extend([f"{line_data.indent * ' '}{line_data.stripped}"
-                               for line_data in module.body[index + 1:]])
+        # Start filling the *toc* and *markdown*:
+        toc.append("Table of Contents:")
+        toc.append("* 1 [Introduction](#introduction):")
 
-        class_counter: int = 0
-        method_counter: int = 0
-        class_or_module: BlockComment
-        for index, class_or_module in enumerate(triples[1:]):
-            # print(f"triples[{index}]: |{len(markdown_lines)=}|")
-            indent: int = class_or_module.indent
+        # Sweep through the remaining *triples* and build the rest of the *toc* and *markdown*:
+        # in one pass.
+        h2_index: int = 1  # h2 is header level 2 (i.e. "## ...")
+        h3_index: int = 0  # h3 is header level 3 (i.e. "### ...")
+        for block_comment in triples[1:]:
+            # *tag* specifies class/method/function:
+            tag = block_comment.tag
+            group: str = "" if tag.group == "~" else tag.group  # Convert "~" => ""
+            name: str = "" if tag.name == "~" else tag.name  # Convert "~" => ""
 
-            # Prescan *preceding_lines* looking for `class` or `def':
-            is_class: bool = False
-            is_def: bool = False
-            stripped: str
-            for line_data in class_or_module.preceding:
-                stripped = line_data.stripped
-                is_class |= stripped.startswith("class ")
-                is_def |= stripped.startswith("def ")
+            # Deal with *toc* entry first:
+            skip: bool = False
+            if group:
+                if name:
+                    # Method:
+                    h3_index += 1
+                    toc.append(f"  * {h2_index}.{h3_index} "
+                               f"[{fix(group)}.{fix(name)}](#{tag.anchor})")
+                else:
+                    # Class:
+                    h2_index += 1
+                    h3_index = 0
+                    toc.append(f'* {h2_index} [Class {fix(group)}](#{tag.anchor})')
+            elif name:
+                # Function:
+                if h3_index == 0:
+                    # The first function create a new Functions section in the *toc*:
+                    h2_index += 1
+                    toc.append(f"* {h2_index} [Functions](#functions)")
+                    markdown.append("")
+                    markdown.append(f'## {h2_index} Functions <a name="functions"></a>')
+                h3_index += 1
+                toc.append(f"  * {h2_index}.{h3_index} [{fix(name)}](#{tag.anchor})")
+                # markdown.append("")
+                # markdown.append(f'  * {name} <a name="{tag.anchor}"></a>')
+            else:
+                skip = True  # Non-keyed comment to be skipped
 
-            # Scrape the useful information from *preceding_lines*:
-            pieces: List[str] = []
-            for line_data in class_or_module.preceding:
-                stripped = line_data.stripped
-                if stripped.startswith("# ") and stripped.endswith(":"):
-                    if is_class:
-                        # `# CLASS_NAME(...):` expected:
-                        # [2:-1] => Remove `# ` at front and `:`
-                        class_counter += 1
-                        method_counter = 0
-                        markdown_lines.extend([
-                            f"## {class_counter}.0 Class {fix(stripped[2:-1])}",
-                            ""])
-                    if is_def:
-                        # `CLASS_NAME.METHOD_NAME():` expected:
-                        # [2:-3] => Remove `# ` at front and `():` at end.
-                        method_counter += 1
-                        markdown_lines.extend([
-                            f"### {class_counter}.{method_counter} {fix(stripped[2:-3])}",
-                            ""])
-                elif not stripped.startswith("@"):
-                    pieces.append(f" {stripped} ")
-            if pieces:
-                # print(f"{pieces=}")
-                joined: str = " ".join(pieces)
-                # joined = joined.replace("def ", "")
-                # joined = joined.replace("class ", "")
-                joined = joined.replace("  ", " ")
-                joined = joined.replace("  ", " ")
-                joined = joined.replace("  ", " ")
-                joined = joined.replace(" ,", ",")
-                joined = joined.replace(" ,", ",")
-                joined = joined.replace("  ->", "-> ")
-                joined = joined.replace("  ->", "-> ")
-                joined = joined.replace("->  ", "-> ")
-                joined = joined.replace("->  ", "-> ")
-                joined = joined.replace(":", ": ")
-                joined = joined.strip()
-                joined = " " + re.sub(r" [a-z][a-z0-9_]*", italicize, joined)
-                joined = joined.replace("_", "\\_")
-                if joined.startswith(" "):
-                    joined = joined[1:]
-                markdown_lines.append(joined)
-                markdown_lines.append("")
+            if not skip:
+                # Prescan *preceding_lines* looking for `class` or `def':
+                is_class: bool = False
+                is_def: bool = False
+                for line_data in block_comment.preceding:
+                    stripped = line_data.stripped
+                    is_class |= stripped.startswith("class ")
+                    is_def |= stripped.startswith("def ")
 
-            indent = class_or_module.indent
-            for line_data in class_or_module.body:
-                padding = max(0, line_data.indent - indent) * " "
-                stripped = line_data.stripped
-                markdown_lines.append(f"{padding}{fix(stripped)}")
-            markdown_lines.append("")
+                # Scrape the useful information from *preceding_lines* building up *pieces*
+                # which can be a multi-line Python function declaration with embedded type hints:
+                pieces: List[str] = []
+                for line_data in block_comment.preceding:
+                    stripped = line_data.stripped
+                    if stripped.startswith("# ") and stripped.endswith(":"):
+                        if is_class:
+                            # `# CLASS_NAME(...):` expected:
+                            # [2:-1] => Remove `# ` at front and `:`
+                            markdown.extend([
+                                "",
+                                (f"## {h2_index} Class {fix(stripped[2:-1])} "
+                                 f'<a name="{tag.anchor}"></a>'),
+                                ""])
+                        if is_def:
+                            # `CLASS_NAME.METHOD_NAME():` expected:
+                            # [2:-3] => Remove `# ` at front and `():` at end.
+                            markdown.extend([
+                                "",
+                                (f"### {h2_index}.{h3_index} {fix(stripped[2:-3])} "
+                                 f'<a name="{tag.anchor}"></a>'),
+                                ""])
+                    elif not stripped.startswith("@"):
+                        pieces.append(f" {stripped} ")
+                if pieces:
+                    # print(f"{pieces=}")
+                    joined: str = " ".join(pieces)
+                    # joined = joined.replace("def ", "")
+                    # joined = joined.replace("class ", "")
+                    joined = joined.replace("  ", " ")
+                    joined = joined.replace("  ", " ")
+                    joined = joined.replace("  ", " ")
+                    joined = joined.replace(" ,", ",")
+                    joined = joined.replace(" ,", ",")
+                    joined = joined.replace("  ->", "-> ")
+                    joined = joined.replace("  ->", "-> ")
+                    joined = joined.replace("->  ", "-> ")
+                    joined = joined.replace("->  ", "-> ")
+                    joined = joined.replace(":", ": ")
+                    joined = joined.strip()
+                    joined = " " + re.sub(r" [a-z][a-z0-9_]*", italicize, joined)
+                    joined = joined.replace("_", "\\_")
+                    if joined.startswith(" "):
+                        joined = joined[1:]
+                    markdown.append(joined)
+                    markdown.append("")
 
-        # Output *markdown_lines*:
-        markdown_path: Path = Path(f"{path.stem}.md")
-        # print(f"{markdown_path=}")
+                # Output the *block_data* body:
+                indent: int = block_comment.indent
+                padding: str
+                for line_data in block_comment.body:
+                    padding = max(0, line_data.indent - indent) * " "
+                    stripped = line_data.stripped
+                    markdown.append(f"{padding}{fix(stripped)}")
+
+        # Output *toc* and *markdown* to *markdown_path*:
+        markdown_path: Path = Path(f"{self._path.stem}.md")
         markdown_file: IO[str]
         with open(markdown_path, "w") as markdown_file:
-            markdown_file.write("\n".join(markdown_lines + [""]))
+            markdown_file.write("\n".join(toc + [""] + markdown + [""]))
         # print("<=Markdown.generate()")
 
 
@@ -413,7 +540,7 @@ def fix(text: str) -> str:
     * Arguments:
       * *text* (str): The text to fix.
     * Returns:
-      * (str) the string with each underscore preceeded by backslash character.
+      * (str) the string with each underscore preceded by backslash character.
     """
     return text.replace("_", "\\_")
 

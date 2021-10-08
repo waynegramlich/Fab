@@ -1,5 +1,36 @@
 # Apex base classes.
 
+Table of Contents:
+* 1 [Introduction](#introduction):
+* 2 [Class ApexBoundBox](#apexboundbox)
+  * 2.1 [ApexBoundBox.\_\_init\_\_](#apexboundbox---init--)
+  * 2.2 [ApexBoundBox.\_\_repr\_\_](#apexboundbox---repr--)
+  * 2.3 [ApexBoundBox.\_\_str\_\_](#apexboundbox---str--)
+  * 2.4 [ApexBoundBox.from\_vectors](#apexboundbox-from-vectors)
+* 3 [Class ApexLength](#apexlength)
+  * 3.1 [ApexLength.\_\_new\_\_](#apexlength---new--)
+  * 3.2 [ApexLength.\_\_repr\_\_](#apexlength---repr--)
+  * 3.3 [ApexLength.\_\_str\_\_](#apexlength---str--)
+  * 3.4 [ApexLength.unit\_test](#apexlength-unit-test)
+  * 3.5 [ApexLength.unit\_test](#apexlength-unit-test)
+* 4 [Class ApexMatrix](#apexmatrix)
+  * 4.1 [ApexMatrix.\_\_init\_\_](#apexmatrix---init--)
+* 5 [Class ApexVector](#apexvector)
+  * 5.1 [ApexVector.\_\_add\_\_](#apexvector---add--)
+  * 5.2 [ApexVector.\_\_init\_\_](#apexvector---init--)
+  * 5.3 [ApexVector.\_\_neg\_\_](#apexvector---neg--)
+  * 5.4 [ApexVector.\_\_repr\_\_](#apexvector---repr--)
+  * 5.5 [ApexVector.\_\_rmul\_\_](#apexvector---rmul--)
+  * 5.6 [ApexVector.\_\_str\_\_](#apexvector---str--)
+  * 5.7 [ApexVector.\_\_sub\_\_](#apexvector---sub--)
+  * 5.8 [ApexVector.\_\_truediv\_\_](#apexvector---truediv--)
+  * 5.9 [ApexVector.atan2](#apexvector-atan2)
+  * 5.10 [ApexVector.forward](#apexvector-forward)
+  * 5.11 [ApexVector.magnitude](#apexvector-magnitude)
+
+## 1 <a name="introduction"></a>Introduction
+
+
 The Apex Base classes are:
 * ApexLength:
   This is sub-class of *float* and provides a way of specifying a length in different units
@@ -17,75 +48,8 @@ The Apex Base classes are:
   transformation consisting of a rotation point, rotation axis, and rotation angle,
   followed by a final translation.  It also computes the inverse matrix.
 
-## 1.0 Class ApexLength(float)
 
-class ApexLength(float):
-
-ApexLength is a float with with optional name and units.
-
-* Attributes:
-  * *length* (float): The length measured in millimeters.
-  * *units* (str): The units (e.g. "km", "m", "cm", "mm", "µm", "nm", "ft", "thou", etc.)
-  * *name* (str): The optional name.
-
-### 1.1 ApexLength.\_\_new\_\_
-
-def \_\_new\_\_(cls, *args, **kwargs) -> "ApexLength":
-
-Create an ApexLength.
-
-(Note: When sub-classing *float*, \_\_new\_\_() is used instead of \_\_init\_\_().)
-The actual function signature is:
-      \_\_new\_\_(cls, value: Union[float, int] = 0.0, units: str = "mm", name: str = ""):
-
-* Arguments:
-  * *value* (Union[float, int]): The distance value.  (Optional: Default = 0.0).
-  * *units* (str): The units to use.  (Optional: Default = "mm").
-  * *name*: (str): An name to associate with the length.  (Optional: Default = "").
-* Returns:
-  (ApexLength) containing the desired values.
-
-### 1.2 ApexLength.\_\_repr\_\_
-
-def \_\_repr\_\_(self) -> *str*:
-
-Return the string representation.
-
-### 1.3 ApexLength.\_\_str\_\_
-
-def \_\_str\_\_(self) -> *str*:
-
-Return the string representation.
-
-def *length*(self) -> *float*:
-
-Return length in millimeters as a float.
-
-def *units*(self) -> *str*:
-
-Return the units.
-
-def *name*(self) -> *str*:
-
-Return the name.
-
-def *value*(self) -> *float*:
-
-Return the value in user specfied units.
-
-### 1.4 ApexLength.unit\_test
-
-def *unit\_tests*() -> None:
-
-Perform Unit tests for ApexLength.
-
-### 1.5 ApexLength.unit\_test
-
-def *unit\_tests*() -> None:  Perform Unit *tests* *for* ApexLength. *def* *check*(apex\_length:  ApexLength, *length*:  *float*, *value*:  *float*, *units*:  *str*, *name*:  *str*, *repr*:  *str*) -> None:
-
-Ensure that an ApexLength has the right values.
-
-## 2.0 Class ApexBoundBox
+## 2 Class ApexBoundBox <a name="apexboundbox"></a>
 
 class ApexBoundBox:
 
@@ -136,7 +100,7 @@ is written in C++ and for technical reasons does not support sub-classing.
     * C (Vector): Center point (same as Center).
     * BB (BoundBox): The wrapped BoundBox object.
 
-### 2.1 ApexBoundBox.\_\_init\_\_
+### 2.1 ApexBoundBox.\_\_init\_\_ <a name="apexboundbox---init--"></a>
 
 def \_\_init\_\_(self, *bound\_box*:  BoundBox) -> None:
 
@@ -148,145 +112,97 @@ Read about \_\_new\_\_() vs. \_\_init\_\_() at the URL below:
 * Arguments:
   *bound\_box* (BoundBox): The bounding box to wrap.
 
-### 2.2 ApexBoundBox.from\_vectors
-
-def *from\_vectors*(vectors:  Tuple[Union[Vector, "ApexVector"], ...]) -> "ApexBoundBox":
-
-Compute BoundingBox from some Point's.
-
-def *from\_bound\_boxes*( *bound\_boxes*:  Tuple[Union[BoundBox, "ApexBoundBox"], ...]) -> "ApexBoundBox":
-
-Create ApexBoundingBox from BoundingBox/ApexBoundBox tuple.
-
-def B(self) -> Vector:
-
-Bottom face center.
-
-def E(self) -> Vector:
-
-East face center.
-
-def N(self) -> Vector:
-
-North face center.
-
-def S(self) -> Vector:
-
-South face center.
-
-def T(self) -> Vector:
-
-Top face center.
-
-def W(self) -> Vector:
-
-Center of bottom face.
-
-def BNE(self) -> Vector:
-
-Bottom North East corner.
-
-def BNW(self) -> Vector:
-
-Bottom North West corner.
-
-def BSE(self) -> Vector:
-
-Bottom South East corner.
-
-def BSW(self) -> Vector:
-
-Bottom South West corner.
-
-def TNE(self) -> Vector:
-
-Top North East corner.
-
-def TNW(self) -> Vector:
-
-Top North West corner.
-
-def TSE(self) -> Vector:
-
-Top South East corner.
-
-def TSW(self) -> Vector:
-
-Top South West corner.
-
-def BE(self) -> Vector:
-
-Bottom East edge center.
-
-def BW(self) -> Vector:
-
-Bottom West edge center.
-
-def BN(self) -> Vector:
-
-Bottom North edge center.
-
-def BS(self) -> Vector:
-
-Bottom South edge center.
-
-def NE(self) -> Vector:
-
-North East edge center.
-
-def NW(self) -> Vector:
-
-North West edge center.
-
-def SE(self) -> Vector:
-
-North East edge center.
-
-def SW(self) -> Vector:
-
-South East edge center.
-
-def TE(self) -> Vector:
-
-Bottom East edge center.
-
-def TW(self) -> Vector:
-
-Bottom West edge center.
-
-def TN(self) -> Vector:
-
-Bottom North edge center.
-
-def TS(self) -> Vector:
-
-Bottom South edge center.
-
-def BB(self) -> BoundBox:
-
-Access the wrapped a BoundBox.
-
-def C(self) -> Vector:
-
-Center point.
-
-### 2.3 ApexBoundBox.\_\_repr\_\_
+### 2.2 ApexBoundBox.\_\_repr\_\_ <a name="apexboundbox---repr--"></a>
 
 def \_\_repr\_\_(self) -> *str*:
 
 Return a representation of an ApexBoundBox.
 
-### 2.4 ApexBoundBox.\_\_str\_\_
+### 2.3 ApexBoundBox.\_\_str\_\_ <a name="apexboundbox---str--"></a>
 
 def \_\_str\_\_(self) -> *str*:
 
 Return a representation of an ApexBoundBox.
 
+### 2.4 ApexBoundBox.from\_vectors <a name="apexboundbox-from-vectors"></a>
+
+def *from\_vectors*(vectors:  Tuple[Union[Vector, "ApexVector"], ...]) -> "ApexBoundBox":
+
+Compute BoundingBox from some Point's.
+
+## 3 Class ApexLength <a name="apexlength"></a>
+
+class ApexLength(float):
+
+ApexLength is a float with with optional name and units.
+
+* Attributes:
+  * *length* (float): The length measured in millimeters.
+  * *units* (str): The units (e.g. "km", "m", "cm", "mm", "µm", "nm", "ft", "thou", etc.)
+  * *name* (str): The optional name.
+
+### 3.1 ApexLength.\_\_new\_\_ <a name="apexlength---new--"></a>
+
+def \_\_new\_\_(cls, *args, **kwargs) -> "ApexLength":
+
+Create an ApexLength.
+
+(Note: When sub-classing *float*, \_\_new\_\_() is used instead of \_\_init\_\_().)
+The actual function signature is:
+      \_\_new\_\_(cls, value: Union[float, int] = 0.0, units: str = "mm", name: str = ""):
+
+* Arguments:
+  * *value* (Union[float, int]): The distance value.  (Optional: Default = 0.0).
+  * *units* (str): The units to use.  (Optional: Default = "mm").
+  * *name*: (str): An name to associate with the length.  (Optional: Default = "").
+* Returns:
+  (ApexLength) containing the desired values.
+
+### 3.2 ApexLength.\_\_repr\_\_ <a name="apexlength---repr--"></a>
+
+def \_\_repr\_\_(self) -> *str*:
+
+Return the string representation.
+
+### 3.3 ApexLength.\_\_str\_\_ <a name="apexlength---str--"></a>
+
+def \_\_str\_\_(self) -> *str*:
+
+Return the string representation.
+
+### 3.4 ApexLength.unit\_test <a name="apexlength-unit-test"></a>
+
 def *unit\_tests*() -> None:
 
-Perform ApexBoundBox unit tests.
+Perform Unit tests for ApexLength.
 
-## 3.0 Class ApexVector
+### 3.5 ApexLength.unit\_test <a name="apexlength-unit-test"></a>
+
+def *unit\_tests*() -> None:  Perform Unit *tests* *for* ApexLength. *def* *check*(apex\_length:  ApexLength, *length*:  *float*, *value*:  *float*, *units*:  *str*, *name*:  *str*, *repr*:  *str*) -> None:
+
+Ensure that an ApexLength has the right values.
+
+## 4 Class ApexMatrix <a name="apexmatrix"></a>
+
+class ApexMatrix:
+
+ApexMatrix is a wrapper around the FreeCAD Matrix class.
+
+This is a wrapper class around the FreeCAD Matrix class that provides an openGL style
+transformation consisting of a rotation point, rotation axis, and rotation angle,
+followed by a final translation.  It also computes the inverse matrix.
+
+* Attributes:
+  * *forward* (Matrix): A FreeCAD Matrix that maps a Vector to a new location.
+  * *reverse* (Matrix): The inverse FreeCAD matrix that for new not location back.
+
+### 4.1 ApexMatrix.\_\_init\_\_ <a name="apexmatrix---init--"></a>
+
+def \_\_init\_\_(self, *center*:  Optional[Union[ApexVector, Vector]] = None, *axis*:  Optional[Union[ApexVector, Vector]] = None, # Z *axis* *angle*:  Optional[float] = None, *translate*:  Optional[Union[ApexVector, Vector]] = None, *name*:  Optional[str] = None, *tracing*:  *str* = "") -> None:
+
+Create ApexMatrix rotation with point/axis/angle and a translate.
+
+## 5 Class ApexVector <a name="apexvector"></a>
 
 class ApexVector:
 
@@ -301,7 +217,13 @@ An ApexVector is basically just a Vector with an optional diameter and/or name.
   * *radius* (float): The apex radius.
   * *name* (str): The apex name.
 
-### 3.1 ApexVector.\_\_init\_\_
+### 5.1 ApexVector.\_\_add\_\_ <a name="apexvector---add--"></a>
+
+def \_\_add\_\_(self, *vector*:  "ApexVector") -> "ApexVector":
+
+Return the sum of two ApexVector's.
+
+### 5.2 ApexVector.\_\_init\_\_ <a name="apexvector---init--"></a>
 
 def \_\_init\_\_(self, *x*:  Union[int, *float*, ApexLength] = 0.0, *y*:  Union[int, *float*, ApexLength] = 0.0, *z*:  Union[int, *float*, ApexLength] = 0.0, *diameter*:  Union[int, *float*, ApexLength] = 0.0, *name*:  *str* = "") -> None:
 
@@ -314,93 +236,56 @@ Initialize an ApexVector.
   * *diameter* (Union[int, float, ApexLength]): The apex diameter. (Default: 0.0)
   * *name* (str): A name primarily used for debugging. (Default: "")
 
-### 3.2 ApexVector.\_\_repr\_\_
+### 5.3 ApexVector.\_\_neg\_\_ <a name="apexvector---neg--"></a>
+
+def \_\_neg\_\_(self) -> "ApexVector":
+
+Return the negative of an ApexVector.
+
+### 5.4 ApexVector.\_\_repr\_\_ <a name="apexvector---repr--"></a>
 
 def \_\_repr\_\_(self) -> *str*:
 
 Return representation of ApexVector.
 
-### 3.3 ApexVector.\_\_str\_\_
+### 5.5 ApexVector.\_\_rmul\_\_ <a name="apexvector---rmul--"></a>
+
+def \_\_mul\_\_(self, *scale*:  *float*) -> "ApexVector":
+
+Return a Point that has been scaled.
+
+### 5.6 ApexVector.\_\_str\_\_ <a name="apexvector---str--"></a>
 
 def \_\_str\_\_(self) -> *str*:
 
 Return string representation of ApexVector.
 
-### 3.4 ApexVector.atan2
+### 5.7 ApexVector.\_\_sub\_\_ <a name="apexvector---sub--"></a>
+
+def \_\_sub\_\_(self, *vector*:  "ApexVector") -> "ApexVector":
+
+Return the difference of two Point's.
+
+### 5.8 ApexVector.\_\_truediv\_\_ <a name="apexvector---truediv--"></a>
+
+def \_\_truediv\_\_(self, *divisor*:  *float*) -> "ApexVector":
+
+Return a Point that has been scaleddown.
+
+### 5.9 ApexVector.atan2 <a name="apexvector-atan2"></a>
 
 def *atan2*(self) -> *float*:
 
 Return the atan2 of the x and y values.
 
-### 3.5 ApexVector.forward
+### 5.10 ApexVector.forward <a name="apexvector-forward"></a>
 
 def *forward*(self, *matrix*:  "ApexMatrix") -> "ApexVector":
 
 Perform a forward matrix transform using an ApexMatrix.
 
-def *unit\_tests*() -> None:
+### 5.11 ApexVector.magnitude <a name="apexvector-magnitude"></a>
 
-Perform ApexVector unit tests.
+def *magnitude*(self) -> *float*:
 
-## 4.0 Class ApexMatrix
-
-class ApexMatrix:
-
-ApexMatrix is a wrapper around the FreeCAD Matrix class.
-
-This is a wrapper class around the FreeCAD Matrix class that provides an openGL style
-transformation consisting of a rotation point, rotation axis, and rotation angle,
-followed by a final translation.  It also computes the inverse matrix.
-
-* Attributes:
-  * *forward* (Matrix): A FreeCAD Matrix that maps a Vector to a new location.
-  * *reverse* (Matrix): The inverse FreeCAD matrix that for new not location back.
-
-### 4.1 ApexMatrix.\_\_init\_\_
-
-def \_\_init\_\_(self, *center*:  Optional[Union[ApexVector, Vector]] = None, *axis*:  Optional[Union[ApexVector, Vector]] = None, # Z *axis* *angle*:  Optional[float] = None, *translate*:  Optional[Union[ApexVector, Vector]] = None, *name*:  Optional[str] = None, *tracing*:  *str* = "") -> None:
-
-Create ApexMatrix rotation with point/axis/angle and a translate.
-
-def *zf*(value:  *float*) -> *float*:
-
-Round values near zero to zero.
-
-def \_rotate(axis:  Union[ApexVector, Vector], *angle*:  *float*) -> Matrix:
-
-Return a FreeCAD Matrix for rotation around an axis.
-
-* Arguments:
-* *axis* (Union[ApexVector, Vector]): The axis to rotate around.
-  * *angle* (float): The number of radians to rotate by.
-* Returns:
-  * Returns the FreeCAD rotation Matrix.
-
-def *matrix\_clean*(matrix:  Matrix) -> Matrix:
-
-Return a matrix where values close to zero are set to zero.
-
-def \_\_repr\_\_(self) -> *str*:
-
-Return string representation of an ApexMatrix.
-
-def \_\_str\_\_(self) -> *str*:
-
-Return string representation of an ApexMatrix.
-
-def *forward*(self) -> Matrix:
-
-Return the FreeCAD Matrix.
-
-def *reverse*(self) -> Matrix:
-
-Return the FreeCAD Matrix.
-
-def *unit\_tests*() -> None:
-
-Run unit tests.
-
-def *main*() -> None:
-
-Run the unit tests.
-
+Return the magnitude of the point vector.

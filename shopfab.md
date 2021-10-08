@@ -1,727 +1,595 @@
 # ShopFab: A shop based design workflow.
-class Point(object):
 
-Represents a drawing point.
-
-### 0.1 Point.\_\_init\_\_
-
-def \_\_init\_\_(self, *x*:  *float* = 0.0, *y*:  *float* = 0.0, *z*:  *float* = 0.0, *name*:  *str* = "", *radius*:  *float* = 0.0) -> None:
-
-Initialize a Point.
-
-### 0.2 Point.\_\_sub\_\_
-
-def \_\_add\_\_(self, *point*:  "Point") -> "Point":
-
-Return the difference of two Point's.
-
-### 0.3 Point.\_\_truediv\_\_
-
-def \_\_truediv\_\_(self, *divisor*:  *float*) -> "Point":
-
-Return a Point that has been scaleddown.
-
-### 0.4 Point.\_\_rmul\_\_
-
-def \_\_mul\_\_(self, *scale*:  *float*) -> "Point":
-
-Return a Point that has been scaled.
-
-### 0.5 Point.\_\_neg\_\_
-
-def \_\_neg\_\_(self) -> "Point":
-
-Return the negative of a Point.
-
-### 0.6 Point.\_\_repr\_\_
-
-def \_\_repr\_\_(self) -> *str*:  # *pragma*:  *no* *unit* *test*
-
-Return a string representation of a Point.
-
-### 0.7 Point.\_\_str\_\_
-
-def \_\_str\_\_(self) -> *str*:  # *pragma*:  *no* *unit* *test*
-
-Return a string representation of a Point.
-
-### 0.8 Point.\_\_sub\_\_
-
-def \_\_sub\_\_(self, *point*:  "Point") -> "Point":
-
-Return the difference of two Point's.
-
-### 0.9 Point.atan2
-
-def *atan2*(self) -> *float*:
-
-Return the Point arc tangent of y/x.
-
-### 0.10 Point.constraints\_append
-
-def *constraints\_append*(self, *drawing*:  "Drawing", *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
-
-Append Point constraints to a list.
-
-### 0.11 PointFeature.features\_get
-
-def *features\_get*(self, *drawing*:  "Drawing", *tracing*:  *str* = "") -> Tuple["Feature", ...]:
-
-Return the PointFeature Feature's.
-
-### 0.12 Point.origin
-
-def *origin*(cls) -> "Point":  # *pragma*:  *no* *unit* *test*
-
-Return an origin point.
-
-### 0.13 Point
-
-def *x*(self) -> *float*:
-
-Return the x coordinate.
-
-### 0.14 Point
-
-def *y*(self) -> *float*:
-
-Return the y coordinate.
-
-### 0.15 Point
-
-def *z*(self) -> *float*:
-
-Return the z coordinate.
-
-### 0.16 Point.radi
-
-def *radius*(self) -> *float*:
-
-Return the radius.
-
-### 0.17 Point.na
-
-def *name*(self) -> *str*:
-
-Return the name.
-
-### 0.18 Point.app\_vect
-
-def *app\_vector*(self) -> App.Vector:
-
-Return Vector from the Point.
-
-### 0.19 Point.magnitude
-
-def *magnitude*(self) -> *float*:
-
-Return the magnitude of the point vector.
-
-### 0.20 Point.normalize
-
-def *normalize*(self) -> "Point":
-
-Return the normal of the point vector.
-
-### 0.21 Point.forward
-
-def *forward*(self, *matrix*:  ApexMatrix) -> "Point":
-
-Perform a forward transform of a point.
-
-### 0.22 Point.reverse
-
-def *reverse*(self, *matrix*:  ApexMatrix) -> "Point":  # *pragma*:  *no* *unit* *test*
-
-Perform a reverse transform of a point.
-
-## 1.0 Class BoundingBox
-
-class BoundingBox:
-
-Bounding box for a set of Point's.
-
-### 1.1 BoundingBox.\_\_init\_\_
-
-def \_\_init\_\_(self, *lower*:  Point, *upper*:  Point, *name*:  *str* = "") -> None:
-
-Initiliaze a bounding box.
-
-### 1.2 BoundingBox.center
-
-def *center*(self) -> Point:  # *pragma*:  *no* *unit* *test*
-
-Return center BoundingBox Point.
-
-### 1.3 BoundingBox.lower
-
-def *lower*(self) -> Point:
-
-Return lower left BoundingBox Point.
-
-### 1.4 BoundingBox.name
-
-def *name*(self) -> *str*:  # *pragma*:  *no* *unit* *test*
-
-Return BoundingBox name.
-
-### 1.5 BoundingBox.lower
-
-def *upper*(self) -> Point:
-
-Return upper right BoundingBox Point.
-
-def *from\_points*(points:  Tuple[Point, ...]) -> "BoundingBox":
-
-Compute BoundingBox from some Point's.
-
-def *from\_bounding\_boxes*(bounding\_boxes:  Tuple["BoundingBox", ...]) -> "BoundingBox":
-
-Compute enclosing BoundingBox from some BoundingBox's.
-
-## 2.0 Class Drawing
-
-class Drawing(object):
-
-Represents a 2D drawing.
-
-### 2.1 Drawing.\_\_init\_\_
-
-def \_\_init\_\_( *self*, *circles*:  Tuple["Circle", ...], *polygons*:  Tuple["Polygon", ...], *name*:  *str* = "" ) -> None:
-
-Initialize a drawing.
-
-### 2.2 Drawing.bounding\_box
-
-def *bounding\_box*(self) -> BoundingBox:
-
-Return the Drawing BoundingBox.
-
-### 2.3 Drawing.circles
-
-def *circles*(self) -> Tuple["Circle", ...]:  # *pragma*:  *no* *unit* *test*
-
-Return the Drawing Circle's.
-
-### 2.4 Drawing.forward\_transform
-
-def *forward\_transform*(self, *matrix*:  ApexMatrix) -> "Drawing":
-
-Return an Drawing that is offset via a forward transform.
-
-### 2.5 Drawing.name
-
-def *name*(self) -> *str*:
-
-Return the Drawing name.
-
-### 2.6 Drawing.origin\_index
-
-def *origin\_index*(self) -> *int*:
-
-Return the Drawing origin index.
-
-### 2.7 Drawing.polygons
-
-def *polygons*(self) -> Tuple["Polygon", ...]:  # *pragma*:  *no* *unit* *test*
-
-Return the Drawing Polygon's.
-
-### 2.8 Drawing.sketch
-
-def *sketch*(self, *sketcher*:  "Sketcher.SketchObject", *lower\_left*:  Point, *tracing*:  *str* = "") -> None:
-
-Sketch a Drawing.
-
-## 3.0 Class Feature
-
-class Feature(object):
-
-Base class a schematic features.
-
-### 3.1 Feature.\_\_init\_\_
-
-def \_\_init\_\_(self, *drawing*:  Drawing, *start*:  Point, *finish*:  Point, *name*:  *str* = "") -> None:
-
-Initialize a Feature.
-
-### 3.2 Feature.drawing
-
-def *drawing*(self) -> Drawing:  # *pragma*:  *no* *unit* *test*
-
-Return the Feature Drawing.
-
-### 3.3 Feature.finish
-
-def *finish*(self) -> Point:  # *pragma*:  *no* *unit* *test*
-
-Return the Feature finish point.
-
-### 3.4 Feature.index
-
-def *index*(self) -> *int*:
-
-Return the Feature index.
-
-### 3.5 Feature.index.setter
-
-def *index*(self, *index*:  *int*) -> None:
-
-Set the Feature index.
-
-def *finish\_key*(self) -> *int*:  # *pragma*:  *no* *unit* *test*
-
-Return the Feature Constraint key for the finish point.
-
-### 3.6 Feature.name
-
-def *name*(self) -> *str*:
-
-Return Feature name.
-
-# Feature.next() *def* *next*(self) -> "Feature":  # *pragma*:  *no* *unit* *test*
-
-Return the next Feature in circular list.
-
-### 3.7 Feature.index.setter
-
-def *next*(self, *next*:  "Feature") -> None:
-
-Set the next Feature in circular list.
-
-### 3.8 Feature.part\_feature
-
-def *part\_feature*(self) -> PartFeature:
-
-Return the PartFeature associated with Feature.
-
-### 3.9 Feature.previous
-
-def *previous*(self) -> "Feature":  # *pragma*:  *no* *unit* *test*
-
-Return the previous Part Feature in circular list.
-
-### 3.10 Feature.previous.setter
-
-def *previous*(self, *next*:  "Feature") -> None:
-
-Set the previous Part Feature in circular list.
-
-### 3.11 Feature.start
-
-def *start*(self) -> Point:  # *pragma*:  *no* *unit* *test*
-
-Return the Feature start point.
-
-def *start\_key*(self) -> *int*:
-
-Return the Feature Constraint key for the start point.
-
-### 3.12 Feature.type\_name
-
-def *type\_name*(self) -> *str*:
-
-Return the Feature type name.
-
-## 4.0 Class ArcFeature
+Table of Contents:
+* 1 [Introduction](#introduction):
+* 2 [Class ArcFeature](#arcfeature)
+  * 2.1 [ArcFeature.\_\_init\_\_](#arcfeature---init--)
+  * 2.2 [ArcFeature.apex](#arcfeature-apex)
+  * 2.3 [ArcFeature.begin](#arcfeature-begin)
+  * 2.4 [ArcFeature.center](#arcfeature-center)
+  * 2.5 [ArcFeature.end](#arcfeature-end)
+  * 2.6 [ArcFeature.finish](#arcfeature-finish)
+  * 2.7 [ArcFeature.finish\_angle](#arcfeature-finish-angle)
+  * 2.8 [ArcFeature.finish\_key](#arcfeature-finish-key)
+  * 2.9 [ArcFeature.finish\_length](#arcfeature-finish-length)
+  * 2.10 [ArcFeature.input](#arcfeature-input)
+  * 2.11 [ArcFeature.part\_feature](#arcfeature-part-feature)
+  * 2.12 [ArcFeature.radius](#arcfeature-radius)
+  * 2.13 [ArcFeature.repr](#arcfeature-repr)
+  * 2.14 [ArcFeature.start](#arcfeature-start)
+  * 2.15 [ArcFeature.start\_angle](#arcfeature-start-angle)
+  * 2.16 [ArcFeature.start\_key](#arcfeature-start-key)
+  * 2.17 [ArcFeature.start\_length](#arcfeature-start-length)
+  * 2.18 [ArcFeature.sweep\_angle](#arcfeature-sweep-angle)
+  * 2.19 [ArcFeature.type\_name](#arcfeature-type-name)
+  * 2.20 [Circle.\_\_init](#circle---init)
+  * 2.21 [Circle.bounding\_box](#circle-bounding-box)
+  * 2.22 [Circle.center](#circle-center)
+  * 2.23 [Circle.circle\_feature](#circle-circle-feature)
+  * 2.24 [Circle.constraints\_append](#circle-constraints-append)
+  * 2.25 [Circle.depth](#circle-depth)
+  * 2.26 [Circle.features\_get](#circle-features-get)
+  * 2.27 [Circle.flat](#circle-flat)
+  * 2.28 [Circle.forward\_transform](#circle-forward-transform)
+  * 2.29 [Circle.name](#circle-name)
+  * 2.30 [Circle.radius](#circle-radius)
+* 3 [Class CircleFeature](#circlefeature)
+  * 3.1 [CircleFeature.\_\_init\_\_](#circlefeature---init--)
+  * 3.2 [CircleFeature.\_\_repr\_\_](#circlefeature---repr--)
+  * 3.3 [CircleFeature.center](#circlefeature-center)
+  * 3.4 [CircleFeature.part\_element](#circlefeature-part-element)
+  * 3.5 [CircleFeature.radius](#circlefeature-radius)
+  * 3.6 [CircleFeature.type\_name](#circlefeature-type-name)
+* 4 [Class Drawing](#drawing)
+  * 4.1 [Drawing.\_\_init\_\_](#drawing---init--)
+  * 4.2 [Drawing.bounding\_box](#drawing-bounding-box)
+  * 4.3 [Drawing.circles](#drawing-circles)
+  * 4.4 [Drawing.features\_get](#drawing-features-get)
+  * 4.5 [Drawing.forward\_transform](#drawing-forward-transform)
+  * 4.6 [Drawing.name](#drawing-name)
+  * 4.7 [Drawing.origin\_index](#drawing-origin-index)
+  * 4.8 [Drawing.point\_constraints\_append](#drawing-point-constraints-append)
+  * 4.9 [Drawing.polygons](#drawing-polygons)
+  * 4.10 [Drawing.sketch](#drawing-sketch)
+* 5 [Class Feature](#feature)
+  * 5.1 [Feature.\_\_init\_\_](#feature---init--)
+  * 5.2 [Feature.drawing](#feature-drawing)
+  * 5.3 [Feature.finish](#feature-finish)
+  * 5.4 [Feature.index](#feature-index)
+  * 5.5 [Feature.name](#feature-name)
+  * 5.6 [Feature.part\_feature](#feature-part-feature)
+  * 5.7 [Feature.previous](#feature-previous)
+  * 5.8 [Feature.start](#feature-start)
+  * 5.9 [Feature.type\_name](#feature-type-name)
+* 6 [Class LineFeature](#linefeature)
+  * 6.1 [LineFeature.\_\_init\_\_](#linefeature---init--)
+  * 6.2 [LineFeature.drawing](#linefeature-drawing)
+  * 6.3 [LineFeature.finish](#linefeature-finish)
+  * 6.4 [LineFeature.finish\_key](#linefeature-finish-key)
+  * 6.5 [LineFeature.part\_feature](#linefeature-part-feature)
+  * 6.6 [LineFeature.start](#linefeature-start)
+  * 6.7 [LineFeature.start\_key](#linefeature-start-key)
+  * 6.8 [LineFeature.type\_name](#linefeature-type-name)
+* 7 [Class PointFeature](#pointfeature)
+  * 7.1 [PointFeature.\_\_init\_\_](#pointfeature---init--)
+  * 7.2 [PointFeature.\_\_str\_\_](#pointfeature---str--)
+  * 7.3 [PointFeature.part\_feature](#pointfeature-part-feature)
+  * 7.4 [PointFeature.point](#pointfeature-point)
+  * 7.5 [PointFeature.type\_name](#pointfeature-type-name)
+* 8 [Class Polygon](#polygon)
+  * 8.1 [Polygon.\_\_init\_\_](#polygon---init--)
+  * 8.2 [Polygon.bounding\_box](#polygon-bounding-box)
+  * 8.3 [Polygon.clockwise](#polygon-clockwise)
+  * 8.4 [Polygon.constraints\_append](#polygon-constraints-append)
+  * 8.5 [Polygon.depth](#polygon-depth)
+  * 8.6 [Polygon.features\_get](#polygon-features-get)
+  * 8.7 [Polygon.flat](#polygon-flat)
+  * 8.8 [Polygon.name](#polygon-name)
+  * 8.9 [Polygon.points](#polygon-points)
+
+## 1 <a name="introduction"></a>Introduction
+
+
+## 2 Class ArcFeature <a name="arcfeature"></a>
 
 class ArcFeature(Feature):
 
 Represents an an arc in a sketch.
 
-### 4.1 ArcFeature.\_\_init\_\_
+### 2.1 ArcFeature.\_\_init\_\_ <a name="arcfeature---init--"></a>
 
-def \_\_init\_\_(self, *drawing*:  Drawing, *begin*:  Point, *apex*:  Point, *end*:  Point, *name*:  *str* = "", *tracing*:  *str* = "") -> None:
+def \_\_init\_\_(self, *drawing*:  Drawing, *begin*:  ApexVector, *apex*:  ApexVector, *end*:  ApexVector, *name*:  *str* = "", *tracing*:  *str* = "") -> None:
 
 Initialize an ArcFeature.
 
-### 4.2 ArcFeature.repr
+### 2.2 ArcFeature.apex <a name="arcfeature-apex"></a>
 
-def \_\_repr\_\_(self) -> *str*:  # *pragma*:  *no* *unit* *test*
+def *apex*(self) -> ApexVector:
 
-Return ArcFeature string representation.
+Return the ArcFeature apex ApexVector.
 
-### 4.3 ArcFeature.apex
+### 2.3 ArcFeature.begin <a name="arcfeature-begin"></a>
 
-def *apex*(self) -> Point:
+def *begin*(self) -> ApexVector:  # *pragma*:  *no* *unit* *test*
 
-Return the ArcFeature apex Point.
+Return the ArcFeature arc begin ApexVector.
 
-### 4.4 ArcFeature.begin
+### 2.4 ArcFeature.center <a name="arcfeature-center"></a>
 
-def *begin*(self) -> Point:  # *pragma*:  *no* *unit* *test*
-
-Return the ArcFeature arc begin Point.
-
-### 4.5 ArcFeature.center
-
-def *center*(self) -> Point:
+def *center*(self) -> ApexVector:
 
 Return the ArcFeature arc center.
 
-### 4.6 ArcFeature.end
+### 2.5 ArcFeature.end <a name="arcfeature-end"></a>
 
-def *end*(self) -> Point:  # *pragma*:  *no* *unit* *test*
+def *end*(self) -> ApexVector:  # *pragma*:  *no* *unit* *test*
 
-Return the initial ArcFeature end Point.
+Return the initial ArcFeature end ApexVector.
 
-### 4.7 ArcFeature.finish
+### 2.6 ArcFeature.finish <a name="arcfeature-finish"></a>
 
-def *finish*(self) -> Point:
+def *finish*(self) -> ApexVector:
 
-Return the ArcFeature arc finish Point.
+Return the ArcFeature arc finish ApexVector.
 
-### 4.8 ArcFeature.finish\_key
-
-def *finish\_key*(self) -> *int*:
-
-Return the ArcFeature finish Constraint key.
-
-### 4.9 ArcFeature.finish\_angle
+### 2.7 ArcFeature.finish\_angle <a name="arcfeature-finish-angle"></a>
 
 def *finish\_angle*(self) -> *float*:  # *pragma*:  *no* *unit* *test*
 
 Return the ArcFeature arc finish angle.
 
-### 4.10 ArcFeature.finish\_length
+### 2.8 ArcFeature.finish\_key <a name="arcfeature-finish-key"></a>
+
+def *finish\_key*(self) -> *int*:
+
+Return the ArcFeature finish Constraint key.
+
+### 2.9 ArcFeature.finish\_length <a name="arcfeature-finish-length"></a>
 
 def *finish\_length*(self) -> *float*:  # *pragma*:  *no* *unit* *test*
 
-Return distance from arc finish Point to the apex Point.
+Return distance from arc finish ApexVector to the apex ApexVector.
 
-### 4.11 ArcFeature.input
+### 2.10 ArcFeature.input <a name="arcfeature-input"></a>
 
-def *input*(self) -> Point:  # *pragma*:  *no* *unit* *test*
+def *input*(self) -> ApexVector:  # *pragma*:  *no* *unit* *test*
 
-Return the initial ArcFeature arc start Point.
+Return the initial ArcFeature arc start ApexVector.
 
-### 4.12 ArcFeatrue.part\_feature
+### 2.11 ArcFeature.part\_feature <a name="arcfeature-part-feature"></a>
 
 def *part\_feature*(self) -> PartFeature:
 
 Return ArcFeature Part.Arc.
 
-### 4.13 ArcFeature.radius
+### 2.12 ArcFeature.radius <a name="arcfeature-radius"></a>
 
 def *radius*(self) -> *float*:
 
 Return the initial ArcFeature radius.
 
-### 4.14 ArcFeature.start
+### 2.13 ArcFeature.repr <a name="arcfeature-repr"></a>
 
-def *start*(self) -> Point:
+def \_\_repr\_\_(self) -> *str*:  # *pragma*:  *no* *unit* *test*
 
-Return the ArcFeature arc start Point.
+Return ArcFeature string representation.
 
-### 4.15 ArcFeature.start\_angle
+### 2.14 ArcFeature.start <a name="arcfeature-start"></a>
+
+def *start*(self) -> ApexVector:
+
+Return the ArcFeature arc start ApexVector.
+
+### 2.15 ArcFeature.start\_angle <a name="arcfeature-start-angle"></a>
 
 def *start\_angle*(self) -> *float*:  # *pragma*:  *no* *unit* *test*
 
 Return the ArcFeature arc start angle.
 
-### 4.16 ArcFeature.start\_key
+### 2.16 ArcFeature.start\_key <a name="arcfeature-start-key"></a>
 
 def *start\_key*(self) -> *int*:
 
 Return the ArcFeature finish Constraint key.
 
-### 4.17 ArcFeature.start\_length
+### 2.17 ArcFeature.start\_length <a name="arcfeature-start-length"></a>
 
 def *start\_length*(self) -> *float*:  # *pragma*:  *no* *unit* *test*
 
-Return the ArcFeature distance from start Point to apex Point.
+Return the ArcFeature distance from start ApexVector to apex ApexVector.
 
-### 4.18 ArcFeature.sweep\_angle
+### 2.18 ArcFeature.sweep\_angle <a name="arcfeature-sweep-angle"></a>
 
 def *sweep\_angle*(self) -> *float*:  # *pragma*:  *no* *unit* *cover*
 
 Return the ArcFeature sweep angle from start angle to end angle.
 
-### 4.19 ArcFeature.type\_name
+### 2.19 ArcFeature.type\_name <a name="arcfeature-type-name"></a>
 
 def *type\_name*(self) -> *str*:  # *pragma*:  *no* *unit* *cover*
 
 Return the ArcFeature type name.
 
-## 5.0 Class CircleFeature
+### 2.20 Circle.\_\_init <a name="circle---init"></a>
 
-class CircleFeature(Feature):
-
-Represents a circle in a sketch.
-
-### 5.1 CircleFeature.\_\_init\_\_
-
-def \_\_init\_\_(self, *drawing*:  Drawing, *center*:  Point, *radius*:  *float*, *name*:  *str* = "") -> None:
-
-Initialize a CircleFeature.
-
-### 5.2 CircleFeature.center
-
-def *center*(self) -> Point:  # *pragma*:  *no* *unit* *cover*
-
-Return the CircleFeature center.
-
-### 5.3 CircleFeature.part\_element
-
-def *part\_feature*(self) -> PartFeature:
-
-Return the CircleFeature PartFeature.
-
-### 5.4 CircleFeature.radius
-
-def *radius*(self) -> *float*:  # *pragma*:  *no* *unit* *cover*
-
-Return the CircleFeature radius.
-
-### 5.5 CircleFeature.type\_name
-
-def *type\_name*(self) -> *str*:  # *pragma*:  *no* *unit* *cover*
-
-Return the CircleFeature type name.
-
-## 6.0 Class LineFeature
-
-class LineFeature(Feature):
-
-Represents a line segment in a sketch.
-
-### 6.1 LineFeature.\_\_init\_\_
-
-def \_\_init\_\_( *self*, *drawing*:  Drawing, *start*:  Point, *finish*:  Point, *name*:  *str* = "", *tracing*:  *str* = "" ) -> None:
-
-Initialize a LineFeature.
-
-### 6.2 LineFeature.drawing
-
-def *drawing*(self) -> Drawing:  # *pragma*:  *no* *unit* *cover*
-
-Return the LineFeature Drawing.
-
-### 6.3 LineFeature.part\_feature
-
-def *part\_feature*(self) -> PartFeature:
-
-Return the PartFeature associated with a LineFeature.
-
-### 6.4 LineFeature.finish
-
-def *finish*(self) -> Point:  # *pragma*:  *no* *unit* *cover*
-
-Return the LineFeature finish Point.
-
-### 6.5 LineFeature.finish\_key
-
-def *finish\_key*(self) -> *int*:
-
-Return the LineFeature finish Constraint key.
-
-### 6.6 LineFeature.start
-
-def *start*(self) -> Point:
-
-Return the LineFeature start Point.
-
-### 6.7 LineFeature.start\_key
-
-def *start\_key*(self) -> *int*:
-
-Return the LineFeature start Constraint key.
-
-### 6.8 LineFeature.type\_name
-
-def *type\_name*(self) -> *str*:  # *pragma*:  *no* *unit* *cover*
-
-Return the LineFeature type name.
-
-## 7.0 Class PointFeature
-
-class PointFeature(Feature):
-
-Represents a point in a sketch.
-
-### 7.1 PointFeature.\_\_init\_\_
-
-def \_\_init\_\_(self, *drawing*:  Drawing, *point*:  Point, *name*:  *str* = "") -> None:
-
-Initialize a PointFeature.
-
-### 7.2 PointFeature.\_\_str\_\_
-
-def \_\_str\_\_(self) -> *str*:  # *pragma*:  *no* *unit* *cover*
-
-Return PointFeature string .
-
-### 7.3 PointFeature.part\_feature
-
-def *part\_feature*(self) -> PartFeature:
-
-Return the  PointFeature.
-
-### 7.4 PointFeature.point
-
-def *point*(self) -> Point:  # *pragma*:  *no* *unit* *cover*
-
-Return the PointFeature Point.
-
-### 7.5 PointFeature.type\_name
-
-def *type\_name*(self) -> *str*:  # *pragma*:  *no* *unit* *cover*
-
-Return the PointFeature type name.
-
-## 8.0 Class Polygon
-
-class Polygon(object):
-
-Represents a polygon with possible rounded corners.
-
-### 8.1 Polygon.\_\_init\_\_
-
-def \_\_init\_\_( *self*, *points*:  Tuple[Point, ...], *depth*:  *float* = 0.0, *flat*:  *bool* = False, *name*:  *str* = "" ) -> None:
-
-Initialize a Polygon.
-
-### 8.2 Polygon.bounding\_box
-
-def *bounding\_box*(self) -> BoundingBox:
-
-Return the Polygon BoundingBox.
-
-### 8.3 Polygon.clockwise
-
-def *clockwise*(self) -> *bool*:  # *pragma*:  *no* *unit* *cover*
-
-Return whether the Polygon points are clockwise.
-
-### 8.4 Polygon.constraints\_append
-
-def *constraints\_append*(self, *drawing*:  Drawing, *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
-
-Return the Polygon constraints for a Drawing.
-
-### 8.5 Polygon.depth
-
-def *depth*(self) -> *float*:
-
-Return the Polygon depth.
-
-### 8.6 Polygon.flat
-
-def *flat*(self) -> *bool*:  # *pragma*:  *no* *unit* *cover*
-
-Return the flat flag.
-
-### 8.7 Polygon.features\_get
-
-def *features\_get*(self, *drawing*:  Drawing, *tracing*:  *str* = "") -> Tuple[Feature, ...]:
-
-Return the Polygon Features tuple.
-
-### 8.8 Polygon.name
-
-def *name*(self) -> *str*:  # *pragma*:  *no* *unit* *cover*
-
-Return the Polygon depth.
-
-### 8.9 Polygon.points
-
-def *points*(self) -> Tuple[Point, ...]:  # *pragma*:  *no* *unit* *cover*
-
-Return the Polygon points.
-
-def *forward\_transform*(self, *matrix*:  ApexMatrix) -> "Polygon":
-
-Return a forward transformed Polygon.
-
-class Circle(object):
-
-Represents a circle.
-
-### 8.10 Circle.\_\_init
-
-def \_\_init\_\_( *self*, *center*:  Point, *depth*:  *float* = 0.0, *flat*:  *bool* = False, *name*:  *str* = "" ) -> None:
+def \_\_init\_\_( *self*, *center*:  ApexVector, *depth*:  *float* = 0.0, *flat*:  *bool* = False, *name*:  *str* = "" ) -> None:
 
 Initialize a circle.
 
-### 8.11 CircleFeature.\_\_repr\_\_
-
-def \_\_repr\_\_(self) -> *str*:
-
-Return a string representation of Circle.
-
-### 8.12 Circle.bounding\_box
+### 2.21 Circle.bounding\_box <a name="circle-bounding-box"></a>
 
 def *bounding\_box*(self) -> BoundingBox:
 
 Return the Circle BoundingBox.
 
-### 8.13 Circle.center
+### 2.22 Circle.center <a name="circle-center"></a>
 
-def *center*(self) -> Point:
+def *center*(self) -> ApexVector:
 
-Return the Circle center Point.
+Return the Circle center ApexVector.
 
-### 8.14 Circle.circle\_featu
+### 2.23 Circle.circle\_featu <a name="circle-circle-feature"></a>
 
 def *circle\_feature*(self) -> CircleFeature:
 
 Return the Circle CircleFeature.
 
-### 8.15 Circle.constraints\_append
+### 2.24 Circle.constraints\_append <a name="circle-constraints-append"></a>
 
 def *constraints\_append*(self, *drawing*:  Drawing, *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
 
 Return the CircleFeature constraints.
 
-### 8.16 Circle.depth
+### 2.25 Circle.depth <a name="circle-depth"></a>
 
 def *depth*(self) -> *float*:
 
 Return the Circle Depth.
 
-### 8.17 Circle.flat
-
-def *flat*(self) -> *bool*:
-
-Return whether the Circle bottom is flat.
-
-### 8.18 Circle.features\_get
+### 2.26 Circle.features\_get <a name="circle-features-get"></a>
 
 def *features\_get*(self, *drawing*:  Drawing) -> Tuple[Feature, ...]:
 
 Return the CircleFeature.
 
-### 8.19 Circle.forward\_transform
+### 2.27 Circle.flat <a name="circle-flat"></a>
+
+def *flat*(self) -> *bool*:
+
+Return whether the Circle bottom is flat.
+
+### 2.28 Circle.forward\_transform <a name="circle-forward-transform"></a>
 
 def *forward\_transform*(self, *matrix*:  ApexMatrix) -> "Circle":
 
 Return a forward transformed Circle.
 
-### 8.20 Circle.name
+### 2.29 Circle.name <a name="circle-name"></a>
 
 def *name*(self) -> *str*:
 
 Return the name of the Circle.
 
-### 8.21 Circle.radius
+### 2.30 Circle.radius <a name="circle-radius"></a>
 
 def *radius*(self) -> *float*:
 
 Return the Circle radius.
 
-def *visibility\_set*(element:  Any, *new\_value*:  *bool* = True) -> None:
+## 3 Class CircleFeature <a name="circlefeature"></a>
 
-Set the visibility of an element.
+class CircleFeature(Feature):
 
-def *main*() -> *int*:
+Represents a circle in a sketch.
 
-Run the program.
+### 3.1 CircleFeature.\_\_init\_\_ <a name="circlefeature---init--"></a>
 
-def *class\_names\_show*(module\_object:  Any) -> None:  # *pragma*:  *no* *unit* *cover*
+def \_\_init\_\_(self, *drawing*:  Drawing, *center*:  ApexVector, *radius*:  *float*, *name*:  *str* = "") -> None:
 
-Show the the class name of an object.
+Initialize a CircleFeature.
 
-def *attributes\_show*(some\_object:  Any) -> None:  # *pragma*:  *no* *unit* *cover*
+### 3.2 CircleFeature.\_\_repr\_\_ <a name="circlefeature---repr--"></a>
 
-Show the attributes of an object.
+def \_\_repr\_\_(self) -> *str*:
 
+Return a string representation of Circle.
+
+### 3.3 CircleFeature.center <a name="circlefeature-center"></a>
+
+def *center*(self) -> ApexVector:  # *pragma*:  *no* *unit* *cover*
+
+Return the CircleFeature center.
+
+### 3.4 CircleFeature.part\_element <a name="circlefeature-part-element"></a>
+
+def *part\_feature*(self) -> PartFeature:
+
+Return the CircleFeature PartFeature.
+
+### 3.5 CircleFeature.radius <a name="circlefeature-radius"></a>
+
+def *radius*(self) -> *float*:  # *pragma*:  *no* *unit* *cover*
+
+Return the CircleFeature radius.
+
+### 3.6 CircleFeature.type\_name <a name="circlefeature-type-name"></a>
+
+def *type\_name*(self) -> *str*:  # *pragma*:  *no* *unit* *cover*
+
+Return the CircleFeature type name.
+
+## 4 Class Drawing <a name="drawing"></a>
+
+class Drawing(object):
+
+Represents a 2D drawing.
+
+### 4.1 Drawing.\_\_init\_\_ <a name="drawing---init--"></a>
+
+def \_\_init\_\_( *self*, *circles*:  Tuple["Circle", ...], *polygons*:  Tuple["Polygon", ...], *name*:  *str* = "" ) -> None:
+
+Initialize a drawing.
+
+### 4.2 Drawing.bounding\_box <a name="drawing-bounding-box"></a>
+
+def *bounding\_box*(self) -> BoundingBox:
+
+Return the Drawing BoundingBox.
+
+### 4.3 Drawing.circles <a name="drawing-circles"></a>
+
+def *circles*(self) -> Tuple["Circle", ...]:  # *pragma*:  *no* *unit* *test*
+
+Return the Drawing Circle's.
+
+### 4.4 Drawing.features\_get <a name="drawing-features-get"></a>
+
+def *point\_features\_get*(self, *point*:  ApexVector, *tracing*:  *str* = "") -> Tuple["Feature", ...]:
+
+Return the PointFeature Feature's.
+
+### 4.5 Drawing.forward\_transform <a name="drawing-forward-transform"></a>
+
+def *forward\_transform*(self, *matrix*:  ApexMatrix) -> "Drawing":
+
+Return an Drawing that is offset via a forward transform.
+
+### 4.6 Drawing.name <a name="drawing-name"></a>
+
+def *name*(self) -> *str*:
+
+Return the Drawing name.
+
+### 4.7 Drawing.origin\_index <a name="drawing-origin-index"></a>
+
+def *origin\_index*(self) -> *int*:
+
+Return the Drawing origin index.
+
+### 4.8 Drawing.point\_constraints\_append <a name="drawing-point-constraints-append"></a>
+
+def *point\_constraints\_append*(self, *point*:  ApexVector, *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:  # REMOVE
+
+Append ApexVector constraints to a list.
+
+### 4.9 Drawing.polygons <a name="drawing-polygons"></a>
+
+def *polygons*(self) -> Tuple["Polygon", ...]:  # *pragma*:  *no* *unit* *test*
+
+Return the Drawing Polygon's.
+
+### 4.10 Drawing.sketch <a name="drawing-sketch"></a>
+
+def *sketch*(self, *sketcher*:  "Sketcher.SketchObject", *lower\_left*:  ApexVector, *tracing*:  *str* = "") -> None:
+
+Sketch a Drawing.
+
+## 5 Class Feature <a name="feature"></a>
+
+class Feature(object):
+
+Base class a schematic features.
+
+### 5.1 Feature.\_\_init\_\_ <a name="feature---init--"></a>
+
+def \_\_init\_\_(self, *drawing*:  Drawing, *start*:  ApexVector, *finish*:  ApexVector, *name*:  *str* = "") -> None:
+
+Initialize a Feature.
+
+### 5.2 Feature.drawing <a name="feature-drawing"></a>
+
+def *drawing*(self) -> Drawing:  # *pragma*:  *no* *unit* *test*
+
+Return the Feature Drawing.
+
+### 5.3 Feature.finish <a name="feature-finish"></a>
+
+def *finish*(self) -> ApexVector:  # *pragma*:  *no* *unit* *test*
+
+Return the Feature finish point.
+
+### 5.4 Feature.index <a name="feature-index"></a>
+
+def *index*(self) -> *int*:
+
+Return the Feature index.
+
+### 5.5 Feature.name <a name="feature-name"></a>
+
+def *name*(self) -> *str*:
+
+Return Feature name.
+
+### 5.6 Feature.part\_feature <a name="feature-part-feature"></a>
+
+def *part\_feature*(self) -> PartFeature:
+
+Return the PartFeature associated with Feature.
+
+### 5.7 Feature.previous <a name="feature-previous"></a>
+
+def *previous*(self) -> "Feature":  # *pragma*:  *no* *unit* *test*
+
+Return the previous Part Feature in circular list.
+
+### 5.8 Feature.start <a name="feature-start"></a>
+
+def *start*(self) -> ApexVector:  # *pragma*:  *no* *unit* *test*
+
+Return the Feature start point.
+
+### 5.9 Feature.type\_name <a name="feature-type-name"></a>
+
+def *type\_name*(self) -> *str*:
+
+Return the Feature type name.
+
+## 6 Class LineFeature <a name="linefeature"></a>
+
+class LineFeature(Feature):
+
+Represents a line segment in a sketch.
+
+### 6.1 LineFeature.\_\_init\_\_ <a name="linefeature---init--"></a>
+
+def \_\_init\_\_(self, *drawing*:  Drawing, *start*:  ApexVector, *finish*:  ApexVector, *name*:  *str* = "", *tracing*:  *str* = "") -> None:
+
+Initialize a LineFeature.
+
+### 6.2 LineFeature.drawing <a name="linefeature-drawing"></a>
+
+def *drawing*(self) -> Drawing:  # *pragma*:  *no* *unit* *cover*
+
+Return the LineFeature Drawing.
+
+### 6.3 LineFeature.finish <a name="linefeature-finish"></a>
+
+def *finish*(self) -> ApexVector:  # *pragma*:  *no* *unit* *cover*
+
+Return the LineFeature finish ApexVector.
+
+### 6.4 LineFeature.finish\_key <a name="linefeature-finish-key"></a>
+
+def *finish\_key*(self) -> *int*:
+
+Return the LineFeature finish Constraint key.
+
+### 6.5 LineFeature.part\_feature <a name="linefeature-part-feature"></a>
+
+def *part\_feature*(self) -> PartFeature:
+
+Return the PartFeature associated with a LineFeature.
+
+### 6.6 LineFeature.start <a name="linefeature-start"></a>
+
+def *start*(self) -> ApexVector:
+
+Return the LineFeature start ApexVector.
+
+### 6.7 LineFeature.start\_key <a name="linefeature-start-key"></a>
+
+def *start\_key*(self) -> *int*:
+
+Return the LineFeature start Constraint key.
+
+### 6.8 LineFeature.type\_name <a name="linefeature-type-name"></a>
+
+def *type\_name*(self) -> *str*:  # *pragma*:  *no* *unit* *cover*
+
+Return the LineFeature type name.
+
+## 7 Class PointFeature <a name="pointfeature"></a>
+
+class PointFeature(Feature):
+
+Represents a point in a sketch.
+
+### 7.1 PointFeature.\_\_init\_\_ <a name="pointfeature---init--"></a>
+
+def \_\_init\_\_(self, *drawing*:  Drawing, *point*:  ApexVector, *name*:  *str* = "") -> None:
+
+Initialize a PointFeature.
+
+### 7.2 PointFeature.\_\_str\_\_ <a name="pointfeature---str--"></a>
+
+def \_\_str\_\_(self) -> *str*:  # *pragma*:  *no* *unit* *cover*
+
+Return PointFeature string .
+
+### 7.3 PointFeature.part\_feature <a name="pointfeature-part-feature"></a>
+
+def *part\_feature*(self) -> PartFeature:
+
+Return the  PointFeature.
+
+### 7.4 PointFeature.point <a name="pointfeature-point"></a>
+
+def *point*(self) -> ApexVector:  # *pragma*:  *no* *unit* *cover*
+
+Return the PointFeature ApexVector.
+
+### 7.5 PointFeature.type\_name <a name="pointfeature-type-name"></a>
+
+def *type\_name*(self) -> *str*:  # *pragma*:  *no* *unit* *cover*
+
+Return the PointFeature type name.
+
+## 8 Class Polygon <a name="polygon"></a>
+
+class Polygon(object):
+
+Represents a polygon with possible rounded corners.
+
+### 8.1 Polygon.\_\_init\_\_ <a name="polygon---init--"></a>
+
+def \_\_init\_\_( *self*, *points*:  Tuple[ApexVector, ...], *depth*:  *float* = 0.0, *flat*:  *bool* = False, *name*:  *str* = "" ) -> None:
+
+Initialize a Polygon.
+
+### 8.2 Polygon.bounding\_box <a name="polygon-bounding-box"></a>
+
+def *bounding\_box*(self) -> BoundingBox:
+
+Return the Polygon BoundingBox.
+
+### 8.3 Polygon.clockwise <a name="polygon-clockwise"></a>
+
+def *clockwise*(self) -> *bool*:  # *pragma*:  *no* *unit* *cover*
+
+Return whether the Polygon points are clockwise.
+
+### 8.4 Polygon.constraints\_append <a name="polygon-constraints-append"></a>
+
+def *constraints\_append*(self, *drawing*:  Drawing, *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
+
+Return the Polygon constraints for a Drawing.
+
+### 8.5 Polygon.depth <a name="polygon-depth"></a>
+
+def *depth*(self) -> *float*:
+
+Return the Polygon depth.
+
+### 8.6 Polygon.features\_get <a name="polygon-features-get"></a>
+
+def *features\_get*(self, *drawing*:  Drawing, *tracing*:  *str* = "") -> Tuple[Feature, ...]:
+
+Return the Polygon Features tuple.
+
+### 8.7 Polygon.flat <a name="polygon-flat"></a>
+
+def *flat*(self) -> *bool*:  # *pragma*:  *no* *unit* *cover*
+
+Return the flat flag.
+
+### 8.8 Polygon.name <a name="polygon-name"></a>
+
+def *name*(self) -> *str*:  # *pragma*:  *no* *unit* *cover*
+
+Return the Polygon depth.
+
+### 8.9 Polygon.points <a name="polygon-points"></a>
+
+def *points*(self) -> Tuple[ApexVector, ...]:  # *pragma*:  *no* *unit* *cover*
+
+Return the Polygon points.

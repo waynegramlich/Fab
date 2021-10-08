@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Synchronize .fcstd and .tar files.
+"""fcstd_tar_sync.py: Synchronize .fcstd and .tar files.
 
 Usage: fcstd_tar_sync [OPTIONS] [DIR] ...
 
