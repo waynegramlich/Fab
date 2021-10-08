@@ -9,7 +9,7 @@ The Apex Base classes are:
   This is a wrapper class around the FreeCAD BoundBox class for specifying bounding boxes.
   It introduces some consistent attributes for accessing the faces, corners and edges
   of a bounding box.  Alas, for technical reasons, this not a true sub-class of BoundBox.
-* ApexVector:
+* ApexPoint:
   This is a wrapper class around the FreeCAD Vector class that adds an optional diameter
   and name for each 3D Vector point.  For the same technical reasons, this is not a true
   sub-class of Vector.
@@ -278,7 +278,7 @@ class ApexBoundBox:
 
     # ApexBoundBox.from_vectors():
     @staticmethod
-    def from_vectors(vectors: Tuple[Union[Vector, "ApexVector"], ...]) -> "ApexBoundBox":
+    def from_vectors(vectors: Tuple[Union[Vector, "ApexPoint"], ...]) -> "ApexBoundBox":
         """Compute BoundingBox from some Point's."""
         if not vectors:
             raise ValueError("No vectors")
@@ -290,7 +290,7 @@ class ApexBoundBox:
         y_max: float = y_min
         z_max: float = z_min
 
-        vector: Union[Vector, ApexVector]
+        vector: Union[Vector, ApexPoint]
         for vector in vectors[1:]:
             x: float = vector.x
             y: float = vector.y
@@ -576,7 +576,7 @@ class ApexBoundBox:
 
         # Test *from_vector* and *from_bound_boxes* methods:
         vector: Vector = Vector(-1, -2, -3)
-        apex_vector: ApexVector = ApexVector(1, 2, 3)
+        apex_vector: ApexPoint = ApexPoint(1, 2, 3)
         new_apex_bound_box: ApexBoundBox = ApexBoundBox.from_vectors((vector, apex_vector))
         assert f"{new_apex_bound_box.BB}" == f"{apex_bound_box.BB}"
         next_apex_bound_box: ApexBoundBox = ApexBoundBox.from_bound_boxes(
@@ -594,9 +594,9 @@ class ApexBoundBox:
             assert str(value_error) == "No bounding boxes"
 
 
-# ApexVector:
-class ApexVector:
-    """An ApexVector is basically just a Vector with an optional diameter and/or name.
+# ApexPoint:
+class ApexPoint:
+    """An ApexPoint is basically just a Vector with an optional diameter and/or name.
 
     * Attributes:
       * *vector* (Vector): The underlying FreeCAD Vector.
@@ -608,14 +608,14 @@ class ApexVector:
       * *name* (str): The apex name.
     """
 
-    # ApexVector.__init__():
+    # ApexPoint.__init__():
     def __init__(self,
                  x: Union[int, float, ApexLength] = 0.0,
                  y: Union[int, float, ApexLength] = 0.0,
                  z: Union[int, float, ApexLength] = 0.0,
                  diameter: Union[int, float, ApexLength] = 0.0,
                  name: str = "") -> None:
-        """Initialize an ApexVector.
+        """Initialize an ApexPoint.
 
         * Arguments:
           * *x* (Union[int, float, ApexLength]): The x coordinate of the vector. (Default: 0.0)
@@ -633,56 +633,56 @@ class ApexVector:
         self.radius: float = float(diameter) / 2.0
         self.name: str = name
 
-    # ApexVector.__add__():
-    def __add__(self, vector: "ApexVector") -> "ApexVector":
-        """Return the sum of two ApexVector's."""
-        return ApexVector(self.x + vector.x, self.y + vector.y, self.z + vector.z)
+    # ApexPoint.__add__():
+    def __add__(self, vector: "ApexPoint") -> "ApexPoint":
+        """Return the sum of two ApexPoint's."""
+        return ApexPoint(self.x + vector.x, self.y + vector.y, self.z + vector.z)
 
-    # ApexVector.__neg__():
-    def __neg__(self) -> "ApexVector":
-        """Return the negative of an ApexVector."""
-        return ApexVector(-self.x, -self.y, -self.z, self.radius, self.name)
+    # ApexPoint.__neg__():
+    def __neg__(self) -> "ApexPoint":
+        """Return the negative of an ApexPoint."""
+        return ApexPoint(-self.x, -self.y, -self.z, self.radius, self.name)
 
-    # ApexVector.__rmul__():
-    def __mul__(self, scale: float) -> "ApexVector":
+    # ApexPoint.__rmul__():
+    def __mul__(self, scale: float) -> "ApexPoint":
         """Return a Point that has been scaled."""
-        return ApexVector(self.x * scale, self.y * scale, self.z * scale)
+        return ApexPoint(self.x * scale, self.y * scale, self.z * scale)
 
-    # ApexVector.__repr__():
+    # ApexPoint.__repr__():
     def __repr__(self) -> str:
-        """Return representation of ApexVector."""
+        """Return representation of ApexPoint."""
         return self.__str__()
 
-    # ApexVector.__str__():
+    # ApexPoint.__str__():
     def __str__(self) -> str:
-        """Return string representation of ApexVector."""
+        """Return string representation of ApexPoint."""
         diameter: str = f", {self.diameter}" if self.diameter else ""
         name: str = f", '{self.name}'" if self.name else ""
-        result: str = f"ApexVector({self.x}, {self.y}, {self.z}{diameter}{name})"
+        result: str = f"ApexPoint({self.x}, {self.y}, {self.z}{diameter}{name})"
         return result
 
-    # ApexVector.__truediv__():
-    def __truediv__(self, divisor: float) -> "ApexVector":
+    # ApexPoint.__truediv__():
+    def __truediv__(self, divisor: float) -> "ApexPoint":
         """Return a Point that has been scaleddown."""
-        return ApexVector(self.x / divisor, self.y / divisor, self.z / divisor)
+        return ApexPoint(self.x / divisor, self.y / divisor, self.z / divisor)
 
-    # ApexVector.__sub__():
-    def __sub__(self, vector: "ApexVector") -> "ApexVector":
+    # ApexPoint.__sub__():
+    def __sub__(self, vector: "ApexPoint") -> "ApexPoint":
         """Return the difference of two Point's."""
-        return ApexVector(self.x - vector.x, self.y - vector.y, self.z - vector.z)
+        return ApexPoint(self.x - vector.x, self.y - vector.y, self.z - vector.z)
 
-    # ApexVector.atan2():
+    # ApexPoint.atan2():
     def atan2(self) -> float:
         """Return the atan2 of the x and y values."""
         return math.atan2(self.x, self.y)
 
-    # ApexVector.forward():
-    def forward(self, matrix: "ApexMatrix") -> "ApexVector":
+    # ApexPoint.forward():
+    def forward(self, matrix: "ApexMatrix") -> "ApexPoint":
         """Perform a forward matrix transform using an ApexMatrix."""
         vector: Vector = matrix.forward * self.vector
-        return ApexVector(vector.x, vector.y, vector.z, self.diameter, self.name)
+        return ApexPoint(vector.x, vector.y, vector.z, self.diameter, self.name)
 
-    # ApexVector.magnitude():
+    # ApexPoint.magnitude():
     def magnitude(self) -> float:
         """Return the magnitude of the point vector."""
         x: float = float(self.x)
@@ -692,13 +692,13 @@ class ApexVector:
 
     @staticmethod
     def unit_tests() -> None:
-        """Perform ApexVector unit tests."""
+        """Perform ApexPoint unit tests."""
         vector: Vector = Vector(1, 2, 3)
-        apex_vector: ApexVector = ApexVector(1, 2, 3, diameter=5, name="test1")
+        apex_vector: ApexPoint = ApexPoint(1, 2, 3, diameter=5, name="test1")
         assert isinstance(vector, Vector)
-        assert isinstance(apex_vector, ApexVector)
+        assert isinstance(apex_vector, ApexPoint)
         assert apex_vector.vector == vector
-        want: str = "ApexVector(1.0, 2.0, 3.0, 5.0, 'test1')"
+        want: str = "ApexPoint(1.0, 2.0, 3.0, 5.0, 'test1')"
         assert f"{apex_vector}" == want, f"{apex_vector} != {want}"
         assert apex_vector.__repr__() == want
 
@@ -732,10 +732,10 @@ class ApexMatrix:
 
     # ApexMatrix.__init__():
     def __init__(self,
-                 center: Optional[Union[ApexVector, Vector]] = None,
-                 axis: Optional[Union[ApexVector, Vector]] = None,  # Z axis
+                 center: Optional[Union[ApexPoint, Vector]] = None,
+                 axis: Optional[Union[ApexPoint, Vector]] = None,  # Z axis
                  angle: Optional[float] = None,
-                 translate: Optional[Union[ApexVector, Vector]] = None,
+                 translate: Optional[Union[ApexPoint, Vector]] = None,
                  name: Optional[str] = None,
                  tracing: str = "") -> None:
         """Create ApexMatrix rotation with point/axis/angle and a translate."""
@@ -743,7 +743,7 @@ class ApexMatrix:
             print(f"{tracing}=>ApexMatrix.__new___("
                   f"{center}, {axis}, {angle}, {translate}, '{name}')")
         # Arguments are only used for __str__():
-        arguments: Tuple[Union[None, ApexVector, Vector], ...] = (
+        arguments: Tuple[Union[None, ApexPoint, Vector], ...] = (
             center, axis, angle, translate, name)
         center = Vector() if center is None else (
             center if isinstance(center, Vector) else center.vector)
@@ -781,7 +781,7 @@ class ApexMatrix:
         forward: Matrix = center_forward * rotate_forward * center_reverse * translate_forward
         reverse: Matrix = translate_reverse * center_forward * rotate_reverse * center_reverse
 
-        self._arguments: Tuple[Union[None, ApexVector, Vector], ...] = arguments
+        self._arguments: Tuple[Union[None, ApexPoint, Vector], ...] = arguments
         self._forward: Matrix = forward
         self._reverse: Matrix = reverse
         if tracing:
@@ -794,11 +794,11 @@ class ApexMatrix:
         return 0.0 if abs(value) < 1.0e-10 else value
 
     @staticmethod
-    def _rotate(axis: Union[ApexVector, Vector], angle: float) -> Matrix:
+    def _rotate(axis: Union[ApexPoint, Vector], angle: float) -> Matrix:
         """Return a FreeCAD Matrix for rotation around an axis.
 
         * Arguments:
-        * *axis* (Union[ApexVector, Vector]): The axis to rotate around.
+        * *axis* (Union[ApexPoint, Vector]): The axis to rotate around.
           * *angle* (float): The number of radians to rotate by.
         * Returns:
           * Returns the FreeCAD rotation Matrix.
@@ -812,7 +812,7 @@ class ApexMatrix:
 
         zf: Callable[[float], float] = ApexMatrix.zf
         # Compute the X/Y/Z components of a normal vector of *length* 1.
-        axis = axis.vector if isinstance(axis, ApexVector) else axis
+        axis = axis.vector if isinstance(axis, ApexPoint) else axis
         assert isinstance(axis, Vector)
         nx: float = zf(axis.x)
         ny: float = zf(axis.y)
@@ -886,7 +886,7 @@ class ApexMatrix:
         keywords_needed: bool = False
         results: List[str] = []
         index: int
-        argument: Union[None, ApexVector, Vector]
+        argument: Union[None, ApexPoint, Vector]
         for index, argument in enumerate(self._arguments):
             # print(f"'{keyword}', {value}, {default}")
             result: str = f"'{argument}'" if isinstance(argument, str) else f"{argument}"
@@ -951,7 +951,7 @@ class ApexMatrix:
         assert f"{cx90}" == want, f"{cx90=}"
 
         # Test translate only:
-        v123: ApexVector = ApexVector(1.0, 2.0, 3.0, name="v123")
+        v123: ApexPoint = ApexPoint(1.0, 2.0, 3.0, name="v123")
         assert v123.vector == Vector(1, 2, 3)
         m_t123: Matrix = Matrix()
         m_t123.move(v123.vector)
@@ -969,7 +969,7 @@ class ApexMatrix:
         m_x90: Matrix = Matrix()
         m_x90.rotateX(degrees90)
         m_x90 = matrix_clean(m_x90)
-        ap_x90: ApexMatrix = ApexMatrix(axis=ApexVector(1, 0, 0), angle=degrees90)
+        ap_x90: ApexMatrix = ApexMatrix(axis=ApexPoint(1, 0, 0), angle=degrees90)
         assert m_x90.A == ap_x90.forward.A, f"{m_x90.A} != {ap_x90.forward.A}"
         m_v: Vector = m_x90 * v010
         ap_v: Vector = ap_x90.forward * v010
@@ -979,7 +979,7 @@ class ApexMatrix:
         m_y90: Matrix = Matrix()
         m_y90.rotateY(degrees90)
         m_y90 = matrix_clean(m_y90)
-        ap_y90: ApexMatrix = ApexMatrix(axis=ApexVector(0, 1, 0), angle=degrees90)
+        ap_y90: ApexMatrix = ApexMatrix(axis=ApexPoint(0, 1, 0), angle=degrees90)
         assert m_y90.A == ap_y90.forward.A, f"{m_y90.A} != {ap_y90.forward.A}"
         m_v = m_y90 * v001
         ap_v = ap_y90.forward * v001
@@ -1008,7 +1008,7 @@ def main() -> None:
     ApexBoundBox.unit_tests()
     ApexMatrix.unit_tests()
     ApexLength.unit_tests()
-    ApexVector.unit_tests()
+    ApexPoint.unit_tests()
 
 
 if __name__ == "__main__":

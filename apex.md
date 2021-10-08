@@ -15,18 +15,18 @@ Table of Contents:
   * 3.5 [ApexLength.unit\_test](#apexlength-unit-test)
 * 4 [Class ApexMatrix](#apexmatrix)
   * 4.1 [ApexMatrix.\_\_init\_\_](#apexmatrix---init--)
-* 5 [Class ApexVector](#apexvector)
-  * 5.1 [ApexVector.\_\_add\_\_](#apexvector---add--)
-  * 5.2 [ApexVector.\_\_init\_\_](#apexvector---init--)
-  * 5.3 [ApexVector.\_\_neg\_\_](#apexvector---neg--)
-  * 5.4 [ApexVector.\_\_repr\_\_](#apexvector---repr--)
-  * 5.5 [ApexVector.\_\_rmul\_\_](#apexvector---rmul--)
-  * 5.6 [ApexVector.\_\_str\_\_](#apexvector---str--)
-  * 5.7 [ApexVector.\_\_sub\_\_](#apexvector---sub--)
-  * 5.8 [ApexVector.\_\_truediv\_\_](#apexvector---truediv--)
-  * 5.9 [ApexVector.atan2](#apexvector-atan2)
-  * 5.10 [ApexVector.forward](#apexvector-forward)
-  * 5.11 [ApexVector.magnitude](#apexvector-magnitude)
+* 5 [Class ApexPoint](#apexpoint)
+  * 5.1 [ApexPoint.\_\_add\_\_](#apexpoint---add--)
+  * 5.2 [ApexPoint.\_\_init\_\_](#apexpoint---init--)
+  * 5.3 [ApexPoint.\_\_neg\_\_](#apexpoint---neg--)
+  * 5.4 [ApexPoint.\_\_repr\_\_](#apexpoint---repr--)
+  * 5.5 [ApexPoint.\_\_rmul\_\_](#apexpoint---rmul--)
+  * 5.6 [ApexPoint.\_\_str\_\_](#apexpoint---str--)
+  * 5.7 [ApexPoint.\_\_sub\_\_](#apexpoint---sub--)
+  * 5.8 [ApexPoint.\_\_truediv\_\_](#apexpoint---truediv--)
+  * 5.9 [ApexPoint.atan2](#apexpoint-atan2)
+  * 5.10 [ApexPoint.forward](#apexpoint-forward)
+  * 5.11 [ApexPoint.magnitude](#apexpoint-magnitude)
 
 ## 1 <a name="introduction"></a>Introduction
 
@@ -39,7 +39,7 @@ The Apex Base classes are:
   This is a wrapper class around the FreeCAD BoundBox class for specifying bounding boxes.
   It introduces some consistent attributes for accessing the faces, corners and edges
   of a bounding box.  Alas, for technical reasons, this not a true sub-class of BoundBox.
-* ApexVector:
+* ApexPoint:
   This is a wrapper class around the FreeCAD Vector class that adds an optional diameter
   and name for each 3D Vector point.  For the same technical reasons, this is not a true
   sub-class of Vector.
@@ -126,7 +126,7 @@ Return a representation of an ApexBoundBox.
 
 ### 2.4 ApexBoundBox.from\_vectors <a name="apexboundbox-from-vectors"></a>
 
-def *from\_vectors*(vectors:  Tuple[Union[Vector, "ApexVector"], ...]) -> "ApexBoundBox":
+def *from\_vectors*(vectors:  Tuple[Union[Vector, "ApexPoint"], ...]) -> "ApexBoundBox":
 
 Compute BoundingBox from some Point's.
 
@@ -198,15 +198,15 @@ followed by a final translation.  It also computes the inverse matrix.
 
 ### 4.1 ApexMatrix.\_\_init\_\_ <a name="apexmatrix---init--"></a>
 
-def \_\_init\_\_(self, *center*:  Optional[Union[ApexVector, Vector]] = None, *axis*:  Optional[Union[ApexVector, Vector]] = None, # Z *axis* *angle*:  Optional[float] = None, *translate*:  Optional[Union[ApexVector, Vector]] = None, *name*:  Optional[str] = None, *tracing*:  *str* = "") -> None:
+def \_\_init\_\_(self, *center*:  Optional[Union[ApexPoint, Vector]] = None, *axis*:  Optional[Union[ApexPoint, Vector]] = None, # Z *axis* *angle*:  Optional[float] = None, *translate*:  Optional[Union[ApexPoint, Vector]] = None, *name*:  Optional[str] = None, *tracing*:  *str* = "") -> None:
 
 Create ApexMatrix rotation with point/axis/angle and a translate.
 
-## 5 Class ApexVector <a name="apexvector"></a>
+## 5 Class ApexPoint <a name="apexpoint"></a>
 
-class ApexVector:
+class ApexPoint:
 
-An ApexVector is basically just a Vector with an optional diameter and/or name.
+An ApexPoint is basically just a Vector with an optional diameter and/or name.
 
 * Attributes:
   * *vector* (Vector): The underlying FreeCAD Vector.
@@ -217,17 +217,17 @@ An ApexVector is basically just a Vector with an optional diameter and/or name.
   * *radius* (float): The apex radius.
   * *name* (str): The apex name.
 
-### 5.1 ApexVector.\_\_add\_\_ <a name="apexvector---add--"></a>
+### 5.1 ApexPoint.\_\_add\_\_ <a name="apexpoint---add--"></a>
 
-def \_\_add\_\_(self, *vector*:  "ApexVector") -> "ApexVector":
+def \_\_add\_\_(self, *vector*:  "ApexPoint") -> "ApexPoint":
 
-Return the sum of two ApexVector's.
+Return the sum of two ApexPoint's.
 
-### 5.2 ApexVector.\_\_init\_\_ <a name="apexvector---init--"></a>
+### 5.2 ApexPoint.\_\_init\_\_ <a name="apexpoint---init--"></a>
 
 def \_\_init\_\_(self, *x*:  Union[int, *float*, ApexLength] = 0.0, *y*:  Union[int, *float*, ApexLength] = 0.0, *z*:  Union[int, *float*, ApexLength] = 0.0, *diameter*:  Union[int, *float*, ApexLength] = 0.0, *name*:  *str* = "") -> None:
 
-Initialize an ApexVector.
+Initialize an ApexPoint.
 
 * Arguments:
   * *x* (Union[int, float, ApexLength]): The x coordinate of the vector. (Default: 0.0)
@@ -236,55 +236,55 @@ Initialize an ApexVector.
   * *diameter* (Union[int, float, ApexLength]): The apex diameter. (Default: 0.0)
   * *name* (str): A name primarily used for debugging. (Default: "")
 
-### 5.3 ApexVector.\_\_neg\_\_ <a name="apexvector---neg--"></a>
+### 5.3 ApexPoint.\_\_neg\_\_ <a name="apexpoint---neg--"></a>
 
-def \_\_neg\_\_(self) -> "ApexVector":
+def \_\_neg\_\_(self) -> "ApexPoint":
 
-Return the negative of an ApexVector.
+Return the negative of an ApexPoint.
 
-### 5.4 ApexVector.\_\_repr\_\_ <a name="apexvector---repr--"></a>
+### 5.4 ApexPoint.\_\_repr\_\_ <a name="apexpoint---repr--"></a>
 
 def \_\_repr\_\_(self) -> *str*:
 
-Return representation of ApexVector.
+Return representation of ApexPoint.
 
-### 5.5 ApexVector.\_\_rmul\_\_ <a name="apexvector---rmul--"></a>
+### 5.5 ApexPoint.\_\_rmul\_\_ <a name="apexpoint---rmul--"></a>
 
-def \_\_mul\_\_(self, *scale*:  *float*) -> "ApexVector":
+def \_\_mul\_\_(self, *scale*:  *float*) -> "ApexPoint":
 
 Return a Point that has been scaled.
 
-### 5.6 ApexVector.\_\_str\_\_ <a name="apexvector---str--"></a>
+### 5.6 ApexPoint.\_\_str\_\_ <a name="apexpoint---str--"></a>
 
 def \_\_str\_\_(self) -> *str*:
 
-Return string representation of ApexVector.
+Return string representation of ApexPoint.
 
-### 5.7 ApexVector.\_\_sub\_\_ <a name="apexvector---sub--"></a>
+### 5.7 ApexPoint.\_\_sub\_\_ <a name="apexpoint---sub--"></a>
 
-def \_\_sub\_\_(self, *vector*:  "ApexVector") -> "ApexVector":
+def \_\_sub\_\_(self, *vector*:  "ApexPoint") -> "ApexPoint":
 
 Return the difference of two Point's.
 
-### 5.8 ApexVector.\_\_truediv\_\_ <a name="apexvector---truediv--"></a>
+### 5.8 ApexPoint.\_\_truediv\_\_ <a name="apexpoint---truediv--"></a>
 
-def \_\_truediv\_\_(self, *divisor*:  *float*) -> "ApexVector":
+def \_\_truediv\_\_(self, *divisor*:  *float*) -> "ApexPoint":
 
 Return a Point that has been scaleddown.
 
-### 5.9 ApexVector.atan2 <a name="apexvector-atan2"></a>
+### 5.9 ApexPoint.atan2 <a name="apexpoint-atan2"></a>
 
 def *atan2*(self) -> *float*:
 
 Return the atan2 of the x and y values.
 
-### 5.10 ApexVector.forward <a name="apexvector-forward"></a>
+### 5.10 ApexPoint.forward <a name="apexpoint-forward"></a>
 
-def *forward*(self, *matrix*:  "ApexMatrix") -> "ApexVector":
+def *forward*(self, *matrix*:  "ApexMatrix") -> "ApexPoint":
 
 Perform a forward matrix transform using an ApexMatrix.
 
-### 5.11 ApexVector.magnitude <a name="apexvector-magnitude"></a>
+### 5.11 ApexPoint.magnitude <a name="apexpoint-magnitude"></a>
 
 def *magnitude*(self) -> *float*:
 

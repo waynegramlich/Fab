@@ -98,39 +98,39 @@ Represents an an arc in a sketch.
 
 ### 2.1 ArcFeature.\_\_init\_\_ <a name="arcfeature---init--"></a>
 
-def \_\_init\_\_(self, *drawing*:  Drawing, *begin*:  ApexVector, *apex*:  ApexVector, *end*:  ApexVector, *name*:  *str* = "", *tracing*:  *str* = "") -> None:
+def \_\_init\_\_(self, *drawing*:  Drawing, *begin*:  ApexPoint, *apex*:  ApexPoint, *end*:  ApexPoint, *name*:  *str* = "", *tracing*:  *str* = "") -> None:
 
 Initialize an ArcFeature.
 
 ### 2.2 ArcFeature.apex <a name="arcfeature-apex"></a>
 
-def *apex*(self) -> ApexVector:
+def *apex*(self) -> ApexPoint:
 
-Return the ArcFeature apex ApexVector.
+Return the ArcFeature apex ApexPoint.
 
 ### 2.3 ArcFeature.begin <a name="arcfeature-begin"></a>
 
-def *begin*(self) -> ApexVector:  # *pragma*:  *no* *unit* *test*
+def *begin*(self) -> ApexPoint:  # *pragma*:  *no* *unit* *test*
 
-Return the ArcFeature arc begin ApexVector.
+Return the ArcFeature arc begin ApexPoint.
 
 ### 2.4 ArcFeature.center <a name="arcfeature-center"></a>
 
-def *center*(self) -> ApexVector:
+def *center*(self) -> ApexPoint:
 
 Return the ArcFeature arc center.
 
 ### 2.5 ArcFeature.end <a name="arcfeature-end"></a>
 
-def *end*(self) -> ApexVector:  # *pragma*:  *no* *unit* *test*
+def *end*(self) -> ApexPoint:  # *pragma*:  *no* *unit* *test*
 
-Return the initial ArcFeature end ApexVector.
+Return the initial ArcFeature end ApexPoint.
 
 ### 2.6 ArcFeature.finish <a name="arcfeature-finish"></a>
 
-def *finish*(self) -> ApexVector:
+def *finish*(self) -> ApexPoint:
 
-Return the ArcFeature arc finish ApexVector.
+Return the ArcFeature arc finish ApexPoint.
 
 ### 2.7 ArcFeature.finish\_angle <a name="arcfeature-finish-angle"></a>
 
@@ -148,13 +148,13 @@ Return the ArcFeature finish Constraint key.
 
 def *finish\_length*(self) -> *float*:  # *pragma*:  *no* *unit* *test*
 
-Return distance from arc finish ApexVector to the apex ApexVector.
+Return distance from arc finish ApexPoint to the apex ApexPoint.
 
 ### 2.10 ArcFeature.input <a name="arcfeature-input"></a>
 
-def *input*(self) -> ApexVector:  # *pragma*:  *no* *unit* *test*
+def *input*(self) -> ApexPoint:  # *pragma*:  *no* *unit* *test*
 
-Return the initial ArcFeature arc start ApexVector.
+Return the initial ArcFeature arc start ApexPoint.
 
 ### 2.11 ArcFeature.part\_feature <a name="arcfeature-part-feature"></a>
 
@@ -176,9 +176,9 @@ Return ArcFeature string representation.
 
 ### 2.14 ArcFeature.start <a name="arcfeature-start"></a>
 
-def *start*(self) -> ApexVector:
+def *start*(self) -> ApexPoint:
 
-Return the ArcFeature arc start ApexVector.
+Return the ArcFeature arc start ApexPoint.
 
 ### 2.15 ArcFeature.start\_angle <a name="arcfeature-start-angle"></a>
 
@@ -196,7 +196,7 @@ Return the ArcFeature finish Constraint key.
 
 def *start\_length*(self) -> *float*:  # *pragma*:  *no* *unit* *test*
 
-Return the ArcFeature distance from start ApexVector to apex ApexVector.
+Return the ArcFeature distance from start ApexPoint to apex ApexPoint.
 
 ### 2.18 ArcFeature.sweep\_angle <a name="arcfeature-sweep-angle"></a>
 
@@ -212,7 +212,7 @@ Return the ArcFeature type name.
 
 ### 2.20 Circle.\_\_init <a name="circle---init"></a>
 
-def \_\_init\_\_( *self*, *center*:  ApexVector, *depth*:  *float* = 0.0, *flat*:  *bool* = False, *name*:  *str* = "" ) -> None:
+def \_\_init\_\_( *self*, *center*:  ApexPoint, *depth*:  *float* = 0.0, *flat*:  *bool* = False, *name*:  *str* = "" ) -> None:
 
 Initialize a circle.
 
@@ -224,9 +224,9 @@ Return the Circle BoundingBox.
 
 ### 2.22 Circle.center <a name="circle-center"></a>
 
-def *center*(self) -> ApexVector:
+def *center*(self) -> ApexPoint:
 
-Return the Circle center ApexVector.
+Return the Circle center ApexPoint.
 
 ### 2.23 Circle.circle\_featu <a name="circle-circle-feature"></a>
 
@@ -284,7 +284,7 @@ Represents a circle in a sketch.
 
 ### 3.1 CircleFeature.\_\_init\_\_ <a name="circlefeature---init--"></a>
 
-def \_\_init\_\_(self, *drawing*:  Drawing, *center*:  ApexVector, *radius*:  *float*, *name*:  *str* = "") -> None:
+def \_\_init\_\_(self, *drawing*:  Drawing, *center*:  ApexPoint, *radius*:  *float*, *name*:  *str* = "") -> None:
 
 Initialize a CircleFeature.
 
@@ -296,7 +296,7 @@ Return a string representation of Circle.
 
 ### 3.3 CircleFeature.center <a name="circlefeature-center"></a>
 
-def *center*(self) -> ApexVector:  # *pragma*:  *no* *unit* *cover*
+def *center*(self) -> ApexPoint:  # *pragma*:  *no* *unit* *cover*
 
 Return the CircleFeature center.
 
@@ -344,7 +344,7 @@ Return the Drawing Circle's.
 
 ### 4.4 Drawing.features\_get <a name="drawing-features-get"></a>
 
-def *point\_features\_get*(self, *point*:  ApexVector, *tracing*:  *str* = "") -> Tuple["Feature", ...]:
+def *point\_features\_get*(self, *point*:  ApexPoint, *tracing*:  *str* = "") -> Tuple["Feature", ...]:
 
 Return the PointFeature Feature's.
 
@@ -368,9 +368,9 @@ Return the Drawing origin index.
 
 ### 4.8 Drawing.point\_constraints\_append <a name="drawing-point-constraints-append"></a>
 
-def *point\_constraints\_append*(self, *point*:  ApexVector, *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:  # REMOVE
+def *point\_constraints\_append*(self, *point*:  ApexPoint, *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:  # REMOVE
 
-Append ApexVector constraints to a list.
+Append ApexPoint constraints to a list.
 
 ### 4.9 Drawing.polygons <a name="drawing-polygons"></a>
 
@@ -380,7 +380,7 @@ Return the Drawing Polygon's.
 
 ### 4.10 Drawing.sketch <a name="drawing-sketch"></a>
 
-def *sketch*(self, *sketcher*:  "Sketcher.SketchObject", *lower\_left*:  ApexVector, *tracing*:  *str* = "") -> None:
+def *sketch*(self, *sketcher*:  "Sketcher.SketchObject", *lower\_left*:  ApexPoint, *tracing*:  *str* = "") -> None:
 
 Sketch a Drawing.
 
@@ -392,7 +392,7 @@ Base class a schematic features.
 
 ### 5.1 Feature.\_\_init\_\_ <a name="feature---init--"></a>
 
-def \_\_init\_\_(self, *drawing*:  Drawing, *start*:  ApexVector, *finish*:  ApexVector, *name*:  *str* = "") -> None:
+def \_\_init\_\_(self, *drawing*:  Drawing, *start*:  ApexPoint, *finish*:  ApexPoint, *name*:  *str* = "") -> None:
 
 Initialize a Feature.
 
@@ -404,7 +404,7 @@ Return the Feature Drawing.
 
 ### 5.3 Feature.finish <a name="feature-finish"></a>
 
-def *finish*(self) -> ApexVector:  # *pragma*:  *no* *unit* *test*
+def *finish*(self) -> ApexPoint:  # *pragma*:  *no* *unit* *test*
 
 Return the Feature finish point.
 
@@ -434,7 +434,7 @@ Return the previous Part Feature in circular list.
 
 ### 5.8 Feature.start <a name="feature-start"></a>
 
-def *start*(self) -> ApexVector:  # *pragma*:  *no* *unit* *test*
+def *start*(self) -> ApexPoint:  # *pragma*:  *no* *unit* *test*
 
 Return the Feature start point.
 
@@ -452,7 +452,7 @@ Represents a line segment in a sketch.
 
 ### 6.1 LineFeature.\_\_init\_\_ <a name="linefeature---init--"></a>
 
-def \_\_init\_\_(self, *drawing*:  Drawing, *start*:  ApexVector, *finish*:  ApexVector, *name*:  *str* = "", *tracing*:  *str* = "") -> None:
+def \_\_init\_\_(self, *drawing*:  Drawing, *start*:  ApexPoint, *finish*:  ApexPoint, *name*:  *str* = "", *tracing*:  *str* = "") -> None:
 
 Initialize a LineFeature.
 
@@ -464,9 +464,9 @@ Return the LineFeature Drawing.
 
 ### 6.3 LineFeature.finish <a name="linefeature-finish"></a>
 
-def *finish*(self) -> ApexVector:  # *pragma*:  *no* *unit* *cover*
+def *finish*(self) -> ApexPoint:  # *pragma*:  *no* *unit* *cover*
 
-Return the LineFeature finish ApexVector.
+Return the LineFeature finish ApexPoint.
 
 ### 6.4 LineFeature.finish\_key <a name="linefeature-finish-key"></a>
 
@@ -482,9 +482,9 @@ Return the PartFeature associated with a LineFeature.
 
 ### 6.6 LineFeature.start <a name="linefeature-start"></a>
 
-def *start*(self) -> ApexVector:
+def *start*(self) -> ApexPoint:
 
-Return the LineFeature start ApexVector.
+Return the LineFeature start ApexPoint.
 
 ### 6.7 LineFeature.start\_key <a name="linefeature-start-key"></a>
 
@@ -506,7 +506,7 @@ Represents a point in a sketch.
 
 ### 7.1 PointFeature.\_\_init\_\_ <a name="pointfeature---init--"></a>
 
-def \_\_init\_\_(self, *drawing*:  Drawing, *point*:  ApexVector, *name*:  *str* = "") -> None:
+def \_\_init\_\_(self, *drawing*:  Drawing, *point*:  ApexPoint, *name*:  *str* = "") -> None:
 
 Initialize a PointFeature.
 
@@ -524,9 +524,9 @@ Return the  PointFeature.
 
 ### 7.4 PointFeature.point <a name="pointfeature-point"></a>
 
-def *point*(self) -> ApexVector:  # *pragma*:  *no* *unit* *cover*
+def *point*(self) -> ApexPoint:  # *pragma*:  *no* *unit* *cover*
 
-Return the PointFeature ApexVector.
+Return the PointFeature ApexPoint.
 
 ### 7.5 PointFeature.type\_name <a name="pointfeature-type-name"></a>
 
@@ -542,7 +542,7 @@ Represents a polygon with possible rounded corners.
 
 ### 8.1 Polygon.\_\_init\_\_ <a name="polygon---init--"></a>
 
-def \_\_init\_\_( *self*, *points*:  Tuple[ApexVector, ...], *depth*:  *float* = 0.0, *flat*:  *bool* = False, *name*:  *str* = "" ) -> None:
+def \_\_init\_\_( *self*, *points*:  Tuple[ApexPoint, ...], *depth*:  *float* = 0.0, *flat*:  *bool* = False, *name*:  *str* = "" ) -> None:
 
 Initialize a Polygon.
 
@@ -590,6 +590,6 @@ Return the Polygon depth.
 
 ### 8.9 Polygon.points <a name="polygon-points"></a>
 
-def *points*(self) -> Tuple[ApexVector, ...]:  # *pragma*:  *no* *unit* *cover*
+def *points*(self) -> Tuple[ApexPoint, ...]:  # *pragma*:  *no* *unit* *cover*
 
 Return the Polygon points.
