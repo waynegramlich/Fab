@@ -12,7 +12,7 @@ import FreeCADGui as Gui  # type: ignore
 gui: bool = hasattr(Gui, "getMainWindow")  # Only present when Gui is active
 
 # from shopfab import importer
-from apex import ApexBoundBox, ApexMatrix, ApexPoint
+from ApexBase import ApexBoundBox, ApexMatrix, ApexPoint
 from FreeCAD import BoundBox, Vector
 import math
 from pathlib import Path  # type: ignore

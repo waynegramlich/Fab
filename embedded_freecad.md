@@ -31,7 +31,7 @@ A FreeCAD macro is basically Python program that typically has either `.py` suff
 the more common (for FreeCAD) `.FCMacro` suffix.
 The most common place where macro files reside is in the `~/.FreeCAD` directory,
 where `~` stands for current user home directory on Linux.
-All of the macros in this director are available via the [Macro] tab
+All of the macros in this directory are available via the [Macro] tab
 at the top line of FreeCAD window.
 
 It is also possible to directly execute a Python program via:
@@ -54,11 +54,12 @@ Python code with a `.FCStd` will typically not enable Python mode.
 A clever solution is to add a symbolic link (e.g. `ln -s my_code.FCStd my_code.py`)
 and point the editor at the `.py` file.
 
-Another note is that neither the FreeCAD application or the FreeCAD console
+Another note is that neither the FreeCAD application nor the FreeCAD console
 (see section immediately below) honor the `PYTHONPATH` environment variable.
-This is deliberate and ensures that is the exact same Python environment that is not
-effected by other Python applications that require PYTHONPATH modifications to properly operate.
-The workaround is add code to explictly modify `sys.path` as discussed a bit further below.
+This is deliberate and ensures that is the exact same Python environment is alway used
+and that it is not effected by other Python applications that require PYTHONPATH
+modifications to properly operate.
+The workaround is add code to explicitly modify `sys.path` as discussed a bit further below.
 
 ## Standalone FreeCAD Console
 
@@ -124,7 +125,7 @@ Alternatively, Python code can be used to accomplish the same task:
      import sys
      sys.path.append("./squashfs-root/usr/lib")
 
-## Dual Mode FreeCAD Python Program
+## Dual Mode FreeCAD Python Programs
 
 A dual mode Python program is one can be run as both FreeCAD macro and in embedded mode.
 The idea is shown immediately below:
@@ -149,6 +150,11 @@ This code looks as follows:
 
      import FreeCAD as App
      import FreeCADGui as Gui
-     gui: bool = hasattr(Gui, "getMainWindow")  # Only present when Gui is active
+     gui: bool = App.GuiUp  # Only True when GUI is active
 
-The following piece of code will exit the window system:<
+The following piece of code will exit the window system when the GUI is up:
+
+     if App.GuiUp:
+         Gui.getMainWindow().close()
+
+You may want to force a document save beforehand.
