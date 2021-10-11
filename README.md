@@ -33,12 +33,12 @@ The Apex prefix is used because it short and sounds "cool".
 
 ## Overview <a name="overview"></a>
 
-The overall strategy is that an overall project is nested tree of ApexPart's.
-The ApexPart tree leaf nodes are physical parts that can be purchased/manufactured and
+The overall strategy is that an overall project is nested tree of ApexNode's.
+The ApexNode tree leaf nodes are physical parts that can be purchased/manufactured and
 the interior nodes are sub-assemblies.
-Each part/assembly is a sub-class of ApexPart.
+Each part/assembly is a sub-class of ApexNode.
 
-The process of creating an ApexPart is as follows:
+The process of creating an ApexNode is as follows:
 1. Various lengths and angles are defined.
 2. 3D points, called ApexPoints's, are defined using the various lengths and angles.
 3. Subsets of the ApexPoints's are projected onto a 2D plane to form lines, arcs,
@@ -48,7 +48,7 @@ The process of creating an ApexPart is as follows:
    various CNC style operations such as Contouring, Drilling, Pocketing, etc.
 
 The final steps are to:
-1. The ApexPart tree is iterated over to propagate constraints between individual ApexPart's.
+1. The ApexNode tree is iterated over to propagate constraints between individual ApexNode's.
 2. The resultant design can be read into FreeCAD to view.
 3. When the design looks good, all of the manufacturing files are generated
    (e.g. .nc, .stl, .dxf files.)
@@ -62,7 +62,7 @@ The bottom up module list is:
   A libarary of base classes for lengths, angles, bounding boxes, transform matrices etc.
 * [ApexSketch](ApexSketch.md):
   A library that converts ApexPoint's into fully constrained FreeCAD sketches.
-* [ApexPart](ApexPart.md):
+* [ApexNode](ApexNode.md):
   A library that supports generating parts using the FreeCAD PartDesign workbench.
 * [ApexShop](ApexShop.md):
   A library that defines machines and tooling available in a given shop.
