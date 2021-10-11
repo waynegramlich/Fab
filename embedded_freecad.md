@@ -11,7 +11,7 @@ This document is Linux focused, since the original author uses neither Windows n
 There are two top level modules in FreeCAD:
 * FreeCAD:
   This module is the top level module primarily for managing FreeCAD geometry.
-  This module is typicxally abbreviated as App (e.g. `import FreeCAD as App`.)
+  This module is typically abbreviated as App (e.g. `import FreeCAD as App`.)
 * FreeCADGui:
   This module is used for accessing the GUI (Graphical User Interface)
   presentation issues such as visibility, transparency, color, views, etc.
@@ -72,8 +72,9 @@ In this mode,
 the FreeCADGui module can be imported (i.e. `import FreeCADGui as Gui`),
 but it has much reduced functionality.
 Running `dir(Gui)` in this mode will show a very minimal list of attributes/methods.
-Current the methods are `embedToWindow`, `exec_loop`, `setupWithoutGUI1, and `showMainWindow`.
+The current Gui methods are `embedToWindow`, `exec_loop`, `setupWithoutGUI1, and `showMainWindow`.
 In general, no attempt should be made to do GUI operations from this console session.
+The `App.GuiUp` attribute is `True` when the GUI is available and `False` otherwise.
 
 To list all of the available modules available to import in this environment type:
 
@@ -114,16 +115,22 @@ For example:
 will create the `squashfs-root` directory that contains consistent files.
 All of the relevant files are in `squashfs-root/usr/lib` which can readily
 be added to the python interpreter path.
-The easiest way is to simply add `squashfs-root/usr/lib` to the `PYTHONPATH`
-environment variable:
 
-     export PYTHONPATH="$PYTHONPATH:squashfs-root/usr/lib"
+The are two ways to get `squashfs-root/usr/lib` into the `PYTHONPATH`.
 
-will do the trick.
-Alternatively, Python code can be used to accomplish the same task:
+1. The easiest way is to simply add `squashfs-root/usr/lib` to the `PYTHONPATH`
+   environment variable:
 
-     import sys
-     sys.path.append("./squashfs-root/usr/lib")
+        export PYTHONPATH="$PYTHONPATH:squashfs-root/usr/lib"
+
+2. Python code can be used to accomplish the same task:
+
+        import sys
+       sys.path.append("./squashfs-root/usr/lib")
+
+Of the two methods, the `sys.path.append` method is preferred because not everybody
+will remember to set up PYTHONPATH beforehand.
+
 
 ## Dual Mode FreeCAD Python Programs
 
@@ -144,17 +151,16 @@ This code looks as follows:
      import os
      import sys
 	
-     assert os.version_info.major == 3  # Python 3.x
-     assert os.version_info.minor == 8  # Python 3.8
+     assert os.version_info.major == 3, "Python 3.x is not running"
+     assert os.version_info.minor == 8, "Python 3.8 is not running"
      sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 
-     import FreeCAD as App
-     import FreeCADGui as Gui
-     gui: bool = App.GuiUp  # Only True when GUI is active
+     import FreeCAD as App  # type: ignore
+     import FreeCADGui as Gui  # type: ignore
+     # Note: App.GuiUp is only True when Gui is actually active.
 
 The following piece of code will exit the window system when the GUI is up:
 
+     # Now is a good time to save a document:
      if App.GuiUp:
          Gui.getMainWindow().close()
-
-You may want to force a document save beforehand.

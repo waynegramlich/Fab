@@ -260,7 +260,7 @@ Return whether the Circle bottom is flat.
 
 ### 2.28 Circle.forward\_transform <a name="circle-forward-transform"></a>
 
-def *forward\_transform*(self, *matrix*:  ApexMatrix) -> "Circle":
+def *forward\_transform*(self, *matrix*:  ApexPlace) -> "Circle":
 
 Return a forward transformed Circle.
 
@@ -350,7 +350,7 @@ Return the PointFeature Feature's.
 
 ### 4.5 Drawing.forward\_transform <a name="drawing-forward-transform"></a>
 
-def *forward\_transform*(self, *matrix*:  ApexMatrix) -> "Drawing":
+def *forward\_transform*(self, *matrix*:  ApexPlace) -> "Drawing":
 
 Return an Drawing that is offset via a forward transform.
 

@@ -9,10 +9,9 @@ sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 
 import FreeCAD as App  # type: ignore
 import FreeCADGui as Gui  # type: ignore
-gui: bool = hasattr(Gui, "getMainWindow")  # Only present when Gui is active
 
 # from shopfab import importer
-from ApexBase import ApexBoundBox, ApexMatrix, ApexPoint
+from ApexBase import ApexBoundBox, ApexPlace, ApexPoint
 from FreeCAD import BoundBox, Vector
 import math
 from pathlib import Path  # type: ignore
@@ -64,7 +63,7 @@ class Drawing(object):
         return self._circles  # pragma: no unit test
 
     # Drawing.forward_transform():
-    def forward_transform(self, matrix: ApexMatrix) -> "Drawing":
+    def forward_transform(self, matrix: ApexPlace) -> "Drawing":
         """Return an Drawing that is offset via a forward transform."""
         circle: Circle
         circles: Tuple[Circle, ...] = tuple([circle.forward_transform(matrix)
@@ -1085,7 +1084,7 @@ class Polygon(object):
         """Return the Polygon points."""
         return self._points
 
-    def forward_transform(self, matrix: ApexMatrix) -> "Polygon":
+    def forward_transform(self, matrix: ApexPlace) -> "Polygon":
         """Return a forward transformed Polygon."""
         point: ApexPoint
         points: Tuple[ApexPoint, ...] = tuple([point.forward(matrix) for point in self._points])
@@ -1216,7 +1215,7 @@ class Circle(object):
         return (circle_feature,)
 
     # Circle.forward_transform():
-    def forward_transform(self, matrix: ApexMatrix) -> "Circle":
+    def forward_transform(self, matrix: ApexPlace) -> "Circle":
         """Return a forward transformed Circle."""
         center: ApexPoint = self.center
         vector: Vector = Vector(center.x, center.y, center.z)
@@ -1241,7 +1240,7 @@ class Circle(object):
 def visibility_set(element: Any, new_value: bool = True) -> None:
     """Set the visibility of an element."""
     # print(f"=>visibility_set({element}, {new_value})")
-    if gui:   # pragma: no unit cover
+    if App.GuiUp:   # pragma: no unit cover
         gui_document: Optional[Any] = (
             Gui.ActiveDocument if hasattr(Gui, "ActiveDocument") else None)
         if gui_document and hasattr(gui_document, "Name"):
@@ -1363,7 +1362,7 @@ def main() -> int:
         origin_vector: Vector = drawing.bounding_box.BSW
         drawing_origin: ApexPoint = ApexPoint(origin_vector.x, origin_vector.y, 0.0)
         vector: Vector = Vector(drawing_origin.x, drawing_origin.y, drawing_origin.z)
-        reorigin: ApexMatrix = ApexMatrix(translate=-vector, name=f"{drawing.name} reorigin")
+        reorigin: ApexPlace = ApexPlace(translate=-vector, name=f"{drawing.name} reorigin")
         drawing = drawing.forward_transform(reorigin)
         drawing.sketch(sketch, drawing_origin, tracing="")
 
@@ -1382,7 +1381,7 @@ def main() -> int:
 
     # Close *document_name* and exit by closing the main window:
     App.closeDocument(document_name)
-    if gui:
+    if App.GuiUp:
         Gui.getMainWindow().close()  # pragma: no unit cover
     return 0
 

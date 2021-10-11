@@ -13,8 +13,8 @@ Table of Contents:
   * 3.3 [ApexLength.\_\_str\_\_](#apexlength---str--)
   * 3.4 [ApexLength.unit\_test](#apexlength-unit-test)
   * 3.5 [ApexLength.unit\_test](#apexlength-unit-test)
-* 4 [Class ApexMatrix](#apexmatrix)
-  * 4.1 [ApexMatrix.\_\_init\_\_](#apexmatrix---init--)
+* 4 [Class ApexPlace](#apexplace)
+  * 4.1 [ApexPlace.\_\_init\_\_](#apexplace---init--)
 * 5 [Class ApexPoint](#apexpoint)
   * 5.1 [ApexPoint.\_\_add\_\_](#apexpoint---add--)
   * 5.2 [ApexPoint.\_\_init\_\_](#apexpoint---init--)
@@ -43,7 +43,7 @@ The Apex Base classes are:
   This is a wrapper class around the FreeCAD Vector class that adds an optional diameter
   and name for each 3D Vector point.  For the same technical reasons, this is not a true
   sub-class of Vector.
-* ApexMatrix:
+* ApexPlace:
   This is a wrapper class around the FreeCAD Matrix class that provides an openGL style
   transformation consisting of a rotation point, rotation axis, and rotation angle,
   followed by a final translation.  It also computes the inverse matrix.
@@ -182,11 +182,11 @@ def *unit\_tests*() -> None:  Perform Unit *tests* *for* ApexLength. *def* *chec
 
 Ensure that an ApexLength has the right values.
 
-## 4 Class ApexMatrix <a name="apexmatrix"></a>
+## 4 Class ApexPlace <a name="apexplace"></a>
 
-class ApexMatrix:
+class ApexPlace:
 
-ApexMatrix is a wrapper around the FreeCAD Matrix class.
+ApexPlace is a wrapper around the FreeCAD Matrix class.
 
 This is a wrapper class around the FreeCAD Matrix class that provides an openGL style
 transformation consisting of a rotation point, rotation axis, and rotation angle,
@@ -196,11 +196,11 @@ followed by a final translation.  It also computes the inverse matrix.
   * *forward* (Matrix): A FreeCAD Matrix that maps a Vector to a new location.
   * *reverse* (Matrix): The inverse FreeCAD matrix that for new not location back.
 
-### 4.1 ApexMatrix.\_\_init\_\_ <a name="apexmatrix---init--"></a>
+### 4.1 ApexPlace.\_\_init\_\_ <a name="apexplace---init--"></a>
 
 def \_\_init\_\_(self, *center*:  Optional[Union[ApexPoint, Vector]] = None, *axis*:  Optional[Union[ApexPoint, Vector]] = None, # Z *axis* *angle*:  Optional[float] = None, *translate*:  Optional[Union[ApexPoint, Vector]] = None, *name*:  Optional[str] = None, *tracing*:  *str* = "") -> None:
 
-Create ApexMatrix rotation with point/axis/angle and a translate.
+Create ApexPlace rotation with point/axis/angle and a translate.
 
 ## 5 Class ApexPoint <a name="apexpoint"></a>
 
@@ -280,9 +280,9 @@ Return the atan2 of the x and y values.
 
 ### 5.10 ApexPoint.forward <a name="apexpoint-forward"></a>
 
-def *forward*(self, *matrix*:  "ApexMatrix") -> "ApexPoint":
+def *forward*(self, *matrix*:  "ApexPlace") -> "ApexPoint":
 
-Perform a forward matrix transform using an ApexMatrix.
+Perform a forward matrix transform using an ApexPlace.
 
 ### 5.11 ApexPoint.magnitude <a name="apexpoint-magnitude"></a>
 

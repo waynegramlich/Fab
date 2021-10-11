@@ -13,7 +13,7 @@ The Apex Base classes are:
   This is a wrapper class around the FreeCAD Vector class that adds an optional diameter
   and name for each 3D Vector point.  For the same technical reasons, this is not a true
   sub-class of Vector.
-* ApexMatrix:
+* ApexPlace:
   This is a wrapper class around the FreeCAD Matrix class that provides an openGL style
   transformation consisting of a rotation point, rotation axis, and rotation angle,
   followed by a final translation.  It also computes the inverse matrix.
@@ -23,19 +23,14 @@ The Apex Base classes are:
 import os
 import sys
 
-assert sys.version_info.major == 3  # Python 3.x
-assert sys.version_info.minor == 8  # Python 3.8
+assert sys.version_info.major == 3, "Python 3.x is not running"
+assert sys.version_info.minor == 8, "Python 3.8 is not running"
 sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 
-import FreeCAD  # type: ignore
-_ = FreeCAD  # Suppress Flake8 F401 error.
-import FreeCADGui as Gui  # type: ignore
-gui: bool = hasattr(Gui, "getMainWindow")  # Only present when Gui is active
+from FreeCAD import BoundBox, Matrix, Vector  # type: ignore
 
 import math
 from typing import Any, Callable, ClassVar, List, Dict, Optional, Tuple, Union
-
-from FreeCAD import BoundBox, Matrix, Vector
 
 
 # ApexLength:
@@ -677,8 +672,8 @@ class ApexPoint:
         return math.atan2(self.x, self.y)
 
     # ApexPoint.forward():
-    def forward(self, matrix: "ApexMatrix") -> "ApexPoint":
-        """Perform a forward matrix transform using an ApexMatrix."""
+    def forward(self, matrix: "ApexPlace") -> "ApexPoint":
+        """Perform a forward matrix transform using an ApexPlace."""
         vector: Vector = matrix.forward * self.vector
         return ApexPoint(vector.x, vector.y, vector.z, self.diameter, self.name)
 
@@ -703,9 +698,9 @@ class ApexPoint:
         assert apex_vector.__repr__() == want
 
 
-# ApexMatrix:
-class ApexMatrix:
-    """ApexMatrix is a wrapper around the FreeCAD Matrix class.
+# ApexPlace:
+class ApexPlace:
+    """ApexPlace is a wrapper around the FreeCAD Matrix class.
 
     This is a wrapper class around the FreeCAD Matrix class that provides an openGL style
     transformation consisting of a rotation point, rotation axis, and rotation angle,
@@ -730,7 +725,7 @@ class ApexMatrix:
     # The 4x4 matrix (on left) is multiplied with a vertex (1x4) on the right to yield
     # the translated point.
 
-    # ApexMatrix.__init__():
+    # ApexPlace.__init__():
     def __init__(self,
                  center: Optional[Union[ApexPoint, Vector]] = None,
                  axis: Optional[Union[ApexPoint, Vector]] = None,  # Z axis
@@ -738,9 +733,9 @@ class ApexMatrix:
                  translate: Optional[Union[ApexPoint, Vector]] = None,
                  name: Optional[str] = None,
                  tracing: str = "") -> None:
-        """Create ApexMatrix rotation with point/axis/angle and a translate."""
+        """Create ApexPlace rotation with point/axis/angle and a translate."""
         if tracing:
-            print(f"{tracing}=>ApexMatrix.__new___("
+            print(f"{tracing}=>ApexPlace.__new___("
                   f"{center}, {axis}, {angle}, {translate}, '{name}')")
         # Arguments are only used for __str__():
         arguments: Tuple[Union[None, ApexPoint, Vector], ...] = (
@@ -768,8 +763,8 @@ class ApexMatrix:
         rotate_forward: Matrix
         rotate_reverse: Matrix
         try:
-            rotate_forward = ApexMatrix._rotate(axis, angle)
-            rotate_reverse = ApexMatrix._rotate(axis, -angle)
+            rotate_forward = ApexPlace._rotate(axis, angle)
+            rotate_reverse = ApexPlace._rotate(axis, -angle)
         except ValueError as value_error:
             if tracing:
                 print(f"{tracing}<=Raising {value_error}")
@@ -785,7 +780,7 @@ class ApexMatrix:
         self._forward: Matrix = forward
         self._reverse: Matrix = reverse
         if tracing:
-            print(f"{tracing}<=ApexMatrix.__new___("
+            print(f"{tracing}<=ApexPlace.__new___("
                   f"{center}, {axis}, {angle}, {translate}, '{name}')")
 
     @staticmethod
@@ -810,7 +805,7 @@ class ApexMatrix:
         angle = angle if angle <= pi else angle - pi2
         assert -pi <= angle <= pi, f"{angle=}"
 
-        zf: Callable[[float], float] = ApexMatrix.zf
+        zf: Callable[[float], float] = ApexPlace.zf
         # Compute the X/Y/Z components of a normal vector of *length* 1.
         axis = axis.vector if isinstance(axis, ApexPoint) else axis
         assert isinstance(axis, Vector)
@@ -872,15 +867,15 @@ class ApexMatrix:
         element: float
         cleaned_elements: List[float] = []
         for element in elements:
-            cleaned_elements.append(ApexMatrix.zf(element))
+            cleaned_elements.append(ApexPlace.zf(element))
         return Matrix(*cleaned_elements)
 
     def __repr__(self) -> str:
-        """Return string representation of an ApexMatrix."""
+        """Return string representation of an ApexPlace."""
         return self.__str__()
 
     def __str__(self) -> str:
-        """Return string representation of an ApexMatrix."""
+        """Return string representation of an ApexPlace."""
         # Assemble *results* which is the list of positonal and keyword arguments:
         keywords: Tuple[str, ...] = ("center=", "axis=", "angle=", "translate=", "name=")
         keywords_needed: bool = False
@@ -894,7 +889,7 @@ class ApexMatrix:
                 results.append(keywords[index] + result if keywords_needed else result)
             else:
                 keywords_needed = True
-        return f"ApexMatrix({', '.join(results)})"
+        return f"ApexPlace({', '.join(results)})"
 
     @property
     def forward(self) -> Matrix:
@@ -909,45 +904,45 @@ class ApexMatrix:
     @staticmethod
     def unit_tests() -> None:
         """Run unit tests."""
-        identity: ApexMatrix = ApexMatrix()
+        identity: ApexPlace = ApexPlace()
 
-        # Create some ApexMatrix's and verity that __str__() yields the same output:
-        assert isinstance(identity, ApexMatrix), f"{identity}"
-        want: str = "ApexMatrix()"
+        # Create some ApexPlace's and verity that __str__() yields the same output:
+        assert isinstance(identity, ApexPlace), f"{identity}"
+        want: str = "ApexPlace()"
         assert f"{identity}" == want, f"{identity=})"
         assert f"{identity}" == identity.__repr__(), f"{identity=}"
 
         # Test the __str__() method:
-        x_translate: ApexMatrix = ApexMatrix(translate=Vector(1, 0, 0), name="x_translate")
-        want = "ApexMatrix(translate=Vector (1.0, 0.0, 0.0), name='x_translate')"
+        x_translate: ApexPlace = ApexPlace(translate=Vector(1, 0, 0), name="x_translate")
+        want = "ApexPlace(translate=Vector (1.0, 0.0, 0.0), name='x_translate')"
         assert f"{x_translate}" == want, f"{x_translate=}"
 
-        y_translate: ApexMatrix = ApexMatrix(translate=Vector(0, 2, 0), name="y_translate")
-        want = "ApexMatrix(translate=Vector (0.0, 2.0, 0.0), name='y_translate')"
+        y_translate: ApexPlace = ApexPlace(translate=Vector(0, 2, 0), name="y_translate")
+        want = "ApexPlace(translate=Vector (0.0, 2.0, 0.0), name='y_translate')"
         assert f"{y_translate}" == want, f"{y_translate=}"
 
-        z_translate: ApexMatrix = ApexMatrix(translate=Vector(0, 0, 3), name="z_translate")
-        want = "ApexMatrix(translate=Vector (0.0, 0.0, 3.0), name='z_translate')"
+        z_translate: ApexPlace = ApexPlace(translate=Vector(0, 0, 3), name="z_translate")
+        want = "ApexPlace(translate=Vector (0.0, 0.0, 3.0), name='z_translate')"
         assert f"{z_translate}" == want, f"{z_translate=}"
 
-        x90: ApexMatrix = ApexMatrix(axis=Vector(1, 0, 0), angle=90.0, name="x90")
-        want = "ApexMatrix(axis=Vector (1.0, 0.0, 0.0), angle=90.0, name='x90')"
+        x90: ApexPlace = ApexPlace(axis=Vector(1, 0, 0), angle=90.0, name="x90")
+        want = "ApexPlace(axis=Vector (1.0, 0.0, 0.0), angle=90.0, name='x90')"
         assert f"{x90}" == want, f"{x90=}"
 
-        want = "ApexMatrix(axis=Vector (0.0, 1.0, 0.0), angle=90.0, name='y90')"
-        y90: ApexMatrix = ApexMatrix(axis=Vector(0, 1, 0), angle=90.0, name="y90")
+        want = "ApexPlace(axis=Vector (0.0, 1.0, 0.0), angle=90.0, name='y90')"
+        y90: ApexPlace = ApexPlace(axis=Vector(0, 1, 0), angle=90.0, name="y90")
         assert f"{y90}" == want, f"{y90=}"
 
-        want = "ApexMatrix(axis=Vector (0.0, 1.0, 0.0), angle=90.0, name='z90a')"
-        z90a: ApexMatrix = ApexMatrix(axis=Vector(0, 1, 0), angle=90.0, name="z90a")
+        want = "ApexPlace(axis=Vector (0.0, 1.0, 0.0), angle=90.0, name='z90a')"
+        z90a: ApexPlace = ApexPlace(axis=Vector(0, 1, 0), angle=90.0, name="z90a")
         assert f"{z90a}" == want, f"{z90a=}"
 
-        z90b: ApexMatrix = ApexMatrix(angle=90.0, name="z90b")
-        want = "ApexMatrix(angle=90.0, name='z90b')"
+        z90b: ApexPlace = ApexPlace(angle=90.0, name="z90b")
+        want = "ApexPlace(angle=90.0, name='z90b')"
         assert f"{z90b}" == want, f"{z90b=}"
 
-        cx90: ApexMatrix = ApexMatrix(Vector(1, 1, 1), Vector(1, 0, 0), 90.0, name="cx90")
-        want = "ApexMatrix(Vector (1.0, 1.0, 1.0), Vector (1.0, 0.0, 0.0), 90.0, name='cx90')"
+        cx90: ApexPlace = ApexPlace(Vector(1, 1, 1), Vector(1, 0, 0), 90.0, name="cx90")
+        want = "ApexPlace(Vector (1.0, 1.0, 1.0), Vector (1.0, 0.0, 0.0), 90.0, name='cx90')"
         assert f"{cx90}" == want, f"{cx90=}"
 
         # Test translate only:
@@ -955,12 +950,12 @@ class ApexMatrix:
         assert v123.vector == Vector(1, 2, 3)
         m_t123: Matrix = Matrix()
         m_t123.move(v123.vector)
-        ap_t123: ApexMatrix = ApexMatrix(translate=v123)
+        ap_t123: ApexPlace = ApexPlace(translate=v123)
         assert ap_t123.forward.A == m_t123.A
         assert (ap_t123.forward * ap_t123.reverse).A == identity.forward.A
 
         degrees90: float = math.pi / 2.0
-        matrix_clean: Callable[[Matrix], Matrix] = ApexMatrix.matrix_clean
+        matrix_clean: Callable[[Matrix], Matrix] = ApexPlace.matrix_clean
         v100: Vector = Vector(1, 0, 0)  # X axis
         v010: Vector = Vector(0, 1, 0)  # Y axis
         v001: Vector = Vector(0, 0, 1)  # Z axis
@@ -969,7 +964,7 @@ class ApexMatrix:
         m_x90: Matrix = Matrix()
         m_x90.rotateX(degrees90)
         m_x90 = matrix_clean(m_x90)
-        ap_x90: ApexMatrix = ApexMatrix(axis=ApexPoint(1, 0, 0), angle=degrees90)
+        ap_x90: ApexPlace = ApexPlace(axis=ApexPoint(1, 0, 0), angle=degrees90)
         assert m_x90.A == ap_x90.forward.A, f"{m_x90.A} != {ap_x90.forward.A}"
         m_v: Vector = m_x90 * v010
         ap_v: Vector = ap_x90.forward * v010
@@ -979,7 +974,7 @@ class ApexMatrix:
         m_y90: Matrix = Matrix()
         m_y90.rotateY(degrees90)
         m_y90 = matrix_clean(m_y90)
-        ap_y90: ApexMatrix = ApexMatrix(axis=ApexPoint(0, 1, 0), angle=degrees90)
+        ap_y90: ApexPlace = ApexPlace(axis=ApexPoint(0, 1, 0), angle=degrees90)
         assert m_y90.A == ap_y90.forward.A, f"{m_y90.A} != {ap_y90.forward.A}"
         m_v = m_y90 * v001
         ap_v = ap_y90.forward * v001
@@ -989,7 +984,7 @@ class ApexMatrix:
         m_z90: Matrix = Matrix()
         m_z90.rotateZ(degrees90)
         m_z90 = matrix_clean(m_z90)
-        ap_z90: ApexMatrix = ApexMatrix(angle=degrees90)
+        ap_z90: ApexPlace = ApexPlace(angle=degrees90)
         assert m_z90.A == ap_z90.forward.A, f"{m_z90.A} != {ap_z90.forward.A}"
         m_v = m_z90 * v100
         ap_v = ap_z90.forward * v100
@@ -997,7 +992,7 @@ class ApexMatrix:
 
         # Do some error tests:
         try:
-            ApexMatrix(axis=Vector(0, 0, 0), angle=degrees90)
+            ApexPlace(axis=Vector(0, 0, 0), angle=degrees90)
             assert False, "Should have failed"  # pragma: no unit cover
         except ValueError as error:
             assert str(error) == "Axis has a length of 0.0"
@@ -1006,7 +1001,7 @@ class ApexMatrix:
 def main() -> None:
     """Run the unit tests."""
     ApexBoundBox.unit_tests()
-    ApexMatrix.unit_tests()
+    ApexPlace.unit_tests()
     ApexLength.unit_tests()
     ApexPoint.unit_tests()
 
