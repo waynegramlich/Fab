@@ -1,7 +1,11 @@
 [run]
+# *signature_bootstrap*  # needed for ApexPath.py
+#  */usr/Ext/*           # needed for ApexPath.py
 omit =
     /usr/*
     squashfs-root/usr/Mod/*
+    *signature_bootstrap*
+    */usr/Ext/*
 
 [report]
 # Regular expressions to exclude code blocks from reports:

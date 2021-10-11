@@ -7,6 +7,8 @@ PY2MD := py2md.py
 
 PY_FILES := \
     ApexBase.py \
+    ApexNode.py \
+    ApexPath.py \
     ApexSketch.py \
     fcstd_tar_sync.py \
     py2md.py
@@ -35,7 +37,7 @@ tests: .tests
 	   then $(PIP) install coverage ; # Do the install \
 	fi  # .coveragerc file controls the `# pragma: no cover` and other options.
 	$(COVERAGE) erase  # Erase previous coverage runs.
-	for py_file in ${PYTHON_FILES}; do  # Collect coverage on the specified files. \
+	for py_file in ${PY_FILES}; do  # Collect coverage on the specified files. \
 	    $(COVERAGE) run --append "$${py_file}" --unit-test ; # --unit-test forces unit tests \
 	done
 	$(COVERAGE) annotate  # Generate annotated coverage files.
@@ -51,7 +53,7 @@ tests: .tests
 	$(PY2MD) $<
 .%.lint: %.py
 	mypy  $<
-	flake8 --max-line-length=100 --ignore=E402 $<
+	flake8 --max-line-length=100 --ignore=E402,W504 $<
 	pydocstyle $<
 	touch $@
 %.html: %.md
