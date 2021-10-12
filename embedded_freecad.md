@@ -161,6 +161,6 @@ This code looks as follows:
 
 The following piece of code will exit the window system when the GUI is up:
 
-     # Now is a good time to save a document:
+     # It might make sense to save any open documents before exiting.
      if App.GuiUp:
          Gui.getMainWindow().close()

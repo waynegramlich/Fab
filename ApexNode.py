@@ -16,7 +16,14 @@ to subclass:
       def __init__(self, name: str, parent: ApexClass, other_args...) -> None:
           '''Initialize MyClass.'''
           super().__init__(self, name, parent)
+          ...
 
+      def configure(self) -> None:
+          '''Configure MyClass.'''
+          ...
+
+      def build(self) -> None:
+          '''Build MyClass.'''
           ...
 
 """
@@ -32,13 +39,22 @@ assert sys.version_info.major == 3  # Python 3.x
 assert sys.version_info.minor == 8  # Python 3.8
 sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 
-import FreeCAD as App  # type: ignore
-gui: bool = App.GuiUp
-import FreeCADGui as Gui  # type: ignore
-_ = Gui
-
-from FreeCAD import Vector
+from FreeCAD import Vector  # type: ignore
 from ApexBase import ApexLength, ApexPoint, ApexBoundBox
+
+
+# ApexContext:
+class ApexContext:
+    """Build context object for controlling build.
+
+    Attributes:
+    * *foo*: foo.
+
+    """
+
+    def __init__(self) -> None:
+        """Initialize context."""
+        self.foo: int = 3
 
 
 # ApexNode:
@@ -83,36 +99,71 @@ class ApexNode(object):
             node = node._parent
         return ".".join(reversed(names))
 
+    # ApexNode.build():
+    def build(self, context: ApexContext) -> None:
+        """Build an ApexNode.
+
+        * Arguments:
+          * *context* (ApexContext): The context information for the entire build.
+
+        The sub-class should override this method to build the node.
+        """
+        pass  # pragma: no unit cover
+
     # ApexNode.configure():
     def configure(self) -> None:
-        """Configure a node.
+        """Configure an ApexNode.
 
         The sub-class should override this method to configure dimensions, etc.
         """
-        pass
+        pass  # pragma: no unit cover
 
-    def _configure(self, values: Dict[str, Any]) -> None:
-        """Recursively configure an ApexNode tree."""
-        if hasattr(self, "configure"):
-            self.configure()
+    # ApexNode.configure_and_build():
+    def configure_and_build(self, count: int = 25, tracing: str = "") -> None:
+        """Recursively configure and build the entire ApexNode tree.
 
-        ignore_names: Tuple[str, ...] = ("", "name", "parent", "full_path", "configure")
+        * Arguments:
+          *count* (int): The maximum number of configuration iterations:
+        """
+        # next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print("=>ApexNode.configure_and_build('{self.full_path}')")
+        context: ApexContext = ApexContext()
+        differences: Tuple[Tuple[str, Any, Any], ...] = self._configure_all(count=count)
+        if differences:
+            difference: Tuple[str, Any, Any]
+            difference_names: Tuple[str, ...] = tuple([difference[0] for difference in differences])
+            print(f"Constraint issues: {difference_names}")
+        else:
+            self._build_all(context)  # , tracing=next_tracing)
+        if tracing:
+            print("<=ApexNode.configure_and_build('{self.full_path}')")
+
+    def _build_all(self, context: ApexContext, tracing: str = "") -> None:
+        """Recursively build an ApexNode tree."""
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>ApexNode._build_all('{self.full_path}')")
+
+        if hasattr(self, "build"):
+            self.build(context)
+
         name: str
         value: Any
         for name, value in self.__dict__.items():
-            if name not in ignore_names and name[0] != "_":
-                if isinstance(value, (bool, int, float, ApexPoint, ApexLength)):
-                    values[f"{self.full_path}:{name}"] = value
-                elif isinstance(value, ApexNode):
-                    value._configure(values)
+            if not name.startswith("_") and isinstance(value, ApexNode):
+                value._build_all(context, tracing=next_tracing)
+        if tracing:
+            print(f"{tracing}<=ApexNode._build_all('{self.full_path}')")
 
-    def _configure_loop(self,
-                        count: int = 5, verbose: bool = True) -> Tuple[Tuple[str, Any, Any], ...]:
+    def _configure_all(self,
+                       count: int = 25, verbose: bool = True) -> Tuple[Tuple[str, Any, Any], ...]:
         """Recursively configure an ApexNode Tree.
 
         * Arguments:
           * *count* (int): The maximum number of iterations to try.
           * *verbose* (bool): If True, print a 1 line progress message for each iteration.
+
         * Returns:
           * Return (Tuple[Tuple[str, Any, Any], ...]) which is a sorted tuple of differences,
             where [0] is the name, [1] is the previous value, and [2] is the current value.
@@ -125,7 +176,7 @@ class ApexNode(object):
             # Recursively collect configurable values:
             previous_key_values = current_key_values
             current_key_values = {}
-            self._configure(current_key_values)
+            self._configure_helper(current_key_values)
 
             # Collect each difference onto *differences*:
             differences = []
@@ -133,7 +184,7 @@ class ApexNode(object):
             previous_keys: Set[str] = set(previous_key_values)
             current_keys: Set[str] = set(current_key_values)
             for key in previous_keys - current_keys:
-                differences.append((key, previous_key_values[key], None))
+                differences.append((key, previous_key_values[key], None))  # pragma: no unit cover
             for key in current_keys - previous_keys:
                 differences.append((key, None, current_key_values[key]))
             for key in previous_keys & current_keys:
@@ -154,6 +205,21 @@ class ApexNode(object):
             difference_keys: Tuple[str, ...] = tuple([difference[0] for difference in differences])
             print(f"configure[FINAL]: The following are not stable: {difference_keys}")
         return tuple(differences)
+
+    def _configure_helper(self, values: Dict[str, Any]) -> None:
+        """Recursively configure an ApexNode tree."""
+        if hasattr(self, "configure"):
+            self.configure()
+
+        ignore_names: Tuple[str, ...] = ("", "name", "parent", "full_path", "configure")
+        name: str
+        value: Any
+        for name, value in self.__dict__.items():
+            if name not in ignore_names and name[0] != "_":
+                if isinstance(value, (bool, int, float, ApexPoint, ApexLength)):
+                    values[f"{self.full_path}:{name}"] = value
+                elif isinstance(value, ApexNode):
+                    value._configure_helper(values)
 
 
 def unit_tests() -> None:
@@ -195,6 +261,9 @@ def unit_tests() -> None:
             self.west_side: Block = Block(
                 "West", self, bb.TNW - z_dw + z_dw, bb.BSW + z_dw - z_dw, "blue")
 
+        def build(self, context: ApexContext) -> None:
+            print("<=>Box.build(*)")
+
         def configure(self) -> None:
             bb: ApexBoundBox = self.bb
             dxyz: Vector = bb.TNE - bb.BSW
@@ -209,6 +278,7 @@ def unit_tests() -> None:
         def __init__(self, name: str, parent: ApexNode, tne: Vector, bsw: Vector,
                      color: str = "") -> None:
             super().__init__(name, parent)
+            assert self.parent == parent, "parent is not set?"
             self.tne: Vector = tne
             self.bsw: Vector = bsw
             self.volume = 0
@@ -217,17 +287,21 @@ def unit_tests() -> None:
             dxyz: Vector = self.tne - self.bsw
             self.volume: float = dxyz.x * dxyz.y * dxyz.z
 
+        def build(self, context: ApexContext) -> None:
+            print(f"<=>Block.build({self.full_path})")
+
     # Constraints should down to zero differences with *count*=3.
     box: ApexNode = Box(
         "Test_Box", ApexLength(20.0), ApexLength(15.0), ApexLength(10.0), ApexLength(0.5))
-    differences: Tuple[Tuple[str, Any, Any], ...] = box._configure_loop(count=3)
+    differences: Tuple[Tuple[str, Any, Any], ...] = box._configure_all(count=3)
     want: Tuple[Tuple[str, Any, Any], ...] = ()
     assert differences == want, f"Got {differences} instead of {want=}"
+    box.configure_and_build(tracing=" ")
 
     # Constraints should be down to 1 difference with *count*=2:
     box = Box(
         "Test_Box", ApexLength(30.0), ApexLength(25.0), ApexLength(15.0), ApexLength(0.75))
-    differences = box._configure_loop(count=2)
+    differences = box._configure_all(count=2)
     want = (('Test_Box:skin_volume', 0.0, 0.0),)
     assert differences == want, f"Got {differences} instead of {want=}"
 
