@@ -20,6 +20,8 @@ The Apex Base classes are:
 
 """
 
+# <--------------------------------------- 100 characters ---------------------------------------> #
+
 import os
 import sys
 
@@ -998,7 +1000,39 @@ class ApexPlace:
             assert str(error) == "Axis has a length of 0.0"
 
 
-def main() -> None:
+# ApexMaterial:
+class ApexMaterial(object):
+    """ApexMaterial: Represents a stock material.
+
+    Other properties to be added later (e.g. transparency, shine, machining properties, etc.)
+
+    Attributes:
+    * *name* (Tuple[str, ...]): A list of material names from generict to specific.
+    * *color* (str): The color name to use.
+
+    """
+
+    # ApexMaterial.__init__():
+    def __init__(self, name: Tuple[str, ...], color: str) -> None:
+        """Initialize and ApexMaterial.
+
+        * Arguments:
+          * *name* (Tuple[str, ...): Non-empty to tuple of material names from broad to narrow.
+          * *color* (str):
+             An [SVG color name](https://www.december.com/html/spec/colorsvgsvg.html).
+
+        * Raises:
+          * ValueError for either an empty name or a bad svg color.
+        """
+        if not name:
+            raise ValueError(f"Material name is an empty tuple.")
+        # Check for SVG color here.
+        self.name: Tuple[str, ...] = name
+        self.color: str = color
+
+
+# unit_tests():
+def unit_tests() -> None:
     """Run the unit tests."""
     ApexBoundBox.unit_tests()
     ApexPlace.unit_tests()
@@ -1007,4 +1041,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    unit_tests()

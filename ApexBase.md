@@ -13,20 +13,23 @@ Table of Contents:
   * 3.3 [ApexLength.\_\_str\_\_](#apexlength---str--)
   * 3.4 [ApexLength.unit\_test](#apexlength-unit-test)
   * 3.5 [ApexLength.unit\_test](#apexlength-unit-test)
-* 4 [Class ApexPlace](#apexplace)
-  * 4.1 [ApexPlace.\_\_init\_\_](#apexplace---init--)
-* 5 [Class ApexPoint](#apexpoint)
-  * 5.1 [ApexPoint.\_\_add\_\_](#apexpoint---add--)
-  * 5.2 [ApexPoint.\_\_init\_\_](#apexpoint---init--)
-  * 5.3 [ApexPoint.\_\_neg\_\_](#apexpoint---neg--)
-  * 5.4 [ApexPoint.\_\_repr\_\_](#apexpoint---repr--)
-  * 5.5 [ApexPoint.\_\_rmul\_\_](#apexpoint---rmul--)
-  * 5.6 [ApexPoint.\_\_str\_\_](#apexpoint---str--)
-  * 5.7 [ApexPoint.\_\_sub\_\_](#apexpoint---sub--)
-  * 5.8 [ApexPoint.\_\_truediv\_\_](#apexpoint---truediv--)
-  * 5.9 [ApexPoint.atan2](#apexpoint-atan2)
-  * 5.10 [ApexPoint.forward](#apexpoint-forward)
-  * 5.11 [ApexPoint.magnitude](#apexpoint-magnitude)
+* 4 [Class ApexMaterial](#apexmaterial)
+  * 4.1 [ApexMaterial.\_\_init\_\_](#apexmaterial---init--)
+* 5 [Class ApexPlace](#apexplace)
+  * 5.1 [ApexPlace.\_\_init\_\_](#apexplace---init--)
+* 6 [Class ApexPoint](#apexpoint)
+  * 6.1 [ApexPoint.\_\_add\_\_](#apexpoint---add--)
+  * 6.2 [ApexPoint.\_\_init\_\_](#apexpoint---init--)
+  * 6.3 [ApexPoint.\_\_neg\_\_](#apexpoint---neg--)
+  * 6.4 [ApexPoint.\_\_repr\_\_](#apexpoint---repr--)
+  * 6.5 [ApexPoint.\_\_rmul\_\_](#apexpoint---rmul--)
+  * 6.6 [ApexPoint.\_\_str\_\_](#apexpoint---str--)
+  * 6.7 [ApexPoint.\_\_sub\_\_](#apexpoint---sub--)
+  * 6.8 [ApexPoint.\_\_truediv\_\_](#apexpoint---truediv--)
+  * 6.9 [ApexPoint.atan2](#apexpoint-atan2)
+  * 6.10 [ApexPoint.forward](#apexpoint-forward)
+  * 6.11 [ApexPoint.magnitude](#apexpoint-magnitude)
+  * 6.12 [unit\_tests](#unit-tests)
 
 ## 1 <a name="introduction"></a>Introduction
 
@@ -182,7 +185,34 @@ def *unit\_tests*() -> None:  Perform Unit *tests* *for* ApexLength. *def* *chec
 
 Ensure that an ApexLength has the right values.
 
-## 4 Class ApexPlace <a name="apexplace"></a>
+## 4 Class ApexMaterial <a name="apexmaterial"></a>
+
+class ApexMaterial(object):
+
+ApexMaterial: Represents a stock material.
+
+Other properties to be added later (e.g. transparency, shine, machining properties, etc.)
+
+Attributes:
+* *name* (Tuple[str, ...]): A list of material names from generict to specific.
+* *color* (str): The color name to use.
+
+
+### 4.1 ApexMaterial.\_\_init\_\_ <a name="apexmaterial---init--"></a>
+
+def \_\_init\_\_(self, *name*:  Tuple[str, ...], *color*:  *str*) -> None:
+
+Initialize and ApexMaterial.
+
+* Arguments:
+  * *name* (Tuple[str, ...): Non-empty to tuple of material names from broad to narrow.
+  * *color* (str):
+     An [SVG color name](https://www.december.com/html/spec/colorsvgsvg.html).
+
+* Raises:
+  * ValueError for either an empty name or a bad svg color.
+
+## 5 Class ApexPlace <a name="apexplace"></a>
 
 class ApexPlace:
 
@@ -196,13 +226,13 @@ followed by a final translation.  It also computes the inverse matrix.
   * *forward* (Matrix): A FreeCAD Matrix that maps a Vector to a new location.
   * *reverse* (Matrix): The inverse FreeCAD matrix that for new not location back.
 
-### 4.1 ApexPlace.\_\_init\_\_ <a name="apexplace---init--"></a>
+### 5.1 ApexPlace.\_\_init\_\_ <a name="apexplace---init--"></a>
 
 def \_\_init\_\_(self, *center*:  Optional[Union[ApexPoint, Vector]] = None, *axis*:  Optional[Union[ApexPoint, Vector]] = None, # Z *axis* *angle*:  Optional[float] = None, *translate*:  Optional[Union[ApexPoint, Vector]] = None, *name*:  Optional[str] = None, *tracing*:  *str* = "") -> None:
 
 Create ApexPlace rotation with point/axis/angle and a translate.
 
-## 5 Class ApexPoint <a name="apexpoint"></a>
+## 6 Class ApexPoint <a name="apexpoint"></a>
 
 class ApexPoint:
 
@@ -217,13 +247,13 @@ An ApexPoint is basically just a Vector with an optional diameter and/or name.
   * *radius* (float): The apex radius.
   * *name* (str): The apex name.
 
-### 5.1 ApexPoint.\_\_add\_\_ <a name="apexpoint---add--"></a>
+### 6.1 ApexPoint.\_\_add\_\_ <a name="apexpoint---add--"></a>
 
 def \_\_add\_\_(self, *vector*:  "ApexPoint") -> "ApexPoint":
 
 Return the sum of two ApexPoint's.
 
-### 5.2 ApexPoint.\_\_init\_\_ <a name="apexpoint---init--"></a>
+### 6.2 ApexPoint.\_\_init\_\_ <a name="apexpoint---init--"></a>
 
 def \_\_init\_\_(self, *x*:  Union[int, *float*, ApexLength] = 0.0, *y*:  Union[int, *float*, ApexLength] = 0.0, *z*:  Union[int, *float*, ApexLength] = 0.0, *diameter*:  Union[int, *float*, ApexLength] = 0.0, *name*:  *str* = "") -> None:
 
@@ -236,56 +266,62 @@ Initialize an ApexPoint.
   * *diameter* (Union[int, float, ApexLength]): The apex diameter. (Default: 0.0)
   * *name* (str): A name primarily used for debugging. (Default: "")
 
-### 5.3 ApexPoint.\_\_neg\_\_ <a name="apexpoint---neg--"></a>
+### 6.3 ApexPoint.\_\_neg\_\_ <a name="apexpoint---neg--"></a>
 
 def \_\_neg\_\_(self) -> "ApexPoint":
 
 Return the negative of an ApexPoint.
 
-### 5.4 ApexPoint.\_\_repr\_\_ <a name="apexpoint---repr--"></a>
+### 6.4 ApexPoint.\_\_repr\_\_ <a name="apexpoint---repr--"></a>
 
 def \_\_repr\_\_(self) -> *str*:
 
 Return representation of ApexPoint.
 
-### 5.5 ApexPoint.\_\_rmul\_\_ <a name="apexpoint---rmul--"></a>
+### 6.5 ApexPoint.\_\_rmul\_\_ <a name="apexpoint---rmul--"></a>
 
 def \_\_mul\_\_(self, *scale*:  *float*) -> "ApexPoint":
 
 Return a Point that has been scaled.
 
-### 5.6 ApexPoint.\_\_str\_\_ <a name="apexpoint---str--"></a>
+### 6.6 ApexPoint.\_\_str\_\_ <a name="apexpoint---str--"></a>
 
 def \_\_str\_\_(self) -> *str*:
 
 Return string representation of ApexPoint.
 
-### 5.7 ApexPoint.\_\_sub\_\_ <a name="apexpoint---sub--"></a>
+### 6.7 ApexPoint.\_\_sub\_\_ <a name="apexpoint---sub--"></a>
 
 def \_\_sub\_\_(self, *vector*:  "ApexPoint") -> "ApexPoint":
 
 Return the difference of two Point's.
 
-### 5.8 ApexPoint.\_\_truediv\_\_ <a name="apexpoint---truediv--"></a>
+### 6.8 ApexPoint.\_\_truediv\_\_ <a name="apexpoint---truediv--"></a>
 
 def \_\_truediv\_\_(self, *divisor*:  *float*) -> "ApexPoint":
 
 Return a Point that has been scaleddown.
 
-### 5.9 ApexPoint.atan2 <a name="apexpoint-atan2"></a>
+### 6.9 ApexPoint.atan2 <a name="apexpoint-atan2"></a>
 
 def *atan2*(self) -> *float*:
 
 Return the atan2 of the x and y values.
 
-### 5.10 ApexPoint.forward <a name="apexpoint-forward"></a>
+### 6.10 ApexPoint.forward <a name="apexpoint-forward"></a>
 
 def *forward*(self, *matrix*:  "ApexPlace") -> "ApexPoint":
 
 Perform a forward matrix transform using an ApexPlace.
 
-### 5.11 ApexPoint.magnitude <a name="apexpoint-magnitude"></a>
+### 6.11 ApexPoint.magnitude <a name="apexpoint-magnitude"></a>
 
 def *magnitude*(self) -> *float*:
 
 Return the magnitude of the point vector.
+
+### 6.12 unit\_tests <a name="unit-tests"></a>
+
+def *unit\_tests*() -> None:
+
+Run the unit tests.

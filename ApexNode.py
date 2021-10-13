@@ -296,7 +296,7 @@ def unit_tests() -> None:
     differences: Tuple[Tuple[str, Any, Any], ...] = box._configure_all(count=3)
     want: Tuple[Tuple[str, Any, Any], ...] = ()
     assert differences == want, f"Got {differences} instead of {want=}"
-    box.configure_and_build(tracing=" ")
+    box.configure_and_build()
 
     # Constraints should be down to 1 difference with *count*=2:
     box = Box(
