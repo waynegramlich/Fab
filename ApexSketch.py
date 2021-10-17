@@ -7,15 +7,15 @@ assert sys.version_info.major == 3  # Python 3.x
 assert sys.version_info.minor == 8  # Python 3.8
 sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 
+import math
+from typing import Any, Callable, List, Optional, Tuple, Union
+
 import FreeCAD as App  # type: ignore
 import FreeCADGui as Gui  # type: ignore
 
-# from shopfab import importer
-from ApexBase import ApexBoundBox, ApexPlace, ApexPoint
+from ApexBase import ApexBoundBox, ApexPose, ApexPoint
 from FreeCAD import BoundBox, Vector
-import math
 from pathlib import Path  # type: ignore
-from typing import Any, Callable, List, Optional, Tuple, Union
 import Part  # type: ignore
 import PartDesign  # type: ignore
 import Sketcher  # type: ignore
@@ -61,13 +61,13 @@ class ApexDrawing(object):
         return self._circles  # pragma: no unit test
 
     # ApexDrawing.forward_transform():
-    def forward_transform(self, matrix: ApexPlace) -> "ApexDrawing":
+    def forward_transform(self, pose: ApexPose) -> "ApexDrawing":
         """Return an ApexDrawing that is offset via a forward transform."""
         circle: ApexCircle
-        circles: Tuple[ApexCircle, ...] = tuple([circle.forward_transform(matrix)
+        circles: Tuple[ApexCircle, ...] = tuple([circle.forward_transform(pose)
                                                  for circle in self._circles])
         polygon: ApexPolygon
-        polygons: Tuple[ApexPolygon, ...] = tuple([polygon.forward_transform(matrix)
+        polygons: Tuple[ApexPolygon, ...] = tuple([polygon.forward_transform(pose)
                                                    for polygon in self._polygons])
         return ApexDrawing(circles, polygons, self._name)
 
@@ -1088,10 +1088,10 @@ class ApexPolygon(object):
         """Return the ApexPolygon points."""
         return self._points
 
-    def forward_transform(self, matrix: ApexPlace) -> "ApexPolygon":
+    def forward_transform(self, pose: ApexPose) -> "ApexPolygon":
         """Return a forward transformed ApexPolygon."""
         point: ApexPoint
-        points: Tuple[ApexPoint, ...] = tuple([point.forward(matrix) for point in self._points])
+        points: Tuple[ApexPoint, ...] = tuple([point.forward(pose) for point in self._points])
         return ApexPolygon(points, self._depth, self._flat, self._name)
 
 
@@ -1220,11 +1220,11 @@ class ApexCircle(object):
         return (circle_feature,)
 
     # ApexCircle.forward_transform():
-    def forward_transform(self, matrix: ApexPlace) -> "ApexCircle":
+    def forward_transform(self, pose: ApexPose) -> "ApexCircle":
         """Return a forward transformed ApexCircle."""
         center: ApexPoint = self.center
         vector: Vector = Vector(center.x, center.y, center.z)
-        vector = matrix.forward * vector
+        vector = pose.forward * vector
         new_center: ApexPoint = ApexPoint(vector.x, vector.y, vector.z,
                                           name=center.name, diameter=center.diameter)
         return ApexCircle(new_center, self.depth, self.flat, self.name)
@@ -1367,7 +1367,7 @@ def main() -> int:
         origin_vector: Vector = drawing.bounding_box.BSW
         drawing_origin: ApexPoint = ApexPoint(origin_vector.x, origin_vector.y, 0.0)
         vector: Vector = Vector(drawing_origin.x, drawing_origin.y, drawing_origin.z)
-        reorigin: ApexPlace = ApexPlace(translate=-vector, name=f"{drawing.name} reorigin")
+        reorigin: ApexPose = ApexPose(translate=-vector, name=f"{drawing.name} reorigin")
         drawing = drawing.forward_transform(reorigin)
         drawing.sketch(sketch, drawing_origin, tracing="")
 

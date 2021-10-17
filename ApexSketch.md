@@ -260,7 +260,7 @@ Return whether the ApexCircle bottom is flat.
 
 ### 2.28 ApexCircle.forward\_transform <a name="apexcircle-forward-transform"></a>
 
-def *forward\_transform*(self, *matrix*:  ApexPlace) -> "ApexCircle":
+def *forward\_transform*(self, *pose*:  ApexPose) -> "ApexCircle":
 
 Return a forward transformed ApexCircle.
 
@@ -350,7 +350,7 @@ Return the ApexPointFeature Feature's.
 
 ### 4.5 ApexDrawing.forward\_transform <a name="apexdrawing-forward-transform"></a>
 
-def *forward\_transform*(self, *matrix*:  ApexPlace) -> "ApexDrawing":
+def *forward\_transform*(self, *pose*:  ApexPose) -> "ApexDrawing":
 
 Return an ApexDrawing that is offset via a forward transform.
 

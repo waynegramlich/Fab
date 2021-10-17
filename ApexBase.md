@@ -7,16 +7,14 @@ Table of Contents:
   * 2.2 [ApexBoundBox.\_\_repr\_\_](#apexboundbox---repr--)
   * 2.3 [ApexBoundBox.\_\_str\_\_](#apexboundbox---str--)
   * 2.4 [ApexBoundBox.from\_vectors](#apexboundbox-from-vectors)
-* 3 [Class ApexLength](#apexlength)
-  * 3.1 [ApexLength.\_\_new\_\_](#apexlength---new--)
-  * 3.2 [ApexLength.\_\_repr\_\_](#apexlength---repr--)
-  * 3.3 [ApexLength.\_\_str\_\_](#apexlength---str--)
-  * 3.4 [ApexLength.unit\_test](#apexlength-unit-test)
-  * 3.5 [ApexLength.unit\_test](#apexlength-unit-test)
-* 4 [Class ApexMaterial](#apexmaterial)
-  * 4.1 [ApexMaterial.\_\_init\_\_](#apexmaterial---init--)
-* 5 [Class ApexPlace](#apexplace)
-  * 5.1 [ApexPlace.\_\_init\_\_](#apexplace---init--)
+* 3 [Class ApexCheck](#apexcheck)
+  * 3.1 [ApexCheck.check](#apexcheck-check)
+* 4 [Class ApexLength](#apexlength)
+  * 4.1 [ApexLength.\_\_new\_\_](#apexlength---new--)
+  * 4.2 [ApexLength.\_\_repr\_\_](#apexlength---repr--)
+  * 4.3 [ApexLength.\_\_str\_\_](#apexlength---str--)
+* 5 [Class ApexMaterial](#apexmaterial)
+  * 5.1 [ApexMaterial.\_\_init\_\_](#apexmaterial---init--)
 * 6 [Class ApexPoint](#apexpoint)
   * 6.1 [ApexPoint.\_\_add\_\_](#apexpoint---add--)
   * 6.2 [ApexPoint.\_\_init\_\_](#apexpoint---init--)
@@ -29,7 +27,8 @@ Table of Contents:
   * 6.9 [ApexPoint.atan2](#apexpoint-atan2)
   * 6.10 [ApexPoint.forward](#apexpoint-forward)
   * 6.11 [ApexPoint.magnitude](#apexpoint-magnitude)
-  * 6.12 [unit\_tests](#unit-tests)
+* 7 [Class ApexPose](#apexpose)
+  * 7.1 [ApexPose.\_\_init\_\_](#apexpose---init--)
 
 ## 1 <a name="introduction"></a>Introduction
 
@@ -46,7 +45,7 @@ The Apex Base classes are:
   This is a wrapper class around the FreeCAD Vector class that adds an optional diameter
   and name for each 3D Vector point.  For the same technical reasons, this is not a true
   sub-class of Vector.
-* ApexPlace:
+* ApexPose:
   This is a wrapper class around the FreeCAD Matrix class that provides an openGL style
   transformation consisting of a rotation point, rotation axis, and rotation angle,
   followed by a final translation.  It also computes the inverse matrix.
@@ -100,8 +99,11 @@ is written in C++ and for technical reasons does not support sub-classing.
     * TS (Vector): Center of Top South edge.
     * TW (Vector): Center of Top West edge.
   * The other ttributes:
-    * C (Vector): Center point (same as Center).
     * BB (BoundBox): The wrapped BoundBox object.
+    * C (Vector): Center point (same as Center).
+    * DX (float): X bounding box length
+    * DY (float): X bounding box length
+    * DZ (float): X bounding box length
 
 ### 2.1 ApexBoundBox.\_\_init\_\_ <a name="apexboundbox---init--"></a>
 
@@ -133,7 +135,19 @@ def *from\_vectors*(vectors:  Tuple[Union[Vector, "ApexPoint"], ...]) -> "ApexBo
 
 Compute BoundingBox from some Point's.
 
-## 3 Class ApexLength <a name="apexlength"></a>
+## 3 Class ApexCheck <a name="apexcheck"></a>
+
+class ApexCheck(object):
+
+ApexCheck: Check arguments for type mismatch errors.
+
+### 3.1 ApexCheck.check <a name="apexcheck-check"></a>
+
+def *check*(cls, *values*:  Sequence[Any], *apex\_checks*:  Sequence["ApexCheck"]) -> *str*:
+
+Return type mismatch error message.
+
+## 4 Class ApexLength <a name="apexlength"></a>
 
 class ApexLength(float):
 
@@ -144,7 +158,7 @@ ApexLength is a float with with optional name and units.
   * *units* (str): The units (e.g. "km", "m", "cm", "mm", "µm", "nm", "ft", "thou", etc.)
   * *name* (str): The optional name.
 
-### 3.1 ApexLength.\_\_new\_\_ <a name="apexlength---new--"></a>
+### 4.1 ApexLength.\_\_new\_\_ <a name="apexlength---new--"></a>
 
 def \_\_new\_\_(cls, *args, **kwargs) -> "ApexLength":
 
@@ -161,31 +175,19 @@ The actual function signature is:
 * Returns:
   (ApexLength) containing the desired values.
 
-### 3.2 ApexLength.\_\_repr\_\_ <a name="apexlength---repr--"></a>
+### 4.2 ApexLength.\_\_repr\_\_ <a name="apexlength---repr--"></a>
 
 def \_\_repr\_\_(self) -> *str*:
 
 Return the string representation.
 
-### 3.3 ApexLength.\_\_str\_\_ <a name="apexlength---str--"></a>
+### 4.3 ApexLength.\_\_str\_\_ <a name="apexlength---str--"></a>
 
 def \_\_str\_\_(self) -> *str*:
 
 Return the string representation.
 
-### 3.4 ApexLength.unit\_test <a name="apexlength-unit-test"></a>
-
-def *unit\_tests*() -> None:
-
-Perform Unit tests for ApexLength.
-
-### 3.5 ApexLength.unit\_test <a name="apexlength-unit-test"></a>
-
-def *unit\_tests*() -> None:  Perform Unit *tests* *for* ApexLength. *def* *check*(apex\_length:  ApexLength, *length*:  *float*, *value*:  *float*, *units*:  *str*, *name*:  *str*, *repr*:  *str*) -> None:
-
-Ensure that an ApexLength has the right values.
-
-## 4 Class ApexMaterial <a name="apexmaterial"></a>
+## 5 Class ApexMaterial <a name="apexmaterial"></a>
 
 class ApexMaterial(object):
 
@@ -198,7 +200,7 @@ Attributes:
 * *color* (str): The color name to use.
 
 
-### 4.1 ApexMaterial.\_\_init\_\_ <a name="apexmaterial---init--"></a>
+### 5.1 ApexMaterial.\_\_init\_\_ <a name="apexmaterial---init--"></a>
 
 def \_\_init\_\_(self, *name*:  Tuple[str, ...], *color*:  *str*) -> None:
 
@@ -211,26 +213,6 @@ Initialize and ApexMaterial.
 
 * Raises:
   * ValueError for either an empty name or a bad svg color.
-
-## 5 Class ApexPlace <a name="apexplace"></a>
-
-class ApexPlace:
-
-ApexPlace is a wrapper around the FreeCAD Matrix class.
-
-This is a wrapper class around the FreeCAD Matrix class that provides an openGL style
-transformation consisting of a rotation point, rotation axis, and rotation angle,
-followed by a final translation.  It also computes the inverse matrix.
-
-* Attributes:
-  * *forward* (Matrix): A FreeCAD Matrix that maps a Vector to a new location.
-  * *reverse* (Matrix): The inverse FreeCAD matrix that for new not location back.
-
-### 5.1 ApexPlace.\_\_init\_\_ <a name="apexplace---init--"></a>
-
-def \_\_init\_\_(self, *center*:  Optional[Union[ApexPoint, Vector]] = None, *axis*:  Optional[Union[ApexPoint, Vector]] = None, # Z *axis* *angle*:  Optional[float] = None, *translate*:  Optional[Union[ApexPoint, Vector]] = None, *name*:  Optional[str] = None, *tracing*:  *str* = "") -> None:
-
-Create ApexPlace rotation with point/axis/angle and a translate.
 
 ## 6 Class ApexPoint <a name="apexpoint"></a>
 
@@ -310,9 +292,9 @@ Return the atan2 of the x and y values.
 
 ### 6.10 ApexPoint.forward <a name="apexpoint-forward"></a>
 
-def *forward*(self, *matrix*:  "ApexPlace") -> "ApexPoint":
+def *forward*(self, *matrix*:  "ApexPose") -> "ApexPoint":
 
-Perform a forward matrix transform using an ApexPlace.
+Perform a forward matrix transform using an ApexPose.
 
 ### 6.11 ApexPoint.magnitude <a name="apexpoint-magnitude"></a>
 
@@ -320,8 +302,59 @@ def *magnitude*(self) -> *float*:
 
 Return the magnitude of the point vector.
 
-### 6.12 unit\_tests <a name="unit-tests"></a>
+## 7 Class ApexPose <a name="apexpose"></a>
 
-def *unit\_tests*() -> None:
+class ApexPose(object):
 
-Run the unit tests.
+ApexPose is a wrapper around the FreeCAD Matrix class.
+
+This is a wrapper class around the FreeCAD Matrix class that provides a number of
+stadard rotations and translations.  It also computes the inverse matrix.
+
+Attributes:
+* *forward* (Matrix): A FreeCAD Matrix that maps a Vector to a new pose.
+* *reverse* (Matrix): The inverse FreeCAD matrix that maps the pose back to its initial value.
+
+
+### 7.1 ApexPose.\_\_init\_\_ <a name="apexpose---init--"></a>
+
+def \_\_init\_\_( *self*, *center*:  Optional[Union[ApexPoint, Vector]] = None, # Default:  *origin* *axis*:  Optional[Union[ApexPoint, Vector]] = None, # Default:  +Z *axis* *angle*:  Optional[float] = None, # Default:  0 *degrees* *z\_align*:  Optional[Union[ApexPoint, Vector]] = None, # Default:  +Z *axis* *y\_align*:  Optional[Union[ApexPoint, Vector]] = None, # Default:  +Y *axis* *translate*:  Optional[Union[ApexPoint, Vector]] = None, # Default:  *origin* *name*:  Optional[str] = None, # Default:  "" *tracing*:  *str* = "" # Default:  Disabled ) -> None:
+
+Create ApexPose rotation with point/axis/angle and a translate.
+
+Arguments:
+* *center* (Optional[Union[ApexPoint, Vector]]):
+  The point around which all rotations occur (default: origin)).
+* *axis* (Optional[Union[ApexPoint, Vector]]):
+  A direction axis rotate around (default: Z axis)).
+* *angle (Optional[float]):
+  The angle to rotate around the *axis* measured in radians (default: 0 radians).
+* *z\_align* (Optional[Union[ApexPoint, Vector]]):
+  An direction axis to reorient to point in the +Z direction (default: +Z axis).
+* *y\_align* (Optional[Union[ApexPoint, Vector]]):
+  After applying the *z\_align* rotation to *y\_align*, project the resulting point down
+  onto the X/Y plane and rotate the point around the Z axis until is alignes with the +Y
+  axis.
+* *translate* (Optional[Union[ApexPoint, Vector]]):
+  The final translation to perform.
+The direction axes do *not* need to be normalized to a length of 1.0.
+
+There are two rotation styles:
+* Axis-Angle:
+  An *axis* that points outward from *center* is specified and a rotation
+  of *angle* radians in a counter clockwise direction occurs (i.e. right hand rule.)
+* Mounting:
+  Frequently parts need to be mounted in a vice.  For this the part need to be rotated
+  so that the surface to be machines is normal to the *Z axis.  And another surface
+  is aligned to be normal to the +Y axis.  For "boxy" parts, the *ApexBoundBox* is
+  used to get these directions.  Specifically, *z\_align* rotates the part such that
+  *z\_align* is in the +Z axis direction and *y\_align* rotates the part such that the
+  part is aligned in the +Y axis.
+
+The operation order is:
+1. Translate *center* to origin.
+2. Perform *axis*/*angle* rotation.
+3. Perform *z\_align* rotation.
+4. Perform *y\_align* rotation.
+5. Translate from origin back to *center*.
+6. Perform final *translation*.
