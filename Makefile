@@ -6,7 +6,7 @@ COVERAGE := $(PYTHON) -m coverage
 PY2MD := py2md.py
 
 PY_FILES := \
-    ApexBase.py \
+    Apex.py \
     ApexExampleBox.py \
     ApexNode.py \
     ApexPath.py \

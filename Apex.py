@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 """Apex base classes.
 
-The Apex Base classes are:
-* ApexLength:
-  This is sub-class of *float* and provides a way of specifying a length in different units
-  (e.g. mm, cm, inch, ft, etc.) and an optional name.
+The Apex base classes are:
 * ApexBoundBox:
   This is a wrapper class around the FreeCAD BoundBox class for specifying bounding boxes.
   It introduces some consistent attributes for accessing the faces, corners and edges
   of a bounding box.  Alas, for technical reasons, this not a true sub-class of BoundBox.
+* ApexCheck:
+  This is some common code to check argument types for public functions.
+* ApexLength:
+  This is sub-class of *float* and provides a way of specifying a length in different units
+  (e.g. mm, cm, inch, ft, etc.) and an optional name.
+* ApexMaterial:
+  This is a class that describes material properties.
 * ApexPoint:
   This is a wrapper class around the FreeCAD Vector class that adds an optional diameter
   and name for each 3D Vector point.  For the same technical reasons, this is not a true
@@ -16,7 +20,7 @@ The Apex Base classes are:
 * ApexPose:
   This is a wrapper class around the FreeCAD Matrix class that provides an openGL style
   transformation consisting of a rotation point, rotation axis, and rotation angle,
-  followed by a final translation.  It also computes the inverse matrix.
+  followed by a final translation.  It also keeps track of the inverse matrix.
 
 """
 
@@ -33,12 +37,492 @@ from FreeCAD import BoundBox, Matrix, Vector  # type: ignore
 
 from dataclasses import dataclass
 import math
-from typing import Any, Callable, ClassVar, List, Dict, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, cast, ClassVar, List, Dict, Optional, Sequence, Tuple, Union
+
+
+# ApexBoundBox:
+class ApexBoundBox:
+    """An ApexBoundBox is FreeCAD BoundBox with some additional attributes.
+
+    An ApexBoundBox is a simple wrapper around a FreeCAD BoundBox object that provides
+    additional attributes that represent various points on the surface of the bounding box.
+    The nomenclature is that East/West represents the X axis, North/South represents the Y axis,
+    and the Top/Bottom represents the Z axis.  Thus, TNE represents the Top North East corner
+    of the bounding box.  NE represents the center of the North East edge of the bounding box.
+    T represents the center of the top face of the bounding box.  By the way, the C attribute
+    is the same as the BoundBox Center attribute.
+
+    The preferred way to do this would be to sub-class BoundBox, but the FreeCAD implementation
+    is written in C++ and for technical reasons does not support sub-classing.
+
+    * Attributes (alphabetical order in each group):
+      * The 6 face attributes:
+        * B (Vector): Center of bottom face.
+        * E (Vector): Center of east face.
+        * N (Vector): Center of north face.
+        * S (Vector): Center of south face.
+        * T (Vector): Center of top face.
+        * W (Vector): Center of west face.
+      * The 8 corner attributes:
+        * BNE (Vector): Bottom North East corner.
+        * BNW (Vector): Bottom North West corner.
+        * BSE (Vector): Bottom South East corner.
+        * BSW (Vector): Bottom South West corner.
+        * TNE (Vector): Top North East corner.
+        * TNW (Vector): Top North West corner.
+        * TSE (Vector): Top South East corner.
+        * TSW (Vector): Bottom South West corner.
+      * The 12 edge attributes:
+        * BE (Vector): Center of Bottom East edge.
+        * BN (Vector): Center of Bottom North edge.
+        * BS (Vector): Center of Bottom South edge.
+        * BW (Vector): Center of Bottom West edge.
+        * NE (Vector): Center of North East edge
+        * NW (Vector): Center of North West edge
+        * SE (Vector): Center of South East edge
+        * SW (Vector): Center of South West edge
+        * TE (Vector): Center of Top East edge.
+        * TN (Vector): Center of Top North edge.
+        * TS (Vector): Center of Top South edge.
+        * TW (Vector): Center of Top West edge.
+      * The other ttributes:
+        * BB (BoundBox): The wrapped BoundBox object.
+        * C (Vector): Center point (same as Center).
+        * DB (Vector): Bottom direction (i.e. B - C)
+        * DE (Vector): East direction (i.e. E - C)
+        * DN (Vector): North direction (i.e. N - C)
+        * DS (Vector): South direction (i.e. S - C)
+        * DT (Vector): Top direction (i.e. T - C)
+        * DW (Vector): West direction (i.e. W - C)
+        * DX (float): X bounding box length
+        * DY (float): Y bounding box length
+        * DZ (float): Z bounding box length
+    """
+
+    # ApexBoundBox.__init__():
+    def __init__(self,
+                 corners: Sequence[Union[Vector, "ApexPoint", BoundBox, "ApexBoundBox"]]) -> None:
+        """Initialize an ApexBoundBox.
+
+        Arguments:
+          * *corners* (Sequence[Union[Vector, ApexPoint, BoundBox, ApexBoundBox]]):
+            A sequence of points/corners to enclose by the bounding box.
+
+        Raises:
+          * ValueError: For bad or empty corners.
+
+        """
+        if not isinstance(corners, (list, tuple)):
+            raise ValueError(f"{corners} is neither a List nor a Tuple")
+
+        # Convert *corners* into *vectors*:
+        corner: Union[Vector, ApexPoint, BoundBox, ApexBoundBox]
+        vectors: List[Vector] = []
+        index: int
+        for index, corner in enumerate(corners):
+            if isinstance(corner, Vector):
+                vectors.append(corner)
+            elif isinstance(corner, ApexPoint):
+                vectors.append(corner.vector)
+            elif isinstance(corner, BoundBox):
+                vectors.append(Vector(corner.XMin, corner.YMin, corner.ZMin))
+                vectors.append(Vector(corner.XMax, corner.YMax, corner.ZMax))
+            elif isinstance(corner, ApexBoundBox):
+                vectors.append(corner.TNE)
+                vectors.append(corner.BSW)
+            else:
+                raise ValueError(
+                    f"{corner} is not of type Vector/ApexPoint/BoundBox/ApexBoundBox")
+        if not vectors:
+            raise ValueError("Corners sequence is empty")
+
+        # Initialize with from the first vector:
+        vector0: Vector = vectors[0]
+        x_min: float = vector0.x
+        y_min: float = vector0.y
+        z_min: float = vector0.z
+        x_max: float = x_min
+        y_max: float = y_min
+        z_max: float = z_min
+
+        # Sweep through *vectors* expanding the bounding box limits:
+        vector: Vector
+        for vector in vectors[1:]:
+            x: float = vector.x
+            y: float = vector.y
+            z: float = vector.z
+            x_min = min(x_min, x)
+            y_min = min(y_min, y)
+            z_min = min(z_min, z)
+            x_max = max(x_max, x)
+            y_max = max(y_max, y)
+            z_max = max(z_max, z)
+
+        self._bound_box: BoundBox = BoundBox(x_min, y_min, z_min, x_max, y_max, z_max)
+
+    # Standard BoundBox attributes:
+
+    @property
+    def B(self) -> Vector:
+        """Bottom face center."""
+        bb: BoundBox = self._bound_box
+        return Vector((bb.XMin + bb.XMax) / 2.0, (bb.YMin + bb.YMax) / 2.0, bb.ZMin)
+
+    @property
+    def E(self) -> Vector:
+        """East face center."""
+        bb: BoundBox = self._bound_box
+        return Vector(bb.XMax, (bb.YMin + bb.YMax) / 2.0, (bb.ZMin + bb.ZMax) / 2.0)
+
+    @property
+    def N(self) -> Vector:
+        """North face center."""
+        bb: BoundBox = self._bound_box
+        return Vector((bb.XMin + bb.XMax) / 2.0, bb.YMax, (bb.ZMin + bb.ZMax) / 2.0)
+
+    @property
+    def S(self) -> Vector:
+        """South face center."""
+        bb: BoundBox = self._bound_box
+        return Vector((bb.XMin + bb.XMax) / 2.0, bb.YMin, (bb.ZMin + bb.ZMax) / 2.0)
+
+    @property
+    def T(self) -> Vector:
+        """Top face center."""
+        bb: BoundBox = self._bound_box
+        return Vector((bb.XMin + bb.XMax) / 2.0, (bb.YMin + bb.YMax) / 2.0, bb.ZMax)
+
+    @property
+    def W(self) -> Vector:
+        """Center of bottom face."""
+        bb: BoundBox = self._bound_box
+        return Vector(bb.XMin, (bb.YMin + bb.YMax) / 2.0, (bb.ZMin + bb.ZMax) / 2.0)
+
+    # 8 Corner, BNE, BNW, BSE, BSW, TNE, TNW, TSE, TSW:
+
+    @property
+    def BNE(self) -> Vector:
+        """Bottom North East corner."""
+        bb: BoundBox = self._bound_box
+        return Vector(bb.XMax, bb.YMax, bb.ZMin)
+
+    @property
+    def BNW(self) -> Vector:
+        """Bottom North West corner."""
+        bb: BoundBox = self._bound_box
+        return Vector(bb.XMin, bb.YMax, bb.ZMin)
+
+    @property
+    def BSE(self) -> Vector:
+        """Bottom South East corner."""
+        bb: BoundBox = self._bound_box
+        return Vector(bb.XMax, bb.YMin, bb.ZMin)
+
+    @property
+    def BSW(self) -> Vector:
+        """Bottom South West corner."""
+        bb: BoundBox = self._bound_box
+        return Vector(bb.XMin, bb.YMin, bb.ZMin)
+
+    @property
+    def TNE(self) -> Vector:
+        """Top North East corner."""
+        bb: BoundBox = self._bound_box
+        return Vector(bb.XMax, bb.YMax, bb.ZMax)
+
+    @property
+    def TNW(self) -> Vector:
+        """Top North West corner."""
+        bb: BoundBox = self._bound_box
+        return Vector(bb.XMin, bb.YMax, bb.ZMax)
+
+    @property
+    def TSE(self) -> Vector:
+        """Top South East corner."""
+        bb: BoundBox = self._bound_box
+        return Vector(bb.XMax, bb.YMin, bb.ZMax)
+
+    @property
+    def TSW(self) -> Vector:
+        """Top South West corner."""
+        bb: BoundBox = self._bound_box
+        return Vector(bb.XMin, bb.YMin, bb.ZMax)
+
+    # 12 Edges BE, BW, BN, BS, NE, NW, SE, SW, TE, TW, TN, TS:
+
+    @property
+    def BE(self) -> Vector:
+        """Bottom East edge center."""
+        bb: BoundBox = self._bound_box
+        return Vector(bb.XMax, (bb.YMin + bb.YMax) / 2.0, bb.ZMin)
+
+    @property
+    def BW(self) -> Vector:
+        """Bottom West edge center."""
+        bb: BoundBox = self._bound_box
+        return Vector(bb.XMin, (bb.YMin + bb.YMax) / 2.0, bb.ZMin)
+
+    @property
+    def BN(self) -> Vector:
+        """Bottom North edge center."""
+        bb: BoundBox = self._bound_box
+        return Vector((bb.XMin + bb.XMax) / 2.0, bb.YMax, bb.ZMin)
+
+    @property
+    def BS(self) -> Vector:
+        """Bottom South edge center."""
+        bb: BoundBox = self._bound_box
+        return Vector((bb.XMin + bb.XMax) / 2.0, bb.YMin, bb.ZMin)
+
+    @property
+    def NE(self) -> Vector:
+        """North East edge center."""
+        bb: BoundBox = self._bound_box
+        return Vector(bb.XMax, bb.YMax, (bb.ZMin + bb.ZMax) / 2.0)
+
+    @property
+    def NW(self) -> Vector:
+        """North West edge center."""
+        bb: BoundBox = self._bound_box
+        return Vector(bb.XMin, bb.YMax, (bb.ZMin + bb.ZMax) / 2.0)
+
+    @property
+    def SE(self) -> Vector:
+        """North East edge center."""
+        bb: BoundBox = self._bound_box
+        return Vector(bb.XMax, bb.YMin, (bb.ZMin + bb.ZMax) / 2.0)
+
+    @property
+    def SW(self) -> Vector:
+        """South East edge center."""
+        bb: BoundBox = self._bound_box
+        return Vector(bb.XMin, bb.YMin, (bb.ZMin + bb.ZMax) / 2.0)
+
+    @property
+    def TE(self) -> Vector:
+        """Bottom East edge center."""
+        bb: BoundBox = self._bound_box
+        return Vector(bb.XMax, (bb.YMin + bb.YMax) / 2.0, bb.ZMax)
+
+    @property
+    def TW(self) -> Vector:
+        """Bottom West edge center."""
+        bb: BoundBox = self._bound_box
+        return Vector(bb.XMin, (bb.YMin + bb.YMax) / 2.0, bb.ZMax)
+
+    @property
+    def TN(self) -> Vector:
+        """Bottom North edge center."""
+        bb: BoundBox = self._bound_box
+        return Vector((bb.XMin + bb.XMax) / 2.0, bb.YMax, bb.ZMax)
+
+    @property
+    def TS(self) -> Vector:
+        """Bottom South edge center."""
+        bb: BoundBox = self._bound_box
+        return Vector((bb.XMin + bb.XMax) / 2.0, bb.YMin, bb.ZMax)
+
+    # Miscellaneous attributes:
+
+    @property
+    def BB(self) -> BoundBox:
+        """Access the wrapped a BoundBox."""
+        return self._bound_box
+
+    @property
+    def C(self) -> Vector:
+        """Center point."""
+        return self._bound_box.Center
+
+    @property
+    def DB(self) -> float:
+        """Direction Bottom."""
+        return self.B - self.C
+
+    @property
+    def DE(self) -> float:
+        """Direction East."""
+        return self.E - self.C
+
+    @property
+    def DN(self) -> float:
+        """Direction North."""
+        return self.N - self.C
+
+    @property
+    def DS(self) -> float:
+        """Direction South."""
+        return self.S - self.C
+
+    @property
+    def DT(self) -> float:
+        """Direction Top."""
+        return self.T - self.C
+
+    @property
+    def DW(self) -> float:
+        """Direction West."""
+        return self.W - self.C
+
+    @property
+    def DX(self) -> float:
+        """Delta X."""
+        bb: BoundBox = self._bound_box
+        return bb.XMax - bb.XMin
+
+    @property
+    def DY(self) -> float:
+        """Delta Y."""
+        bb: BoundBox = self._bound_box
+        return bb.YMax - bb.YMin
+
+    @property
+    def DZ(self) -> float:
+        """Delta Z."""
+        bb: BoundBox = self._bound_box
+        return bb.ZMax - bb.ZMin
+
+    # ApexBoundBox.__repr__():
+    def __repr__(self) -> str:
+        """Return a representation of an ApexBoundBox."""
+        return self.__str__()
+
+    # ApexBoundBox.__str__():
+    def __str__(self) -> str:
+        """Return a representation of an ApexBoundBox."""
+        return f"ApexBoundBox({self.BB})"
+
+    @staticmethod
+    def _unit_tests() -> None:
+        """Perform ApexBoundBox unit tests."""
+        # Initial tests:
+        bound_box: BoundBox = BoundBox(-1.0, -2.0, -3.0, 1.0, 2.0, 3.0)
+        assert bound_box == bound_box
+        apex_bound_box: ApexBoundBox = ApexBoundBox([bound_box])
+        assert isinstance(apex_bound_box, ApexBoundBox)
+
+        # FreeCAD.BoundBox.__eq__() appears to only compare ids for equality.
+        # Thus, it is necessary to test that each value is equal by hand.
+        assert apex_bound_box.BB.XMin == bound_box.XMin
+        assert apex_bound_box.BB.YMin == bound_box.YMin
+        assert apex_bound_box.BB.ZMin == bound_box.ZMin
+        assert apex_bound_box.BB.XMax == bound_box.XMax
+        assert apex_bound_box.BB.YMax == bound_box.YMax
+        assert apex_bound_box.BB.ZMax == bound_box.ZMax
+
+        # Verify __str__() works:
+        want: str = f"ApexBoundBox({bound_box})"
+        assert f"{apex_bound_box}" == want, f"'{apex_bound_box}' != '{want}'"
+
+        def check(vector: Vector, x: float, y: float, z: float) -> bool:
+            assert vector.x == x, f"{vector.x} != {x}"
+            assert vector.y == y, f"{vector.y} != {y}"
+            assert vector.z == z, f"{vector.z} != {z}"
+            return vector.x == x and vector.y == y and vector.z == z
+
+        # Do 6 faces:
+        assert check(apex_bound_box.E, 1, 0, 0), "E"
+        assert check(apex_bound_box.W, -1, 0, 0), "W"
+        assert check(apex_bound_box.N, 0, 2, 0), "N"
+        assert check(apex_bound_box.S, 0, -2, 0), "S"
+        assert check(apex_bound_box.T, 0, 0, 3), "T"
+        assert check(apex_bound_box.B, 0, 0, -3), "B"
+
+        # Do the 12 edges:
+        assert check(apex_bound_box.BE, 1, 0, -3), "BE"
+        assert check(apex_bound_box.BN, 0, 2, -3), "BN"
+        assert check(apex_bound_box.BS, 0, -2, -3), "BS"
+        assert check(apex_bound_box.BW, -1, 0, -3), "BW"
+        assert check(apex_bound_box.NE, 1, 2, 0), "NE"
+        assert check(apex_bound_box.NW, -1, 2, 0), "NW"
+        assert check(apex_bound_box.SE, 1, -2, 0), "SE"
+        assert check(apex_bound_box.SW, -1, -2, 0), "SW"
+        assert check(apex_bound_box.TE, 1, 0, 3), "TE"
+        assert check(apex_bound_box.TN, 0, 2, 3), "TN"
+        assert check(apex_bound_box.TS, 0, -2, 3), "TS"
+        assert check(apex_bound_box.TW, -1, 0, 3), "TW"
+
+        # Do the 8 corners:
+        assert check(apex_bound_box.BNE, 1, 2, -3), "BNE"
+        assert check(apex_bound_box.BNW, -1, 2, -3), "BNW"
+        assert check(apex_bound_box.BSE, 1, -2, -3), "BSE"
+        assert check(apex_bound_box.BSW, -1, -2, -3), "BSW"
+        assert check(apex_bound_box.TNE, 1, 2, 3), "TNE"
+        assert check(apex_bound_box.TNW, -1, 2, 3), "TNW"
+        assert check(apex_bound_box.TSE, 1, -2, 3), "TSE"
+        assert check(apex_bound_box.TSW, -1, -2, 3), "TSW"
+
+        # Do the miscellaneous attributes:
+        assert check(apex_bound_box.C, 0, 0, 0), "C"
+        assert check(apex_bound_box.BB.Center, 0, 0, 0), "Center"
+        assert isinstance(apex_bound_box.BB, BoundBox), "BB error"
+        assert apex_bound_box.C == apex_bound_box.BB.Center, "C != Center"
+        assert apex_bound_box.DX == 2.0, "DX"
+        assert apex_bound_box.DY == 4.0, "DY"
+        assert apex_bound_box.DZ == 6.0, "DZ"
+        assert check(apex_bound_box.DB, 0, 0, -3), "DB"
+        assert check(apex_bound_box.DE, 1, 0, 0), "DE"
+        assert check(apex_bound_box.DN, 0, 2, 0), "DN"
+        assert check(apex_bound_box.DS, 0, -2, 0), "DS"
+        assert check(apex_bound_box.DT, 0, 0, 3), "DT"
+        assert check(apex_bound_box.DW, -1, 0, 0), "DW"
+
+        # Test *from_vector* and *from_bound_boxes* methods:
+        vector: Vector = Vector(-1, -2, -3)
+        apex_vector: ApexPoint = ApexPoint(1, 2, 3)
+        new_apex_bound_box: ApexBoundBox = ApexBoundBox((vector, apex_vector))
+        assert f"{new_apex_bound_box.BB}" == f"{apex_bound_box.BB}"
+        next_apex_bound_box: ApexBoundBox = ApexBoundBox((bound_box, new_apex_bound_box))
+        want = "ApexBoundBox(BoundBox (-1, -2, -3, 1, 2, 3))"
+        assert f"{next_apex_bound_box}" == want, f"'{next_apex_bound_box}' != '{want}'"
+        assert next_apex_bound_box.__repr__() == want
+
+        # Do some error checking:
+        try:
+            ApexBoundBox(())
+        except ValueError as value_error:
+            assert str(value_error) == "Corners sequence is empty", str(value_error)
+        try:
+            ApexBoundBox(cast(List, 123))  # Force invalid argument type.
+        except ValueError as value_error:
+            assert str(value_error) == "123 is neither a List nor a Tuple", str(value_error)
+        try:
+            ApexBoundBox(cast(List, [123]))  # Force invalid corner type
+        except ValueError as value_error:
+            assert str(value_error) == "123 is not of type Vector/ApexPoint/BoundBox/ApexBoundBox"
+
 
 # ApexCheck:
 @dataclass(frozen=True)
 class ApexCheck(object):
-    """ApexCheck: Check arguments for type mismatch errors."""
+    """ApexCheck: Check arguments for type mismatch errors.
+
+    Attributes:
+    * *name* (str):
+       The argument name (used for error messages.)
+    * *type* (Tuple[Any]):
+      A tuple of acceptable types.
+
+    An ApexCheck contains is used to type check a single function argument.
+    The static method `Apexcheck.check()` takes a list of argument values and the
+    corresponding tuple ApexCheck's and verifies that they are correct.
+
+    Example:
+
+         MY_FUNCTION_CHECKS = (
+             ApexCheck("arg1", int),
+             ApexCheck("arg2", bool),
+             ApexCheck("arg3", object),  # Any <=> object
+             ApexCheck("arg4," list),   # List <=> list
+         )
+         def my_function(arg1: int, arg2: bool, arg3: Any, arg4: List[str]) -> None:
+             '''Doc string here.'''
+            value_error: str = ApexCheck.check((arg1, arg2, arg3, arg4), MY_FUNCTION_CHECKS)
+            if value_error:
+                raise ValueError(value_error)
+            # Rest of code goes here.
+
+    """
 
     name: str  # Argument name
     types: Tuple[Any, ...]  # Types to match
@@ -75,6 +559,55 @@ class ApexCheck(object):
                 break
         return error
 
+    @staticmethod
+    def init_show(name: str, arguments: Sequence[Any], apex_checks: Sequence["ApexCheck"]) -> str:
+        """Return string representation based in initializer arguments.
+
+        Arguments:
+        * *name* (str): Full fuction/method name.
+        * *arguments* (Sequence[Any]): All argument values.
+        * *apex_checks*: (Sequence[ApexCheck]): Associated ApexCheck's.
+
+        Returns:
+        * (str) containing function/method name with associated initialize arguments:
+
+        Raises:
+        * ValueError: For length mismatches and bad parameter types:
+
+        """
+        # Assemble *results* which is the list of positional and keyword arguments:
+        if len(arguments) != len(apex_checks):
+            raise ValueError(
+                f"Arguments size ({len(arguments)}) != checks size ({len(apex_checks)})")
+        if not isinstance(name, str):
+            raise ValueError(f"{name} is not a string")
+
+        # Assemble *results* from *arguments* and *apex_checks*:
+        keywords_needed: bool = False
+        index: int
+        argument_value: Any
+        results: List[str] = []
+        for index, argument_value in enumerate(arguments):
+            apex_check: ApexCheck = apex_checks[index]
+            if not isinstance(apex_check, ApexCheck):
+                raise ValueError(f"{apex_check} is not an ApexCheck")
+            argument_name: str = apex_check.name
+            argument_types: Tuple[Any, ...] = apex_check.types
+            none_allowed: bool = type(None) in argument_types
+            is_none: bool = isinstance(argument_value, type(None))
+
+            # Append appropriate values to *results*:
+            if isinstance(argument_value, str):
+                argument_value = f"'{argument_value}'"
+            if is_none and none_allowed:
+                # None occurred and is allowed.  From now on prefix *result* with a keyword:
+                keywords_needed = True
+            elif keywords_needed:
+                results.append(f"{argument_name}={argument_value}")
+            else:
+                results.append(f"{argument_value}")
+        return f"{name}({', '.join(results)})"
+
     @classmethod
     def _unit_tests(cls):
         """Run ApexCheck unit tests."""
@@ -93,11 +626,11 @@ class ApexCheck(object):
         float_check: ApexCheck = ApexCheck("float", (float,))
         number_check: ApexCheck = ApexCheck("number", (int, float))
         str_check: ApexCheck = ApexCheck("str", (str,))
-        optional_int: ApexCheck = ApexCheck("Optional[int]", (type(None), int))
-        optional_float: ApexCheck = ApexCheck("Optional[float]", (type(None), float))
+        optional_int: ApexCheck = ApexCheck("optional_int", (type(None), int))
+        optional_float: ApexCheck = ApexCheck("optional_float", (type(None), float))
         optional_number: ApexCheck = ApexCheck(
-            "Optional[Union[int, float]]", (type(None), int, float))
-        optional_str: ApexCheck = ApexCheck("Optional[str]", (type(None), str))
+            "optional_int_float", (type(None), int, float))
+        optional_str: ApexCheck = ApexCheck("optional_str", (type(None), str))
 
         # All of the *good_pairs* should not generate an error:
         good_pairs: Sequence[Tuple[Any, ApexCheck]] = (
@@ -137,6 +670,41 @@ class ApexCheck(object):
         apex_check: ApexCheck
         for value, apex_check in bad_pairs:
             assert ApexCheck.check((value,), (apex_check,)), f"{value=} {apex_check=} did not fail"
+
+        # Test ApexCheck.init_show():
+        apex_checks: Tuple[ApexCheck, ...] = (
+            int_check,
+            str_check,
+            optional_int,
+            optional_str,
+            optional_float
+        )
+        result: str = ApexCheck.init_show("Foo", (1, "a", 1, "b", 1.0), apex_checks)
+        assert result == "Foo(1, 'a', 1, 'b', 1.0)", result
+        result: str = ApexCheck.init_show("Foo", (1, "a", 1, "b", None), apex_checks)
+        assert result == "Foo(1, 'a', 1, 'b')", result
+        result: str = ApexCheck.init_show("Foo", (1, "a", 1, None, None), apex_checks)
+        assert result == "Foo(1, 'a', 1)", result
+        result: str = ApexCheck.init_show("Foo", (1, "a", None, None, None), apex_checks)
+        assert result == "Foo(1, 'a')", result
+        result: str = ApexCheck.init_show("Foo", (1, "a", None, None, 1.0), apex_checks)
+        assert result == "Foo(1, 'a', optional_float=1.0)", result
+        result: str = ApexCheck.init_show("Foo", (1, "a", None, "b", 1.0), apex_checks)
+        assert result == "Foo(1, 'a', optional_str='b', optional_float=1.0)", result
+        result: str = ApexCheck.init_show("Foo", (1, "a", None, None, 1.0), apex_checks)
+        assert result == "Foo(1, 'a', optional_float=1.0)", result
+        try:
+            ApexCheck.init_show("Foo", (), apex_checks)  # Arguments/ApexCheck's misamtch.
+        except ValueError as value_error:
+            assert str(value_error) == "Arguments size (0) != checks size (5)", str(value_error)
+        try:
+            ApexCheck.init_show("Foo", (0,), (cast(ApexCheck, 0),))
+        except ValueError as value_error:
+            assert str(value_error) == "0 is not an ApexCheck", str(value_error)
+        try:
+            ApexCheck.init_show(cast(str, 0), (0,), (int_check,))
+        except ValueError as value_error:
+            assert str(value_error) == "0 is not a string", str(value_error)
 
 
 # ApexLength:
@@ -327,408 +895,43 @@ class ApexLength(float):
                 str(value_error))
 
 
-# ApexBoundBox:
-class ApexBoundBox:
-    """An ApexBoundBox is FreeCAD BoundBox with some additional attributes.
+# ApexMaterial:
+class ApexMaterial(object):
+    """ApexMaterial: Represents a stock material.
 
-    An ApexBoundBox is a simple wrapper around a FreeCAD BoundBox object that provides
-    additional attributes that represent various points on the surface of the bounding box.
-    The nomenclature is that East/West represents the X axis, North/South represents the Y axis,
-    and the Top/Bottom represents the Z axis.  Thus, TNE represents the Top North East corner
-    of the bounding box.  NE represents the center of the North East edge of the bounding box.
-    T represents the center of the top face of the bounding box.  By the way, the C attribute
-    is the same as the BoundBox Center attribute.
+    Other properties to be added later (e.g. transparency, shine, machining properties, etc.)
 
-    The preferred way to do this would be to sub-class BoundBox, but the FreeCAD implementation
-    is written in C++ and for technical reasons does not support sub-classing.
+    Attributes:
+    * *name* (Tuple[str, ...]): A list of material names from generict to specific.
+    * *color* (str): The color name to use.
 
-    * Attributes (alphabetical order in each group):
-      * The 6 face attributes:
-        * B (Vector): Center of bottom face.
-        * E (Vector): Center of east face.
-        * N (Vector): Center of north face.
-        * S (Vector): Center of south face.
-        * T (Vector): Center of top face.
-        * W (Vector): Center of west face.
-      * The 8 corner attributes:
-        * BNE (Vector): Bottom North East corner.
-        * BNW (Vector): Bottom North West corner.
-        * BSE (Vector): Bottom South East corner.
-        * BSW (Vector): Bottom South West corner.
-        * TNE (Vector): Top North East corner.
-        * TNW (Vector): Top North West corner.
-        * TSE (Vector): Top South East corner.
-        * TSW (Vector): Bottom South West corner.
-      * The 12 edge attributes:
-        * BE (Vector): Center of Bottom East edge.
-        * BN (Vector): Center of Bottom North edge.
-        * BS (Vector): Center of Bottom South edge.
-        * BW (Vector): Center of Bottom West edge.
-        * NE (Vector): Center of North East edge
-        * NW (Vector): Center of North West edge
-        * SE (Vector): Center of South East edge
-        * SW (Vector): Center of South West edge
-        * TE (Vector): Center of Top East edge.
-        * TN (Vector): Center of Top North edge.
-        * TS (Vector): Center of Top South edge.
-        * TW (Vector): Center of Top West edge.
-      * The other ttributes:
-        * BB (BoundBox): The wrapped BoundBox object.
-        * C (Vector): Center point (same as Center).
-        * DX (float): X bounding box length
-        * DY (float): X bounding box length
-        * DZ (float): X bounding box length
     """
 
-    # ApexBoundBox.__init__():
-    def __init__(self, bound_box: BoundBox) -> None:
-        """Initialize an ApexBoundBox.
-
-        Read about __new__() vs. __init__() at the URL below:
-        * [new](https://stackoverflow.com/questions/4859129/python-and-python-c-api-new-versus-init)
+    # ApexMaterial.__init__():
+    def __init__(self, name: Tuple[str, ...], color: str) -> None:
+        """Initialize and ApexMaterial.
 
         * Arguments:
-          *bound_box* (BoundBox): The bounding box to wrap.
+          * *name* (Tuple[str, ...): Non-empty to tuple of material names from broad to narrow.
+          * *color* (str):
+             An [SVG color name](https://www.december.com/html/spec/colorsvgsvg.html).
+
+        * Raises:
+          * ValueError for either an empty name or a bad svg color.
         """
-        self._bound_box: BoundBox = bound_box
-
-    # ApexBoundBox.from_vectors():
-    @staticmethod
-    def from_vectors(vectors: Tuple[Union[Vector, "ApexPoint"], ...]) -> "ApexBoundBox":
-        """Compute BoundingBox from some Point's."""
-        if not vectors:
-            raise ValueError("No vectors")
-        vector0: Vector = vectors[0]
-        x_min: float = vector0.x
-        y_min: float = vector0.y
-        z_min: float = vector0.z
-        x_max: float = x_min
-        y_max: float = y_min
-        z_max: float = z_min
-
-        vector: Union[Vector, ApexPoint]
-        for vector in vectors[1:]:
-            x: float = vector.x
-            y: float = vector.y
-            z: float = vector.z
-            x_min = min(x_min, x)
-            y_min = min(y_min, y)
-            z_min = min(z_min, z)
-            x_max = max(x_max, x)
-            y_max = max(y_max, y)
-            z_max = max(z_max, z)
-
-        bound_box: BoundBox = BoundBox(x_min, y_min, z_min, x_max, y_max, z_max)
-        return ApexBoundBox(bound_box)
-
-    @staticmethod
-    def from_bound_boxes(
-            bound_boxes: Tuple[Union[BoundBox, "ApexBoundBox"], ...]) -> "ApexBoundBox":
-        """Create ApexBoundingBox from BoundingBox/ApexBoundBox tuple."""
-        if not bound_boxes:
-            raise ValueError("No bounding boxes")  # pragma: no unit test
-
-        bound_box: Union[BoundBox, "ApexBoundBox"] = bound_boxes[0]
-        bound_box = bound_box if isinstance(bound_box, BoundBox) else bound_box.BB
-        assert isinstance(bound_box, BoundBox)
-        x_min: float = bound_box.XMin
-        y_min: float = bound_box.YMin
-        z_min: float = bound_box.ZMin
-        x_max: float = x_min
-        y_max: float = y_min
-        z_max: float = z_min
-
-        for bound_box in bound_boxes[1:]:
-            bound_box = bound_box if isinstance(bound_box, BoundBox) else bound_box.BB
-            x_min = min(x_min, bound_box.XMin)
-            y_min = min(y_min, bound_box.YMin)
-            z_min = min(z_min, bound_box.ZMin)
-            x_max = max(x_max, bound_box.XMax)
-            y_max = max(y_max, bound_box.YMax)
-            z_max = max(z_max, bound_box.ZMax)
-
-        bound_box = BoundBox(x_min, y_min, z_min, x_max, y_max, z_max)
-        return ApexBoundBox(bound_box)
-
-    # Standard BoundBox attributes:
-
-    @property
-    def B(self) -> Vector:
-        """Bottom face center."""
-        bb: BoundBox = self._bound_box
-        return Vector((bb.XMin + bb.XMax) / 2.0, (bb.YMin + bb.YMax) / 2.0, bb.ZMin)
-
-    @property
-    def E(self) -> Vector:
-        """East face center."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMax, (bb.YMin + bb.YMax) / 2.0, (bb.ZMin + bb.ZMax) / 2.0)
-
-    @property
-    def N(self) -> Vector:
-        """North face center."""
-        bb: BoundBox = self._bound_box
-        return Vector((bb.XMin + bb.XMax) / 2.0, bb.YMax, (bb.ZMin + bb.ZMax) / 2.0)
-
-    @property
-    def S(self) -> Vector:
-        """South face center."""
-        bb: BoundBox = self._bound_box
-        return Vector((bb.XMin + bb.XMax) / 2.0, bb.YMin, (bb.ZMin + bb.ZMax) / 2.0)
-
-    @property
-    def T(self) -> Vector:
-        """Top face center."""
-        bb: BoundBox = self._bound_box
-        return Vector((bb.XMin + bb.XMax) / 2.0, (bb.YMin + bb.YMax) / 2.0, bb.ZMax)
-
-    @property
-    def W(self) -> Vector:
-        """Center of bottom face."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMin, (bb.YMin + bb.YMax) / 2.0, (bb.ZMin + bb.ZMax) / 2.0)
-
-    # 8 Corner, BNE, BNW, BSE, BSW, TNE, TNW, TSE, TSW:
-
-    @property
-    def BNE(self) -> Vector:
-        """Bottom North East corner."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMax, bb.YMax, bb.ZMin)
-
-    @property
-    def BNW(self) -> Vector:
-        """Bottom North West corner."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMin, bb.YMax, bb.ZMin)
-
-    @property
-    def BSE(self) -> Vector:
-        """Bottom South East corner."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMax, bb.YMin, bb.ZMin)
-
-    @property
-    def BSW(self) -> Vector:
-        """Bottom South West corner."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMin, bb.YMin, bb.ZMin)
-
-    @property
-    def TNE(self) -> Vector:
-        """Top North East corner."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMax, bb.YMax, bb.ZMax)
-
-    @property
-    def TNW(self) -> Vector:
-        """Top North West corner."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMin, bb.YMax, bb.ZMax)
-
-    @property
-    def TSE(self) -> Vector:
-        """Top South East corner."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMax, bb.YMin, bb.ZMax)
-
-    @property
-    def TSW(self) -> Vector:
-        """Top South West corner."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMin, bb.YMin, bb.ZMax)
-
-    # 12 Edges BE, BW, BN, BS, NE, NW, SE, SW, TE, TW, TN, TS:
-
-    @property
-    def BE(self) -> Vector:
-        """Bottom East edge center."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMax, (bb.YMin + bb.YMax) / 2.0, bb.ZMin)
-
-    @property
-    def BW(self) -> Vector:
-        """Bottom West edge center."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMin, (bb.YMin + bb.YMax) / 2.0, bb.ZMin)
-
-    @property
-    def BN(self) -> Vector:
-        """Bottom North edge center."""
-        bb: BoundBox = self._bound_box
-        return Vector((bb.XMin + bb.XMax) / 2.0, bb.YMax, bb.ZMin)
-
-    @property
-    def BS(self) -> Vector:
-        """Bottom South edge center."""
-        bb: BoundBox = self._bound_box
-        return Vector((bb.XMin + bb.XMax) / 2.0, bb.YMin, bb.ZMin)
-
-    @property
-    def NE(self) -> Vector:
-        """North East edge center."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMax, bb.YMax, (bb.ZMin + bb.ZMax) / 2.0)
-
-    @property
-    def NW(self) -> Vector:
-        """North West edge center."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMin, bb.YMax, (bb.ZMin + bb.ZMax) / 2.0)
-
-    @property
-    def SE(self) -> Vector:
-        """North East edge center."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMax, bb.YMin, (bb.ZMin + bb.ZMax) / 2.0)
-
-    @property
-    def SW(self) -> Vector:
-        """South East edge center."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMin, bb.YMin, (bb.ZMin + bb.ZMax) / 2.0)
-
-    @property
-    def TE(self) -> Vector:
-        """Bottom East edge center."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMax, (bb.YMin + bb.YMax) / 2.0, bb.ZMax)
-
-    @property
-    def TW(self) -> Vector:
-        """Bottom West edge center."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMin, (bb.YMin + bb.YMax) / 2.0, bb.ZMax)
-
-    @property
-    def TN(self) -> Vector:
-        """Bottom North edge center."""
-        bb: BoundBox = self._bound_box
-        return Vector((bb.XMin + bb.XMax) / 2.0, bb.YMax, bb.ZMax)
-
-    @property
-    def TS(self) -> Vector:
-        """Bottom South edge center."""
-        bb: BoundBox = self._bound_box
-        return Vector((bb.XMin + bb.XMax) / 2.0, bb.YMin, bb.ZMax)
-
-    # Miscellaneous attributes:
-
-    @property
-    def BB(self) -> BoundBox:
-        """Access the wrapped a BoundBox."""
-        return self._bound_box
-
-    @property
-    def C(self) -> Vector:
-        """Center point."""
-        return self._bound_box.Center
-
-    @property
-    def DX(self) -> float:
-        """Delta X."""
-        bb: BoundBox = self._bound_box
-        return bb.XMax - bb.XMin
-
-    @property
-    def DY(self) -> float:
-        """Delta Y."""
-        bb: BoundBox = self._bound_box
-        return bb.YMax - bb.YMin
-
-    @property
-    def DZ(self) -> float:
-        """Delta Z."""
-        bb: BoundBox = self._bound_box
-        return bb.ZMax - bb.ZMin
-
-    # ApexBoundBox.__repr__():
-    def __repr__(self) -> str:
-        """Return a representation of an ApexBoundBox."""
-        return self.__str__()
-
-    # ApexBoundBox.__str__():
-    def __str__(self) -> str:
-        """Return a representation of an ApexBoundBox."""
-        return f"ApexBoundBox({self.BB})"
+        if not name:
+            raise ValueError(f"Material name is an empty tuple.")
+        # Check for SVG color here.
+        self.name: Tuple[str, ...] = name
+        self.color: str = color
 
     @staticmethod
     def _unit_tests() -> None:
-        """Perform ApexBoundBox unit tests."""
-        # Verity directories match:
-        bound_box: BoundBox = BoundBox(-1, -2, -3, 1, 2, 3)
-        apex_bound_box: ApexBoundBox = ApexBoundBox(bound_box)
-        assert isinstance(apex_bound_box, ApexBoundBox)
-
-        # Verity __str__() and __repr():
-        want: str = f"ApexBoundBox({bound_box})"
-        assert f"{apex_bound_box}" == want, f"'{apex_bound_box}' != '{want}'"
-
-        def check(vector: Vector, x: float, y: float, z: float) -> bool:
-            assert vector.x == x, f"{vector.x} != {x}"
-            assert vector.y == y, f"{vector.y} != {y}"
-            assert vector.z == z, f"{vector.z} != {z}"
-            return vector.x == x and vector.y == y and vector.z == z
-
-        # Do 6 faces:
-        assert check(apex_bound_box.E, 1, 0, 0), "E"
-        assert check(apex_bound_box.W, -1, 0, 0), "W"
-        assert check(apex_bound_box.N, 0, 2, 0), "N"
-        assert check(apex_bound_box.S, 0, -2, 0), "S"
-        assert check(apex_bound_box.T, 0, 0, 3), "T"
-        assert check(apex_bound_box.B, 0, 0, -3), "B"
-
-        # Do the 12 edges:
-        assert check(apex_bound_box.BE, 1, 0, -3), "BE"
-        assert check(apex_bound_box.BN, 0, 2, -3), "BN"
-        assert check(apex_bound_box.BS, 0, -2, -3), "BS"
-        assert check(apex_bound_box.BW, -1, 0, -3), "BW"
-        assert check(apex_bound_box.NE, 1, 2, 0), "NE"
-        assert check(apex_bound_box.NW, -1, 2, 0), "NW"
-        assert check(apex_bound_box.SE, 1, -2, 0), "SE"
-        assert check(apex_bound_box.SW, -1, -2, 0), "SW"
-        assert check(apex_bound_box.TE, 1, 0, 3), "TE"
-        assert check(apex_bound_box.TN, 0, 2, 3), "TN"
-        assert check(apex_bound_box.TS, 0, -2, 3), "TS"
-        assert check(apex_bound_box.TW, -1, 0, 3), "TW"
-
-        # Do the 8 corners:
-        assert check(apex_bound_box.BNE, 1, 2, -3), "BNE"
-        assert check(apex_bound_box.BNW, -1, 2, -3), "BNW"
-        assert check(apex_bound_box.BSE, 1, -2, -3), "BSE"
-        assert check(apex_bound_box.BSW, -1, -2, -3), "BSW"
-        assert check(apex_bound_box.TNE, 1, 2, 3), "TNE"
-        assert check(apex_bound_box.TNW, -1, 2, 3), "TNW"
-        assert check(apex_bound_box.TSE, 1, -2, 3), "TSE"
-        assert check(apex_bound_box.TSW, -1, -2, 3), "TSW"
-
-        # Do the miscellaneous attributes:
-        assert check(apex_bound_box.C, 0, 0, 0), "C"
-        assert check(apex_bound_box.BB.Center, 0, 0, 0), "Center"
-        assert apex_bound_box.BB is bound_box, "BB error"
-        assert apex_bound_box.C == apex_bound_box.BB.Center, "C != Center"
-        assert apex_bound_box.DX == 2.0, "DX"
-        assert apex_bound_box.DY == 4.0, "DY"
-        assert apex_bound_box.DZ == 6.0, "DZ"
-
-        # Test *from_vector* and *from_bound_boxes* methods:
-        vector: Vector = Vector(-1, -2, -3)
-        apex_vector: ApexPoint = ApexPoint(1, 2, 3)
-        new_apex_bound_box: ApexBoundBox = ApexBoundBox.from_vectors((vector, apex_vector))
-        assert f"{new_apex_bound_box.BB}" == f"{apex_bound_box.BB}"
-        next_apex_bound_box: ApexBoundBox = ApexBoundBox.from_bound_boxes(
-            (bound_box, new_apex_bound_box))
-        want = "ApexBoundBox(BoundBox (-1, -2, -3, 1, 2, 3))"
-        assert f"{next_apex_bound_box}" == want, f"'{next_apex_bound_box}' != '{want}'"
-        assert next_apex_bound_box.__repr__() == want
+        """Run ApexMaterial unit tests."""
         try:
-            ApexBoundBox.from_vectors(())
-        except ValueError as value_error:
-            assert str(value_error) == "No vectors"
-        try:
-            ApexBoundBox.from_bound_boxes(())
-        except ValueError as value_error:
-            assert str(value_error) == "No bounding boxes"
+            ApexMaterial((), "")
+        except ValueError as error:
+            assert str(error) == "Material name is an empty tuple.", str(error)
 
 
 # ApexPoint:
@@ -737,13 +940,21 @@ class ApexPoint:
 
     * Attributes:
       * *vector* (Vector): The underlying FreeCAD Vector.
-      * *x* (float): The x coordinate of the vector.
+      * *x* (Union[float, Apex): The x coordinate of the vector.
       * *y* (float): The y coordinate of the vector.
       * *z* (float): The z coordinate of the vector.
       * *diameter* (Union[float, ApexLength]): The apex diameter.
       * *radius* (float): The apex radius.
       * *name* (str): The apex name.
     """
+
+    INIT_CHECKS = (
+        ApexCheck("x", (int, float, ApexLength)),
+        ApexCheck("y", (int, float, ApexLength)),
+        ApexCheck("z", (int, float, ApexLength)),
+        ApexCheck("diameter", (int, float, ApexLength)),
+        ApexCheck("name", (str,)),
+    )
 
     # ApexPoint.__init__():
     def __init__(self,
@@ -761,6 +972,10 @@ class ApexPoint:
           * *diameter* (Union[int, float, ApexLength]): The apex diameter. (Default: 0.0)
           * *name* (str): A name primarily used for debugging. (Default: "")
         """
+        value_error: str = ApexCheck.check((x, y, z, diameter, name), ApexPoint.INIT_CHECKS)
+        if value_error:
+            raise ValueError(value_error)
+
         self.vector: Vector = Vector(x, y, z)
         self.x: Union[float, ApexLength] = float(x) if isinstance(x, int) else x
         self.y: Union[float, ApexLength] = float(y) if isinstance(y, int) else y
@@ -831,35 +1046,22 @@ class ApexPoint:
     def _unit_tests() -> None:
         """Perform ApexPoint unit tests."""
         vector: Vector = Vector(1, 2, 3)
-        apex_vector: ApexPoint = ApexPoint(1, 2, 3, diameter=5, name="test1")
+        apex_point: ApexPoint = ApexPoint(1, 2, 3, diameter=5, name="test1")
         assert isinstance(vector, Vector)
-        assert isinstance(apex_vector, ApexPoint)
-        assert apex_vector.vector == vector
+        assert isinstance(apex_point, ApexPoint)
+        assert apex_point.vector == vector
         want: str = "ApexPoint(1.0, 2.0, 3.0, 5.0, 'test1')"
-        assert f"{apex_vector}" == want, f"{apex_vector} != {want}"
-        assert apex_vector.__repr__() == want
+        assert f"{apex_point}" == want, f"{apex_point} != {want}"
+        assert apex_point.__repr__() == want
+        assert (-apex_point).vector == Vector(-1, -2, -3)
+        assert (apex_point / 2).vector == Vector(0.5, 1.0, 1.5)
 
-
-@dataclass(frozen=True)
-class _XReorient:
-    """_Reorient a class used for ApexPose.reorient() unit tests.
-
-    Attributes:
-    * *z_align* (Vector): The vector to align with the +Z axis.
-    * *y_align* (Vector): The vector to align with the +Y axis.
-    * *x* (int): The desired spot X coordinate.
-    * *y* (int): The desired spot Y coordinate.
-    * *z* (int): The desired spot Z coordinate.
-    * *tag* (str): A tag to print out on errors.
-
-    """
-
-    z_align: Vector  # Direction to reorient to the top (+Z)
-    y_align: Vector  # Direction to reorient to the north (+Y)
-    x: int  # X Location of rotated spot
-    y: int  # Y Location of rotated spot
-    z: int  # Z Location of rotated spot
-    tag: str  # 2-character string "ab", where "a" is *top* and "b" is *north*
+        try:
+            ApexPoint(cast(int, "x"), cast(float, "y"), cast(ApexLength, "z"),
+                      cast(float, "diameter"), cast(str, None))
+        except ValueError as value_error:
+            assert str(value_error) == (
+                "Argument 'x' is str which is not one of ['int', 'float', 'ApexLength']")
 
 
 # ApexPose:
@@ -1146,7 +1348,7 @@ class ApexPose(object):
         return matrix1, matrix2
 
     @staticmethod
-    def zf(value: float) -> float:
+    def _zf(value: float) -> float:
         """Round values near zero to zero."""
         return 0.0 if abs(value) < 1.0e-10 else value
 
@@ -1172,18 +1374,18 @@ class ApexPose(object):
 
         # Normalize *angle* to be between -180.0 and 180.0 and convert to radians:
 
-        zf: Callable[[float], float] = ApexPose.zf
+        _zf: Callable[[float], float] = ApexPose._zf
         # Compute the X/Y/Z components of a normal vector of *length* 1.
         axis = axis.vector if isinstance(axis, ApexPoint) else axis
         assert isinstance(axis, Vector)
-        nx: float = zf(axis.x)
-        ny: float = zf(axis.y)
-        nz: float = zf(axis.z)
+        nx: float = _zf(axis.x)
+        ny: float = _zf(axis.y)
+        nz: float = _zf(axis.z)
         length: float = math.sqrt(nx * nx + ny * ny + nz * nz)
         assert length > 0.0, "Internal error: {length=}"
-        nx = zf(nx / length)
-        ny = zf(ny / length)
-        nz = zf(nz / length)
+        nx = _zf(nx / length)
+        ny = _zf(ny / length)
+        nz = _zf(nz / length)
 
         # The matrix for rotating by *angle* around the normal *axis* is:
         #
@@ -1219,23 +1421,23 @@ class ApexPose(object):
         #     0.0, 0.0, 0.0, 1.0)
 
         matrix: Matrix = Matrix(
-            zf(nx * x_omc + c), zf(nx * y_omc - zs), zf(nx * z_omc + ys), 0.0,
-            zf(ny * x_omc + zs), zf(ny * y_omc + c), zf(ny * z_omc - xs), 0.0,
-            zf(nz * x_omc - ys), zf(nz * y_omc + xs), zf(nz * z_omc + c), 0.0,
+            _zf(nx * x_omc + c), _zf(nx * y_omc - zs), _zf(nx * z_omc + ys), 0.0,
+            _zf(ny * x_omc + zs), _zf(ny * y_omc + c), _zf(ny * z_omc - xs), 0.0,
+            _zf(nz * x_omc - ys), _zf(nz * y_omc + xs), _zf(nz * z_omc + c), 0.0,
             0.0, 0.0, 0.0, 1.0)
         if tracing:
             print(f"{tracing}<=ApexPose._rotate({axis}, {math.degrees(angle)}deg)=>{matrix}")
         return matrix
 
     @staticmethod
-    def matrix_clean(matrix: Matrix) -> Matrix:
+    def _matrix_clean(matrix: Matrix) -> Matrix:
         """Return a matrix where values close to zero are set to zero."""
         assert isinstance(matrix, Matrix)
         elements: Tuple[float, ...] = matrix.A
         element: float
         cleaned_elements: List[float] = []
         for element in elements:
-            cleaned_elements.append(ApexPose.zf(element))
+            cleaned_elements.append(ApexPose._zf(element))
         return Matrix(*cleaned_elements)
 
     def __repr__(self) -> str:
@@ -1244,21 +1446,7 @@ class ApexPose(object):
 
     def __str__(self) -> str:
         """Return string representation of an ApexPose."""
-        # Assemble *results* which is the list of positional and keyword arguments:
-        keywords: Tuple[str, ...] = (
-            "center=", "axis=", "angle=", "z_align=", "y_align", "translate=", "name=")
-        keywords_needed: bool = False
-        results: List[str] = []
-        index: int
-        argument: Any
-        for index, argument in enumerate(self._arguments):
-            # print(f"'{keyword}', {value}, {default}")
-            if argument:
-                result: str = f"'{argument}'" if isinstance(argument, str) else f"{argument}"
-                results.append(keywords[index] + result if keywords_needed else result)
-            else:
-                keywords_needed = True
-        return f"ApexPose({', '.join(results)})"
+        return ApexCheck.init_show("ApexPose", self._arguments, ApexPose.INIT_CHECKS)
 
     @property
     def forward(self) -> Matrix:
@@ -1425,17 +1613,17 @@ class ApexPose(object):
         assert (ap_t123.forward * ap_t123.reverse).A == identity_pose.forward.A
 
         degrees90: float = math.pi / 2.0
-        matrix_clean: Callable[[Matrix], Matrix] = ApexPose.matrix_clean
+        _matrix_clean: Callable[[Matrix], Matrix] = ApexPose._matrix_clean
         v100: Vector = Vector(1, 0, 0)  # X axis
         v010: Vector = Vector(0, 1, 0)  # Y axis
         v001: Vector = Vector(0, 0, 1)  # Z axis
 
         # Rotate around the X axis:
-        m_x90: Matrix = matrix_clean(Matrix())
+        m_x90: Matrix = _matrix_clean(Matrix())
         m_x90.rotateX(degrees90)
-        m_x90 = matrix_clean(m_x90)
+        m_x90 = _matrix_clean(m_x90)
 
-        m_x90 = matrix_clean(m_x90)
+        m_x90 = _matrix_clean(m_x90)
         ap_x90: ApexPose = ApexPose(axis=ApexPoint(1, 0, 0), angle=degrees90)
         assert m_x90.A == ap_x90.forward.A, f"{m_x90.A} != {ap_x90.forward.A}"
         m_v: Vector = m_x90 * v010
@@ -1445,7 +1633,7 @@ class ApexPose(object):
         # Rotate around the Y axis:
         m_y90: Matrix = Matrix()
         m_y90.rotateY(degrees90)
-        m_y90 = matrix_clean(m_y90)
+        m_y90 = _matrix_clean(m_y90)
         ap_y90: ApexPose = ApexPose(axis=ApexPoint(0, 1, 0), angle=degrees90)
         assert m_y90.A == ap_y90.forward.A, f"{m_y90.A} != {ap_y90.forward.A}"
         m_v = m_y90 * v001
@@ -1455,7 +1643,7 @@ class ApexPose(object):
         # Rotate around the Z axis:
         m_z90: Matrix = Matrix()
         m_z90.rotateZ(degrees90)
-        m_z90 = matrix_clean(m_z90)
+        m_z90 = _matrix_clean(m_z90)
         ap_z90: ApexPose = ApexPose(angle=degrees90)
         assert m_z90.A == ap_z90.forward.A, f"{m_z90.A} != {ap_z90.forward.A}"
         m_v = m_z90 * v100
@@ -1517,45 +1705,6 @@ class ApexPose(object):
         """Run unit tests."""
         ApexPose._other_unit_tests()
         ApexPose._xy_align_unit_tests()
-
-
-# ApexMaterial:
-class ApexMaterial(object):
-    """ApexMaterial: Represents a stock material.
-
-    Other properties to be added later (e.g. transparency, shine, machining properties, etc.)
-
-    Attributes:
-    * *name* (Tuple[str, ...]): A list of material names from generict to specific.
-    * *color* (str): The color name to use.
-
-    """
-
-    # ApexMaterial.__init__():
-    def __init__(self, name: Tuple[str, ...], color: str) -> None:
-        """Initialize and ApexMaterial.
-
-        * Arguments:
-          * *name* (Tuple[str, ...): Non-empty to tuple of material names from broad to narrow.
-          * *color* (str):
-             An [SVG color name](https://www.december.com/html/spec/colorsvgsvg.html).
-
-        * Raises:
-          * ValueError for either an empty name or a bad svg color.
-        """
-        if not name:
-            raise ValueError(f"Material name is an empty tuple.")
-        # Check for SVG color here.
-        self.name: Tuple[str, ...] = name
-        self.color: str = color
-
-    @staticmethod
-    def _unit_tests() -> None:
-        """Run ApexMaterial unit tests."""
-        try:
-            ApexMaterial((), "")
-        except ValueError as error:
-            assert str(error) == "Material name is an empty tuple.", str(error)
 
 
 def _unit_tests() -> None:

@@ -6,7 +6,6 @@ Table of Contents:
   * 2.1 [ApexBoundBox.\_\_init\_\_](#apexboundbox---init--)
   * 2.2 [ApexBoundBox.\_\_repr\_\_](#apexboundbox---repr--)
   * 2.3 [ApexBoundBox.\_\_str\_\_](#apexboundbox---str--)
-  * 2.4 [ApexBoundBox.from\_vectors](#apexboundbox-from-vectors)
 * 3 [Class ApexCheck](#apexcheck)
   * 3.1 [ApexCheck.check](#apexcheck-check)
 * 4 [Class ApexLength](#apexlength)
@@ -33,14 +32,18 @@ Table of Contents:
 ## 1 <a name="introduction"></a>Introduction
 
 
-The Apex Base classes are:
-* ApexLength:
-  This is sub-class of *float* and provides a way of specifying a length in different units
-  (e.g. mm, cm, inch, ft, etc.) and an optional name.
+The Apex base classes are:
 * ApexBoundBox:
   This is a wrapper class around the FreeCAD BoundBox class for specifying bounding boxes.
   It introduces some consistent attributes for accessing the faces, corners and edges
   of a bounding box.  Alas, for technical reasons, this not a true sub-class of BoundBox.
+* ApexCheck:
+  This is some common code to check argument types for public functions.
+* ApexLength:
+  This is sub-class of *float* and provides a way of specifying a length in different units
+  (e.g. mm, cm, inch, ft, etc.) and an optional name.
+* ApexMaterial:
+  This is a class that describes material properties.
 * ApexPoint:
   This is a wrapper class around the FreeCAD Vector class that adds an optional diameter
   and name for each 3D Vector point.  For the same technical reasons, this is not a true
@@ -48,7 +51,7 @@ The Apex Base classes are:
 * ApexPose:
   This is a wrapper class around the FreeCAD Matrix class that provides an openGL style
   transformation consisting of a rotation point, rotation axis, and rotation angle,
-  followed by a final translation.  It also computes the inverse matrix.
+  followed by a final translation.  It also keeps track of the inverse matrix.
 
 
 ## 2 Class ApexBoundBox <a name="apexboundbox"></a>
@@ -101,21 +104,29 @@ is written in C++ and for technical reasons does not support sub-classing.
   * The other ttributes:
     * BB (BoundBox): The wrapped BoundBox object.
     * C (Vector): Center point (same as Center).
+    * DB (Vector): Bottom direction (i.e. B - C)
+    * DE (Vector): East direction (i.e. E - C)
+    * DN (Vector): North direction (i.e. N - C)
+    * DS (Vector): South direction (i.e. S - C)
+    * DT (Vector): Top direction (i.e. T - C)
+    * DW (Vector): West direction (i.e. W - C)
     * DX (float): X bounding box length
-    * DY (float): X bounding box length
-    * DZ (float): X bounding box length
+    * DY (float): Y bounding box length
+    * DZ (float): Z bounding box length
 
 ### 2.1 ApexBoundBox.\_\_init\_\_ <a name="apexboundbox---init--"></a>
 
-def \_\_init\_\_(self, *bound\_box*:  BoundBox) -> None:
+def \_\_init\_\_(self, *corners*:  Sequence[Union[Vector, "ApexPoint", BoundBox, "ApexBoundBox"]]) -> None:
 
 Initialize an ApexBoundBox.
 
-Read about \_\_new\_\_() vs. \_\_init\_\_() at the URL below:
-* [new](https://stackoverflow.com/questions/4859129/python-and-python-c-api-new-versus-init)
+Arguments:
+  * *corners* (Sequence[Union[Vector, ApexPoint, BoundBox, ApexBoundBox]]):
+    A sequence of points/corners to enclose by the bounding box.
 
-* Arguments:
-  *bound\_box* (BoundBox): The bounding box to wrap.
+Raises:
+  * ValueError: For bad or empty corners.
+
 
 ### 2.2 ApexBoundBox.\_\_repr\_\_ <a name="apexboundbox---repr--"></a>
 
@@ -129,17 +140,37 @@ def \_\_str\_\_(self) -> *str*:
 
 Return a representation of an ApexBoundBox.
 
-### 2.4 ApexBoundBox.from\_vectors <a name="apexboundbox-from-vectors"></a>
-
-def *from\_vectors*(vectors:  Tuple[Union[Vector, "ApexPoint"], ...]) -> "ApexBoundBox":
-
-Compute BoundingBox from some Point's.
-
 ## 3 Class ApexCheck <a name="apexcheck"></a>
 
 class ApexCheck(object):
 
 ApexCheck: Check arguments for type mismatch errors.
+
+Attributes:
+* *name* (str):
+   The argument name (used for error messages.)
+* *type* (Tuple[Any]):
+  A tuple of acceptable types.
+
+An ApexCheck contains is used to type check a single function argument.
+The static method `Apexcheck.check()` takes a list of argument values and the
+corresponding tuple ApexCheck's and verifies that they are correct.
+
+Example:
+
+     MY\_FUNCTION\_CHECKS = (
+         ApexCheck("arg1", int),
+         ApexCheck("arg2", bool),
+         ApexCheck("arg3", object),  # Any <=> object
+         ApexCheck("arg4," list),   # List <=> list
+     )
+     def my\_function(arg1: int, arg2: bool, arg3: Any, arg4: List[str]) -> None:
+         Doc string here.
+        value\_error: str = ApexCheck.check((arg1, arg2, arg3, arg4), MY\_FUNCTION\_CHECKS)
+        if value\_error:
+            raise ValueError(value\_error)
+        # Rest of code goes here.
+
 
 ### 3.1 ApexCheck.check <a name="apexcheck-check"></a>
 
@@ -222,7 +253,7 @@ An ApexPoint is basically just a Vector with an optional diameter and/or name.
 
 * Attributes:
   * *vector* (Vector): The underlying FreeCAD Vector.
-  * *x* (float): The x coordinate of the vector.
+  * *x* (Union[float, Apex): The x coordinate of the vector.
   * *y* (float): The y coordinate of the vector.
   * *z* (float): The z coordinate of the vector.
   * *diameter* (Union[float, ApexLength]): The apex diameter.

@@ -40,7 +40,7 @@ assert sys.version_info.minor == 8  # Python 3.8
 sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 
 from FreeCAD import Vector  # type: ignore
-from ApexBase import ApexLength, ApexPoint, ApexBoundBox
+from Apex import ApexLength, ApexPoint, ApexBoundBox
 
 
 # ApexContext:
@@ -238,7 +238,7 @@ def unit_tests() -> None:
             self.inner_volume: float = 0
             self.tne: ApexPoint = ApexPoint(dx / 2.0, dy / 2.0, dz / 2.0)
             self.bsw: ApexPoint = ApexPoint(-dx / 2.0, -dy / 2.0, -dz / 2.0)
-            self.bb: ApexBoundBox = ApexBoundBox.from_vectors((self.tne, self.bsw))
+            self.bb: ApexBoundBox = ApexBoundBox((self.tne, self.bsw))
             bb: ApexBoundBox = self.bb
 
             # x_dw: Vector = Vector(dw, 0.0, 0.0)

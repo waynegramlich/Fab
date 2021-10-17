@@ -13,8 +13,8 @@ from typing import Any, Callable, List, Optional, Tuple, Union
 import FreeCAD as App  # type: ignore
 import FreeCADGui as Gui  # type: ignore
 
-from ApexBase import ApexBoundBox, ApexPose, ApexPoint
-from FreeCAD import BoundBox, Vector
+from Apex import ApexBoundBox, ApexPose, ApexPoint
+from FreeCAD import Vector
 from pathlib import Path  # type: ignore
 import Part  # type: ignore
 import PartDesign  # type: ignore
@@ -38,7 +38,7 @@ class ApexDrawing(object):
                                                                 for circle in circles])
         polygon_bounding_boxes: Tuple[ApexBoundBox, ...] = tuple([polygon.bounding_box
                                                                  for polygon in polygons])
-        bounding_box: ApexBoundBox = ApexBoundBox.from_bound_boxes(
+        bounding_box: ApexBoundBox = ApexBoundBox(
             circle_bounding_boxes + polygon_bounding_boxes)
 
         self._bounding_box: ApexBoundBox = bounding_box
@@ -782,7 +782,7 @@ class ApexPolygon(object):
         if not points:
             raise ValueError("bounding box needs at least one point.")  # pragma: no unit cover
 
-        self._bounding_box: ApexBoundBox = ApexBoundBox.from_vectors(points)
+        self._bounding_box: ApexBoundBox = ApexBoundBox(points)
         self._depth: float = depth
         self._features: Optional[Tuple[ApexFeature, ...]] = None
         self._flat: bool = flat
@@ -1118,7 +1118,7 @@ class ApexCircle(object):
         lower: ApexPoint = ApexPoint(x - radius, y - radius, 0.0, name=name, diameter=0.0)
         upper: ApexPoint = ApexPoint(x + radius, y + radius, 0.0, name=name, diameter=0.0)
 
-        self._bounding_box: ApexBoundBox = ApexBoundBox(BoundBox(lower.vector, upper.vector))
+        self._bounding_box: ApexBoundBox = ApexBoundBox((lower.vector, upper.vector))
         self._circle_feature: Optional[ApexCircleFeature] = None
         self._constraints: Tuple[Sketcher.Constraint, ...] = ()
         self._center: ApexPoint = center
