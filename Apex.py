@@ -33,7 +33,7 @@ assert sys.version_info.major == 3, "Python 3.x is not running"
 assert sys.version_info.minor == 8, "Python 3.8 is not running"
 sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 
-from FreeCAD import BoundBox, Matrix, Vector  # type: ignore
+from FreeCAD import BoundBox, Matrix, Placement, Rotation, Vector  # type: ignore
 
 from dataclasses import dataclass
 import math
@@ -976,7 +976,6 @@ class ApexPoint:
         if value_error:
             raise ValueError(value_error)
 
-        self.vector: Vector = Vector(x, y, z)
         self.x: Union[float, ApexLength] = float(x) if isinstance(x, int) else x
         self.y: Union[float, ApexLength] = float(y) if isinstance(y, int) else y
         self.z: Union[float, ApexLength] = float(z) if isinstance(z, int) else z
@@ -984,6 +983,11 @@ class ApexPoint:
             float(diameter) if isinstance(diameter, int) else diameter)
         self.radius: float = float(diameter) / 2.0
         self.name: str = name
+
+    @property
+    def vector(self) -> Vector:
+        """Return associated Vector."""
+        return Vector(self.x, self.y, self.z)
 
     # ApexPoint.__add__():
     def __add__(self, vector: "ApexPoint") -> "ApexPoint":
@@ -1042,6 +1046,35 @@ class ApexPoint:
         z: float = float(self.z)
         return math.sqrt(x * x + y * y + z * z)
 
+    # ApexPoint.Reorient():
+    REORIENT_CHECKS = (
+        ApexCheck("placement", (Placement,)),
+        ApexCheck("suffix", (type(None), str)),
+    )
+
+    def reorient(self, placement: Placement, suffix: Optional[str] = "") -> "ApexPoint":
+        """Return the a new ApexPoint that has been reoriented.
+
+        Arguments:
+        * *placement* (Placement):
+          A FreeCAD Placement of the form Placement(translate, rotate, center) where:
+          * *translate* (Vector):
+           Specifies a translation that occurs **AFTER** the rotation (Default: Vector().)
+          * *rotation* (Rotation):
+            Specifies a rotation about the center point. (Default: Rotation().)
+          * *center* (Vector):
+            Specifies the rotation center point. (Default: Vector().)
+        * *suffix* (Optional[str]):
+          A suffix to append to the name of each original *ApexPoint* name.  If `None`
+          is specified the name is set to the empty string.  (Default: "")
+        """
+        value_error: str = ApexCheck.check((placement, suffix), ApexPoint.REORIENT_CHECKS)
+        if value_error:
+            raise ValueError(value_error)
+        name: str = "" if suffix is None else f"{self.name}{suffix}"
+        reoriented: Vector = placement * self.vector
+        return ApexPoint(reoriented.x, reoriented.y, reoriented.z, self.diameter, name)
+
     @staticmethod
     def _unit_tests() -> None:
         """Perform ApexPoint unit tests."""
@@ -1062,6 +1095,83 @@ class ApexPoint:
         except ValueError as value_error:
             assert str(value_error) == (
                 "Argument 'x' is str which is not one of ['int', 'float', 'ApexLength']")
+
+        def whole(vector: Vector) -> Vector:
+            """Return Vector that is close to integers (testing only)."""
+            def fix(value: float) -> float:
+                """Round floats to closest whole number."""
+                negative: bool = value < 0.0
+                if negative:
+                    value = -value
+                whole: float
+                fractional: float
+                whole, fractional = divmod(value, 1.0)
+                epsilon: float = 1.0e-10
+                if abs(fractional) < epsilon:
+                    fractional = 0.0
+                if abs(fractional - 1.0) < epsilon:
+                    fractional = 0.0  # pragma: no unit cover
+                    whole += 1.0  # pragma: no unit cover
+                value = whole + fractional
+                if negative:
+                    value = -value
+                return value
+            fixed_vector: Vector = Vector(fix(vector.x), fix(vector.y), fix(vector.z))
+            # print(f"whole({vector}) => {fixed_vector}")
+            return fixed_vector
+
+        def reorients(vectors: Sequence[Vector], placement: Placement) -> Sequence[Vector]:
+            """Reorient ApexPoints by a Placement."""
+            vector: Vector
+            apex_points: List[ApexPoint] = ([
+                ApexPoint(vector.x, vector.y, vector.z) for vector in vectors])
+            # print(f"{apex_points=}")
+            apex_point: ApexPoint
+            reoriented_apex_points: Sequence[ApexPoint] = tuple(
+                [apex_point.reorient(placement) for apex_point in apex_points])
+            # print(f"{reoriented_apex_points=}")
+            reoriented_vectors: Sequence[Vector] = tuple(
+                [whole(apex_point.vector) for apex_point in reoriented_apex_points])
+            # print(f"{reoriented_vectors=}")
+            return reoriented_vectors
+
+        t0: Vector = Vector(0, 0, 0)  # No translation
+        t10: Vector = Vector(10, 10, 10)  # Translate by +10 in X/Y/Z
+        c0: Vector = t0  # Center point at origin
+        c10: Vector = t10  # Center point at (10, 10, 10)
+
+        x_axis: Vector = Vector(1, 0, 0)
+        y_axis: Vector = Vector(0, 1, 0)
+        z_axis: Vector = Vector(0, 0, 1)
+        xyz: Sequence[Vector] = (x_axis, y_axis, z_axis)
+
+        x2z: Rotation = Rotation(x_axis, z_axis)  # X-axis to Z-axis
+        # y2z: Rotation = Rotation(y, z)  # Y-axis to Z-axis
+        # z2x: Rotation = Rotation(x, z)  # Z-axis to X-axis
+        # z2y: Rotation = Rotation(y, z)  # Z-axis to Y-axis
+        z2z: Rotation = Rotation(z_axis, z_axis)  # Z-axis to Z-axis
+
+        # Rotate origin from X-axis to Z-axis;
+        t0_x2z_c0: Placement = Placement(t0, x2z, c0)
+        t0_x2z_c0_xyz: Sequence[ApexPoint] = reorients(xyz, t0_x2z_c0)
+        assert t0_x2z_c0_xyz == (Vector(0, 0, 1), Vector(0, 1, 0), Vector(-1, 0, 0))
+
+        # Translate origin to *t10*:
+        t10_z2z_c0: Placement = Placement(t10, z2z, c0)
+        t10_xyz: Vector[ApexPoint] = reorients(xyz, t10_z2z_c0)
+        assert t10_xyz == (Vector(11, 10, 10), Vector(10, 11, 10), Vector(10, 10, 11)), t10_xyz
+
+        # Rotate around the center at *t10*:
+        t0_x2z_c10: Placement = Placement(t0, x2z, c10)
+        t0_x2z_c10_xyz: Placement = reorients(t10_xyz, t0_x2z_c10)
+        assert t0_x2z_c10_xyz == (Vector(10, 10, 11), Vector(10, 11, 10), Vector(9, 10, 10))
+
+        # Try to trigger a value error:
+        try:
+            apex_point.reorient(None)
+        except ValueError as value_error:
+            assert str(value_error) == (
+                "Argument 'placement' is NoneType which is not one of ['Placement']")
 
 
 # ApexPose:

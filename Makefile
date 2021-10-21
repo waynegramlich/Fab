@@ -25,7 +25,18 @@ PY_MD_FILES := ${PY_FILES:%.py=%.md}
 ALL_MD_FILES := ${PY_MD_FILES} ${OTHER_MD_FILES}
 HTML_FILES := ${ALL_MD_FILES:%.md=%.html}
 
+MODULES := \
+    FreeCAD \
+    FreeCADGui \
+    Part \
+    Path \
+    Sketcher
+MODULES_TXTS := ${MODULES:%=/tmp/%.txt}
+
+
 all: documentation lint tests
+
+texts: ${MODULES_TXTS}
 
 documentation: ${ALL_MD_FILES} ${HTML_FILES}  # Use *.py => *.md pattern rules
 
@@ -59,6 +70,10 @@ tests: .tests
 	touch $@
 %.html: %.md
 	cmark $< -o $@
+/tmp/%.txt:
+	python3 -c "import os ; import sys ; sys.path.extend([os.path.join(os.getcwd(), 'squashfs-root/usr/lib'), '.']) ; import FreeCAD ; import ${@:/tmp/%.txt=%} ; help(${@:/tmp/%.txt=%})" > $@
+
+
 
 clean:
-	rm -f ${COVER_FILES} ${LINT_FILES} ${HTML_FILES} .tests
+	rm -f ${COVER_FILES} ${LINT_FILES} ${HTML_FILES} ${MODULES_TXTS} .tests
