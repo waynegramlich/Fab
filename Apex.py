@@ -2,7 +2,7 @@
 """Apex base classes.
 
 The Apex base classes are:
-* ApexBoundBox:
+* ApexBox:
   This is a wrapper class around the FreeCAD BoundBox class for specifying bounding boxes.
   It introduces some consistent attributes for accessing the faces, corners and edges
   of a bounding box.  Alas, for technical reasons, this not a true sub-class of BoundBox.
@@ -40,11 +40,11 @@ import math
 from typing import Any, Callable, cast, ClassVar, List, Dict, Optional, Sequence, Tuple, Union
 
 
-# ApexBoundBox:
-class ApexBoundBox:
-    """An ApexBoundBox is FreeCAD BoundBox with some additional attributes.
+# ApexBox:
+class ApexBox:
+    """An ApexBox is FreeCAD BoundBox with some additional attributes.
 
-    An ApexBoundBox is a simple wrapper around a FreeCAD BoundBox object that provides
+    An ApexBox is a simple wrapper around a FreeCAD BoundBox object that provides
     additional attributes that represent various points on the surface of the bounding box.
     The nomenclature is that East/West represents the X axis, North/South represents the Y axis,
     and the Top/Bottom represents the Z axis.  Thus, TNE represents the Top North East corner
@@ -99,13 +99,13 @@ class ApexBoundBox:
         * DZ (float): Z bounding box length
     """
 
-    # ApexBoundBox.__init__():
+    # ApexBox.__init__():
     def __init__(self,
-                 corners: Sequence[Union[Vector, "ApexPoint", BoundBox, "ApexBoundBox"]]) -> None:
-        """Initialize an ApexBoundBox.
+                 corners: Sequence[Union[Vector, "ApexPoint", BoundBox, "ApexBox"]]) -> None:
+        """Initialize an ApexBox.
 
         Arguments:
-          * *corners* (Sequence[Union[Vector, ApexPoint, BoundBox, ApexBoundBox]]):
+          * *corners* (Sequence[Union[Vector, ApexPoint, BoundBox, ApexBox]]):
             A sequence of points/corners to enclose by the bounding box.
 
         Raises:
@@ -116,7 +116,7 @@ class ApexBoundBox:
             raise ValueError(f"{corners} is neither a List nor a Tuple")
 
         # Convert *corners* into *vectors*:
-        corner: Union[Vector, ApexPoint, BoundBox, ApexBoundBox]
+        corner: Union[Vector, ApexPoint, BoundBox, ApexBox]
         vectors: List[Vector] = []
         index: int
         for index, corner in enumerate(corners):
@@ -127,12 +127,12 @@ class ApexBoundBox:
             elif isinstance(corner, BoundBox):
                 vectors.append(Vector(corner.XMin, corner.YMin, corner.ZMin))
                 vectors.append(Vector(corner.XMax, corner.YMax, corner.ZMax))
-            elif isinstance(corner, ApexBoundBox):
+            elif isinstance(corner, ApexBox):
                 vectors.append(corner.TNE)
                 vectors.append(corner.BSW)
             else:
                 raise ValueError(
-                    f"{corner} is not of type Vector/ApexPoint/BoundBox/ApexBoundBox")
+                    f"{corner} is not of type Vector/ApexPoint/BoundBox/ApexBox")
         if not vectors:
             raise ValueError("Corners sequence is empty")
 
@@ -382,24 +382,22 @@ class ApexBoundBox:
         bb: BoundBox = self._bound_box
         return bb.ZMax - bb.ZMin
 
-    # ApexBoundBox.__repr__():
     def __repr__(self) -> str:
-        """Return a representation of an ApexBoundBox."""
+        """Return a representation of an ApexBox."""
         return self.__str__()
 
-    # ApexBoundBox.__str__():
     def __str__(self) -> str:
-        """Return a representation of an ApexBoundBox."""
-        return f"ApexBoundBox({self.BB})"
+        """Return a representation of an ApexBox."""
+        return f"ApexBox({self.BB})"
 
     @staticmethod
     def _unit_tests() -> None:
-        """Perform ApexBoundBox unit tests."""
+        """Perform ApexBox unit tests."""
         # Initial tests:
         bound_box: BoundBox = BoundBox(-1.0, -2.0, -3.0, 1.0, 2.0, 3.0)
         assert bound_box == bound_box
-        apex_bound_box: ApexBoundBox = ApexBoundBox([bound_box])
-        assert isinstance(apex_bound_box, ApexBoundBox)
+        apex_bound_box: ApexBox = ApexBox([bound_box])
+        assert isinstance(apex_bound_box, ApexBox)
 
         # FreeCAD.BoundBox.__eq__() appears to only compare ids for equality.
         # Thus, it is necessary to test that each value is equal by hand.
@@ -411,7 +409,7 @@ class ApexBoundBox:
         assert apex_bound_box.BB.ZMax == bound_box.ZMax
 
         # Verify __str__() works:
-        want: str = f"ApexBoundBox({bound_box})"
+        want: str = f"ApexBox({bound_box})"
         assert f"{apex_bound_box}" == want, f"'{apex_bound_box}' != '{want}'"
 
         def check(vector: Vector, x: float, y: float, z: float) -> bool:
@@ -470,26 +468,26 @@ class ApexBoundBox:
         # Test *from_vector* and *from_bound_boxes* methods:
         vector: Vector = Vector(-1, -2, -3)
         apex_vector: ApexPoint = ApexPoint(1, 2, 3)
-        new_apex_bound_box: ApexBoundBox = ApexBoundBox((vector, apex_vector))
+        new_apex_bound_box: ApexBox = ApexBox((vector, apex_vector))
         assert f"{new_apex_bound_box.BB}" == f"{apex_bound_box.BB}"
-        next_apex_bound_box: ApexBoundBox = ApexBoundBox((bound_box, new_apex_bound_box))
-        want = "ApexBoundBox(BoundBox (-1, -2, -3, 1, 2, 3))"
+        next_apex_bound_box: ApexBox = ApexBox((bound_box, new_apex_bound_box))
+        want = "ApexBox(BoundBox (-1, -2, -3, 1, 2, 3))"
         assert f"{next_apex_bound_box}" == want, f"'{next_apex_bound_box}' != '{want}'"
         assert next_apex_bound_box.__repr__() == want
 
         # Do some error checking:
         try:
-            ApexBoundBox(())
+            ApexBox(())
         except ValueError as value_error:
             assert str(value_error) == "Corners sequence is empty", str(value_error)
         try:
-            ApexBoundBox(cast(List, 123))  # Force invalid argument type.
+            ApexBox(cast(List, 123))  # Force invalid argument type.
         except ValueError as value_error:
             assert str(value_error) == "123 is neither a List nor a Tuple", str(value_error)
         try:
-            ApexBoundBox(cast(List, [123]))  # Force invalid corner type
+            ApexBox(cast(List, [123]))  # Force invalid corner type
         except ValueError as value_error:
-            assert str(value_error) == "123 is not of type Vector/ApexPoint/BoundBox/ApexBoundBox"
+            assert str(value_error) == "123 is not of type Vector/ApexPoint/BoundBox/ApexBox"
 
 
 # ApexCheck:
@@ -946,7 +944,7 @@ class ApexPoint:
       * *diameter* (Union[float, ApexLength]): The apex diameter.
       * *radius* (float): The apex radius.
       * *name* (str): The apex name.
-      * *bound_box* (ApexBoundBox): The bound box of ApexPoint assuming a *diameter* sphere.
+      * *bound_box* (ApexBox): The bound box of ApexPoint assuming a *diameter* sphere.
     """
 
     INIT_CHECKS = (
@@ -987,10 +985,10 @@ class ApexPoint:
         radius: float = diameter / 2.0
         tne: Vector = Vector(x + radius, y + radius, z + radius)
         bsw: Vector = Vector(x - radius, y - radius, z - radius)
-        bound_box: ApexBoundBox = ApexBoundBox((tne, bsw))
+        bound_box: ApexBox = ApexBox((tne, bsw))
 
         # Install everything into *self* (i.e. ApexPoint):
-        self.bound_box: ApexBoundBox = bound_box
+        self.bound_box: ApexBox = bound_box
         self.diameter: Union[float, ApexLength] = diameter
         self.name: str = name
         self.radius: float = radius
@@ -1257,7 +1255,7 @@ class ApexPose(object):
         * Mounting:
           Frequently parts need to be mounted in a vice.  For this the part need to be rotated
           so that the surface to be machines is normal to the *Z axis.  And another surface
-          is aligned to be normal to the +Y axis.  For "boxy" parts, the *ApexBoundBox* is
+          is aligned to be normal to the +Y axis.  For "boxy" parts, the *ApexBox* is
           used to get these directions.  Specifically, *z_align* rotates the part such that
           *z_align* is in the +Z axis direction and *y_align* rotates the part such that the
           part is aligned in the +Y axis.
@@ -1828,7 +1826,7 @@ class ApexPose(object):
 def _unit_tests() -> None:
     """Run the unit tests."""
     ApexCheck._unit_tests()
-    ApexBoundBox._unit_tests()
+    ApexBox._unit_tests()
     ApexPose._unit_tests()
     ApexLength._unit_tests()
     ApexPoint._unit_tests()

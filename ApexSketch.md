@@ -207,7 +207,7 @@ class ApexCircle(object):
 ApexCircle: Represents a circle with an optional hole.
 
 Attributes:
-* *bounding\_box* (ApexBoundingBox): The ApexCircle ApexBoundingBox.
+* *bounding\_box* (ApexBoundBox): The ApexCircle ApexBoundBox.
 * *center* (ApexPoint): The center of the circle.
 * *circle\_feature* (ApexCircleFeature): The ApexCircleFeature for the circle.
 * *depth* (float): The hole depth in millimeters.
@@ -224,9 +224,9 @@ Initialize a circle.
 
 ### 3.2 ApexCircle.bounding\_box <a name="apexcircle-bounding-box"></a>
 
-def *bounding\_box*(self) -> ApexBoundBox:
+def *bounding\_box*(self) -> ApexBox:
 
-Return the ApexCircle ApexBoundBox.
+Return the ApexCircle ApexBox.
 
 ### 3.3 ApexCircle.constraints\_append <a name="apexcircle-constraints-append"></a>
 
@@ -295,7 +295,7 @@ class ApexDrawing(object):
 ApexDrawing: Used to create fully constrained 2D drawings.
 
 Attributes:
-* *bounding\_box* (ApexBoundBox): Bounding box of associated ApexPoints.
+* *bounding\_box* (ApexBox): Bounding box of associated ApexPoints.
 * *circles (Tuple[ApexCircle, ...]): The ApexCircle's.
 * *name* (str): The ApexDraing name.
 * *origin\_index* (int): The constraint index for the origin.
@@ -523,7 +523,7 @@ class ApexPolygon(object):
 ApexPolyon: A closed polygon of ApexPoints.
 
 Attributes:
-* *bounding\_box* (ApexBoundBox): The bounding box of the ApexPoint's.
+* *bounding\_box* (ApexBox): The bounding box of the ApexPoint's.
 * *clockwise* (bool): True if the ApexPoints are clockwise and False otherwise.
 * *depth* (bool): The ApexPolygon depth.
 * *flat* (bool): True if the polygon is flat (i.e. is planar).

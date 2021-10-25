@@ -2,10 +2,8 @@
 
 Table of Contents:
 * 1 [Introduction](#introduction):
-* 2 [Class ApexBoundBox](#apexboundbox)
-  * 2.1 [ApexBoundBox.\_\_init\_\_](#apexboundbox---init--)
-  * 2.2 [ApexBoundBox.\_\_repr\_\_](#apexboundbox---repr--)
-  * 2.3 [ApexBoundBox.\_\_str\_\_](#apexboundbox---str--)
+* 2 [Class ApexBox](#apexbox)
+  * 2.1 [ApexBox.\_\_init\_\_](#apexbox---init--)
 * 3 [Class ApexCheck](#apexcheck)
   * 3.1 [ApexCheck.check](#apexcheck-check)
 * 4 [Class ApexLength](#apexlength)
@@ -32,7 +30,7 @@ Table of Contents:
 
 
 The Apex base classes are:
-* ApexBoundBox:
+* ApexBox:
   This is a wrapper class around the FreeCAD BoundBox class for specifying bounding boxes.
   It introduces some consistent attributes for accessing the faces, corners and edges
   of a bounding box.  Alas, for technical reasons, this not a true sub-class of BoundBox.
@@ -53,13 +51,13 @@ The Apex base classes are:
   followed by a final translation.  It also keeps track of the inverse matrix.
 
 
-## 2 Class ApexBoundBox <a name="apexboundbox"></a>
+## 2 Class ApexBox <a name="apexbox"></a>
 
-class ApexBoundBox:
+class ApexBox:
 
-An ApexBoundBox is FreeCAD BoundBox with some additional attributes.
+An ApexBox is FreeCAD BoundBox with some additional attributes.
 
-An ApexBoundBox is a simple wrapper around a FreeCAD BoundBox object that provides
+An ApexBox is a simple wrapper around a FreeCAD BoundBox object that provides
 additional attributes that represent various points on the surface of the bounding box.
 The nomenclature is that East/West represents the X axis, North/South represents the Y axis,
 and the Top/Bottom represents the Z axis.  Thus, TNE represents the Top North East corner
@@ -113,31 +111,19 @@ is written in C++ and for technical reasons does not support sub-classing.
     * DY (float): Y bounding box length
     * DZ (float): Z bounding box length
 
-### 2.1 ApexBoundBox.\_\_init\_\_ <a name="apexboundbox---init--"></a>
+### 2.1 ApexBox.\_\_init\_\_ <a name="apexbox---init--"></a>
 
-def \_\_init\_\_(self, *corners*:  Sequence[Union[Vector, "ApexPoint", BoundBox, "ApexBoundBox"]]) -> None:
+def \_\_init\_\_(self, *corners*:  Sequence[Union[Vector, "ApexPoint", BoundBox, "ApexBox"]]) -> None:
 
-Initialize an ApexBoundBox.
+Initialize an ApexBox.
 
 Arguments:
-  * *corners* (Sequence[Union[Vector, ApexPoint, BoundBox, ApexBoundBox]]):
+  * *corners* (Sequence[Union[Vector, ApexPoint, BoundBox, ApexBox]]):
     A sequence of points/corners to enclose by the bounding box.
 
 Raises:
   * ValueError: For bad or empty corners.
 
-
-### 2.2 ApexBoundBox.\_\_repr\_\_ <a name="apexboundbox---repr--"></a>
-
-def \_\_repr\_\_(self) -> *str*:
-
-Return a representation of an ApexBoundBox.
-
-### 2.3 ApexBoundBox.\_\_str\_\_ <a name="apexboundbox---str--"></a>
-
-def \_\_str\_\_(self) -> *str*:
-
-Return a representation of an ApexBoundBox.
 
 ## 3 Class ApexCheck <a name="apexcheck"></a>
 
@@ -258,7 +244,7 @@ An ApexPoint is basically just a Vector with an optional diameter and/or name.
   * *diameter* (Union[float, ApexLength]): The apex diameter.
   * *radius* (float): The apex radius.
   * *name* (str): The apex name.
-  * *bound\_box* (ApexBoundBox): The bound box of ApexPoint assuming a *diameter* sphere.
+  * *bound\_box* (ApexBox): The bound box of ApexPoint assuming a *diameter* sphere.
 
 ### 6.1 ApexPoint.\_\_add\_\_ <a name="apexpoint---add--"></a>
 
@@ -371,7 +357,7 @@ There are two rotation styles:
 * Mounting:
   Frequently parts need to be mounted in a vice.  For this the part need to be rotated
   so that the surface to be machines is normal to the *Z axis.  And another surface
-  is aligned to be normal to the +Y axis.  For "boxy" parts, the *ApexBoundBox* is
+  is aligned to be normal to the +Y axis.  For "boxy" parts, the *ApexBox* is
   used to get these directions.  Specifically, *z\_align* rotates the part such that
   *z\_align* is in the +Z axis direction and *y\_align* rotates the part such that the
   part is aligned in the +Y axis.

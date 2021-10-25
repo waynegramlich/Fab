@@ -40,7 +40,7 @@ assert sys.version_info.minor == 8  # Python 3.8
 sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 
 from FreeCAD import Vector  # type: ignore
-from Apex import ApexLength, ApexPoint, ApexBoundBox
+from Apex import ApexLength, ApexPoint, ApexBox
 
 
 # ApexContext:
@@ -238,8 +238,8 @@ def unit_tests() -> None:
             self.inner_volume: float = 0
             self.tne: ApexPoint = ApexPoint(dx / 2.0, dy / 2.0, dz / 2.0)
             self.bsw: ApexPoint = ApexPoint(-dx / 2.0, -dy / 2.0, -dz / 2.0)
-            self.bb: ApexBoundBox = ApexBoundBox((self.tne, self.bsw))
-            bb: ApexBoundBox = self.bb
+            self.bb: ApexBox = ApexBox((self.tne, self.bsw))
+            bb: ApexBox = self.bb
 
             # x_dw: Vector = Vector(dw, 0.0, 0.0)
             y_dw: Vector = Vector(0.0, dw, 0.0)
@@ -265,7 +265,7 @@ def unit_tests() -> None:
             print("<=>Box.build(*)")
 
         def configure(self) -> None:
-            bb: ApexBoundBox = self.bb
+            bb: ApexBox = self.bb
             dxyz: Vector = bb.TNE - bb.BSW
             self.skin_volume = (
                 self.top_side.volume + self.bottom_side.volume +
