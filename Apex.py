@@ -946,6 +946,7 @@ class ApexPoint:
       * *diameter* (Union[float, ApexLength]): The apex diameter.
       * *radius* (float): The apex radius.
       * *name* (str): The apex name.
+      * *bound_box* (ApexBoundBox): The bound box of ApexPoint assuming a *diameter* sphere.
     """
 
     INIT_CHECKS = (
@@ -976,13 +977,26 @@ class ApexPoint:
         if value_error:
             raise ValueError(value_error)
 
-        self.x: Union[float, ApexLength] = float(x) if isinstance(x, int) else x
-        self.y: Union[float, ApexLength] = float(y) if isinstance(y, int) else y
-        self.z: Union[float, ApexLength] = float(z) if isinstance(z, int) else z
-        self.diameter: Union[float, ApexLength] = (
-            float(diameter) if isinstance(diameter, int) else diameter)
-        self.radius: float = float(diameter) / 2.0
+        # Make sure that *x*, *y*, *z*, and *diameter* are no longer *int*'s:
+        x = float(x) if isinstance(x, int) else x
+        y = float(y) if isinstance(y, int) else y
+        z = float(z) if isinstance(z, int) else z
+        diameter = float(diameter) if isinstance(diameter, int) else diameter
+
+        # Compute the *bound_box* assuming spherical *radius* around (*x*, *y*, *z*):
+        radius: float = diameter / 2.0
+        tne: Vector = Vector(x + radius, y + radius, z + radius)
+        bsw: Vector = Vector(x - radius, y - radius, z - radius)
+        bound_box: ApexBoundBox = ApexBoundBox((tne, bsw))
+
+        # Install everything into *self* (i.e. ApexPoint):
+        self.bound_box: ApexBoundBox = bound_box
+        self.diameter: Union[float, ApexLength] = diameter
         self.name: str = name
+        self.radius: float = radius
+        self.x: Union[float, ApexLength] = x
+        self.y: Union[float, ApexLength] = y
+        self.z: Union[float, ApexLength] = z
 
     @property
     def vector(self) -> Vector:
@@ -1031,12 +1045,6 @@ class ApexPoint:
     def atan2(self) -> float:
         """Return the atan2 of the x and y values."""
         return math.atan2(self.x, self.y)
-
-    # ApexPoint.forward():
-    def forward(self, matrix: "ApexPose") -> "ApexPoint":
-        """Perform a forward matrix transform using an ApexPose."""
-        vector: Vector = matrix.forward * self.vector
-        return ApexPoint(vector.x, vector.y, vector.z, self.diameter, self.name)
 
     # ApexPoint.magnitude():
     def magnitude(self) -> float:

@@ -24,8 +24,7 @@ Table of Contents:
   * 6.7 [ApexPoint.\_\_sub\_\_](#apexpoint---sub--)
   * 6.8 [ApexPoint.\_\_truediv\_\_](#apexpoint---truediv--)
   * 6.9 [ApexPoint.atan2](#apexpoint-atan2)
-  * 6.10 [ApexPoint.forward](#apexpoint-forward)
-  * 6.11 [ApexPoint.magnitude](#apexpoint-magnitude)
+  * 6.10 [ApexPoint.magnitude](#apexpoint-magnitude)
 * 7 [Class ApexPose](#apexpose)
   * 7.1 [ApexPose.\_\_init\_\_](#apexpose---init--)
 
@@ -259,6 +258,7 @@ An ApexPoint is basically just a Vector with an optional diameter and/or name.
   * *diameter* (Union[float, ApexLength]): The apex diameter.
   * *radius* (float): The apex radius.
   * *name* (str): The apex name.
+  * *bound\_box* (ApexBoundBox): The bound box of ApexPoint assuming a *diameter* sphere.
 
 ### 6.1 ApexPoint.\_\_add\_\_ <a name="apexpoint---add--"></a>
 
@@ -321,13 +321,7 @@ def *atan2*(self) -> *float*:
 
 Return the atan2 of the x and y values.
 
-### 6.10 ApexPoint.forward <a name="apexpoint-forward"></a>
-
-def *forward*(self, *matrix*:  "ApexPose") -> "ApexPoint":
-
-Perform a forward matrix transform using an ApexPose.
-
-### 6.11 ApexPoint.magnitude <a name="apexpoint-magnitude"></a>
+### 6.10 ApexPoint.magnitude <a name="apexpoint-magnitude"></a>
 
 def *magnitude*(self) -> *float*:
 
