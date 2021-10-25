@@ -26,7 +26,7 @@ class ApexDrawing(object):
     """ApexDrawing: Used to create fully constrained 2D drawings.
 
     Attributes:
-    * *bounding_box* (ApexBox): Bounding box of associated ApexPoints.
+    * *box* (ApexBox): Bounding box of associated ApexPoints.
     * *circles (Tuple[ApexCircle, ...]): The ApexCircle's.
     * *name* (str): The ApexDraing name.
     * *origin_index* (int): The constraint index for the origin.
@@ -86,15 +86,15 @@ class ApexDrawing(object):
         # self._datum_plane: Optional[Part.ApexFeature] = None
         # self._geometries: List[Any] = []
 
-        # Now compute the final *bounding_box*:
-        circle_bounding_boxes: Tuple[ApexBox, ...] = tuple(
-            [circle.bounding_box for circle in circles])
-        polygon_bounding_boxes: Tuple[ApexBox, ...] = tuple(
-            [polygon.bounding_box for polygon in polygons])
-        bounding_box: ApexBox = ApexBox(circle_bounding_boxes + polygon_bounding_boxes)
+        # Now compute the final *box*:
+        circle_boxes: Tuple[ApexBox, ...] = tuple(
+            [circle.box for circle in circles])
+        polygon_boxes: Tuple[ApexBox, ...] = tuple(
+            [polygon.box for polygon in polygons])
+        box: ApexBox = ApexBox(circle_boxes + polygon_boxes)
 
         # Load everything into *self*:
-        self._bounding_box: ApexBox = bounding_box
+        self._box: ApexBox = box
         self._circles: Tuple[ApexCircle, ...] = tuple(circles)
         self._contact: Union[ApexPoint, Vector] = contact
         self._origin_index: int = -999  # Value that is less than -1 (used for constraints)
@@ -103,9 +103,9 @@ class ApexDrawing(object):
         self._polygons: Tuple[ApexPolygon, ...] = tuple(polygons)
 
     @property
-    def bounding_box(self) -> ApexBox:
+    def box(self) -> ApexBox:
         """Return the ApexDrawing ApexBox."""
-        return self._bounding_box
+        return self._box
 
     @property
     def circles(self) -> Tuple["ApexCircle", ...]:  # pragma: no unit test
@@ -329,7 +329,7 @@ class ApexDrawing(object):
             origin, Rotation(normal, z_axis), contact, tracing=next_tracing)
         z_aligned_drawing: "ApexDrawing" = self.reorient(z_aligned_placement, ".+z")
         if tracing:
-            print(f"{tracing}{z_aligned_drawing.bounding_box=}")
+            print(f"{tracing}{z_aligned_drawing.box=}")
 
         # There may be a better way of doing this, but for now, everything is moved to
         # quadrant 1 (i.e. +X/+Y quarter plane.)  This ensures that all length constraints
@@ -340,8 +340,8 @@ class ApexDrawing(object):
         # that can be positive, negative or zero.
 
         name: str = self._name
-        z_aligned_bounding_box: ApexBox = z_aligned_drawing.bounding_box
-        tsw: Vector = z_aligned_bounding_box.TSW  # Lower left is along the SW bounding box edge.
+        z_aligned_box: ApexBox = z_aligned_drawing.box
+        tsw: Vector = z_aligned_box.TSW  # Lower left is along the SW bounding box edge.
         quadrant1_placement: Placement = Placement(Vector(-tsw.x, -tsw.y, 0.0), Rotation())
         quadrant1_drawing: "ApexDrawing" = z_aligned_drawing.reorient(
             quadrant1_placement, ".q1", tracing=next_tracing)
@@ -975,7 +975,7 @@ class ApexPolygon(object):
     """ApexPolyon: A closed polygon of ApexPoints.
 
     Attributes:
-    * *bounding_box* (ApexBox): The bounding box of the ApexPoint's.
+    * *box* (ApexBox): The bounding box of the ApexPoint's.
     * *clockwise* (bool): True if the ApexPoints are clockwise and False otherwise.
     * *depth* (bool): The ApexPolygon depth.
     * *flat* (bool): True if the polygon is flat (i.e. is planar).
@@ -996,7 +996,7 @@ class ApexPolygon(object):
         if not points:
             raise ValueError("bounding box needs at least one point.")  # pragma: no unit cover
 
-        self._bounding_box: ApexBox = ApexBox(points)
+        self._box: ApexBox = ApexBox(points)
         self._depth: float = depth
         self._features: Optional[Tuple[ApexFeature, ...]] = None
         self._flat: bool = flat
@@ -1012,9 +1012,9 @@ class ApexPolygon(object):
         return f"ApexPolygon({self._points}, {self._depth}, {self.flat}, '{self._name}')"
 
     @property
-    def bounding_box(self) -> ApexBox:
+    def box(self) -> ApexBox:
         """Return the ApexPolygon ApexBox."""
-        return self._bounding_box
+        return self._box
 
     # ApexPolygon.clockwise():
     @property
@@ -1342,7 +1342,7 @@ class ApexCircle(object):
     """ApexCircle: Represents a circle with an optional hole.
 
     Attributes:
-    * *bounding_box* (ApexBoundBox): The ApexCircle ApexBoundBox.
+    * *box* (ApexBoundBox): The ApexCircle ApexBoundBox.
     * *center* (ApexPoint): The center of the circle.
     * *circle_feature* (ApexCircleFeature): The ApexCircleFeature for the circle.
     * *depth* (float): The hole depth in millimeters.
@@ -1372,7 +1372,7 @@ class ApexCircle(object):
         lower: ApexPoint = ApexPoint(x - radius, y - radius, 0.0, name=name, diameter=0.0)
         upper: ApexPoint = ApexPoint(x + radius, y + radius, 0.0, name=name, diameter=0.0)
 
-        self._bounding_box: ApexBox = ApexBox((lower.vector, upper.vector))
+        self._box: ApexBox = ApexBox((lower.vector, upper.vector))
         self._circle_feature: Optional[ApexCircleFeature] = None
         self._constraints: Tuple[Sketcher.Constraint, ...] = ()
         self._center: ApexPoint = center
@@ -1390,11 +1390,11 @@ class ApexCircle(object):
         return (f"ApexCircle({self._center}, "
                 f"{self._radius}, '{self._name}')")  # pragma: no unit cover
 
-    # ApexCircle.bounding_box():
+    # ApexCircle.box():
     @property
-    def bounding_box(self) -> ApexBox:
+    def box(self) -> ApexBox:
         """Return the ApexCircle ApexBox."""
-        return self._bounding_box
+        return self._box
 
     @property
     def center(self) -> ApexPoint:
@@ -1620,8 +1620,8 @@ def main() -> int:
 
         # drawing.__str__()
         print(f"{drawing=}")
-        bounding_box: ApexBox = drawing.bounding_box
-        print(f"{bounding_box=}")
+        box: ApexBox = drawing.box
+        print(f"{box=}")
 
         drawing.sketch(sketch)
 

@@ -24,7 +24,7 @@ Table of Contents:
   * 2.19 [ApexArcFeature.type\_name](#apexarcfeature-type-name)
 * 3 [Class ApexCircle](#apexcircle)
   * 3.1 [ApexCircle.\_\_init](#apexcircle---init)
-  * 3.2 [ApexCircle.bounding\_box](#apexcircle-bounding-box)
+  * 3.2 [ApexCircle.box](#apexcircle-box)
   * 3.3 [ApexCircle.constraints\_append](#apexcircle-constraints-append)
   * 3.4 [ApexCircle.features\_get](#apexcircle-features-get)
   * 3.5 [ApexCircle.reorient](#apexcircle-reorient)
@@ -207,7 +207,7 @@ class ApexCircle(object):
 ApexCircle: Represents a circle with an optional hole.
 
 Attributes:
-* *bounding\_box* (ApexBoundBox): The ApexCircle ApexBoundBox.
+* *box* (ApexBoundBox): The ApexCircle ApexBoundBox.
 * *center* (ApexPoint): The center of the circle.
 * *circle\_feature* (ApexCircleFeature): The ApexCircleFeature for the circle.
 * *depth* (float): The hole depth in millimeters.
@@ -222,9 +222,9 @@ def \_\_init\_\_( *self*, *center*:  ApexPoint, *depth*:  *float* = 0.0, *flat*:
 
 Initialize a circle.
 
-### 3.2 ApexCircle.bounding\_box <a name="apexcircle-bounding-box"></a>
+### 3.2 ApexCircle.box <a name="apexcircle-box"></a>
 
-def *bounding\_box*(self) -> ApexBox:
+def *box*(self) -> ApexBox:
 
 Return the ApexCircle ApexBox.
 
@@ -295,7 +295,7 @@ class ApexDrawing(object):
 ApexDrawing: Used to create fully constrained 2D drawings.
 
 Attributes:
-* *bounding\_box* (ApexBox): Bounding box of associated ApexPoints.
+* *box* (ApexBox): Bounding box of associated ApexPoints.
 * *circles (Tuple[ApexCircle, ...]): The ApexCircle's.
 * *name* (str): The ApexDraing name.
 * *origin\_index* (int): The constraint index for the origin.
@@ -523,7 +523,7 @@ class ApexPolygon(object):
 ApexPolyon: A closed polygon of ApexPoints.
 
 Attributes:
-* *bounding\_box* (ApexBox): The bounding box of the ApexPoint's.
+* *box* (ApexBox): The bounding box of the ApexPoint's.
 * *clockwise* (bool): True if the ApexPoints are clockwise and False otherwise.
 * *depth* (bool): The ApexPolygon depth.
 * *flat* (bool): True if the polygon is flat (i.e. is planar).

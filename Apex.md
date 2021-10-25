@@ -13,16 +13,9 @@ Table of Contents:
 * 5 [Class ApexMaterial](#apexmaterial)
   * 5.1 [ApexMaterial.\_\_init\_\_](#apexmaterial---init--)
 * 6 [Class ApexPoint](#apexpoint)
-  * 6.1 [ApexPoint.\_\_add\_\_](#apexpoint---add--)
-  * 6.2 [ApexPoint.\_\_init\_\_](#apexpoint---init--)
-  * 6.3 [ApexPoint.\_\_neg\_\_](#apexpoint---neg--)
-  * 6.4 [ApexPoint.\_\_repr\_\_](#apexpoint---repr--)
-  * 6.5 [ApexPoint.\_\_rmul\_\_](#apexpoint---rmul--)
-  * 6.6 [ApexPoint.\_\_str\_\_](#apexpoint---str--)
-  * 6.7 [ApexPoint.\_\_sub\_\_](#apexpoint---sub--)
-  * 6.8 [ApexPoint.\_\_truediv\_\_](#apexpoint---truediv--)
-  * 6.9 [ApexPoint.atan2](#apexpoint-atan2)
-  * 6.10 [ApexPoint.magnitude](#apexpoint-magnitude)
+  * 6.1 [ApexPoint.\_\_init\_\_](#apexpoint---init--)
+  * 6.2 [ApexPoint.atan2](#apexpoint-atan2)
+  * 6.3 [ApexPoint.magnitude](#apexpoint-magnitude)
 * 7 [Class ApexPose](#apexpose)
   * 7.1 [ApexPose.\_\_init\_\_](#apexpose---init--)
 
@@ -34,6 +27,7 @@ The Apex base classes are:
   This is a wrapper class around the FreeCAD BoundBox class for specifying bounding boxes.
   It introduces some consistent attributes for accessing the faces, corners and edges
   of a bounding box.  Alas, for technical reasons, this not a true sub-class of BoundBox.
+  Also, it called a box rather than a bounding box.
 * ApexCheck:
   This is some common code to check argument types for public functions.
 * ApexLength:
@@ -58,11 +52,11 @@ class ApexBox:
 An ApexBox is FreeCAD BoundBox with some additional attributes.
 
 An ApexBox is a simple wrapper around a FreeCAD BoundBox object that provides
-additional attributes that represent various points on the surface of the bounding box.
-The nomenclature is that East/West represents the X axis, North/South represents the Y axis,
-and the Top/Bottom represents the Z axis.  Thus, TNE represents the Top North East corner
-of the bounding box.  NE represents the center of the North East edge of the bounding box.
-T represents the center of the top face of the bounding box.  By the way, the C attribute
+additional attributes that represent various points on the surface of the box.
+The nomenclature is that East/West represents the +X/-X axes, North/South represents the
++Y/-Y axes, nd the Top/Bottom represents the +Z/-Z axes.  Thus, TNE represents the Top
+North East corner of the box.  NE represents the center of the North East edge of the
+box.  T represents the center of the top face of the box.  By the way, the C attribute
 is the same as the BoundBox Center attribute.
 
 The preferred way to do this would be to sub-class BoundBox, but the FreeCAD implementation
@@ -107,9 +101,13 @@ is written in C++ and for technical reasons does not support sub-classing.
     * DS (Vector): South direction (i.e. S - C)
     * DT (Vector): Top direction (i.e. T - C)
     * DW (Vector): West direction (i.e. W - C)
-    * DX (float): X bounding box length
-    * DY (float): Y bounding box length
-    * DZ (float): Z bounding box length
+    * DX (float): X box length
+    * DXY (Vector): X box length
+    * DXZ (Vector): X/Y box lengths
+    * DXYZ (Vector): X/Y/Z box lengths
+    * DY (float): Y box length
+    * DYZ (Vector): Y/Z box length
+    * DZ (float): Z box length
 
 ### 2.1 ApexBox.\_\_init\_\_ <a name="apexbox---init--"></a>
 
@@ -119,7 +117,7 @@ Initialize an ApexBox.
 
 Arguments:
   * *corners* (Sequence[Union[Vector, ApexPoint, BoundBox, ApexBox]]):
-    A sequence of points/corners to enclose by the bounding box.
+    A sequence of points/corners to enclose by the box.
 
 Raises:
   * ValueError: For bad or empty corners.
@@ -244,70 +242,28 @@ An ApexPoint is basically just a Vector with an optional diameter and/or name.
   * *diameter* (Union[float, ApexLength]): The apex diameter.
   * *radius* (float): The apex radius.
   * *name* (str): The apex name.
-  * *bound\_box* (ApexBox): The bound box of ApexPoint assuming a *diameter* sphere.
+  * *box* (ApexBox): The ApexBox that encloses an ApexPoint assuming a *diameter* sphere.
 
-### 6.1 ApexPoint.\_\_add\_\_ <a name="apexpoint---add--"></a>
-
-def \_\_add\_\_(self, *vector*:  "ApexPoint") -> "ApexPoint":
-
-Return the sum of two ApexPoint's.
-
-### 6.2 ApexPoint.\_\_init\_\_ <a name="apexpoint---init--"></a>
+### 6.1 ApexPoint.\_\_init\_\_ <a name="apexpoint---init--"></a>
 
 def \_\_init\_\_(self, *x*:  Union[int, *float*, ApexLength] = 0.0, *y*:  Union[int, *float*, ApexLength] = 0.0, *z*:  Union[int, *float*, ApexLength] = 0.0, *diameter*:  Union[int, *float*, ApexLength] = 0.0, *name*:  *str* = "") -> None:
 
 Initialize an ApexPoint.
 
-* Arguments:
+Arguments:
   * *x* (Union[int, float, ApexLength]): The x coordinate of the vector. (Default: 0.0)
   * *y* (Union[int, float, ApexLength]): The y coordinate of the vector. (Default: 0.0)
   * *z* (Union[int, float, ApexLength]): The z coordinate of the vector. (Default: 0.0)
   * *diameter* (Union[int, float, ApexLength]): The apex diameter. (Default: 0.0)
   * *name* (str): A name primarily used for debugging. (Default: "")
 
-### 6.3 ApexPoint.\_\_neg\_\_ <a name="apexpoint---neg--"></a>
-
-def \_\_neg\_\_(self) -> "ApexPoint":
-
-Return the negative of an ApexPoint.
-
-### 6.4 ApexPoint.\_\_repr\_\_ <a name="apexpoint---repr--"></a>
-
-def \_\_repr\_\_(self) -> *str*:
-
-Return representation of ApexPoint.
-
-### 6.5 ApexPoint.\_\_rmul\_\_ <a name="apexpoint---rmul--"></a>
-
-def \_\_mul\_\_(self, *scale*:  *float*) -> "ApexPoint":
-
-Return a Point that has been scaled.
-
-### 6.6 ApexPoint.\_\_str\_\_ <a name="apexpoint---str--"></a>
-
-def \_\_str\_\_(self) -> *str*:
-
-Return string representation of ApexPoint.
-
-### 6.7 ApexPoint.\_\_sub\_\_ <a name="apexpoint---sub--"></a>
-
-def \_\_sub\_\_(self, *vector*:  "ApexPoint") -> "ApexPoint":
-
-Return the difference of two Point's.
-
-### 6.8 ApexPoint.\_\_truediv\_\_ <a name="apexpoint---truediv--"></a>
-
-def \_\_truediv\_\_(self, *divisor*:  *float*) -> "ApexPoint":
-
-Return a Point that has been scaleddown.
-
-### 6.9 ApexPoint.atan2 <a name="apexpoint-atan2"></a>
+### 6.2 ApexPoint.atan2 <a name="apexpoint-atan2"></a>
 
 def *atan2*(self) -> *float*:
 
 Return the atan2 of the x and y values.
 
-### 6.10 ApexPoint.magnitude <a name="apexpoint-magnitude"></a>
+### 6.3 ApexPoint.magnitude <a name="apexpoint-magnitude"></a>
 
 def *magnitude*(self) -> *float*:
 

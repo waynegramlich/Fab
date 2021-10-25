@@ -6,6 +6,7 @@ The Apex base classes are:
   This is a wrapper class around the FreeCAD BoundBox class for specifying bounding boxes.
   It introduces some consistent attributes for accessing the faces, corners and edges
   of a bounding box.  Alas, for technical reasons, this not a true sub-class of BoundBox.
+  Also, it called a box rather than a bounding box.
 * ApexCheck:
   This is some common code to check argument types for public functions.
 * ApexLength:
@@ -45,11 +46,11 @@ class ApexBox:
     """An ApexBox is FreeCAD BoundBox with some additional attributes.
 
     An ApexBox is a simple wrapper around a FreeCAD BoundBox object that provides
-    additional attributes that represent various points on the surface of the bounding box.
-    The nomenclature is that East/West represents the X axis, North/South represents the Y axis,
-    and the Top/Bottom represents the Z axis.  Thus, TNE represents the Top North East corner
-    of the bounding box.  NE represents the center of the North East edge of the bounding box.
-    T represents the center of the top face of the bounding box.  By the way, the C attribute
+    additional attributes that represent various points on the surface of the box.
+    The nomenclature is that East/West represents the +X/-X axes, North/South represents the
+    +Y/-Y axes, nd the Top/Bottom represents the +Z/-Z axes.  Thus, TNE represents the Top
+    North East corner of the box.  NE represents the center of the North East edge of the
+    box.  T represents the center of the top face of the box.  By the way, the C attribute
     is the same as the BoundBox Center attribute.
 
     The preferred way to do this would be to sub-class BoundBox, but the FreeCAD implementation
@@ -94,9 +95,13 @@ class ApexBox:
         * DS (Vector): South direction (i.e. S - C)
         * DT (Vector): Top direction (i.e. T - C)
         * DW (Vector): West direction (i.e. W - C)
-        * DX (float): X bounding box length
-        * DY (float): Y bounding box length
-        * DZ (float): Z bounding box length
+        * DX (float): X box length
+        * DXY (Vector): X box length
+        * DXZ (Vector): X/Y box lengths
+        * DXYZ (Vector): X/Y/Z box lengths
+        * DY (float): Y box length
+        * DYZ (Vector): Y/Z box length
+        * DZ (float): Z box length
     """
 
     # ApexBox.__init__():
@@ -106,7 +111,7 @@ class ApexBox:
 
         Arguments:
           * *corners* (Sequence[Union[Vector, ApexPoint, BoundBox, ApexBox]]):
-            A sequence of points/corners to enclose by the bounding box.
+            A sequence of points/corners to enclose by the box.
 
         Raises:
           * ValueError: For bad or empty corners.
@@ -145,7 +150,7 @@ class ApexBox:
         y_max: float = y_min
         z_max: float = z_min
 
-        # Sweep through *vectors* expanding the bounding box limits:
+        # Sweep through *vectors* expanding the box limits:
         vector: Vector
         for vector in vectors[1:]:
             x: float = vector.x
@@ -371,10 +376,34 @@ class ApexBox:
         return bb.XMax - bb.XMin
 
     @property
+    def DXY(self) -> Vector:
+        """Delta X/Y."""
+        bb: BoundBox = self._bound_box
+        return Vector(bb.XMax - bb.XMin, bb.YMax - bb.YMin, 0.0)
+
+    @property
+    def DXYZ(self) -> Vector:
+        """Delta X/Y/Z."""
+        bb: BoundBox = self._bound_box
+        return Vector(bb.XMax - bb.XMin, bb.YMax - bb.YMin, bb.ZMax - bb.ZMin)
+
+    @property
+    def DXZ(self) -> float:
+        """Delta X/Z."""
+        bb: BoundBox = self._bound_box
+        return Vector(bb.XMax - bb.XMin, 0.0, bb.ZMax - bb.ZMin)
+
+    @property
     def DY(self) -> float:
         """Delta Y."""
         bb: BoundBox = self._bound_box
         return bb.YMax - bb.YMin
+
+    @property
+    def DYZ(self) -> Vector:
+        """Delta Y/Z."""
+        bb: BoundBox = self._bound_box
+        return Vector(0.0, bb.YMax - bb.YMin, bb.ZMax - bb.ZMin)
 
     @property
     def DZ(self) -> float:
@@ -396,21 +425,21 @@ class ApexBox:
         # Initial tests:
         bound_box: BoundBox = BoundBox(-1.0, -2.0, -3.0, 1.0, 2.0, 3.0)
         assert bound_box == bound_box
-        apex_bound_box: ApexBox = ApexBox([bound_box])
-        assert isinstance(apex_bound_box, ApexBox)
+        apex_box: ApexBox = ApexBox([bound_box])
+        assert isinstance(apex_box, ApexBox)
 
         # FreeCAD.BoundBox.__eq__() appears to only compare ids for equality.
         # Thus, it is necessary to test that each value is equal by hand.
-        assert apex_bound_box.BB.XMin == bound_box.XMin
-        assert apex_bound_box.BB.YMin == bound_box.YMin
-        assert apex_bound_box.BB.ZMin == bound_box.ZMin
-        assert apex_bound_box.BB.XMax == bound_box.XMax
-        assert apex_bound_box.BB.YMax == bound_box.YMax
-        assert apex_bound_box.BB.ZMax == bound_box.ZMax
+        assert apex_box.BB.XMin == bound_box.XMin
+        assert apex_box.BB.YMin == bound_box.YMin
+        assert apex_box.BB.ZMin == bound_box.ZMin
+        assert apex_box.BB.XMax == bound_box.XMax
+        assert apex_box.BB.YMax == bound_box.YMax
+        assert apex_box.BB.ZMax == bound_box.ZMax
 
         # Verify __str__() works:
         want: str = f"ApexBox({bound_box})"
-        assert f"{apex_bound_box}" == want, f"'{apex_bound_box}' != '{want}'"
+        assert f"{apex_box}" == want, f"'{apex_box}' != '{want}'"
 
         def check(vector: Vector, x: float, y: float, z: float) -> bool:
             assert vector.x == x, f"{vector.x} != {x}"
@@ -419,61 +448,65 @@ class ApexBox:
             return vector.x == x and vector.y == y and vector.z == z
 
         # Do 6 faces:
-        assert check(apex_bound_box.E, 1, 0, 0), "E"
-        assert check(apex_bound_box.W, -1, 0, 0), "W"
-        assert check(apex_bound_box.N, 0, 2, 0), "N"
-        assert check(apex_bound_box.S, 0, -2, 0), "S"
-        assert check(apex_bound_box.T, 0, 0, 3), "T"
-        assert check(apex_bound_box.B, 0, 0, -3), "B"
+        assert check(apex_box.E, 1, 0, 0), "E"
+        assert check(apex_box.W, -1, 0, 0), "W"
+        assert check(apex_box.N, 0, 2, 0), "N"
+        assert check(apex_box.S, 0, -2, 0), "S"
+        assert check(apex_box.T, 0, 0, 3), "T"
+        assert check(apex_box.B, 0, 0, -3), "B"
 
         # Do the 12 edges:
-        assert check(apex_bound_box.BE, 1, 0, -3), "BE"
-        assert check(apex_bound_box.BN, 0, 2, -3), "BN"
-        assert check(apex_bound_box.BS, 0, -2, -3), "BS"
-        assert check(apex_bound_box.BW, -1, 0, -3), "BW"
-        assert check(apex_bound_box.NE, 1, 2, 0), "NE"
-        assert check(apex_bound_box.NW, -1, 2, 0), "NW"
-        assert check(apex_bound_box.SE, 1, -2, 0), "SE"
-        assert check(apex_bound_box.SW, -1, -2, 0), "SW"
-        assert check(apex_bound_box.TE, 1, 0, 3), "TE"
-        assert check(apex_bound_box.TN, 0, 2, 3), "TN"
-        assert check(apex_bound_box.TS, 0, -2, 3), "TS"
-        assert check(apex_bound_box.TW, -1, 0, 3), "TW"
+        assert check(apex_box.BE, 1, 0, -3), "BE"
+        assert check(apex_box.BN, 0, 2, -3), "BN"
+        assert check(apex_box.BS, 0, -2, -3), "BS"
+        assert check(apex_box.BW, -1, 0, -3), "BW"
+        assert check(apex_box.NE, 1, 2, 0), "NE"
+        assert check(apex_box.NW, -1, 2, 0), "NW"
+        assert check(apex_box.SE, 1, -2, 0), "SE"
+        assert check(apex_box.SW, -1, -2, 0), "SW"
+        assert check(apex_box.TE, 1, 0, 3), "TE"
+        assert check(apex_box.TN, 0, 2, 3), "TN"
+        assert check(apex_box.TS, 0, -2, 3), "TS"
+        assert check(apex_box.TW, -1, 0, 3), "TW"
 
         # Do the 8 corners:
-        assert check(apex_bound_box.BNE, 1, 2, -3), "BNE"
-        assert check(apex_bound_box.BNW, -1, 2, -3), "BNW"
-        assert check(apex_bound_box.BSE, 1, -2, -3), "BSE"
-        assert check(apex_bound_box.BSW, -1, -2, -3), "BSW"
-        assert check(apex_bound_box.TNE, 1, 2, 3), "TNE"
-        assert check(apex_bound_box.TNW, -1, 2, 3), "TNW"
-        assert check(apex_bound_box.TSE, 1, -2, 3), "TSE"
-        assert check(apex_bound_box.TSW, -1, -2, 3), "TSW"
+        assert check(apex_box.BNE, 1, 2, -3), "BNE"
+        assert check(apex_box.BNW, -1, 2, -3), "BNW"
+        assert check(apex_box.BSE, 1, -2, -3), "BSE"
+        assert check(apex_box.BSW, -1, -2, -3), "BSW"
+        assert check(apex_box.TNE, 1, 2, 3), "TNE"
+        assert check(apex_box.TNW, -1, 2, 3), "TNW"
+        assert check(apex_box.TSE, 1, -2, 3), "TSE"
+        assert check(apex_box.TSW, -1, -2, 3), "TSW"
 
         # Do the miscellaneous attributes:
-        assert check(apex_bound_box.C, 0, 0, 0), "C"
-        assert check(apex_bound_box.BB.Center, 0, 0, 0), "Center"
-        assert isinstance(apex_bound_box.BB, BoundBox), "BB error"
-        assert apex_bound_box.C == apex_bound_box.BB.Center, "C != Center"
-        assert apex_bound_box.DX == 2.0, "DX"
-        assert apex_bound_box.DY == 4.0, "DY"
-        assert apex_bound_box.DZ == 6.0, "DZ"
-        assert check(apex_bound_box.DB, 0, 0, -3), "DB"
-        assert check(apex_bound_box.DE, 1, 0, 0), "DE"
-        assert check(apex_bound_box.DN, 0, 2, 0), "DN"
-        assert check(apex_bound_box.DS, 0, -2, 0), "DS"
-        assert check(apex_bound_box.DT, 0, 0, 3), "DT"
-        assert check(apex_bound_box.DW, -1, 0, 0), "DW"
+        assert check(apex_box.C, 0, 0, 0), "C"
+        assert check(apex_box.BB.Center, 0, 0, 0), "Center"
+        assert isinstance(apex_box.BB, BoundBox), "BB error"
+        assert apex_box.C == apex_box.BB.Center, "C != Center"
+        assert apex_box.DX == 2.0, "DX"
+        assert apex_box.DXY == Vector(2.0, 4.0, 0.0), "DXY"
+        assert apex_box.DXYZ == Vector(2.0, 4.0, 6.0), "DXYZ"
+        assert apex_box.DXZ == Vector(2.0, 0.0, 6.0), "DXZ"
+        assert apex_box.DY == 4.0, "DY"
+        assert apex_box.DYZ == Vector(0.0, 4.0, 6.0), "DYZ"
+        assert apex_box.DZ == 6.0, "DZ"
+        assert check(apex_box.DB, 0, 0, -3), "DB"
+        assert check(apex_box.DE, 1, 0, 0), "DE"
+        assert check(apex_box.DN, 0, 2, 0), "DN"
+        assert check(apex_box.DS, 0, -2, 0), "DS"
+        assert check(apex_box.DT, 0, 0, 3), "DT"
+        assert check(apex_box.DW, -1, 0, 0), "DW"
 
-        # Test *from_vector* and *from_bound_boxes* methods:
+        # Test ApexBox() contructors:
         vector: Vector = Vector(-1, -2, -3)
         apex_vector: ApexPoint = ApexPoint(1, 2, 3)
-        new_apex_bound_box: ApexBox = ApexBox((vector, apex_vector))
-        assert f"{new_apex_bound_box.BB}" == f"{apex_bound_box.BB}"
-        next_apex_bound_box: ApexBox = ApexBox((bound_box, new_apex_bound_box))
+        new_apex_box: ApexBox = ApexBox((vector, apex_vector))
+        assert f"{new_apex_box.BB}" == f"{apex_box.BB}"
+        next_apex_box: ApexBox = ApexBox((bound_box, new_apex_box))
         want = "ApexBox(BoundBox (-1, -2, -3, 1, 2, 3))"
-        assert f"{next_apex_bound_box}" == want, f"'{next_apex_bound_box}' != '{want}'"
-        assert next_apex_bound_box.__repr__() == want
+        assert f"{next_apex_box}" == want, f"'{next_apex_box}' != '{want}'"
+        assert next_apex_box.__repr__() == want
 
         # Do some error checking:
         try:
@@ -944,7 +977,7 @@ class ApexPoint:
       * *diameter* (Union[float, ApexLength]): The apex diameter.
       * *radius* (float): The apex radius.
       * *name* (str): The apex name.
-      * *bound_box* (ApexBox): The bound box of ApexPoint assuming a *diameter* sphere.
+      * *box* (ApexBox): The ApexBox that encloses an ApexPoint assuming a *diameter* sphere.
     """
 
     INIT_CHECKS = (
@@ -964,7 +997,7 @@ class ApexPoint:
                  name: str = "") -> None:
         """Initialize an ApexPoint.
 
-        * Arguments:
+        Arguments:
           * *x* (Union[int, float, ApexLength]): The x coordinate of the vector. (Default: 0.0)
           * *y* (Union[int, float, ApexLength]): The y coordinate of the vector. (Default: 0.0)
           * *z* (Union[int, float, ApexLength]): The z coordinate of the vector. (Default: 0.0)
@@ -988,7 +1021,7 @@ class ApexPoint:
         bound_box: ApexBox = ApexBox((tne, bsw))
 
         # Install everything into *self* (i.e. ApexPoint):
-        self.bound_box: ApexBox = bound_box
+        self.box: ApexBox = bound_box
         self.diameter: Union[float, ApexLength] = diameter
         self.name: str = name
         self.radius: float = radius
@@ -1001,27 +1034,22 @@ class ApexPoint:
         """Return associated Vector."""
         return Vector(self.x, self.y, self.z)
 
-    # ApexPoint.__add__():
     def __add__(self, vector: "ApexPoint") -> "ApexPoint":
         """Return the sum of two ApexPoint's."""
         return ApexPoint(self.x + vector.x, self.y + vector.y, self.z + vector.z)
 
-    # ApexPoint.__neg__():
     def __neg__(self) -> "ApexPoint":
         """Return the negative of an ApexPoint."""
         return ApexPoint(-self.x, -self.y, -self.z, self.radius, self.name)
 
-    # ApexPoint.__rmul__():
     def __mul__(self, scale: float) -> "ApexPoint":
         """Return a Point that has been scaled."""
         return ApexPoint(self.x * scale, self.y * scale, self.z * scale)
 
-    # ApexPoint.__repr__():
     def __repr__(self) -> str:
         """Return representation of ApexPoint."""
         return self.__str__()
 
-    # ApexPoint.__str__():
     def __str__(self) -> str:
         """Return string representation of ApexPoint."""
         diameter: str = f", {self.diameter}" if self.diameter else ""
@@ -1029,12 +1057,10 @@ class ApexPoint:
         result: str = f"ApexPoint({self.x}, {self.y}, {self.z}{diameter}{name})"
         return result
 
-    # ApexPoint.__truediv__():
     def __truediv__(self, divisor: float) -> "ApexPoint":
         """Return a Point that has been scaleddown."""
         return ApexPoint(self.x / divisor, self.y / divisor, self.z / divisor)
 
-    # ApexPoint.__sub__():
     def __sub__(self, vector: "ApexPoint") -> "ApexPoint":
         """Return the difference of two Point's."""
         return ApexPoint(self.x - vector.x, self.y - vector.y, self.z - vector.z)
