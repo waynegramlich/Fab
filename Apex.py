@@ -18,10 +18,6 @@ The Apex base classes are:
   This is a wrapper class around the FreeCAD Vector class that adds an optional diameter
   and name for each 3D Vector point.  For the same technical reasons, this is not a true
   sub-class of Vector.
-* ApexPose:
-  This is a wrapper class around the FreeCAD Matrix class that provides an openGL style
-  transformation consisting of a rotation point, rotation axis, and rotation angle,
-  followed by a final translation.  It also keeps track of the inverse matrix.
 
 """
 
@@ -34,11 +30,11 @@ assert sys.version_info.major == 3, "Python 3.x is not running"
 assert sys.version_info.minor == 8, "Python 3.8 is not running"
 sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 
-from FreeCAD import BoundBox, Matrix, Placement, Rotation, Vector  # type: ignore
+from FreeCAD import BoundBox, Placement, Rotation, Vector  # type: ignore
 
 from dataclasses import dataclass
 import math
-from typing import Any, Callable, cast, ClassVar, List, Dict, Optional, Sequence, Tuple, Union
+from typing import Any, cast, ClassVar, List, Dict, Optional, Sequence, Tuple, Union
 
 
 # ApexBox:
@@ -102,11 +98,13 @@ class ApexBox:
         * DY (float): Y box length
         * DYZ (Vector): Y/Z box length
         * DZ (float): Z box length
+        * Name (str): The ApexBox name.
     """
 
     # ApexBox.__init__():
     def __init__(self,
-                 corners: Sequence[Union[Vector, "ApexPoint", BoundBox, "ApexBox"]]) -> None:
+                 corners: Sequence[Union[Vector, "ApexPoint", BoundBox, "ApexBox"]],
+                 name: str = "") -> None:
         """Initialize an ApexBox.
 
         Arguments:
@@ -163,6 +161,7 @@ class ApexBox:
             y_max = max(y_max, y)
             z_max = max(z_max, z)
 
+        self._name: str = name
         self._bound_box: BoundBox = BoundBox(x_min, y_min, z_min, x_max, y_max, z_max)
 
     # Standard BoundBox attributes:
@@ -411,6 +410,11 @@ class ApexBox:
         bb: BoundBox = self._bound_box
         return bb.ZMax - bb.ZMin
 
+    @property
+    def Name(self) -> str:
+        """Name."""
+        return self._name
+
     def __repr__(self) -> str:
         """Return a representation of an ApexBox."""
         return self.__str__()
@@ -419,14 +423,32 @@ class ApexBox:
         """Return a representation of an ApexBox."""
         return f"ApexBox({self.BB})"
 
+    # ApexBox.reorient():
+    def reorient(self, placement: Placement, suffix: Optional[str] = "") -> "ApexBox":
+        """Reorient ApexBox given a Placement.
+
+        Note after the *placement* is applied, the resulting box is still rectilinear with the
+        X/Y/Z axes.  In particular, box volume is *not* conserved.
+
+        Arguments:
+        * *placement* (Placement): The placement of the box corners.
+        * *suffix* (Optional[str]): The suffix to append at all names.  If None, all
+          names are set to "" instead appending the suffix.  (Default: "")
+        """
+        reorient_suffix: str = "" if suffix is None else f"{self._name}{suffix}"
+        reoriented_bsw: Vector = placement * self.BSW
+        reoriented_tne: Vector = placement * self.TNE
+        return ApexBox((reoriented_bsw, reoriented_tne), reorient_suffix)
+
     @staticmethod
     def _unit_tests() -> None:
         """Perform ApexBox unit tests."""
         # Initial tests:
         bound_box: BoundBox = BoundBox(-1.0, -2.0, -3.0, 1.0, 2.0, 3.0)
         assert bound_box == bound_box
-        apex_box: ApexBox = ApexBox([bound_box])
+        apex_box: ApexBox = ApexBox([bound_box], name="Test")
         assert isinstance(apex_box, ApexBox)
+        assert apex_box.Name == "Test"
 
         # FreeCAD.BoundBox.__eq__() appears to only compare ids for equality.
         # Thus, it is necessary to test that each value is equal by hand.
@@ -859,6 +881,32 @@ class ApexLength(float):
         return float(self) / self._scale
 
     @staticmethod
+    def whole_fix(length: Union["ApexLength", float, int]) -> Union["ApexLength", float]:
+        """Fix values that are close to whole numbers to be whole numbers."""
+        original_length: Union[ApexLength, float, int] = length
+
+        length = float(length)
+        is_negative: bool = length < 0.0
+        if is_negative:
+            length = -length
+        whole: float
+        fractional: float
+        whole, fractional = divmod(length, 1.0)
+        epsilon: float = 1.0e-10
+        if abs(fractional) < epsilon:
+            fractional = 0.0
+        if abs(fractional - 1.0) < epsilon:
+            fractional = 0.0  # pragma: no unit cover
+            whole += 1.0  # pragma: no unit cover
+        fixed_length: float = whole + fractional
+        if is_negative:
+            fixed_length = -fixed_length
+        final_length: Union[ApexLength, float] = fixed_length
+        if isinstance(original_length, ApexLength):
+            final_length = ApexLength(fixed_length, original_length.units, original_length.name)
+        return final_length
+
+    @staticmethod
     def _unit_tests() -> None:
         """Perform Unit tests for ApexLength."""
         def check(apex_length: ApexLength, length: float, value: float, units: str, name: str,
@@ -899,6 +947,32 @@ class ApexLength(float):
         f1c: ApexLength = ApexLength(1, name="f1c")
         check(f1c, 1.0, 1.0, "mm", "", "ApexLength(1.0, 'mm', 'f1c')")
         assert f1c.name == "f1c"
+
+        # Test fixing:
+        positive_zero: Union[ApexLength, float] = (
+            ApexLength.whole_fix(ApexLength(0.00000000001, fix=True)))
+        assert isinstance(positive_zero, ApexLength)
+        check(positive_zero, 0.0, 0.0, "mm", "", "ApexLength(0.0)")
+        negative_zero: Union[ApexLength, float] = (
+            ApexLength.whole_fix(ApexLength(-0.00000000001, fix=True)))
+        assert isinstance(negative_zero, ApexLength)
+        check(positive_zero, 0.0, 0.0, "mm", "", "ApexLength(0.0)")
+        positive_high_one: Union[ApexLength, float] = (
+            ApexLength.whole_fix(ApexLength(1.00000000001, fix=True)))
+        assert isinstance(positive_high_one, ApexLength)
+        check(positive_high_one, 1.0, 1.0, "mm", "", "ApexLength(1.0)")
+        positive_low_one: Union[ApexLength, float] = (
+            ApexLength.whole_fix(ApexLength(0.99999999999, fix=True)))
+        assert isinstance(positive_low_one, ApexLength)
+        check(positive_high_one, 1.0, 1.0, "mm", "", "ApexLength(1.0)")
+        negative_high_one: Union[ApexLength, float] = (
+            ApexLength.whole_fix(ApexLength(-1.00000000001, fix=True)))
+        assert isinstance(negative_high_one, ApexLength)
+        check(negative_high_one, -1.0, -1.0, "mm", "", "ApexLength(-1.0)")
+        negative_low_one: Union[ApexLength, float] = (
+            ApexLength.whole_fix(ApexLength(-0.99999999999, fix=True)))
+        assert isinstance(negative_low_one, ApexLength)
+        check(negative_high_one, -1.0, -1.0, "mm", "", "ApexLength(-1.0)")
 
         # Miscellaneous tests:
         assert str(f0a) == "ApexLength(0.0)", "test __str__()"
@@ -986,15 +1060,21 @@ class ApexPoint:
         ApexCheck("z", (int, float, ApexLength)),
         ApexCheck("diameter", (int, float, ApexLength)),
         ApexCheck("name", (str,)),
+        ApexCheck("vector", (type(None), Vector)),
+        ApexCheck("fix", (bool,)),
     )
 
     # ApexPoint.__init__():
-    def __init__(self,
-                 x: Union[int, float, ApexLength] = 0.0,
-                 y: Union[int, float, ApexLength] = 0.0,
-                 z: Union[int, float, ApexLength] = 0.0,
-                 diameter: Union[int, float, ApexLength] = 0.0,
-                 name: str = "") -> None:
+    def __init__(
+            self,
+            x: Union[int, float, ApexLength] = 0.0,
+            y: Union[int, float, ApexLength] = 0.0,
+            z: Union[int, float, ApexLength] = 0.0,
+            diameter: Union[int, float, ApexLength] = 0.0,
+            name: str = "",
+            vector: Optional[Vector] = None,
+            fix: bool = False
+    ) -> None:
         """Initialize an ApexPoint.
 
         Arguments:
@@ -1003,16 +1083,30 @@ class ApexPoint:
           * *z* (Union[int, float, ApexLength]): The z coordinate of the vector. (Default: 0.0)
           * *diameter* (Union[int, float, ApexLength]): The apex diameter. (Default: 0.0)
           * *name* (str): A name primarily used for debugging. (Default: "")
+          * *vector* (Vector): A vector to initialize *x*, *y*, and *z* with.
+            (Default: Vector(0.0, 0.0, 0.0)
+          * *fix* (bool): If True, fix float values that are close to hole numbers to be whole.
         """
-        value_error: str = ApexCheck.check((x, y, z, diameter, name), ApexPoint.INIT_CHECKS)
+        value_error: str = ApexCheck.check((x, y, z, diameter, name, vector, fix),
+                                           ApexPoint.INIT_CHECKS)
         if value_error:
             raise ValueError(value_error)
 
         # Make sure that *x*, *y*, *z*, and *diameter* are no longer *int*'s:
-        x = float(x) if isinstance(x, int) else x
-        y = float(y) if isinstance(y, int) else y
-        z = float(z) if isinstance(z, int) else z
+        if vector is None:
+            x = float(x) if isinstance(x, int) else x
+            y = float(y) if isinstance(y, int) else y
+            z = float(z) if isinstance(z, int) else z
+        else:
+            x = vector.x
+            y = vector.y
+            z = vector.z
         diameter = float(diameter) if isinstance(diameter, int) else diameter
+        if fix:
+            x = ApexLength.whole_fix(x)
+            y = ApexLength.whole_fix(y)
+            z = ApexLength.whole_fix(z)
+            diameter = ApexLength.whole_fix(diameter)
 
         # Compute the *bound_box* assuming spherical *radius* around (*x*, *y*, *z*):
         radius: float = diameter / 2.0
@@ -1205,655 +1299,15 @@ class ApexPoint:
             assert str(value_error) == (
                 "Argument 'placement' is NoneType which is not one of ['Placement']")
 
-
-# ApexPose:
-class ApexPose(object):
-    """ApexPose is a wrapper around the FreeCAD Matrix class.
-
-    This is a wrapper class around the FreeCAD Matrix class that provides a number of
-    stadard rotations and translations.  It also computes the inverse matrix.
-
-    Attributes:
-    * *forward* (Matrix): A FreeCAD Matrix that maps a Vector to a new pose.
-    * *reverse* (Matrix): The inverse FreeCAD matrix that maps the pose back to its initial value.
-
-    """
-
-    # The matrix format is an affine 4x4 matrix in the following format:
-    #
-    #    [ r00 r01 r02 dx ]
-    #    [ r10 r11 r12 dy ]
-    #    [ r20 r21 r22 dz ]
-    #    [ 0   0   0   1  ]
-    #
-    # An affine point format is a 1x4 matrix of the following format:
-    #
-    #    [ x y z 1 ]
-    #
-    # The 4x4 matrix (on left) is multiplied with a vertex (1x4) on the right to yield
-    # the translated point.
-
-    INIT_CHECKS = (
-        ApexCheck("center", (type(None), ApexPoint, Vector)),
-        ApexCheck("axis", (type(None), ApexPoint, Vector)),
-        ApexCheck("angle", (type(None), float, int)),
-        ApexCheck("z_align", (type(None), ApexPoint, Vector)),
-        ApexCheck("y_align", (type(None), ApexPoint, Vector)),
-        ApexCheck("translate", (type(None), ApexPoint, Vector)),
-        ApexCheck("name", (type(None), str)),
-    )
-
-    # ApexPose.__init__():
-    def __init__(
-            self,
-            center: Optional[Union[ApexPoint, Vector]] = None,  # Default: origin
-            axis: Optional[Union[ApexPoint, Vector]] = None,  # Default: +Z axis
-            angle: Optional[float] = None,  # Default: 0 degrees
-            z_align: Optional[Union[ApexPoint, Vector]] = None,  # Default: +Z axis
-            y_align: Optional[Union[ApexPoint, Vector]] = None,  # Default: +Y axis
-            translate: Optional[Union[ApexPoint, Vector]] = None,  # Default: origin
-            name: Optional[str] = None,  # Default: ""
-            tracing: str = ""  # Default: Disabled
-    ) -> None:
-        """Create ApexPose rotation with point/axis/angle and a translate.
-
-        Arguments:
-        * *center* (Optional[Union[ApexPoint, Vector]]):
-          The point around which all rotations occur (default: origin)).
-        * *axis* (Optional[Union[ApexPoint, Vector]]):
-          A direction axis rotate around (default: Z axis)).
-        * *angle (Optional[float]):
-          The angle to rotate around the *axis* measured in radians (default: 0 radians).
-        * *z_align* (Optional[Union[ApexPoint, Vector]]):
-          An direction axis to reorient to point in the +Z direction (default: +Z axis).
-        * *y_align* (Optional[Union[ApexPoint, Vector]]):
-          After applying the *z_align* rotation to *y_align*, project the resulting point down
-          onto the X/Y plane and rotate the point around the Z axis until is alignes with the +Y
-          axis.
-        * *translate* (Optional[Union[ApexPoint, Vector]]):
-          The final translation to perform.
-        The direction axes do *not* need to be normalized to a length of 1.0.
-
-        There are two rotation styles:
-        * Axis-Angle:
-          An *axis* that points outward from *center* is specified and a rotation
-          of *angle* radians in a counter clockwise direction occurs (i.e. right hand rule.)
-        * Mounting:
-          Frequently parts need to be mounted in a vice.  For this the part need to be rotated
-          so that the surface to be machines is normal to the *Z axis.  And another surface
-          is aligned to be normal to the +Y axis.  For "boxy" parts, the *ApexBox* is
-          used to get these directions.  Specifically, *z_align* rotates the part such that
-          *z_align* is in the +Z axis direction and *y_align* rotates the part such that the
-          part is aligned in the +Y axis.
-
-        The operation order is:
-        1. Translate *center* to origin.
-        2. Perform *axis*/*angle* rotation.
-        3. Perform *z_align* rotation.
-        4. Perform *y_align* rotation.
-        5. Translate from origin back to *center*.
-        6. Perform final *translation*.
-        """
-        # Process *arguments*:
-        arguments: Sequence[Any] = (center, axis, angle, z_align, y_align, translate, name)
-        next_tracing: str = tracing + " " if tracing else ""
-        if tracing:
-            print(f"{tracing}=>ApexPose.__init__{arguments}")
-        value_error: str = ApexCheck.check(arguments, ApexPose.INIT_CHECKS)
-        if value_error:
-            raise ValueError(value_error)
-
-        if not name:
-            name = ""
-        assert isinstance(name, str), f"{name} is not a str"
-
-        # Compute *center_forward* and *center_reverse* Matrix's:
-        if not center:
-            center = Vector()
-        if isinstance(center, ApexPoint):
-            center = center.vector
-        assert isinstance(center, Vector)
-        center_forward: Matrix = Matrix()
-        center_reverse: Matrix = Matrix()
-        if center:
-            assert isinstance(center, Vector), f"{center=} is not a Vector"
-            center_forward.move(center)
-            center_reverse.move(-center)
-
-        # Compute the *rotate_forward* and *rotate_reverse* Matrix's from *axis* and *angle*:
-        pi: float = math.pi
-        origin: Vector = Vector()
-        epsilon: float = 1.0e-10
-        if isinstance(axis, ApexPoint):
-            axis = axis.vector
-        if axis is None:
-            axis = Vector(0.0, 0.0, 1.0)  # Default is +Z axis
-        assert isinstance(axis, Vector)
-        if abs(axis.distanceToPoint(origin)) < epsilon:
-            raise ValueError(f"Rotation axis ({axis}) has no direction")
-        if not angle:
-            angle = 0.0
-        if not -2.0 * pi <= angle <= 2.0 * pi:
-            angle = angle % (2.0 * pi)
-        rotate_forward: Matrix = ApexPose._rotate(axis, angle)
-        rotate_reverse: Matrix = ApexPose._rotate(axis, -angle)
-
-        # Compute the *z_align_forward* and *z_align_reverse* Matrix's:
-        spot: Vector = Vector(1, 1, 2)
-        z_align_spot: Vector = spot
-        z_align_forward: Matrix = Matrix()
-        z_align_reverse: Matrix = Matrix()
-        if z_align:
-            if isinstance(z_align, ApexPoint):
-                z_align = z_align.vector
-            if z_align.distanceToPoint(origin) < epsilon:
-                raise ValueError(f"{z_align=} has no direction")
-            z_axis: Vector = Vector(0.0, 0.0, 1.0)
-            z_tracing: str = f"{next_tracing}z_align:" if tracing else ""
-            z_align_forward, z_align_reverse = ApexPose._rotate_from_to(
-                z_align, z_axis, tracing=z_tracing)
-            z_align_spot = z_align_forward * spot
-            if tracing:
-                print(f"{z_tracing}z_spot:{spot}=>{z_align_spot}")
-
-        # Compute *y_align_forward* and *y_align_reverse* Matrix's:
-        y_align_spot: Vector = z_align_spot
-        y_align_forward: Matrix = Matrix()
-        y_align_reverse: Matrix = Matrix()
-        if y_align:
-            if isinstance(y_align, ApexPoint):
-                y_align = y_align.vector
-            if y_align.distanceToPoint(origin) < epsilon:
-                raise ValueError(f"{y_align=} has no direction")
-
-            # Rotate *y_align* to *new_y_align*, project on to X/Y plane, and normalize:
-            y_tracing: str = f"{next_tracing}y_align:" if tracing else ""
-            new_y_align: Vector = z_align_forward * y_align
-            if tracing:
-                print(f"{y_tracing}new_y_align:{y_align=}=>{new_y_align}")
-            final_y_align: Vector = Vector(new_y_align.x, new_y_align.y, 0.0).normalize()
-            y_axis: Vector = Vector(0.0, 1.0, 0.0)
-            y_align_forward, y_align_reverse = ApexPose._rotate_from_to(
-                final_y_align, y_axis, tracing=y_tracing)
-            y_align_spot = y_align_forward * z_align_spot
-            if tracing:
-                print(f"{y_tracing}y_spot:{z_align_spot}=>{y_align_spot}")
-
-            check: bool = True
-            if check:
-                z_spot: Vector = z_align_forward * spot
-                y_spot: Vector = y_align_forward * z_align_forward * spot
-                if tracing:
-                    print(f"{tracing}z_spot={z_spot} vs. z_align_spot={z_align_spot}")
-                    print(f"{tracing}y_spot={y_spot} vs. y_align_spot={y_align_spot}")
-
-        # Compute the *translate_forward* and *translate_reverse* Matrix's:
-        if not translate:
-            translate = Vector()
-        if isinstance(translate, ApexPoint):
-            translate = translate.vector
-        assert isinstance(translate, Vector)
-        translate_forward: Matrix = Matrix()
-        translate_forward.move(translate)
-        translate_reverse: Matrix = Matrix()
-        translate_reverse.move(-translate)
-
-        # Compute the final forward/reverse matrices:
-        self._arguments: Sequence[Any] = arguments
-        # For some reason the code works if *y_align_forward* occurs before *z_align_forward*.
-        # It is counter intuitive, but it work.  Weird.
-        self._forward: Matrix = (center_forward * rotate_forward * y_align_forward *
-                                 z_align_forward * center_reverse * translate_forward)
-        self._reverse: Matrix = (translate_reverse * center_forward * z_align_reverse *
-                                 y_align_reverse * rotate_reverse * center_reverse)
-
-        if tracing:
-            print(f"{tracing}<=ApexPose.__init__{arguments}")
-
-    @staticmethod
-    def _rotate_from_to(start: Vector, finish: Vector, tracing: str = "") -> Tuple[Matrix, Matrix]:
-        """Return to/from rotation Matrix's between to vectors.
-
-        Arguments:
-        * *start* (Vector): The vector orientation to start at.
-        * *finish* (Vector): The vector orientation to finish at.
-
-        Returns:
-        * (Matrix) The Matrix to rotate from start to finish.
-        * (Matrix) The Matrix to rotate from finish to start.
-
-        """
-        if tracing:
-            print(f"{tracing}=>ApexPose._rotate_from_to({start}, {finish})")
-        start = start.normalize()
-        finish = finish.normalize()
-        abs_angle: float = abs(start.getAngle(finish))
-        epsilon: float = 1.0e-10
-        pi: float = math.pi
-        matrix1: Matrix
-        matrix2: Matrix
-        axis: Optional[Vector] = None
-        # Cross products do not work if the two vectors are colinear.
-        if abs_angle < epsilon:
-            # *from* and *to* are colinear in the same direction.  Use *identity* matrix:
-            if tracing:
-                print(f"{tracing}:No Rotate")
-            matrix1 = Matrix()
-            matrix2 = matrix1
-        elif abs(pi - abs_angle) < epsilon:
-            # The goal is to compute an *axis* that orthogonal to *from*.  A cross product
-            # with the X, Y, or Z axis will work just fine.
-            x_cross: Vector = start.cross(Vector(1.0, 0.0, 0.0))
-            y_cross: Vector = start.cross(Vector(0.0, 1.0, 0.0))
-            z_cross: Vector = start.cross(Vector(0.0, 1.0, 0.0))
-            origin: Vector = Vector(0.0, 0.0, 0.0)
-            x_distance: float = x_cross.distanceToPoint(origin)
-            y_distance: float = y_cross.distanceToPoint(origin)
-            z_distance: float = z_cross.distanceToPoint(origin)
-            max_distance: float = max(x_distance, y_distance, z_distance)
-            if x_distance >= max_distance:
-                axis = x_cross
-            if y_distance >= max_distance:
-                axis = y_cross
-            if z_distance >= max_distance:
-                axis = z_cross
-            assert axis, "Internal error, no orthogonal axis found."
-            axis = axis.normalize()
-
-            # Finally, rotate by 180 degrees around axis:
-            matrix1 = ApexPose._rotate(axis, pi)
-            matrix2 = matrix1  # The same matrix will flip it back.
-            if tracing:
-                print(f"{tracing}Rotate 180 around:{axis}")
-        else:
-            # Use a cross product to find a rotation *axis*:
-            axis = start.cross(finish).normalize()
-            matrix1 = ApexPose._rotate(axis, abs_angle)
-            matrix2 = ApexPose._rotate(axis, -abs_angle)
-            angle: float = abs_angle
-            if abs((matrix1 * start).distanceToPoint(finish)) > epsilon:  # pragma: no unit cover
-                # Swap the matrices:
-                matrix1, matrix2 = matrix2, matrix1
-                assert abs((matrix1 * start).distanceToPoint(finish)) < epsilon
-                angle = -abs_angle
-            if tracing:
-                print(f"{tracing}Rotate {math.degrees(angle)}deg around {axis}")
-
-        # Optinally test results:
-        check: bool = True
-        if check:
-            assert (matrix1 * start).distanceToPoint(finish) < epsilon
-            assert (matrix2 * finish).distanceToPoint(start) < epsilon
-
-        if tracing:
-            print(f"{tracing}<=ApexPose._rotate_from_to({start}, {finish})=>{matrix1}, {matrix2}")
-        return matrix1, matrix2
-
-    @staticmethod
-    def _zf(value: float) -> float:
-        """Round values near zero to zero."""
-        return 0.0 if abs(value) < 1.0e-10 else value
-
-    @staticmethod
-    def _rotate(axis: Union[ApexPoint, Vector], angle: float, tracing: str = "") -> Matrix:
-        """Return a FreeCAD Matrix for rotation around an axis.
-
-        * Arguments:
-        * *axis* (Union[ApexPoint, Vector]): The axis to rotate around.
-          * *angle* (float): The number of radians to rotate by.
-        * Returns:
-          * Returns the FreeCAD rotation Matrix.
-        """
-        # Ensure -*pi* <= *angle* <= *pi:
-        pi: float = math.pi
-        pi2: float = 2.0 * pi
-        angle = angle % pi2
-        angle = angle if angle <= pi else angle - pi2
-        assert -pi <= angle <= pi, f"{angle=}"
-
-        if tracing:
-            print(f"{tracing}=>ApexPose._rotate({axis}, {math.degrees(angle)}deg)")
-
-        # Normalize *angle* to be between -180.0 and 180.0 and convert to radians:
-
-        _zf: Callable[[float], float] = ApexPose._zf
-        # Compute the X/Y/Z components of a normal vector of *length* 1.
-        axis = axis.vector if isinstance(axis, ApexPoint) else axis
-        assert isinstance(axis, Vector)
-        nx: float = _zf(axis.x)
-        ny: float = _zf(axis.y)
-        nz: float = _zf(axis.z)
-        length: float = math.sqrt(nx * nx + ny * ny + nz * nz)
-        assert length > 0.0, "Internal error: {length=}"
-        nx = _zf(nx / length)
-        ny = _zf(ny / length)
-        nz = _zf(nz / length)
-
-        # The matrix for rotating by *angle* around the normal *axis* is:
-        #
-        #     [ xx(1-c)+c   xy(1-c)+zs  xz(1-c)-ys   0  ]
-        #     [ yx(1-c)-zs  yy(1-c)+c   yz(1-c)+xs   0  ]
-        #     [ zx(1-c)+ys  zy(1-c)-xs  zz(1-c)+c    0  ]
-        #     [ 0           0           0            1  ]
-
-        # Compute some sub expressions:
-        # Why is -*angle* used?
-        c = math.cos(angle)
-        s = math.sin(angle)
-        omc = 1.0 - c  # *omc* stands for One Minus *c*.
-        x_omc = nx * omc
-        y_omc = ny * omc
-        z_omc = nz * omc
-        xs = nx * s
-        ys = ny * s
-        zs = nz * s
-
-        # Create the *matrix* and return it:
-        # matrix: Matrix = Matrix(
-        #     zf(nx * x_omc + c), zf(nx * y_omc - zs), zf(nx * z_omc + ys), 0.0,
-        #     zf(ny * x_omc + zs), zf(ny * y_omc + c), zf(ny * z_omc - xs), 0.0,
-        #     zf(nz * x_omc - ys), zf(nz * y_omc + xs), zf(nz * z_omc + c), 0.0,
-        #     0.0, 0.0, 0.0, 1.0)
-
-        # X & Z only:
-        # matrix: Matrix = Matrix(
-        #     zf(nx * x_omc + c), zf(ny * x_omc + zs), zf(nz * x_omc - ys), 0.0,
-        #     zf(nx * y_omc - zs), zf(ny * y_omc + c), zf(nz * y_omc + xs), 0.0,
-        #     zf(nx * z_omc + ys), zf(ny * z_omc - xs), zf(nz * z_omc + c), 0.0,
-        #     0.0, 0.0, 0.0, 1.0)
-
-        matrix: Matrix = Matrix(
-            _zf(nx * x_omc + c), _zf(nx * y_omc - zs), _zf(nx * z_omc + ys), 0.0,
-            _zf(ny * x_omc + zs), _zf(ny * y_omc + c), _zf(ny * z_omc - xs), 0.0,
-            _zf(nz * x_omc - ys), _zf(nz * y_omc + xs), _zf(nz * z_omc + c), 0.0,
-            0.0, 0.0, 0.0, 1.0)
-        if tracing:
-            print(f"{tracing}<=ApexPose._rotate({axis}, {math.degrees(angle)}deg)=>{matrix}")
-        return matrix
-
-    @staticmethod
-    def _matrix_clean(matrix: Matrix) -> Matrix:
-        """Return a matrix where values close to zero are set to zero."""
-        assert isinstance(matrix, Matrix)
-        elements: Tuple[float, ...] = matrix.A
-        element: float
-        cleaned_elements: List[float] = []
-        for element in elements:
-            cleaned_elements.append(ApexPose._zf(element))
-        return Matrix(*cleaned_elements)
-
-    def __repr__(self) -> str:
-        """Return string representation of an ApexPose."""
-        return self.__str__()
-
-    def __str__(self) -> str:
-        """Return string representation of an ApexPose."""
-        return ApexCheck.init_show("ApexPose", self._arguments, ApexPose.INIT_CHECKS)
-
-    @property
-    def forward(self) -> Matrix:
-        """Return the FreeCAD Matrix."""
-        return self._forward
-
-    @property
-    def reverse(self) -> Matrix:
-        """Return the FreeCAD Matrix."""
-        return self._reverse
-
-    @staticmethod
-    def _xy_align_unit_tests() -> None:
-        """Run unit tests that use x_align and y_align in ApexPose.__init.
-
-        Test *z_align* and *y_align*.  There are basically 24 possibilities because there
-        are 6 faces (T, B, N, S, E, W) each of which can be rotated around the Z axis 4
-        different ways (0, 90, 180, 270 degrees.)  The orientations were figured out by
-        taking small cardboard box, labeling the six faces (T, B, N, S, E, W) and orienting
-        T facing up (+Z) with N facing north (+Y).  The box is assumed to be 4 x 4 x 4 with a
-        center of (0, 0, 0).  Thus, the opposite corners are (-2, -2, -2) and (2, 2, 2).
-        A *spot*  is placed on the Top surface at (1, 1, 2).  For each of the 24 reorient
-        possibilities the spot lands in a different and unique position.
-        """
-        class _Reorient(object):
-            """_Reorient: A helper class for _xy_align_unit_tests."""
-
-            def __init__(self, z_align: Vector, y_align: Vector,
-                         x: int, y: int, z: int, tag: str) -> None:
-                """Initialize _Reorient."""
-                self.z_align: Vector = z_align  # Direction to reorient to the top (+Z)
-                self.y_align: Vector = y_align  # Direction to reorient to the north (+Y)
-                self.x: int = x  # X Location of rotated spot
-                self.y: int = y  # Y Location of rotated spot
-                self.z: int = z  # Z Location of rotated spot
-                self.tag: str = tag  # String "ab", where "a" is *top* and "b" is *north*
-
-        # Define the 24 test cases in *reorients*:
-        spot: Vector = Vector(1, 1, 2)
-        e: Vector = Vector(1, 0, 0)
-        w: Vector = Vector(-1, 0, 0)
-        n: Vector = Vector(0, 1, 0)
-        s: Vector = Vector(0, -1, 0)
-        t: Vector = Vector(0, 0, 1)
-        b: Vector = Vector(0, 0, -1)
-        reorients: Sequence[_Reorient] = (
-            # Top is T:
-            _Reorient(t, n, 1, 1, 2, "TN"),  # TN => No rotation at all => matches *spot*
-            _Reorient(t, s, -1, -1, 2, "TS"),
-            _Reorient(t, e, -1, 1, 2, "TE"),
-            _Reorient(t, w, 1, -1, 2, "TW"),
-
-            # Top is B:
-            _Reorient(b, n, -1, 1, -2, "BN"),
-            _Reorient(b, s, 1, -1, -2, "BS"),
-            _Reorient(b, e, 1, 1, -2, "BE"),
-            _Reorient(b, w, -1, -1, -2, "BW"),
-
-            # Top is N:
-            _Reorient(n, t, -1, 2, 1, "NT"),
-            _Reorient(n, b, 1, -2, 1, "NB"),
-            _Reorient(n, e, 2, 1, 1, "NE"),
-            _Reorient(n, w, -2, -1, 1, "NW"),
-
-            # Top is S:
-            _Reorient(s, t, 1, 2, -1, "ST"),
-            _Reorient(s, b, -1, -2, -1, "SB"),
-            _Reorient(s, e, -2, 1, -1, "SE"),
-            _Reorient(s, w, 2, -1, -1, "SW"),
-
-            # Top is E:
-            _Reorient(e, t, 1, 2, 1, "ET"),
-            _Reorient(e, b, -1, -2, 1, "EB"),
-            _Reorient(e, n, -2, 1, 1, "EN"),
-            _Reorient(e, s, 2, -1, 1, "ES"),
-
-            # Top is W:
-            _Reorient(w, t, -1, 2, -1, "WT"),
-            _Reorient(w, b, 1, -2, -1, "WB"),
-            _Reorient(w, n, 2, 1, -1, "WN"),
-            _Reorient(w, s, -2, -1, -1, "WS"),
-        )
-
-        # Verify that the *absolute_key* associated with each *key* has exactly two 1's, and one 2.
-        # In addition, use *duplicates* to ensure that no *key* is duplicated:
-        reorient: _Reorient
-        duplicates: Dict[Tuple[int, int, int], str] = {}
-        tag: str
-        for reorient in reorients:
-            tag = reorient.tag
-            key: Tuple[int, int, int] = (reorient.x, reorient.y, reorient.z)
-            absolute_key: Tuple[int, int, int] = (abs(key[0]), abs(key[1]), abs(key[2]))
-            assert sorted(absolute_key) != (1, 1, 2), (f"{key=} is bad")
-            assert key not in duplicates, f"'{duplicates[key]}' conflicts with '{tag}'"
-            duplicates[key] = tag
-
-        # Sweep through all 24 cases in *reorients* and verify that both forward and
-        # reverse are correct:
-        epsilon: float = 1.0e-10
-        for reorient in reorients:
-            tag = reorient.tag
-            z_align: Vector = reorient.z_align
-            y_align: Vector = reorient.y_align
-            apex_pose: ApexPose = ApexPose(z_align=z_align, y_align=y_align)
-            spot_want: Vector = Vector(reorient.x, reorient.y, reorient.z)
-            spot_got: Vector = apex_pose.forward * spot
-            assert spot_want.distanceToPoint(spot_got) < epsilon, (
-                f"{tag}: {spot_want} != {spot_got}")
-            spot_back: Vector = apex_pose.reverse * spot_want
-            assert spot.distanceToPoint(spot_back) < epsilon, (
-                f"{tag}: {spot} != {spot_back}")
-
-    @staticmethod
-    def _other_unit_tests() -> None:
-        """Run some other unit tests."""
-        # Create some ApexPose's and verity that __str__() yields the same output:
-        identity_pose: ApexPose = ApexPose()
-        errors: int = 0
-        assert isinstance(identity_pose, ApexPose), f"{identity_pose} is not ApexPose"
-        want: str = "ApexPose()"
-        assert f"{identity_pose}" == want, f"{identity_pose=})"
-        assert f"{identity_pose}" == identity_pose.__repr__(), f"{identity_pose=}"
-
-        # Test the __str__() method:
-        x_translate: ApexPose = ApexPose(translate=Vector(1, 0, 0), name="x_translate")
-        want = "ApexPose(translate=Vector (1.0, 0.0, 0.0), name='x_translate')"
-        assert f"{x_translate}" == want, f"{x_translate=}"
-
-        y_translate: ApexPose = ApexPose(translate=Vector(0, 2, 0), name="y_translate")
-        want = "ApexPose(translate=Vector (0.0, 2.0, 0.0), name='y_translate')"
-        assert f"{y_translate}" == want, f"{y_translate=}"
-
-        z_translate: ApexPose = ApexPose(translate=Vector(0, 0, 3), name="z_translate")
-        want = "ApexPose(translate=Vector (0.0, 0.0, 3.0), name='z_translate')"
-        assert f"{z_translate}" == want, f"{z_translate=}"
-
-        x90: ApexPose = ApexPose(axis=Vector(1, 0, 0), angle=90.0, name="x90")
-        want = "ApexPose(axis=Vector (1.0, 0.0, 0.0), angle=90.0, name='x90')"
-        assert f"{x90}" == want, f"{x90=}"
-
-        want = "ApexPose(axis=Vector (0.0, 1.0, 0.0), angle=90.0, name='y90')"
-        y90: ApexPose = ApexPose(axis=Vector(0, 1, 0), angle=90.0, name="y90")
-        assert f"{y90}" == want, f"{y90=}"
-
-        want = "ApexPose(axis=Vector (0.0, 1.0, 0.0), angle=90.0, name='z90a')"
-        z90a: ApexPose = ApexPose(axis=Vector(0, 1, 0), angle=90.0, name="z90a")
-        assert f"{z90a}" == want, f"{z90a=}"
-
-        z90b: ApexPose = ApexPose(angle=90.0, name="z90b")
-        want = "ApexPose(angle=90.0, name='z90b')"
-        assert f"{z90b}" == want, f"{z90b=}"
-
-        cx90: ApexPose = ApexPose(Vector(1, 1, 1), Vector(1, 0, 0), 90.0, name="cx90")
-        want = "ApexPose(Vector (1.0, 1.0, 1.0), Vector (1.0, 0.0, 0.0), 90.0, name='cx90')"
-        assert f"{cx90}" == want, f"{cx90=}"
-
-        # Test translate only:
-        v123: ApexPoint = ApexPoint(1.0, 2.0, 3.0, name="v123")
-        assert v123.vector == Vector(1, 2, 3)
-        m_t123: Matrix = Matrix()
-        m_t123.move(v123.vector)
-        ap_t123: ApexPose = ApexPose(center=ApexPoint(0, 0, 0), translate=v123)
-        assert ap_t123.forward.A == m_t123.A
-        assert (ap_t123.forward * ap_t123.reverse).A == identity_pose.forward.A
-
-        degrees90: float = math.pi / 2.0
-        _matrix_clean: Callable[[Matrix], Matrix] = ApexPose._matrix_clean
-        v100: Vector = Vector(1, 0, 0)  # X axis
-        v010: Vector = Vector(0, 1, 0)  # Y axis
-        v001: Vector = Vector(0, 0, 1)  # Z axis
-
-        # Rotate around the X axis:
-        m_x90: Matrix = _matrix_clean(Matrix())
-        m_x90.rotateX(degrees90)
-        m_x90 = _matrix_clean(m_x90)
-
-        m_x90 = _matrix_clean(m_x90)
-        ap_x90: ApexPose = ApexPose(axis=ApexPoint(1, 0, 0), angle=degrees90)
-        assert m_x90.A == ap_x90.forward.A, f"{m_x90.A} != {ap_x90.forward.A}"
-        m_v: Vector = m_x90 * v010
-        ap_v: Vector = ap_x90.forward * v010
-        assert m_v == ap_v == v001
-
-        # Rotate around the Y axis:
-        m_y90: Matrix = Matrix()
-        m_y90.rotateY(degrees90)
-        m_y90 = _matrix_clean(m_y90)
-        ap_y90: ApexPose = ApexPose(axis=ApexPoint(0, 1, 0), angle=degrees90)
-        assert m_y90.A == ap_y90.forward.A, f"{m_y90.A} != {ap_y90.forward.A}"
-        m_v = m_y90 * v001
-        ap_v = ap_y90.forward * v001
-        assert ap_v == m_v == v100
-
-        # Rotate around the Z axis:
-        m_z90: Matrix = Matrix()
-        m_z90.rotateZ(degrees90)
-        m_z90 = _matrix_clean(m_z90)
-        ap_z90: ApexPose = ApexPose(angle=degrees90)
-        assert m_z90.A == ap_z90.forward.A, f"{m_z90.A} != {ap_z90.forward.A}"
-        m_v = m_z90 * v100
-        ap_v = ap_z90.forward * v100
-        assert m_v == ap_v == v010
-
-        # Do some error tests:
-        try:
-            ApexPose(axis=Vector(0, 0, 0), angle=degrees90, center=ApexPoint(0, 0, 0))
-        except ValueError as error:
-            assert str(error) == "Rotation axis (Vector (0.0, 0.0, 0.0)) has no direction", (
-                f"{str(error)=}")
-        try:
-            ApexPose(axis={})
-        except ValueError as error:
-            desired_error: str = (
-                "Argument 'axis' is dict which is not one of ['NoneType', 'ApexPoint', 'Vector']")
-            assert str(error) == desired_error, f"{str(error)=}"
-        assert not errors, f"{errors} errors encountered"
-
-        ApexPose(z_align=ApexPoint(0, 1, 0), y_align=ApexPoint(1, 0, 0),
-                 center=ApexPoint(0, 0, 1), name="y_align")
-
-        try:
-            ApexPose(z_align=Vector())
-        except ValueError as error:
-            assert str(error) == "z_align=Vector (0.0, 0.0, 0.0) has no direction", str(error)
-        try:
-            ApexPose(y_align=Vector())
-        except ValueError as error:
-            assert str(error) == "y_align=Vector (0.0, 0.0, 0.0) has no direction", str(error)
-        try:
-            ApexPose(center=23)
-        except ValueError as error:
-            assert str(error) == (
-                "Argument 'center' is int which is not one of ['NoneType', 'ApexPoint', 'Vector']")
-        try:
-            ApexPose(axis=34)
-        except ValueError as error:
-            assert str(error) == (
-                "Argument 'axis' is int which is not one of ['NoneType', 'ApexPoint', 'Vector']")
-        try:
-            ApexPose(z_align=45)
-        except ValueError as error:
-            assert str(error) == (
-                "Argument 'z_align' is int which is not one of ['NoneType', 'ApexPoint', 'Vector']")
-        try:
-            ApexPose(y_align=56)
-        except ValueError as error:
-            assert str(error) == (
-                "Argument 'y_align' is int which is not one of ['NoneType', 'ApexPoint', 'Vector']")
-        try:
-            ApexPose(axis=Vector())
-        except ValueError as error:
-            assert str(error) == "Rotation axis (Vector (0.0, 0.0, 0.0)) has no direction"
-
-    @staticmethod
-    def _unit_tests() -> None:
-        """Run unit tests."""
-        ApexPose._other_unit_tests()
-        ApexPose._xy_align_unit_tests()
+        # Create from a vector.
+        from_vector: ApexPoint = ApexPoint(vector=t10)
+        from_vector.vector == t10, "from vector failed"
 
 
 def _unit_tests() -> None:
     """Run the unit tests."""
     ApexCheck._unit_tests()
     ApexBox._unit_tests()
-    ApexPose._unit_tests()
     ApexLength._unit_tests()
     ApexPoint._unit_tests()
     ApexMaterial._unit_tests()

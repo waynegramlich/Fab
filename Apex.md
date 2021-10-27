@@ -4,6 +4,7 @@ Table of Contents:
 * 1 [Introduction](#introduction):
 * 2 [Class ApexBox](#apexbox)
   * 2.1 [ApexBox.\_\_init\_\_](#apexbox---init--)
+  * 2.2 [ApexBox.reorient](#apexbox-reorient)
 * 3 [Class ApexCheck](#apexcheck)
   * 3.1 [ApexCheck.check](#apexcheck-check)
 * 4 [Class ApexLength](#apexlength)
@@ -16,8 +17,6 @@ Table of Contents:
   * 6.1 [ApexPoint.\_\_init\_\_](#apexpoint---init--)
   * 6.2 [ApexPoint.atan2](#apexpoint-atan2)
   * 6.3 [ApexPoint.magnitude](#apexpoint-magnitude)
-* 7 [Class ApexPose](#apexpose)
-  * 7.1 [ApexPose.\_\_init\_\_](#apexpose---init--)
 
 ## 1 <a name="introduction"></a>Introduction
 
@@ -39,10 +38,6 @@ The Apex base classes are:
   This is a wrapper class around the FreeCAD Vector class that adds an optional diameter
   and name for each 3D Vector point.  For the same technical reasons, this is not a true
   sub-class of Vector.
-* ApexPose:
-  This is a wrapper class around the FreeCAD Matrix class that provides an openGL style
-  transformation consisting of a rotation point, rotation axis, and rotation angle,
-  followed by a final translation.  It also keeps track of the inverse matrix.
 
 
 ## 2 Class ApexBox <a name="apexbox"></a>
@@ -108,10 +103,11 @@ is written in C++ and for technical reasons does not support sub-classing.
     * DY (float): Y box length
     * DYZ (Vector): Y/Z box length
     * DZ (float): Z box length
+    * Name (str): The ApexBox name.
 
 ### 2.1 ApexBox.\_\_init\_\_ <a name="apexbox---init--"></a>
 
-def \_\_init\_\_(self, *corners*:  Sequence[Union[Vector, "ApexPoint", BoundBox, "ApexBox"]]) -> None:
+def \_\_init\_\_(self, *corners*:  Sequence[Union[Vector, "ApexPoint", BoundBox, "ApexBox"]], *name*:  *str* = "") -> None:
 
 Initialize an ApexBox.
 
@@ -122,6 +118,20 @@ Arguments:
 Raises:
   * ValueError: For bad or empty corners.
 
+
+### 2.2 ApexBox.reorient <a name="apexbox-reorient"></a>
+
+def *reorient*(self, *placement*:  Placement, *suffix*:  Optional[str] = "") -> "ApexBox":
+
+Reorient ApexBox given a Placement.
+
+Note after the *placement* is applied, the resulting box is still rectilinear with the
+X/Y/Z axes.  In particular, box volume is *not* conserved.
+
+Arguments:
+* *placement* (Placement): The placement of the box corners.
+* *suffix* (Optional[str]): The suffix to append at all names.  If None, all
+  names are set to "" instead appending the suffix.  (Default: "")
 
 ## 3 Class ApexCheck <a name="apexcheck"></a>
 
@@ -246,7 +256,7 @@ An ApexPoint is basically just a Vector with an optional diameter and/or name.
 
 ### 6.1 ApexPoint.\_\_init\_\_ <a name="apexpoint---init--"></a>
 
-def \_\_init\_\_(self, *x*:  Union[int, *float*, ApexLength] = 0.0, *y*:  Union[int, *float*, ApexLength] = 0.0, *z*:  Union[int, *float*, ApexLength] = 0.0, *diameter*:  Union[int, *float*, ApexLength] = 0.0, *name*:  *str* = "") -> None:
+def \_\_init\_\_( *self*, *x*:  Union[int, *float*, ApexLength] = 0.0, *y*:  Union[int, *float*, ApexLength] = 0.0, *z*:  Union[int, *float*, ApexLength] = 0.0, *diameter*:  Union[int, *float*, ApexLength] = 0.0, *name*:  *str* = "", *vector*:  Optional[Vector] = None, *fix*:  *bool* = False ) -> None:
 
 Initialize an ApexPoint.
 
@@ -256,6 +266,9 @@ Arguments:
   * *z* (Union[int, float, ApexLength]): The z coordinate of the vector. (Default: 0.0)
   * *diameter* (Union[int, float, ApexLength]): The apex diameter. (Default: 0.0)
   * *name* (str): A name primarily used for debugging. (Default: "")
+  * *vector* (Vector): A vector to initialize *x*, *y*, and *z* with.
+    (Default: Vector(0.0, 0.0, 0.0)
+  * *fix* (bool): If True, fix float values that are close to hole numbers to be whole.
 
 ### 6.2 ApexPoint.atan2 <a name="apexpoint-atan2"></a>
 
@@ -268,60 +281,3 @@ Return the atan2 of the x and y values.
 def *magnitude*(self) -> *float*:
 
 Return the magnitude of the point vector.
-
-## 7 Class ApexPose <a name="apexpose"></a>
-
-class ApexPose(object):
-
-ApexPose is a wrapper around the FreeCAD Matrix class.
-
-This is a wrapper class around the FreeCAD Matrix class that provides a number of
-stadard rotations and translations.  It also computes the inverse matrix.
-
-Attributes:
-* *forward* (Matrix): A FreeCAD Matrix that maps a Vector to a new pose.
-* *reverse* (Matrix): The inverse FreeCAD matrix that maps the pose back to its initial value.
-
-
-### 7.1 ApexPose.\_\_init\_\_ <a name="apexpose---init--"></a>
-
-def \_\_init\_\_( *self*, *center*:  Optional[Union[ApexPoint, Vector]] = None, # Default:  *origin* *axis*:  Optional[Union[ApexPoint, Vector]] = None, # Default:  +Z *axis* *angle*:  Optional[float] = None, # Default:  0 *degrees* *z\_align*:  Optional[Union[ApexPoint, Vector]] = None, # Default:  +Z *axis* *y\_align*:  Optional[Union[ApexPoint, Vector]] = None, # Default:  +Y *axis* *translate*:  Optional[Union[ApexPoint, Vector]] = None, # Default:  *origin* *name*:  Optional[str] = None, # Default:  "" *tracing*:  *str* = "" # Default:  Disabled ) -> None:
-
-Create ApexPose rotation with point/axis/angle and a translate.
-
-Arguments:
-* *center* (Optional[Union[ApexPoint, Vector]]):
-  The point around which all rotations occur (default: origin)).
-* *axis* (Optional[Union[ApexPoint, Vector]]):
-  A direction axis rotate around (default: Z axis)).
-* *angle (Optional[float]):
-  The angle to rotate around the *axis* measured in radians (default: 0 radians).
-* *z\_align* (Optional[Union[ApexPoint, Vector]]):
-  An direction axis to reorient to point in the +Z direction (default: +Z axis).
-* *y\_align* (Optional[Union[ApexPoint, Vector]]):
-  After applying the *z\_align* rotation to *y\_align*, project the resulting point down
-  onto the X/Y plane and rotate the point around the Z axis until is alignes with the +Y
-  axis.
-* *translate* (Optional[Union[ApexPoint, Vector]]):
-  The final translation to perform.
-The direction axes do *not* need to be normalized to a length of 1.0.
-
-There are two rotation styles:
-* Axis-Angle:
-  An *axis* that points outward from *center* is specified and a rotation
-  of *angle* radians in a counter clockwise direction occurs (i.e. right hand rule.)
-* Mounting:
-  Frequently parts need to be mounted in a vice.  For this the part need to be rotated
-  so that the surface to be machines is normal to the *Z axis.  And another surface
-  is aligned to be normal to the +Y axis.  For "boxy" parts, the *ApexBox* is
-  used to get these directions.  Specifically, *z\_align* rotates the part such that
-  *z\_align* is in the +Z axis direction and *y\_align* rotates the part such that the
-  part is aligned in the +Y axis.
-
-The operation order is:
-1. Translate *center* to origin.
-2. Perform *axis*/*angle* rotation.
-3. Perform *z\_align* rotation.
-4. Perform *y\_align* rotation.
-5. Translate from origin back to *center*.
-6. Perform final *translation*.
