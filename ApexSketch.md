@@ -295,11 +295,11 @@ class ApexDrawing(object):
 ApexDrawing: Used to create fully constrained 2D drawings.
 
 Attributes:
-* *box* (ApexBox): Bounding box of associated ApexPoints.
-* *circles (Tuple[ApexCircle, ...]): The ApexCircle's.
+* *circles (Tuple[ApexCircle, ...]): The ApexCircle's for the ApexDrawing.
+* *polygons* (Tuple[ApexCircle, ...]): The ApexPolygon's for the ApexDrawing
+* *contact*: (Union[Vector, ApexPoint]): On point on the surface of the polygon.
+* *normal*: (Union[Vector, ApexPoint]): A normal to the polygon plane.
 * *name* (str): The ApexDraing name.
-* *origin\_index* (int): The constraint index for the origin.
-* *polygons* (Tuple[ApexCircle, ...]): The ApexPolygon's.
 
 
 ### 5.1 ApexDrawing.\_\_init\_\_ <a name="apexdrawing---init--"></a>

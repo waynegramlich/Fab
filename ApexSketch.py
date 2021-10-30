@@ -8,7 +8,7 @@ assert sys.version_info.minor == 8  # Python 3.8
 sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 
 import math
-from typing import Any, Callable, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import FreeCAD as App  # type: ignore
 import FreeCADGui as Gui  # type: ignore
@@ -21,389 +21,6 @@ import PartDesign  # type: ignore
 import Sketcher  # type: ignore
 
 
-# ApexDrawing:
-class ApexDrawing(object):
-    """ApexDrawing: Used to create fully constrained 2D drawings.
-
-    Attributes:
-    * *box* (ApexBox): Bounding box of associated ApexPoints.
-    * *circles (Tuple[ApexCircle, ...]): The ApexCircle's.
-    * *name* (str): The ApexDraing name.
-    * *origin_index* (int): The constraint index for the origin.
-    * *polygons* (Tuple[ApexCircle, ...]): The ApexPolygon's.
-
-    """
-
-    INIT_CHECKS = (
-        ApexCheck("circle", (list, tuple)),
-        ApexCheck("polygons", (list, tuple)),
-        ApexCheck("contact", (Vector, ApexPoint)),
-        ApexCheck("normal", (Vector, ApexPoint)),
-        ApexCheck("name", (str,)),
-    )
-
-    # ApexDrawing.__init__():
-    def __init__(
-            self,
-            circles: Sequence["ApexCircle"],
-            polygons: Sequence["ApexPolygon"],
-            contact: Union["ApexPoint", "Vector"] = Vector(0, 0, 0),
-            normal: Union["ApexPoint", "Vector"] = Vector(0, 0, 1),
-            name: str = "",
-    ) -> None:
-        """Initialize a drawing.
-
-        Arguments:
-        * *circles* (Sequence[ApexCircle]):
-          The circles of the drawing.
-        * *polygons* (Sequence[ApexPolygon]):
-          The polygons of the drawing.
-        * *contact* (Union[ApexPoint, Vector]):
-          A point on the surface of the drawing in 3D space.  (Default: Vector(0, 0, 0))
-        * *normal* (Union[ApexPoint, Vector]):
-          An ApexPoint/Vector that is normal to the plane that goes through *contact*.
-          (Default: Vector(0, 0, 1))
-        * *name*: (str): The drawing name.  (Default: "")
-
-        """
-        value_error: str = ApexCheck.check(
-            (circles, polygons, contact, normal, name), ApexDrawing.INIT_CHECKS)
-        if value_error:
-            raise ValueError(value_error)
-
-        # Create the *placement* used to rotate all points around *contact* such that
-        # *perpendicular* is aligned with the +Z axis:
-        contact = contact.vector if isinstance(contact, ApexPoint) else contact
-        assert isinstance(contact, Vector), f"{contact=}"
-        normal = (normal.vector if isinstance(normal, ApexPoint) else normal)
-        assert isinstance(normal, Vector)
-        normal = normal.normalize()
-        # rotation: Rotation = Rotation(normal, Vector(0, 0, 1))
-        # placement: Placement = Placement(Vector(0, 0, 0), rotation, contact)
-
-        # Load everything into *self* (i.e. ApexDrawing):
-        # self._body: Optional[PartDesign.Body] = None
-        # self._datum_plane: Optional[Part.ApexFeature] = None
-        # self._geometries: List[Any] = []
-
-        # Now compute the final *box*:
-        circle_boxes: Tuple[ApexBox, ...] = tuple(
-            [circle.box for circle in circles])
-        polygon_boxes: Tuple[ApexBox, ...] = tuple(
-            [polygon.box for polygon in polygons])
-        box: ApexBox = ApexBox(circle_boxes + polygon_boxes)
-
-        # Load everything into *self*:
-        self._box: ApexBox = box
-        self._circles: Tuple[ApexCircle, ...] = tuple(circles)
-        self._contact: Union[ApexPoint, Vector] = contact
-        self._origin_index: int = -999  # Value that is less than -1 (used for constraints)
-        self._normal: Vector = normal.normalize()  # Store in normalized form.
-        self._name: str = name
-        self._polygons: Tuple[ApexPolygon, ...] = tuple(polygons)
-
-    @property
-    def box(self) -> ApexBox:
-        """Return the ApexDrawing ApexBox."""
-        return self._box
-
-    @property
-    def circles(self) -> Tuple["ApexCircle", ...]:  # pragma: no unit test
-        """Return the ApexDrawing Circle's."""
-        return self._circles  # pragma: no unit test
-
-    @property
-    def name(self) -> str:
-        """Return the ApexDrawing name."""
-        return self._name
-
-    @property
-    def origin_index(self) -> int:
-        """Return the ApexDrawing origin index."""
-        origin_index: int = self._origin_index
-        if origin_index < -1:
-            raise ValueError(f"Origin Index not set.")  # pragma: no unit test
-        return self._origin_index
-
-    @property
-    def polygons(self) -> Tuple["ApexPolygon", ...]:  # pragma: no unit test
-        """Return the ApexDrawing ApexPolygon's."""
-        return self._polygons  # pragma: no unit test
-
-    def __repr__(self) -> str:
-        """Return string representation of ApexDrawing."""
-        return self.__str__()
-
-    def __str__(self) -> str:
-        """Return string representation of ApexDrawing."""
-        return (f"ApexDrawing({self._circles}, {self._polygons}, "
-                f"{self._contact}, {self._normal}, '{self._name}')")
-
-    # ApexDrawing.create_datum_plane():
-    def create_datum_plane(self,
-                           body: "PartDesign.Body") -> "Part.ApexFeature":
-        """Return the FreeCAD DatumPlane used for the drawing.
-
-        Arguments:
-        * *body* (PartDesign.Body): The FreeCAD Part design Body to attach the datum plane to.
-
-        * Returns:
-          * (Part.ApexFeature) that is the datum_plane.
-        """
-        # This is where the math for FreeCAD DatumPlanes is discussed.
-        #
-        # Here is the notation used in this comment:
-        #
-        # Scalars: a, b, c, ...  (i.e. a lower case letter)
-        # Vectors: P, N, Pa, ... (i.e. an upper case letter with optional suffix letter)
-        # Magnitude: |N|, |P|, ... (i.e. a vector with vertical bars on each side.)
-        # Normal: <N>, <P>, ... (i.e. a vector enclosed in angle brakcets < ...>).)
-        # Dot Prodocct: N . P (i.e. two vectors separated by a period.)
-        # Vector scaling: s * V (i.e. a scalar times a vector.)
-        # Note that:  |N| * <N> = N
-        #
-        # More information about the math of planes can be found at
-        # [MathWorld Planes](https://mathworld.wolfram.com/Plane.html).
-        # The section on Hessian normal form  appropriate.
-        #
-        # The base ('b' suffix) space has an origin (Ob=(0,0,0)), X axis (Xb=(1,0,0)),
-        # Y axis (Yb=(0,1,0), and Z axis (Zb=(0,1,0).  The X/Y/Z axes are normalized
-        # (i.e. |Xb|=|Yb|=|Zb|=1 .)
-        #
-        # Likewise, in the same base coordinate system, the datum plane ('d' suffix) has an
-        # Origin (Od), X axis (Xd), Y axis (Yd), and Z axis (Zd).  Again, X/Y/Z axes are normalized
-        # (i.e. |Xd|=|Yd|=|Zd|=1 .)  The goal is provide the math for computing these values.
-        #
-        # A plane is specified by a contact point Pd on the plane and a normal Nd to the plane.
-        # The normal can be at any point on the plane.
-        #
-        # The datum plane origin is computed as:
-        #
-        #     Od = Os + d * <Nd>
-        #
-        # where d is a signed distance computed as:
-        #
-        #     d = - (<Nd> . Pd)
-
-        # if body is not self._body:
-        #     self._datum_plane = None
-        #     self._body = body
-        # if not self._datum_plane:
-        if True:  # pragma: no unit_cover
-            datum_plane: Part.ApexFeature = body.newObject("PartDesign::Plane", "DatumPlane")
-            xy_plane: App.GeoApexFeature = body.getObject("XY_Plane")
-            datum_plane.Support = [(xy_plane, "")]
-            datum_plane.MapMode = "FlatFace"
-
-            contact: Vector = self._contact  # Pd
-            normal: Vector = self._normal  # <Nd>
-            distance: float = -normal.dot(contact)  # d = - (<Nd> . Pd)
-            origin: Vector = normal * distance  # Od = Os + d * <Nd>
-
-            # This looks simple, but
-            z_axis: Vector = Vector(0, 0, 1)  # Zb
-            rotation: Rotation = Rotation(z_axis, normal)  # Rotation from Zb to Nd.
-            datum_plane.AttachmentOffset = App.Placement(origin, rotation)
-            datum_plane.MapReversed = False
-            datum_plane.MapPathParameter = 0.0
-            datum_plane.recompute()
-            visibility_set(datum_plane)
-            self._datum_plane = datum_plane
-        return self._datum_plane
-
-    # ApexDrawing.point_constraints_append():
-    def point_constraints_append(self, point: ApexPoint, constraints: List[Sketcher.Constraint],
-                                 tracing: str = "") -> None:  # REMOVE
-        """Append ApexPoint constraints to a list."""
-        # Now that the *origin_index* is set, is is safe to assemble the *constraints*:
-        if tracing:
-            print(f"{tracing}=>ApexPoint.constraints_append(*, |*|={len(constraints)})")
-        origin_index: int = self.origin_index
-
-        # Set DistanceX constraint:
-        constraints.append(Sketcher.Constraint("DistanceX",
-                                               -1, 1,  # -1 => OriginRoot.
-                                               origin_index, 1, point.x))
-        if tracing:
-            print(f"{tracing}     [{len(constraints)}]: "
-                  f"DistanceX('RootOrigin':(-1, 1), "
-                  f"'{point.name}':({origin_index}, 1)), {point.x:.2f}")
-
-        # Set DistanceY constraint:
-        constraints.append(Sketcher.Constraint("DistanceY",
-                                               -1, 1,  # -1 => OriginRoot.
-                                               origin_index, 1, point.y))
-        if tracing:
-            print(f"{tracing}     [{len(constraints)}]: "
-                  f"DistanceY('RootOrigin':(-1, 1), "
-                  f"'{point.name}':({origin_index}, 1), {point.y:.2f})")
-            print(f"{tracing}<=ApexPoint.constraints_append(*, |*|={len(constraints)})")
-
-    # ApexDrawing.features_get():
-    def point_features_get(self, point: ApexPoint, tracing: str = "") -> Tuple["ApexFeature", ...]:
-        """Return the ApexPointFeature Feature's."""
-        assert isinstance(point, ApexPoint)
-        return (ApexPointFeature(self, point, point.name),)
-
-    # ApexDrawing.reorient():
-    def reorient(self, placement: Placement, suffix: Optional[str] = "",
-                 tracing: str = "") -> "ApexDrawing":
-        """Return a reoriented ApexDrawing.
-
-        Arguments:
-        * *placement* (Placement): The Placement to apply to internal ApexCircles and ApexPolygons.
-        * *suffix* (Optional[str]): The suffix to append at all names.  If None, all
-          names are set to "" instead appending the suffix.  (Default: "")
-
-        """
-        next_tracing: str = tracing + " " if tracing else ""
-        if tracing:
-            print(f"=>ApexDrawing.reorient(*, {placement}, '{suffix}')")
-
-        # Reorient *circles* and *polygons*:
-        circle: ApexCircle
-        reoriented_circles: Tuple[ApexCircle, ...] = tuple(
-            [circle.reorient(placement, suffix, tracing=next_tracing)
-             for circle in self._circles])
-        polygon: ApexPolygon
-        reoriented_polygons: Tuple[ApexPolygon, ...] = tuple(
-            [polygon.reorient(placement, suffix, tracing=next_tracing)
-             for polygon in self._polygons])
-
-        # Reorient the plane *contact* point.
-        contact: Union["ApexPoint", Vector] = self._contact
-        reoriented_contact: Union[ApexPoint, Vector]
-        if isinstance(contact, Vector):
-            reoriented_contact = placement * contact
-        elif isinstance(contact, ApexPoint):  # pragma: no unit cover
-            reoriented_contact = contact.reorient(placement, suffix)
-
-        # The *normal* is only rotated, not translated.
-        normal: Union["ApexPoint", Vector] = self._normal
-        rotation: Rotation = placement.Rotation
-        reoriented_normal: Union[ApexPoint, Vector]
-        if isinstance(normal, Vector):
-            reoriented_normal = rotation * normal
-        elif isinstance(normal, ApexPoint):  # pragma: no unit cover
-            reoriented_normal = normal.reorient(Placement(Vector(), rotation), suffix)
-
-        apex_drawing: ApexDrawing = ApexDrawing(reoriented_circles, reoriented_polygons,
-                                                reoriented_contact, reoriented_normal)
-        if tracing:
-            print(f"{tracing}{self._circles=}")
-            print(f"{tracing}{reoriented_circles=}")
-            print(f"{tracing}{self._polygons=}")
-            print(f"{tracing}{reoriented_polygons=}")
-            print(f"{tracing}{contact=} >= {reoriented_contact}")
-            print(f"{tracing}{normal=} >= {reoriented_normal}")
-        if tracing:
-            print(f"<=ApexDrawing.reorient(*, {placement}, '{suffix}')")
-        return apex_drawing
-
-    # ApexDrawing.sketch():
-    def sketch(self, sketcher: "Sketcher.SketchObject", tracing: str = "") -> None:
-        """Insert an ApexDrawing into a FreeCAD SketchObject.
-
-        Arguments:
-        * sketcher (Sketcher.SketchObject): The sketcher object to use.
-        """
-        # Perform any requested *tracing*:
-        next_tracing: str = tracing + " " if tracing else ""
-        if tracing:
-            print(f"{tracing}=>ApexDrawing.sketch(*, *)")
-
-        # Ensure that *contact* and *normal* are Vector's:
-        contact: Union[ApexPoint, Vector] = self._contact
-        if isinstance(contact, ApexPoint):
-            contact = contact.vector  # pragma: no unit cover
-        assert isinstance(contact, Vector)
-        normal: Union[ApexPoint, Vector] = self._normal
-        if isinstance(normal, ApexPoint):
-            normal = contact.vector  # pragma: no unit cover
-        assert isinstance(normal, Vector)
-
-        # Rotate every around *contact* such that *normal* is aligned with the +Z axis:
-        origin: Vector = Vector()
-        z_axis: Vector = Vector(0, 0, 1)
-        z_aligned_placement: Placement = Placement(
-            origin, Rotation(normal, z_axis), contact, tracing=next_tracing)
-        z_aligned_drawing: "ApexDrawing" = self.reorient(z_aligned_placement, ".+z")
-        if tracing:
-            print(f"{tracing}{z_aligned_drawing.box=}")
-
-        # There may be a better way of doing this, but for now, everything is moved to
-        # quadrant 1 (i.e. +X/+Y quarter plane.)  This ensures that all length constraints
-        # are always positive.  The drawing has a true Origin point.  In addition, there
-        # is a *lower_left* point that is at the lower left corner of the drawing.  All
-        # X/Y length constraints are positive numbers measured from the *lower_left* point.
-        # The point is constrained to true drawing origin by an X constraint and Y constraint
-        # that can be positive, negative or zero.
-
-        name: str = self._name
-        z_aligned_box: ApexBox = z_aligned_drawing.box
-        tsw: Vector = z_aligned_box.TSW  # Lower left is along the SW bounding box edge.
-        quadrant1_placement: Placement = Placement(Vector(-tsw.x, -tsw.y, 0.0), Rotation())
-        quadrant1_drawing: "ApexDrawing" = z_aligned_drawing.reorient(
-            quadrant1_placement, ".q1", tracing=next_tracing)
-
-        points: Tuple[ApexPoint, ...] = (ApexPoint(tsw.x, tsw.y, 0.0, name=f"{name}.lower_left"),)
-        circles: Tuple[ApexCircle, ...] = quadrant1_drawing.circles
-        polygons: Tuple[ApexPolygon, ...] = quadrant1_drawing.polygons
-
-        # Now extract all of the ApexFeature'ss:
-        features: List[ApexFeature] = []
-
-        # Extract the VectorFeature's from *points* (this must be first):
-        point: ApexPoint
-        for point in points:
-            features.extend(self.point_features_get(point))
-        circle: ApexCircle
-        for circle in circles:
-            features.extend(circle.features_get(self))
-        polygon: ApexPolygon
-        for polygon in polygons:
-            features.extend(polygon.features_get(self))
-
-        # The first Feature corresponds to *lower_left* and it is the "origin" for the sketch.
-        lower_left_feature: ApexFeature = features[0]
-        assert isinstance(lower_left_feature, ApexPointFeature)
-
-        # Set the *index* for each Feature in *final_features*:
-        feature: ApexFeature
-        for index, feature in enumerate(features):
-            feature.index = index
-        final_features: Tuple[ApexFeature, ...] = tuple(features)
-
-        # Now that the Feature indices are set, *origin_index* can be extracted:
-        origin_index: int = lower_left_feature.index
-        self._origin_index = origin_index
-        if tracing:
-            print(f"{tracing}{origin_index=}")
-
-        # Extract *part_features* from *features*:
-        part_features: List[PartFeature] = []
-        for index, feature in enumerate(final_features):
-            # part_feature: PartFeature = feature.part_feature
-            # print(f"part_feature[{index}]: {part_feature}")
-            part_features.append(feature.part_feature)
-        sketcher.addGeometry(part_features, False)
-
-        # The *points*, *circles* and *polygons* Constraint's are extracted next:
-        constraints: List[Sketcher.Constraint] = []
-        for point in points:
-            self.point_constraints_append(point, constraints)
-        for circle in circles:
-            circle.constraints_append(self, constraints)
-        for polygon in polygons:
-            polygon.constraints_append(self, constraints)
-
-        # Load the final *constraints* into *sketcher*:
-        sketcher.addConstraint(constraints)
-
-        if tracing:
-            print(f"{tracing}<=ApexDrawing.sketch(*, *)")
-
-
 PartFeature = Union[Part.Circle, Part.LineSegment, Part.Point, Part.Arc]
 
 
@@ -412,7 +29,7 @@ class ApexFeature(object):
     """Base class a schematic features."""
 
     # ApexFeature.__init__():
-    def __init__(self, drawing: ApexDrawing,
+    def __init__(self, drawing: "ApexDrawing",
                  start: ApexPoint, finish: ApexPoint, name: str = "") -> None:
         """Initialize a ApexFeature."""
         if not name:
@@ -429,7 +46,7 @@ class ApexFeature(object):
 
     # ApexFeature.drawing():
     @property
-    def drawing(self) -> ApexDrawing:  # pragma: no unit test
+    def drawing(self) -> "ApexDrawing":  # pragma: no unit test
         """Return the ApexFeature ApexDrawing."""
         return self._drawing  # pragma: no unit test
 
@@ -520,7 +137,7 @@ class ApexArcFeature(ApexFeature):
     """Represents an an arc in a sketch."""
 
     # ApexArcFeature.__init__():
-    def __init__(self, drawing: ApexDrawing,
+    def __init__(self, drawing: "ApexDrawing",
                  begin: ApexPoint, apex: ApexPoint, end: ApexPoint,
                  name: str = "", tracing: str = "") -> None:
         """Initialize an ApexArcFeature."""
@@ -839,7 +456,7 @@ class ApexCircleFeature(ApexFeature):
     """Represents a circle in a sketch."""
 
     # ApexCircleFeature.__init__():
-    def __init__(self, drawing: ApexDrawing,
+    def __init__(self, drawing: "ApexDrawing",
                  center: ApexPoint, radius: float, name: str = "") -> None:
         """Initialize a ApexCircleFeature."""
         super().__init__(drawing, center, center, name)
@@ -878,7 +495,7 @@ class ApexLineFeature(ApexFeature):
     """Represents a line segment in a sketch."""
 
     # ApexLineFeature.__init__():
-    def __init__(self, drawing: ApexDrawing,
+    def __init__(self, drawing: "ApexDrawing",
                  start: ApexPoint, finish: ApexPoint, name: str = "", tracing: str = "") -> None:
         """Initialize a ApexLineFeature."""
         if tracing:
@@ -893,7 +510,7 @@ class ApexLineFeature(ApexFeature):
 
     # ApexLineFeature.drawing():
     @property
-    def drawing(self) -> ApexDrawing:  # pragma: no unit cover
+    def drawing(self) -> "ApexDrawing":  # pragma: no unit cover
         """Return the ApexLineFeature ApexDrawing."""
         return self._drawing
 
@@ -939,7 +556,7 @@ class ApexPointFeature(ApexFeature):
     """Represents a point in a sketch."""
 
     # ApexPointFeature.__init__():
-    def __init__(self, drawing: ApexDrawing, point: ApexPoint, name: str = "") -> None:
+    def __init__(self, drawing: "ApexDrawing", point: ApexPoint, name: str = "") -> None:
         """Initialize a ApexPointFeature."""
         super().__init__(drawing, point, point, name)
         self._point: ApexPoint = point
@@ -1031,7 +648,7 @@ class ApexPolygon(object):
         return total_angle >= 0.0
 
     # ApexPolygon.constraints_append():
-    def constraints_append(self, drawing: ApexDrawing, constraints: List[Sketcher.Constraint],
+    def constraints_append(self, drawing: "ApexDrawing", constraints: List[Sketcher.Constraint],
                            tracing: str = "") -> None:
         """Return the ApexPolygon constraints for a ApexDrawing."""
         # Perform an requested *tracing*:
@@ -1191,7 +808,7 @@ class ApexPolygon(object):
         return self._flat
 
     # ApexPolygon.features_get():
-    def features_get(self, drawing: ApexDrawing, tracing: str = "") -> Tuple[ApexFeature, ...]:
+    def features_get(self, drawing: "ApexDrawing", tracing: str = "") -> Tuple[ApexFeature, ...]:
         """Return the ApexPolygon ApexFeatures tuple."""
         # This is a 4 pass process.
         #
@@ -1309,6 +926,11 @@ class ApexPolygon(object):
         """Return the ApexPolygon points."""
         return self._points
 
+    REORIENT_CHECKS = (
+        ApexCheck("placement", (Placement,)),
+        ApexCheck("suffix", (str, )),
+    )
+
     # ApexPolygon.reorient():
     def reorient(self, placement: Placement, suffix: Optional[str] = "",
                  tracing: str = "") -> "ApexPolygon":
@@ -1321,19 +943,23 @@ class ApexPolygon(object):
           A suffix to append to the name.  If None, an empty name is used. (Default: "")
 
         """
+        arguments: Tuple[Any, ...] = (placement, suffix)
+        value_error: str = ApexCheck.check(arguments, ApexPolygon.REORIENT_CHECKS)
+        if value_error:
+            raise ValueError(value_error)
         if tracing:
-            print(f"{tracing}=>ApexPolygon.reorient({placement}, '{suffix}')")
+            print(f"{tracing}=>ApexPolygon.reorient{arguments}")
+
         name: str = f"{self._name}{suffix}" if suffix else ""
         apex_point: ApexPoint
         reoriented_points: Tuple[ApexPoint, ...] = tuple([
-
             apex_point.reorient(placement, name) for apex_point in self.points])
         result: ApexPolygon = ApexPolygon(reoriented_points, self.depth, self.flat, name)
         if tracing:
             index: int
             for index, apex_point in enumerate(self._points):
                 print(f"{tracing}Point[{index}]:{apex_point} => {reoriented_points[index]}")
-            print(f"{tracing}<=ApexPolygon.(*, '{suffix}')=>*")
+            print(f"{tracing}<=ApexPolygon.reorient{arguments}=>{result}")
         return result
 
 
@@ -1410,7 +1036,7 @@ class ApexCircle(object):
         return circle_feature
 
     # ApexCircle.constraints_append():
-    def constraints_append(self, drawing: ApexDrawing, constraints: List[Sketcher.Constraint],
+    def constraints_append(self, drawing: "ApexDrawing", constraints: List[Sketcher.Constraint],
                            tracing: str = "") -> None:
         """Return the ApexCircleFeature constraints."""
         if tracing:
@@ -1464,7 +1090,7 @@ class ApexCircle(object):
         return self._flat
 
     # ApexCircle.features_get():
-    def features_get(self, drawing: ApexDrawing) -> Tuple[ApexFeature, ...]:
+    def features_get(self, drawing: "ApexDrawing") -> Tuple[ApexFeature, ...]:
         """Return the ApexCircleFeature."""
         circle_feature: Optional[ApexCircleFeature] = self._circle_feature
         if not circle_feature:
@@ -1502,6 +1128,453 @@ class ApexCircle(object):
             print(f"{tracing}{self} => {reoriented}")
             print(f"{tracing}<=ApexCircle.reorient(*, {placement}, '{suffix}') => *")
         return reoriented
+
+
+# ApexDrawing:
+class ApexDrawing(object):
+    """ApexDrawing: Used to create fully constrained 2D drawings.
+
+    Attributes:
+    * *exterior* (Union[ApexCircle, ApexPolygon]): The exterior contour.  Must have positive depth.
+    * *circles (Tuple[ApexCircle, ...]): Interior ApexCircle's for the ApexDrawing.
+    * *polygons* (Tuple[ApexCircle, ...]): Interior ApexPolygon's for the ApexDrawing
+    * *contact*: (Union[Vector, ApexPoint]): On point on the surface of the polygon.
+    * *normal*: (Union[Vector, ApexPoint]): A normal to the polygon plane.
+    * *name* (str): The ApexDrawing name.
+
+    """
+
+    INIT_CHECKS = (
+        ApexCheck("contact", (Vector, ApexPoint)),
+        ApexCheck("normal", (Vector, ApexPoint)),
+        ApexCheck("exterior", (type(None), ApexCircle, ApexPolygon)),
+        ApexCheck("circles", (list, tuple)),
+        ApexCheck("polygons", (list, tuple)),
+        ApexCheck("name", (str,)),
+    )
+
+    # ApexDrawing.__init__():
+    def __init__(
+            self,
+            contact: Union["ApexPoint", "Vector"] = Vector(0, 0, 0),
+            normal: Union["ApexPoint", "Vector"] = Vector(0, 0, 1),
+            exterior: Optional[Union["ApexCircle", "ApexPolygon"]] = None,
+            circles: Sequence["ApexCircle"] = (),
+            polygons: Sequence["ApexPolygon"] = (),
+            name: str = "",
+            tracing: str = ""
+    ) -> None:
+        """Initialize a drawing.
+
+        Arguments:
+        * *contact* (Union[ApexPoint, Vector]):
+          A point on the surface of the drawing in 3D space.  (Default: Vector(0, 0, 0))
+        * *normal* (Union[ApexPoint, Vector]):
+          An ApexPoint/Vector that is normal to the plane that goes through *contact*.
+          (Default: Vector(0, 0, 1))
+        * *exterior*: (Union[None, ApexCircle, ApexPolygon]):
+          The exterior contour of the part.  None if exterior is not needed. (Default: None)
+        * *circles* (Sequence[ApexCircle]):
+          The circles of the drawing.  (Default: ())
+        * *polygons* (Sequence[ApexPolygon]):
+          The polygons of the drawing.  (Default: ())
+        * *name*: (str): The drawing name.  (Default: "")
+
+        Raises:
+        * ValueError if no exterior, circles, or polygons are specified.
+
+        """
+        arguments: Tuple[Any, ...] = (contact, normal, exterior, circles, polygons, name)
+        value_error: str = ApexCheck.check(arguments, ApexDrawing.INIT_CHECKS)
+        if value_error:
+            raise ValueError(value_error)
+        if (1 if exterior else 0) + len(circles) + len(polygons) == 0:
+            raise ValueError(f"No ApexPolygon's or ApexCircle's provided.")
+        # next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>ApexSketch.fred{arguments}")
+
+        # Create the *placement* used to rotate all points around *contact* such that
+        # *perpendicular* is aligned with the +Z axis:
+        contact = contact.vector if isinstance(contact, ApexPoint) else contact
+        assert isinstance(contact, Vector), f"{contact=}"
+        normal = (normal.vector if isinstance(normal, ApexPoint) else normal)
+        assert isinstance(normal, Vector)
+        normal = normal.normalize()
+        # rotation: Rotation = Rotation(normal, Vector(0, 0, 1))
+        # placement: Placement = Placement(Vector(0, 0, 0), rotation, contact)
+
+        # Load everything into *self* (i.e. ApexDrawing):
+        # self._body: Optional[PartDesign.Body] = None
+        # self._datum_plane: Optional[Part.ApexFeature] = None
+        # self._geometries: List[Any] = []
+
+        # Now compute the final *box*:
+        circle_boxes: Tuple[ApexBox, ...] = tuple(
+            [circle.box for circle in circles])
+        polygon_boxes: Tuple[ApexBox, ...] = tuple(
+            [polygon.box for polygon in polygons])
+        box: ApexBox = ApexBox(circle_boxes + polygon_boxes)
+
+        # Load everything into *self*:
+        self._box: ApexBox = box
+        self._circles: Tuple[ApexCircle, ...] = tuple(circles)
+        self._contact: Union[ApexPoint, Vector] = contact
+        self._exterior: Optional[Union[ApexCircle, ApexPolygon]] = exterior
+        self._origin_index: int = -999  # Value that is less than -1 (used for constraints)
+        self._normal: Vector = normal.normalize()  # Store in normalized form.
+        self._name: str = name
+        self._polygons: Tuple[ApexPolygon, ...] = tuple(polygons)
+
+        if tracing:
+            print(f"{tracing}<=ApexSketch.fred{arguments}")
+
+    @property
+    def box(self) -> ApexBox:
+        """Return the ApexDrawing ApexBox."""
+        return self._box
+
+    @property
+    def circles(self) -> Tuple["ApexCircle", ...]:  # pragma: no unit test
+        """Return the ApexDrawing Circle's."""
+        return self._circles  # pragma: no unit test
+
+    @property
+    def name(self) -> str:
+        """Return the ApexDrawing name."""
+        return self._name
+
+    @property
+    def origin_index(self) -> int:
+        """Return the ApexDrawing origin index."""
+        origin_index: int = self._origin_index
+        if origin_index < -1:
+            raise ValueError(f"Origin Index not set.")  # pragma: no unit test
+        return self._origin_index
+
+    @property
+    def polygons(self) -> Tuple["ApexPolygon", ...]:  # pragma: no unit test
+        """Return the ApexDrawing ApexPolygon's."""
+        return self._polygons  # pragma: no unit test
+
+    def __repr__(self) -> str:
+        """Return string representation of ApexDrawing."""
+        return self.__str__()
+
+    def __str__(self) -> str:
+        """Return string representation of ApexDrawing."""
+        return (f"ApexDrawing({self._circles}, {self._polygons}, "
+                f"{self._contact}, {self._normal}, '{self._name}')")
+
+    # ApexDrawing.create_datum_plane():
+    def create_datum_plane(self, body: "PartDesign.Body",
+                           name: str = "DatumPlane") -> "Part.ApexFeature":
+        """Return the FreeCAD DatumPlane used for the drawing.
+
+        Arguments:
+        * *body* (PartDesign.Body): The FreeCAD Part design Body to attach the datum plane to.
+        * *name* (str): The datum plane name (Default: "DatumPlane")
+
+        * Returns:
+          * (Part.ApexFeature) that is the datum_plane.
+        """
+        # This is where the math for FreeCAD DatumPlanes is discussed.
+        #
+        # Here is the notation used in this comment:
+        #
+        # Scalars: a, b, c, ...  (i.e. a lower case letter)
+        # Vectors: P, N, Pa, ... (i.e. an upper case letter with optional suffix letter)
+        # Magnitude: |N|, |P|, ... (i.e. a vector with vertical bars on each side.)
+        # Unit Normal: <N>, <P>, ... (i.e. a vector enclosed in angle brakcets < ...>).)
+        # Dot Product: N . P (i.e. two vectors separated by a period.)
+        # Vector scaling: s * V (i.e. a scalar times a vector.)
+        # Note that:  |N| * <N> = N
+        #
+        # The section on Hessian normal plane representation from
+        # [MathWorld Planes](https://mathworld.wolfram.com/Plane.html)
+        # is worth reading.
+        #
+        # The base coordinate system ('b' suffix) has an origin (Ob=(0,0,0)), X axis (<Xb>=(1,0,0)),
+        # Y axis (<Yb>=(0,1,0), and Z axis (<Zb>=(0,1,0).
+        #
+        # A datum plane specifies a new coordinate system ('d' suffix) that has an Origin (Od),
+        # X axis (<Xd>), Y axis (<Yd>), and Z axis (<Zd>).
+        #
+        # The math for computing these values is discussed immediately below:
+        #
+        # A plane is specified by a contact point Pd on the plane and a normal Nd to the plane.
+        # The normal can be at any point on the plane.
+        #
+        # The datum plane origin is computed as:
+        #
+        #     Od = Os + d * <Nd>
+        #
+        # where d is a signed distance computed as:
+        #
+        #     d = - (<Nd> . Pd)
+
+        # Compute *rotation* from <Zb> to <Nd>:
+        contact: Vector = self._contact  # Pd
+        normal: Vector = self._normal  # <Nd>
+        distance: float = -normal.dot(contact)  # d = - (<Nd> . Pd)
+        origin: Vector = normal * distance  # Od = Os + d * <Nd>
+        z_axis: Vector = Vector(0, 0, 1)  # <Zb>
+        rotation: Rotation = Rotation(z_axis, normal)  # Rotation from <Zb> to <Nd>.
+
+        # Create, save and return the *datum_plane*:
+        datum_plane: Part.ApexFeature = body.newObject("PartDesign::Plane", "DatumPlane")
+        xy_plane: App.GeoApexFeature = body.getObject("XY_Plane")
+        datum_plane.Support = [(xy_plane, "")]
+        datum_plane.MapMode = "FlatFace"
+        datum_plane.AttachmentOffset = App.Placement(origin, rotation)
+        datum_plane.MapReversed = False
+        datum_plane.MapPathParameter = 0.0
+        datum_plane.recompute()
+        visibility_set(datum_plane)
+        self._datum_plane = datum_plane
+        return self._datum_plane
+
+    # ApexDrawing.fred():
+    def fred(self, tracing: str = "") -> None:
+        """Fred."""
+        # next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"=>ApexDrawing.fred()")
+
+        # Group all *polygons* of the same depth together:
+        depth_polygons: Dict[float, Tuple[ApexPolygon, ...]] = {}
+        polygon: ApexPolygon
+        depth: float
+        for polygon in self._polygons:
+            depth = float(polygon.depth)
+            if depth not in depth_polygons:
+                depth_polygons[depth] = ()
+            depth_polygons[depth] += (polygon,)
+        sorted_depth_polygons: Tuple[Tuple[float, Tuple[ApexPolygon, ...]], ...] = tuple(
+            [(depth, depth_polygons[depth]) for depth in depth_polygons.keys()]
+        )
+        _ = sorted_depth_polygons
+
+        # Group all of the *circles* of the same depth together:
+        depth_circles: Dict[float, Tuple[ApexCircle, ...]] = {}
+        circle: ApexCircle
+        for circle in self._circles:
+            depth = float(circle.depth)
+            if depth not in depth_circles:
+                depth_circles[depth] = ()
+            depth_circles[depth] += (circle,)
+        sorted_depth_circles: Tuple[Tuple[float, Tuple[ApexCircle, ...]], ...] = tuple(
+            [(depth, depth_circles[depth]) for depth in depth_circles.keys()]
+        )
+        _ = sorted_depth_circles
+
+        if tracing:
+            print(f"<=ApexDrawing.fred()")
+
+    # ApexDrawing.point_constraints_append():
+    def point_constraints_append(self, point: ApexPoint, constraints: List[Sketcher.Constraint],
+                                 tracing: str = "") -> None:  # REMOVE
+        """Append ApexPoint constraints to a list."""
+        # Now that the *origin_index* is set, is is safe to assemble the *constraints*:
+        if tracing:
+            print(f"{tracing}=>ApexPoint.constraints_append(*, |*|={len(constraints)})")
+        origin_index: int = self.origin_index
+
+        # Set DistanceX constraint:
+        constraints.append(Sketcher.Constraint("DistanceX",
+                                               -1, 1,  # -1 => OriginRoot.
+                                               origin_index, 1, point.x))
+        if tracing:
+            print(f"{tracing}     [{len(constraints)}]: "
+                  f"DistanceX('RootOrigin':(-1, 1), "
+                  f"'{point.name}':({origin_index}, 1)), {point.x:.2f}")
+
+        # Set DistanceY constraint:
+        constraints.append(Sketcher.Constraint("DistanceY",
+                                               -1, 1,  # -1 => OriginRoot.
+                                               origin_index, 1, point.y))
+        if tracing:
+            print(f"{tracing}     [{len(constraints)}]: "
+                  f"DistanceY('RootOrigin':(-1, 1), "
+                  f"'{point.name}':({origin_index}, 1), {point.y:.2f})")
+            print(f"{tracing}<=ApexPoint.constraints_append(*, |*|={len(constraints)})")
+
+    # ApexDrawing.features_get():
+    def point_features_get(self, point: ApexPoint, tracing: str = "") -> Tuple["ApexFeature", ...]:
+        """Return the ApexPointFeature Feature's."""
+        assert isinstance(point, ApexPoint)
+        return (ApexPointFeature(self, point, point.name),)
+
+    # ApexDrawing.reorient():
+    def reorient(self, placement: Placement, suffix: Optional[str] = "",
+                 tracing: str = "") -> "ApexDrawing":
+        """Return a reoriented ApexDrawing.
+
+        Arguments:
+        * *placement* (Placement): The Placement to apply to internal ApexCircles and ApexPolygons.
+        * *suffix* (Optional[str]): The suffix to append at all names.  If None, all
+          names are set to "" instead appending the suffix.  (Default: "")
+
+        """
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"=>ApexDrawing.reorient(*, {placement}, '{suffix}')")
+
+        # Reorient, *exterior*, *circles* and *polygons*:
+        exterior: Optional[Union[ApexCircle, ApexPolygon]] = self._exterior
+        reoriented_exterior: Optional[Union[ApexCircle, ApexPolygon]] = (
+            exterior.reorient(placement, tracing=next_tracing) if exterior else None)
+        circle: ApexCircle
+        reoriented_circles: Tuple[ApexCircle, ...] = tuple(
+            [circle.reorient(placement, suffix, tracing=next_tracing)
+             for circle in self._circles])
+        polygon: ApexPolygon
+        reoriented_polygons: Tuple[ApexPolygon, ...] = tuple(
+            [polygon.reorient(placement, suffix, tracing=next_tracing)
+             for polygon in self._polygons])
+
+        # Reorient the plane *contact* point.
+        contact: Union["ApexPoint", Vector] = self._contact
+        reoriented_contact: Union[ApexPoint, Vector]
+        if isinstance(contact, Vector):
+            reoriented_contact = placement * contact
+        elif isinstance(contact, ApexPoint):  # pragma: no unit cover
+            reoriented_contact = contact.reorient(placement, suffix)
+
+        # The *normal* is only rotated, not translated.
+        normal: Union["ApexPoint", Vector] = self._normal
+        rotation: Rotation = placement.Rotation
+        reoriented_normal: Union[ApexPoint, Vector]
+        if isinstance(normal, Vector):
+            reoriented_normal = rotation * normal
+        elif isinstance(normal, ApexPoint):  # pragma: no unit cover
+            reoriented_normal = normal.reorient(Placement(Vector(), rotation), suffix)
+
+        apex_drawing: ApexDrawing = ApexDrawing(
+            reoriented_contact, reoriented_normal, reoriented_exterior,
+            reoriented_circles, reoriented_polygons, f"{self._name}{suffix}"
+        )
+
+        if tracing:
+            print(f"{tracing}{self._circles=}")
+            print(f"{tracing}{reoriented_circles=}")
+            print(f"{tracing}{self._polygons=}")
+            print(f"{tracing}{reoriented_polygons=}")
+            print(f"{tracing}{contact=} >= {reoriented_contact}")
+            print(f"{tracing}{normal=} >= {reoriented_normal}")
+        if tracing:
+            print(f"<=ApexDrawing.reorient(*, {placement}, '{suffix}')")
+        return apex_drawing
+
+    # ApexDrawing.sketch():
+    def sketch(self, sketcher: "Sketcher.SketchObject", tracing: str = "") -> None:
+        """Insert an ApexDrawing into a FreeCAD SketchObject.
+
+        Arguments:
+        * sketcher (Sketcher.SketchObject): The sketcher object to use.
+        """
+        # Perform any requested *tracing*:
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>ApexDrawing.sketch(*, *)")
+
+        # Ensure that *contact* and *normal* are Vector's:
+        contact: Union[ApexPoint, Vector] = self._contact
+        if isinstance(contact, ApexPoint):
+            contact = contact.vector  # pragma: no unit cover
+        assert isinstance(contact, Vector)
+        normal: Union[ApexPoint, Vector] = self._normal
+        if isinstance(normal, ApexPoint):
+            normal = contact.vector  # pragma: no unit cover
+        assert isinstance(normal, Vector)
+
+        # Rotate every around *contact* such that *normal* is aligned with the +Z axis:
+        origin: Vector = Vector()
+        z_axis: Vector = Vector(0, 0, 1)
+        z_aligned_placement: Placement = Placement(
+            origin, Rotation(normal, z_axis), contact, tracing=next_tracing)
+        z_aligned_drawing: "ApexDrawing" = self.reorient(z_aligned_placement, ".+z")
+        if tracing:
+            print(f"{tracing}{z_aligned_drawing.box=}")
+
+        # There may be a better way of doing this, but for now, everything is moved to
+        # quadrant 1 (i.e. +X/+Y quarter plane.)  This ensures that all length constraints
+        # are always positive.  The drawing has a true Origin point.  In addition, there
+        # is a *lower_left* point that is at the lower left corner of the drawing.  All
+        # X/Y length constraints are positive numbers measured from the *lower_left* point.
+        # The point is constrained to true drawing origin by an X constraint and Y constraint
+        # that can be positive, negative or zero.
+
+        name: str = self._name
+        z_aligned_box: ApexBox = z_aligned_drawing.box
+        tsw: Vector = z_aligned_box.TSW  # Lower left is along the SW bounding box edge.
+        quadrant1_placement: Placement = Placement(Vector(-tsw.x, -tsw.y, 0.0), Rotation())
+        quadrant1_drawing: "ApexDrawing" = z_aligned_drawing.reorient(
+            quadrant1_placement, ".q1", tracing=next_tracing)
+
+        points: Tuple[ApexPoint, ...] = (ApexPoint(tsw.x, tsw.y, 0.0, name=f"{name}.lower_left"),)
+        exterior: Optional[Union[ApexCircle, ApexPolygon]] = quadrant1_drawing._exterior
+        circles: Tuple[ApexCircle, ...] = ()
+        if isinstance(exterior, ApexCircle):
+            circles += (exterior,)
+        circles += quadrant1_drawing.circles
+        polygons: Tuple[ApexPolygon, ...] = ()
+        if isinstance(exterior, ApexPolygon):
+            polygons += (exterior,)
+        polygons += quadrant1_drawing.polygons
+
+        # Now extract all of the ApexFeature'ss:
+        features: List[ApexFeature] = []
+
+        # Extract the VectorFeature's from *points* (this must be first):
+        point: ApexPoint
+        for point in points:
+            features.extend(self.point_features_get(point))
+        circle: ApexCircle
+        for circle in circles:
+            features.extend(circle.features_get(self))
+        polygon: ApexPolygon
+        for polygon in polygons:
+            features.extend(polygon.features_get(self))
+
+        # The first Feature corresponds to *lower_left* and it is the "origin" for the sketch.
+        lower_left_feature: ApexFeature = features[0]
+        assert isinstance(lower_left_feature, ApexPointFeature)
+
+        # Set the *index* for each Feature in *final_features*:
+        feature: ApexFeature
+        for index, feature in enumerate(features):
+            feature.index = index
+        final_features: Tuple[ApexFeature, ...] = tuple(features)
+
+        # Now that the Feature indices are set, *origin_index* can be extracted:
+        origin_index: int = lower_left_feature.index
+        self._origin_index = origin_index
+        if tracing:
+            print(f"{tracing}{origin_index=}")
+
+        # Extract *part_features* from *features*:
+        part_features: List[PartFeature] = []
+        for index, feature in enumerate(final_features):
+            # part_feature: PartFeature = feature.part_feature
+            # print(f"part_feature[{index}]: {part_feature}")
+            part_features.append(feature.part_feature)
+        sketcher.addGeometry(part_features, False)
+
+        # The *points*, *circles* and *polygons* Constraint's are extracted next:
+        constraints: List[Sketcher.Constraint] = []
+        for point in points:
+            self.point_constraints_append(point, constraints)
+        for circle in circles:
+            circle.constraints_append(self, constraints)
+        for polygon in polygons:
+            polygon.constraints_append(self, constraints)
+
+        # Load the final *constraints* into *sketcher*:
+        sketcher.addConstraint(constraints)
+
+        if tracing:
+            print(f"{tracing}<=ApexDrawing.sketch(*, *)")
 
 
 def visibility_set(element: Any, new_value: bool = True) -> None:
@@ -1603,25 +1676,20 @@ def main() -> int:
 
         # Create the *drawing*:
         circles: Tuple[ApexCircle, ...] = (center_circle,)
-        polygons: Tuple[ApexPolygon, ...] = (box_polygon,)
+        exterior: ApexPolygon = box_polygon
+        polygons: Tuple[ApexPolygon, ...] = ()  # TODO: add an interior pocket.
         origin: Vector = Vector(0, 0, 0)
         z_axis: Vector = Vector(0, 0, 1)
-        drawing = ApexDrawing(circles, polygons, origin, z_axis, "test_drawing")
+        drawing = ApexDrawing(origin, z_axis, exterior, circles, polygons, "test_drawing")
 
         # Create the *body* and add the *datum_plane*:
         body: PartDesign.Body = app_document.addObject("PartDesign::Body", "Body")
-
         datum_plane: Part.ApexFeature = drawing.create_datum_plane(body)
 
         # Create the sketch and attach it to the *datum_plane*:
         sketch: Sketcher.SketchObject = body.newObject("Sketcher::SketchObject", "sketch")
         sketch.Support = (datum_plane, "")
         sketch.MapMode = "FlatFace"
-
-        # drawing.__str__()
-        print(f"{drawing=}")
-        box: ApexBox = drawing.box
-        print(f"{box=}")
 
         drawing.sketch(sketch)
 
