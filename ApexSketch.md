@@ -38,9 +38,14 @@ Table of Contents:
   * 5.1 [ApexDrawing.\_\_init\_\_](#apexdrawing---init--)
   * 5.2 [ApexDrawing.create\_datum\_plane](#apexdrawing-create-datum-plane)
   * 5.3 [ApexDrawing.features\_get](#apexdrawing-features-get)
-  * 5.4 [ApexDrawing.point\_constraints\_append](#apexdrawing-point-constraints-append)
-  * 5.5 [ApexDrawing.reorient](#apexdrawing-reorient)
-  * 5.6 [ApexDrawing.sketch](#apexdrawing-sketch)
+  * 5.4 [ApexDrawing.fred](#apexdrawing-fred)
+  * 5.5 [ApexDrawing.point\_constraints\_append](#apexdrawing-point-constraints-append)
+  * 5.6 [ApexDrawing.reorient](#apexdrawing-reorient)
+  * 5.7 [ApexDrawing.sketch](#apexdrawing-sketch)
+  * 5.8 [ApexElement.\_\_init\_\_](#apexelement---init--)
+  * 5.9 [ApexElement.constraints\_append](#apexelement-constraints-append)
+  * 5.10 [ApexElement.features\_get](#apexelement-features-get)
+  * 5.11 [ApexElement.reorient](#apexelement-reorient)
 * 6 [Class ApexFeature](#apexfeature)
   * 6.1 [ApexFeature.\_\_init\_\_](#apexfeature---init--)
   * 6.2 [ApexFeature.drawing](#apexfeature-drawing)
@@ -76,6 +81,7 @@ Table of Contents:
   * 9.7 [ApexPolygon.name](#apexpolygon-name)
   * 9.8 [ApexPolygon.points](#apexpolygon-points)
   * 9.9 [ApexPolygon.reorient](#apexpolygon-reorient)
+  * 9.10 [ApexElement](#apexelement)
 
 ## 1 <a name="introduction"></a>Introduction
 
@@ -88,7 +94,7 @@ Represents an an arc in a sketch.
 
 ### 2.1 ApexArcFeature.\_\_init\_\_ <a name="apexarcfeature---init--"></a>
 
-def \_\_init\_\_(self, *drawing*:  ApexDrawing, *begin*:  ApexPoint, *apex*:  ApexPoint, *end*:  ApexPoint, *name*:  *str* = "", *tracing*:  *str* = "") -> None:
+def \_\_init\_\_(self, *drawing*:  "ApexDrawing", *begin*:  ApexPoint, *apex*:  ApexPoint, *end*:  ApexPoint, *name*:  *str* = "", *tracing*:  *str* = "") -> None:
 
 Initialize an ApexArcFeature.
 
@@ -202,7 +208,7 @@ Return the ApexArcFeature type name.
 
 ## 3 Class ApexCircle <a name="apexcircle"></a>
 
-class ApexCircle(object):
+class ApexCircle(ApexElement):
 
 ApexCircle: Represents a circle with an optional hole.
 
@@ -230,13 +236,13 @@ Return the ApexCircle ApexBox.
 
 ### 3.3 ApexCircle.constraints\_append <a name="apexcircle-constraints-append"></a>
 
-def *constraints\_append*(self, *drawing*:  ApexDrawing, *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
+def *constraints\_append*(self, *drawing*:  "ApexDrawing", *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
 
 Return the ApexCircleFeature constraints.
 
 ### 3.4 ApexCircle.features\_get <a name="apexcircle-features-get"></a>
 
-def *features\_get*(self, *drawing*:  ApexDrawing) -> Tuple[ApexFeature, ...]:
+def *features\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[ApexFeature, ...]:
 
 Return the ApexCircleFeature.
 
@@ -260,7 +266,7 @@ Represents a circle in a sketch.
 
 ### 4.1 ApexCircleFeature.\_\_init\_\_ <a name="apexcirclefeature---init--"></a>
 
-def \_\_init\_\_(self, *drawing*:  ApexDrawing, *center*:  ApexPoint, *radius*:  *float*, *name*:  *str* = "") -> None:
+def \_\_init\_\_(self, *drawing*:  "ApexDrawing", *center*:  ApexPoint, *radius*:  *float*, *name*:  *str* = "") -> None:
 
 Initialize a ApexCircleFeature.
 
@@ -295,40 +301,42 @@ class ApexDrawing(object):
 ApexDrawing: Used to create fully constrained 2D drawings.
 
 Attributes:
-* *circles (Tuple[ApexCircle, ...]): The ApexCircle's for the ApexDrawing.
-* *polygons* (Tuple[ApexCircle, ...]): The ApexPolygon's for the ApexDrawing
 * *contact*: (Union[Vector, ApexPoint]): On point on the surface of the polygon.
 * *normal*: (Union[Vector, ApexPoint]): A normal to the polygon plane.
-* *name* (str): The ApexDraing name.
+* *elements* (Tuple[ApexElement, ...]): All ApexElements (including *exterior*, if present.)
+* *exterior* (Optional[ApexElement]): The exterior ApexElement, if present (Default: None).
+* *name* (str): The ApexDrawing name. (Default: "")
 
 
 ### 5.1 ApexDrawing.\_\_init\_\_ <a name="apexdrawing---init--"></a>
 
-def \_\_init\_\_( *self*, *circles*:  Sequence["ApexCircle"], *polygons*:  Sequence["ApexPolygon"], *contact*:  Union["ApexPoint", "Vector"] = Vector(0, 0, 0), *normal*:  Union["ApexPoint", "Vector"] = Vector(0, 0, 1), *name*:  *str* = "", ) -> None:
+def \_\_init\_\_( *self*, *contact*:  Union["ApexPoint", "Vector"], *normal*:  Union["ApexPoint", "Vector"], *elements*:  Tuple[ApexElement, ...], *exterior*:  Optional[ApexElement] = None, *name*:  *str* = "", *tracing*:  *str* = "" ) -> None:
 
 Initialize a drawing.
 
 Arguments:
-* *circles* (Sequence[ApexCircle]):
-  The circles of the drawing.
-* *polygons* (Sequence[ApexPolygon]):
-  The polygons of the drawing.
 * *contact* (Union[ApexPoint, Vector]):
   A point on the surface of the drawing in 3D space.  (Default: Vector(0, 0, 0))
 * *normal* (Union[ApexPoint, Vector]):
   An ApexPoint/Vector that is normal to the plane that goes through *contact*.
   (Default: Vector(0, 0, 1))
+* *exterior*: (Optional[ApexElement]):
+  The exterior contour of the part.  None if exterior is not needed. (Default: None)
 * *name*: (str): The drawing name.  (Default: "")
+
+Raises:
+* ValueError if no exterior, circles, or polygons are specified.
 
 
 ### 5.2 ApexDrawing.create\_datum\_plane <a name="apexdrawing-create-datum-plane"></a>
 
-def *create\_datum\_plane*(self, *body*:  "PartDesign.Body") -> "Part.ApexFeature":
+def *create\_datum\_plane*(self, *body*:  "PartDesign.Body", *name*:  *str* = "DatumPlane") -> "Part.ApexFeature":
 
 Return the FreeCAD DatumPlane used for the drawing.
 
 Arguments:
 * *body* (PartDesign.Body): The FreeCAD Part design Body to attach the datum plane to.
+* *name* (str): The datum plane name (Default: "DatumPlane")
 
 * Returns:
   * (Part.ApexFeature) that is the datum\_plane.
@@ -339,13 +347,19 @@ def *point\_features\_get*(self, *point*:  ApexPoint, *tracing*:  *str* = "") ->
 
 Return the ApexPointFeature Feature's.
 
-### 5.4 ApexDrawing.point\_constraints\_append <a name="apexdrawing-point-constraints-append"></a>
+### 5.4 ApexDrawing.fred <a name="apexdrawing-fred"></a>
+
+def *fred*(self, *tracing*:  *str* = "") -> None:
+
+Fred.
+
+### 5.5 ApexDrawing.point\_constraints\_append <a name="apexdrawing-point-constraints-append"></a>
 
 def *point\_constraints\_append*(self, *point*:  ApexPoint, *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:  # REMOVE
 
 Append ApexPoint constraints to a list.
 
-### 5.5 ApexDrawing.reorient <a name="apexdrawing-reorient"></a>
+### 5.6 ApexDrawing.reorient <a name="apexdrawing-reorient"></a>
 
 def *reorient*(self, *placement*:  Placement, *suffix*:  Optional[str] = "", *tracing*:  *str* = "") -> "ApexDrawing":
 
@@ -357,7 +371,7 @@ Arguments:
   names are set to "" instead appending the suffix.  (Default: "")
 
 
-### 5.6 ApexDrawing.sketch <a name="apexdrawing-sketch"></a>
+### 5.7 ApexDrawing.sketch <a name="apexdrawing-sketch"></a>
 
 def *sketch*(self, *sketcher*:  "Sketcher.SketchObject", *tracing*:  *str* = "") -> None:
 
@@ -365,6 +379,55 @@ Insert an ApexDrawing into a FreeCAD SketchObject.
 
 Arguments:
 * sketcher (Sketcher.SketchObject): The sketcher object to use.
+
+### 5.8 ApexElement.\_\_init\_\_ <a name="apexelement---init--"></a>
+
+def \_\_init\_\_(self, *depth*:  Union[float, ApexLength], *name*:  *str* = "") -> None:
+
+Initialize the ApexElement.
+
+Arguments:
+* *depth* (Union[float, ApexLength]): The ApexElement depth.
+* *name* (str): The ApexElement name (Default: "").
+
+
+### 5.9 ApexElement.constraints\_append <a name="apexelement-constraints-append"></a>
+
+def *constraints\_append*(self, *drawing*:  "ApexDrawing", *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
+
+Append the ApexElement constraints to drawing.
+
+Arguments:
+* *drawing* (ApexDrawing): The drawing to use.
+* *constraints* (List[SketcherConstraint]): The contstraints list to append to.
+
+
+### 5.10 ApexElement.features\_get <a name="apexelement-features-get"></a>
+
+def *features\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[ApexFeature, ...]:
+
+Return the ApexElement ApexFeatures tuple.
+
+Arguments:
+* *drawing* (ApexDrawing): The associated drawing to use for feature extraction.
+
+Returns:
+* (Tuple[ApexFeature, ...]) of extracted ApexFeature's.
+
+
+### 5.11 ApexElement.reorient <a name="apexelement-reorient"></a>
+
+def *reorient*(self, *placement*:  Placement, *suffix*:  Optional[str] = "", *tracing*:  *str* = "") -> "ApexElement":
+
+Return a new reoriented ApexCircle.
+
+Arguments:
+* *placement* (Placement): The FreeCAD Placement reoirient with.
+* *suffix* (str): The suffix to append to the current name string.  None, specifies
+  that an empty name is to be used.  (Default: "")
+
+# Returns:
+* (ApexElement) that has been reoriented with a new name.
 
 ## 6 Class ApexFeature <a name="apexfeature"></a>
 
@@ -374,13 +437,13 @@ Base class a schematic features.
 
 ### 6.1 ApexFeature.\_\_init\_\_ <a name="apexfeature---init--"></a>
 
-def \_\_init\_\_(self, *drawing*:  ApexDrawing, *start*:  ApexPoint, *finish*:  ApexPoint, *name*:  *str* = "") -> None:
+def \_\_init\_\_(self, *drawing*:  "ApexDrawing", *start*:  ApexPoint, *finish*:  ApexPoint, *name*:  *str* = "") -> None:
 
 Initialize a ApexFeature.
 
 ### 6.2 ApexFeature.drawing <a name="apexfeature-drawing"></a>
 
-def *drawing*(self) -> ApexDrawing:  # *pragma*:  *no* *unit* *test*
+def *drawing*(self) -> "ApexDrawing":  # *pragma*:  *no* *unit* *test*
 
 Return the ApexFeature ApexDrawing.
 
@@ -434,13 +497,13 @@ Represents a line segment in a sketch.
 
 ### 7.1 ApexLineFeature.\_\_init\_\_ <a name="apexlinefeature---init--"></a>
 
-def \_\_init\_\_(self, *drawing*:  ApexDrawing, *start*:  ApexPoint, *finish*:  ApexPoint, *name*:  *str* = "", *tracing*:  *str* = "") -> None:
+def \_\_init\_\_(self, *drawing*:  "ApexDrawing", *start*:  ApexPoint, *finish*:  ApexPoint, *name*:  *str* = "", *tracing*:  *str* = "") -> None:
 
 Initialize a ApexLineFeature.
 
 ### 7.2 ApexLineFeature.drawing <a name="apexlinefeature-drawing"></a>
 
-def *drawing*(self) -> ApexDrawing:  # *pragma*:  *no* *unit* *cover*
+def *drawing*(self) -> "ApexDrawing":  # *pragma*:  *no* *unit* *cover*
 
 Return the ApexLineFeature ApexDrawing.
 
@@ -488,7 +551,7 @@ Represents a point in a sketch.
 
 ### 8.1 ApexPointFeature.\_\_init\_\_ <a name="apexpointfeature---init--"></a>
 
-def \_\_init\_\_(self, *drawing*:  ApexDrawing, *point*:  ApexPoint, *name*:  *str* = "") -> None:
+def \_\_init\_\_(self, *drawing*:  "ApexDrawing", *point*:  ApexPoint, *name*:  *str* = "") -> None:
 
 Initialize a ApexPointFeature.
 
@@ -518,14 +581,14 @@ Return the ApexPointFeature type name.
 
 ## 9 Class ApexPolygon <a name="apexpolygon"></a>
 
-class ApexPolygon(object):
+class ApexPolygon(ApexElement):
 
 ApexPolyon: A closed polygon of ApexPoints.
 
 Attributes:
 * *box* (ApexBox): The bounding box of the ApexPoint's.
 * *clockwise* (bool): True if the ApexPoints are clockwise and False otherwise.
-* *depth* (bool): The ApexPolygon depth.
+* *depth* (Union[float, ApexLength]): The ApexPolygon depth.
 * *flat* (bool): True if the polygon is flat (i.e. is planar).
 * *name* (str): The ApexPolygon name.
 * *points* (Tuple[ApexPoint, ...]): The ApexPoint's of the ApexPoloygon.
@@ -533,7 +596,7 @@ Attributes:
 
 ### 9.1 ApexPolygon.\_\_init\_\_ <a name="apexpolygon---init--"></a>
 
-def \_\_init\_\_( *self*, *points*:  Tuple[ApexPoint, ...], *depth*:  *float* = 0.0, *flat*:  *bool* = False, *name*:  *str* = "" ) -> None:
+def \_\_init\_\_( *self*, *points*:  Tuple[ApexPoint, ...], *depth*:  Union[ApexLength, *float*] = 0.0, *flat*:  *bool* = False, *name*:  *str* = "" ) -> None:
 
 Initialize a ApexPolygon.
 
@@ -545,7 +608,7 @@ Return whether the ApexPolygon points are clockwise.
 
 ### 9.3 ApexPolygon.constraints\_append <a name="apexpolygon-constraints-append"></a>
 
-def *constraints\_append*(self, *drawing*:  ApexDrawing, *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
+def *constraints\_append*(self, *drawing*:  "ApexDrawing", *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
 
 Return the ApexPolygon constraints for a ApexDrawing.
 
@@ -557,7 +620,7 @@ Return the ApexPolygon depth.
 
 ### 9.5 ApexPolygon.features\_get <a name="apexpolygon-features-get"></a>
 
-def *features\_get*(self, *drawing*:  ApexDrawing, *tracing*:  *str* = "") -> Tuple[ApexFeature, ...]:
+def *features\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[ApexFeature, ...]:
 
 Return the ApexPolygon ApexFeatures tuple.
 
@@ -590,4 +653,15 @@ Arguments:
   The FreeCAD Placement to use for reorientation.
 * *suffix* (Optional[str]):
   A suffix to append to the name.  If None, an empty name is used. (Default: "")
+
+
+## 9 Class ApexElement() <a name="apexelement"></a>
+
+class ApexElement(object):
+
+ApexElement: Base class for ApexCircle and ApexPolygon.
+
+Attributes:
+* *depth* (Union[float, ApexLength]): The element depth.
+* *name* (Optional[str]): The element name (Default: "")
 
