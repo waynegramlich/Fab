@@ -246,7 +246,7 @@ An ApexPoint is basically just a Vector with an optional diameter and/or name.
 
 * Attributes:
   * *vector* (Vector): The underlying FreeCAD Vector.
-  * *x* (Union[float, Apex): The x coordinate of the vector.
+  * *x* (Union[float, Apex]): The x coordinate of the vector.
   * *y* (float): The y coordinate of the vector.
   * *z* (float): The z coordinate of the vector.
   * *diameter* (Union[float, ApexLength]): The apex diameter.

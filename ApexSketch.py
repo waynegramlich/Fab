@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """ShopFab: A shop based design workflow."""
+
 import os
 import sys
 
@@ -7,6 +8,7 @@ assert sys.version_info.major == 3  # Python 3.x
 assert sys.version_info.minor == 8  # Python 3.8
 sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 
+from dataclasses import dataclass
 import math
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
@@ -587,26 +589,58 @@ class ApexPointFeature(ApexFeature):
         return "ApexPointFeature"
 
 
+# ApexElementKey():
+@dataclass(frozen=True, order=True)
+class ApexElementKey(object):
+    """ApexElementKey: Sorting key for ApexElement's.
+
+    Attributues:
+    * *is_exterior* (bool): True if ApexElement is the exterior.
+    * *depth* (float): The ApexElement depth.
+    * *diameter* (float): The ApexCircle diameter (or 0.0 for an ApexPolygon).
+
+    An ApexElementKey is used to group ApexElements and choose between Pad, Pocket, and
+    Hole operations.
+
+    """
+
+    is_exterior: bool
+    diameter: float
+    depth: float
+
+
 # ApexElement():
 class ApexElement(object):
     """ApexElement: Base class for ApexCircle and ApexPolygon.
 
     Attributes:
+    * *box* (ApexBox): The Apex box for the ApexElement.
     * *depth* (Union[float, ApexLength]): The element depth.
-    * *name* (Optional[str]): The element name (Default: "")
+    * *diameter* (Union[float, ApexLength]): The element diameter.
+    * *is_exterior* (bool): True if ApexElement is the exterior.
+    * *key* (ApexElementKey): The grouping key FreeCAD Part Design operations.
+    * *name* (Optional[str]): The ApexElement name:
 
     """
 
     # ApexElement.__init__():
-    def __init__(self, depth: Union[float, ApexLength], name: str = "") -> None:
+    def __init__(self, is_exterior: bool = False, depth: Union[float, ApexLength] = 0.0,
+                 diameter: Union[float, ApexLength] = 0.0, name: str = "") -> None:
         """Initialize the ApexElement.
 
         Arguments:
+        * *is_exterior* (bool): True if the Element is the exterior of an ApexDrawing.
+        * *depth* (Union[float, ApexLength]): The ApexElement depth.
+        * *diameter* (Union[float, ApexLength]): The ApexElement diameter (0.0 for ApexPolygon.)
         * *depth* (Union[float, ApexLength]): The ApexElement depth.
         * *name* (str): The ApexElement name (Default: "").
 
         """
+        self._is_exterior: bool = is_exterior
         self._depth: Union[float, ApexLength] = depth
+        self._diameter: Union[float, ApexLength] = diameter
+        self._key: ApexElementKey = ApexElementKey(
+            is_exterior=is_exterior, depth=float(depth), diameter=float(diameter))
         self._name: str = name
 
     @property
@@ -616,8 +650,22 @@ class ApexElement(object):
 
     @property
     def depth(self) -> Union[float, ApexLength]:
+        """Return ApexElement depth."""
+
+    @property
+    def diameter(self) -> Union[float, ApexLength]:
         """Return the name."""
-        return self._depth
+        return self._diameter
+
+    @property
+    def is_exterior(self) -> bool:
+        """Return True if ApexElement is the exterior."""
+        return self._is_exterior
+
+    @property
+    def key(self) -> ApexElementKey:
+        """Return the associated ApexElementKey."""
+        return self._key
 
     @property
     def name(self) -> str:
@@ -673,7 +721,7 @@ class ApexPolygon(ApexElement):
     * *box* (ApexBox): The bounding box of the ApexPoint's.
     * *clockwise* (bool): True if the ApexPoints are clockwise and False otherwise.
     * *depth* (Union[float, ApexLength]): The ApexPolygon depth.
-    * *flat* (bool): True if the polygon is flat (i.e. is planar).
+    * *diameter* (Union[Float, ApexLength]): Always 0.0 for an ApexPolygon.
     * *name* (str): The ApexPolygon name.
     * *points* (Tuple[ApexPoint, ...]): The ApexPoint's of the ApexPoloygon.
 
@@ -684,19 +732,17 @@ class ApexPolygon(ApexElement):
             self,
             points: Tuple[ApexPoint, ...],
             depth: Union[ApexLength, float] = 0.0,
-            flat: bool = False,
+            is_exterior: bool = False,
             name: str = ""
     ) -> None:
         """Initialize a ApexPolygon."""
         if not points:
             raise ValueError("bounding box needs at least one point.")  # pragma: no unit cover
 
-        super().__init__(depth, name)
+        super().__init__(is_exterior=is_exterior, diameter=0.0, depth=depth, name=name)
+        assert self.depth
         self._box: ApexBox = ApexBox(points)
-        self._depth: float = depth
         self._features: Optional[Tuple[ApexFeature, ...]] = None
-        self._flat: bool = flat
-        self._name: str = name
         self._points: Tuple[ApexPoint, ...] = points
 
     def __repr__(self) -> str:
@@ -705,7 +751,7 @@ class ApexPolygon(ApexElement):
 
     def __str__(self) -> str:
         """Return string representation of ApexPolygon."""
-        return f"ApexPolygon({self._points}, {self._depth}, {self.flat}, '{self._name}')"
+        return f"ApexPolygon({self._points}, {self._depth}, {self.is_exterior}, '{self._name}')"
 
     @property
     def box(self) -> ApexBox:
@@ -880,12 +926,6 @@ class ApexPolygon(ApexElement):
         """Return the ApexPolygon depth."""
         return self._depth
 
-    # ApexPolygon.flat():
-    @property
-    def flat(self) -> bool:  # pragma: no unit cover
-        """Return the flat flag."""
-        return self._flat
-
     # ApexPolygon.features_get():
     def features_get(self, drawing: "ApexDrawing", tracing: str = "") -> Tuple[ApexFeature, ...]:
         """Return the ApexPolygon ApexFeatures tuple."""
@@ -1033,7 +1073,8 @@ class ApexPolygon(ApexElement):
         apex_point: ApexPoint
         reoriented_points: Tuple[ApexPoint, ...] = tuple([
             apex_point.reorient(placement, name) for apex_point in self.points])
-        result: ApexPolygon = ApexPolygon(reoriented_points, self.depth, self.flat, name)
+        result: ApexPolygon = ApexPolygon(reoriented_points, depth=self._depth,
+                                          is_exterior=self._is_exterior, name=name)
         if tracing:
             index: int
             for index, apex_point in enumerate(self._points):
@@ -1052,6 +1093,7 @@ class ApexCircle(ApexElement):
     * *circle_feature* (ApexCircleFeature): The ApexCircleFeature for the circle.
     * *depth* (float): The hole depth in millimeters.
     * *flat* (bool): True if the hole bottom is flat.
+    * *is_exterior* (bool): True if the ApexCircle is the exterior of an ApexDrawing.
     * *name* (str): The ApexCircle name.
     * *radius* (str): The ApexCircle radius in millimeters.
 
@@ -1063,6 +1105,7 @@ class ApexCircle(ApexElement):
             center: ApexPoint,
             depth: float = 0.0,
             flat: bool = False,
+            is_exterior: bool = False,
             name: str = ""
     ) -> None:
         """Initialize a circle."""
@@ -1070,7 +1113,7 @@ class ApexCircle(ApexElement):
             raise ValueError("ApexCircle has no radius")  # pragma: no unit cover
 
         name = name if name else center.name
-        super().__init__(depth, name)
+        super().__init__(is_exterior=is_exterior, depth=depth, diameter=center.diameter, name=name)
         x: float = center.x
         y: float = center.y
         radius: float = center.radius
@@ -1204,8 +1247,9 @@ class ApexCircle(ApexElement):
         if tracing:
             print(f"{tracing}=>ApexCircle.reorient(*, {placement}, '{suffix}')")
         name: str = f"{self.name}{suffix}" if suffix else ""
-        reoriented: ApexCircle = ApexCircle(self.center.reorient(placement, suffix),
-                                            self.depth, self.flat, name)
+        reoriented: ApexCircle = ApexCircle(
+            center=self.center.reorient(placement, suffix), depth=self.depth, flat=self.flat,
+            is_exterior=self.is_exterior, name=name)
         if tracing:
             print(f"{tracing}{self} => {reoriented}")
             print(f"{tracing}<=ApexCircle.reorient(*, {placement}, '{suffix}') => *")
@@ -1264,11 +1308,13 @@ class ApexDrawing(object):
         if value_error:
             raise ValueError(value_error)
         if tracing:
-            print(f"{tracing}=>ApexSketch.fred{arguments}")
+            print(f"{tracing}=>ApexSketch.plane_process{arguments}")
         if not elements:
             raise ValueError(f"No ApexPolygon's or ApexCircle's provided.")
         if exterior and exterior not in elements:
             raise ValueError(f"Exterior element not present in elements.")
+        if exterior and exterior.depth <= 0:
+            raise ValueError(f"Exterior element does not have a positive depth")
         # next_tracing: str = tracing + " " if tracing else ""
 
         # Create the *placement* used to rotate all points around *contact* such that
@@ -1300,7 +1346,7 @@ class ApexDrawing(object):
         self._normal: Vector = normal.normalize()  # Store in normalized form.
 
         if tracing:
-            print(f"{tracing}<=ApexSketch.fred{arguments}")
+            print(f"{tracing}<=ApexSketch.plane_process{arguments}")
 
     @property
     def elements(self) -> Tuple["ApexElement", ...]:
@@ -1397,35 +1443,92 @@ class ApexDrawing(object):
         self._datum_plane = datum_plane
         return self._datum_plane
 
-    # ApexDrawing.fred():
-    def fred(self, tracing: str = "") -> None:
-        """Fred."""
-        # next_tracing: str = tracing + " " if tracing else ""
+    # ApexDrawing.plane_process():
+    def plane_process(self, body: "PartDesign.Body", tracing: str = "") -> None:
+        """Plane_Process."""
+        next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>ApexDrawing.fred()")
+            print(f"{tracing}=>ApexDrawing.plane_process()")
 
-        # Get the default depth from *exterior*:
+        # Create the *datum_plane*.  The "Apex" in Part.ApexFeature is a coinciding name used
+        # by the FreeCAD Part Design workbench. It is not related to the Apex classes.
+        # There is commonly used *datum_plane* for all sketches:
+        datum_plane: Part.ApexFeature = self.create_datum_plane(body)
+
+        # Partition *elements* into *groups* based on the associated *key*:
         element: ApexElement
-        depth_table: Dict[float, Tuple[ApexElement, ...]] = {}
-        for element in self.elements:
-            depth: float = float(element.depth)
-            if depth not in depth_table:
-                depth_table[depth] = ()
-            depth_table[depth] += (element,)
+        groups: Dict[ApexElementKey, Tuple[ApexElement, ...]] = {}
+        key: ApexElementKey
+        index: int
+        for index, element in enumerate(self.elements):
+            key = element.key
+            if tracing:
+                print(f"{tracing}Key[{index}]: {key}")
+            if key not in groups:
+                groups[key] = ()
+            groups[key] += (element,)
 
-        # Compute *sorted_depth_elements* from deepest depth to :
-        sorted_depth_elements: Tuple[Tuple[float, Tuple[ApexElement, ...]], ...] = tuple(
-            [(depth, depth_table[depth]) for depth in reversed(sorted(depth_table.keys()))]
-        )
+        for index, key in enumerate(sorted(groups.keys(), reverse=True)):
+            group: Tuple[ApexElement, ...] = groups[key]
+            assert group, "Internal error: group is empty"
+            group0: ApexElement = group[0]
 
-        # Create a Sketch for each depth:
-        elements: Tuple[ApexElement, ...]
-        for depth, elements in sorted_depth_elements:
-            for element in elements:
-                pass
+            # Create a new ... using elements:
+            exterior: Optional[ApexElement] = None
+            if key.is_exterior:
+                assert len(group) == 1, "Exterior should be all by itself"
+                exterior = group0
+                assert float(exterior.depth) > 0.0, (
+                    f"Exterior depth '{exterior.name}' is not positive.")
+
+            group_name: str = f"{group0._name}_{len(group)}"
+            drawing = ApexDrawing(self._contact, self._normal, group, exterior, name=group_name)
+
+            sketch_name: str = f"{group0.name}.sketch"
+            sketch: Sketcher.SketchObject = body.newObject("Sketcher::SketchObject", sketch_name)
+            sketch.Support = (datum_plane, "")
+            sketch.MapMode = "FlatFace"
+
+            drawing.sketch(sketch, tracing=next_tracing)
+
+            if key.is_exterior:
+                # Pad:
+                if tracing:
+                    print(f"{tracing}Pad")
+                pad: PartDesign.ApexFeature = body.newObject("PartDesign::Pad", f"{group_name}.Pad")
+                pad.Profile = sketch
+                pad.Length = float(key.depth)
+                pad.Reversed = True
+            elif isinstance(group0, ApexCircle):
+                # We have bunch of ApexCircles with the same *diameter* and *depth*:
+                if tracing:
+                    print(f"{tracing}Hole")
+                hole: PartDesign.Feature = body.newObject("PartDesign::Hole", f"{group_name}.Hole")
+                if tracing:
+                    print(f"{tracing}{hole=} {type(hole)=}")
+                hole.Profile = sketch
+                hole.DrillPointAngle = 118.00
+                # hole.setExpression("Depth, "10mm")
+                hole.ThreadType = 0
+                hole.HoleCutType = 0
+                hole.DrillPoint = group0.flat
+                hole.Tapered = 0
+                hole.Diameter = float(key.diameter)
+                hole.Depth = float(key.depth)
+                # hole.DrillPoint = u"Flat" if group0.flat else u"Angled"
+            else:
+                # Pocket:
+                if tracing:
+                    print(f"{tracing}Pocket")
+                pocket: "PartDesign.Feature" = body.newObject(
+                    "PartDesign::Pocket", f"{group_name}.Pocket")
+                if tracing:
+                    print(f"{tracing}{pocket=}")
+                pocket.Profile = sketch
+                pocket.Length = float(key.depth)
 
         if tracing:
-            print(f"{tracing}<=ApexDrawing.fred()")
+            print(f"{tracing}<=ApexDrawing.plane_process()")
 
     # ApexDrawing.point_constraints_append():
     def point_constraints_append(self, point: ApexPoint, constraints: List[Sketcher.Constraint],
@@ -1483,8 +1586,8 @@ class ApexDrawing(object):
         if exterior:
             try:
                 exterior_index = self._elements.index(exterior)
-            except ValueError:
-                raise RuntimeError("Can not find exterior index")  # pragma: no unit cover
+            except ValueError:  # pragma: no unit cover
+                raise RuntimeError("Can not find exterior index")
 
         reoriented_elements: Tuple[ApexElement, ...] = tuple(
             [element.reorient(placement, suffix, tracing=next_tracing)
@@ -1606,8 +1709,6 @@ class ApexDrawing(object):
         # Extract *part_features* from *features*:
         part_features: List[PartFeature] = []
         for index, feature in enumerate(final_features):
-            part_feature: PartFeature = feature.part_feature
-            print(f"part_feature[{index}]: {part_feature}")
             part_features.append(feature.part_feature)
         sketcher.addGeometry(part_features, False)
 
@@ -1667,9 +1768,8 @@ def visibility_set(element: Any, new_value: bool = True) -> None:
         # del(_tv_DatumPlane)
 
 
-def main() -> int:
+def _unit_tests() -> int:
     """Run the program."""
-    print("=>main()")
     # Open *document_name* and get associated *app_document* and *gui_document*:
     document_name: str = "bar"
 
@@ -1678,10 +1778,15 @@ def main() -> int:
     drawing: ApexDrawing
     center_circle: ApexCircle
 
-    app_document: App.Document = App.newDocument("bar")
-    if True:
-        print(f"{app_document=}")
+    # Do some trivial tests on drawing:
+    try:
+        drawing = ApexDrawing(Vector(), Vector(0, 0, 1), (), None, 123)  # type: ignore
+    except ValueError as value_error:
+        assert str(value_error) == (
+            "Argument 'name' is int which is not one of ['str']"), f"{str(value_error)=}"
 
+    document: App.Document = App.newDocument("bar")
+    if True:
         # Create *box_polygon* (with notch in lower left corner):
         left_x: float = -40.0
         right_x: float = 40.0
@@ -1716,35 +1821,42 @@ def main() -> int:
             upper_left,
             lower_left_left,
         )
-        box_polygon: ApexPolygon = ApexPolygon(box_points, 0.0, False, "box")
+        box_polygon: ApexPolygon = ApexPolygon(box_points, depth=20.0, is_exterior=True, name="box")
+        assert box_polygon.name == "box", box_polygon.name
 
         # Create the *hole_center*:
         center_hole: ApexPoint = ApexPoint(0.0, 0.0, 0.0, name="center_hole", diameter=10.0)
-        center_circle = ApexCircle(center_hole, 0.0, False, "center_hole")
+        center_circle = ApexCircle(
+            center=center_hole, depth=10.0, is_exterior=False, name="center_hole")
+        assert center_circle.name == "center_hole", center_circle.name
+
+        sides: int = 4
+        angle_increment: float = 2 * math.pi / float(sides)
+        x_offset: float = -20.0
+        y_offset: float = 5.0
+        hex_radius: float = 8.0
+        poly_points: List[ApexPoint] = []
+        index: int
+        for index in range(6):
+            angle: float = index * angle_increment
+            x: float = x_offset + hex_radius * math.cos(angle)
+            y: float = y_offset + hex_radius * math.sin(angle)
+            poly_points.append(ApexPoint(x, y, 0.0, name=f"hex{index}", diameter=0.0))
+        polygon: ApexPolygon = ApexPolygon(
+            tuple(poly_points), depth=18.0, is_exterior=False, name="hexagon")
 
         # Create the *drawing*:
-        elements: Tuple[ApexElement, ...] = (box_polygon, center_circle)
+        elements: Tuple[ApexElement, ...] = (box_polygon, polygon, center_circle)
         exterior: ApexPolygon = box_polygon
         origin: Vector = Vector(0, 0, 0)
         z_axis: Vector = Vector(0, 0, 1)
         drawing = ApexDrawing(origin, z_axis, elements, exterior, "test_drawing")
 
-        # Create the *body* and add the *datum_plane*:
-        body: PartDesign.Body = app_document.addObject("PartDesign::Body", "Body")
-        datum_plane: Part.ApexFeature = drawing.create_datum_plane(body)
-
-        # Create the sketch and attach it to the *datum_plane*:
-        sketch: Sketcher.SketchObject = body.newObject("Sketcher::SketchObject", "sketch")
-        sketch.Support = (datum_plane, "")
-        sketch.MapMode = "FlatFace"
-
-        drawing.sketch(sketch)
-
-        pad: PartDesign.ApexFeature = body.newObject("PartDesign::Pad", "Pad")
-        pad.Profile = sketch
-        pad.Length = 10.0
-        pad.Reversed = True
-        app_document.recompute()
+        # Create the FreeCAD Part Design Workbench *body* object:
+        body_name: str = drawing.name if drawing.name else "Body"
+        body: PartDesign.Body = document.addObject("PartDesign::Body", body_name)
+        drawing.plane_process(body)
+        document.recompute()  # This is *VERY* important!!!
 
     # Delete previous file *fcstd_path* and then save a new one:
     root: Path = Path("/")
@@ -1752,13 +1864,12 @@ def main() -> int:
     if fcstd_path.exists():
         fcstd_path.unlink()
     print(f"Save {fcstd_path} file.")
-    app_document.saveAs(f"{str(fcstd_path)}")
+    document.saveAs(f"{str(fcstd_path)}")
 
     # Close *document_name* and exit by closing the main window:
     App.closeDocument(document_name)
     if App.GuiUp:
         Gui.getMainWindow().close()  # pragma: no unit cover
-    print("<=main()")
     return 0
 
 
@@ -1783,4 +1894,4 @@ def attributes_show(some_object: Any) -> None:  # pragma: no unit cover
 
 
 if __name__ == "__main__":
-    main()
+    _unit_tests()

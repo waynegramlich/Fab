@@ -38,7 +38,7 @@ Table of Contents:
   * 5.1 [ApexDrawing.\_\_init\_\_](#apexdrawing---init--)
   * 5.2 [ApexDrawing.create\_datum\_plane](#apexdrawing-create-datum-plane)
   * 5.3 [ApexDrawing.features\_get](#apexdrawing-features-get)
-  * 5.4 [ApexDrawing.fred](#apexdrawing-fred)
+  * 5.4 [ApexDrawing.plane\_process](#apexdrawing-plane-process)
   * 5.5 [ApexDrawing.point\_constraints\_append](#apexdrawing-point-constraints-append)
   * 5.6 [ApexDrawing.reorient](#apexdrawing-reorient)
   * 5.7 [ApexDrawing.sketch](#apexdrawing-sketch)
@@ -77,11 +77,11 @@ Table of Contents:
   * 9.3 [ApexPolygon.constraints\_append](#apexpolygon-constraints-append)
   * 9.4 [ApexPolygon.depth](#apexpolygon-depth)
   * 9.5 [ApexPolygon.features\_get](#apexpolygon-features-get)
-  * 9.6 [ApexPolygon.flat](#apexpolygon-flat)
-  * 9.7 [ApexPolygon.name](#apexpolygon-name)
-  * 9.8 [ApexPolygon.points](#apexpolygon-points)
-  * 9.9 [ApexPolygon.reorient](#apexpolygon-reorient)
-  * 9.10 [ApexElement](#apexelement)
+  * 9.6 [ApexPolygon.name](#apexpolygon-name)
+  * 9.7 [ApexPolygon.points](#apexpolygon-points)
+  * 9.8 [ApexPolygon.reorient](#apexpolygon-reorient)
+  * 9.9 [ApexElement](#apexelement)
+  * 9.10 [ApexElementKey](#apexelementkey)
 
 ## 1 <a name="introduction"></a>Introduction
 
@@ -218,13 +218,14 @@ Attributes:
 * *circle\_feature* (ApexCircleFeature): The ApexCircleFeature for the circle.
 * *depth* (float): The hole depth in millimeters.
 * *flat* (bool): True if the hole bottom is flat.
+* *is\_exterior* (bool): True if the ApexCircle is the exterior of an ApexDrawing.
 * *name* (str): The ApexCircle name.
 * *radius* (str): The ApexCircle radius in millimeters.
 
 
 ### 3.1 ApexCircle.\_\_init <a name="apexcircle---init"></a>
 
-def \_\_init\_\_( *self*, *center*:  ApexPoint, *depth*:  *float* = 0.0, *flat*:  *bool* = False, *name*:  *str* = "" ) -> None:
+def \_\_init\_\_( *self*, *center*:  ApexPoint, *depth*:  *float* = 0.0, *flat*:  *bool* = False, *is\_exterior*:  *bool* = False, *name*:  *str* = "" ) -> None:
 
 Initialize a circle.
 
@@ -347,11 +348,11 @@ def *point\_features\_get*(self, *point*:  ApexPoint, *tracing*:  *str* = "") ->
 
 Return the ApexPointFeature Feature's.
 
-### 5.4 ApexDrawing.fred <a name="apexdrawing-fred"></a>
+### 5.4 ApexDrawing.plane\_process <a name="apexdrawing-plane-process"></a>
 
-def *fred*(self, *tracing*:  *str* = "") -> None:
+def *plane\_process*(self, *body*:  "PartDesign.Body", *tracing*:  *str* = "") -> None:
 
-Fred.
+Plane\_Process.
 
 ### 5.5 ApexDrawing.point\_constraints\_append <a name="apexdrawing-point-constraints-append"></a>
 
@@ -382,11 +383,14 @@ Arguments:
 
 ### 5.8 ApexElement.\_\_init\_\_ <a name="apexelement---init--"></a>
 
-def \_\_init\_\_(self, *depth*:  Union[float, ApexLength], *name*:  *str* = "") -> None:
+def \_\_init\_\_(self, *is\_exterior*:  *bool* = False, *depth*:  Union[float, ApexLength] = 0.0, *diameter*:  Union[float, ApexLength] = 0.0, *name*:  *str* = "") -> None:
 
 Initialize the ApexElement.
 
 Arguments:
+* *is\_exterior* (bool): True if the Element is the exterior of an ApexDrawing.
+* *depth* (Union[float, ApexLength]): The ApexElement depth.
+* *diameter* (Union[float, ApexLength]): The ApexElement diameter (0.0 for ApexPolygon.)
 * *depth* (Union[float, ApexLength]): The ApexElement depth.
 * *name* (str): The ApexElement name (Default: "").
 
@@ -589,14 +593,14 @@ Attributes:
 * *box* (ApexBox): The bounding box of the ApexPoint's.
 * *clockwise* (bool): True if the ApexPoints are clockwise and False otherwise.
 * *depth* (Union[float, ApexLength]): The ApexPolygon depth.
-* *flat* (bool): True if the polygon is flat (i.e. is planar).
+* *diameter* (Union[Float, ApexLength]): Always 0.0 for an ApexPolygon.
 * *name* (str): The ApexPolygon name.
 * *points* (Tuple[ApexPoint, ...]): The ApexPoint's of the ApexPoloygon.
 
 
 ### 9.1 ApexPolygon.\_\_init\_\_ <a name="apexpolygon---init--"></a>
 
-def \_\_init\_\_( *self*, *points*:  Tuple[ApexPoint, ...], *depth*:  Union[ApexLength, *float*] = 0.0, *flat*:  *bool* = False, *name*:  *str* = "" ) -> None:
+def \_\_init\_\_( *self*, *points*:  Tuple[ApexPoint, ...], *depth*:  Union[ApexLength, *float*] = 0.0, *is\_exterior*:  *bool* = False, *name*:  *str* = "" ) -> None:
 
 Initialize a ApexPolygon.
 
@@ -624,25 +628,19 @@ def *features\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> 
 
 Return the ApexPolygon ApexFeatures tuple.
 
-### 9.6 ApexPolygon.flat <a name="apexpolygon-flat"></a>
-
-def *flat*(self) -> *bool*:  # *pragma*:  *no* *unit* *cover*
-
-Return the flat flag.
-
-### 9.7 ApexPolygon.name <a name="apexpolygon-name"></a>
+### 9.6 ApexPolygon.name <a name="apexpolygon-name"></a>
 
 def *name*(self) -> *str*:  # *pragma*:  *no* *unit* *cover*
 
 Return the ApexPolygon depth.
 
-### 9.8 ApexPolygon.points <a name="apexpolygon-points"></a>
+### 9.7 ApexPolygon.points <a name="apexpolygon-points"></a>
 
 def *points*(self) -> Tuple[ApexPoint, ...]:  # *pragma*:  *no* *unit* *cover*
 
 Return the ApexPolygon points.
 
-### 9.9 ApexPolygon.reorient <a name="apexpolygon-reorient"></a>
+### 9.8 ApexPolygon.reorient <a name="apexpolygon-reorient"></a>
 
 def *reorient*(self, *placement*:  Placement, *suffix*:  Optional[str] = "", *tracing*:  *str* = "") -> "ApexPolygon":
 
@@ -662,6 +660,25 @@ class ApexElement(object):
 ApexElement: Base class for ApexCircle and ApexPolygon.
 
 Attributes:
+* *box* (ApexBox): The Apex box for the ApexElement.
 * *depth* (Union[float, ApexLength]): The element depth.
-* *name* (Optional[str]): The element name (Default: "")
+* *diameter* (Union[float, ApexLength]): The element diameter.
+* *is\_exterior* (bool): True if ApexElement is the exterior.
+* *key* (ApexElementKey): The grouping key FreeCAD Part Design operations.
+* *name* (Optional[str]): The ApexElement name:
+
+
+## 9 Class ApexElementKey() <a name="apexelementkey"></a>
+
+class ApexElementKey(object):
+
+ApexElementKey: Sorting key for ApexElement's.
+
+Attributues:
+* *is\_exterior* (bool): True if ApexElement is the exterior.
+* *depth* (float): The ApexElement depth.
+* *diameter* (float): The ApexCircle diameter (or 0.0 for an ApexPolygon).
+
+An ApexElementKey is used to group ApexElements and choose between Pad, Pocket, and
+Hole operations.
 
