@@ -331,7 +331,7 @@ Raises:
 
 ### 5.2 ApexDrawing.create\_datum\_plane <a name="apexdrawing-create-datum-plane"></a>
 
-def *create\_datum\_plane*(self, *body*:  "PartDesign.Body", *name*:  *str* = "DatumPlane") -> "Part.ApexFeature":
+def *create\_datum\_plane*(self, *body*:  "PartDesign.Body", *name*:  *str* = "DatumPlane", *tracing*:  *str* = "") -> "Part.ApexFeature":
 
 Return the FreeCAD DatumPlane used for the drawing.
 

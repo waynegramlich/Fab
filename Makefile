@@ -7,7 +7,7 @@ PY2MD := py2md.py
 
 PY_FILES := \
     Apex.py \
-    ApexExampleBox.py \
+    ApexEnclosure.py \
     ApexNode.py \
     ApexPath.py \
     ApexSketch.py \

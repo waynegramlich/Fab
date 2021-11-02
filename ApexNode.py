@@ -39,6 +39,7 @@ assert sys.version_info.major == 3  # Python 3.x
 assert sys.version_info.minor == 8  # Python 3.8
 sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 
+import FreeCAD as App  # type: ignore
 from FreeCAD import Vector  # type: ignore
 from Apex import ApexLength, ApexPoint, ApexBox
 
@@ -48,13 +49,18 @@ class ApexContext:
     """Build context object for controlling build.
 
     Attributes:
-    * *foo*: foo.
+    * *document* (App.Document): The document to work in.
 
     """
 
-    def __init__(self) -> None:
-        """Initialize context."""
-        self.foo: int = 3
+    def __init__(self, document: "App.Document") -> None:
+        """Initialize context.
+
+        Arguments:
+        * *document* (App.Document): The FreeCAD document to use.
+
+        """
+        self.document: App.Document = document
 
 
 # ApexNode:
@@ -100,7 +106,7 @@ class ApexNode(object):
         return ".".join(reversed(names))
 
     # ApexNode.build():
-    def build(self, context: ApexContext) -> None:
+    def build(self, context: ApexContext, tracing: str = "") -> None:
         """Build an ApexNode.
 
         * Arguments:
@@ -119,25 +125,26 @@ class ApexNode(object):
         pass  # pragma: no unit cover
 
     # ApexNode.configure_and_build():
-    def configure_and_build(self, count: int = 25, tracing: str = "") -> None:
+    def configure_and_build(self, document: "App.Document",
+                            count: int = 25, tracing: str = "") -> None:
         """Recursively configure and build the entire ApexNode tree.
 
         * Arguments:
           *count* (int): The maximum number of configuration iterations:
         """
-        # next_tracing: str = tracing + " " if tracing else ""
+        next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print("=>ApexNode.configure_and_build('{self.full_path}')")
-        context: ApexContext = ApexContext()
+            print(f"{tracing}=>ApexNode.configure_and_build('{self.full_path}')")
+        context: ApexContext = ApexContext(document)
         differences: Tuple[Tuple[str, Any, Any], ...] = self._configure_all(count=count)
         if differences:
             difference: Tuple[str, Any, Any]
             difference_names: Tuple[str, ...] = tuple([difference[0] for difference in differences])
             print(f"Constraint issues: {difference_names}")
         else:
-            self._build_all(context)  # , tracing=next_tracing)
+            self._build_all(context, tracing=next_tracing)
         if tracing:
-            print("<=ApexNode.configure_and_build('{self.full_path}')")
+            print(f"{tracing}<=ApexNode.configure_and_build('{self.full_path}')")
 
     def _build_all(self, context: ApexContext, tracing: str = "") -> None:
         """Recursively build an ApexNode tree."""
@@ -146,7 +153,7 @@ class ApexNode(object):
             print(f"{tracing}=>ApexNode._build_all('{self.full_path}')")
 
         if hasattr(self, "build"):
-            self.build(context)
+            self.build(context, tracing=next_tracing)
 
         name: str
         value: Any
@@ -261,8 +268,9 @@ def unit_tests() -> None:
             self.west_side: Block = Block(
                 "West", self, bb.TNW - z_dw + z_dw, bb.BSW + z_dw - z_dw, "blue")
 
-        def build(self, context: ApexContext) -> None:
-            print("<=>Box.build(*)")
+        def build(self, context: ApexContext, tracing: str = "") -> None:
+            if tracing:
+                print(f"{tracing}<=>Box.build(*)")
 
         def configure(self) -> None:
             bb: ApexBox = self.bb
@@ -287,8 +295,9 @@ def unit_tests() -> None:
             dxyz: Vector = self.tne - self.bsw
             self.volume: float = dxyz.x * dxyz.y * dxyz.z
 
-        def build(self, context: ApexContext) -> None:
-            print(f"<=>Block.build({self.full_path})")
+        def build(self, context: ApexContext, tracing: str = "") -> None:
+            if tracing:
+                print(f"{tracing}<=>Block.build({self.full_path})")
 
     # Constraints should down to zero differences with *count*=3.
     box: ApexNode = Box(
@@ -296,7 +305,8 @@ def unit_tests() -> None:
     differences: Tuple[Tuple[str, Any, Any], ...] = box._configure_all(count=3)
     want: Tuple[Tuple[str, Any, Any], ...] = ()
     assert differences == want, f"Got {differences} instead of {want=}"
-    box.configure_and_build()
+    document: "App.Document" = App.newDocument("ApexNodeTestDocument")
+    box.configure_and_build(document)
 
     # Constraints should be down to 1 difference with *count*=2:
     box = Box(

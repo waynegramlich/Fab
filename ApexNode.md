@@ -43,7 +43,7 @@ class ApexContext:
 Build context object for controlling build.
 
 Attributes:
-* *foo*: foo.
+* *document* (App.Document): The document to work in.
 
 
 ## 3 Class ApexNode <a name="apexnode"></a>
@@ -60,7 +60,7 @@ Attributes:
 
 ### 3.1 ApexNode.build <a name="apexnode-build"></a>
 
-def *build*(self, *context*:  ApexContext) -> None:
+def *build*(self, *context*:  ApexContext, *tracing*:  *str* = "") -> None:
 
 Build an ApexNode.
 
@@ -79,7 +79,7 @@ The sub-class should override this method to configure dimensions, etc.
 
 ### 3.3 ApexNode.configure\_and\_build <a name="apexnode-configure-and-build"></a>
 
-def *configure\_and\_build*(self, *count*:  *int* = 25, *tracing*:  *str* = "") -> None:
+def *configure\_and\_build*(self, *document*:  "App.Document", *count*:  *int* = 25, *tracing*:  *str* = "") -> None:
 
 Recursively configure and build the entire ApexNode tree.
 

@@ -1376,8 +1376,8 @@ class ApexDrawing(object):
                 f"{self._exterior}, '{self._name}')")
 
     # ApexDrawing.create_datum_plane():
-    def create_datum_plane(self, body: "PartDesign.Body",
-                           name: str = "DatumPlane") -> "Part.ApexFeature":
+    def create_datum_plane(self, body: "PartDesign.Body", name: str = "DatumPlane",
+                           tracing: str = "") -> "Part.ApexFeature":
         """Return the FreeCAD DatumPlane used for the drawing.
 
         Arguments:
@@ -1423,12 +1423,20 @@ class ApexDrawing(object):
         #     d = - (<Nd> . Pd)
 
         # Compute *rotation* from <Zb> to <Nd>:
+        if tracing:
+            print(f"{tracing}ApexDrawing.create_datum_plane(*, '{body.Name}', '{name}')")
         contact: Vector = self._contact  # Pd
         normal: Vector = self._normal  # <Nd>
-        distance: float = -normal.dot(contact)  # d = - (<Nd> . Pd)
+        distance: float = normal.dot(contact)  # d = - (<Nd> . Pd)
         origin: Vector = normal * distance  # Od = Os + d * <Nd>
         z_axis: Vector = Vector(0, 0, 1)  # <Zb>
         rotation: Rotation = Rotation(z_axis, normal)  # Rotation from <Zb> to <Nd>.
+        if tracing:
+            print(f"{tracing}{contact=}")
+            print(f"{tracing}{normal=}")
+            print(f"{tracing}{origin=}")
+            print(f"{tracing}{z_axis=}")
+            print(f"{tracing}{rotation=}")
 
         # Create, save and return the *datum_plane*:
         datum_plane: Part.ApexFeature = body.newObject("PartDesign::Plane", "DatumPlane")
@@ -1441,6 +1449,8 @@ class ApexDrawing(object):
         datum_plane.recompute()
         visibility_set(datum_plane)
         self._datum_plane = datum_plane
+        if tracing:
+            print(f"{tracing}ApexDrawing.create_datum_plane(*, '{body.Name}', '{name}') => *")
         return self._datum_plane
 
     # ApexDrawing.plane_process():
@@ -1448,12 +1458,12 @@ class ApexDrawing(object):
         """Plane_Process."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>ApexDrawing.plane_process()")
+            print(f"{tracing}=>ApexDrawing.plane_process('{body.Name}')")
 
         # Create the *datum_plane*.  The "Apex" in Part.ApexFeature is a coinciding name used
         # by the FreeCAD Part Design workbench. It is not related to the Apex classes.
         # There is commonly used *datum_plane* for all sketches:
-        datum_plane: Part.ApexFeature = self.create_datum_plane(body)
+        datum_plane: Part.ApexFeature = self.create_datum_plane(body, tracing=next_tracing)
 
         # Partition *elements* into *groups* based on the associated *key*:
         element: ApexElement
@@ -1528,7 +1538,7 @@ class ApexDrawing(object):
                 pocket.Length = float(key.depth)
 
         if tracing:
-            print(f"{tracing}<=ApexDrawing.plane_process()")
+            print(f"{tracing}<=ApexDrawing.plane_process('{body.Name}')")
 
     # ApexDrawing.point_constraints_append():
     def point_constraints_append(self, point: ApexPoint, constraints: List[Sketcher.Constraint],
