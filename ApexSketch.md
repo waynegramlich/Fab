@@ -41,11 +41,13 @@ Table of Contents:
   * 5.4 [ApexDrawing.plane\_process](#apexdrawing-plane-process)
   * 5.5 [ApexDrawing.point\_constraints\_append](#apexdrawing-point-constraints-append)
   * 5.6 [ApexDrawing.reorient](#apexdrawing-reorient)
-  * 5.7 [ApexDrawing.sketch](#apexdrawing-sketch)
-  * 5.8 [ApexElement.\_\_init\_\_](#apexelement---init--)
-  * 5.9 [ApexElement.constraints\_append](#apexelement-constraints-append)
-  * 5.10 [ApexElement.features\_get](#apexelement-features-get)
-  * 5.11 [ApexElement.reorient](#apexelement-reorient)
+  * 5.7 [ApexDrawing.show](#apexdrawing-show)
+  * 5.8 [ApexDrawing.sketch](#apexdrawing-sketch)
+  * 5.9 [ApexElement.\_\_init\_\_](#apexelement---init--)
+  * 5.10 [ApexElement.constraints\_append](#apexelement-constraints-append)
+  * 5.11 [ApexElement.features\_get](#apexelement-features-get)
+  * 5.12 [ApexElement.reorient](#apexelement-reorient)
+  * 5.13 [ApexElement.show](#apexelement-show)
 * 6 [Class ApexFeature](#apexfeature)
   * 6.1 [ApexFeature.\_\_init\_\_](#apexfeature---init--)
   * 6.2 [ApexFeature.drawing](#apexfeature-drawing)
@@ -80,8 +82,9 @@ Table of Contents:
   * 9.6 [ApexPolygon.name](#apexpolygon-name)
   * 9.7 [ApexPolygon.points](#apexpolygon-points)
   * 9.8 [ApexPolygon.reorient](#apexpolygon-reorient)
-  * 9.9 [ApexElement](#apexelement)
-  * 9.10 [ApexElementKey](#apexelementkey)
+  * 9.9 [ApexPolygon.show](#apexpolygon-show)
+  * 9.10 [ApexElement](#apexelement)
+  * 9.11 [ApexElementKey](#apexelementkey)
 
 ## 1 <a name="introduction"></a>Introduction
 
@@ -331,14 +334,14 @@ Raises:
 
 ### 5.2 ApexDrawing.create\_datum\_plane <a name="apexdrawing-create-datum-plane"></a>
 
-def *create\_datum\_plane*(self, *body*:  "PartDesign.Body", *name*:  *str* = "DatumPlane", *tracing*:  *str* = "") -> "Part.ApexFeature":
+def *create\_datum\_plane*(self, *body*:  "PartDesign.Body", *name*:  Optional[str] = None, *tracing*:  *str* = "") -> "Part.ApexFeature":
 
 Return the FreeCAD DatumPlane used for the drawing.
 
 Arguments:
 * *body* (PartDesign.Body): The FreeCAD Part design Body to attach the datum plane to.
-* *name* (str): The datum plane name (Default: "DatumPlane")
-
+* *name* (Optional[str]): The datum plane name.
+  (Default: "...DatumPlaneN", where N is incremented.)
 * Returns:
   * (Part.ApexFeature) that is the datum\_plane.
 
@@ -350,7 +353,7 @@ Return the ApexPointFeature Feature's.
 
 ### 5.4 ApexDrawing.plane\_process <a name="apexdrawing-plane-process"></a>
 
-def *plane\_process*(self, *body*:  "PartDesign.Body", *tracing*:  *str* = "") -> None:
+def *plane\_process*(self, *body*:  "PartDesign.Body", *app\_document*:  "App.Document", *gui\_document*:  "Optional[Gui.Document]", *tracing*:  *str* = "") -> None:
 
 Plane\_Process.
 
@@ -372,7 +375,13 @@ Arguments:
   names are set to "" instead appending the suffix.  (Default: "")
 
 
-### 5.7 ApexDrawing.sketch <a name="apexdrawing-sketch"></a>
+### 5.7 ApexDrawing.show <a name="apexdrawing-show"></a>
+
+def *show*(self) -> *str*:
+
+Return compact string for ApexDrawing.
+
+### 5.8 ApexDrawing.sketch <a name="apexdrawing-sketch"></a>
 
 def *sketch*(self, *sketcher*:  "Sketcher.SketchObject", *tracing*:  *str* = "") -> None:
 
@@ -381,7 +390,7 @@ Insert an ApexDrawing into a FreeCAD SketchObject.
 Arguments:
 * sketcher (Sketcher.SketchObject): The sketcher object to use.
 
-### 5.8 ApexElement.\_\_init\_\_ <a name="apexelement---init--"></a>
+### 5.9 ApexElement.\_\_init\_\_ <a name="apexelement---init--"></a>
 
 def \_\_init\_\_(self, *is\_exterior*:  *bool* = False, *depth*:  Union[float, ApexLength] = 0.0, *diameter*:  Union[float, ApexLength] = 0.0, *name*:  *str* = "") -> None:
 
@@ -395,7 +404,7 @@ Arguments:
 * *name* (str): The ApexElement name (Default: "").
 
 
-### 5.9 ApexElement.constraints\_append <a name="apexelement-constraints-append"></a>
+### 5.10 ApexElement.constraints\_append <a name="apexelement-constraints-append"></a>
 
 def *constraints\_append*(self, *drawing*:  "ApexDrawing", *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
 
@@ -406,7 +415,7 @@ Arguments:
 * *constraints* (List[SketcherConstraint]): The contstraints list to append to.
 
 
-### 5.10 ApexElement.features\_get <a name="apexelement-features-get"></a>
+### 5.11 ApexElement.features\_get <a name="apexelement-features-get"></a>
 
 def *features\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[ApexFeature, ...]:
 
@@ -419,7 +428,7 @@ Returns:
 * (Tuple[ApexFeature, ...]) of extracted ApexFeature's.
 
 
-### 5.11 ApexElement.reorient <a name="apexelement-reorient"></a>
+### 5.12 ApexElement.reorient <a name="apexelement-reorient"></a>
 
 def *reorient*(self, *placement*:  Placement, *suffix*:  Optional[str] = "", *tracing*:  *str* = "") -> "ApexElement":
 
@@ -432,6 +441,12 @@ Arguments:
 
 # Returns:
 * (ApexElement) that has been reoriented with a new name.
+
+### 5.13 ApexElement.show <a name="apexelement-show"></a>
+
+def *show*(self) -> *str*:
+
+Return compact string for ApexElement.
 
 ## 6 Class ApexFeature <a name="apexfeature"></a>
 
@@ -600,7 +615,7 @@ Attributes:
 
 ### 9.1 ApexPolygon.\_\_init\_\_ <a name="apexpolygon---init--"></a>
 
-def \_\_init\_\_( *self*, *points*:  Tuple[ApexPoint, ...], *depth*:  Union[ApexLength, *float*] = 0.0, *is\_exterior*:  *bool* = False, *name*:  *str* = "" ) -> None:
+def \_\_init\_\_( *self*, *points*:  Tuple[ApexPoint, ...], *depth*:  Union[ApexLength, *float*] = 0.0, *is\_exterior*:  *bool* = False, *name*:  *str* = "", *tracing*:  *str* = "" ) -> None:
 
 Initialize a ApexPolygon.
 
@@ -652,6 +667,12 @@ Arguments:
 * *suffix* (Optional[str]):
   A suffix to append to the name.  If None, an empty name is used. (Default: "")
 
+
+### 9.9 ApexPolygon.show <a name="apexpolygon-show"></a>
+
+def *show*(self) -> *str*:
+
+Return compact string showing ApexPolygon contents.
 
 ## 9 Class ApexElement() <a name="apexelement"></a>
 

@@ -7,16 +7,17 @@ Table of Contents:
   * 2.2 [ApexBox.reorient](#apexbox-reorient)
 * 3 [Class ApexCheck](#apexcheck)
   * 3.1 [ApexCheck.check](#apexcheck-check)
-* 4 [Class ApexLength](#apexlength)
-  * 4.1 [ApexLength.\_\_new\_\_](#apexlength---new--)
-  * 4.2 [ApexLength.\_\_repr\_\_](#apexlength---repr--)
-  * 4.3 [ApexLength.\_\_str\_\_](#apexlength---str--)
-* 5 [Class ApexMaterial](#apexmaterial)
-  * 5.1 [ApexMaterial.\_\_init\_\_](#apexmaterial---init--)
-* 6 [Class ApexPoint](#apexpoint)
-  * 6.1 [ApexPoint.\_\_init\_\_](#apexpoint---init--)
-  * 6.2 [ApexPoint.atan2](#apexpoint-atan2)
-  * 6.3 [ApexPoint.magnitude](#apexpoint-magnitude)
+* 4 [Class ApexColor](#apexcolor)
+* 5 [Class ApexLength](#apexlength)
+  * 5.1 [ApexLength.\_\_new\_\_](#apexlength---new--)
+  * 5.2 [ApexLength.\_\_repr\_\_](#apexlength---repr--)
+  * 5.3 [ApexLength.\_\_str\_\_](#apexlength---str--)
+* 6 [Class ApexMaterial](#apexmaterial)
+  * 6.1 [ApexMaterial.\_\_init\_\_](#apexmaterial---init--)
+* 7 [Class ApexPoint](#apexpoint)
+  * 7.1 [ApexPoint.\_\_init\_\_](#apexpoint---init--)
+  * 7.2 [ApexPoint.atan2](#apexpoint-atan2)
+  * 7.3 [ApexPoint.magnitude](#apexpoint-magnitude)
 
 ## 1 <a name="introduction"></a>Introduction
 
@@ -171,7 +172,13 @@ def *check*(cls, *values*:  Sequence[Any], *apex\_checks*:  Sequence["ApexCheck"
 
 Return type mismatch error message.
 
-## 4 Class ApexLength <a name="apexlength"></a>
+## 4 Class ApexColor <a name="apexcolor"></a>
+
+class ApexColor(object):
+
+ApexColor: Convert from SVG color names to FreeCAD HSL.
+
+## 5 Class ApexLength <a name="apexlength"></a>
 
 class ApexLength(float):
 
@@ -182,7 +189,7 @@ ApexLength is a float with with optional name and units.
   * *units* (str): The units (e.g. "km", "m", "cm", "mm", "µm", "nm", "ft", "thou", etc.)
   * *name* (str): The optional name.
 
-### 4.1 ApexLength.\_\_new\_\_ <a name="apexlength---new--"></a>
+### 5.1 ApexLength.\_\_new\_\_ <a name="apexlength---new--"></a>
 
 def \_\_new\_\_(cls, *args, **kwargs) -> "ApexLength":
 
@@ -199,19 +206,19 @@ The actual function signature is:
 * Returns:
   (ApexLength) containing the desired values.
 
-### 4.2 ApexLength.\_\_repr\_\_ <a name="apexlength---repr--"></a>
+### 5.2 ApexLength.\_\_repr\_\_ <a name="apexlength---repr--"></a>
 
 def \_\_repr\_\_(self) -> *str*:
 
 Return the string representation.
 
-### 4.3 ApexLength.\_\_str\_\_ <a name="apexlength---str--"></a>
+### 5.3 ApexLength.\_\_str\_\_ <a name="apexlength---str--"></a>
 
 def \_\_str\_\_(self) -> *str*:
 
 Return the string representation.
 
-## 5 Class ApexMaterial <a name="apexmaterial"></a>
+## 6 Class ApexMaterial <a name="apexmaterial"></a>
 
 class ApexMaterial(object):
 
@@ -224,7 +231,7 @@ Attributes:
 * *color* (str): The color name to use.
 
 
-### 5.1 ApexMaterial.\_\_init\_\_ <a name="apexmaterial---init--"></a>
+### 6.1 ApexMaterial.\_\_init\_\_ <a name="apexmaterial---init--"></a>
 
 def \_\_init\_\_(self, *name*:  Tuple[str, ...], *color*:  *str*) -> None:
 
@@ -238,7 +245,7 @@ Initialize and ApexMaterial.
 * Raises:
   * ValueError for either an empty name or a bad svg color.
 
-## 6 Class ApexPoint <a name="apexpoint"></a>
+## 7 Class ApexPoint <a name="apexpoint"></a>
 
 class ApexPoint:
 
@@ -254,7 +261,7 @@ An ApexPoint is basically just a Vector with an optional diameter and/or name.
   * *name* (str): The apex name.
   * *box* (ApexBox): The ApexBox that encloses an ApexPoint assuming a *diameter* sphere.
 
-### 6.1 ApexPoint.\_\_init\_\_ <a name="apexpoint---init--"></a>
+### 7.1 ApexPoint.\_\_init\_\_ <a name="apexpoint---init--"></a>
 
 def \_\_init\_\_( *self*, *x*:  Union[int, *float*, ApexLength] = 0.0, *y*:  Union[int, *float*, ApexLength] = 0.0, *z*:  Union[int, *float*, ApexLength] = 0.0, *diameter*:  Union[int, *float*, ApexLength] = 0.0, *name*:  *str* = "", *vector*:  Optional[Vector] = None, *fix*:  *bool* = False ) -> None:
 
@@ -270,13 +277,13 @@ Arguments:
     (Default: Vector(0.0, 0.0, 0.0)
   * *fix* (bool): If True, fix float values that are close to hole numbers to be whole.
 
-### 6.2 ApexPoint.atan2 <a name="apexpoint-atan2"></a>
+### 7.2 ApexPoint.atan2 <a name="apexpoint-atan2"></a>
 
 def *atan2*(self) -> *float*:
 
 Return the atan2 of the x and y values.
 
-### 6.3 ApexPoint.magnitude <a name="apexpoint-magnitude"></a>
+### 7.3 ApexPoint.magnitude <a name="apexpoint-magnitude"></a>
 
 def *magnitude*(self) -> *float*:
 

@@ -41,6 +41,7 @@ sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 
 import FreeCAD as App  # type: ignore
 from FreeCAD import Vector  # type: ignore
+import FreeCADGui as Gui  # type:ignore
 from Apex import ApexLength, ApexPoint, ApexBox
 
 
@@ -53,14 +54,21 @@ class ApexContext:
 
     """
 
-    def __init__(self, document: "App.Document") -> None:
+    def __init__(self, document_name: str) -> None:
         """Initialize context.
 
         Arguments:
         * *document* (App.Document): The FreeCAD document to use.
 
         """
-        self.document: App.Document = document
+        app_document: App.Document = App.getDocument(document_name)
+        gui_document: Optional[Gui.Document] = None
+        if App.GuiUp:
+            gui_document = Gui.getDocument(document_name)
+
+        self.document_name = document_name
+        self.app_document: App.Document = app_document
+        self.gui_document: Optional[Gui.Document] = gui_document
 
 
 # ApexNode:

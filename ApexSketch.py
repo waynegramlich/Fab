@@ -10,7 +10,7 @@ sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 
 from dataclasses import dataclass
 import math
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, cast, Dict, List, Optional, Tuple, Union
 
 import FreeCAD as App  # type: ignore
 import FreeCADGui as Gui  # type: ignore
@@ -712,6 +712,11 @@ class ApexElement(object):
         """
         raise NotImplementedError()
 
+    # ApexElement.show():
+    def show(self) -> str:
+        """Return compact string for ApexElement."""
+        raise NotImplementedError()
+
 
 # ApexPolygon:
 class ApexPolygon(ApexElement):
@@ -727,31 +732,64 @@ class ApexPolygon(ApexElement):
 
     """
 
+    INIT = (
+        ApexCheck("points", (list, tuple)),
+        ApexCheck("depth", (float, ApexLength)),
+        ApexCheck("is_exterior", (bool,)),
+        ApexCheck("name", (str,)),
+    )
+
     # ApexPolygon.__init__():
     def __init__(
             self,
             points: Tuple[ApexPoint, ...],
             depth: Union[ApexLength, float] = 0.0,
             is_exterior: bool = False,
-            name: str = ""
+            name: str = "",
+            tracing: str = ""
     ) -> None:
         """Initialize a ApexPolygon."""
+        arguments: Tuple[Any] = cast(Tuple[Any], (points, depth, is_exterior, name))
+        value_error: str = ApexCheck.check(arguments, ApexPolygon.INIT)
+        if value_error:
+            raise ValueError(value_error)
+        # next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>ApexPolygon.__init__(*, ...)")
+        point: ApexPoint
         if not points:
             raise ValueError("bounding box needs at least one point.")  # pragma: no unit cover
+        if float(depth) < 0.0:
+            raise ValueError(f"depth {depth} is negative")
 
         super().__init__(is_exterior=is_exterior, diameter=0.0, depth=depth, name=name)
-        assert self.depth
         self._box: ApexBox = ApexBox(points)
+        self._depth: Union[ApexLength, float] = depth
         self._features: Optional[Tuple[ApexFeature, ...]] = None
         self._points: Tuple[ApexPoint, ...] = points
+        if tracing:
+            print(f"{tracing}<=ApexPolygon.__init__(*)=>{self.show()}")
 
     def __repr__(self) -> str:
         """Return string representation of ApexPolygon."""
         return self.__str__()
 
-    def __str__(self) -> str:
-        """Return string representation of ApexPolygon."""
-        return f"ApexPolygon({self._points}, {self._depth}, {self.is_exterior}, '{self._name}')"
+    def __str__(self, short: bool = False) -> str:
+        """Return string representation of ApexPolygon.
+
+        Arguments:
+        * *short* (bool): If true, a shorter versions returned.
+
+        """
+        return f"ApexPolygon(({self._points}), {self._depth}, {self.is_exterior}, '{self._name}')"
+
+    # ApexPolygon.show():
+    def show(self) -> str:
+        """Return compact string showing ApexPolygon contents."""
+        point: ApexPoint
+        points_text: str = ", ".join([f"({point.x},{point.y},{point.z})"
+                                     for point in self._points])
+        return f"ApexPolygon(({points_text}), {self._depth}, {self.is_exterior}, '{self._name}')"
 
     @property
     def box(self) -> ApexBox:
@@ -1078,8 +1116,9 @@ class ApexPolygon(ApexElement):
         if tracing:
             index: int
             for index, apex_point in enumerate(self._points):
-                print(f"{tracing}Point[{index}]:{apex_point} => {reoriented_points[index]}")
-            print(f"{tracing}<=ApexPolygon.reorient{arguments}=>{result}")
+                print(f"{tracing}Point[{index}]:{apex_point.vector} => "
+                      f"{reoriented_points[index].vector}")
+            print(f"{tracing}<=ApexPolygon.reorient{arguments}=>*")
         return result
 
 
@@ -1307,8 +1346,13 @@ class ApexDrawing(object):
         value_error: str = ApexCheck.check(arguments, ApexDrawing.INIT_CHECKS)
         if value_error:
             raise ValueError(value_error)
+        trace_arguments: str
         if tracing:
-            print(f"{tracing}=>ApexSketch.plane_process{arguments}")
+            trace_arguments = (
+                f"ApexDrawing.__init__(({contact.x}, {contact.y}, {contact.z}), "
+                f"({normal.x}, {normal.y}, {normal.z}), *, '{name}')"
+            )
+            print(f"{tracing}=>{trace_arguments}")
         if not elements:
             raise ValueError(f"No ApexPolygon's or ApexCircle's provided.")
         if exterior and exterior not in elements:
@@ -1339,6 +1383,7 @@ class ApexDrawing(object):
         # Load everything into *self*:
         self._box: ApexBox = box
         self._contact: Union[ApexPoint, Vector] = contact
+        self._datum_plane_counter: int = 0
         self._elements: Tuple[ApexElement, ...] = elements
         self._exterior: Optional[ApexElement] = exterior
         self._origin_index: int = -999  # Value that is less than -1 (used for constraints)
@@ -1346,7 +1391,7 @@ class ApexDrawing(object):
         self._normal: Vector = normal.normalize()  # Store in normalized form.
 
         if tracing:
-            print(f"{tracing}<=ApexSketch.plane_process{arguments}")
+            print(f"{tracing}<={trace_arguments}")
 
     @property
     def elements(self) -> Tuple["ApexElement", ...]:
@@ -1375,15 +1420,36 @@ class ApexDrawing(object):
         return (f"ApexDrawing({self._contact}, {self._normal}, {self._elements}, "
                 f"{self._exterior}, '{self._name}')")
 
+    # ApexDrawing.show():
+    def show(self) -> str:
+        """Return compact string for ApexDrawing."""
+        contact: Union[ApexPoint, Vector] = self._contact
+        if isinstance(contact, ApexPoint):
+            contact = contact.vector
+        assert isinstance(contact, Vector)
+        normal: Union[ApexPoint, Vector] = self._normal
+        if isinstance(normal, ApexPoint):
+            contact = normal.vector
+        assert isinstance(normal, Vector)
+
+        element: ApexElement
+        elements_text: str = ", ".join([f"{element.show()}" for element in self._elements])
+        exterior_text: str = "None"
+        if self._exterior:
+            exterior_text = f"{self._exterior.show()}"
+        return ("ApexDrawing("
+                f"({contact.x},{contact.y},{contact.z}), ({normal.x},{normal.y},{normal.z})"
+                f"({elements_text}), {exterior_text}, '{self._name}')")
+
     # ApexDrawing.create_datum_plane():
-    def create_datum_plane(self, body: "PartDesign.Body", name: str = "DatumPlane",
+    def create_datum_plane(self, body: "PartDesign.Body", name: Optional[str] = None,
                            tracing: str = "") -> "Part.ApexFeature":
         """Return the FreeCAD DatumPlane used for the drawing.
 
         Arguments:
         * *body* (PartDesign.Body): The FreeCAD Part design Body to attach the datum plane to.
-        * *name* (str): The datum plane name (Default: "DatumPlane")
-
+        * *name* (Optional[str]): The datum plane name.
+          (Default: "...DatumPlaneN", where N is incremented.)
         * Returns:
           * (Part.ApexFeature) that is the datum_plane.
         """
@@ -1424,7 +1490,8 @@ class ApexDrawing(object):
 
         # Compute *rotation* from <Zb> to <Nd>:
         if tracing:
-            print(f"{tracing}ApexDrawing.create_datum_plane(*, '{body.Name}', '{name}')")
+            print(f"{tracing}=>ApexDrawing.create_datum_plane("
+                  f"'{self._name}', '{body.Name}', {name})")
         contact: Vector = self._contact  # Pd
         normal: Vector = self._normal  # <Nd>
         distance: float = normal.dot(contact)  # d = - (<Nd> . Pd)
@@ -1435,30 +1502,51 @@ class ApexDrawing(object):
             print(f"{tracing}{contact=}")
             print(f"{tracing}{normal=}")
             print(f"{tracing}{origin=}")
-            print(f"{tracing}{z_axis=}")
             print(f"{tracing}{rotation=}")
 
         # Create, save and return the *datum_plane*:
-        datum_plane: Part.ApexFeature = body.newObject("PartDesign::Plane", "DatumPlane")
-        xy_plane: App.GeoApexFeature = body.getObject("XY_Plane")
-        datum_plane.Support = [(xy_plane, "")]
-        datum_plane.MapMode = "FlatFace"
-        datum_plane.AttachmentOffset = App.Placement(origin, rotation)
-        datum_plane.MapReversed = False
+        if not name:
+            name = f"{self._name}.DatumPlane{self._datum_plane_counter}"
+            self._datum_plane_counter += 1
+        datum_plane: Part.ApexFeature = body.newObject("PartDesign::Plane", name)
+        # xy_plane: App.GeoApexFeature = body.getObject("XY_Plane")
+        placement: Placement = Placement(origin, rotation)
+        if tracing:
+            print(f"{tracing}{placement=}")
+        datum_plane.AttachmentOffset = Placement()  # Null placement:  Use Placement instead
+        datum_plane.Placement = placement
+        datum_plane.MapMode = "Translate"
         datum_plane.MapPathParameter = 0.0
+        datum_plane.MapReversed = False
+        datum_plane.Support = None
         datum_plane.recompute()
-        visibility_set(datum_plane)
+
+        # Turn datum plane visibility off:
+        if App.GuiUp:
+            gui_document: Any = Gui.ActiveDocument
+            object_name: str = datum_plane.Name
+            gui_datum_plane: Any = gui_document.getObject(object_name)
+            if gui_datum_plane is not None and hasattr(gui_datum_plane, "Visibility"):
+                setattr(gui_datum_plane, "Visibility", False)
+
         self._datum_plane = datum_plane
         if tracing:
-            print(f"{tracing}ApexDrawing.create_datum_plane(*, '{body.Name}', '{name}') => *")
+            print(f"{tracing}<=ApexDrawing.create_datum_plane("
+                  f"'{self._name}', '{body.Name}', '{name}') => *")
         return self._datum_plane
 
     # ApexDrawing.plane_process():
-    def plane_process(self, body: "PartDesign.Body", tracing: str = "") -> None:
+    def plane_process(self, body: "PartDesign.Body", document_name: str, tracing: str = "") -> None:
         """Plane_Process."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>ApexDrawing.plane_process('{body.Name}')")
+            print(f"{tracing}################################################################")
+            print(f"{tracing}=>ApexDrawing.plane_process('{self.name}', '{body.Name}')")
+
+        # app_document: App.Document = App.getDocument(document_name)
+        gui_document: Optional[Gui.Document] = None
+        if App.GuiUp:
+            gui_document = Gui.getDocument(document_name)
 
         # Create the *datum_plane*.  The "Apex" in Part.ApexFeature is a coinciding name used
         # by the FreeCAD Part Design workbench. It is not related to the Apex classes.
@@ -1472,43 +1560,84 @@ class ApexDrawing(object):
         index: int
         for index, element in enumerate(self.elements):
             key = element.key
-            if tracing:
-                print(f"{tracing}Key[{index}]: {key}")
             if key not in groups:
                 groups[key] = ()
             groups[key] += (element,)
 
+        # Generate one *sketch* per *group*:
         for index, key in enumerate(sorted(groups.keys(), reverse=True)):
+            if tracing:
+                print("")
+                print(f"{tracing}Group[{index}]: {key}")
             group: Tuple[ApexElement, ...] = groups[key]
-            assert group, "Internal error: group is empty"
+
             group0: ApexElement = group[0]
 
-            # Create a new ... using elements:
+            # Deal with *exterior*:
             exterior: Optional[ApexElement] = None
             if key.is_exterior:
-                assert len(group) == 1, "Exterior should be all by itself"
+                if len(group) != 1:
+                    raise ValueError("Exterior should be all by itself")
                 exterior = group0
-                assert float(exterior.depth) > 0.0, (
-                    f"Exterior depth '{exterior.name}' is not positive.")
+                if float(exterior.depth) <= 0.0:
+                    raise ValueError("Exterior depth '{exterior.name}' is not positive.")
 
+            # Create a new *drawing* using elements:
             group_name: str = f"{group0._name}_{len(group)}"
-            drawing = ApexDrawing(self._contact, self._normal, group, exterior, name=group_name)
+            drawing = ApexDrawing(self._contact, self._normal, group, exterior, name=group_name,
+                                  tracing=next_tracing)
 
+            # Create the *sketch* and attach it to *datum_plane*:
             sketch_name: str = f"{group0.name}.sketch"
             sketch: Sketcher.SketchObject = body.newObject("Sketcher::SketchObject", sketch_name)
+            if tracing:
+                print(f"{tracing}{sketch=} {sketch.Name=}")
             sketch.Support = (datum_plane, "")
             sketch.MapMode = "FlatFace"
+            if App.GuiUp:
+                if gui_document:
+                    if tracing:
+                        print(f"{tracing}{sketch.Name=}")
+                    gui_sketch: Any = gui_document.getObject(sketch.Name)
+                    if gui_sketch and hasattr(gui_sketch, "Visibility"):
+                        if tracing:
+                            print(f"{tracing}Set sketch visibility to false")
+                        setattr(gui_sketch, "Visibility", False)
+            # visibility_set(sketch, False)
 
+            # Fill in the *sketch* from *drawing*:
             drawing.sketch(sketch, tracing=next_tracing)
 
             if key.is_exterior:
                 # Pad:
-                if tracing:
-                    print(f"{tracing}Pad")
                 pad: PartDesign.ApexFeature = body.newObject("PartDesign::Pad", f"{group_name}.Pad")
                 pad.Profile = sketch
                 pad.Length = float(key.depth)
                 pad.Reversed = True
+                # Unclear what most of these features do:
+                pad.Length2 = 0
+                pad.UseCustomVector = 0
+                pad.Direction = (1, 1, 1)
+                pad.Type = 0
+                pad.UpToFace = None
+                pad.Midplane = 0
+                pad.Offset = 0
+
+                if gui_document:
+                    visibility_set(pad, True)
+                    view_object: Any = body.getLinkedObject(True).ViewObject
+                    pad.ViewObject.LineColor = getattr(
+                        view_object, "LineColor", pad.ViewObject.LineColor)
+                    pad.ViewObject.ShapeColor = getattr(
+                        view_object, "ShapeColor", pad.ViewObject.ShapeColor)
+                    pad.ViewObject.PointColor = getattr(
+                        view_object, "PointColor", pad.ViewObject.PointColor)
+                    pad.ViewObject.Transparency = getattr(
+                        view_object, "Transparency", pad.ViewObject.Transparency)
+                    # The following code appears to disable edge highlighting:
+                    # pad.ViewObject.DisplayMode = getattr(
+                    #    view_object, "DisplayMode", pad.ViewObject.DisplayMode)
+
             elif isinstance(group0, ApexCircle):
                 # We have bunch of ApexCircles with the same *diameter* and *depth*:
                 if tracing:
@@ -1538,7 +1667,7 @@ class ApexDrawing(object):
                 pocket.Length = float(key.depth)
 
         if tracing:
-            print(f"{tracing}<=ApexDrawing.plane_process('{body.Name}')")
+            print(f"{tracing}<=ApexDrawing.plane_process('self._name', '{body.Name}')")
 
     # ApexDrawing.point_constraints_append():
     def point_constraints_append(self, point: ApexPoint, constraints: List[Sketcher.Constraint],
@@ -1587,7 +1716,7 @@ class ApexDrawing(object):
         """
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"=>ApexDrawing.reorient(*, {placement}, '{suffix}')")
+            print(f"{tracing}=>ApexDrawing.reorient('{self._name}', {placement}, '{suffix}')")
 
         # Reorient *elements* and *exterior*:
         element: ApexElement
@@ -1599,6 +1728,10 @@ class ApexDrawing(object):
             except ValueError:  # pragma: no unit cover
                 raise RuntimeError("Can not find exterior index")
 
+        if tracing:
+            index: int
+            for index, element in enumerate(self._elements):
+                print(f"{tracing}[{index}]:'{element.name}'")
         reoriented_elements: Tuple[ApexElement, ...] = tuple(
             [element.reorient(placement, suffix, tracing=next_tracing)
              for element in self._elements]
@@ -1631,10 +1764,11 @@ class ApexDrawing(object):
         if tracing:
             print(f"{tracing}{contact=} >= {reoriented_contact}")
             print(f"{tracing}{normal=} >= {reoriented_normal}")
-            print(f"{tracing}{self._elements=}")
-            print(f"{tracing}{reoriented_elements=}")
+            for index, element in enumerate(self._elements):
+                print(f"{tracing}[{index}]: {element.show()} =>")
+                print(f"{tracing}     {reoriented_elements[index].show()}")
         if tracing:
-            print(f"<=ApexDrawing.reorient(*, {placement}, '{suffix}')")
+            print(f"{tracing}<=ApexDrawing.reorient('{self._name}', {placement}, '{suffix}')")
         return apex_drawing
 
     # ApexDrawing.sketch():
@@ -1645,9 +1779,13 @@ class ApexDrawing(object):
         * sketcher (Sketcher.SketchObject): The sketcher object to use.
         """
         # Perform any requested *tracing*:
+        index: int
+        element: ApexElement
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>ApexDrawing.sketch(*, *)")
+            print(f"{tracing}=>ApexDrawing.sketch('{self._name}', *)")
+            for index, element in enumerate(self._elements):
+                print(f"{tracing}Element[{index}]: '{element.show()}'")
 
         # Ensure that *contact* and *normal* are Vector's:
         contact: Union[ApexPoint, Vector] = self._contact
@@ -1660,11 +1798,15 @@ class ApexDrawing(object):
         assert isinstance(normal, Vector)
 
         # Rotate all features around *contact* such that *normal* is aligned with the +Z axis:
-        origin: Vector = Vector()
+        origin: Vector = Vector(0, 0, 0)
         z_axis: Vector = Vector(0, 0, 1)
-        z_aligned_placement: Placement = Placement(
-            origin, Rotation(normal, z_axis), contact, tracing=next_tracing)
-        z_aligned_drawing: "ApexDrawing" = self.reorient(z_aligned_placement, ".+z")
+        rotation: Rotation = Rotation(normal, z_axis)
+        z_aligned_placement: Placement = Placement(origin, rotation)
+        if tracing:
+            print(f"{tracing}{origin=} {rotation=} {contact=}")
+            print(f"{tracing}{z_aligned_placement=}")
+        z_aligned_drawing: "ApexDrawing" = self.reorient(
+            z_aligned_placement, ".+z", tracing=next_tracing)
         if tracing:
             print(f"{tracing}{z_aligned_drawing._box=}")
 
@@ -1681,8 +1823,12 @@ class ApexDrawing(object):
         z_aligned_box: ApexBox = z_aligned_drawing._box
         tsw: Vector = z_aligned_box.TSW  # Lower left is along the SW bounding box edge.
         quadrant1_placement: Placement = Placement(Vector(-tsw.x, -tsw.y, 0.0), Rotation())
+        if tracing:
+            print(f"{tracing}here 2")
         quadrant1_drawing: "ApexDrawing" = z_aligned_drawing.reorient(
             quadrant1_placement, ".q1", tracing=next_tracing)
+        if tracing:
+            print(f"{tracing}here 3")
 
         points: Tuple[ApexPoint, ...] = (ApexPoint(tsw.x, tsw.y, 0.0, name=f"{name}.lower_left"),)
         # quadrant1_exterior: Optional[ApexElement] = quadrant1_drawing._exterior
@@ -1696,7 +1842,6 @@ class ApexDrawing(object):
             features.extend(self.point_features_get(point))
 
         elements: Tuple[ApexElement, ...] = quadrant1_drawing._elements
-        element: ApexElement
         for element in elements:
             features.extend(element.features_get(self))
 
@@ -1733,22 +1878,38 @@ class ApexDrawing(object):
         sketcher.addConstraint(constraints)
 
         if tracing:
-            print(f"{tracing}<=ApexDrawing.sketch(*, *)")
+            print(f"{tracing}<=ApexDrawing.sketch('{self._name}', *)")
 
 
-def visibility_set(element: Any, new_value: bool = True) -> None:
-    """Set the visibility of an element."""
-    # print(f"=>visibility_set({element}, {new_value})")
+def visibility_set(element: Any, new_value: bool = True, tracing: str = "") -> None:
+    """Set the visibility of an element.
+
+    Arguments:
+    * *element* (Any): Any FreeCAD element.
+    * *new_value* (bool): The new visibility to use.  (Default True):
+
+    """
+    if tracing:
+        print(f"{tracing}=>visibility_set({element}, {new_value})")
     if App.GuiUp:   # pragma: no unit cover
+        if tracing:
+            print(f"{tracing}App.GuiUp")
         gui_document: Optional[Any] = (
             Gui.ActiveDocument if hasattr(Gui, "ActiveDocument") else None)
+        if tracing:
+            print(f"{tracing}{gui_document=}")
+            print(f"{tracing}{dir(gui_document)=}")
+            print(f"{tracing}{hasattr(gui_document, 'Name')=})")
         if gui_document and hasattr(gui_document, "Name"):
             name: str = getattr(element, "Name")
+            if tracing:
+                print(f"{tracing}{name=}")
             sub_element: Any = gui_document.getObject(name)
             if sub_element is not None and hasattr(sub_element, "Visibility"):
                 if isinstance(getattr(sub_element, "Visibility"), bool):
                     setattr(sub_element, "Visibility", new_value)
-    # print(f"<=visibility_set({element}, {new_value})")
+    if tracing:
+        print(f"{tracing}<=visibility_set({element}, {new_value})")
 
     if False:  # pragma: no unit cover
         pass
@@ -1781,12 +1942,14 @@ def visibility_set(element: Any, new_value: bool = True) -> None:
 def _unit_tests() -> int:
     """Run the program."""
     # Open *document_name* and get associated *app_document* and *gui_document*:
-    document_name: str = "bar"
-
-    # gui_document: Optional[Gui.Document] = Gui.ActiveDocument if Gui else None
-
     drawing: ApexDrawing
     center_circle: ApexCircle
+
+    document_name: str = "ApexSketchUnitTests"
+    app_document: App.Document = App.newDocument(document_name)
+    # gui_document: Optional[Gui.Document] = None
+    # if App.GuiUp:
+    #     gui_document = Gui.GetDocument(document_name)
 
     # Do some trivial tests on drawing:
     try:
@@ -1795,7 +1958,62 @@ def _unit_tests() -> int:
         assert str(value_error) == (
             "Argument 'name' is int which is not one of ['str']"), f"{str(value_error)=}"
 
-    document: App.Document = App.newDocument("bar")
+    # Do some unit tests on *Placment* objects to make sure they behave as documented.
+    origin: Vector = Vector(0, 0, 0)
+    x_axis: Vector = Vector(1, 0, 0)
+    y_axis: Vector = Vector(0, 1, 0)
+    z_axis: Vector = Vector(0, 0, 1)
+
+    r0: Rotation = Rotation()
+    assert r0 * origin == origin
+    assert r0 * x_axis == x_axis
+    assert r0 * y_axis == y_axis
+    assert r0 * z_axis == z_axis
+
+    def fix(v: Vector) -> Vector:
+        return Vector(
+            ApexLength.whole_fix(v.x),
+            ApexLength.whole_fix(v.y),
+            ApexLength.whole_fix(v.z)
+        )
+
+    rxy: Rotation = Rotation(x_axis, y_axis)
+    assert rxy * x_axis == y_axis
+    ryx: Rotation = Rotation(y_axis, x_axis)
+    assert ryx * y_axis == x_axis
+
+    rxz: Rotation = Rotation(x_axis, z_axis)
+    assert rxz * x_axis == z_axis
+    rzx: Rotation = Rotation(z_axis, x_axis)
+    assert rzx * z_axis == x_axis
+
+    ryz: Rotation = Rotation(y_axis, z_axis)
+    assert ryz * y_axis == z_axis
+    rzy: Rotation = Rotation(z_axis, y_axis)
+    assert rzy * z_axis == y_axis
+
+    t10: Vector = Vector(10, 10, 10)
+
+    t10_r0_placement: Placement = Placement(t10, r0)
+    assert t10_r0_placement * origin == t10
+    assert t10_r0_placement * x_axis == t10 + x_axis
+    assert t10_r0_placement * y_axis == t10 + y_axis
+    assert t10_r0_placement * z_axis == t10 + z_axis
+
+    t10_r0_c10_placement: Placement = Placement(t10, r0, t10)
+    assert t10_r0_c10_placement * origin == t10
+    assert t10_r0_c10_placement * x_axis == t10 + x_axis
+    assert t10_r0_c10_placement * y_axis == t10 + y_axis
+    assert t10_r0_c10_placement * z_axis == t10 + z_axis
+
+    t0_rxy_c10_placement: Placement = Placement(origin, rxy, t10)
+    assert fix(t0_rxy_c10_placement * t10) == t10, t0_rxy_c10_placement * t10
+    assert fix(t0_rxy_c10_placement * (t10 + x_axis)) == t10 + y_axis
+
+    t0_ryx_c10_placement: Placement = Placement(origin, ryx, t10)
+    assert fix(t0_ryx_c10_placement * t10) == t10, t0_ryx_c10_placement * t10
+    assert fix(t0_ryx_c10_placement * (t10 + y_axis)) == t10 + x_axis
+
     if True:
         # Create *box_polygon* (with notch in lower left corner):
         left_x: float = -40.0
@@ -1858,15 +2076,14 @@ def _unit_tests() -> int:
         # Create the *drawing*:
         elements: Tuple[ApexElement, ...] = (box_polygon, polygon, center_circle)
         exterior: ApexPolygon = box_polygon
-        origin: Vector = Vector(0, 0, 0)
-        z_axis: Vector = Vector(0, 0, 1)
         drawing = ApexDrawing(origin, z_axis, elements, exterior, "test_drawing")
 
         # Create the FreeCAD Part Design Workbench *body* object:
         body_name: str = drawing.name if drawing.name else "Body"
-        body: PartDesign.Body = document.addObject("PartDesign::Body", body_name)
-        drawing.plane_process(body)
-        document.recompute()  # This is *VERY* important!!!
+        body: PartDesign.Body = app_document.addObject("PartDesign::Body", body_name)
+        drawing.plane_process(body, document_name)
+        visibility_set(body)
+        app_document.recompute()  # This is *VERY* important!!!
 
     # Delete previous file *fcstd_path* and then save a new one:
     root: Path = Path("/")
@@ -1874,7 +2091,7 @@ def _unit_tests() -> int:
     if fcstd_path.exists():
         fcstd_path.unlink()
     print(f"Save {fcstd_path} file.")
-    document.saveAs(f"{str(fcstd_path)}")
+    app_document.saveAs(f"{str(fcstd_path)}")
 
     # Close *document_name* and exit by closing the main window:
     App.closeDocument(document_name)

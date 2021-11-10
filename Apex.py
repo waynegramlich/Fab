@@ -32,6 +32,7 @@ sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 
 from FreeCAD import BoundBox, Placement, Rotation, Vector  # type: ignore
 
+# import colorsys  # Color conversion routines.
 from dataclasses import dataclass
 import math
 from typing import Any, cast, ClassVar, List, Dict, Optional, Sequence, Tuple, Union
@@ -760,6 +761,181 @@ class ApexCheck(object):
             assert str(value_error) == "0 is not a string", str(value_error)
 
 
+# ApexColor:
+class ApexColor(object):
+    """ApexColor: Convert from SVG color names to FreeCAD HSL."""
+
+    RGB_COLORS = {
+        "alice_blue": 0xf0f8ff,
+        "antique_white": 0xfaebd7,
+        "aqua": 0x00ffff,
+        "aquamarine": 0x7fffd4,
+        "azure": 0xf0ffff,
+        "beige": 0xf5f5dc,
+        "bisque": 0xffe4c4,
+        "black": 0x000000,
+        "blanched_almond": 0xffebcd,
+        "blue": 0x0000ff,
+        "blue_violet": 0x8a2be2,
+        "brown": 0xa52a2a,
+        "burlywood": 0xdeb887,
+        "cadet_blue": 0x5f9ea0,
+        "chartreuse": 0x7fff00,
+        "chocolate": 0xd2691e,
+        "coral": 0xf08080,
+        "corn_flower_blue": 0x6495ed,
+        "corn_silk": 0xfff8dc,
+        "crimson": 0xdc143c,
+        "cyan": 0x00ffff,
+        "dark_blue": 0x00008b,
+        "dark_cyan": 0x008b8b,
+        "dark_goldenrod": 0xb8860b,
+        "dark_gray": 0xa9a9a9,
+        "dark_green": 0x006400,
+        "dark_grey": 0xa9a9a9,
+        "dark_khaki": 0xbdb76b,
+        "dark_magenta": 0x8b008b,
+        "dark_olive_green": 0x556b2f,
+        "dark_orange": 0xff8c00,
+        "dark_orchid": 0x9932cc,
+        "dark_red": 0x8b0000,
+        "dark_salmon": 0xe9967a,
+        "dark_sea_green": 0x8fbc8f,
+        "dark_slate_blue": 0x483d8b,
+        "dark_slate_gray": 0x2f4f4f,
+        "dark_slate_grey": 0x2f4f4f,
+        "dark_turquoise": 0x40e0d0,
+        "dark_violet": 0x9f00d3,
+        "deep_pink": 0xff1493,
+        "deep_sky_blue": 0x00bfff,
+        "dim_gray": 0x696969,
+        "dim_grey": 0x696969,
+        "dodger_blue": 0x1e90ff,
+        "fire_brick": 0xb22222,
+        "floral_white": 0xfffaf0,
+        "forest_green": 0x228b22,
+        "fuchsia": 0xff00ff,
+        "gainsboro": 0xdcdcdc,
+        "ghost_white": 0xf8f8ff,
+        "gold": 0xffd700,
+        "goldenrod": 0xdaa520,
+        "gray": 0x808080,
+        "green": 0x008000,
+        "green_yellow": 0xadff2f,
+        "grey": 0x808080,
+        "honey_dew": 0xf0fff0,
+        "hot_pink": 0xff1493,
+        "indian_red": 0xcd5c5c,
+        "indigo": 0x4b0082,
+        "ivory": 0xfffff0,
+        "khaki": 0xf0e68c,
+        "lavender": 0xe6e6fa,
+        "lavender_blush": 0xfff0f5,
+        "lawn_green": 0x7cfc00,
+        "lemon_chiffon": 0xfffacd,
+        "light_blue": 0xadd8e6,
+        "light_coral": 0xf08080,
+        "light_cyan": 0xe0ffff,
+        "light_goldenrod_yellow": 0xfafad2,
+        "light_gray": 0xd3d3d3,
+        "light_green": 0x90ee90,
+        "light_grey": 0xd3d3d3,
+        "light_pink": 0xffb6c1,
+        "light_salmon": 0xffa07a,
+        "light_sea_green": 0x20b2aa,
+        "light_sky_blue": 0x87cefa,
+        "light_slate_gray": 0x778899,
+        "light_slate_grey": 0x778899,
+        "light_steel_blue": 0xb0c4de,
+        "light_yellow": 0xffffe0,
+        "lime": 0x00ff00,
+        "lime_green": 0x2e8b57,
+        "linen": 0xfaf0e6,
+        "magenta": 0xff00ff,
+        "maroon": 0x800000,
+        "medium_aquamarine": 0x66cdaa,
+        "medium_blue": 0x0000cd,
+        "medium_orchid": 0xba55d3,
+        "medium_purple": 0x9370db,
+        "medium_sea_green": 0x3cb371,
+        "medium_slate_blue": 0x66cdaa,
+        "medium_spring_green": 0x00fa9a,
+        "medium_turquoise": 0x48d1cc,
+        "medium_violet_red": 0xc71585,
+        "mid_night_blue": 0x191970,
+        "mint_cream": 0xf5fffa,
+        "misty_rose": 0xffe4e1,
+        "moccasin": 0xffe4b5,
+        "navajo_white": 0xffdead,
+        "navy": 0x000080,
+        "old_lace": 0xfdf5e6,
+        "olive": 0x808000,
+        "olive_drab": 0x6b8e23,
+        "orange": 0xffa500,
+        "orange_red": 0xff4500,
+        "orchid": 0xda70d6,
+        "pale_goldenrod": 0xeee8aa,
+        "pale_green": 0x98fb98,
+        "pale_turquoise": 0xafeeee,
+        "pale_violet_red": 0xdb7093,
+        "papaya_whip": 0xffefd5,
+        "peach_puff": 0xffdab9,
+        "peru": 0xcd8f3f,
+        "pink": 0xffc0cb,
+        "plum": 0xdda0dd,
+        "powder_blue": 0xb0e0e6,
+        "purple": 0x800080,
+        "red": 0xff0000,
+        "rosy_brown": 0xbc8f8f,
+        "royal_blue": 0x4169e1,
+        "saddle_brown": 0x8b2be2,
+        "salmon": 0xfa8072,
+        "sandy_brown": 0xf4a460,
+        "sea_green": 0x2e8b57,
+        "sea_shell": 0xfff5ee,
+        "sienna": 0xa0522d,
+        "silver": 0xc0c0c0,
+        "sky_blue": 0x87ceeb,
+        "slate_blue": 0x6a5acd,
+        "slate_gray": 0x708090,
+        "slate_grey": 0x708090,
+        "snow": 0xfffafa,
+        "spring_green": 0x00ff7f,
+        "steel_blue": 0x4682b4,
+        "tan": 0xd2b48c,
+        "teal": 0x008080,
+        "thistle": 0xd8bfd8,
+        "tomato": 0xff6347,
+        "turquoise": 0x40e0d0,
+        "violet": 0xee82ee,
+        "wheat": 0xf5deb3,
+        "white": 0xffffff,
+        "white_smoke": 0xf5f5f5,
+        "yellow": 0xffff00,
+        "yellow_green": 0x9acd32,
+    }
+
+    @staticmethod
+    def svg_to_rgb(svg_color_name: str) -> Tuple[float, float, float]:
+        """Convert Scalable Vector Graphics color to Hue/Saturation/Value tuple.
+
+        Arguments:
+        * *svg_color_name* (str): The SVG color name to use.
+
+        Returns:
+        * (Tuple[float, float, float]) as HSV (Hue/Satruation/Value) tuple used by FreeCAD.
+
+        """
+        rgb_colors: Dict[str, int] = ApexColor.RGB_COLORS
+        if svg_color_name not in rgb_colors:
+            raise ValueError(f"'{svg_color_name}' is not a supported SVG color name.")
+        rgb_color: int = rgb_colors[svg_color_name]
+        red: int = (rgb_color >> 16) & 0xff
+        green: int = (rgb_color >> 8) & 0xff
+        blue: int = rgb_color & 0xff
+        return (float(red) / 255.0, float(green) / 255.0, float(blue) / 255.0)
+
+
 # ApexLength:
 class ApexLength(float):
     """ApexLength is a float with with optional name and units.
@@ -901,6 +1077,8 @@ class ApexLength(float):
         fixed_length: float = whole + fractional
         if is_negative:
             fixed_length = -fixed_length
+        if abs(fixed_length) == 0.0:
+            fixed_length = 0.0
         final_length: Union[ApexLength, float] = fixed_length
         if isinstance(original_length, ApexLength):
             final_length = ApexLength(fixed_length, original_length.units, original_length.name)
@@ -1199,7 +1377,7 @@ class ApexPoint:
             raise ValueError(value_error)
         name: str = "" if suffix is None else f"{self.name}{suffix}"
         reoriented: Vector = placement * self.vector
-        return ApexPoint(reoriented.x, reoriented.y, reoriented.z, self.diameter, name)
+        return ApexPoint(reoriented.x, reoriented.y, reoriented.z, self.diameter, name, fix=True)
 
     @staticmethod
     def _unit_tests() -> None:
