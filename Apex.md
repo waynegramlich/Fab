@@ -7,6 +7,7 @@ Table of Contents:
   * 2.2 [ApexBox.reorient](#apexbox-reorient)
 * 3 [Class ApexCheck](#apexcheck)
   * 3.1 [ApexCheck.check](#apexcheck-check)
+  * 3.2 [ApexCheck.init\_show](#apexcheck-init-show)
 * 4 [Class ApexColor](#apexcolor)
 * 5 [Class ApexLength](#apexlength)
   * 5.1 [ApexLength.\_\_new\_\_](#apexlength---new--)
@@ -143,20 +144,22 @@ ApexCheck: Check arguments for type mismatch errors.
 Attributes:
 * *name* (str):
    The argument name (used for error messages.)
-* *type* (Tuple[Any]):
-  A tuple of acceptable types.
+* *types* (Tuple[Any]):
+  A tuple of acceptable types or constrained types.  A type is something line `bool`, `int`,
+  `float`, `MyClass`, etc.   A constrained type is a tuple of the form (str, Any, Any, ...)
+  and are discussed further below.
 
 An ApexCheck contains is used to type check a single function argument.
-The static method `Apexcheck.check()` takes a list of argument values and the
+The static method `ApexCheck.check()` takes a list of argument values and the
 corresponding tuple ApexCheck's and verifies that they are correct.
 
-Example:
+Example 1:
 
-     MY\_FUNCTION\_CHECKS = (
-         ApexCheck("arg1", int),
-         ApexCheck("arg2", bool),
-         ApexCheck("arg3", object),  # Any <=> object
-         ApexCheck("arg4," list),   # List <=> list
+     EXAMPLE1\_CHECKS = (
+         ApexCheck("arg1", (int,)),
+         ApexCheck("arg2", (bool,)),
+         ApexCheck("arg3", (type(None), MyType),  # Optional[myType]
+         ApexCheck("arg4," list),   # List[Any]
      )
      def my\_function(arg1: int, arg2: bool, arg3: Any, arg4: List[str]) -> None:
          Doc string here.
@@ -165,12 +168,50 @@ Example:
             raise ValueError(value\_error)
         # Rest of code goes here.
 
+A constrained type looks like `("xxx:yyy:zzz", XArg, YArg, ZArg)`, where the `xxx` are flag
+characters are associated with `XArg`, `yyy` are for `YArg`, etc.  The flag characters are:
+* `L`: A List of Arg
+* `T`: A Tuple of Arg
+* `S`: A List or Tuple of Arg
+* `+`: Len of Arg must be greater than 0
+* `?`: None is acceptible.
+Additional flags are added as needed.
+
+Example 2:
+
+    EXAMPLE2\_CHECKS = (
+        ApexCheck("arg1", ("+", str)),  # Arg1 must be a non-empty string
+        ApexCheck("arg2", ("?", str)),  # Arg2 can be a string or None
+        ApexCheck("arg3", ("+?", str)),  # Arg3 can be a non-empty string or None
+        ApexCheck("arg4", ("L", str)),  # Arg4 can be a list of strings
+        ApexCheck("arg5", ("T", str)),  # Arg4 can be a tuple of strings
+        ApexCheck("arg6", ("S", str)),  # Arg6 can be a list or tuple of strings
+        ApexCheck("arg7", ("L", (float, int)),  # Arg7 can be a list of mixed float and int
+
 
 ### 3.1 ApexCheck.check <a name="apexcheck-check"></a>
 
-def *check*(cls, *values*:  Sequence[Any], *apex\_checks*:  Sequence["ApexCheck"]) -> *str*:
+def *check*(cls, *values*:  Sequence[Any], *apex\_checks*:  Sequence["ApexCheck"], *tracing*:  *str* = "") -> *str*:
 
 Return type mismatch error message.
+
+### 3.2 ApexCheck.init\_show <a name="apexcheck-init-show"></a>
+
+def *init\_show*(name:  *str*, *arguments*:  Sequence[Any], *apex\_checks*:  Sequence["ApexCheck"]) -> *str*:
+
+Return string representation based in initializer arguments.
+
+Arguments:
+* *name* (str): Full fuction/method name.
+* *arguments* (Sequence[Any]): All argument values.
+* *apex\_checks*: (Sequence[ApexCheck]): Associated ApexCheck's.
+
+Returns:
+* (str) containing function/method name with associated initialize arguments:
+
+Raises:
+* ValueError: For length mismatches and bad parameter types:
+
 
 ## 4 Class ApexColor <a name="apexcolor"></a>
 
@@ -227,23 +268,15 @@ ApexMaterial: Represents a stock material.
 Other properties to be added later (e.g. transparency, shine, machining properties, etc.)
 
 Attributes:
-* *name* (Tuple[str, ...]): A list of material names from generict to specific.
-* *color* (str): The color name to use.
+* *Name* (Tuple[str, ...]): A list of material names from generict to specific.
+* *Color* (str): The color name to use.
 
 
 ### 6.1 ApexMaterial.\_\_init\_\_ <a name="apexmaterial---init--"></a>
 
-def \_\_init\_\_(self, *name*:  Tuple[str, ...], *color*:  *str*) -> None:
+def \_\_post\_init\_\_(self) -> None:
 
-Initialize and ApexMaterial.
-
-* Arguments:
-  * *name* (Tuple[str, ...): Non-empty to tuple of material names from broad to narrow.
-  * *color* (str):
-     An [SVG color name](https://www.december.com/html/spec/colorsvgsvg.html).
-
-* Raises:
-  * ValueError for either an empty name or a bad svg color.
+Post process.
 
 ## 7 Class ApexPoint <a name="apexpoint"></a>
 

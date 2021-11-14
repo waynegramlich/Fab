@@ -353,7 +353,7 @@ Return the ApexPointFeature Feature's.
 
 ### 5.4 ApexDrawing.plane\_process <a name="apexdrawing-plane-process"></a>
 
-def *plane\_process*(self, *body*:  "PartDesign.Body", *app\_document*:  "App.Document", *gui\_document*:  "Optional[Gui.Document]", *tracing*:  *str* = "") -> None:
+def *plane\_process*(self, *body*:  "PartDesign.Body", *document\_name*:  *str*, *tracing*:  *str* = "") -> None:
 
 Plane\_Process.
 

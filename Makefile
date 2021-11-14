@@ -8,6 +8,7 @@ PY2MD := py2md.py
 PY_FILES := \
     Apex.py \
     ApexEnclosure.py \
+    ApexFasten.py \
     ApexNode.py \
     ApexPath.py \
     ApexSketch.py \

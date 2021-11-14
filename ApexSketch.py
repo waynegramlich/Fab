@@ -733,7 +733,7 @@ class ApexPolygon(ApexElement):
     """
 
     INIT = (
-        ApexCheck("points", (list, tuple)),
+        ApexCheck("points", ("T+", ApexPoint)),
         ApexCheck("depth", (float, ApexLength)),
         ApexCheck("is_exterior", (bool,)),
         ApexCheck("name", (str,)),
@@ -752,6 +752,7 @@ class ApexPolygon(ApexElement):
         arguments: Tuple[Any] = cast(Tuple[Any], (points, depth, is_exterior, name))
         value_error: str = ApexCheck.check(arguments, ApexPolygon.INIT)
         if value_error:
+            assert False, str(value_error)
             raise ValueError(value_error)
         # next_tracing: str = tracing + " " if tracing else ""
         if tracing:
@@ -1311,8 +1312,8 @@ class ApexDrawing(object):
     INIT_CHECKS = (
         ApexCheck("contact", (Vector, ApexPoint)),
         ApexCheck("normal", (Vector, ApexPoint)),
-        ApexCheck("elements", (list, tuple)),
-        ApexCheck("exterior", (type(None), ApexElement)),
+        ApexCheck("elements", ("T", ApexElement)),
+        ApexCheck("exterior", ("?", ApexElement)),
         ApexCheck("name", (str,)),
     )
 

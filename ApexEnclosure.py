@@ -105,24 +105,25 @@ class ApexEnclosure(ApexNode):
         self.top_side: Block = Block("Top", self,
                                      box.TNE + Vector(0.0, 0.0, 0.0),
                                      box.TSW + Vector(0.0, 0.0, -dw), box.T, box.N, "red")
-        self.bottom_side: Block = Block("Bottom", self,
-                                        box.BNE + Vector(0.0, 0.0, 0.0),
-                                        box.BSW + Vector(0.0, 0.0, dw), box.B, box.N, "red")
+        if False:
+            self.bottom_side: Block = Block("Bottom", self,
+                                            box.BNE + Vector(0.0, 0.0, 0.0),
+                                            box.BSW + Vector(0.0, 0.0, dw), box.B, box.N, "red")
 
-        self.north_side: Block = Block("North", self,
-                                       box.TNE + Vector(0.0, 0.0, -dw),
-                                       box.BNW + Vector(0.0, -dw, dw), box.N, box.B, "green",
-                                       tracing=next_tracing)
-        self.south_side: Block = Block("South", self,
-                                       box.TSE + Vector(0.0, 0.0, -dw),
-                                       box.BSW + Vector(0.0, dw, dw), box.S, box.B, "green")
+            self.north_side: Block = Block("North", self,
+                                           box.TNE + Vector(0.0, 0.0, -dw),
+                                           box.BNW + Vector(0.0, -dw, dw), box.N, box.B, "green",
+                                           tracing=next_tracing)
+            self.south_side: Block = Block("South", self,
+                                           box.TSE + Vector(0.0, 0.0, -dw),
+                                           box.BSW + Vector(0.0, dw, dw), box.S, box.B, "green")
 
-        self.east_side: Block = Block("East", self,
-                                      box.TNE + Vector(0.0, -dw, -dw),
-                                      box.BSE + Vector(-dw, dw, dw), box.DE, box.DN, "blue")
-        self.west_side: Block = Block("West", self,
-                                      box.TNW + Vector(0.0, -dw, -dw),
-                                      box.BSW + Vector(dw, dw, dw), box.DW, box.DN, "blue")
+            self.east_side: Block = Block("East", self,
+                                          box.TNE + Vector(0.0, -dw, -dw),
+                                          box.BSE + Vector(-dw, dw, dw), box.DE, box.DN, "blue")
+            self.west_side: Block = Block("West", self,
+                                          box.TNW + Vector(0.0, -dw, -dw),
+                                          box.BSW + Vector(dw, dw, dw), box.DW, box.DN, "blue")
 
         if tracing:
             print(f"{tracing}<=ApexEnclosure.__init__{arguments}")
@@ -268,7 +269,7 @@ class Block(ApexNode):
             if tracing:
                 print(f"{tracing}Gui.Selection.addSelection("
                       f"'{document_name}', '{fixed_body_name}')")
-            if gui_document:
+            if gui_document:  # pragma: no unit cover
                 gui_body: Any = gui_document.getObject(body.Name)
                 assert hasattr(gui_body, "ShapeColor"), (body.Name, gui_body.Name, dir(gui_body))
                 if gui_body:

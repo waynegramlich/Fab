@@ -554,20 +554,22 @@ class ApexCheck(object):
     Attributes:
     * *name* (str):
        The argument name (used for error messages.)
-    * *type* (Tuple[Any]):
-      A tuple of acceptable types.
+    * *types* (Tuple[Any]):
+      A tuple of acceptable types or constrained types.  A type is something line `bool`, `int`,
+      `float`, `MyClass`, etc.   A constrained type is a tuple of the form (str, Any, Any, ...)
+      and are discussed further below.
 
     An ApexCheck contains is used to type check a single function argument.
-    The static method `Apexcheck.check()` takes a list of argument values and the
+    The static method `ApexCheck.check()` takes a list of argument values and the
     corresponding tuple ApexCheck's and verifies that they are correct.
 
-    Example:
+    Example 1:
 
-         MY_FUNCTION_CHECKS = (
-             ApexCheck("arg1", int),
-             ApexCheck("arg2", bool),
-             ApexCheck("arg3", object),  # Any <=> object
-             ApexCheck("arg4," list),   # List <=> list
+         EXAMPLE1_CHECKS = (
+             ApexCheck("arg1", (int,)),
+             ApexCheck("arg2", (bool,)),
+             ApexCheck("arg3", (type(None), MyType),  # Optional[myType]
+             ApexCheck("arg4," list),   # List[Any]
          )
          def my_function(arg1: int, arg2: bool, arg3: Any, arg4: List[str]) -> None:
              '''Doc string here.'''
@@ -576,10 +578,30 @@ class ApexCheck(object):
                 raise ValueError(value_error)
             # Rest of code goes here.
 
+    A constrained type looks like `("xxx:yyy:zzz", XArg, YArg, ZArg)`, where the `xxx` are flag
+    characters are associated with `XArg`, `yyy` are for `YArg`, etc.  The flag characters are:
+    * `L`: A List of Arg
+    * `T`: A Tuple of Arg
+    * `S`: A List or Tuple of Arg
+    * `+`: Len of Arg must be greater than 0
+    * `?`: None is acceptible.
+    Additional flags are added as needed.
+
+    Example 2:
+
+        EXAMPLE2_CHECKS = (
+            ApexCheck("arg1", ("+", str)),  # Arg1 must be a non-empty string
+            ApexCheck("arg2", ("?", str)),  # Arg2 can be a string or None
+            ApexCheck("arg3", ("+?", str)),  # Arg3 can be a non-empty string or None
+            ApexCheck("arg4", ("L", str)),  # Arg4 can be a list of strings
+            ApexCheck("arg5", ("T", str)),  # Arg4 can be a tuple of strings
+            ApexCheck("arg6", ("S", str)),  # Arg6 can be a list or tuple of strings
+            ApexCheck("arg7", ("L", (float, int)),  # Arg7 can be a list of mixed float and int
+
     """
 
     name: str  # Argument name
-    types: Tuple[Any, ...]  # Types to match
+    options: Tuple[Any, ...]  # Types or patterns to match
 
     @staticmethod
     def _type_name(t: Any) -> str:
@@ -593,26 +615,109 @@ class ApexCheck(object):
 
     def _message(self, argument_name: str, value: Any) -> str:
         """Return error message."""
-        type_names: Sequence[str] = [ApexCheck._type_name(t) for t in self.types]
+        type_names: Sequence[str] = [ApexCheck._type_name(t) for t in self.options]
         return (f"Argument '{argument_name}' is {ApexCheck._type_name(type(value))} "
                 f"which is not one of {type_names}")
 
     # ApexCheck.check():
     @classmethod
-    def check(cls, values: Sequence[Any], apex_checks: Sequence["ApexCheck"]) -> str:
+    def check(cls, values: Sequence[Any],
+              apex_checks: Sequence["ApexCheck"], tracing: str = "") -> str:
         """Return type mismatch error message."""
+        if tracing:
+            print(f"{tracing}=>ApexCheck({values}, {apex_checks}")
         assert len(values) == len(apex_checks), (
             f"{len(values)} values do not match {len(apex_checks)} checks")
         error: str = ""
         index: int
-        apex_check: "ApexCheck"
-        for index, apex_check in enumerate(apex_checks):
-            value: Any = values[index]
-            if not isinstance(value, apex_check.types):
-                error = apex_check._message(apex_check.name, value)
-                break
+        value: Any
+        for index, value in enumerate(values):
+            # Catagorize *value*:
+            is_list: bool = isinstance(value, list)
+            is_tuple: bool = isinstance(value, tuple)
+            is_sequence: bool = is_list or is_tuple
+            length: int = -1
+            try:
+                length = len(value)
+            except TypeError:
+                pass
+            if tracing:
+                print(f"{tracing}{is_list=} {is_tuple=} {is_sequence=} {length=}")
+
+            # Get associated *apex_check* and unpack it:
+            apex_check: "ApexCheck" = apex_checks[index]
+            if not isinstance(apex_check, cls):
+                raise ValueError(f"[{index}]:{apex_check} is not ApexCheck:  {apex_checks}")
+            name: str = apex_check.name
+            options: Tuple[Any, ...] = apex_check.options
+            if not options:
+                raise ValueError(f"[{index}]:{apex_check} has empty options")
+            flags: str = ""
+            if isinstance(options[0], str):
+                flags = options[0]
+                options = options[1:]
+            if tracing:
+                print(f"{tracing}{flags=} {options=}")
+
+            # Process each *flag* in *flags*:
+            flag: str
+            for flag in sorted(flags, reverse=True):  # Do letter flags first:
+                if flag == 'S':
+                    if not is_sequence:
+                        error = f"[{index}]: Argument '{name}' is neither a list nor tuple"
+                elif flag == 'L':
+                    if not is_list:
+                        error = f"[{index}]: Argument '{name}' is not a list"
+                elif flag == 'T':
+                    if tracing:
+                        print(f"{tracing}{flag=} {is_tuple=}")
+                    if not is_tuple:
+                        error = f"[{index}]: Argument '{name}' is not a tuple"
+                elif flag == '+':
+                    if tracing:
+                        print(f"{tracing}{flag=}")
+                    if length < 1:
+                        error = f"[{index}]: Argument '{name}' has no length"
+                    elif length == 0:
+                        error = f"[{index}]: Argument '{name}' is empty"
+                elif flag == '?':
+                    options += (type(None),)  # Allow for None type.
+                else:
+                    raise ValueError(f"Flag '{flag=}' is not allowed {flags=}.")
+                if flag:
+                    break
+
+            if not error:
+                type_names: Sequence[str]
+                if is_sequence:
+                    # For a sequence, verify the sequence element types:
+                    element: Any
+                    for index, element in enumerate(value):
+                        for option in options:
+                            if isinstance(element, option):
+                                break
+                        else:
+                            type_names = [ApexCheck._type_name(option)
+                                          for option in options]
+                            error = (f"[{index}]: {element} ({cls._type_name(element)}) "
+                                     f"is not of type {type_names}")
+                            break
+                else:
+                    # For a non-sequence, verify the types:
+                    for option in options:
+                        if isinstance(value, option):
+                            break  # Type matched
+                    else:
+                        type_names = [ApexCheck._type_name(option)
+                                      for option in options]
+                        error = (f"Argument '{name}' is {cls._type_name(value)} "
+                                 f"which is not one of {type_names}")
+                        break
+        if tracing:
+            print(f"{tracing}<=ApexCheck({values}, {apex_checks}=>'{error}'")
         return error
 
+    # ApexCheck.init_show():
     @staticmethod
     def init_show(name: str, arguments: Sequence[Any], apex_checks: Sequence["ApexCheck"]) -> str:
         """Return string representation based in initializer arguments.
@@ -646,8 +751,8 @@ class ApexCheck(object):
             if not isinstance(apex_check, ApexCheck):
                 raise ValueError(f"{apex_check} is not an ApexCheck")
             argument_name: str = apex_check.name
-            argument_types: Tuple[Any, ...] = apex_check.types
-            none_allowed: bool = type(None) in argument_types
+            argument_options: Tuple[Any, ...] = apex_check.options
+            none_allowed: bool = type(None) in argument_options
             is_none: bool = isinstance(argument_value, type(None))
 
             # Append appropriate values to *results*:
@@ -724,6 +829,106 @@ class ApexCheck(object):
         apex_check: ApexCheck
         for value, apex_check in bad_pairs:
             assert ApexCheck.check((value,), (apex_check,)), f"{value=} {apex_check=} did not fail"
+
+        # Do some flags based checks:
+        float_list_check: ApexCheck = ApexCheck("float_list_check", ("L", float))
+        float_sequence_check: ApexCheck = ApexCheck("float_sequence_check", ("S", float))
+        float_tuple_check: ApexCheck = ApexCheck("float_tuple_check", ("T", float))
+        int_list_check: ApexCheck = ApexCheck("int_list_check", ("L", int))
+        int_sequence_check: ApexCheck = ApexCheck("int_sequence_check", ("S", int))
+        int_tuple_check: ApexCheck = ApexCheck("int_tuple_check", ("T", int))
+        number_list_check: ApexCheck = ApexCheck("float_list_check", ("L", float, int))
+        number_sequence_check: ApexCheck = ApexCheck("float_sequence_check", ("S", float, int))
+        number_tuple_check: ApexCheck = ApexCheck("float_tuple_check", ("T", float, int))
+
+        empty_list: List[Union[int, float]] = []
+        empty_tuple: Tuple[Union[int, float], ...] = ()
+        int_list: List[int] = [1, 2, 3]
+        int_tuple: Tuple[int, ...] = (1, 2, 3)
+        float_list: List[float] = [1.0, 2.0, 3.0]
+        float_tuple: Tuple[float, ...] = (.0, 2.0, 3.0)
+        number_list: List[Union[int, float], ...] = [1, 2.0, 3]
+        number_tuple: Tuple[Union[int, float], ...] = (1, 2.0, 3)
+
+        _ = int_sequence_check
+        _ = int_tuple_check
+        _ = number_list_check
+        _ = int_tuple
+        _ = empty_list
+        _ = empty_tuple
+        _ = float_sequence_check
+        _ = float_tuple_check
+        _ = number_tuple_check
+        _ = float_tuple
+        good_pairs: Sequence[Tuple[Any, ApexCheck]] = (
+            # Empty Checks:
+            (empty_list, int_list_check),
+            (empty_list, float_list_check),
+            (empty_list, number_list_check),
+            (empty_list, int_sequence_check),
+            (empty_list, float_sequence_check),
+            (empty_list, number_sequence_check),
+
+            (empty_tuple, int_tuple_check),
+            (empty_tuple, float_tuple_check),
+            (empty_tuple, number_tuple_check),
+            (empty_tuple, int_sequence_check),
+            (empty_tuple, float_sequence_check),
+            (empty_tuple, number_sequence_check),
+
+            # Non_empty check:
+            (int_list, int_list_check),
+            (int_list, number_list_check),
+            (int_list, int_sequence_check),
+            (int_list, number_sequence_check),
+
+            (float_list, float_list_check),
+            (float_list, number_list_check),
+            (float_list, float_sequence_check),
+            (float_list, number_sequence_check),
+
+            (number_list, number_list_check),
+            (number_list, number_sequence_check),
+
+            (int_tuple, int_tuple_check),
+            (int_tuple, number_tuple_check),
+            (int_tuple, int_sequence_check),
+            (int_tuple, number_sequence_check),
+
+            (float_tuple, float_tuple_check),
+            (float_tuple, number_tuple_check),
+            (float_tuple, float_sequence_check),
+            (float_tuple, number_sequence_check),
+
+            # (number_tuple, number_tuple_check),
+            (number_tuple, number_sequence_check),
+        )
+
+        bad_pairs: Sequence[Tuple[Any, ApexCheck]] = (
+            (float_list, int_list_check),
+            (number_list, int_list_check),
+            (int_list, float_list_check),
+            (number_list, float_list_check),
+        )
+
+        index: int
+        value: Any
+        apex_check: ApexCheck
+        good_pair: Tuple
+
+        good_pair: Tuple[Any, ApexCheck]
+        for index, good_pair in enumerate(good_pairs):
+            value, apex_check = good_pair
+            assert isinstance(apex_check, cls), apex_check
+            error = ApexCheck.check((value,), (apex_check,))
+            assert not error, f"[{index}]: {value=} {apex_check=} {error=}"
+
+        value: Any
+        apex_check: ApexCheck
+        for value, apex_check in bad_pairs:
+            assert isinstance(apex_check, cls)
+            error = ApexCheck.check((value,), (apex_check,))
+            assert error, "No error generated"
 
         # Test ApexCheck.init_show():
         apex_checks: Tuple[ApexCheck, ...] = (
@@ -934,6 +1139,16 @@ class ApexColor(object):
         green: int = (rgb_color >> 8) & 0xff
         blue: int = rgb_color & 0xff
         return (float(red) / 255.0, float(green) / 255.0, float(blue) / 255.0)
+
+    @staticmethod
+    def _unit_tests() -> None:
+        """Run ApexColor unit tests."""
+        _ = ApexColor.svg_to_rgb("red")
+
+        try:
+            ApexColor.svg_to_rgb("fred")
+        except ValueError as value_error:
+            assert str(value_error) == "'fred' is not a supported SVG color name.", str(value_error)
 
 
 # ApexLength:
@@ -1179,42 +1394,97 @@ class ApexLength(float):
 
 
 # ApexMaterial:
+@dataclass
 class ApexMaterial(object):
     """ApexMaterial: Represents a stock material.
 
     Other properties to be added later (e.g. transparency, shine, machining properties, etc.)
 
     Attributes:
-    * *name* (Tuple[str, ...]): A list of material names from generict to specific.
-    * *color* (str): The color name to use.
+    * *Name* (Tuple[str, ...]): A list of material names from generict to specific.
+    * *Color* (str): The color name to use.
 
     """
 
+    Name: Tuple[str, ...]  # Hierarchical name from least specific to most specific.
+    Color: str  # SVG color name to use.
+
+    INIT_CHECKS = (
+        ApexCheck("Name", ("T+", str)),
+        ApexCheck("Color", (str,)),
+    )
+
     # ApexMaterial.__init__():
-    def __init__(self, name: Tuple[str, ...], color: str) -> None:
-        """Initialize and ApexMaterial.
+    def __post_init__(self) -> None:
+        """Post process."""
+        arguments = (self.Name, self.Color)
+        value_error: str = ApexCheck.check(arguments, ApexMaterial.INIT_CHECKS)
+        if value_error:
+            raise ValueError(value_error)
+        assert isinstance(self.Name, tuple)
+        if len(self.Name) == 0:
+            raise ValueError(f"Material is an empty tuple.")
+        name: str
+        for name in self.Name:
+            if not isinstance(name, str):
+                raise ValueError(f"{name} is not a string")
+            if not name:
+                raise ValueError("Name contains an empty string")
+        if not self.Color:
+            raise ValueError(f"Color name is empty")
 
-        * Arguments:
-          * *name* (Tuple[str, ...): Non-empty to tuple of material names from broad to narrow.
-          * *color* (str):
-             An [SVG color name](https://www.december.com/html/spec/colorsvgsvg.html).
+    def __repr__(self) -> str:
+        """Return string representation of ApexMaterial."""
+        return self.__str__()
 
-        * Raises:
-          * ValueError for either an empty name or a bad svg color.
-        """
-        if not name:
-            raise ValueError(f"Material name is an empty tuple.")
-        # Check for SVG color here.
-        self.name: Tuple[str, ...] = name
-        self.color: str = color
+    def __str__(self) -> str:
+        """Return string representation of ApexMaterial."""
+        return f"ApexMaterial({self.Name}, '{self.Color}')"
 
     @staticmethod
     def _unit_tests() -> None:
         """Run ApexMaterial unit tests."""
+        name: Tuple[str, ...] = ("brass",)
+        color: str = "orange"
+        material: ApexMaterial = ApexMaterial(name, color)
+        assert material.__repr__() == "ApexMaterial(('brass',), 'orange')"
+        assert f"{material}" == "ApexMaterial(('brass',), 'orange')", f"{material}"
+        material_text: str = f"ApexMaterial({name}, '{color}')"
+        assert f"{material}" == material_text, f"{material}"
+
+        # Name is not a Tuple:
         try:
-            ApexMaterial((), "")
-        except ValueError as error:
-            assert str(error) == "Material name is an empty tuple.", str(error)
+            ApexMaterial(cast(tuple, 0), color)
+        except ValueError as value_error:
+            want: str = "[0]: Argument 'Name' is not a tuple"
+            got: str = str(value_error)
+            assert want == got, (want, got)
+
+        # Name is empty tuple:
+        try:
+            ApexMaterial((), color)
+        except ValueError as value_error:
+            assert str(value_error) == "Material is an empty tuple.", str(value_error)
+
+        # Name with an empty string:
+        try:
+            ApexMaterial(("",), color)
+        except ValueError as value_error:
+            assert str(value_error) == "Name contains an empty string", str(value_error)
+
+        # Name is does not have a string:
+        try:
+            ApexMaterial((cast(str, 1),), color)
+        except ValueError as value_error:
+            want = "[0]: 1 (int) is not of type ['str']"
+            got = str(value_error)
+            assert got == want, (got, want)
+
+        # Color is empty.
+        try:
+            ApexMaterial(("Brass",), "")
+        except ValueError as value_error:
+            assert str(value_error) == "Color name is empty", str(value_error)
 
 
 # ApexPoint:
@@ -1397,8 +1667,9 @@ class ApexPoint:
             ApexPoint(cast(int, "x"), cast(float, "y"), cast(ApexLength, "z"),
                       cast(float, "diameter"), cast(str, None))
         except ValueError as value_error:
-            assert str(value_error) == (
-                "Argument 'x' is str which is not one of ['int', 'float', 'ApexLength']")
+            want = "Argument 'x' is str which is not one of ['int', 'float', 'ApexLength']"
+            got: str = str(value_error)
+            assert want == got, (want, got)
 
         def whole(vector: Vector) -> Vector:
             """Return Vector that is close to integers (testing only)."""
@@ -1485,6 +1756,7 @@ class ApexPoint:
 def _unit_tests() -> None:
     """Run the unit tests."""
     ApexCheck._unit_tests()
+    ApexColor._unit_tests()
     ApexBox._unit_tests()
     ApexLength._unit_tests()
     ApexPoint._unit_tests()
