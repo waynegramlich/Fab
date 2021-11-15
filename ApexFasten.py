@@ -72,16 +72,17 @@ class ApexOption(object):
     Name: str  # ApexOption name
     Detail: str  # ApexOption description.
 
+    POST_INIT_CHECKS = (
+        ApexCheck("Name", ("+", str)),
+        ApexCheck("Detail", ("+", str)),
+    )
+
     def __post_init__(self) -> None:
         """Ensure values are reasonable."""
-        if not isinstance(self.Name, str):
-            raise ValueError("Name is not a string.")
-        if not self.Name:
-            raise ValueError(f"Name is empty")
-        if not isinstance(self.Detail, str):
-            raise ValueError(f"Detail is not a string.")
-        if not self.Detail:
-            raise ValueError(f"Detail is empty")
+        arguments = (self.Name, self.Detail)
+        value_error: str = ApexCheck.check(arguments, ApexOption.POST_INIT_CHECKS)
+        if value_error:
+            raise ValueError(value_error)
 
     def __repr__(self) -> str:
         """Return String representation of ApexOption."""
@@ -100,6 +101,31 @@ class ApexOption(object):
         assert option.Name == name
         assert option.Detail == detail
         assert f"{option}" == "ApexOption('name', 'detail')", f"{option}"
+
+        # Error tests:
+        # Non string for Name.
+        try:
+            ApexOption(cast(str, 1), detail)
+        except ValueError as value_error:
+            assert str(value_error) == "[0]: Argument 'Name' has no length", str(value_error)
+
+        # Empty string for Name:
+        try:
+            ApexOption("", detail)
+        except ValueError as value_error:
+            assert str(value_error) == "[0]: Argument 'Name' has no length", str(value_error)
+
+        # Non string for Detail.
+        try:
+            ApexOption(name, cast(str, 2))
+        except ValueError as value_error:
+            assert str(value_error) == "[1]: Argument 'Detail' has no length", str(value_error)
+
+        # Empty string for Detail:
+        try:
+            ApexOption(name, "")
+        except ValueError as value_error:
+            assert str(value_error) == "[1]: Argument 'Detail' has no length", str(value_error)
 
 
 # ApexHead:
@@ -140,8 +166,8 @@ class ApexHead(ApexOption):
     DRIVES = (CARRIAGE, HEX_DRIVE, PHILIPS_DRIVE, SLOT_DRIVE, TORX_DRIVE)
 
     INIT_CHECKS = (
-        ApexCheck("Name", (str,)),
-        ApexCheck("Detail", (str,)),
+        ApexCheck("Name", ("+", str,)),
+        ApexCheck("Detail", ("+", str,)),
         ApexCheck("Material", (ApexMaterial,)),
         ApexCheck("Shape", (str,)),
         ApexCheck("Drive", (str,)),
@@ -151,14 +177,8 @@ class ApexHead(ApexOption):
         """Verify ApexHead."""
         arguments = (self.Name, self.Detail, self.Material, self.Shape, self.Drive)
         value_error: str = ApexCheck.check(arguments, ApexHead.INIT_CHECKS)
-        if not self.Name:
-            raise ValueError("Name is empty")
-        if not self.Detail:
-            raise ValueError("Detail is empty")
         if value_error:
             raise ValueError(value_error)
-        if not isinstance(self.Material, ApexMaterial):
-            raise ValueError("Material is not an ApexMaterial")
         if self.Shape not in ApexHead.HEADS:
             raise ValueError(f"Shape (='{self.Shape}') is not in {ApexHead.HEADS}")
         if self.Drive not in ApexHead.DRIVES:
@@ -187,6 +207,9 @@ class ApexHead(ApexOption):
         assert f"{apex_head}" == (
             "ApexHead('PH', 'Brass Philips Pan Head', ApexMaterial(('Brass',), 'orange'), "
             "'Pan', Philips)"), f"{apex_head}"
+        assert apex_head.__repr__() == (
+            "ApexHead('PH', 'Brass Philips Pan Head', ApexMaterial(('Brass',), 'orange'), "
+            "'Pan', Philips)"), f"{apex_head}"
         assert apex_head.Name == name, apex_head.Name
         assert apex_head.Material is material, apex_head.Material
         assert apex_head.Shape == shape, apex_head.Shape
@@ -195,14 +218,15 @@ class ApexHead(ApexOption):
         # Empty Name Test:
         try:
             ApexHead("", detail, material, shape, drive)
+            assert False
         except ValueError as value_error:
-            assert str(value_error) == "Name is empty", str(value_error)
+            assert str(value_error) == "[0]: Argument 'Name' has no length", str(value_error)
 
         # Bad Detail:
         try:
             ApexHead(name, "", cast(ApexMaterial, 0), shape, drive)
         except ValueError as value_error:
-            assert str(value_error) == "Detail is empty", str(value_error)
+            assert str(value_error) == "[1]: Argument 'Detail' has no length", str(value_error)
 
         # Bad Material:
         try:
@@ -214,16 +238,18 @@ class ApexHead(ApexOption):
         # Bad Shape:
         try:
             ApexHead(name, detail, material, "", drive)
+            assert False
         except ValueError as value_error:
             assert str(value_error) == ("Shape (='') is not in ('Cheese', 'Fillister', "
                                         "'Flat', 'Hex', 'Oval', 'Pan', 'Round')"), str(value_error)
 
         # Bad Drive:
         try:
-            ApexHead(name, detail, material, "", drive)
+            ApexHead(name, detail, material, shape, "")
         except ValueError as value_error:
-            assert str(value_error) == ("Shape (='') is not in ('Cheese', 'Fillister', 'Flat', "
-                                        "'Hex', 'Oval', 'Pan', 'Round')"), str(value_error)
+            got: str = str(value_error)
+            assert got == (
+                "Head (='') is not in ('Carriage', 'Hex', 'Philips', 'Slot', 'Torx')"), got
 
 
 # ApexNut:
@@ -292,6 +318,13 @@ class ApexNut(ApexOption):
         thickness: float = 2.0
         material: ApexMaterial = ApexMaterial(("brass",), "orange")
         nut: ApexNut = ApexNut(name, detail, sides, width, thickness, material)
+
+        # Verify that __repr__() and __str__() work.
+        want: str = ("ApexNut('M3Nut', 'Brass M3 Hex Nut', 6, 6.2, 2.0, "
+                     "ApexMaterial(('brass',), 'orange'))")
+        assert f"{nut}" == want, f"{nut}"
+        assert nut.__repr__() == want
+        assert str(nut) == want
 
         # Verify attributes:
         assert nut.Name == name, nut.Name
@@ -376,13 +409,13 @@ class ApexWasher(ApexOption):
     SPLIT_LOCK = "SPLIT_LOCK"
 
     INIT_CHECKS = (
-        ApexCheck("Name", (str,)),
-        ApexCheck("Detail", (str,)),
+        ApexCheck("Name", ("+", str)),
+        ApexCheck("Detail", ("+", str)),
         ApexCheck("Inner", (float,)),
         ApexCheck("Outer", (float,)),
         ApexCheck("Thickness", (float,)),
         ApexCheck("Material", (ApexMaterial,)),
-        ApexCheck("Kind", (str,)),
+        ApexCheck("Kind", ("+", str,)),
     )
 
     # ApexWasher:
@@ -437,6 +470,8 @@ class ApexWasher(ApexOption):
         washer_text: str = (f"ApexWasher('{name}', '{detail}', "
                             f"{inner}, {outer}, {thickness}, {material}, '{kind}')")
         assert f"{washer}" == washer_text, (f"{washer}", washer_text)
+        assert str(washer) == washer_text
+        assert washer.__repr__() == washer_text
 
         # Access all of the attributes:
         assert washer.Name == name, washer.Name
@@ -452,13 +487,13 @@ class ApexWasher(ApexOption):
             # Empty name error:
             ApexWasher("", detail, inner, outer, thickness, material, kind)
         except ValueError as value_error:
-            assert str(value_error) == "Name is empty", str(value_error)
+            assert str(value_error) == "[0]: Argument 'Name' has no length", str(value_error)
 
         try:
             # Empty detail errora:
             ApexWasher(name, "", inner, outer, thickness, material, kind)
         except ValueError as value_error:
-            assert str(value_error) == "Detail is empty", str(value_error)
+            assert str(value_error) == "[1]: Argument 'Detail' has no length", str(value_error)
 
         try:
             # Bad Inner:
@@ -622,7 +657,7 @@ class ApexFasten:
         ApexCheck("Name", (str,)),
         ApexCheck("Profile", (str,)),
         ApexCheck("Size", (str,)),
-        ApexCheck("Options", (tuple,)),
+        ApexCheck("Options", ("T", ApexOption)),
     )
     PROFILES = (
         ISO_COARSE,
@@ -644,7 +679,14 @@ class ApexFasten:
 
     def __str__(self) -> str:
         """Return a string representation of an ApexFasten."""
-        return f"ApexFasten('{self.Name}', '{self.Profile}', '{self.Size}'))"
+        return f"ApexFasten('{self.Name}', '{self.Profile}', '{self.Size}')"
+
+    POST_INIT_CHECKS = (
+        ApexCheck("Name", ("+", str)),
+        ApexCheck("Profile", ("+", str)),
+        ApexCheck("Size", ("+", str)),
+        ApexCheck("Options", ("T", ApexOption)),
+    )
 
     def __post_init__(self):
         """Verify that ApexFasten is properly initialized.
@@ -666,12 +708,10 @@ class ApexFasten:
         value_error: str = ApexCheck.check(arguments, ApexFasten.INIT_CHECKS)
         if value_error:
             raise ValueError(value_error)
-        if not self.Name:
-            raise ValueError("Name is empty")
         if self.Profile not in ApexFasten.PROFILES:
-            raise ValueError(f"'{self.Profile}' is not one of {ApexFasten.Profiles}")
-        if self.Profile not in ApexFasten.SIZES:
-            raise ValueError(f"'{self.Profile}' is not a valid size")
+            raise ValueError(f"'{self.Profile}' is not one of {ApexFasten.PROFILES}")
+        if self.Size not in ApexFasten.SIZES:
+            raise ValueError(f"'{self.Size}' is not a valid size")
 
         # Ensure that Options is a tuple and only contains ApexOptions:
         if not isinstance(self.Options, tuple):
@@ -688,20 +728,51 @@ class ApexFasten:
         profile: str = ApexFasten.UTS_FINE
         size: str = ApexFasten.UTS_N4
         fasten: ApexFasten = ApexFasten(name, profile, size, ())
-        _ = fasten
 
         # Verify __repr__() works:
-        pass
+        assert f"{fasten}" == "ApexFasten('#4-40', 'UTS Fine', 'UTS #4')", f"{fasten}"
+
+        # Empty profile:
+        try:
+            ApexFasten(name, "bad", size, ())
+        except ValueError as value_error:
+            got: str = str(value_error)
+            want: str = ("'bad' is not one of ('ISO Metric Coarse', 'ISO Metric FINE', "
+                         "'UTS Coarse', 'UTS Fine', 'UTS Extra Fine')")
+            assert want == got, (want, got)
 
 
 # ApexJoin:
+@dataclass(frozen=True)
 class ApexJoin(object):
-    """ApexJoin: Specifies a single fastener instance."""
+    """ApexJoin: Specifies a single fastener instance.
 
-    # ApexJoin.__init__():
-    def __init__(self, fasten: ApexFasten, start: Vector, end: Vector, options: str = "") -> None:
+    Attributes:
+    * Fasten (ApexFasten): ApexFasten object to use for basic dimensions.
+    * Start (Vector): Start point for ApexJoin.
+    * End (Vector): End point for ApexJoin.
+    * Options (Tuple[ApexOption]): The various options associated with the ApexJoin.
+
+    """
+
+    Fasten: ApexFasten  # Parent ApexFasten
+    Start: Vector  # Start point (near screw/bolt head)
+    End: Vector  # End point (ene screw/bolt tip)
+    Stack: str  # Stack of items that make up the entire ApexJoin stack.
+
+    POST_INIT_CHECKS = (
+        ApexCheck("Fasten", (ApexFasten,)),
+        ApexCheck("Start", (Vector,)),
+        ApexCheck("End", (Vector,)),
+        ApexCheck("Stack", (str,)),
+    )
+
+    def __post_init__(self) -> None:
         """Initialize a single ApexJoin."""
-        pass
+        arguments = (self.Fasten, self.Start, self.End, self.Stack)
+        value_error: str = ApexCheck.check(arguments, ApexJoin.POST_INIT_CHECKS)
+        if value_error:
+            raise ValueError
 
     @staticmethod
     def _unit_tests() -> None:
@@ -722,9 +793,10 @@ def _unit_tests() -> None:
     """Run unit tests."""
     ApexOption._unit_tests()
     ApexHead._unit_tests()
-    # ApexFasten._unit_tests()
+    ApexFasten._unit_tests()
     ApexNut._unit_tests()
     ApexWasher._unit_tests()
+    ApexJoin._unit_tests()
 
 
 if __name__ == "__main__":

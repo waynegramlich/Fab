@@ -80,7 +80,7 @@ class ApexEnclosure(ApexNode):
         arguments: Tuple[Any, ...] = (name, dx, dy, dz, material, dw, center, z_align, y_align)
         value_error = ApexCheck.check(arguments, ApexEnclosure.INIT_CHECKS)
         if value_error:
-            raise ValueError(value_error)
+            raise ValueError(value_error)  # pragma: no unit cover
 
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
@@ -283,7 +283,7 @@ class Block(ApexNode):
             if tracing:
                 print(f"{tracing}Gui.Selection.clearSelection()")
             # Gui.Selection.clearSelection()
-            app_document.recompute()
+        app_document.recompute()
 
         elements: Tuple[ApexElement, ...] = (block_polygon,)
         if tracing:

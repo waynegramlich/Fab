@@ -613,12 +613,6 @@ class ApexCheck(object):
             name = t.__class__.__name__
         return name
 
-    def _message(self, argument_name: str, value: Any) -> str:
-        """Return error message."""
-        type_names: Sequence[str] = [ApexCheck._type_name(t) for t in self.options]
-        return (f"Argument '{argument_name}' is {ApexCheck._type_name(type(value))} "
-                f"which is not one of {type_names}")
-
     # ApexCheck.check():
     @classmethod
     def check(cls, values: Sequence[Any],
@@ -850,16 +844,6 @@ class ApexCheck(object):
         number_list: List[Union[int, float], ...] = [1, 2.0, 3]
         number_tuple: Tuple[Union[int, float], ...] = (1, 2.0, 3)
 
-        _ = int_sequence_check
-        _ = int_tuple_check
-        _ = number_list_check
-        _ = int_tuple
-        _ = empty_list
-        _ = empty_tuple
-        _ = float_sequence_check
-        _ = float_tuple_check
-        _ = number_tuple_check
-        _ = float_tuple
         good_pairs: Sequence[Tuple[Any, ApexCheck]] = (
             # Empty Checks:
             (empty_list, int_list_check),
@@ -905,6 +889,9 @@ class ApexCheck(object):
         )
 
         bad_pairs: Sequence[Tuple[Any, ApexCheck]] = (
+            (int_tuple, int_list_check),
+            (float_tuple, int_list_check),
+            (number_tuple, int_list_check),
             (float_list, int_list_check),
             (number_list, int_list_check),
             (int_list, float_list_check),
@@ -929,6 +916,13 @@ class ApexCheck(object):
             assert isinstance(apex_check, cls)
             error = ApexCheck.check((value,), (apex_check,))
             assert error, "No error generated"
+
+        # Test non sequence checks:
+        non_empty_string_check: ApexCheck = ApexCheck("Name", ("+", str))
+        value_error: str = ApexCheck.check(("non-empty",), (non_empty_string_check,))
+        assert value_error == "", f"{value_error=}"
+        value_error = ApexCheck.check(("",), (non_empty_string_check,))
+        assert value_error == "[0]: Argument 'Name' has no length", value_error
 
         # Test ApexCheck.init_show():
         apex_checks: Tuple[ApexCheck, ...] = (
@@ -1426,8 +1420,6 @@ class ApexMaterial(object):
             raise ValueError(f"Material is an empty tuple.")
         name: str
         for name in self.Name:
-            if not isinstance(name, str):
-                raise ValueError(f"{name} is not a string")
             if not name:
                 raise ValueError("Name contains an empty string")
         if not self.Color:

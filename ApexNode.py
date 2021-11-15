@@ -147,8 +147,11 @@ class ApexNode(object):
         differences: Tuple[Tuple[str, Any, Any], ...] = self._configure_all(count=count)
         if differences:
             difference: Tuple[str, Any, Any]
-            difference_names: Tuple[str, ...] = tuple([difference[0] for difference in differences])
-            print(f"Constraint issues: {difference_names}")
+            difference_names: Tuple[str, ...] = tuple(
+                [difference[0]
+                 for difference in differences]
+            )
+            print(f"Constraint issues: {difference_names}")  # pragma: no unit cover
         else:
             self._build_all(context, tracing=next_tracing)
         if tracing:

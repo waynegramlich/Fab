@@ -44,7 +44,7 @@ def get_document(name: str) -> "App.Document":
         document = App.activeDocument()
         # if App.GuiUp:
         #     VIEW = App.Gui.ActiveDocument.ActiveView
-    else:
+    else:  # pragma: no unit cover
         for obj in document.Objects:
             document.removeObject(obj.Name)
         # if App.GuiUp:
@@ -55,7 +55,7 @@ def get_document(name: str) -> "App.Document":
 def setview(document: "App.Document") -> "App.Document":
     """Rearrange View."""
     document.recompute()
-    if App.GuiUp:
+    if App.GuiUp:  # pragma: no unit cover
         view = Gui.ActiveDocument.ActiveView
         view.viewAxometric()
         view.setAxisCross(True)
@@ -141,7 +141,7 @@ def model(document: "App.Document") -> None:
     #                              rotate=45)
 
     job = PathJob.Create('Job', [donut_a], None)
-    if App.GuiUp:
+    if App.GuiUp:  # pragma: no unit cover
         proxy: Any = PathJobGui.ViewProvider(job.ViewObject)
         # The statement below causes a bunch of rearrangement of the FreeCAD object tree
         # to push all off the Path related object to be under the FreeCAD Path Job object.

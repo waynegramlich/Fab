@@ -1523,7 +1523,7 @@ class ApexDrawing(object):
         datum_plane.recompute()
 
         # Turn datum plane visibility off:
-        if App.GuiUp:
+        if App.GuiUp:  # pragma: no unit cover
             gui_document: Any = Gui.ActiveDocument
             object_name: str = datum_plane.Name
             gui_datum_plane: Any = gui_document.getObject(object_name)
@@ -1546,7 +1546,7 @@ class ApexDrawing(object):
 
         # app_document: App.Document = App.getDocument(document_name)
         gui_document: Optional[Gui.Document] = None
-        if App.GuiUp:
+        if App.GuiUp:  # pragma: no unit cover
             gui_document = Gui.getDocument(document_name)
 
         # Create the *datum_plane*.  The "Apex" in Part.ApexFeature is a coinciding name used
@@ -1596,7 +1596,7 @@ class ApexDrawing(object):
             sketch.Support = (datum_plane, "")
             sketch.MapMode = "FlatFace"
             if App.GuiUp:
-                if gui_document:
+                if gui_document:  # pragma: no unit cover
                     if tracing:
                         print(f"{tracing}{sketch.Name=}")
                     gui_sketch: Any = gui_document.getObject(sketch.Name)
@@ -1624,7 +1624,7 @@ class ApexDrawing(object):
                 pad.Midplane = 0
                 pad.Offset = 0
 
-                if gui_document:
+                if gui_document:  # pragma: no unit cover
                     visibility_set(pad, True)
                     view_object: Any = body.getLinkedObject(True).ViewObject
                     pad.ViewObject.LineColor = getattr(
