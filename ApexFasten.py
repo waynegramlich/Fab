@@ -4,8 +4,8 @@
 While the most common fasteners are screws and bolts, there are others like rivets, set screws,
 cotter pins, etc.  This package centralizes all of the issues associated with fasteners
 so that changing a fastener does not become a nightmare of having to individually find
-each fastener and make manual changes to each one.  The change is made in once place and
-it propagates to all associated fasteners.
+each fastener scattered throughout a design and make individual manual changes to each one.
+The change is made in once place and it propagates to all associated fasteners.
 
 The ApexFasten class deals with the following issues:
 * Hole Drilling/Milling:
@@ -30,13 +30,29 @@ The ApexFasten class deals with the following issues:
 * Fastener WorkBench:
   The FreeCAD Fasteners workbench is used wherever possible.
 
-The ApexJoin class specifics a single fastener instance.  It specifies two end points
-(i.e. Vector's) and a class of sub-parts (screw head, screw drive, washer, lock washer, etc.)
-The screw/bolt length to use is determined and associated operations occur.  For a given part,
-the holes are correctly placed and sized for each part.  The end user basically says "this part
-interacts with this following ApexJoin's" and the Apex system takes care of the rest.  Moving
-either of the two end-points of an ApexJoin automatically updates all associated parts that
-use the ApexJoin.
+The two main classes are:
+
+* ApexStack:
+  A screw/bolt "factory" that contains the screw/bolt and associated washer, nuts, etc.
+  The overall length is *NOT* specified.
+* ApexStackBody:
+  The specifications for the screw/bolt body.
+  A list of available lengths is provided.
+* ApexStackOption:
+  This is the base class for the following sub-classes:
+  * ApexWasher:
+    A way to specify flat and lock washers.
+  * ApexNut:
+    A way to specify nuts.
+* ApexScrew:
+  This is an instance of an ApexStack that has an actual position and length.
+
+Each ApexScrew can be applied to the contents of an ApexNode to properly place and
+size holes in Parts.  The system properly determines where to place the hole on the
+appropriate FreeCAD sketch.  If an ApexScrew is moved to a different position in 3D space,
+the associated holes are automatically moved to the correct new locations.
+
+There is a base call ApexClass called ApexOption that is used to represent
 
 """
 
@@ -58,10 +74,10 @@ from FreeCAD import Vector  # type: ignore
 #  https://github.com/shaise/FreeCAD_FastenersWB
 
 
-# ApexOption:
+# ApexStackOption:
 @dataclass(frozen=True)
-class ApexOption(object):
-    """ApexOption: Base class for ApexFasten options (e.g. washers, nuts, etc...).
+class ApexStackOption(object):
+    """ApexStackOption: Base class for ApexFasten options (e.g. washers, nuts, etc...).
 
     Attributes:
     * *Name* (str): The option name.
@@ -69,8 +85,8 @@ class ApexOption(object):
 
     """
 
-    Name: str  # ApexOption name
-    Detail: str  # ApexOption description.
+    Name: str  # ApexStackOption name
+    Detail: str  # ApexStackOption description.
 
     POST_INIT_CHECKS = (
         ApexCheck("Name", ("+", str)),
@@ -80,217 +96,88 @@ class ApexOption(object):
     def __post_init__(self) -> None:
         """Ensure values are reasonable."""
         arguments = (self.Name, self.Detail)
-        value_error: str = ApexCheck.check(arguments, ApexOption.POST_INIT_CHECKS)
+        value_error: str = ApexCheck.check(arguments, ApexStackOption.POST_INIT_CHECKS)
         if value_error:
             raise ValueError(value_error)
 
     def __repr__(self) -> str:
-        """Return String representation of ApexOption."""
+        """Return String representation of ApexStackOption."""
         return self.__str__()
 
     def __str__(self) -> str:
-        """Return String representation of ApexOption."""
-        return f"ApexOption('{self.Name}', '{self.Detail}')"
+        """Return String representation of ApexStackOption."""
+        return f"ApexStackOption('{self.Name}', '{self.Detail}')"
 
     @staticmethod
     def _unit_tests() -> None:
-        """Run ApexOption unit tests."""
+        """Run ApexStackOption unit tests."""
         name: str = "name"
         detail: str = "detail"
-        option: ApexOption = ApexOption(name, detail)
+        option: ApexStackOption = ApexStackOption(name, detail)
         assert option.Name == name
         assert option.Detail == detail
-        assert f"{option}" == "ApexOption('name', 'detail')", f"{option}"
+        assert f"{option}" == "ApexStackOption('name', 'detail')", f"{option}"
 
         # Error tests:
         # Non string for Name.
         try:
-            ApexOption(cast(str, 1), detail)
+            ApexStackOption(cast(str, 1), detail)
         except ValueError as value_error:
             assert str(value_error) == "[0]: Argument 'Name' has no length", str(value_error)
 
         # Empty string for Name:
         try:
-            ApexOption("", detail)
+            ApexStackOption("", detail)
         except ValueError as value_error:
             assert str(value_error) == "[0]: Argument 'Name' has no length", str(value_error)
 
         # Non string for Detail.
         try:
-            ApexOption(name, cast(str, 2))
+            ApexStackOption(name, cast(str, 2))
         except ValueError as value_error:
             assert str(value_error) == "[1]: Argument 'Detail' has no length", str(value_error)
 
         # Empty string for Detail:
         try:
-            ApexOption(name, "")
+            ApexStackOption(name, "")
         except ValueError as value_error:
             assert str(value_error) == "[1]: Argument 'Detail' has no length", str(value_error)
-
-
-# ApexHead:
-@dataclass(frozen=True)
-class ApexHead(ApexOption):
-    """Represents the Head of the ApexFastener.
-
-    Attributes:
-    * *Name* (str): The name for this head.
-    * *Detail* (str): Short ApexHead description.
-    * *Material* (ApexMaterial): The ApexHead fastener material.
-    * *Shape* (str): The ApexHead shape.
-    * *Drive* (str): The ApexH drive .
-
-    """
-
-    Material: ApexMaterial  # ApexHead material
-    Shape: str  # ApexHead shape
-    Drive: str  # ApexHead drive
-
-    # Screw Heads:
-    CHEESE_HEAD = "Cheese"
-    FILLISTER_HEAD = "Fillister"
-    FLAT_HEAD = "Flat"
-    HEX_HEAD = "Hex"  # For a Bolt
-    OVAL_HEAD = "Oval"
-    PAN_HEAD = "Pan"
-    ROUND_HEAD = "Round"
-
-    # Screw Drives:
-    CARRIAGE = "Carriage"  # Carriage Bolts do not get driven
-    HEX_DRIVE = "Hex"
-    PHILIPS_DRIVE = "Philips"
-    SLOT_DRIVE = "Slot"
-    TORX_DRIVE = "Torx"
-
-    HEADS = (CHEESE_HEAD, FILLISTER_HEAD, FLAT_HEAD, HEX_HEAD, OVAL_HEAD, PAN_HEAD, ROUND_HEAD)
-    DRIVES = (CARRIAGE, HEX_DRIVE, PHILIPS_DRIVE, SLOT_DRIVE, TORX_DRIVE)
-
-    INIT_CHECKS = (
-        ApexCheck("Name", ("+", str,)),
-        ApexCheck("Detail", ("+", str,)),
-        ApexCheck("Material", (ApexMaterial,)),
-        ApexCheck("Shape", (str,)),
-        ApexCheck("Drive", (str,)),
-    )
-
-    def __post_init__(self) -> None:
-        """Verify ApexHead."""
-        arguments = (self.Name, self.Detail, self.Material, self.Shape, self.Drive)
-        value_error: str = ApexCheck.check(arguments, ApexHead.INIT_CHECKS)
-        if value_error:
-            raise ValueError(value_error)
-        if self.Shape not in ApexHead.HEADS:
-            raise ValueError(f"Shape (='{self.Shape}') is not in {ApexHead.HEADS}")
-        if self.Drive not in ApexHead.DRIVES:
-            raise ValueError(f"Head (='{self.Drive}') is not in {ApexHead.DRIVES}")
-
-    def __repr__(self) -> str:
-        """Return ApexHead as a string."""
-        return self.__str__()
-
-    def __str__(self) -> str:
-        """Return ApexHead as a string."""
-        return (f"ApexHead('{self.Name}', '{self.Detail}', "
-                f"{self.Material}, '{self.Shape}', {self.Drive})")
-
-    @staticmethod
-    def _unit_tests() -> None:
-        """Run ApexHead unit tests."""
-        name: str = "PH"
-        detail: str = "Brass Philips Pan Head"
-        material: ApexMaterial = ApexMaterial(("Brass",), "orange")
-        shape: str = ApexHead.PAN_HEAD
-        drive: str = ApexHead.PHILIPS_DRIVE
-        apex_head: ApexHead = ApexHead(name, detail, material, shape, drive)
-
-        # Verify __repr__() and attributes work:
-        assert f"{apex_head}" == (
-            "ApexHead('PH', 'Brass Philips Pan Head', ApexMaterial(('Brass',), 'orange'), "
-            "'Pan', Philips)"), f"{apex_head}"
-        assert apex_head.__repr__() == (
-            "ApexHead('PH', 'Brass Philips Pan Head', ApexMaterial(('Brass',), 'orange'), "
-            "'Pan', Philips)"), f"{apex_head}"
-        assert apex_head.Name == name, apex_head.Name
-        assert apex_head.Material is material, apex_head.Material
-        assert apex_head.Shape == shape, apex_head.Shape
-        assert apex_head.Drive == drive, apex_head.Drive
-
-        # Empty Name Test:
-        try:
-            ApexHead("", detail, material, shape, drive)
-            assert False
-        except ValueError as value_error:
-            assert str(value_error) == "[0]: Argument 'Name' has no length", str(value_error)
-
-        # Bad Detail:
-        try:
-            ApexHead(name, "", cast(ApexMaterial, 0), shape, drive)
-        except ValueError as value_error:
-            assert str(value_error) == "[1]: Argument 'Detail' has no length", str(value_error)
-
-        # Bad Material:
-        try:
-            ApexHead(name, detail, cast(ApexMaterial, 0), shape, drive)
-        except ValueError as value_error:
-            assert str(value_error) == (
-                "Argument 'Material' is int which is not one of ['ApexMaterial']"), str(value_error)
-
-        # Bad Shape:
-        try:
-            ApexHead(name, detail, material, "", drive)
-            assert False
-        except ValueError as value_error:
-            assert str(value_error) == ("Shape (='') is not in ('Cheese', 'Fillister', "
-                                        "'Flat', 'Hex', 'Oval', 'Pan', 'Round')"), str(value_error)
-
-        # Bad Drive:
-        try:
-            ApexHead(name, detail, material, shape, "")
-        except ValueError as value_error:
-            got: str = str(value_error)
-            assert got == (
-                "Head (='') is not in ('Carriage', 'Hex', 'Philips', 'Slot', 'Torx')"), got
-
 
 # ApexNut:
 @dataclass(frozen=True)
-class ApexNut(ApexOption):
+class ApexNut(ApexStackOption):
     """ApexNut: A class the represents a fastener nut.
 
     Attributes:
     * Name (str): Nut name.
     * Detail (str): More nut detail.
+    * Material (ApexMaterial): The nut material
     * Sides (int): The number of nut sides (either 4 or 6.)
     * Width (float): The Nut width between 2 opposite faces.
     * Thickness (float): The nut thickness in millimeters.
-    * Material (ApexMaterial): The nut material
 
     """
 
+    Material: ApexMaterial  # The Nut material.
     Sides: int  # The Nut sides (either, 4 or 6).
     Width: float  # The Nut width between 2 faces in millimeters.
     Thickness: float  # The Nut thickness in millimeters.
-    Material: ApexMaterial  # The Nut material.
 
     INIT_CHECKS = (
-        ApexCheck("Name", (str,)),
-        ApexCheck("Detail", (str,)),
+        ApexCheck("Name", ("+", str,)),
+        ApexCheck("Detail", ("+", str,)),
+        ApexCheck("Material", (ApexMaterial,)),
         ApexCheck("Sides", (int,)),
         ApexCheck("Width", (float,)),
         ApexCheck("Thickness", (float,)),
-        ApexCheck("Material", (ApexMaterial,)),
     )
 
     def __post_init__(self) -> None:
         """Verify everything is reasonable."""
-        arguments = (self.Name, self.Detail, self.Sides, self.Width, self.Thickness, self.Material)
+        arguments = (self.Name, self.Detail, self.Material, self.Sides, self.Width, self.Thickness)
         value_error: str = ApexCheck.check(arguments, ApexNut.INIT_CHECKS)
         if value_error:
             raise ValueError(value_error)
-        if not self.Name:
-            raise ValueError(f"Name is empty")
-        if not self.Detail:
-            raise ValueError(f"Detail is empty")
         if self.Sides not in (4, 6):
             raise ValueError(f"Sides (={self.Sides}) is neither 4 nor 6")
         if self.Width <= 0.0:
@@ -317,7 +204,7 @@ class ApexNut(ApexOption):
         width: float = 6.2
         thickness: float = 2.0
         material: ApexMaterial = ApexMaterial(("brass",), "orange")
-        nut: ApexNut = ApexNut(name, detail, sides, width, thickness, material)
+        nut: ApexNut = ApexNut(name, detail, material, sides, width, thickness)
 
         # Verify that __repr__() and __str__() work.
         want: str = ("ApexNut('M3Nut', 'Brass M3 Hex Nut', 6, 6.2, 2.0, "
@@ -340,42 +227,44 @@ class ApexNut(ApexOption):
 
         # Do argument checking:
         try:
-            # Empty name:
-            ApexNut("", detail, sides, width, thickness, material)
+            # Empty Name:
+            ApexNut("", detail, material, sides, width, thickness)
+            assert False
         except ValueError as value_error:
-            assert str(value_error) == "Name is empty", str(value_error)
+            assert str(value_error) == "[0]: Argument 'Name' has no length", str(value_error)
 
         try:
-            # Empty detail:
-            ApexNut(name, "", sides, width, thickness, material)
+            # Empty Detail:
+            ApexNut(name, "", material, sides, width, thickness)
+            assert False
         except ValueError as value_error:
-            assert str(value_error) == "Detail is empty", str(value_error)
-
-        try:  # Bad sides:
-            ApexNut(name, detail, 5, width, thickness, material)
-        except ValueError as value_error:
-            assert str(value_error) == "Sides (=5) is neither 4 nor 6", str(value_error)
-
-        try:  # Bad width:
-            ApexNut(name, detail, sides, 0.0, thickness, material)
-        except ValueError as value_error:
-            assert str(value_error) == "Width (=0.0) is not positive", str(value_error)
-
-        try:  # Bad thickness:
-            ApexNut(name, detail, sides, width, 0.0, material)
-        except ValueError as value_error:
-            assert str(value_error) == "Thickness (=0.0) is not positive", str(value_error)
+            assert str(value_error) == "[1]: Argument 'Detail' has no length", str(value_error)
 
         try:  # Bad Material:
-            ApexNut(name, detail, sides, width, thickness, cast(ApexMaterial, 0))
+            ApexNut(name, detail, cast(ApexMaterial, 0), sides, width, thickness)
         except ValueError as value_error:
             assert str(value_error) == (
                 "Argument 'Material' is int which is not one of ['ApexMaterial']"), str(value_error)
 
+        try:  # Bad Sides:
+            ApexNut(name, detail, material, 5, width, thickness)
+        except ValueError as value_error:
+            assert str(value_error) == "Sides (=5) is neither 4 nor 6", str(value_error)
+
+        try:  # Bad Width:
+            ApexNut(name, detail, material, sides, 0.0, thickness)
+        except ValueError as value_error:
+            assert str(value_error) == "Width (=0.0) is not positive", str(value_error)
+
+        try:  # Bad Thickness:
+            ApexNut(name, detail, material, sides, width, 0.0)
+        except ValueError as value_error:
+            assert str(value_error) == "Thickness (=0.0) is not positive", str(value_error)
+
 
 # ApexWasher:
 @dataclass(frozen=True)
-class ApexWasher(ApexOption):
+class ApexWasher(ApexStackOption):
     """ApexWahser: Represents a washer.
 
     Constants:
@@ -387,19 +276,19 @@ class ApexWasher(ApexOption):
     Attributes:
     * *Name* (str): The washer name.
     * *Detail* (str): More detail about the ApexWasher.
+    * *Material* (ApexMaterial): The Material the washer is made out of.
     * *Inner* (float): The Inner diameter in millimeters.
     * *Outer* (float): The Outer diameter in millimeters.
     * *Thickness* (float): The thickness in millimeters.
-    * *Material* (ApexMaterial): The Material the washer is made out of.
     * *Kind* (str): The washer kind -- one of following ApexWasher constants --
       `PLAIN`, `INTERNAL_LOCK`, `EXTERNAL_LOCK`, or `SPLIT_LOCK`.
 
     """
 
-    Inner: float  # Inner diameter
-    Outer: float  # Outer diameter
-    Thickness: float  # Thickness
     Material: ApexMaterial  # Material
+    Inner: float
+    Outer: float
+    Thickness: float  # Thickness
     Kind: str  # Kind
 
     # Predefined constants for Kind.
@@ -411,10 +300,10 @@ class ApexWasher(ApexOption):
     INIT_CHECKS = (
         ApexCheck("Name", ("+", str)),
         ApexCheck("Detail", ("+", str)),
+        ApexCheck("Material", (ApexMaterial,)),
         ApexCheck("Inner", (float,)),
         ApexCheck("Outer", (float,)),
         ApexCheck("Thickness", (float,)),
-        ApexCheck("Material", (ApexMaterial,)),
         ApexCheck("Kind", ("+", str,)),
     )
 
@@ -422,8 +311,8 @@ class ApexWasher(ApexOption):
     def __post_init__(self):
         """Post process ApexWasher looking for errors."""
         # Check the arguments and do any requested *tracing*:
-        arguments = (self.Name, self.Detail, self.Inner, self.Outer, self.Thickness,
-                     self.Material, self.Kind)
+        arguments = (self.Name, self.Detail, self.Material,
+                     self.Inner, self.Outer, self.Thickness, self.Kind)
         value_error: str = ApexCheck.check(arguments, ApexWasher.INIT_CHECKS)
         if value_error:
             raise ValueError(value_error)
@@ -464,7 +353,7 @@ class ApexWasher(ApexOption):
         thickness: float = 0.5
         material: ApexMaterial = ApexMaterial(("brass",), "orange")
         kind: str = ApexWasher.PLAIN
-        washer: ApexWasher = ApexWasher(name, detail, inner, outer, thickness, material, kind)
+        washer: ApexWasher = ApexWasher(name, detail, material, inner, outer, thickness, kind)
 
         # Ensure that the __str__() method works:
         washer_text: str = (f"ApexWasher('{name}', '{detail}', "
@@ -476,59 +365,59 @@ class ApexWasher(ApexOption):
         # Access all of the attributes:
         assert washer.Name == name, washer.Name
         assert washer.Detail == detail, washer.Detail
+        assert washer.Material is material, washer.Material
         assert washer.Inner == inner, washer.Inner
         assert washer.Outer == outer, washer.Outer
         assert washer.Thickness == thickness, washer.Thickness
-        assert washer.Material is material, washer.Material
         assert washer.Kind == kind, washer.Kind
 
         # Do argument checks:
         try:
-            # Empty name error:
-            ApexWasher("", detail, inner, outer, thickness, material, kind)
+            # Empty Name error:
+            ApexWasher("", detail, material, inner, outer, thickness, kind)
         except ValueError as value_error:
             assert str(value_error) == "[0]: Argument 'Name' has no length", str(value_error)
 
         try:
-            # Empty detail errora:
-            ApexWasher(name, "", inner, outer, thickness, material, kind)
+            # Empty Detail error:
+            ApexWasher(name, "", material, inner, outer, thickness, kind)
         except ValueError as value_error:
             assert str(value_error) == "[1]: Argument 'Detail' has no length", str(value_error)
 
         try:
-            # Bad Inner:
-            washer = ApexWasher(name, detail, 0.0, outer, thickness, material, kind)
-        except ValueError as value_error:
-            assert str(value_error) == "Inner (=0.0) is not positive", str(value_error)
-
-        try:
-            # Bad Outer:
-            ApexWasher(name, detail, inner, 0.0, thickness, material, kind)
-        except ValueError as value_error:
-            assert str(value_error) == "Outer (=0.0) is not positive", str(value_error)
-
-        try:
-            # Inner >= Outer:
-            ApexWasher(name, detail, 10.0, 5.0, 0.0, material, kind)
-        except ValueError as value_error:
-            assert str(value_error) == "Inner (=10.0) >= Outer (=5.0)", str(value_error)
-
-        try:
-            # Bad Thickness:
-            ApexWasher(name, detail, inner, outer, 0.0, material, kind)
-        except ValueError as value_error:
-            assert str(value_error) == "Thickness (=0.0) is not positive", str(value_error)
-
-        try:
-            # Bad Material:
-            ApexWasher(name, detail, inner, outer, thickness, cast(ApexMaterial, 0), kind)
+            # Bad Material
+            washer = ApexWasher(name, detail, cast(ApexMaterial, 0), 0.0, outer, thickness, kind)
         except ValueError as value_error:
             assert str(value_error) == (
                 "Argument 'Material' is int which is not one of ['ApexMaterial']"), str(value_error)
 
         try:
+            # Bad Inner:
+            ApexWasher(name, detail, material, 0.0, outer, thickness, kind)
+        except ValueError as value_error:
+            assert str(value_error) == "Inner (=0.0) is not positive", str(value_error)
+
+        try:
+            # Inner >= Outer:
+            ApexWasher(name, detail, material, 10.0, 5.0, 0.0, kind)
+        except ValueError as value_error:
+            assert str(value_error) == "Inner (=10.0) >= Outer (=5.0)", str(value_error)
+
+        try:
+            # Bad Outer:
+            ApexWasher(name, detail, material, inner, 0.0, thickness, kind)
+        except ValueError as value_error:
+            assert str(value_error) == "Outer (=0.0) is not positive", str(value_error)
+
+        try:
+            # Bad Thickness:
+            ApexWasher(name, detail, material, inner, outer, 0.0, kind)
+        except ValueError as value_error:
+            assert str(value_error) == "Thickness (=0.0) is not positive", str(value_error)
+
+        try:
             # Bad kind:
-            ApexWasher(name, detail, inner, outer, thickness, material, "BOGUS")
+            ApexWasher(name, detail, material, inner, outer, thickness, "BOGUS")
         except ValueError as value_error:
             assert str(value_error) == (
                 "Kind (='BOGUS') is not one of "
@@ -536,37 +425,44 @@ class ApexWasher(ApexOption):
             ), str(value_error)
 
 
-# ApexFasten:
+# ApexStackBody:
 @dataclass(frozen=True)
-class ApexFasten:
+class ApexStackBody:
     """ApexFastner: The class of Fastener to use.
 
     Attributes:
-    * Name (str): ApexFasten Name.
-    * Profile (str): ApexFasten Profile.  Must be one of the ApexFasten constants --
+    * Name (str): ApexStack Name.
+    * Detail (str): A more detailed description of the ApexStack.
+    * Pitch (str): ApexStack Profile.  Must be one of the ApexStack constants --
       `ISO_COARSE`, `ISO_FINE`,  `UTS_COARSE`, `UTS_FINE`, and `UTS_EXTRA_FINE.
-    * Size (str): Standard fastener size.  Must be one of the ApexFasten constants --
+    * Size (str): Standard fastener size.  Must be one of the ApexStack constants --
       `UTS_N1`, `UTS_N2`, `UTS_N3`, `UTS_N4`, `UTS_N5`, `UTS_N6`, `UTS_N8`, `UTS_N10`, `UTS_N12`,
       `UTS_F1_4`, `UTS_F5_16`, `UTS_F3_8`, `UTS_F7_16`, `UTS_F1_2`, `UTS_F9_16`, `UTS_F5_8`,
       `UTS_F3_4`, `UTS_F3_4`, `M1_6`, `M2`, `M2_5`, `M3`, `M3_5`, `M4`, `M5`, `M6`, `M8`, `M10`,
       `M12`, `M14`, `M16`, `M18,  `M20`, `M22`, `M24`, `M27`, `M30`, `M36`, `M42`, `M48`, `M56`,
       `M68.
+    * Material (ApexMaterial): The material that the primary fastener is made out of.
+    * Head (str): The screw head shape (e.g. FLAT, OVAL, ...)
+    * Drive (str): The screw drive (e.g. PHILIPS, SLOT, ...)
 
     """
 
-    Name: str  # ApexFasten Name
-    Profile: str  # ApexFasten Profile
-    Size: str  # ApexFasten Size
-    Options: Tuple[ApexOption, ...]  # ApexFasten Options
+    Name: str  # Short name to use.
+    Detail: str  # Longer more detailed description
+    Pitch: str  # The metric/imperial Pitch profile to use (e.g. ISO_FINE, UTS_FINE, ..)
+    Size: str  # The metric screw diameter (e.g. UTS_N4, M3, ...)
+    Material: ApexMaterial  # The screw material (e.g. brass, stainless-steel, ...)
+    Head: str  # The screw head shape (e.g. FLAT, OVAL, ...)
+    Drive: str  # Apex drive (e.g. PHILIPS, SLOT, ...)
 
-    # Profile:
+    # Valid values for Pitch:
     ISO_COARSE = "ISO Metric Coarse"
     ISO_FINE = "ISO Metric FINE"
     UTS_COARSE = "UTS Coarse"
     UTS_FINE = "UTS Fine"
     UTS_EXTRA_FINE = "UTS Extra Fine"
 
-    # Various standard sizes:
+    # Valid Values for Size:
     UTS_N1 = "UTS #1"
     UTS_N2 = "UTS #2"
     UTS_N3 = "UTS #3"
@@ -610,6 +506,27 @@ class ApexFasten:
     M56 = "M56"
     M68 = "M68"
 
+    # Screw Heads:
+    CARRIAGE = "Carriage Bolt"
+    CHEESE = "Cheese"
+    FILLISTER = "Fillister"
+    FLAT = "Flat"
+    HEX_BOLT = "Hex Bolt"  # For a Bolt
+    OVAL = "Oval"
+    PAN = "Pan"
+    ROUND = "Round"
+
+    # Screw Drives:
+    NO_DRIVE = "No Drive"  # Carriage Bolts do not get driven
+    HEX = "Hex"
+    PHILLIPS = "Phillips"
+    SLOT = "Slot"
+    TORX = "Torx"
+
+    HEADS = (CARRIAGE, CHEESE, FILLISTER, FLAT, HEX_BOLT, OVAL, PAN, ROUND)
+    DRIVES = (NO_DRIVE, HEX, PHILLIPS, SLOT, TORX)
+
+    # Old stuff
     # Direction:
     DIRECTION_LEFT = "Direction Left"
     DIRECTION_RIGHT = "Direction Right"
@@ -653,13 +570,7 @@ class ApexFasten:
     #  Tapered (angle)
     #  Reversed bool
 
-    INIT_CHECKS = (
-        ApexCheck("Name", (str,)),
-        ApexCheck("Profile", (str,)),
-        ApexCheck("Size", (str,)),
-        ApexCheck("Options", ("T", ApexOption)),
-    )
-    PROFILES = (
+    PITCHES = (
         ISO_COARSE,
         ISO_FINE,
         UTS_COARSE,
@@ -673,130 +584,297 @@ class ApexFasten:
         M20, M22, M24, M27, M30, M36, M42, M48, M56, M68,
     )
 
-    def __repr__(self) -> str:
-        """Return a string representation of an ApexFasten."""
-        return self.__str__()
-
-    def __str__(self) -> str:
-        """Return a string representation of an ApexFasten."""
-        return f"ApexFasten('{self.Name}', '{self.Profile}', '{self.Size}')"
-
     POST_INIT_CHECKS = (
-        ApexCheck("Name", ("+", str)),
-        ApexCheck("Profile", ("+", str)),
-        ApexCheck("Size", ("+", str)),
-        ApexCheck("Options", ("T", ApexOption)),
+        ApexCheck("Name", ("+", str,)),
+        ApexCheck("Detail", ("+", str,)),
+        ApexCheck("Pitch", (str,)),
+        ApexCheck("Size", (str,)),
+        ApexCheck("Material", (ApexMaterial,)),
+        ApexCheck("Head", ("+", str)),
+        ApexCheck("Drive", ("+", str)),
     )
 
+    # ApexStackBody.__post_init__():
     def __post_init__(self):
-        """Verify that ApexFasten is properly initialized.
-
-        Arguments:
-        * Profile (str): Profile to use.  Select from the following predefined ApexFasten
-          constants -- `PROFILE_CUSTOM`, `PROFILE_ISO_COARSE`, `PROFILE_ISO_FINE`,
-          `PROFILE_UTS_COARSE`, `PROFILE_UTS_FINE`, `PROFILE_UTS_EXTRA_FINE`.  `PROFILE_CUSTOM`
-          requires additional sizes to be specified -- `close_diameter`, `loose_diameter`,
-          `thread_diameter`.
-        * Size (str): Size to use. Select from the following predefined ApexFasten constants --
-          `CUSTOM_SIZE`, `UTS_N1`, `UTS_N2`, `UTS_N3`, `UTS_N4`, `UTS_N5`, `UTS_N6`, `UTS_N8`,
-          `UTS_N10`, `UTS_N12`, `UTS_F1_4`, `UTS_F5_16`, `UTS_F3_8`, `UTS_F7_16`, `UTS_F1_2`,
-          `UTS_F9_16`, `UTS_F5_8`, `UTS_F3_4`, `UTS_F3_4`, `M1_6`, `M2`, `M2_5`, `M3`, `M3_5`,
-          `M4`, `M5`, `M6`, `M8`, `M10`, `M12`, `M14`, `M16`, `M18`, `M20`, `M22`, `M24`, `M27`,
-          `M30`, `M36`, `M42`, `M48`, `M56`, `M68`.
-        """
-        arguments = (self.Name, self.Profile, self.Size, self.Options)
-        value_error: str = ApexCheck.check(arguments, ApexFasten.INIT_CHECKS)
+        """Verify that ApexStack is properly initialized."""
+        arguments = (self.Name, self.Detail,
+                     self.Pitch, self.Size, self.Material, self.Head, self.Drive)
+        value_error: str = ApexCheck.check(arguments, ApexStackBody.POST_INIT_CHECKS)
         if value_error:
             raise ValueError(value_error)
-        if self.Profile not in ApexFasten.PROFILES:
-            raise ValueError(f"'{self.Profile}' is not one of {ApexFasten.PROFILES}")
-        if self.Size not in ApexFasten.SIZES:
-            raise ValueError(f"'{self.Size}' is not a valid size")
+        if self.Pitch not in ApexStackBody.PITCHES:
+            raise ValueError(f"'{self.Pitch}' is not one of {ApexStackBody.PITCHES}")
+        if self.Size not in ApexStackBody.SIZES:
+            raise ValueError(f"'{self.Size}' is not one of {ApexStackBody.SIZES}")
+        if self.Head not in ApexStackBody.HEADS:
+            raise ValueError(f"'{self.Head}' is not one of {ApexStackBody.HEADS}")
+        if self.Drive not in ApexStackBody.DRIVES:
+            raise ValueError(f"'{self.Drive}' is not one of {ApexStackBody.DRIVES}")
 
-        # Ensure that Options is a tuple and only contains ApexOptions:
-        if not isinstance(self.Options, tuple):
-            raise ValueError("Options is not a tuple")
-        option: ApexOption
-        for option in self.Options:
-            if not isinstance(option, ApexOption):
-                raise ValueError(f"{option} is not an ApexOption")
+    # ApexStackBody.__repr__():
+    def __repr__(self) -> str:
+        """Return string representation of ApexStack."""
+        return self.__str__()
 
+    # ApexStackBody.__str__():
+    def __str__(self) -> str:
+        """Return string representation of ApexStack."""
+        return (
+            f"ApexStack('{self.Name}', '{self.Detail}', '{self.Pitch}', '{self.Size}', "
+            f"{self.Material}, '{self.Head}', '{self.Drive}')"
+        )
+
+    # ApexStackBody._unit_tests():
     @staticmethod
     def _unit_tests() -> None:
-        """Run ApexFasten unit tests."""
-        name: str = "#4-40"
-        profile: str = ApexFasten.UTS_FINE
-        size: str = ApexFasten.UTS_N4
-        fasten: ApexFasten = ApexFasten(name, profile, size, ())
+        """Run ApexStackBody unit tests."""
+        # Create *screw_body*:
+        name: str = "#4-40 FH"
+        detail: str = "Brass #4-40 FH Slotted"
+        pitch: str = ApexStackBody.UTS_FINE
+        size: str = ApexStackBody.UTS_N4
+        material: ApexMaterial = ApexMaterial(("brass",), "orange")
+        head: str = ApexStackBody.FLAT
+        drive: str = ApexStackBody.PHILLIPS
+        screw_body: ApexStackBody = ApexStackBody(
+            name, detail, pitch, size, material, head, drive)
 
-        # Verify __repr__() works:
-        assert f"{fasten}" == "ApexFasten('#4-40', 'UTS Fine', 'UTS #4')", f"{fasten}"
+        # Verify attributes:
+        assert screw_body.Name == name, screw_body.Name
+        assert screw_body.Detail == detail, screw_body.Detail
+        assert screw_body.Pitch == pitch, screw_body.Pitch
+        assert screw_body.Size == size, screw_body.Size
+        assert screw_body.Material is material, screw_body.Material
+        assert screw_body.Head == head, screw_body.Head
+        assert screw_body.Drive == drive, screw_body.Drive
 
-        # Empty profile:
+        # Verify __str__ and __repr__() works:
+        want: str = ("ApexStack('#4-40 FH', 'Brass #4-40 FH Slotted', 'UTS Fine', 'UTS #4', "
+                     "ApexMaterial(('brass',), 'orange'), 'Flat', 'Phillips')")
+        got: str = f"{screw_body}"
+        assert want == got, (want, got)
+        got = screw_body.__repr__()
+        assert want == got, (want, got)
+        got = screw_body.__str__()
+        assert want == got, (want, got)
+
+        # Empty Name:
         try:
-            ApexFasten(name, "bad", size, ())
+            ApexStackBody("", detail, pitch, size, material, head, drive)
         except ValueError as value_error:
-            got: str = str(value_error)
-            want: str = ("'bad' is not one of ('ISO Metric Coarse', 'ISO Metric FINE', "
-                         "'UTS Coarse', 'UTS Fine', 'UTS Extra Fine')")
-            assert want == got, (want, got)
+            assert str(value_error) == "[0]: Argument 'Name' has no length", str(value_error)
+
+        # Empty Detail:
+        try:
+            ApexStackBody(name, "", pitch, size, material, head, drive)
+        except ValueError as value_error:
+            assert str(value_error) == "[1]: Argument 'Detail' has no length", str(value_error)
+
+        # Bad Pitch:
+        try:
+            ApexStackBody(name, detail, "BAD_PITCH", size, material, head, drive)
+            assert False
+        except ValueError as value_error:
+            assert str(value_error) == (
+                "'BAD_PITCH' is not one of ('ISO Metric Coarse', 'ISO Metric FINE', "
+                "'UTS Coarse', 'UTS Fine', 'UTS Extra Fine')"), str(value_error)
+
+        # Bad Size:
+        try:
+            ApexStackBody(name, detail, pitch, "BAD_SIZE", material, head, drive)
+            assert False
+        except ValueError as value_error:
+            assert str(value_error) == (
+                "'BAD_SIZE' is not one of ('UTS #1', 'UTS #2', 'UTS #3', 'UTS #4', 'UTS #5', "
+                "'UTS #6', 'UTS #8', 'UTS #10', 'UTS #12', 'UTS 1/4', 'UTS 5/16', 'UTS 3/8', "
+                "'UTS 7/16', 'UTS 1/2', 'UTS 9/16', 'UTS 5/8', 'UTS 1', 'UTS 1', 'M1.60', "
+                "'M2', 'M2.50', 'M3', 'M3.50', 'M4', 'M5', 'M6', 'M8', 'M10', 'M12', 'M14', "
+                "'M16', 'M18', 'M20', 'M22', 'M24', 'M27', 'M30', 'M36', 'M42', 'M48', 'M56', "
+                "'M68')"), str(value_error)
+
+        # Bad Material:
+        try:
+            ApexStackBody(name, detail, pitch, size, cast(ApexMaterial, 0), head, drive)
+        except ValueError as value_error:
+            assert str(value_error) == (
+                "Argument 'Material' is int which is not one of ['ApexMaterial']"), str(value_error)
+
+        # Bad Head:
+        try:
+            ApexStackBody(name, detail, pitch, size, material, "BAD_HEAD", drive)
+        except ValueError as value_error:
+            assert str(value_error) == (
+                "'BAD_HEAD' is not one of ('Carriage Bolt', 'Cheese', 'Fillister', "
+                "'Flat', 'Hex Bolt', 'Oval', 'Pan', 'Round')"), str(value_error)
+
+        # Bad Drive:
+        try:
+            ApexStackBody(name, detail, pitch, size, material, head, "BAD_DRIVE")
+            assert False
+        except ValueError as value_error:
+            assert str(value_error) == ("'BAD_DRIVE' is not one of ('No Drive', 'Hex', "
+                                        "'Phillips', 'Slot', 'Torx')"), str(value_error)
 
 
-# ApexJoin:
+# ApexStack:
 @dataclass(frozen=True)
-class ApexJoin(object):
-    """ApexJoin: Specifies a single fastener instance.
+class ApexStack:
+    """ApexStack: A class consisting of an ApexStackBody and associated ApexStackOptions.
 
     Attributes:
-    * Fasten (ApexFasten): ApexFasten object to use for basic dimensions.
-    * Start (Vector): Start point for ApexJoin.
-    * End (Vector): End point for ApexJoin.
-    * Options (Tuple[ApexOption]): The various options associated with the ApexJoin.
+    * Name (str): The name of the ApexStack.
+    * Detail (str): A more detailed description of the ApexStack.
+    * StackBody (ApexStackBody): The basic screw/bolt to use.
+    * HeadOptions: (Tuple[ApexStackOption, ...]): Additional washers, etc mounted at the head.
+    * TailOptions: (Tuple[ApexStackOption, ...]): Additional washers, etc mounted at the tail.
 
     """
 
-    Fasten: ApexFasten  # Parent ApexFasten
-    Start: Vector  # Start point (near screw/bolt head)
-    End: Vector  # End point (ene screw/bolt tip)
-    Stack: str  # Stack of items that make up the entire ApexJoin stack.
+    Name: str
+    Detail: str
+    StackBody: ApexStackBody
+    HeadOptions: Tuple[ApexStackOption, ...]
+    TailOptions: Tuple[ApexStackOption, ...]
 
     POST_INIT_CHECKS = (
-        ApexCheck("Fasten", (ApexFasten,)),
-        ApexCheck("Start", (Vector,)),
-        ApexCheck("End", (Vector,)),
-        ApexCheck("Stack", (str,)),
+        ApexCheck("Name", ("+", str)),
+        ApexCheck("Detail", ("+", str)),
+        ApexCheck("StackBody", (ApexStackBody,)),
+        ApexCheck("HeadOptions", ("T", ApexStackOption)),
+        ApexCheck("TailOptions", ("T", ApexStackOption)),
     )
 
+    # ApexStack.__post_init__():
+    def __post_init__(self) -> None:
+        """Verify the ApexStack values."""
+        arguments = (self.Name, self.Detail, self.StackBody, self.HeadOptions, self.TailOptions)
+        value_error: str = ApexCheck.check(arguments, ApexStack.POST_INIT_CHECKS)
+        if value_error:
+            raise ValueError(value_error)
+
+    # ApexStack.__repr__():
+    def __repr__(self) -> str:
+        """Return ApexStack as a string."""
+        return self.__str__()
+
+    # ApexStack.__str__():
+    def __str__(self) -> str:
+        """Return ApexStack as a string."""
+        return (f"ApexStack('{self.Name}', '{self.Detail}', '{self.StackBody}' "
+                f"{self.HeadOptions}, {self.TailOptions})")
+
+    # ApexStack._unit_tests():
+    @classmethod
+    def _unit_tests(cls) -> None:
+        """Run unit tests for ApexStack."""
+        # Create a *screwbody* to use:
+        brass: ApexMaterial = ApexMaterial(("brass",), "orange")
+        stack_body: ApexStackBody = ApexStackBody(
+            "#4-40FH", "#4-40 Flat Head Philips Brass",
+            ApexStackBody.UTS_FINE, ApexStackBody.UTS_N4, brass,
+            ApexStackBody.FLAT, ApexStackBody.PHILLIPS)
+
+        # Create *head_options* and *tail_options* to use:
+        washer: ApexWasher = ApexWasher(
+            "Washer", "Flat Washer", brass, 3.0, 6.0, 1.5, ApexWasher.PLAIN)
+        nut: ApexNut = ApexNut("Nut", "Hex Nut", brass, 6, 6.0, 2.0)
+        head_options: Tuple[ApexStackOption, ...] = (washer,)
+        tail_options: Tuple[ApexStackOption, ...] = (nut,)
+
+        # Build up the required arguments:
+        name: str = "name"
+        detail: str = "detail"
+        apex_stack: ApexStack = ApexStack(name, detail, stack_body, head_options, tail_options)
+
+        # Verify attributes:
+        assert apex_stack.Name == name, apex_stack.Name
+        assert apex_stack.Detail == detail, apex_stack.Detail
+        assert apex_stack.StackBody is stack_body, apex_stack.StackBody
+        assert apex_stack.HeadOptions is head_options, apex_stack.HeadOptions
+        assert apex_stack.TailOptions is tail_options, apex_stack.TailOptions
+
+
+# ApexScrew:
+@dataclass(frozen=True)
+class ApexScrew(object):
+    """ApexScrew: Specifies a single fastener instance.
+
+    Attributes:
+    * Stack (ApexStack): ApexStack object to use for basic dimensions.
+    * Start (Vector): Start point for ApexJoin.
+    * End (Vector): End point for ApexJoin.
+
+    """
+
+    Stack: ApexStack  # Stack of items that make up the entire ApexScrew.
+    Start: Vector  # Start point (near screw/bolt head)
+    End: Vector  # End point (ene screw/bolt tip)
+
+    POST_INIT_CHECKS = (
+        ApexCheck("Stack", (ApexStack,)),
+        ApexCheck("Start", (Vector,)),
+        ApexCheck("End", (Vector,)),
+    )
+
+    # ApexScrew.__post_init__():
     def __post_init__(self) -> None:
         """Initialize a single ApexJoin."""
-        arguments = (self.Fasten, self.Start, self.End, self.Stack)
-        value_error: str = ApexCheck.check(arguments, ApexJoin.POST_INIT_CHECKS)
+        arguments = (self.Stack, self.Start, self.End)
+        value_error: str = ApexCheck.check(arguments, ApexScrew.POST_INIT_CHECKS)
         if value_error:
-            raise ValueError
+            raise ValueError(value_error)
 
+    # ApexScrew._unit_tests():
     @staticmethod
     def _unit_tests() -> None:
         """Run ApexJoint unit tests."""
+        # Create the *screw*:
         brass: ApexMaterial = ApexMaterial(("brass",), "orange")
-        apex_head: ApexHead = ApexHead("PH", "Brass Philips Pan Head",
-                                       brass, ApexHead.PAN_HEAD, ApexHead.PHILIPS_DRIVE)
-        options: Tuple[ApexOption, ...] = (apex_head,)
-        apex_fasten: ApexFasten = ApexFasten(
-            "#4-40", ApexFasten.UTS_FINE, ApexFasten.UTS_N4, options)
-        start: Vector = Vector(0, 0, 0)
-        stop: Vector = Vector(1, 1, 1)
-        apex_join: ApexJoin = ApexJoin(apex_fasten, start, stop, "")
-        _ = apex_join
+        stack_body: ApexStackBody = ApexStackBody(
+            "#4-40 PH", "Brass #4-40 Pan Head Phillips",
+            ApexStackBody.UTS_FINE, ApexStackBody.UTS_N4,
+            brass, ApexStackBody.PAN, ApexStackBody.PHILLIPS)
+        stack: ApexStack = ApexStack("#4-40", "Brass #4-40", stack_body, (), ())
+        start: Vector = Vector(0.0, 0.0, 1.0)
+        end: Vector = Vector(0.0, 0.0, 0.0)
+        screw: ApexScrew = ApexScrew(stack, start, end)
+
+        # Verify attributes:
+        assert screw.Stack is stack, screw.Stack
+        assert screw.Start is start, screw.Start
+        assert screw.End is end, screw.End
+
+        # Bad Stack:
+        try:
+            ApexScrew(cast(ApexStack, 0), start, end)
+            assert False
+        except ValueError as value_error:
+            assert str(value_error) == (
+                "Argument 'Stack' is int which is not one of ['ApexStack']"), str(value_error)
+
+        # Bad Start:
+        try:
+            ApexScrew(stack, cast(Vector, 0), end)
+        except ValueError as value_error:
+            assert str(value_error) == (
+                "Argument 'Start' is int which is not one of ['Vector']"), str(value_error)
+
+        # Bad End:
+        try:
+            ApexScrew(stack, start, cast(Vector, 0))
+        except ValueError as value_error:
+            assert str(value_error) == (
+                "Argument 'End' is int which is not one of ['Vector']"), str(value_error)
 
 
 def _unit_tests() -> None:
     """Run unit tests."""
-    ApexOption._unit_tests()
-    ApexHead._unit_tests()
-    ApexFasten._unit_tests()
+    ApexStackOption._unit_tests()
     ApexNut._unit_tests()
     ApexWasher._unit_tests()
-    ApexJoin._unit_tests()
+    ApexStackBody._unit_tests()
+    ApexStack._unit_tests()
+    ApexScrew._unit_tests()
 
 
 if __name__ == "__main__":

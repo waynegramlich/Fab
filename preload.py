@@ -1,7 +1,7 @@
 # A quick program that brings up a FreeCAD Python console.
 #
 # Usage:
-#    python -i preload.py
+#    python3 -i preload.py
 
 
 import os
