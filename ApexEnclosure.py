@@ -21,7 +21,7 @@ from FreeCAD import Placement, Rotation, Vector  # type: ignore
 from Apex import ApexBox, ApexCheck, ApexColor, ApexLength, ApexMaterial, ApexPoint
 from ApexNode import ApexContext, ApexNode
 from ApexSketch import ApexDrawing, ApexElement, ApexPolygon
-# from ApexFasten import ApexFasten, ApexHead, ApexJoin
+from ApexFasten import ApexScrew, ApexStack, ApexStackBody
 import PartDesign  # type: ignore
 
 
@@ -107,25 +107,25 @@ class ApexEnclosure(ApexNode):
                                      box.TNE + Vector(0.0, 0.0, 0.0),
                                      box.TSW + Vector(0.0, 0.0, -dw), box.T, box.N, "red")
 
-        # stainless: ApexMaterial = ApexMaterial(("steel", "stainless"), "white")
-        # head: ApexHead = ApexHead("FH", "Stainless Steel Philips FlatHead",
-        #                           stainless, ApexHead.FLAT_HEAD, ApexHead.PHILIPS_DRIVE)
-        # screw_family: ApexFasten = ApexFasten("#4-40", ApexFasten.UTS_FINE, ApexFasten.UTS_N4,
-        #                                       (head,))
-        # fh_screw: ApexJoin = ApexJoin(screw_family, Vector(), Vector(), "FH|")
-        # dw2: float = dw / 2.0
-        # bottom_starts: Tuple[Vector, ...] = (
-        #     box.BSE + Vector(-dw2, dw2, 0.0),
-        #     box.BSW + Vector(dw2, dw2, 0.0),
-        #     box.BNE + Vector(-dw2, -dw2, 0.0),
-        #     box.BNW + Vector(dw2, -dw2, 0.0),
-        # )
-        # bottom_joins: Tuple[ApexJoin, ...] = ()
-        # bottom_start: Vector
-        # for bottom_start in bottom_starts:
-        #     bottom_end: Vector = bottom_start + Vector(0.0, 0.0, 2.0 * dw)
-        #     # bottom_join: ApexJoin = fh_screw.clone(bottom_start, top_start)
-        #     # bottom_joins += (bottom_join,)
+        stainless: ApexMaterial = ApexMaterial(("steel", "stainless"), "white")
+        stack_body: ApexStackBody = ApexStackBody(
+            "#4-40", "#4-40", ApexStackBody.UTS_FINE, ApexStackBody.UTS_N4,
+            stainless, ApexStackBody.FLAT, ApexStackBody.PHILLIPS)
+        stack: ApexStack = ApexStack("SS #4-40 FH", "Stainless #4-40 Phillips Flat Head",
+                                     stack_body, (), ())
+        dw2: float = dw / 2.0
+        bottom_starts: Tuple[Vector, ...] = (
+            box.BSE + Vector(-dw2, dw2, 0.0),
+            box.BSW + Vector(dw2, dw2, 0.0),
+            box.BNE + Vector(-dw2, -dw2, 0.0),
+            box.BNW + Vector(dw2, -dw2, 0.0),
+        )
+        bottom_screws: Tuple[ApexScrew, ...] = ()
+        bottom_start: Vector
+        for bottom_start in bottom_starts:
+            bottom_end: Vector = bottom_start + Vector(0.0, 0.0, 2.0 * dw)
+            bottom_screw: ApexScrew = ApexScrew(stack, bottom_start, bottom_end)
+            bottom_screws += (bottom_screw,)
 
         if False:
             self.bottom_side: Block = Block("Bottom", self,
