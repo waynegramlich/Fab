@@ -2,23 +2,24 @@
 
 Table of Contents:
 * 1 [Introduction](#introduction):
-* 2 [Class ApexNut](#apexnut)
-* 3 [Class ApexScrew](#apexscrew)
-  * 3.1 [ApexScrew.\_\_post\_init\_\_](#apexscrew---post-init--)
-  * 3.2 [ApexScrew.\_unit\_tests](#apexscrew--unit-tests)
-* 4 [Class ApexStack](#apexstack)
-  * 4.1 [ApexStack.\_\_post\_init\_\_](#apexstack---post-init--)
-  * 4.2 [ApexStack.\_\_repr\_\_](#apexstack---repr--)
-  * 4.3 [ApexStack.\_\_str\_\_](#apexstack---str--)
-  * 4.4 [ApexStack.\_unit\_tests](#apexstack--unit-tests)
-* 5 [Class ApexStackBody](#apexstackbody)
-  * 5.1 [ApexStackBody.\_\_post\_init\_\_](#apexstackbody---post-init--)
-  * 5.2 [ApexStackBody.\_\_repr\_\_](#apexstackbody---repr--)
-  * 5.3 [ApexStackBody.\_\_str\_\_](#apexstackbody---str--)
-  * 5.4 [ApexStackBody.\_unit\_tests](#apexstackbody--unit-tests)
-* 6 [Class ApexStackOption](#apexstackoption)
-* 7 [Class ApexWasher](#apexwasher)
+* 2 [Class ApexCounter](#apexcounter)
+* 3 [Class ApexNut](#apexnut)
+* 4 [Class ApexScrew](#apexscrew)
+  * 4.1 [ApexScrew.\_\_post\_init\_\_](#apexscrew---post-init--)
+  * 4.2 [ApexScrew.\_unit\_tests](#apexscrew--unit-tests)
+* 5 [Class ApexStack](#apexstack)
+  * 5.1 [ApexStack.\_\_post\_init\_\_](#apexstack---post-init--)
+  * 5.2 [ApexStack.\_\_repr\_\_](#apexstack---repr--)
+  * 5.3 [ApexStack.\_\_str\_\_](#apexstack---str--)
+  * 5.4 [ApexStack.\_unit\_tests](#apexstack--unit-tests)
+* 6 [Class ApexStackBody](#apexstackbody)
+  * 6.1 [ApexStackBody.\_\_post\_init\_\_](#apexstackbody---post-init--)
+  * 6.2 [ApexStackBody.\_\_repr\_\_](#apexstackbody---repr--)
+  * 6.3 [ApexStackBody.\_\_str\_\_](#apexstackbody---str--)
+  * 6.4 [ApexStackBody.\_unit\_tests](#apexstackbody--unit-tests)
+* 7 [Class ApexStackOption](#apexstackoption)
 * 8 [Class ApexWasher](#apexwasher)
+* 9 [Class ApexWasher](#apexwasher)
 
 ## 1 <a name="introduction"></a>Introduction
 
@@ -52,11 +53,11 @@ The ApexFasten class deals with the following issues:
 * Fastener WorkBench:
   The FreeCAD Fasteners workbench is used wherever possible.
 
-The two main classes are:
+The main classes are:
 
 * ApexStack:
   A screw/bolt "factory" that contains the screw/bolt and associated washer, nuts, etc.
-  The overall length is *NOT* specified.
+  The overall length is not specified.
 * ApexStackBody:
   The specifications for the screw/bolt body.
   A list of available lengths is provided.
@@ -66,6 +67,8 @@ The two main classes are:
     A way to specify flat and lock washers.
   * ApexNut:
     A way to specify nuts.
+  * ApexCounter:
+    A countersink/counterbore specification.
 * ApexScrew:
   This is an instance of an ApexStack that has an actual position and length.
 
@@ -77,7 +80,26 @@ the associated holes are automatically moved to the correct new locations.
 There is a base call ApexClass called ApexOption that is used to represent
 
 
-## 2 Class ApexNut <a name="apexnut"></a>
+## 2 Class ApexCounter <a name="apexcounter"></a>
+
+class ApexCounter(ApexStackOption):
+
+ApexCounter: A class the represents a fastener counter.
+
+Attributes:
+* Name (str): Counter name.
+* Detail (str): More counter detail.
+* Depth (float): Controls depth of countersink/counterbore.  (Default: 0.0)
+  * Negative: Specifes exact depth in millimeters.
+  * Zero: Use reasonable value (i.e. 110%).
+  * Postive: Specifies depth as a percentage options height.
+* Diameter: Controls the diameter of countersink/counterbore. (Default:0.0)
+  * Negtive: specifes diameter in millimeters.
+  * Zero: Use reasonable value (i.e. 110%).
+  * Positive: Specifes diameter as a percentatage of options diameter.
+
+
+## 3 Class ApexNut <a name="apexnut"></a>
 
 class ApexNut(ApexStackOption):
 
@@ -92,7 +114,7 @@ Attributes:
 * Thickness (float): The nut thickness in millimeters.
 
 
-## 3 Class ApexScrew <a name="apexscrew"></a>
+## 4 Class ApexScrew <a name="apexscrew"></a>
 
 class ApexScrew(object):
 
@@ -104,19 +126,19 @@ Attributes:
 * End (Vector): End point for ApexJoin.
 
 
-### 3.1 ApexScrew.\_\_post\_init\_\_ <a name="apexscrew---post-init--"></a>
+### 4.1 ApexScrew.\_\_post\_init\_\_ <a name="apexscrew---post-init--"></a>
 
 def \_\_post\_init\_\_(self) -> None:
 
 Initialize a single ApexJoin.
 
-### 3.2 ApexScrew.\_unit\_tests <a name="apexscrew--unit-tests"></a>
+### 4.2 ApexScrew.\_unit\_tests <a name="apexscrew--unit-tests"></a>
 
 def \_unit\_tests() -> None:
 
 Run ApexJoint unit tests.
 
-## 4 Class ApexStack <a name="apexstack"></a>
+## 5 Class ApexStack <a name="apexstack"></a>
 
 class ApexStack:
 
@@ -130,31 +152,31 @@ Attributes:
 * TailOptions: (Tuple[ApexStackOption, ...]): Additional washers, etc mounted at the tail.
 
 
-### 4.1 ApexStack.\_\_post\_init\_\_ <a name="apexstack---post-init--"></a>
+### 5.1 ApexStack.\_\_post\_init\_\_ <a name="apexstack---post-init--"></a>
 
 def \_\_post\_init\_\_(self) -> None:
 
 Verify the ApexStack values.
 
-### 4.2 ApexStack.\_\_repr\_\_ <a name="apexstack---repr--"></a>
+### 5.2 ApexStack.\_\_repr\_\_ <a name="apexstack---repr--"></a>
 
 def \_\_repr\_\_(self) -> *str*:
 
 Return ApexStack as a string.
 
-### 4.3 ApexStack.\_\_str\_\_ <a name="apexstack---str--"></a>
+### 5.3 ApexStack.\_\_str\_\_ <a name="apexstack---str--"></a>
 
 def \_\_str\_\_(self) -> *str*:
 
 Return ApexStack as a string.
 
-### 4.4 ApexStack.\_unit\_tests <a name="apexstack--unit-tests"></a>
+### 5.4 ApexStack.\_unit\_tests <a name="apexstack--unit-tests"></a>
 
 def \_unit\_tests(cls) -> None:
 
 Run unit tests for ApexStack.
 
-## 5 Class ApexStackBody <a name="apexstackbody"></a>
+## 6 Class ApexStackBody <a name="apexstackbody"></a>
 
 class ApexStackBody:
 
@@ -176,31 +198,31 @@ Attributes:
 * Drive (str): The screw drive (e.g. PHILIPS, SLOT, ...)
 
 
-### 5.1 ApexStackBody.\_\_post\_init\_\_ <a name="apexstackbody---post-init--"></a>
+### 6.1 ApexStackBody.\_\_post\_init\_\_ <a name="apexstackbody---post-init--"></a>
 
 def \_\_post\_init\_\_(self):
 
 Verify that ApexStack is properly initialized.
 
-### 5.2 ApexStackBody.\_\_repr\_\_ <a name="apexstackbody---repr--"></a>
+### 6.2 ApexStackBody.\_\_repr\_\_ <a name="apexstackbody---repr--"></a>
 
 def \_\_repr\_\_(self) -> *str*:
 
 Return string representation of ApexStack.
 
-### 5.3 ApexStackBody.\_\_str\_\_ <a name="apexstackbody---str--"></a>
+### 6.3 ApexStackBody.\_\_str\_\_ <a name="apexstackbody---str--"></a>
 
 def \_\_str\_\_(self) -> *str*:
 
 Return string representation of ApexStack.
 
-### 5.4 ApexStackBody.\_unit\_tests <a name="apexstackbody--unit-tests"></a>
+### 6.4 ApexStackBody.\_unit\_tests <a name="apexstackbody--unit-tests"></a>
 
 def \_unit\_tests() -> None:
 
 Run ApexStackBody unit tests.
 
-## 6 Class ApexStackOption <a name="apexstackoption"></a>
+## 7 Class ApexStackOption <a name="apexstackoption"></a>
 
 class ApexStackOption(object):
 
@@ -211,7 +233,7 @@ Attributes:
 * *Detail* (str): More detailed information about the option.
 
 
-## 7 Class ApexWasher <a name="apexwasher"></a>
+## 8 Class ApexWasher <a name="apexwasher"></a>
 
 class ApexWasher(ApexStackOption):
 
@@ -234,7 +256,7 @@ Attributes:
   `PLAIN`, `INTERNAL\_LOCK`, `EXTERNAL\_LOCK`, or `SPLIT\_LOCK`.
 
 
-### 8.0 ApexWash <a name="apexwasher"></a>
+### 9.0 ApexWash <a name="apexwasher"></a>
 
 def \_\_post\_init\_\_(self):
 

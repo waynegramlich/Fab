@@ -30,11 +30,11 @@ The ApexFasten class deals with the following issues:
 * Fastener WorkBench:
   The FreeCAD Fasteners workbench is used wherever possible.
 
-The two main classes are:
+The main classes are:
 
 * ApexStack:
   A screw/bolt "factory" that contains the screw/bolt and associated washer, nuts, etc.
-  The overall length is *NOT* specified.
+  The overall length is not specified.
 * ApexStackBody:
   The specifications for the screw/bolt body.
   A list of available lengths is provided.
@@ -44,6 +44,8 @@ The two main classes are:
     A way to specify flat and lock washers.
   * ApexNut:
     A way to specify nuts.
+  * ApexCounter:
+    A countersink/counterbore specification.
 * ApexScrew:
   This is an instance of an ApexStack that has an actual position and length.
 
@@ -114,9 +116,16 @@ class ApexStackOption(object):
         name: str = "name"
         detail: str = "detail"
         option: ApexStackOption = ApexStackOption(name, detail)
+
+        # Verify attributes:
         assert option.Name == name
         assert option.Detail == detail
-        assert f"{option}" == "ApexStackOption('name', 'detail')", f"{option}"
+
+        # Verify __repr__() and __str__():
+        want: str = "ApexStackOption('name', 'detail')"
+        assert f"{option}" == want, f"{option}"
+        assert str(option) == want, str(option)
+        assert option.__repr__() == want, option.__repr__()
 
         # Error tests:
         # Non string for Name.
@@ -142,6 +151,104 @@ class ApexStackOption(object):
             ApexStackOption(name, "")
         except ValueError as value_error:
             assert str(value_error) == "[1]: Argument 'Detail' has no length", str(value_error)
+
+# ApexCounter:
+@dataclass(frozen=True)
+class ApexCounter(ApexStackOption):
+    """ApexCounter: A class the represents a fastener counter.
+
+    Attributes:
+    * Name (str): Counter name.
+    * Detail (str): More counter detail.
+    * Depth (float): Controls depth of countersink/counterbore.  (Default: 0.0)
+      * Negative: Specifes exact depth in millimeters.
+      * Zero: Use reasonable value (i.e. 110%).
+      * Postive: Specifies depth as a percentage options height.
+    * Diameter: Controls the diameter of countersink/counterbore. (Default:0.0)
+      * Negtive: specifes diameter in millimeters.
+      * Zero: Use reasonable value (i.e. 110%).
+      * Positive: Specifes diameter as a percentatage of options diameter.
+
+    """
+
+    Depth: float = 0.0
+    Diameter: float = 0.0
+
+    INIT_CHECKS = (
+        ApexCheck("Name", ("+", str,)),
+        ApexCheck("Detail", ("+", str,)),
+        ApexCheck("Depth", (float, int)),
+        ApexCheck("Diameter", (float, int)),
+    )
+
+    def __post_init__(self) -> None:
+        """Verify everything is reasonable."""
+        arguments = (self.Name, self.Detail, self.Depth, self.Diameter)
+        value_error: str = ApexCheck.check(arguments, ApexCounter.INIT_CHECKS)
+        if value_error:
+            raise ValueError(value_error)
+
+    def __repr__(self) -> str:
+        """Return ApexCounter string representation."""
+        return self.__str__()
+
+    def __str__(self) -> str:
+        """Return ApexCounter string representation."""
+        return (f"ApexCounter('{self.Name}', '{self.Detail}', {self.Depth}, {self.Diameter})")
+
+    @staticmethod
+    def _unit_tests() -> None:
+        """Run ApexCounter unit tests."""
+        # Create the ApexCounter:
+        name: str = "Counterbore"
+        detail: str = "Cheesehead Counterbore"
+        depth: float = 120.0
+        diameter: float = 120.0
+        counter: ApexCounter = ApexCounter(name, detail, depth, diameter)
+
+        # Verify attributes:
+        assert counter.Name == name, counter.Name
+        assert counter.Detail == detail, counter.Detail
+        assert counter.Depth == depth, counter.Depth
+        assert counter.Diameter == diameter, counter.Diameter
+
+        # Verify that __repr__() and __str__() work.
+        want: str = ("ApexCounter('Counterbore', 'Cheesehead Counterbore', 120.0, 120.0)")
+        assert f"{counter}" == want, f"{counter}"
+        assert counter.__repr__() == want
+        assert str(counter) == want
+
+        # Do argument checking:
+        try:
+            # Empty Name:
+            ApexCounter("", detail, depth, diameter)
+            assert False
+        except ValueError as value_error:
+            assert str(value_error) == "[0]: Argument 'Name' has no length", str(value_error)
+
+        # Empty Detail:
+        try:
+            ApexCounter(name, "", depth, diameter)
+            assert False
+        except ValueError as value_error:
+            assert str(value_error) == "[1]: Argument 'Detail' has no length", str(value_error)
+
+        # Bad Depth:
+        try:
+            ApexCounter(name, detail, cast(float, "BAD_DIAMETER"), diameter)
+            assert False
+        except ValueError as value_error:
+            assert str(value_error) == (
+                "Argument 'Depth' is str which is not one of ['float', 'int']"), str(value_error)
+
+        # Bad Diameter:
+        try:
+            ApexCounter(name, detail, depth, cast(float, "BAD_DIAMETER"))
+            assert False
+        except ValueError as value_error:
+            assert str(value_error) == (
+                "Argument 'Diameter' is str which is not one of ['float', 'int']"), str(value_error)
+
 
 # ApexNut:
 @dataclass(frozen=True)
@@ -229,14 +336,12 @@ class ApexNut(ApexStackOption):
         try:
             # Empty Name:
             ApexNut("", detail, material, sides, width, thickness)
-            assert False
         except ValueError as value_error:
             assert str(value_error) == "[0]: Argument 'Name' has no length", str(value_error)
 
         try:
             # Empty Detail:
             ApexNut(name, "", material, sides, width, thickness)
-            assert False
         except ValueError as value_error:
             assert str(value_error) == "[1]: Argument 'Detail' has no length", str(value_error)
 
@@ -673,7 +778,6 @@ class ApexStackBody:
         # Bad Pitch:
         try:
             ApexStackBody(name, detail, "BAD_PITCH", size, material, head, drive)
-            assert False
         except ValueError as value_error:
             assert str(value_error) == (
                 "'BAD_PITCH' is not one of ('ISO Metric Coarse', 'ISO Metric FINE', "
@@ -682,7 +786,6 @@ class ApexStackBody:
         # Bad Size:
         try:
             ApexStackBody(name, detail, pitch, "BAD_SIZE", material, head, drive)
-            assert False
         except ValueError as value_error:
             assert str(value_error) == (
                 "'BAD_SIZE' is not one of ('UTS #1', 'UTS #2', 'UTS #3', 'UTS #4', 'UTS #5', "
@@ -767,31 +870,75 @@ class ApexStack:
     @classmethod
     def _unit_tests(cls) -> None:
         """Run unit tests for ApexStack."""
-        # Create a *screwbody* to use:
+        # Create a *stack_body*, *washer*, and *nut*:
         brass: ApexMaterial = ApexMaterial(("brass",), "orange")
         stack_body: ApexStackBody = ApexStackBody(
             "#4-40FH", "#4-40 Flat Head Philips Brass",
             ApexStackBody.UTS_FINE, ApexStackBody.UTS_N4, brass,
             ApexStackBody.FLAT, ApexStackBody.PHILLIPS)
-
-        # Create *head_options* and *tail_options* to use:
         washer: ApexWasher = ApexWasher(
             "Washer", "Flat Washer", brass, 3.0, 6.0, 1.5, ApexWasher.PLAIN)
         nut: ApexNut = ApexNut("Nut", "Hex Nut", brass, 6, 6.0, 2.0)
-        head_options: Tuple[ApexStackOption, ...] = (washer,)
-        tail_options: Tuple[ApexStackOption, ...] = (nut,)
 
-        # Build up the required arguments:
+        # Build *stack*:
         name: str = "name"
         detail: str = "detail"
-        apex_stack: ApexStack = ApexStack(name, detail, stack_body, head_options, tail_options)
+        head_options: Tuple[ApexStackOption, ...] = (washer,)
+        tail_options: Tuple[ApexStackOption, ...] = (nut,)
+        stack: ApexStack = ApexStack(name, detail, stack_body, head_options, tail_options)
 
         # Verify attributes:
-        assert apex_stack.Name == name, apex_stack.Name
-        assert apex_stack.Detail == detail, apex_stack.Detail
-        assert apex_stack.StackBody is stack_body, apex_stack.StackBody
-        assert apex_stack.HeadOptions is head_options, apex_stack.HeadOptions
-        assert apex_stack.TailOptions is tail_options, apex_stack.TailOptions
+        assert stack.Name == name, stack.Name
+        assert stack.Detail == detail, stack.Detail
+        assert stack.StackBody is stack_body, stack.StackBody
+        assert stack.HeadOptions is head_options, stack.HeadOptions
+        assert stack.TailOptions is tail_options, stack.TailOptions
+
+        # Verify __str__() and __repr__():
+        want: str = (
+            "ApexStack('name', 'detail', "
+            "'ApexStack('#4-40FH', '#4-40 Flat Head Philips Brass', 'UTS Fine', 'UTS #4', "
+            "ApexMaterial(('brass',), 'orange'), 'Flat', 'Phillips')' "
+            "(ApexWasher('Washer', 'Flat Washer', 3.0, 6.0, 1.5, "
+            "ApexMaterial(('brass',), 'orange'), 'PLAIN'),), "
+            "(ApexNut('Nut', 'Hex Nut', 6, 6.0, 2.0, ApexMaterial(('brass',), 'orange')),))")
+        assert f"{stack}" == want, f"{stack}"
+        assert str(stack) == want, str(stack)
+        assert stack.__repr__() == want, stack.__repr__()
+
+        # Bad Name:
+        try:
+            ApexStack("", detail, stack_body, head_options, tail_options)
+        except ValueError as value_error:
+            assert str(value_error) == "[0]: Argument 'Name' has no length", str(value_error)
+
+        # Bad Detail:
+        try:
+            ApexStack(name, "", stack_body, head_options, tail_options)
+        except ValueError as value_error:
+            assert str(value_error) == "[1]: Argument 'Detail' has no length", str(value_error)
+
+        # Bad StackBody:
+        try:
+            ApexStack(name, detail, cast(ApexStackBody, 0), head_options, tail_options)
+        except ValueError as value_error:
+            assert str(value_error) == (
+                "Argument 'StackBody' is int which is not one of ['ApexStackBody']"
+            ), str(value_error)
+
+        # Bad HeadOptions:
+        try:
+            ApexStack(name, detail, stack_body, (cast(ApexStackOption, "BAD_HEAD"), ), tail_options)
+        except ValueError as value_error:
+            assert str(value_error) == (
+                "[0]: BAD_HEAD (str) is not of type ['ApexStackOption']"), str(value_error)
+
+        # Bad TailOptions:
+        try:
+            ApexStack(name, detail, stack_body, head_options, (cast(ApexStackOption, "BAD_TAIL"), ))
+        except ValueError as value_error:
+            assert str(value_error) == (
+                "[0]: BAD_TAIL (str) is not of type ['ApexStackOption']"), str(value_error)
 
 
 # ApexScrew:
@@ -847,7 +994,6 @@ class ApexScrew(object):
         # Bad Stack:
         try:
             ApexScrew(cast(ApexStack, 0), start, end)
-            assert False
         except ValueError as value_error:
             assert str(value_error) == (
                 "Argument 'Stack' is int which is not one of ['ApexStack']"), str(value_error)
@@ -870,6 +1016,7 @@ class ApexScrew(object):
 def _unit_tests() -> None:
     """Run unit tests."""
     ApexStackOption._unit_tests()
+    ApexCounter._unit_tests()
     ApexNut._unit_tests()
     ApexWasher._unit_tests()
     ApexStackBody._unit_tests()
