@@ -42,7 +42,7 @@ sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 import FreeCAD as App  # type: ignore
 from FreeCAD import Vector  # type: ignore
 import FreeCADGui as Gui  # type:ignore
-from Apex import ApexLength, ApexPoint, ApexBox
+from Apex import ApexPoint, ApexBox
 
 
 # ApexContext:
@@ -234,7 +234,7 @@ class ApexNode(object):
         value: Any
         for name, value in self.__dict__.items():
             if name not in ignore_names and name[0] != "_":
-                if isinstance(value, (bool, int, float, ApexPoint, ApexLength)):
+                if isinstance(value, (bool, int, float, ApexPoint)):
                     values[f"{self.full_path}:{name}"] = value
                 elif isinstance(value, ApexNode):
                     value._configure_helper(values)
@@ -243,8 +243,7 @@ class ApexNode(object):
 def unit_tests() -> None:
     """Run unit tests for ApexNode."""
     class Box(ApexNode):
-        def __init__(self, name: str, dx: ApexLength, dy: ApexLength,
-                     dz: ApexLength, dw: ApexLength) -> None:
+        def __init__(self, name: str, dx: float, dy: float, dz: float, dw: float) -> None:
             super().__init__(name, None)
             self.dx: float = dx
             self.dy: float = dy
@@ -311,8 +310,7 @@ def unit_tests() -> None:
                 print(f"{tracing}<=>Block.build({self.full_path})")
 
     # Constraints should down to zero differences with *count*=3.
-    box: ApexNode = Box(
-        "Test_Box", ApexLength(20.0), ApexLength(15.0), ApexLength(10.0), ApexLength(0.5))
+    box: ApexNode = Box("Test_Box", 20.0, 15.0, 10.0, 0.5)
     differences: Tuple[Tuple[str, Any, Any], ...] = box._configure_all(count=3)
     want: Tuple[Tuple[str, Any, Any], ...] = ()
     assert differences == want, f"Got {differences} instead of {want=}"
@@ -322,8 +320,7 @@ def unit_tests() -> None:
     box.configure_and_build(document_name)
 
     # Constraints should be down to 1 difference with *count*=2:
-    box = Box(
-        "Test_Box", ApexLength(30.0), ApexLength(25.0), ApexLength(15.0), ApexLength(0.75))
+    box = Box("Test_Box", 30.0, 25.0, 15.0, 0.75)
     differences = box._configure_all(count=2)
     want = (('Test_Box:skin_volume', 0.0, 0.0),)
     assert differences == want, f"Got {differences} instead of {want=}"

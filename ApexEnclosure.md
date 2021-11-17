@@ -22,11 +22,11 @@ ApexEnclosure: Build a box.
 Builds a box given a length, width, height, material, thickness and position in space.
 
 Attributes:
-* *dx* (ApexLength): length in X direction.
-* *dy* (ApexLength): width in Y direction.
-* *dz* (ApexLength): height in Z direction.
+* *dx* (float): length in X direction in millimeters.
+* *dy* (float): width in Y direction in millimeters.
+* *dz* (float): height in Z direction in millimeters.
 * *material* (ApexMaterial): Material to use.
-* *dw* (ApexLength): material thickness.
+* *dw* (float): material thickness in millimeters.
 * *center*: (ApexPoint): Center of box:
 * *z\_align*: (ApexPoint): Axis to align with +Z axis.
 * *y\_align: (ApexPoint): Axis to align with +Y axis.
@@ -40,7 +40,7 @@ Block: A rectangular block.
 
 ### 3.1 Block.\_\_init\_\_ <a name="block---init--"></a>
 
-def \_\_init\_\_(self, *name*:  *str*, *parent*:  ApexNode, *tne*:  Vector, *bsw*:  Vector, *top\_face*:  Vector, *north\_face*:  Vector, *color*:  *str* = "", *tracing*:  *str* = "") -> None:
+def \_\_init\_\_(self, *name*:  *str*, *parent*:  ApexNode, *tne*:  Vector, *bsw*:  Vector, *top\_face*:  Vector, *north\_face*:  Vector, *color*:  *str* = "", *screws*:  Tuple[ApexScrew, ...] = (), *tracing*:  *str* = "") -> None:
 
 Initlialze a Block.
 
@@ -52,6 +52,7 @@ Initlialze a Block.
   * *top\_face* (Vector): The face to have pointing +Z when doing operations.
   * *north\_face* (Vector): The face to have pointing +Y when doing operations.
   * *color*: (str): The SVG color name to use for coloring purposes.
+  * *screws*: (Tuple[ApexScrew]): Screws to attach. (Default: ())
 
 ### 3.2 Block.build <a name="block-build"></a>
 

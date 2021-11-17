@@ -35,7 +35,7 @@ from FreeCAD import BoundBox, Placement, Rotation, Vector  # type: ignore
 # import colorsys  # Color conversion routines.
 from dataclasses import dataclass
 import math
-from typing import Any, cast, ClassVar, List, Dict, Optional, Sequence, Tuple, Union
+from typing import Any, cast, List, Dict, Optional, Sequence, Tuple, Union
 
 
 # ApexBox:
@@ -1145,246 +1145,37 @@ class ApexColor(object):
             assert str(value_error) == "'fred' is not a supported SVG color name.", str(value_error)
 
 
-# ApexLength:
-class ApexLength(float):
-    """ApexLength is a float with with optional name and units.
+# Miscellaneous functions:
 
-    * Attributes:
-      * *length* (float): The length measured in millimeters.
-      * *units* (str): The units (e.g. "km", "m", "cm", "mm", "µm", "nm", "ft", "thou", etc.)
-      * *name* (str): The optional name.
-    """
+# float_fix():
+def float_fix(length: float) -> float:
+    """Return a length that is rounded to a whole number when appropriate."""
+    is_negative: bool = length < 0.0
+    if is_negative:
+        length = -length
 
-    _conversions: ClassVar[Dict[str, float]] = {
-        "km": 1000000.0,
-        "m": 1000.0,
-        "cm": 10.0,
-        "mm": 1.0,
-        "µm": 1. / 1000.0,  # Unicode in strings is fully suported by Python 3.
-        "um": 1. / 1000.0,
-        "nm": 1. / 1000000.0,
-        "ft": 2.54 * 12.0,
-        "in": 2.54,
-        # "mil" means "thou" in US/Canada and "mm" everywhere else.  So it is not allowed.
-        "thou": 2.54 / 1000.0,
-    }
-    _value: float
-    _scale: float
-    _units: str
-    _name: str
+    whole: float
+    fractional: float
+    whole, fractional = divmod(length, 1.0)
 
-    # ApexLength.__new__():
-    def __new__(cls, *args, **kwargs) -> "ApexLength":
-        """Create an ApexLength.
+    epsilon: float = 1.0e-8
+    if abs(fractional) < epsilon:
+        fractional = 0.0
+    if abs(fractional - 1.0) < epsilon:
+        fractional = 0.0  # pragma: no unit cover
+        whole += 1.0  # pragma: no unit cover
+    fixed_length: float = whole + fractional
+    if is_negative:
+        fixed_length = -fixed_length
+    if abs(fixed_length) == 0.0:
+        fixed_length = 0.0
+    return fixed_length
 
-        (Note: When sub-classing *float*, __new__() is used instead of __init__().)
-        The actual function signature is:
-              __new__(cls, value: Union[float, int] = 0.0, units: str = "mm", name: str = ""):
 
-        * Arguments:
-          * *value* (Union[float, int]): The distance value.  (Optional: Default = 0.0).
-          * *units* (str): The units to use.  (Optional: Default = "mm").
-          * *name*: (str): An name to associate with the length.  (Optional: Default = "").
-        * Returns:
-          (ApexLength) containing the desired values.
-        """
-        tracing: str = kwargs["tracing"] if "tracing" in kwargs else ""
-        if tracing:
-            print(f"{tracing}=>ApexLength.__new__({args}, {kwargs})")
-        # Tediously extract arguments from *args* and *kwargs* (Probably there is a better way...):
-        args_size: int = len(args)
-        value: Any = args[0] if args_size >= 1 else (
-            kwargs["value"] if "value" in kwargs else 0.0)
-        if not isinstance(value, (float, int)):
-            raise ValueError(f"value ({value}) is neither a float nor an int")
-        value = float(value)
-
-        units: Any = args[1] if args_size >= 2 else (
-            kwargs["units"] if "units" in kwargs else "mm")
-        units = units if units else "mm"
-        if tracing:
-            print(f"{tracing}{units=}")
-        if not isinstance(units, str):
-            raise ValueError(f"units ({units}) is not a str")
-        conversions: Dict[str, float] = ApexLength._conversions
-        if units not in conversions:
-            raise ValueError(f"units ('{units}') is not one of {tuple(conversions.keys())}")
-        scale = conversions[units]
-
-        name: Any = args[2] if args_size >= 3 else (
-            kwargs["name"] if "name" in kwargs else "")
-        if not isinstance(name, str):
-            raise ValueError(f"name ({name}) is not a str")
-
-        # Install everything into *apex_length* and return.
-        apex_length: ApexLength = super(ApexLength, cls).__new__(cls, value * scale)  # type: ignore
-        apex_length._units = units
-        apex_length._name = name
-        apex_length._scale = scale
-        assert isinstance(apex_length, float)
-        assert isinstance(apex_length, ApexLength)
-        if tracing:
-            print(f"{tracing}<=ApexLength.__new__({args}, {kwargs})=>{apex_length}")
-        return apex_length
-
-    # ApexLength.__repr__():
-    def __repr__(self) -> str:
-        """Return the string representation."""
-        value: float = float(self) / self._scale
-        units: str = self._units
-        name: str = self._name
-        # print(f"=>repr({value}, '{units}', 'name')")
-
-        name = f", '{name}'" if name else ""
-        units = "" if not name and units == "mm" else f", '{units}'"
-        result: str = f"ApexLength({value}{units}{name})"
-        return result
-
-    # ApexLength.__str__():
-    def __str__(self) -> str:
-        """Return the string representation."""
-        return self.__repr__()
-
-    @property
-    def length(self) -> float:
-        """Return length in millimeters as a float."""
-        return float(self)
-
-    @property
-    def units(self) -> str:
-        """Return the units."""
-        return self._units
-
-    @property
-    def name(self) -> str:
-        """Return the name."""
-        return self._name
-
-    @property
-    def value(self) -> float:
-        """Return the value in user specfied units."""
-        return float(self) / self._scale
-
-    @staticmethod
-    def whole_fix(length: Union["ApexLength", float, int]) -> Union["ApexLength", float]:
-        """Fix values that are close to whole numbers to be whole numbers."""
-        original_length: Union[ApexLength, float, int] = length
-
-        length = float(length)
-        is_negative: bool = length < 0.0
-        if is_negative:
-            length = -length
-        whole: float
-        fractional: float
-        whole, fractional = divmod(length, 1.0)
-        epsilon: float = 1.0e-10
-        if abs(fractional) < epsilon:
-            fractional = 0.0
-        if abs(fractional - 1.0) < epsilon:
-            fractional = 0.0  # pragma: no unit cover
-            whole += 1.0  # pragma: no unit cover
-        fixed_length: float = whole + fractional
-        if is_negative:
-            fixed_length = -fixed_length
-        if abs(fixed_length) == 0.0:
-            fixed_length = 0.0
-        final_length: Union[ApexLength, float] = fixed_length
-        if isinstance(original_length, ApexLength):
-            final_length = ApexLength(fixed_length, original_length.units, original_length.name)
-        return final_length
-
-    @staticmethod
-    def _unit_tests() -> None:
-        """Perform Unit tests for ApexLength."""
-        def check(apex_length: ApexLength, length: float, value: float, units: str, name: str,
-                  repr: str) -> None:
-            """Ensure that an ApexLength has the right values."""
-            assert apex_length.length == length, f"{apex_length.length} != {length}"
-            assert apex_length.value == value, f"{apex_length.value} != {value}"
-            assert apex_length.units == units, f"{apex_length.units} != {units}"
-            assert apex_length.__repr__() == repr, f"'{apex_length.__repr__()}' != '{repr}'"
-
-        f0a: ApexLength = ApexLength()  # No arguments
-        assert isinstance(f0a, ApexLength)
-        check(f0a, 0.0, 0.0, "mm", "", "ApexLength(0.0)")
-        f0b: ApexLength = ApexLength(0)  # Integer argument of zero.
-        check(f0b, 0.0, 0.0, "mm", "", "ApexLength(0.0)")
-
-        f1a: ApexLength = ApexLength(1.0)  # Float argument
-        check(f1a, 1.0, 1.0, "mm", "", "ApexLength(1.0)")
-        f1b: ApexLength = ApexLength(1)  # Integer argument
-        check(f1b, 1.0, 1.0, "mm", "", "ApexLength(1.0)")
-
-        f10a: ApexLength = ApexLength(1.0, "cm")
-        check(f10a, 10.0, 1.0, "cm", "", "ApexLength(1.0, 'cm')")
-        f10b: ApexLength = ApexLength(10)
-        check(f10b, 10.0, 10.0, "mm", "", "ApexLength(10.0)")
-        assert float(f10a) == float(f10b)
-
-        f254a: ApexLength = ApexLength(1, "in")
-        check(f254a, 2.54, 1.0, "in", "", "ApexLength(1.0, 'in')")
-        f254b: ApexLength = ApexLength(2.54)
-        check(f254b, 2.54, 2.54, "mm", "", "ApexLength(2.54)")
-        assert float(f254a) == float(f254b)
-
-        f0c: ApexLength = ApexLength(name="f0c")
-        check(f0c, 0.0, 0.0, "mm", "", "ApexLength(0.0, 'mm', 'f0c')")
-        f0d: ApexLength = ApexLength(0, "", "f0d")
-        check(f0d, 0.0, 0.0, "mm", "", "ApexLength(0.0, 'mm', 'f0d')")
-        f1c: ApexLength = ApexLength(1, name="f1c")
-        check(f1c, 1.0, 1.0, "mm", "", "ApexLength(1.0, 'mm', 'f1c')")
-        assert f1c.name == "f1c"
-
-        # Test fixing:
-        positive_zero: Union[ApexLength, float] = (
-            ApexLength.whole_fix(ApexLength(0.00000000001, fix=True)))
-        assert isinstance(positive_zero, ApexLength)
-        check(positive_zero, 0.0, 0.0, "mm", "", "ApexLength(0.0)")
-        negative_zero: Union[ApexLength, float] = (
-            ApexLength.whole_fix(ApexLength(-0.00000000001, fix=True)))
-        assert isinstance(negative_zero, ApexLength)
-        check(positive_zero, 0.0, 0.0, "mm", "", "ApexLength(0.0)")
-        positive_high_one: Union[ApexLength, float] = (
-            ApexLength.whole_fix(ApexLength(1.00000000001, fix=True)))
-        assert isinstance(positive_high_one, ApexLength)
-        check(positive_high_one, 1.0, 1.0, "mm", "", "ApexLength(1.0)")
-        positive_low_one: Union[ApexLength, float] = (
-            ApexLength.whole_fix(ApexLength(0.99999999999, fix=True)))
-        assert isinstance(positive_low_one, ApexLength)
-        check(positive_high_one, 1.0, 1.0, "mm", "", "ApexLength(1.0)")
-        negative_high_one: Union[ApexLength, float] = (
-            ApexLength.whole_fix(ApexLength(-1.00000000001, fix=True)))
-        assert isinstance(negative_high_one, ApexLength)
-        check(negative_high_one, -1.0, -1.0, "mm", "", "ApexLength(-1.0)")
-        negative_low_one: Union[ApexLength, float] = (
-            ApexLength.whole_fix(ApexLength(-0.99999999999, fix=True)))
-        assert isinstance(negative_low_one, ApexLength)
-        check(negative_high_one, -1.0, -1.0, "mm", "", "ApexLength(-1.0)")
-
-        # Miscellaneous tests:
-        assert str(f0a) == "ApexLength(0.0)", "test __str__()"
-        # Do some error testing:
-        try:
-            ApexLength(units=7)
-        except ValueError as value_error:
-            assert str(value_error) == "units (7) is not a str"
-        try:
-            ApexLength(name=7)
-        except ValueError as value_error:
-            assert str(value_error) == "name (7) is not a str", str(value_error)
-
-        try:
-            ApexLength(None)
-        except ValueError as value_error:
-            assert str(value_error) == "value (None) is neither a float nor an int", (
-                str(value_error))
-
-        try:
-            ApexLength(units="angstrom")
-        except ValueError as value_error:
-            units = "'km', 'm', 'cm', 'mm', 'µm', 'um', 'nm', 'ft', 'in', 'thou'"
-            assert str(value_error) == f"units ('angstrom') is not one of ({units})", (
-                str(value_error))
+# vector_fix():
+def vector_fix(vector: Vector) -> Vector:
+    """Return Vector with values rounded to appropriate hole numbers."""
+    return Vector(float_fix(vector.x), float_fix(vector.y), float_fix(vector.y))
 
 
 # ApexMaterial:
@@ -1488,17 +1279,17 @@ class ApexPoint:
       * *x* (Union[float, Apex]): The x coordinate of the vector.
       * *y* (float): The y coordinate of the vector.
       * *z* (float): The z coordinate of the vector.
-      * *diameter* (Union[float, ApexLength]): The apex diameter.
+      * *diameter* (float): The apex diameter.
       * *radius* (float): The apex radius.
       * *name* (str): The apex name.
       * *box* (ApexBox): The ApexBox that encloses an ApexPoint assuming a *diameter* sphere.
     """
 
     INIT_CHECKS = (
-        ApexCheck("x", (int, float, ApexLength)),
-        ApexCheck("y", (int, float, ApexLength)),
-        ApexCheck("z", (int, float, ApexLength)),
-        ApexCheck("diameter", (int, float, ApexLength)),
+        ApexCheck("x", (int, float)),
+        ApexCheck("y", (int, float)),
+        ApexCheck("z", (int, float)),
+        ApexCheck("diameter", (int, float)),
         ApexCheck("name", (str,)),
         ApexCheck("vector", (type(None), Vector)),
         ApexCheck("fix", (bool,)),
@@ -1507,10 +1298,10 @@ class ApexPoint:
     # ApexPoint.__init__():
     def __init__(
             self,
-            x: Union[int, float, ApexLength] = 0.0,
-            y: Union[int, float, ApexLength] = 0.0,
-            z: Union[int, float, ApexLength] = 0.0,
-            diameter: Union[int, float, ApexLength] = 0.0,
+            x: Union[int, float] = 0.0,
+            y: Union[int, float] = 0.0,
+            z: Union[int, float] = 0.0,
+            diameter: Union[int, float] = 0.0,
             name: str = "",
             vector: Optional[Vector] = None,
             fix: bool = False
@@ -1518,10 +1309,10 @@ class ApexPoint:
         """Initialize an ApexPoint.
 
         Arguments:
-          * *x* (Union[int, float, ApexLength]): The x coordinate of the vector. (Default: 0.0)
-          * *y* (Union[int, float, ApexLength]): The y coordinate of the vector. (Default: 0.0)
-          * *z* (Union[int, float, ApexLength]): The z coordinate of the vector. (Default: 0.0)
-          * *diameter* (Union[int, float, ApexLength]): The apex diameter. (Default: 0.0)
+          * *x* (Union[int, float]): The x coordinate of the vector. (Default: 0.0)
+          * *y* (Union[int, float]): The y coordinate of the vector. (Default: 0.0)
+          * *z* (Union[int, float]): The z coordinate of the vector. (Default: 0.0)
+          * *diameter* (Union[int, float]): The apex diameter. (Default: 0.0)
           * *name* (str): A name primarily used for debugging. (Default: "")
           * *vector* (Vector): A vector to initialize *x*, *y*, and *z* with.
             (Default: Vector(0.0, 0.0, 0.0)
@@ -1543,10 +1334,10 @@ class ApexPoint:
             z = vector.z
         diameter = float(diameter) if isinstance(diameter, int) else diameter
         if fix:
-            x = ApexLength.whole_fix(x)
-            y = ApexLength.whole_fix(y)
-            z = ApexLength.whole_fix(z)
-            diameter = ApexLength.whole_fix(diameter)
+            x = float_fix(x)
+            y = float_fix(y)
+            z = float_fix(z)
+            diameter = float_fix(diameter)
 
         # Compute the *bound_box* assuming spherical *radius* around (*x*, *y*, *z*):
         radius: float = diameter / 2.0
@@ -1556,12 +1347,12 @@ class ApexPoint:
 
         # Install everything into *self* (i.e. ApexPoint):
         self.box: ApexBox = bound_box
-        self.diameter: Union[float, ApexLength] = diameter
+        self.diameter: float = diameter
         self.name: str = name
         self.radius: float = radius
-        self.x: Union[float, ApexLength] = x
-        self.y: Union[float, ApexLength] = y
-        self.z: Union[float, ApexLength] = z
+        self.x: float = x
+        self.y: float = y
+        self.z: float = z
 
     @property
     def vector(self) -> Vector:
@@ -1656,10 +1447,10 @@ class ApexPoint:
         assert (apex_point / 2).vector == Vector(0.5, 1.0, 1.5)
 
         try:
-            ApexPoint(cast(int, "x"), cast(float, "y"), cast(ApexLength, "z"),
+            ApexPoint(cast(int, "x"), cast(float, "y"), cast(float, "z"),
                       cast(float, "diameter"), cast(str, None))
         except ValueError as value_error:
-            want = "Argument 'x' is str which is not one of ['int', 'float', 'ApexLength']"
+            want = "Argument 'x' is str which is not one of ['int', 'float']"
             got: str = str(value_error)
             assert want == got, (want, got)
 
@@ -1745,12 +1536,32 @@ class ApexPoint:
         from_vector.vector == t10, "from vector failed"
 
 
+def _misc_unit_tests() -> None:
+    """Test helper functions."""
+    # Test float_fix():
+    assert float_fix(0.0) == 0.0, "Zero fail"
+    assert float_fix(1.0) == 1.0, "1.0 fail"
+    assert float_fix(-1.0) == -1.0, "-1.0 fail"
+    assert float_fix(0.5) == 0.5, "0.5 fail"
+    assert float_fix(-0.5) == -0.5, "-0.5 fail"
+    epsilon: float = 1.0e-11
+    assert float_fix(epsilon) == 0.0, "epsilon fail"
+    assert float_fix(-epsilon) == 0.0, "-epsilon fail"
+    assert float_fix(1 - epsilon) == 1.0, "1-epsilon fail"
+    assert float_fix(1 + epsilon) == 1.0, "1+epsilon fail"
+    assert float_fix(-1 - epsilon) == -1.0, "-1-epsilon fail"
+    assert float_fix(-1 + epsilon) == -1.0, "-1+epsilon fail"
+
+    # Test vector_fix():
+    return vector_fix(Vector(epsilon, 1.0 - epsilon, -1.0 + epsilon)) == Vector(0.0, 0.0, 0.0)
+
+
 def _unit_tests() -> None:
     """Run the unit tests."""
+    _misc_unit_tests()
     ApexCheck._unit_tests()
     ApexColor._unit_tests()
     ApexBox._unit_tests()
-    ApexLength._unit_tests()
     ApexPoint._unit_tests()
     ApexMaterial._unit_tests()
 

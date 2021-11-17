@@ -130,7 +130,7 @@ Attributes:
 
 def \_\_post\_init\_\_(self) -> None:
 
-Initialize a single ApexJoin.
+Initialize ApexScrew.
 
 ### 4.2 ApexScrew.\_unit\_tests <a name="apexscrew--unit-tests"></a>
 

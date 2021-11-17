@@ -18,7 +18,7 @@ from typing import Any, Sequence, Optional, Tuple
 import FreeCAD as App  # type: ignore
 import FreeCADGui as Gui  # type: ignore
 from FreeCAD import Placement, Rotation, Vector  # type: ignore
-from Apex import ApexBox, ApexCheck, ApexColor, ApexLength, ApexMaterial, ApexPoint
+from Apex import ApexBox, ApexCheck, ApexColor, ApexMaterial, ApexPoint
 from ApexNode import ApexContext, ApexNode
 from ApexSketch import ApexDrawing, ApexElement, ApexPolygon
 from ApexFasten import ApexScrew, ApexStack, ApexStackBody
@@ -32,11 +32,11 @@ class ApexEnclosure(ApexNode):
     Builds a box given a length, width, height, material, thickness and position in space.
 
     Attributes:
-    * *dx* (ApexLength): length in X direction.
-    * *dy* (ApexLength): width in Y direction.
-    * *dz* (ApexLength): height in Z direction.
+    * *dx* (float): length in X direction in millimeters.
+    * *dy* (float): width in Y direction in millimeters.
+    * *dz* (float): height in Z direction in millimeters.
     * *material* (ApexMaterial): Material to use.
-    * *dw* (ApexLength): material thickness.
+    * *dw* (float): material thickness in millimeters.
     * *center*: (ApexPoint): Center of box:
     * *z_align*: (ApexPoint): Axis to align with +Z axis.
     * *y_align: (ApexPoint): Axis to align with +Y axis.
@@ -45,30 +45,29 @@ class ApexEnclosure(ApexNode):
 
     INIT_CHECKS = (
         ApexCheck("name", (str,)),
-        ApexCheck("dx", (ApexLength,)),
-        ApexCheck("dy", (ApexLength,)),
-        ApexCheck("dz", (ApexLength,)),
+        ApexCheck("dx", (float,)),
+        ApexCheck("dy", (float,)),
+        ApexCheck("dz", (float,)),
         ApexCheck("material", (ApexMaterial,)),
-        ApexCheck("dw", (int, float, ApexLength)),
+        ApexCheck("dw", (float,)),
         ApexCheck("center", (ApexPoint,)),
         ApexCheck("z_align", (ApexPoint,)),
         ApexCheck("y_align", (ApexPoint,)),
     )
 
     # ApexEnclosure.__ init__():
-    def __init__(self, name: str, dx: ApexLength, dy: ApexLength, dz: ApexLength,
-                 material: ApexMaterial, dw: ApexLength,
-                 center: ApexPoint, z_align: ApexPoint, y_align: ApexPoint,
+    def __init__(self, name: str, dx: float, dy: float, dz: float, material: ApexMaterial,
+                 dw: float, center: ApexPoint, z_align: ApexPoint, y_align: ApexPoint,
                  tracing: str = "") -> None:
         """Initialize a ApexEnclosure.
 
         Arguments:
           * *name* (str): The box name.
-          * *dx* (ApexLength): length in X direction.
-          * *dy* (ApexLength): width in Y direction.
-          * *dz* (ApexLength): height in Z direction.
+          * *dx* (float): length in X direction in millimeters.
+          * *dy* (float): width in Y direction in millimeters.
+          * *dz* (float): height in Z direction in millimeters.
           * *material* (ApexMaterial): ApexEnclosure material.
-          * *dw* (ApexLength): material thickness.
+          * *dw* (float): material thickness in millimeters.
           * *center* (ApexPoint): Center of box.
           * *z_align* (ApexPoint): Axis to align top normal to.
           * *y_align* (ApexPoint): Axis to align "back" normal to.
@@ -88,11 +87,11 @@ class ApexEnclosure(ApexNode):
             print(f"{tracing}=>ApexEnclosure.__init__{arguments}")
 
         super().__init__(name, None)  # Initilize ApexNode parent class.
-        self.dx: ApexLength = dx
-        self.dy: ApexLength = dy
-        self.dz: ApexLength = dz
+        self.dx: float = dx
+        self.dy: float = dy
+        self.dz: float = dz
         self.material: ApexMaterial = material
-        self.dw: ApexLength = dw
+        self.dw: float = dw
         self.center: ApexPoint = center
         self.z_align: ApexPoint = z_align
         self.y_align: ApexPoint = y_align
@@ -314,10 +313,10 @@ class Block(ApexNode):
         app_document.recompute()
 
         screw: ApexScrew
-        screw_elements: Tuple[ApexElement, ...] = tuple(
-            [screw.element() for screw in self.screws]
-        )
-        elements: Tuple[ApexElement, ...] = (block_polygon,) + screw_elements
+        # screw_elements: Tuple[ApexElement, ...] = tuple(
+        #     [screw.element() for screw in self.screws]
+        # )
+        elements: Tuple[ApexElement, ...] = (block_polygon,)  # + screw_elements
         if tracing:
             print(f"{tracing}{top_face=}")
             print(f"{tracing}{z_align=}")
@@ -332,11 +331,11 @@ class Block(ApexNode):
 def main() -> None:
     """Box Example main program."""
     name: str = "Test_Box"
-    length: ApexLength = ApexLength(200.0, name="Length")  # DX
-    width: ApexLength = ApexLength(150.0, name="Width")  # DY
-    height: ApexLength = ApexLength(100.0, name="Height")  # DZ
+    length: float = 200.0  # DX
+    width: float = 150.0  # DY
+    height: float = 100.0  # DZ
     material: ApexMaterial = ApexMaterial(("Plastic", "HDPE"), "yellow")
-    thickness: ApexLength = ApexLength(10, name="Thickness")  # DW
+    thickness: float = 10.0  # DW
     origin: ApexPoint = ApexPoint(0.0, 0.0, 0.0, name="Origin")  # Center
     z_axis: ApexPoint = ApexPoint(0.0, 0.0, 1.0, name="+Z")  # +Z Axis
     y_axis: ApexPoint = ApexPoint(0.0, 1.0, 0.0, name="+Y")  # +Y Axis

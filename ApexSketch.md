@@ -392,15 +392,15 @@ Arguments:
 
 ### 5.9 ApexElement.\_\_init\_\_ <a name="apexelement---init--"></a>
 
-def \_\_init\_\_(self, *is\_exterior*:  *bool* = False, *depth*:  Union[float, ApexLength] = 0.0, *diameter*:  Union[float, ApexLength] = 0.0, *name*:  *str* = "") -> None:
+def \_\_init\_\_(self, *is\_exterior*:  *bool* = False, *depth*:  *float* = 0.0, *diameter*:  *float* = 0.0, *name*:  *str* = "") -> None:
 
 Initialize the ApexElement.
 
 Arguments:
 * *is\_exterior* (bool): True if the Element is the exterior of an ApexDrawing.
-* *depth* (Union[float, ApexLength]): The ApexElement depth.
-* *diameter* (Union[float, ApexLength]): The ApexElement diameter (0.0 for ApexPolygon.)
-* *depth* (Union[float, ApexLength]): The ApexElement depth.
+* *depth* (float): The ApexElement depth in millimeters.
+* *diameter* (float): The ApexElement diameter in millimeters (0.0 for ApexPolygon.)
+* *depth* (float): The ApexElement depth in millimeters.
 * *name* (str): The ApexElement name (Default: "").
 
 
@@ -607,15 +607,15 @@ ApexPolyon: A closed polygon of ApexPoints.
 Attributes:
 * *box* (ApexBox): The bounding box of the ApexPoint's.
 * *clockwise* (bool): True if the ApexPoints are clockwise and False otherwise.
-* *depth* (Union[float, ApexLength]): The ApexPolygon depth.
-* *diameter* (Union[Float, ApexLength]): Always 0.0 for an ApexPolygon.
+* *depth* (float): The ApexPolygon depth in millimeters.
+* *diameter* (float): Always 0.0 for an ApexPolygon.
 * *name* (str): The ApexPolygon name.
 * *points* (Tuple[ApexPoint, ...]): The ApexPoint's of the ApexPoloygon.
 
 
 ### 9.1 ApexPolygon.\_\_init\_\_ <a name="apexpolygon---init--"></a>
 
-def \_\_init\_\_( *self*, *points*:  Tuple[ApexPoint, ...], *depth*:  Union[ApexLength, *float*] = 0.0, *is\_exterior*:  *bool* = False, *name*:  *str* = "", *tracing*:  *str* = "" ) -> None:
+def \_\_init\_\_( *self*, *points*:  Tuple[ApexPoint, ...], *depth*:  *float* = 0.0, *is\_exterior*:  *bool* = False, *name*:  *str* = "", *tracing*:  *str* = "" ) -> None:
 
 Initialize a ApexPolygon.
 
@@ -682,10 +682,10 @@ ApexElement: Base class for ApexCircle and ApexPolygon.
 
 Attributes:
 * *box* (ApexBox): The Apex box for the ApexElement.
-* *depth* (Union[float, ApexLength]): The element depth.
-* *diameter* (Union[float, ApexLength]): The element diameter.
+* *depth* (float): The element depth in millimeters.
+* *diameter* (float): The element diameter in millimeters.
 * *is\_exterior* (bool): True if ApexElement is the exterior.
-* *key* (ApexElementKey): The grouping key FreeCAD Part Design operations.
+* *key* (ApexElementKey): The grouping key FreeCAD for Part Design operations.
 * *name* (Optional[str]): The ApexElement name:
 
 
