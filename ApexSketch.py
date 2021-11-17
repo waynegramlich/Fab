@@ -618,7 +618,7 @@ class ApexElement(object):
     * *depth* (Union[float, ApexLength]): The element depth.
     * *diameter* (Union[float, ApexLength]): The element diameter.
     * *is_exterior* (bool): True if ApexElement is the exterior.
-    * *key* (ApexElementKey): The grouping key FreeCAD Part Design operations.
+    * *key* (ApexElementKey): The grouping key FreeCAD for Part Design operations.
     * *name* (Optional[str]): The ApexElement name:
 
     """

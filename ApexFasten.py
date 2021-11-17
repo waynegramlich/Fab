@@ -71,6 +71,7 @@ from dataclasses import dataclass
 from typing import cast, Tuple
 
 from Apex import ApexCheck, ApexMaterial
+from ApexSketch import ApexElement
 from FreeCAD import Vector  # type: ignore
 
 #  https://github.com/shaise/FreeCAD_FastenersWB
@@ -965,11 +966,15 @@ class ApexScrew(object):
 
     # ApexScrew.__post_init__():
     def __post_init__(self) -> None:
-        """Initialize a single ApexJoin."""
+        """Initialize ApexScrew."""
         arguments = (self.Stack, self.Start, self.End)
         value_error: str = ApexCheck.check(arguments, ApexScrew.POST_INIT_CHECKS)
         if value_error:
             raise ValueError(value_error)
+
+    def element(self) -> ApexElement:
+        """Return the ApexElmenent for ApexScrew."""
+        assert False
 
     # ApexScrew._unit_tests():
     @staticmethod

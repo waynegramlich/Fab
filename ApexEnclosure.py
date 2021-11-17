@@ -83,7 +83,7 @@ class ApexEnclosure(ApexNode):
         if value_error:
             raise ValueError(value_error)  # pragma: no unit cover
 
-        next_tracing: str = tracing + " " if tracing else ""
+        # next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>ApexEnclosure.__init__{arguments}")
 
@@ -105,7 +105,7 @@ class ApexEnclosure(ApexNode):
 
         self.top_side: Block = Block("Top", self,
                                      box.TNE + Vector(0.0, 0.0, 0.0),
-                                     box.TSW + Vector(0.0, 0.0, -dw), box.T, box.N, "red")
+                                     box.TSW + Vector(0.0, 0.0, -dw), box.T, box.N, "red", ())
 
         stainless: ApexMaterial = ApexMaterial(("steel", "stainless"), "white")
         stack_body: ApexStackBody = ApexStackBody(
@@ -114,6 +114,7 @@ class ApexEnclosure(ApexNode):
         stack: ApexStack = ApexStack("SS #4-40 FH", "Stainless #4-40 Phillips Flat Head",
                                      stack_body, (), ())
         dw2: float = dw / 2.0
+
         bottom_starts: Tuple[Vector, ...] = (
             box.BSE + Vector(-dw2, dw2, 0.0),
             box.BSW + Vector(dw2, dw2, 0.0),
@@ -127,25 +128,26 @@ class ApexEnclosure(ApexNode):
             bottom_screw: ApexScrew = ApexScrew(stack, bottom_start, bottom_end)
             bottom_screws += (bottom_screw,)
 
-        if False:
-            self.bottom_side: Block = Block("Bottom", self,
-                                            box.BNE + Vector(0.0, 0.0, 0.0),
-                                            box.BSW + Vector(0.0, 0.0, dw), box.B, box.N, "red")
+        self.bottom_side: Block = Block("Bottom", self,
+                                        box.BNE + Vector(0.0, 0.0, 0.0),
+                                        box.BSW + Vector(0.0, 0.0, dw), box.B, box.N, "red",
+                                        bottom_screws)
 
+        if False:
             self.north_side: Block = Block("North", self,
                                            box.TNE + Vector(0.0, 0.0, -dw),
                                            box.BNW + Vector(0.0, -dw, dw), box.N, box.B, "green",
-                                           tracing=next_tracing)
+                                           ())
             self.south_side: Block = Block("South", self,
                                            box.TSE + Vector(0.0, 0.0, -dw),
-                                           box.BSW + Vector(0.0, dw, dw), box.S, box.B, "green")
+                                           box.BSW + Vector(0.0, dw, dw), box.S, box.B, "green", ())
 
             self.east_side: Block = Block("East", self,
                                           box.TNE + Vector(0.0, -dw, -dw),
-                                          box.BSE + Vector(-dw, dw, dw), box.DE, box.DN, "blue")
+                                          box.BSE + Vector(-dw, dw, dw), box.DE, box.DN, "blue", ())
             self.west_side: Block = Block("West", self,
                                           box.TNW + Vector(0.0, -dw, -dw),
-                                          box.BSW + Vector(dw, dw, dw), box.DW, box.DN, "blue")
+                                          box.BSW + Vector(dw, dw, dw), box.DW, box.DN, "blue", ())
 
         if tracing:
             print(f"{tracing}<=ApexEnclosure.__init__{arguments}")
@@ -171,11 +173,13 @@ class Block(ApexNode):
         ApexCheck("north_face", (Vector,)),
         ApexCheck("top_face", (Vector,)),
         ApexCheck("color", (str,)),
+        ApexCheck("screws", ("T", ApexScrew)),
     )
 
     # Block.__init__():
     def __init__(self, name: str, parent: ApexNode, tne: Vector, bsw: Vector,
-                 top_face: Vector, north_face: Vector, color: str = "", tracing: str = "") -> None:
+                 top_face: Vector, north_face: Vector, color: str = "",
+                 screws: Tuple[ApexScrew, ...] = (), tracing: str = "") -> None:
         """Initlialze a Block.
 
         * Arguments:
@@ -186,8 +190,9 @@ class Block(ApexNode):
           * *top_face* (Vector): The face to have pointing +Z when doing operations.
           * *north_face* (Vector): The face to have pointing +Y when doing operations.
           * *color*: (str): The SVG color name to use for coloring purposes.
+          * *screws*: (Tuple[ApexScrew]): Screws to attach. (Default: ())
         """
-        arguments: Sequence[Any] = (name, parent, tne, bsw, north_face, top_face, color)
+        arguments: Sequence[Any] = (name, parent, tne, bsw, north_face, top_face, color, screws)
         value_error: str = ApexCheck.check(arguments, Block.BLOCK_INIT)
         if value_error:
             raise ValueError(value_error)  # pragma: no unit cover
@@ -200,6 +205,7 @@ class Block(ApexNode):
         self.tne: Vector = tne
         self.top_face: Vector = top_face
         self.north_face: Vector = north_face
+        self.screws: Tuple[ApexScrew, ...] = screws
 
         if tracing:
             print(f"{tracing}<=>Block.__init__{arguments}")
@@ -307,7 +313,11 @@ class Block(ApexNode):
             # Gui.Selection.clearSelection()
         app_document.recompute()
 
-        elements: Tuple[ApexElement, ...] = (block_polygon,)
+        screw: ApexScrew
+        screw_elements: Tuple[ApexElement, ...] = tuple(
+            [screw.element() for screw in self.screws]
+        )
+        elements: Tuple[ApexElement, ...] = (block_polygon,) + screw_elements
         if tracing:
             print(f"{tracing}{top_face=}")
             print(f"{tracing}{z_align=}")
