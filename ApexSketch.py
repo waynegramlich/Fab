@@ -9,7 +9,7 @@ The are 4 base classes of used in this module:
 * ApexDrawing: Create one or more FreeCAD Sketches and applies Part Design and Path operations.
 * ApexShape: This is the geometric shapes that go into the ApexDrawing.
 * ApexOperation: This is the Part Design and Path operation information.
-* ApexFeature: This is an internal class used to construct a fully constrained FreeCAD sketch.
+* ApexGeometry: This is an internal class used to construct a fully constrained FreeCAD sketch.
 
 The ApexShape sub-classes are:
 * ApexCircle: This represents a circle in the ApexDrawing.
@@ -56,7 +56,7 @@ import PartDesign  # type: ignore
 import Sketcher  # type: ignore
 
 
-PartFeature = Union[Part.Circle, Part.LineSegment, Part.Point, Part.Arc]
+PartGeometry = Union[Part.Circle, Part.LineSegment, Part.Point, Part.Arc]
 
 
 # ApexCorner:
@@ -154,45 +154,45 @@ class ApexCorner(object):
                 "Argument 'Name' is int which is not one of ['str']"), str(value_error)
 
 
-# ApexFeature:
-class ApexFeature(object):
-    """Base class a sketch feature."""
+# ApexGeometry:
+class ApexGeometry(object):
+    """Base class a sketch geometry."""
 
-    # ApexFeature.__init__():
+    # ApexGeometry.__init__():
     def __init__(self, drawing: "ApexDrawing",
                  start: Vector, finish: Vector, name: str = "") -> None:
-        """Initialize a ApexFeature."""
+        """Initialize a ApexGeometry."""
         self._drawing: ApexDrawing = drawing
         self._index: int = -999
         self._origin_index: int = -999
         self._name: str = name
-        self._next: ApexFeature = self
-        self._previous: ApexFeature = self
-        # print(f"<=>ApexFeature.__init__(*, {self._part_feature}, '{self._name}')")
+        self._next: ApexGeometry = self
+        self._previous: ApexGeometry = self
+        # print(f"<=>ApexGeometry.__init__(*, {self._part_geometry}, '{self._name}')")
 
-    # ApexFeature.drawing():
+    # ApexGeometry.drawing():
     @property
     def drawing(self) -> "ApexDrawing":  # pragma: no unit test
-        """Return the ApexFeature ApexDrawing."""
+        """Return the ApexGeometry ApexDrawing."""
         return self._drawing  # pragma: no unit test
 
-    # ApexFeature.finish():
+    # ApexGeometry.finish():
     @property
     def finish(self) -> Vector:  # pragma: no unit test
-        """Return the ApexFeature finish point."""
-        raise NotImplementedError(f"ApexFeature.start() not implemented for {self}")
+        """Return the ApexGeometry finish point."""
+        raise NotImplementedError(f"ApexGeometry.start() not implemented for {self}")
 
-    # ApexFeature.index():
+    # ApexGeometry.index():
     @property
     def index(self) -> int:
-        """Return the ApexFeature index."""
+        """Return the ApexGeometry index."""
         assert self._index >= -1, f"index is not set: {self}"
         return self._index
 
-    # ApexFeature.index.setter():
+    # ApexGeometry.index.setter():
     @index.setter
     def index(self, index: int) -> None:
-        """Set the ApexFeature index."""
+        """Set the ApexGeometry index."""
         if self._index >= -1:
             raise ValueError("index is already set")  # pragma: no unit test
         if index < -1:
@@ -201,73 +201,73 @@ class ApexFeature(object):
 
     @property
     def finish_key(self) -> int:  # pragma: no unit test
-        """Return the ApexFeature Constraint key for the finish point."""
+        """Return the ApexGeometry Constraint key for the finish point."""
         raise NotImplementedError(f"{self}.finish_key() not implemented yet.")
 
-    # ApexFeature.name():
+    # ApexGeometry.name():
     @property
     def name(self) -> str:
-        """Return ApexFeature name."""
+        """Return ApexGeometry name."""
         return self._name
 
-    # ApexFeature.next()
+    # ApexGeometry.next()
     @property
-    def next(self) -> "ApexFeature":  # pragma: no unit test
-        """Return the next ApexFeature in circular list."""
+    def next(self) -> "ApexGeometry":  # pragma: no unit test
+        """Return the next ApexGeometry in circular list."""
         return self._next  # pragma: no unit test
 
-    # ApexFeature.index.setter():
+    # ApexGeometry.index.setter():
     @next.setter
-    def next(self, next: "ApexFeature") -> None:
-        """Set the next ApexFeature in circular list."""
+    def next(self, next: "ApexGeometry") -> None:
+        """Set the next ApexGeometry in circular list."""
         self._next = next
 
-    # ApexFeature.part_feature():
+    # ApexGeometry.part_geometry():
     @property
-    def part_feature(self) -> PartFeature:
-        """Return the PartFeature associated with ApexFeature."""
-        raise NotImplementedError(f"{self}.part_feature not implmented.")
+    def part_geometry(self) -> PartGeometry:
+        """Return the PartGeometry associated with ApexGeometry."""
+        raise NotImplementedError(f"{self}.part_geometry not implmented.")
 
-    # ApexFeature.previous():
+    # ApexGeometry.previous():
     @property
-    def previous(self) -> "ApexFeature":  # pragma: no unit test
-        """Return the previous Part ApexFeature in circular list."""
+    def previous(self) -> "ApexGeometry":  # pragma: no unit test
+        """Return the previous Part ApexGeometry in circular list."""
         return self._previous  # pragma: no unit test
 
-    # ApexFeature.previous.setter():
+    # ApexGeometry.previous.setter():
     @previous.setter
-    def previous(self, next: "ApexFeature") -> None:
-        """Set the previous Part ApexFeature in circular list."""
+    def previous(self, next: "ApexGeometry") -> None:
+        """Set the previous Part ApexGeometry in circular list."""
         self._previous = next
 
-    # ApexFeature.start():
+    # ApexGeometry.start():
     @property
     def start(self) -> Vector:  # pragma: no unit test
-        """Return the ApexFeature start point."""
-        raise NotImplementedError(f"ApexFeature.start() not implemented for {self}")
+        """Return the ApexGeometry start point."""
+        raise NotImplementedError(f"ApexGeometry.start() not implemented for {self}")
 
     @property
     def start_key(self) -> int:
-        """Return the ApexFeature Constraint key for the start point."""
+        """Return the ApexGeometry Constraint key for the start point."""
         raise NotImplementedError(f"{self}.start_key() not implemented yet.")
 
-    # ApexFeature.type_name():
+    # ApexGeometry.type_name():
     @property
     def type_name(self) -> str:
-        """Return the ApexFeature type name."""
+        """Return the ApexGeometry type name."""
         raise NotImplementedError(f"{self}.kind() not implemented yet")
 
-    # ApexFeature.__repr__():
+    # ApexGeometry.__repr__():
     def __repr__(self) -> str:
-        """Return string reprentation of ApexFeature."""
+        """Return string reprentation of ApexGeometry."""
         return self.__str__()
 
-    # ApexFeature.__str__():
+    # ApexGeometry.__str__():
     def __str__(self) -> str:
-        """Return string reprentation of ApexFeature."""
-        raise NotImplementedError(f"ApexFeature.__str__() not implemented")
+        """Return string reprentation of ApexGeometry."""
+        raise NotImplementedError(f"ApexGeometry.__str__() not implemented")
 
-    # ApexFeature.constraints_append():
+    # ApexGeometry.constraints_append():
     def constraints_append(self, drawing: "ApexDrawing", constraints: List[Sketcher.Constraint],
                            tracing: str = "") -> None:
         """Append the ApexShape constraints to drawing.
@@ -277,22 +277,22 @@ class ApexFeature(object):
         * *constraints* (List[SketcherConstraint]): The constraints list to append to.
 
         """
-        raise NotImplementedError(f"ApexFeature.constraints_append() not implmentent {self}")
+        raise NotImplementedError(f"ApexGeometry.constraints_append() not implmentent {self}")
 
 
-# ApexArcFeature:
-class ApexArcFeature(ApexFeature):
+# ApexArcGeometry:
+class ApexArcGeometry(ApexGeometry):
     """Represents an an arc in a sketch."""
 
-    # ApexArcFeature.__init__():
+    # ApexArcGeometry.__init__():
     def __init__(self, drawing: "ApexDrawing",
                  begin: ApexCorner, at: ApexCorner, end: ApexCorner,
                  name: str = "", tracing: str = "") -> None:
-        """Initialize an ApexArcFeature."""
+        """Initialize an ApexArcGeometry."""
         # next_tracing: str = tracing + " " if tracing else ""
         trace_level: int = 0
         if tracing:
-            print(f"{tracing}=>ApexArcFeature('{begin.Name}', "
+            print(f"{tracing}=>ApexArcGeometry('{begin.Name}', "
                   f"'{at.Name}', '{end.Name}', '{name}')")
             trace_level = 0
 
@@ -458,7 +458,7 @@ class ApexArcFeature(ApexFeature):
             start_angle, end_angle = end_angle, start_angle
         part_arc: Part.Arc = Part.ArcOfCircle(part_circle, start_angle, end_angle)
 
-        # Now we can create the *ApexArcFeature*:
+        # Now we can create the *ApexArcGeometry*:
         super().__init__(drawing, s, f, name)
         self._at: Vector = at.Point
         self._begin: Vector = begin.Point
@@ -486,172 +486,172 @@ class ApexArcFeature(ApexFeature):
             print(f"{tracing}{self._start=}")
             print(f"{tracing}{deg(self._start_angle)=:.2f}deg")
             print(f"{tracing}{self._start_length=}")
-            print(f"{tracing}<=ApexArcFeature(*, {begin=}, {at=}, {end=})")
+            print(f"{tracing}<=ApexArcGeometry(*, {begin=}, {at=}, {end=})")
         if tracing:
-            print(f"{tracing}<=ApexArcFeature('{begin.Name}', "
+            print(f"{tracing}<=ApexArcGeometry('{begin.Name}', "
                   f"'{at.Name}', '{end.Name}', '{name}')")
 
-    # ApexArcFeature.repr():
+    # ApexArcGeometry.repr():
     def __repr__(self) -> str:  # pragma: no unit test
-        """Return ApexArcFeature string representation."""
-        return f"ApexArcFeature({self._begin}, {self._at}, {self._end})"  # pragma: no unit test
+        """Return ApexArcGeometry string representation."""
+        return f"ApexArcGeometry({self._begin}, {self._at}, {self._end})"  # pragma: no unit test
 
-    # ApexArcFeature.apex():
+    # ApexArcGeometry.apex():
     @property
     def at(self) -> Vector:
-        """Return the ApexArcFeature apex Vector."""
+        """Return the ApexArcGeometry apex Vector."""
         return self._at
 
-    # ApexArcFeature.begin():
+    # ApexArcGeometry.begin():
     @property
     def begin(self) -> Vector:  # pragma: no unit test
-        """Return the ApexArcFeature arc begin Vector."""
+        """Return the ApexArcGeometry arc begin Vector."""
         return self._begin  # pragma: no unit test
 
-    # ApexArcFeature.center():
+    # ApexArcGeometry.center():
     @property
     def center(self) -> Vector:
-        """Return the ApexArcFeature arc center."""
+        """Return the ApexArcGeometry arc center."""
         return self._center
 
-    # ApexArcFeature.end():
+    # ApexArcGeometry.end():
     @property
     def end(self) -> Vector:  # pragma: no unit test
-        """Return the initial ApexArcFeature end Vector."""
+        """Return the initial ApexArcGeometry end Vector."""
         return self._end  # pragma: no unit test
 
-    # ApexArcFeature.finish():
+    # ApexArcGeometry.finish():
     @property
     def finish(self) -> Vector:
-        """Return the ApexArcFeature arc finish Vector."""
+        """Return the ApexArcGeometry arc finish Vector."""
         return self._finish
 
-    # ApexArcFeature.finish_key():
+    # ApexArcGeometry.finish_key():
     @property
     def finish_key(self) -> int:
-        """Return the ApexArcFeature finish Constraint key."""
+        """Return the ApexArcGeometry finish Constraint key."""
         # return 2
         return 2 if self._sweep_angle < 0 else 1
 
-    # ApexArcFeature.finish_angle():
+    # ApexArcGeometry.finish_angle():
     @property
     def finish_angle(self) -> float:  # pragma: no unit test
-        """Return the ApexArcFeature arc finish angle."""
+        """Return the ApexArcGeometry arc finish angle."""
         return self._finish_angle  # pragma: no unit test
 
-    # ApexArcFeature.finish_length():
+    # ApexArcGeometry.finish_length():
     @property
     def finish_length(self) -> float:  # pragma: no unit test
         """Return distance from arc finish Vector to the apex Vector."""
         return self._finish_length  # pragma: no unit test
 
-    # ApexArcFeature.input():
+    # ApexArcGeometry.input():
     @property
     def input(self) -> Vector:  # pragma: no unit test
-        """Return the initial ApexArcFeature arc start Vector."""
+        """Return the initial ApexArcGeometry arc start Vector."""
         return self._start  # pragma: no unit test
 
-    # ApexArcFeature.part_feature():
+    # ApexArcGeometry.part_geometry():
     @property
-    def part_feature(self) -> PartFeature:
-        """Return ApexArcFeature Part.Arc."""
+    def part_geometry(self) -> PartGeometry:
+        """Return ApexArcGeometry Part.Arc."""
         return self._part_arc
 
-    # ApexArcFeature.radius():
+    # ApexArcGeometry.radius():
     @property
     def radius(self) -> float:
-        """Return the initial ApexArcFeature radius."""
+        """Return the initial ApexArcGeometry radius."""
         return self._radius
 
-    # ApexArcFeature.start():
+    # ApexArcGeometry.start():
     @property
     def start(self) -> Vector:
-        """Return the ApexArcFeature arc start Vector."""
+        """Return the ApexArcGeometry arc start Vector."""
         return self._start
 
-    # ApexArcFeature.start_angle():
+    # ApexArcGeometry.start_angle():
     @property
     def start_angle(self) -> float:  # pragma: no unit test
-        """Return the ApexArcFeature arc start angle."""
+        """Return the ApexArcGeometry arc start angle."""
         return self._start_angle  # pragma: no unit test
 
-    # ApexArcFeature.start_key():
+    # ApexArcGeometry.start_key():
     @property
     def start_key(self) -> int:
-        """Return the ApexArcFeature finish Constraint key."""
+        """Return the ApexArcGeometry finish Constraint key."""
         # return 1
         return 1 if self._sweep_angle < 0.0 else 2
 
-    # ApexArcFeature.start_length():
+    # ApexArcGeometry.start_length():
     @property
     def start_length(self) -> float:  # pragma: no unit test
-        """Return the ApexArcFeature distance from start Vector to apex Vector."""
+        """Return the ApexArcGeometry distance from start Vector to apex Vector."""
         return self._start_length  # pragma: no unit test
 
-    # ApexArcFeature.sweep_angle():
+    # ApexArcGeometry.sweep_angle():
     @property
     def sweep_angle(self) -> float:  # pragma: no unit cover
-        """Return the ApexArcFeature sweep angle from start angle to end angle."""
+        """Return the ApexArcGeometry sweep angle from start angle to end angle."""
         return self._sweep_angle
 
-    # ApexArcFeature.type_name():
+    # ApexArcGeometry.type_name():
     @property
     def type_name(self) -> str:  # pragma: no unit cover
-        """Return the ApexArcFeature type name."""
-        return "ApexArcFeature"
+        """Return the ApexArcGeometry type name."""
+        return "ApexArcGeometry"
 
-    # ApexArcFeature.__repr__():
+    # ApexArcGeometry.__repr__():
     # def __repr__(self) -> str:
-    #     """Return string reprentation of ApexFeature."""
+    #     """Return string reprentation of ApexGeometry."""
     #     return self.__str__()
 
-    # ApexArcFeature.__str__():
+    # ApexArcGeometry.__str__():
     def __str__(self) -> str:
-        """Return string reprentation of ApexFeature."""
-        return f"ApexArcFeature({self._begin}, {self._at}, {self._finish})"
+        """Return string reprentation of ApexGeometry."""
+        return f"ApexArcGeometry({self._begin}, {self._at}, {self._finish})"
 
 
-# ApexCircleFeature:
-class ApexCircleFeature(ApexFeature):
+# ApexCircleGeometry:
+class ApexCircleGeometry(ApexGeometry):
     """Represents a circle in a sketch."""
 
-    # ApexCircleFeature.__init__():
+    # ApexCircleGeometry.__init__():
     def __init__(self, drawing: "ApexDrawing",
                  center: Vector, radius: float, name: str = "") -> None:
-        """Initialize a ApexCircleFeature."""
+        """Initialize a ApexCircleGeometry."""
         super().__init__(drawing, center, center, name)
         self._center: Vector = center
         self._drawing: ApexDrawing = drawing
         self._part_circle: Part.Circle = Part.Circle(center, App.Vector(0, 0, 1), radius)
         self._radius: float = radius
 
-    # ApexCircleFeature.center():
+    # ApexCircleGeometry.center():
     @property
     def center(self) -> Vector:  # pragma: no unit cover
-        """Return the ApexCircleFeature center."""
+        """Return the ApexCircleGeometry center."""
         return self._center
 
-    # ApexCircleFeature.part_element():
+    # ApexCircleGeometry.part_element():
     @property
-    def part_feature(self) -> PartFeature:
-        """Return the ApexCircleFeature PartFeature."""
+    def part_geometry(self) -> PartGeometry:
+        """Return the ApexCircleGeometry PartGeometry."""
         return self._part_circle
 
-    # ApexCircleFeature.radius():
+    # ApexCircleGeometry.radius():
     @property
     def radius(self) -> float:  # pragma: no unit cover
-        """Return the ApexCircleFeature radius."""
+        """Return the ApexCircleGeometry radius."""
         return self._radius
 
-    # ApexCircleFeature.type_name():
+    # ApexCircleGeometry.type_name():
     @property
     def type_name(self) -> str:  # pragma: no unit cover
-        """Return the ApexCircleFeature type name."""
-        return "ApexCircleFeature"
+        """Return the ApexCircleGeometry type name."""
+        return "ApexCircleGeometry"
 
 
-# ApexLineFeature:
-class ApexLineFeature(ApexFeature):
+# ApexLineGeometry:
+class ApexLineGeometry(ApexGeometry):
     """Represents a line segment in a sketch."""
 
     INIT_CHECKS = (
@@ -661,113 +661,113 @@ class ApexLineFeature(ApexFeature):
         ApexCheck("name", (str,)),
     )
 
-    # ApexLineFeature.__init__():
+    # ApexLineGeometry.__init__():
     def __init__(self, drawing: "ApexDrawing",
                  start: Vector, finish: Vector, name: str = "", tracing: str = "") -> None:
-        """Initialize a ApexLineFeature."""
+        """Initialize a ApexLineGeometry."""
         arguments: Tuple[Any, ...] = (drawing, start, finish, name)
-        value_error: str = ApexCheck.check(arguments, ApexLineFeature.INIT_CHECKS)
+        value_error: str = ApexCheck.check(arguments, ApexLineGeometry.INIT_CHECKS)
         if value_error:
             raise ValueError(value_error)
         if tracing:
-            print(f"{tracing}=>ApexLineFeature({start}, {finish}, '{name}')")
+            print(f"{tracing}=>ApexLineGeometry({start}, {finish}, '{name}')")
         super().__init__(drawing, start, finish, name)
         self._drawing: ApexDrawing = drawing
         self._line_segment: Part.LineSegment = Part.LineSegment(start, finish)
         self._start: Vector = start
         self._finish: Vector = finish
         if tracing:
-            print(f"{tracing}<=ApexLineFeature({start}, {finish}, '{name}')")
+            print(f"{tracing}<=ApexLineGeometry({start}, {finish}, '{name}')")
 
-    # ApexLineFeature.drawing():
+    # ApexLineGeometry.drawing():
     @property
     def drawing(self) -> "ApexDrawing":  # pragma: no unit cover
-        """Return the ApexLineFeature ApexDrawing."""
+        """Return the ApexLineGeometry ApexDrawing."""
         return self._drawing
 
-    # ApexLineFeature.part_feature():
+    # ApexLineGeometry.part_geometry():
     @property
-    def part_feature(self) -> PartFeature:
-        """Return the PartFeature associated with a ApexLineFeature."""
+    def part_geometry(self) -> PartGeometry:
+        """Return the PartGeometry associated with a ApexLineGeometry."""
         return self._line_segment
 
-    # ApexLineFeature.finish():
+    # ApexLineGeometry.finish():
     @property
     def finish(self) -> Vector:  # pragma: no unit cover
-        """Return the ApexLineFeature finish Vector."""
+        """Return the ApexLineGeometry finish Vector."""
         return self._finish
 
-    # ApexLineFeature.finish_key():
+    # ApexLineGeometry.finish_key():
     @property
     def finish_key(self) -> int:
-        """Return the ApexLineFeature finish Constraint key."""
-        return 2  # 2 => End point (never changes for a ApexLineFeature)
+        """Return the ApexLineGeometry finish Constraint key."""
+        return 2  # 2 => End point (never changes for a ApexLineGeometry)
 
-    # ApexLineFeature.start():
+    # ApexLineGeometry.start():
     @property
     def start(self) -> ApexCorner:
-        """Return the ApexLineFeature start Vector."""
+        """Return the ApexLineGeometry start Vector."""
         return self._start
 
-    # ApexLineFeature.start_key():
+    # ApexLineGeometry.start_key():
     @property
     def start_key(self) -> int:
-        """Return the ApexLineFeature start Constraint key."""
-        return 1  # 1 => End point (never changes for a ApexLineFeature)
+        """Return the ApexLineGeometry start Constraint key."""
+        return 1  # 1 => End point (never changes for a ApexLineGeometry)
 
-    # ApexLineFeature.type_name():
+    # ApexLineGeometry.type_name():
     @property
     def type_name(self) -> str:  # pragma: no unit cover
-        """Return the ApexLineFeature type name."""
-        return "ApexLineFeature"
+        """Return the ApexLineGeometry type name."""
+        return "ApexLineGeometry"
 
-    # ApexLineFeature.__repr__():
+    # ApexLineGeometry.__repr__():
     def __repr__(self) -> str:
-        """Return string representation of ApexLineFeature."""
+        """Return string representation of ApexLineGeometry."""
         return self.__str__()
 
-    # ApexLineFeature.__str__():
+    # ApexLineGeometry.__str__():
     def __str__(self) -> str:
-        """Return string representation of ApexLineFeature."""
+        """Return string representation of ApexLineGeometry."""
         start: Vector = self._start
         finish: Vector = self._finish
-        return f"ApexLineFeature({start}, {finish})"
+        return f"ApexLineGeometry({start}, {finish})"
 
 
-# ApexPointFeature:
-class ApexPointFeature(ApexFeature):
+# ApexPointGeometry:
+class ApexPointGeometry(ApexGeometry):
     """Represents a point in a sketch."""
 
-    # ApexPointFeature.__init__():
+    # ApexPointGeometry.__init__():
     def __init__(self, drawing: "ApexDrawing", point: Vector, name: str = "") -> None:
-        """Initialize a ApexPointFeature."""
+        """Initialize a ApexPointGeometry."""
         super().__init__(drawing, point, point, name)
         self._point: Vector = point
-        self._part_point: PartFeature = Part.Point(point)
-        # print(f"ApexPointFeature.__init__({point.vector=}): ")
+        self._part_point: PartGeometry = Part.Point(point)
+        # print(f"ApexPointGeometry.__init__({point.vector=}): ")
 
-    # ApexPointFeature.__str__():
+    # ApexPointGeometry.__str__():
     def __str__(self) -> str:  # pragma: no unit cover
-        """Return ApexPointFeature string ."""
-        return f"ApexPointFeature(point={self._point}, name='{self._name}', index={self._index})"
+        """Return ApexPointGeometry string ."""
+        return f"ApexPointGeometry(point={self._point}, name='{self._name}', index={self._index})"
 
-    # ApexPointFeature.part_feature():
+    # ApexPointGeometry.part_geometry():
     @property
-    def part_feature(self) -> PartFeature:
-        """Return the  ApexPointFeature."""
+    def part_geometry(self) -> PartGeometry:
+        """Return the  ApexPointGeometry."""
         return self._part_point
 
-    # ApexPointFeature.point():
+    # ApexPointGeometry.point():
     @property
     def point(self) -> Vector:  # pragma: no unit cover
-        """Return the ApexPointFeature Vector."""
+        """Return the ApexPointGeometry Vector."""
         return self._point
 
-    # ApexPointFeature.type_name():
+    # ApexPointGeometry.type_name():
     @property
     def type_name(self) -> str:  # pragma: no unit cover
-        """Return the ApexPointFeature type name."""
-        return "ApexPointFeature"
+        """Return the ApexPointGeometry type name."""
+        return "ApexPointGeometry"
 
 
 # ApexShape:
@@ -792,15 +792,15 @@ class ApexShape(object):
         """
         raise NotImplementedError()
 
-    # ApexShape.features_get():
-    def features_get(self, drawing: "ApexDrawing", tracing: str = "") -> Tuple[ApexFeature, ...]:
-        """Return the ApexShape ApexFeatures tuple.
+    # ApexShape.geometrys_get():
+    def geometrys_get(self, drawing: "ApexDrawing", tracing: str = "") -> Tuple[ApexGeometry, ...]:
+        """Return the ApexShape ApexGeometrys tuple.
 
         Arguments:
-        * *drawing* (ApexDrawing): The associated drawing to use for feature extraction.
+        * *drawing* (ApexDrawing): The associated drawing to use for geometry extraction.
 
         Returns:
-        * (Tuple[ApexFeature, ...]) of extracted ApexFeature's.
+        * (Tuple[ApexGeometry, ...]) of extracted ApexGeometry's.
 
         """
         raise NotImplementedError()
@@ -847,7 +847,7 @@ class ApexPolygon(ApexShape):
     # Computed attributes:
     InternalRadius: float = field(init=False)
     Clockwise: bool = field(init=False)
-    _features: Optional[Tuple[ApexFeature, ...]] = None
+    _geometrys: Optional[Tuple[ApexGeometry, ...]] = None
 
     POST_INIT_CHECKS = (
         ApexCheck("corners", ("T+", ApexCorner)),
@@ -922,47 +922,48 @@ class ApexPolygon(ApexShape):
                   f"*, {len(constraints)=}):")
 
         origin_index: int = drawing.OriginIndex
-        features: Optional[Tuple[ApexFeature, ...]] = (
-            self.features_get(drawing, tracing=next_tracing))
-        assert features, "ApexFeatures not set"
-        features_size: int = len(features)
+        geometrys: Optional[Tuple[ApexGeometry, ...]] = (
+            self.geometrys_get(drawing, tracing=next_tracing))
+        assert geometrys, "ApexGeometrys not set"
+        geometrys_size: int = len(geometrys)
         if tracing:
-            print(f"{tracing}|features| == {features_size}")
+            print(f"{tracing}|geometrys| == {geometrys_size}")
         # degrees45: float = math.pi / 4.0
         # degrees135: float = 3.0 * degrees45
         # deg: Callable[[float], float] = math.degrees
 
         at_index: int
-        # Iterate through adjacent ApexFeature pairs and apply constraints;
-        for at_index, at_feature in enumerate(features):
-            # Grab a bunch of field from *at_feature* and *before_feature*
-            at_feature_index: int = at_feature.index
-            at_name: str = at_feature.name
-            at_start: Vector = at_feature.start
-            at_start_key: int = at_feature.start_key
-            before_feature: ApexFeature = features[(at_index - 1) % features_size]
-            before_feature_index: int = before_feature.index
-            before_name: str = before_feature.name
-            # before_finish: Vector = before_feature.finish
-            before_finish_key: int = before_feature.finish_key
-            after_feature: ApexFeature = features[(at_index + 1) % features_size]
-            assert at_feature is not before_feature
+        # Iterate through adjacent ApexGeometry pairs and apply constraints;
+        for at_index, at_geometry in enumerate(geometrys):
+            # Grab a bunch of field from *at_geometry* and *before_geometry*
+            at_geometry_index: int = at_geometry.index
+            at_name: str = at_geometry.name
+            at_start: Vector = at_geometry.start
+            at_start_key: int = at_geometry.start_key
+            before_geometry: ApexGeometry = geometrys[(at_index - 1) % geometrys_size]
+            before_geometry_index: int = before_geometry.index
+            before_name: str = before_geometry.name
+            # before_finish: Vector = before_geometry.finish
+            before_finish_key: int = before_geometry.finish_key
+            after_geometry: ApexGeometry = geometrys[(at_index + 1) % geometrys_size]
+            assert at_geometry is not before_geometry
             if tracing:
                 print("")
                 print(f"{tracing}[{at_index}]: "
-                      f"at={at_feature.type_name}('{at_name}'):{at_feature_index} "
-                      f"before={before_feature.type_name}('{before_name}'):{before_feature_index}")
+                      f"at={at_geometry.type_name}('{at_name}'):{at_geometry_index} "
+                      f"before={before_geometry.type_name}('{before_name}'):"
+                      f"{before_geometry_index}")
 
             # Extract *at_arc* and/or *before_arc* if they are present:
-            before_arc: Optional[ApexArcFeature] = None
-            if isinstance(before_feature, ApexArcFeature):
-                before_arc = before_feature
-            at_arc: Optional[ApexArcFeature] = None
-            if isinstance(at_feature, ApexArcFeature):
-                at_arc = at_feature
-            after_arc: Optional[ApexArcFeature] = None
-            if isinstance(after_feature, ApexArcFeature):
-                after_arc = after_feature
+            before_arc: Optional[ApexArcGeometry] = None
+            if isinstance(before_geometry, ApexArcGeometry):
+                before_arc = before_geometry
+            at_arc: Optional[ApexArcGeometry] = None
+            if isinstance(at_geometry, ApexArcGeometry):
+                at_arc = at_geometry
+            after_arc: Optional[ApexArcGeometry] = None
+            if isinstance(after_geometry, ApexArcGeometry):
+                after_arc = after_geometry
 
             # *at_arc* almost always needs to specify a radius.  In almost all cases,
             # the X/Y coordinates of the arc center need to be specified as well.
@@ -976,10 +977,10 @@ class ApexPolygon(ApexShape):
                 # Set Radius constraint:
                 constraints.append(Sketcher.Constraint(
                     "Radius",
-                    at_feature_index, at_radius))
+                    at_geometry_index, at_radius))
                 if tracing:
                     print(f"{tracing}     [{len(constraints)}]: "
-                          f"Radius('{before_name}':({at_feature_index}, 0), "
+                          f"Radius('{before_name}':({at_geometry_index}, 0), "
                           f"{at_radius}),  # Arc Radius")
 
                 # Suppress Arc center constraints when an arc is sandwiched between two
@@ -989,24 +990,24 @@ class ApexPolygon(ApexShape):
                     constraints.append(Sketcher.Constraint(
                         "DistanceX",
                         origin_index, 1,  # 1 => start point
-                        at_feature_index, 3,  # 3 => arc center
+                        at_geometry_index, 3,  # 3 => arc center
                         at_center.x))
                     if tracing:
                         print(f"{tracing}     [{len(constraints)}]: "
                               f"DistanceX(Origin:({origin_index}, 1), "
-                              f"'{at_name}':({at_feature_index},3), "
+                              f"'{at_name}':({at_geometry_index},3), "
                               f"{at_center.x:.2f}) # Arc Center X")
 
                     # Set DistanceY constraint:
                     constraints.append(Sketcher.Constraint(
                         "DistanceY",
                         origin_index, 1,  # 1 => start point
-                        at_feature_index, 3,  # 3 => arc center
+                        at_geometry_index, 3,  # 3 => arc center
                         at_center.y))
                     if tracing:
                         print(f"{tracing}     [{len(constraints)}]: "
                               f"DistanceY('Origin':({origin_index}, 1), "
-                              f"'{at_name}:{at_feature_index}, 3)', "
+                              f"'{at_name}:{at_geometry_index}, 3)', "
                               f"{at_center.y:.2f}) # Arc Center Y")
 
             # No matter what, glue the two endpoints together.  If either side is an arc,
@@ -1014,57 +1015,58 @@ class ApexPolygon(ApexShape):
             # an X and Y.
             if before_arc or at_arc:
                 # Make coincident:
-                # Just force the two features to be tangent:
+                # Just force the two geometrys to be tangent:
                 constraints.append(Sketcher.Constraint(
                     "Tangent",
-                    before_feature_index, before_finish_key,
-                    at_feature_index, at_start_key))
+                    before_geometry_index, before_finish_key,
+                    at_geometry_index, at_start_key))
                 if tracing:
                     print(f"{tracing}     [{len(constraints)}]: "
-                          f"Tangent('{before_name}':({before_feature_index}, {before_finish_key}), "
-                          f"'{at_name}':({at_feature_index}, {at_start_key})")
+                          f"Tangent('{before_name}':({before_geometry_index}, "
+                          f"{before_finish_key}), "
+                          f"'{at_name}':({at_geometry_index}, {at_start_key})")
             else:
                 # Specify Coincident constraint first:
                 constraints.append(
                     Sketcher.Constraint(
                         "Coincident",
-                        before_feature_index, before_finish_key,
-                        at_feature_index, at_start_key))
+                        before_geometry_index, before_finish_key,
+                        at_geometry_index, at_start_key))
                 if tracing:
                     print(f"{tracing}     [{len(constraints)}]: "
-                          f"Coincident('{before_name}':({before_feature_index}, "
+                          f"Coincident('{before_name}':({before_geometry_index}, "
                           f"{before_finish_key}), "
-                          f"'{at_name}':({at_feature_index}, {at_start_key}) # End points")
+                          f"'{at_name}':({at_geometry_index}, {at_start_key}) # End points")
 
                 # Specify the DistanceX constraint next:
                 constraints.append(Sketcher.Constraint(
                     "DistanceX",
                     origin_index, 1,  # 1 => start point
-                    at_feature_index, at_start_key,
+                    at_geometry_index, at_start_key,
                     at_start.x))
                 if tracing:
                     print(f"{tracing}     [{len(constraints)}]: "
                           f"DistanceX(Origin:({origin_index}, 1), "
-                          f"'{at_name}:({at_feature_index}, {at_start_key})', {at_start.x:.2f})")
+                          f"'{at_name}:({at_geometry_index}, {at_start_key})', {at_start.x:.2f})")
 
                 # Specify DistanceY constraint last:
                 constraints.append(Sketcher.Constraint(
                     "DistanceY",
                     origin_index, 1,  # 1 => start point
-                    at_feature_index, at_start_key,
+                    at_geometry_index, at_start_key,
                     at_start.y))
                 if tracing:
                     print(f"{tracing}     [{len(constraints)}]: "
                           f"DistanceY(Origin:({origin_index}, 1), "
-                          f"'{at_name}({at_feature_index}, {at_start_key})', {at_start.y:.2f})")
+                          f"'{at_name}({at_geometry_index}, {at_start_key})', {at_start.y:.2f})")
 
         if tracing:
             print(f"{tracing}<=ApexPolygon.contraints_append('{self.Name}', "
                   f"*, , {len(constraints)=})")
 
-    # ApexPolygon.features_get():
-    def features_get(self, drawing: "ApexDrawing", tracing: str = "") -> Tuple[ApexFeature, ...]:
-        """Return the ApexPolygon ApexFeatures tuple."""
+    # ApexPolygon.geometrys_get():
+    def geometrys_get(self, drawing: "ApexDrawing", tracing: str = "") -> Tuple[ApexGeometry, ...]:
+        """Return the ApexPolygon ApexGeometrys tuple."""
         # This is a 4 pass process.
         #
         # In absence of any arcs, pair of points produces a single line segment where the
@@ -1080,15 +1082,15 @@ class ApexPolygon(ApexShape):
 
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>ApexPolygon.features_get(*)")
+            print(f"{tracing}=>ApexPolygon.geometrys_get(*)")
 
-        if not self._features:
+        if not self._geometrys:
             # Some variable declarations (re)used in the code below:
             after_corner: ApexCorner
-            arc: Optional[ApexArcFeature]
-            at_arc: Optional[ApexArcFeature]
+            arc: Optional[ApexArcGeometry]
+            at_arc: Optional[ApexArcGeometry]
             at_index: int
-            at_line: Optional[ApexLineFeature]
+            at_line: Optional[ApexLineGeometry]
             at_name: str
             at_corner: ApexCorner
             before_corner: ApexCorner
@@ -1098,26 +1100,26 @@ class ApexPolygon(ApexShape):
 
             corners: Tuple[ApexCorner, ...] = self.Corners
             corners_size: int = len(corners)
-            arcs: List[Optional[ApexArcFeature]] = []
+            arcs: List[Optional[ApexArcGeometry]] = []
             for at_index, at_corner in enumerate(corners):
                 before_corner = corners[(at_index - 1) % corners_size]
                 after_corner = corners[(at_index + 1) % corners_size]
                 at_name = at_corner.Name
-                arc_feature: Optional[ApexArcFeature] = None
+                arc_geometry: Optional[ApexArcGeometry] = None
                 if at_corner.Radius > 0.0:
-                    arc_feature = ApexArcFeature(drawing, before_corner, at_corner,
-                                                 after_corner, at_name, next_tracing)
-                arcs.append(arc_feature)
+                    arc_geometry = ApexArcGeometry(drawing, before_corner, at_corner,
+                                                   after_corner, at_name, next_tracing)
+                arcs.append(arc_geometry)
 
             # Pass 2: Create any *lines* associated with a each point.
             # This list is 1-to-1 with the points.  Occasionally, a line is omitted when 2 arcs
             # connect with no intermediate line segment.
             epsilon: float = 1e-9  # 1 nano meter (used to detect when two points are close.)
-            lines: List[Optional[ApexLineFeature]] = []
+            lines: List[Optional[ApexLineGeometry]] = []
             for at_index, at_corner in enumerate(corners):
                 before_index: int = (at_index - 1) % corners_size
                 before_corner = corners[before_index]
-                before_arc: Optional[ApexArcFeature] = arcs[before_index]
+                before_arc: Optional[ApexArcGeometry] = arcs[before_index]
                 at_arc = arcs[at_index]
                 at_name = at_corner.Name
                 # *start* and *finish* are the start and end points of the *line*:
@@ -1142,35 +1144,35 @@ class ApexPolygon(ApexShape):
                         generate_at_line = False
                     elif arc_lengths > line_length:  # pragma: no unit cover
                         raise ValueError("Arcs are too big")
-                line_feature: Optional[ApexLineFeature] = None
+                line_geometry: Optional[ApexLineGeometry] = None
                 if generate_at_line:
-                    line_feature = ApexLineFeature(drawing, start,
-                                                   finish, at_name, tracing=next_tracing)
-                lines.append(line_feature)
+                    line_geometry = ApexLineGeometry(drawing, start,
+                                                     finish, at_name, tracing=next_tracing)
+                lines.append(line_geometry)
 
-            # Pass 3: Assemble the final *features* list:
-            features: List[ApexFeature] = []
+            # Pass 3: Assemble the final *geometrys* list:
+            geometrys: List[ApexGeometry] = []
             for at_index in range(corners_size):
                 at_line = lines[at_index]
                 if at_line:
-                    features.append(at_line)
+                    geometrys.append(at_line)
                 at_arc = arcs[at_index]
                 if at_arc:
-                    features.append(at_arc)
-            final_features: Tuple[ApexFeature, ...] = tuple(features)
+                    geometrys.append(at_arc)
+            final_geometrys: Tuple[ApexGeometry, ...] = tuple(geometrys)
 
-            # Pass 4: Make bi-directional doubly linked list features that is used for constraints
+            # Pass 4: Make bi-directional doubly linked list geometrys that is used for constraints
             # generation.
-            at_feature: ApexFeature
-            features_size: int = len(features)
-            for at_index, feature in enumerate(final_features):
-                feature.previous = features[(at_index - 1) % features_size]
-                feature.next = features[(at_index + 1) % features_size]
+            at_geometry: ApexGeometry
+            geometrys_size: int = len(geometrys)
+            for at_index, geometry in enumerate(final_geometrys):
+                geometry.previous = geometrys[(at_index - 1) % geometrys_size]
+                geometry.next = geometrys[(at_index + 1) % geometrys_size]
 
-            self._features = final_features
+            self._geometrys = final_geometrys
         if tracing:
-            print(f"{tracing}<=ApexPolygon.features_get(*)=>|*|={len(self._features)}")
-        return self._features
+            print(f"{tracing}<=ApexPolygon.geometrys_get(*)=>|*|={len(self._geometrys)}")
+        return self._geometrys
 
     REORIENT_CHECKS = (
         ApexCheck("placement", (Placement,)),
@@ -1229,7 +1231,7 @@ class ApexCircle(ApexShape):
     Center: Vector
     Diameter: float
     Name: str = ""
-    _circle_feature: Optional[ApexCircleFeature] = None
+    _circle_geometry: Optional[ApexCircleGeometry] = None
 
     POST_INIT_CHECKS = (
         ApexCheck("center", (Vector,)),
@@ -1263,61 +1265,61 @@ class ApexCircle(ApexShape):
     # ApexCircle.constraints_append():
     def constraints_append(self, drawing: "ApexDrawing", constraints: List[Sketcher.Constraint],
                            tracing: str = "") -> None:
-        """Return the ApexCircleFeature constraints."""
+        """Return the ApexCircleGeometry constraints."""
         if tracing:
             print(f"{tracing}=>ApexCircle.constraints_append(*, *): {len(constraints)=}")
         origin_index: int = drawing.OriginIndex
         center: Vector = self.Center
         diameter: float = self.Diameter
         circle_name: str = self.Name
-        circle_feature: Optional[ApexCircleFeature] = self._circle_feature
-        assert isinstance(circle_feature, ApexCircleFeature), "circle feature is not present."
-        circle_feature_index: int = circle_feature.index
+        circle_geometry: Optional[ApexCircleGeometry] = self._circle_geometry
+        assert isinstance(circle_geometry, ApexCircleGeometry), "circle geometry is not present."
+        circle_geometry_index: int = circle_geometry.index
 
         # Append the Radius constraint:
-        constraints.append(Sketcher.Constraint("Radius", circle_feature_index, diameter / 2.0))
+        constraints.append(Sketcher.Constraint("Radius", circle_geometry_index, diameter / 2.0))
         if tracing:
             print(f"{tracing}     [{len(constraints)}]: "
-                  f"Radius('{circle_name}:({circle_feature_index}, 0)'),  # Arc Radius")
+                  f"Radius('{circle_name}:({circle_geometry_index}, 0)'),  # Arc Radius")
 
         # Append the DistanceX constraint:
         constraints.append(Sketcher.Constraint("DistanceX",
                                                origin_index, 1,  # 1 => Start point
-                                               circle_feature_index, 3,  # 3 => ApexCircle Center
+                                               circle_geometry_index, 3,  # 3 => ApexCircle Center
                                                center.x))
         if tracing:
             print(f"{tracing}     [{len(constraints)}]: "
                   f"DistanceX(Origin:({origin_index}, 1), "
-                  f"'{circle_name}':({circle_feature_index}, 3), "
+                  f"'{circle_name}':({circle_geometry_index}, 3), "
                   f"{center.x:.2f})) # ApexCircle Center X")
 
         # Append the DistanceY constraint:
         constraints.append(
             Sketcher.Constraint("DistanceY",
                                 origin_index, 1,  # 1 => Start Vector
-                                circle_feature_index, 3,  # 3 => ApexCircle Center
+                                circle_geometry_index, 3,  # 3 => ApexCircle Center
                                 center.y))
         if tracing:
             print(f"{tracing}     [{len(constraints)}]: "
                   f"DistanceX(Origin:({origin_index}, 1), "
-                  f"'{circle_name}':({circle_feature_index}, 3), "
+                  f"'{circle_name}':({circle_geometry_index}, 3), "
                   f"{center.y:.2f})) # ApexCircle Center Y")
             print(f"{tracing}<=ApexCircle.constraints_append(*, *): {len(constraints)=}")
 
-    # ApexCircle.features_get():
-    def features_get(self, drawing: "ApexDrawing", tracing: str = "") -> Tuple[ApexFeature, ...]:
-        """Return the ApexCircleFeature."""
+    # ApexCircle.geometrys_get():
+    def geometrys_get(self, drawing: "ApexDrawing", tracing: str = "") -> Tuple[ApexGeometry, ...]:
+        """Return the ApexCircleGeometry."""
         if tracing:
-            print(f"{tracing}=>ApexCircle.features_get()")
-        circle_feature: Optional[ApexCircleFeature] = self._circle_feature
-        if not circle_feature:
-            circle_feature = ApexCircleFeature(
+            print(f"{tracing}=>ApexCircle.geometrys_get()")
+        circle_geometry: Optional[ApexCircleGeometry] = self._circle_geometry
+        if not circle_geometry:
+            circle_geometry = ApexCircleGeometry(
                 drawing, self.Center, self.Diameter / 2.0, self.Name)
-            self._circle_feature = circle_feature
-        assert isinstance(circle_feature, ApexCircleFeature)
+            self._circle_geometry = circle_geometry
+        assert isinstance(circle_geometry, ApexCircleGeometry)
         if tracing:
-            print(f"{tracing}<=ApexCircle.features_get()=>{(circle_feature,)}")
-        return (circle_feature,)
+            print(f"{tracing}<=ApexCircle.geometrys_get()=>{(circle_geometry,)}")
+        return (circle_geometry,)
 
     # ApexCircle.reorient():
     def reorient(self, placement: Placement, suffix: Optional[str] = "",
@@ -1399,10 +1401,10 @@ class ApexOperation(object):
         """
         raise NotImplementedError(f"ApexOperation.constraints_append(): {self}")
 
-    # ApexOperation.features_get():
-    def features_get(self, drawing: "ApexDrawing", tracing: str = "") -> Tuple[ApexFeature, ...]:
-        """Return the features associated with an operation."""
-        raise NotImplementedError(f"ApexOperation.features_get() not implemented {self}")
+    # ApexOperation.geometrys_get():
+    def geometrys_get(self, drawing: "ApexDrawing", tracing: str = "") -> Tuple[ApexGeometry, ...]:
+        """Return the geometrys associated with an operation."""
+        raise NotImplementedError(f"ApexOperation.geometrys_get() not implemented {self}")
 
     # ApexOperation.shape_get():
     def shape_get(self) -> ApexShape:
@@ -1453,7 +1455,7 @@ class ApexHole(ApexOperation):
                    gui_document: Optional["Gui.ActiveDocument"]) -> None:
         """Apply hole operation to PartDesign body."""
         # We have bunch of ApexCircles with the same *diameter* and *depth*:
-        hole: PartDesign.Feature = body.newObject("PartDesign::Hole", f"{group_name}.Hole")
+        hole: PartDesign.Geometry = body.newObject("PartDesign::Hole", f"{group_name}.Hole")
         hole.Profile = sketch
         hole.DrillPointAngle = 118.00
         # hole.setExpression("Depth, "10mm")
@@ -1482,10 +1484,10 @@ class ApexHole(ApexOperation):
         if tracing:
             print(f"{tracing}<=ApexHole.constraints_append('{self.Name}', *, *)")
 
-    # ApexHole.features_get():
-    def features_get(self, drawing: "ApexDrawing", tracing: str = "") -> Tuple[ApexFeature, ...]:
-        """Return the ApexHole drawing features."""
-        return self.Circle.features_get(drawing)
+    # ApexHole.geometrys_get():
+    def geometrys_get(self, drawing: "ApexDrawing", tracing: str = "") -> Tuple[ApexGeometry, ...]:
+        """Return the ApexHole drawing geometrys."""
+        return self.Circle.geometrys_get(drawing)
 
     # ApexHole.reorient():
     def reorient(self, placement: Placement, suffix: str = None,
@@ -1553,11 +1555,11 @@ class ApexPad(ApexOperation):
                    gui_document: Optional["Gui.ActiveDocument"]) -> None:
         """Apply ApexPad opertation to PartDesign Body."""
         # Pad:
-        pad: PartDesign.ApexFeature = body.newObject("PartDesign::Pad", f"{group_name}.Pad")
+        pad: PartDesign.ApexGeometry = body.newObject("PartDesign::Pad", f"{group_name}.Pad")
         pad.Profile = sketch
         pad.Length = float(self.Depth)
         pad.Reversed = True
-        # Unclear what most of these features do:
+        # Unclear what most of these geometrys do:
         pad.Length2 = 0
         pad.UseCustomVector = 0
         pad.Direction = (1, 1, 1)
@@ -1598,10 +1600,10 @@ class ApexPad(ApexOperation):
         if tracing:
             print(f"{tracing}<=ApexPad.constraints_append('{self.Name}, *, *')")
 
-    # ApexPad.features_get():
-    def features_get(self, drawing: "ApexDrawing", tracing: str = "") -> Tuple[ApexFeature, ...]:
-        """Return the features associated with an operation."""
-        return self.Shape.features_get(drawing)
+    # ApexPad.geometrys_get():
+    def geometrys_get(self, drawing: "ApexDrawing", tracing: str = "") -> Tuple[ApexGeometry, ...]:
+        """Return the geometrys associated with an operation."""
+        return self.Shape.geometrys_get(drawing)
 
     # ApexPad.reorient():
     def reorient(self, placement: Placement, suffix: str = None,
@@ -1665,7 +1667,7 @@ class ApexPocket(ApexOperation):
                    group_name: str, sketch: "Sketcher.SketchObject",
                    gui_document: Optional["Gui.ActiveDocument"]) -> None:
         """Apply pocket operation to PartDesign Body."""
-        pocket: "PartDesign.Feature" = body.newObject(
+        pocket: "PartDesign.Geometry" = body.newObject(
             "PartDesign::Pocket", f"{group_name}.Pocket")
         pocket.Profile = sketch
         pocket.Length = float(self.Depth)
@@ -1754,7 +1756,7 @@ class ApexDrawing(object):
 
         # Load everything into *self* (i.e. ApexDrawing):
         # self._body: Optional[PartDesign.Body] = None
-        # self._datum_plane: Optional[Part.ApexFeature] = None
+        # self._datum_plane: Optional[Part.ApexGeometry] = None
         # self._geometries: List[Any] = []
 
         # Now compute the final *box*:
@@ -1798,7 +1800,7 @@ class ApexDrawing(object):
 
     # ApexDrawing.create_datum_plane():
     def create_datum_plane(self, body: "PartDesign.Body", name: Optional[str] = None,
-                           tracing: str = "") -> "Part.ApexFeature":
+                           tracing: str = "") -> "Part.ApexGeometry":
         """Return the FreeCAD DatumPlane used for the drawing.
 
         Arguments:
@@ -1806,7 +1808,7 @@ class ApexDrawing(object):
         * *name* (Optional[str]): The datum plane name.
           (Default: "...DatumPlaneN", where N is incremented.)
         * Returns:
-          * (Part.ApexFeature) that is the datum_plane.
+          * (Part.ApexGeometry) that is the datum_plane.
         """
         # This is where the math for FreeCAD DatumPlanes is discussed.
         #
@@ -1863,8 +1865,8 @@ class ApexDrawing(object):
         if not name:
             name = f"{self.Name}.DatumPlane{self.DatumPlaneCounter}"
             self.DatumPlaneCounter += 1
-        datum_plane: Part.ApexFeature = body.newObject("PartDesign::Plane", name)
-        # xy_plane: App.GeoApexFeature = body.getObject("XY_Plane")
+        datum_plane: Part.ApexGeometry = body.newObject("PartDesign::Plane", name)
+        # xy_plane: App.GeoApexGeometry = body.getObject("XY_Plane")
         placement: Placement = Placement(origin, rotation)
         if tracing:
             print(f"{tracing}{placement=}")
@@ -1903,10 +1905,10 @@ class ApexDrawing(object):
         if App.GuiUp:  # pragma: no unit cover
             gui_document = Gui.getDocument(document_name)
 
-        # Create the *datum_plane*.  The "Apex" in Part.ApexFeature is a coinciding name used
+        # Create the *datum_plane*.  The "Apex" in Part.ApexGeometry is a coinciding name used
         # by the FreeCAD Part Design workbench. It is not related to the Apex classes.
         # There is commonly used *datum_plane* for all sketches:
-        datum_plane: Part.ApexFeature = self.create_datum_plane(body, tracing=next_tracing)
+        datum_plane: Part.ApexGeometry = self.create_datum_plane(body, tracing=next_tracing)
 
         # Partition *operations* into *groups* based on the associated *sort_key*:
         SortKey = Tuple[str, ...]
@@ -1989,11 +1991,11 @@ class ApexDrawing(object):
                   f"'{point.name}':({origin_index}, 1), {point.y:.2f})")
             print(f"{tracing}<=Vector.constraints_append(*, |*|={len(constraints)})")
 
-    # ApexDrawing.features_get():
-    def point_features_get(self, point: Vector, tracing: str = "") -> Tuple["ApexFeature", ...]:
-        """Return the ApexPointFeature Feature's."""
+    # ApexDrawing.geometrys_get():
+    def point_geometrys_get(self, point: Vector, tracing: str = "") -> Tuple["ApexGeometry", ...]:
+        """Return the ApexPointGeometry Geometry's."""
         assert isinstance(point, Vector)
-        return (ApexPointFeature(self, point, ""),)
+        return (ApexPointGeometry(self, point, ""),)
 
     # ApexDrawing.reorient():
     def reorient(self, placement: Placement, suffix: Optional[str] = "",
@@ -2061,7 +2063,7 @@ class ApexDrawing(object):
         contact: Vector = self.Contact
         normal: Vector = self.Normal
 
-        # Rotate all features around *contact* such that *normal* is aligned with the +Z axis:
+        # Rotate all geometrys around *contact* such that *normal* is aligned with the +Z axis:
         origin: Vector = Vector(0, 0, 0)
         z_axis: Vector = Vector(0, 0, 1)
         rotation: Rotation = Rotation(normal, z_axis)
@@ -2101,43 +2103,43 @@ class ApexDrawing(object):
         shapes: List[ApexShape] = [operation.shape_get() for operation in operations]
         final_shapes: Tuple[ApexShape, ...] = tuple(shapes)
 
-        # Now extract all of the ApexFeature's:
-        features: List[ApexFeature] = []
+        # Now extract all of the ApexGeometry's:
+        geometrys: List[ApexGeometry] = []
 
-        # Extract the ApexFeature's from *points* (this must be first):
+        # Extract the ApexGeometry's from *points* (this must be first):
         point: Vector
         for point in points:
-            features.extend(self.point_features_get(point))
+            geometrys.extend(self.point_geometrys_get(point))
 
-        # Now extract all of the ApexFeature's from *final_shapes*::
+        # Now extract all of the ApexGeometry's from *final_shapes*::
         shape: ApexShape
         for shape in final_shapes:
-            f: Tuple[ApexFeature, ...] = shape.features_get(self)
-            assert f is shape.features_get(self)
-            features.extend(f)
+            f: Tuple[ApexGeometry, ...] = shape.geometrys_get(self)
+            assert f is shape.geometrys_get(self)
+            geometrys.extend(f)
 
-        # The first Feature corresponds to *lower_left* and it is the "origin" for the sketch.
-        lower_left_feature: ApexFeature = features[0]
-        assert isinstance(lower_left_feature, ApexPointFeature)
+        # The first Geometry corresponds to *lower_left* and it is the "origin" for the sketch.
+        lower_left_geometry: ApexGeometry = geometrys[0]
+        assert isinstance(lower_left_geometry, ApexPointGeometry)
 
-        def indices_check(features: Tuple[ApexFeature, ...]) -> None:
-            for index, feature in enumerate(features):
-                assert feature.index == index
+        def indices_check(geometrys: Tuple[ApexGeometry, ...]) -> None:
+            for index, geometry in enumerate(geometrys):
+                assert geometry.index == index
 
-        # Set the *index* for each Feature in *final_features*:
-        for index, feature in enumerate(features):
-            feature.index = index
+        # Set the *index* for each Geometry in *final_geometrys*:
+        for index, geometry in enumerate(geometrys):
+            geometry.index = index
             if tracing:
-                print(f"{tracing}Features[{index}]: {feature}")
-        final_features: Tuple[ApexFeature, ...] = tuple(features)
-        indices_check(final_features)
-        indices_check(final_features)
+                print(f"{tracing}Geometrys[{index}]: {geometry}")
+        final_geometrys: Tuple[ApexGeometry, ...] = tuple(geometrys)
+        indices_check(final_geometrys)
+        indices_check(final_geometrys)
 
         if tracing:
             print(f"{tracing}indices set")
 
-        # Now that the Feature indices are set, *origin_index* can be extracted:
-        origin_index: int = lower_left_feature.index
+        # Now that the Geometry indices are set, *origin_index* can be extracted:
+        origin_index: int = lower_left_geometry.index
         assert origin_index >= -1
         self._origin_index = origin_index
         self.OriginIndex = origin_index
@@ -2145,15 +2147,15 @@ class ApexDrawing(object):
         if tracing:
             print(f"{tracing}{origin_index=}")
 
-        # Extract *part_features* from *features*:
-        part_feature: PartFeature
-        part_features: List[PartFeature] = []
-        for index, feature in enumerate(final_features):
-            part_feature = feature.part_feature
-            part_features.append(part_feature)
+        # Extract *part_geometrys* from *geometrys*:
+        part_geometry: PartGeometry
+        part_geometrys: List[PartGeometry] = []
+        for index, geometry in enumerate(final_geometrys):
+            part_geometry = geometry.part_geometry
+            part_geometrys.append(part_geometry)
             if tracing:
-                print(f"{tracing}part_features[{index}]: {part_feature}")
-        sketcher.addGeometry(part_features, False)
+                print(f"{tracing}part_geometrys[{index}]: {part_geometry}")
+        sketcher.addGeometry(part_geometrys, False)
 
         # The *points* and *operations* Constraint's are extracted next:
         constraints: List[Sketcher.Constraint] = []

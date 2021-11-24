@@ -2,38 +2,38 @@
 
 Table of Contents:
 * 1 [Introduction](#introduction):
-* 2 [Class ApexArcFeature](#apexarcfeature)
-  * 2.1 [ApexArcFeature.\_\_init\_\_](#apexarcfeature---init--)
-  * 2.2 [ApexArcFeature.\_\_str\_\_](#apexarcfeature---str--)
-  * 2.3 [ApexArcFeature.apex](#apexarcfeature-apex)
-  * 2.4 [ApexArcFeature.begin](#apexarcfeature-begin)
-  * 2.5 [ApexArcFeature.center](#apexarcfeature-center)
-  * 2.6 [ApexArcFeature.end](#apexarcfeature-end)
-  * 2.7 [ApexArcFeature.finish](#apexarcfeature-finish)
-  * 2.8 [ApexArcFeature.finish\_angle](#apexarcfeature-finish-angle)
-  * 2.9 [ApexArcFeature.finish\_key](#apexarcfeature-finish-key)
-  * 2.10 [ApexArcFeature.finish\_length](#apexarcfeature-finish-length)
-  * 2.11 [ApexArcFeature.input](#apexarcfeature-input)
-  * 2.12 [ApexArcFeature.part\_feature](#apexarcfeature-part-feature)
-  * 2.13 [ApexArcFeature.radius](#apexarcfeature-radius)
-  * 2.14 [ApexArcFeature.repr](#apexarcfeature-repr)
-  * 2.15 [ApexArcFeature.start](#apexarcfeature-start)
-  * 2.16 [ApexArcFeature.start\_angle](#apexarcfeature-start-angle)
-  * 2.17 [ApexArcFeature.start\_key](#apexarcfeature-start-key)
-  * 2.18 [ApexArcFeature.start\_length](#apexarcfeature-start-length)
-  * 2.19 [ApexArcFeature.sweep\_angle](#apexarcfeature-sweep-angle)
-  * 2.20 [ApexArcFeature.type\_name](#apexarcfeature-type-name)
+* 2 [Class ApexArcGeometry](#apexarcgeometry)
+  * 2.1 [ApexArcGeometry.\_\_init\_\_](#apexarcgeometry---init--)
+  * 2.2 [ApexArcGeometry.\_\_str\_\_](#apexarcgeometry---str--)
+  * 2.3 [ApexArcGeometry.apex](#apexarcgeometry-apex)
+  * 2.4 [ApexArcGeometry.begin](#apexarcgeometry-begin)
+  * 2.5 [ApexArcGeometry.center](#apexarcgeometry-center)
+  * 2.6 [ApexArcGeometry.end](#apexarcgeometry-end)
+  * 2.7 [ApexArcGeometry.finish](#apexarcgeometry-finish)
+  * 2.8 [ApexArcGeometry.finish\_angle](#apexarcgeometry-finish-angle)
+  * 2.9 [ApexArcGeometry.finish\_key](#apexarcgeometry-finish-key)
+  * 2.10 [ApexArcGeometry.finish\_length](#apexarcgeometry-finish-length)
+  * 2.11 [ApexArcGeometry.input](#apexarcgeometry-input)
+  * 2.12 [ApexArcGeometry.part\_geometry](#apexarcgeometry-part-geometry)
+  * 2.13 [ApexArcGeometry.radius](#apexarcgeometry-radius)
+  * 2.14 [ApexArcGeometry.repr](#apexarcgeometry-repr)
+  * 2.15 [ApexArcGeometry.start](#apexarcgeometry-start)
+  * 2.16 [ApexArcGeometry.start\_angle](#apexarcgeometry-start-angle)
+  * 2.17 [ApexArcGeometry.start\_key](#apexarcgeometry-start-key)
+  * 2.18 [ApexArcGeometry.start\_length](#apexarcgeometry-start-length)
+  * 2.19 [ApexArcGeometry.sweep\_angle](#apexarcgeometry-sweep-angle)
+  * 2.20 [ApexArcGeometry.type\_name](#apexarcgeometry-type-name)
 * 3 [Class ApexCircle](#apexcircle)
   * 3.1 [ApexCircle.\_\_post\_init](#apexcircle---post-init)
   * 3.2 [ApexCircle.constraints\_append](#apexcircle-constraints-append)
-  * 3.3 [ApexCircle.features\_get](#apexcircle-features-get)
+  * 3.3 [ApexCircle.geometrys\_get](#apexcircle-geometrys-get)
   * 3.4 [ApexCircle.reorient](#apexcircle-reorient)
-* 4 [Class ApexCircleFeature](#apexcirclefeature)
-  * 4.1 [ApexCircleFeature.\_\_init\_\_](#apexcirclefeature---init--)
-  * 4.2 [ApexCircleFeature.center](#apexcirclefeature-center)
-  * 4.3 [ApexCircleFeature.part\_element](#apexcirclefeature-part-element)
-  * 4.4 [ApexCircleFeature.radius](#apexcirclefeature-radius)
-  * 4.5 [ApexCircleFeature.type\_name](#apexcirclefeature-type-name)
+* 4 [Class ApexCircleGeometry](#apexcirclegeometry)
+  * 4.1 [ApexCircleGeometry.\_\_init\_\_](#apexcirclegeometry---init--)
+  * 4.2 [ApexCircleGeometry.center](#apexcirclegeometry-center)
+  * 4.3 [ApexCircleGeometry.part\_element](#apexcirclegeometry-part-element)
+  * 4.4 [ApexCircleGeometry.radius](#apexcirclegeometry-radius)
+  * 4.5 [ApexCircleGeometry.type\_name](#apexcirclegeometry-type-name)
 * 5 [Class ApexCorner](#apexcorner)
   * 5.1 [ApexCorner.\_\_post\_init\_\_](#apexcorner---post-init--)
   * 5.2 [ApexCorner.\_\_repr\_\_](#apexcorner---repr--)
@@ -42,46 +42,46 @@ Table of Contents:
 * 6 [Class ApexDrawing](#apexdrawing)
   * 6.1 [ApexDrawing.\_\_post\_init\_\_](#apexdrawing---post-init--)
   * 6.2 [ApexDrawing.create\_datum\_plane](#apexdrawing-create-datum-plane)
-  * 6.3 [ApexDrawing.features\_get](#apexdrawing-features-get)
+  * 6.3 [ApexDrawing.geometrys\_get](#apexdrawing-geometrys-get)
   * 6.4 [ApexDrawing.plane\_process](#apexdrawing-plane-process)
   * 6.5 [ApexDrawing.point\_constraints\_append](#apexdrawing-point-constraints-append)
   * 6.6 [ApexDrawing.reorient](#apexdrawing-reorient)
   * 6.7 [ApexDrawing.sketch](#apexdrawing-sketch)
-* 7 [Class ApexFeature](#apexfeature)
-  * 7.1 [ApexFeature.\_\_init\_\_](#apexfeature---init--)
-  * 7.2 [ApexFeature.\_\_repr\_\_](#apexfeature---repr--)
-  * 7.3 [ApexFeature.\_\_str\_\_](#apexfeature---str--)
-  * 7.4 [ApexFeature.constraints\_append](#apexfeature-constraints-append)
-  * 7.5 [ApexFeature.drawing](#apexfeature-drawing)
-  * 7.6 [ApexFeature.finish](#apexfeature-finish)
-  * 7.7 [ApexFeature.index](#apexfeature-index)
-  * 7.8 [ApexFeature.name](#apexfeature-name)
-  * 7.9 [ApexFeature.part\_feature](#apexfeature-part-feature)
-  * 7.10 [ApexFeature.previous](#apexfeature-previous)
-  * 7.11 [ApexFeature.start](#apexfeature-start)
-  * 7.12 [ApexFeature.type\_name](#apexfeature-type-name)
+* 7 [Class ApexGeometry](#apexgeometry)
+  * 7.1 [ApexGeometry.\_\_init\_\_](#apexgeometry---init--)
+  * 7.2 [ApexGeometry.\_\_repr\_\_](#apexgeometry---repr--)
+  * 7.3 [ApexGeometry.\_\_str\_\_](#apexgeometry---str--)
+  * 7.4 [ApexGeometry.constraints\_append](#apexgeometry-constraints-append)
+  * 7.5 [ApexGeometry.drawing](#apexgeometry-drawing)
+  * 7.6 [ApexGeometry.finish](#apexgeometry-finish)
+  * 7.7 [ApexGeometry.index](#apexgeometry-index)
+  * 7.8 [ApexGeometry.name](#apexgeometry-name)
+  * 7.9 [ApexGeometry.part\_geometry](#apexgeometry-part-geometry)
+  * 7.10 [ApexGeometry.previous](#apexgeometry-previous)
+  * 7.11 [ApexGeometry.start](#apexgeometry-start)
+  * 7.12 [ApexGeometry.type\_name](#apexgeometry-type-name)
 * 8 [Class ApexHole](#apexhole)
   * 8.1 [ApexHole.\_\_post\_init\_\_](#apexhole---post-init--)
   * 8.2 [ApexHole.body\_apply](#apexhole-body-apply)
   * 8.3 [ApexHole.constraints\_append](#apexhole-constraints-append)
-  * 8.4 [ApexHole.features\_get](#apexhole-features-get)
+  * 8.4 [ApexHole.geometrys\_get](#apexhole-geometrys-get)
   * 8.5 [ApexHole.reorient](#apexhole-reorient)
   * 8.6 [ApexHole.shape\_get](#apexhole-shape-get)
-* 9 [Class ApexLineFeature](#apexlinefeature)
-  * 9.1 [ApexLineFeature.\_\_init\_\_](#apexlinefeature---init--)
-  * 9.2 [ApexLineFeature.\_\_repr\_\_](#apexlinefeature---repr--)
-  * 9.3 [ApexLineFeature.\_\_str\_\_](#apexlinefeature---str--)
-  * 9.4 [ApexLineFeature.drawing](#apexlinefeature-drawing)
-  * 9.5 [ApexLineFeature.finish](#apexlinefeature-finish)
-  * 9.6 [ApexLineFeature.finish\_key](#apexlinefeature-finish-key)
-  * 9.7 [ApexLineFeature.part\_feature](#apexlinefeature-part-feature)
-  * 9.8 [ApexLineFeature.start](#apexlinefeature-start)
-  * 9.9 [ApexLineFeature.start\_key](#apexlinefeature-start-key)
-  * 9.10 [ApexLineFeature.type\_name](#apexlinefeature-type-name)
+* 9 [Class ApexLineGeometry](#apexlinegeometry)
+  * 9.1 [ApexLineGeometry.\_\_init\_\_](#apexlinegeometry---init--)
+  * 9.2 [ApexLineGeometry.\_\_repr\_\_](#apexlinegeometry---repr--)
+  * 9.3 [ApexLineGeometry.\_\_str\_\_](#apexlinegeometry---str--)
+  * 9.4 [ApexLineGeometry.drawing](#apexlinegeometry-drawing)
+  * 9.5 [ApexLineGeometry.finish](#apexlinegeometry-finish)
+  * 9.6 [ApexLineGeometry.finish\_key](#apexlinegeometry-finish-key)
+  * 9.7 [ApexLineGeometry.part\_geometry](#apexlinegeometry-part-geometry)
+  * 9.8 [ApexLineGeometry.start](#apexlinegeometry-start)
+  * 9.9 [ApexLineGeometry.start\_key](#apexlinegeometry-start-key)
+  * 9.10 [ApexLineGeometry.type\_name](#apexlinegeometry-type-name)
 * 10 [Class ApexOperation](#apexoperation)
   * 10.1 [ApexOperation.body\_apply](#apexoperation-body-apply)
   * 10.2 [ApexOperation.constraints\_append](#apexoperation-constraints-append)
-  * 10.3 [ApexOperation.features\_get](#apexoperation-features-get)
+  * 10.3 [ApexOperation.geometrys\_get](#apexoperation-geometrys-get)
   * 10.4 [ApexOperation.reorient](#apexoperation-reorient)
   * 10.5 [ApexOperation.shape\_get](#apexoperation-shape-get)
   * 10.6 [ApexOperation.show](#apexoperation-show)
@@ -89,7 +89,7 @@ Table of Contents:
   * 11.1 [ApexPad.\_\_post\_init\_\_](#apexpad---post-init--)
   * 11.2 [ApexPad.body\_apply](#apexpad-body-apply)
   * 11.3 [ApexPad.constraints\_append](#apexpad-constraints-append)
-  * 11.4 [ApexPad.features\_get](#apexpad-features-get)
+  * 11.4 [ApexPad.geometrys\_get](#apexpad-geometrys-get)
   * 11.5 [ApexPad.reorient](#apexpad-reorient)
   * 11.6 [ApexPad.shape\_get](#apexpad-shape-get)
   * 11.7 [ApexPad.shape\_get](#apexpad-shape-get)
@@ -97,23 +97,23 @@ Table of Contents:
   * 12.1 [ApexPocket.\_\_post\_init\_\_](#apexpocket---post-init--)
   * 12.2 [ApexPocket.body\_apply](#apexpocket-body-apply)
   * 12.3 [ApexPocket.constraints\_append](#apexpocket-constraints-append)
-* 13 [Class ApexPointFeature](#apexpointfeature)
-  * 13.1 [ApexPointFeature.\_\_init\_\_](#apexpointfeature---init--)
-  * 13.2 [ApexPointFeature.\_\_str\_\_](#apexpointfeature---str--)
-  * 13.3 [ApexPointFeature.part\_feature](#apexpointfeature-part-feature)
-  * 13.4 [ApexPointFeature.point](#apexpointfeature-point)
-  * 13.5 [ApexPointFeature.type\_name](#apexpointfeature-type-name)
+* 13 [Class ApexPointGeometry](#apexpointgeometry)
+  * 13.1 [ApexPointGeometry.\_\_init\_\_](#apexpointgeometry---init--)
+  * 13.2 [ApexPointGeometry.\_\_str\_\_](#apexpointgeometry---str--)
+  * 13.3 [ApexPointGeometry.part\_geometry](#apexpointgeometry-part-geometry)
+  * 13.4 [ApexPointGeometry.point](#apexpointgeometry-point)
+  * 13.5 [ApexPointGeometry.type\_name](#apexpointgeometry-type-name)
 * 14 [Class ApexPolygon](#apexpolygon)
   * 14.1 [ApexPolygon.\_\_post\_init\_\_](#apexpolygon---post-init--)
   * 14.2 [ApexPolygon.\_\_repr\_\_](#apexpolygon---repr--)
   * 14.3 [ApexPolygon.\_\_str\_\_](#apexpolygon---str--)
   * 14.4 [ApexPolygon.constraints\_append](#apexpolygon-constraints-append)
-  * 14.5 [ApexPolygon.features\_get](#apexpolygon-features-get)
+  * 14.5 [ApexPolygon.geometrys\_get](#apexpolygon-geometrys-get)
   * 14.6 [ApexPolygon.reorient](#apexpolygon-reorient)
   * 14.7 [ApexPolygon.show](#apexpolygon-show)
 * 15 [Class ApexShape](#apexshape)
   * 15.1 [ApexShape.constraints\_append](#apexshape-constraints-append)
-  * 15.2 [ApexShape.features\_get](#apexshape-features-get)
+  * 15.2 [ApexShape.geometrys\_get](#apexshape-geometrys-get)
   * 15.3 [ApexShape.reorient](#apexshape-reorient)
   * 15.4 [ApexShape.show](#apexshape-show)
 
@@ -128,7 +128,7 @@ The are 4 base classes of used in this module:
 * ApexDrawing: Create one or more FreeCAD Sketches and applies Part Design and Path operations.
 * ApexShape: This is the geometric shapes that go into the ApexDrawing.
 * ApexOperation: This is the Part Design and Path operation information.
-* ApexFeature: This is an internal class used to construct a fully constrained FreeCAD sketch.
+* ApexGeometry: This is an internal class used to construct a fully constrained FreeCAD sketch.
 
 The ApexShape sub-classes are:
 * ApexCircle: This represents a circle in the ApexDrawing.
@@ -149,131 +149,131 @@ The current ApexOperation sub-classes are:
 All of this information is collected into an ApexDrawing instance.
 The ApexDrawing.body_apply() takes a FreeCAD Part Design Body and applies operations drawing to it.
 
-## 2 Class ApexArcFeature <a name="apexarcfeature"></a>
+## 2 Class ApexArcGeometry <a name="apexarcgeometry"></a>
 
-class ApexArcFeature(ApexFeature):
+class ApexArcGeometry(ApexGeometry):
 
 Represents an an arc in a sketch.
 
-### 2.1 ApexArcFeature.\_\_init\_\_ <a name="apexarcfeature---init--"></a>
+### 2.1 ApexArcGeometry.\_\_init\_\_ <a name="apexarcgeometry---init--"></a>
 
 def \_\_init\_\_(self, *drawing*:  "ApexDrawing", *begin*:  ApexCorner, *at*:  ApexCorner, *end*:  ApexCorner, *name*:  *str* = "", *tracing*:  *str* = "") -> None:
 
-Initialize an ApexArcFeature.
+Initialize an ApexArcGeometry.
 
-### 2.2 ApexArcFeature.\_\_str\_\_ <a name="apexarcfeature---str--"></a>
+### 2.2 ApexArcGeometry.\_\_str\_\_ <a name="apexarcgeometry---str--"></a>
 
 def \_\_str\_\_(self) -> *str*:
 
-Return string reprentation of ApexFeature.
+Return string reprentation of ApexGeometry.
 
-### 2.3 ApexArcFeature.apex <a name="apexarcfeature-apex"></a>
+### 2.3 ApexArcGeometry.apex <a name="apexarcgeometry-apex"></a>
 
 def *at*(self) -> Vector:
 
-Return the ApexArcFeature apex Vector.
+Return the ApexArcGeometry apex Vector.
 
-### 2.4 ApexArcFeature.begin <a name="apexarcfeature-begin"></a>
+### 2.4 ApexArcGeometry.begin <a name="apexarcgeometry-begin"></a>
 
 def *begin*(self) -> Vector:  # *pragma*:  *no* *unit* *test*
 
-Return the ApexArcFeature arc begin Vector.
+Return the ApexArcGeometry arc begin Vector.
 
-### 2.5 ApexArcFeature.center <a name="apexarcfeature-center"></a>
+### 2.5 ApexArcGeometry.center <a name="apexarcgeometry-center"></a>
 
 def *center*(self) -> Vector:
 
-Return the ApexArcFeature arc center.
+Return the ApexArcGeometry arc center.
 
-### 2.6 ApexArcFeature.end <a name="apexarcfeature-end"></a>
+### 2.6 ApexArcGeometry.end <a name="apexarcgeometry-end"></a>
 
 def *end*(self) -> Vector:  # *pragma*:  *no* *unit* *test*
 
-Return the initial ApexArcFeature end Vector.
+Return the initial ApexArcGeometry end Vector.
 
-### 2.7 ApexArcFeature.finish <a name="apexarcfeature-finish"></a>
+### 2.7 ApexArcGeometry.finish <a name="apexarcgeometry-finish"></a>
 
 def *finish*(self) -> Vector:
 
-Return the ApexArcFeature arc finish Vector.
+Return the ApexArcGeometry arc finish Vector.
 
-### 2.8 ApexArcFeature.finish\_angle <a name="apexarcfeature-finish-angle"></a>
+### 2.8 ApexArcGeometry.finish\_angle <a name="apexarcgeometry-finish-angle"></a>
 
 def *finish\_angle*(self) -> *float*:  # *pragma*:  *no* *unit* *test*
 
-Return the ApexArcFeature arc finish angle.
+Return the ApexArcGeometry arc finish angle.
 
-### 2.9 ApexArcFeature.finish\_key <a name="apexarcfeature-finish-key"></a>
+### 2.9 ApexArcGeometry.finish\_key <a name="apexarcgeometry-finish-key"></a>
 
 def *finish\_key*(self) -> *int*:
 
-Return the ApexArcFeature finish Constraint key.
+Return the ApexArcGeometry finish Constraint key.
 
-### 2.10 ApexArcFeature.finish\_length <a name="apexarcfeature-finish-length"></a>
+### 2.10 ApexArcGeometry.finish\_length <a name="apexarcgeometry-finish-length"></a>
 
 def *finish\_length*(self) -> *float*:  # *pragma*:  *no* *unit* *test*
 
 Return distance from arc finish Vector to the apex Vector.
 
-### 2.11 ApexArcFeature.input <a name="apexarcfeature-input"></a>
+### 2.11 ApexArcGeometry.input <a name="apexarcgeometry-input"></a>
 
 def *input*(self) -> Vector:  # *pragma*:  *no* *unit* *test*
 
-Return the initial ApexArcFeature arc start Vector.
+Return the initial ApexArcGeometry arc start Vector.
 
-### 2.12 ApexArcFeature.part\_feature <a name="apexarcfeature-part-feature"></a>
+### 2.12 ApexArcGeometry.part\_geometry <a name="apexarcgeometry-part-geometry"></a>
 
-def *part\_feature*(self) -> PartFeature:
+def *part\_geometry*(self) -> PartGeometry:
 
-Return ApexArcFeature Part.Arc.
+Return ApexArcGeometry Part.Arc.
 
-### 2.13 ApexArcFeature.radius <a name="apexarcfeature-radius"></a>
+### 2.13 ApexArcGeometry.radius <a name="apexarcgeometry-radius"></a>
 
 def *radius*(self) -> *float*:
 
-Return the initial ApexArcFeature radius.
+Return the initial ApexArcGeometry radius.
 
-### 2.14 ApexArcFeature.repr <a name="apexarcfeature-repr"></a>
+### 2.14 ApexArcGeometry.repr <a name="apexarcgeometry-repr"></a>
 
 def \_\_repr\_\_(self) -> *str*:  # *pragma*:  *no* *unit* *test*
 
-Return ApexArcFeature string representation.
+Return ApexArcGeometry string representation.
 
-### 2.15 ApexArcFeature.start <a name="apexarcfeature-start"></a>
+### 2.15 ApexArcGeometry.start <a name="apexarcgeometry-start"></a>
 
 def *start*(self) -> Vector:
 
-Return the ApexArcFeature arc start Vector.
+Return the ApexArcGeometry arc start Vector.
 
-### 2.16 ApexArcFeature.start\_angle <a name="apexarcfeature-start-angle"></a>
+### 2.16 ApexArcGeometry.start\_angle <a name="apexarcgeometry-start-angle"></a>
 
 def *start\_angle*(self) -> *float*:  # *pragma*:  *no* *unit* *test*
 
-Return the ApexArcFeature arc start angle.
+Return the ApexArcGeometry arc start angle.
 
-### 2.17 ApexArcFeature.start\_key <a name="apexarcfeature-start-key"></a>
+### 2.17 ApexArcGeometry.start\_key <a name="apexarcgeometry-start-key"></a>
 
 def *start\_key*(self) -> *int*:
 
-Return the ApexArcFeature finish Constraint key.
+Return the ApexArcGeometry finish Constraint key.
 
-### 2.18 ApexArcFeature.start\_length <a name="apexarcfeature-start-length"></a>
+### 2.18 ApexArcGeometry.start\_length <a name="apexarcgeometry-start-length"></a>
 
 def *start\_length*(self) -> *float*:  # *pragma*:  *no* *unit* *test*
 
-Return the ApexArcFeature distance from start Vector to apex Vector.
+Return the ApexArcGeometry distance from start Vector to apex Vector.
 
-### 2.19 ApexArcFeature.sweep\_angle <a name="apexarcfeature-sweep-angle"></a>
+### 2.19 ApexArcGeometry.sweep\_angle <a name="apexarcgeometry-sweep-angle"></a>
 
 def *sweep\_angle*(self) -> *float*:  # *pragma*:  *no* *unit* *cover*
 
-Return the ApexArcFeature sweep angle from start angle to end angle.
+Return the ApexArcGeometry sweep angle from start angle to end angle.
 
-### 2.20 ApexArcFeature.type\_name <a name="apexarcfeature-type-name"></a>
+### 2.20 ApexArcGeometry.type\_name <a name="apexarcgeometry-type-name"></a>
 
 def *type\_name*(self) -> *str*:  # *pragma*:  *no* *unit* *cover*
 
-Return the ApexArcFeature type name.
+Return the ApexArcGeometry type name.
 
 ## 3 Class ApexCircle <a name="apexcircle"></a>
 
@@ -301,13 +301,13 @@ Initialize a circle.
 
 def *constraints\_append*(self, *drawing*:  "ApexDrawing", *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
 
-Return the ApexCircleFeature constraints.
+Return the ApexCircleGeometry constraints.
 
-### 3.3 ApexCircle.features\_get <a name="apexcircle-features-get"></a>
+### 3.3 ApexCircle.geometrys\_get <a name="apexcircle-geometrys-get"></a>
 
-def *features\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[ApexFeature, ...]:
+def *geometrys\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[ApexGeometry, ...]:
 
-Return the ApexCircleFeature.
+Return the ApexCircleGeometry.
 
 ### 3.4 ApexCircle.reorient <a name="apexcircle-reorient"></a>
 
@@ -321,41 +321,41 @@ Arguments:
   that an empty name is to be used.  (Default: "")
 
 
-## 4 Class ApexCircleFeature <a name="apexcirclefeature"></a>
+## 4 Class ApexCircleGeometry <a name="apexcirclegeometry"></a>
 
-class ApexCircleFeature(ApexFeature):
+class ApexCircleGeometry(ApexGeometry):
 
 Represents a circle in a sketch.
 
-### 4.1 ApexCircleFeature.\_\_init\_\_ <a name="apexcirclefeature---init--"></a>
+### 4.1 ApexCircleGeometry.\_\_init\_\_ <a name="apexcirclegeometry---init--"></a>
 
 def \_\_init\_\_(self, *drawing*:  "ApexDrawing", *center*:  Vector, *radius*:  *float*, *name*:  *str* = "") -> None:
 
-Initialize a ApexCircleFeature.
+Initialize a ApexCircleGeometry.
 
-### 4.2 ApexCircleFeature.center <a name="apexcirclefeature-center"></a>
+### 4.2 ApexCircleGeometry.center <a name="apexcirclegeometry-center"></a>
 
 def *center*(self) -> Vector:  # *pragma*:  *no* *unit* *cover*
 
-Return the ApexCircleFeature center.
+Return the ApexCircleGeometry center.
 
-### 4.3 ApexCircleFeature.part\_element <a name="apexcirclefeature-part-element"></a>
+### 4.3 ApexCircleGeometry.part\_element <a name="apexcirclegeometry-part-element"></a>
 
-def *part\_feature*(self) -> PartFeature:
+def *part\_geometry*(self) -> PartGeometry:
 
-Return the ApexCircleFeature PartFeature.
+Return the ApexCircleGeometry PartGeometry.
 
-### 4.4 ApexCircleFeature.radius <a name="apexcirclefeature-radius"></a>
+### 4.4 ApexCircleGeometry.radius <a name="apexcirclegeometry-radius"></a>
 
 def *radius*(self) -> *float*:  # *pragma*:  *no* *unit* *cover*
 
-Return the ApexCircleFeature radius.
+Return the ApexCircleGeometry radius.
 
-### 4.5 ApexCircleFeature.type\_name <a name="apexcirclefeature-type-name"></a>
+### 4.5 ApexCircleGeometry.type\_name <a name="apexcirclegeometry-type-name"></a>
 
 def *type\_name*(self) -> *str*:  # *pragma*:  *no* *unit* *cover*
 
-Return the ApexCircleFeature type name.
+Return the ApexCircleGeometry type name.
 
 ## 5 Class ApexCorner <a name="apexcorner"></a>
 
@@ -420,7 +420,7 @@ Initialize a drawing.
 
 ### 6.2 ApexDrawing.create\_datum\_plane <a name="apexdrawing-create-datum-plane"></a>
 
-def *create\_datum\_plane*(self, *body*:  "PartDesign.Body", *name*:  Optional[str] = None, *tracing*:  *str* = "") -> "Part.ApexFeature":
+def *create\_datum\_plane*(self, *body*:  "PartDesign.Body", *name*:  Optional[str] = None, *tracing*:  *str* = "") -> "Part.ApexGeometry":
 
 Return the FreeCAD DatumPlane used for the drawing.
 
@@ -429,13 +429,13 @@ Arguments:
 * *name* (Optional[str]): The datum plane name.
   (Default: "...DatumPlaneN", where N is incremented.)
 * Returns:
-  * (Part.ApexFeature) that is the datum\_plane.
+  * (Part.ApexGeometry) that is the datum\_plane.
 
-### 6.3 ApexDrawing.features\_get <a name="apexdrawing-features-get"></a>
+### 6.3 ApexDrawing.geometrys\_get <a name="apexdrawing-geometrys-get"></a>
 
-def *point\_features\_get*(self, *point*:  Vector, *tracing*:  *str* = "") -> Tuple["ApexFeature", ...]:
+def *point\_geometrys\_get*(self, *point*:  Vector, *tracing*:  *str* = "") -> Tuple["ApexGeometry", ...]:
 
-Return the ApexPointFeature Feature's.
+Return the ApexPointGeometry Geometry's.
 
 ### 6.4 ApexDrawing.plane\_process <a name="apexdrawing-plane-process"></a>
 
@@ -470,31 +470,31 @@ Insert an ApexDrawing into a FreeCAD SketchObject.
 Arguments:
 * sketcher (Sketcher.SketchObject): The sketcher object to use.
 
-## 7 Class ApexFeature <a name="apexfeature"></a>
+## 7 Class ApexGeometry <a name="apexgeometry"></a>
 
-class ApexFeature(object):
+class ApexGeometry(object):
 
-Base class a sketch feature.
+Base class a sketch geometry.
 
-### 7.1 ApexFeature.\_\_init\_\_ <a name="apexfeature---init--"></a>
+### 7.1 ApexGeometry.\_\_init\_\_ <a name="apexgeometry---init--"></a>
 
 def \_\_init\_\_(self, *drawing*:  "ApexDrawing", *start*:  Vector, *finish*:  Vector, *name*:  *str* = "") -> None:
 
-Initialize a ApexFeature.
+Initialize a ApexGeometry.
 
-### 7.2 ApexFeature.\_\_repr\_\_ <a name="apexfeature---repr--"></a>
+### 7.2 ApexGeometry.\_\_repr\_\_ <a name="apexgeometry---repr--"></a>
 
 def \_\_repr\_\_(self) -> *str*:
 
-Return string reprentation of ApexFeature.
+Return string reprentation of ApexGeometry.
 
-### 7.3 ApexFeature.\_\_str\_\_ <a name="apexfeature---str--"></a>
+### 7.3 ApexGeometry.\_\_str\_\_ <a name="apexgeometry---str--"></a>
 
 def \_\_str\_\_(self) -> *str*:
 
-Return string reprentation of ApexFeature.
+Return string reprentation of ApexGeometry.
 
-### 7.4 ApexFeature.constraints\_append <a name="apexfeature-constraints-append"></a>
+### 7.4 ApexGeometry.constraints\_append <a name="apexgeometry-constraints-append"></a>
 
 def *constraints\_append*(self, *drawing*:  "ApexDrawing", *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
 
@@ -505,53 +505,53 @@ Arguments:
 * *constraints* (List[SketcherConstraint]): The constraints list to append to.
 
 
-### 7.5 ApexFeature.drawing <a name="apexfeature-drawing"></a>
+### 7.5 ApexGeometry.drawing <a name="apexgeometry-drawing"></a>
 
 def *drawing*(self) -> "ApexDrawing":  # *pragma*:  *no* *unit* *test*
 
-Return the ApexFeature ApexDrawing.
+Return the ApexGeometry ApexDrawing.
 
-### 7.6 ApexFeature.finish <a name="apexfeature-finish"></a>
+### 7.6 ApexGeometry.finish <a name="apexgeometry-finish"></a>
 
 def *finish*(self) -> Vector:  # *pragma*:  *no* *unit* *test*
 
-Return the ApexFeature finish point.
+Return the ApexGeometry finish point.
 
-### 7.7 ApexFeature.index <a name="apexfeature-index"></a>
+### 7.7 ApexGeometry.index <a name="apexgeometry-index"></a>
 
 def *index*(self) -> *int*:
 
-Return the ApexFeature index.
+Return the ApexGeometry index.
 
-### 7.8 ApexFeature.name <a name="apexfeature-name"></a>
+### 7.8 ApexGeometry.name <a name="apexgeometry-name"></a>
 
 def *name*(self) -> *str*:
 
-Return ApexFeature name.
+Return ApexGeometry name.
 
-### 7.9 ApexFeature.part\_feature <a name="apexfeature-part-feature"></a>
+### 7.9 ApexGeometry.part\_geometry <a name="apexgeometry-part-geometry"></a>
 
-def *part\_feature*(self) -> PartFeature:
+def *part\_geometry*(self) -> PartGeometry:
 
-Return the PartFeature associated with ApexFeature.
+Return the PartGeometry associated with ApexGeometry.
 
-### 7.10 ApexFeature.previous <a name="apexfeature-previous"></a>
+### 7.10 ApexGeometry.previous <a name="apexgeometry-previous"></a>
 
-def *previous*(self) -> "ApexFeature":  # *pragma*:  *no* *unit* *test*
+def *previous*(self) -> "ApexGeometry":  # *pragma*:  *no* *unit* *test*
 
-Return the previous Part ApexFeature in circular list.
+Return the previous Part ApexGeometry in circular list.
 
-### 7.11 ApexFeature.start <a name="apexfeature-start"></a>
+### 7.11 ApexGeometry.start <a name="apexgeometry-start"></a>
 
 def *start*(self) -> Vector:  # *pragma*:  *no* *unit* *test*
 
-Return the ApexFeature start point.
+Return the ApexGeometry start point.
 
-### 7.12 ApexFeature.type\_name <a name="apexfeature-type-name"></a>
+### 7.12 ApexGeometry.type\_name <a name="apexgeometry-type-name"></a>
 
 def *type\_name*(self) -> *str*:
 
-Return the ApexFeature type name.
+Return the ApexGeometry type name.
 
 ## 8 Class ApexHole <a name="apexhole"></a>
 
@@ -591,11 +591,11 @@ Arguments:
 * *constraints* (List[SketcherConstraint]): The constraints list to append to.
 
 
-### 8.4 ApexHole.features\_get <a name="apexhole-features-get"></a>
+### 8.4 ApexHole.geometrys\_get <a name="apexhole-geometrys-get"></a>
 
-def *features\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[ApexFeature, ...]:
+def *geometrys\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[ApexGeometry, ...]:
 
-Return the ApexHole drawing features.
+Return the ApexHole drawing geometrys.
 
 ### 8.5 ApexHole.reorient <a name="apexhole-reorient"></a>
 
@@ -615,71 +615,71 @@ def *shape\_get*(self) -> ApexShape:
 
 Return the ApexHole ApexShape.
 
-## 9 Class ApexLineFeature <a name="apexlinefeature"></a>
+## 9 Class ApexLineGeometry <a name="apexlinegeometry"></a>
 
-class ApexLineFeature(ApexFeature):
+class ApexLineGeometry(ApexGeometry):
 
 Represents a line segment in a sketch.
 
-### 9.1 ApexLineFeature.\_\_init\_\_ <a name="apexlinefeature---init--"></a>
+### 9.1 ApexLineGeometry.\_\_init\_\_ <a name="apexlinegeometry---init--"></a>
 
 def \_\_init\_\_(self, *drawing*:  "ApexDrawing", *start*:  Vector, *finish*:  Vector, *name*:  *str* = "", *tracing*:  *str* = "") -> None:
 
-Initialize a ApexLineFeature.
+Initialize a ApexLineGeometry.
 
-### 9.2 ApexLineFeature.\_\_repr\_\_ <a name="apexlinefeature---repr--"></a>
+### 9.2 ApexLineGeometry.\_\_repr\_\_ <a name="apexlinegeometry---repr--"></a>
 
 def \_\_repr\_\_(self) -> *str*:
 
-Return string representation of ApexLineFeature.
+Return string representation of ApexLineGeometry.
 
-### 9.3 ApexLineFeature.\_\_str\_\_ <a name="apexlinefeature---str--"></a>
+### 9.3 ApexLineGeometry.\_\_str\_\_ <a name="apexlinegeometry---str--"></a>
 
 def \_\_str\_\_(self) -> *str*:
 
-Return string representation of ApexLineFeature.
+Return string representation of ApexLineGeometry.
 
-### 9.4 ApexLineFeature.drawing <a name="apexlinefeature-drawing"></a>
+### 9.4 ApexLineGeometry.drawing <a name="apexlinegeometry-drawing"></a>
 
 def *drawing*(self) -> "ApexDrawing":  # *pragma*:  *no* *unit* *cover*
 
-Return the ApexLineFeature ApexDrawing.
+Return the ApexLineGeometry ApexDrawing.
 
-### 9.5 ApexLineFeature.finish <a name="apexlinefeature-finish"></a>
+### 9.5 ApexLineGeometry.finish <a name="apexlinegeometry-finish"></a>
 
 def *finish*(self) -> Vector:  # *pragma*:  *no* *unit* *cover*
 
-Return the ApexLineFeature finish Vector.
+Return the ApexLineGeometry finish Vector.
 
-### 9.6 ApexLineFeature.finish\_key <a name="apexlinefeature-finish-key"></a>
+### 9.6 ApexLineGeometry.finish\_key <a name="apexlinegeometry-finish-key"></a>
 
 def *finish\_key*(self) -> *int*:
 
-Return the ApexLineFeature finish Constraint key.
+Return the ApexLineGeometry finish Constraint key.
 
-### 9.7 ApexLineFeature.part\_feature <a name="apexlinefeature-part-feature"></a>
+### 9.7 ApexLineGeometry.part\_geometry <a name="apexlinegeometry-part-geometry"></a>
 
-def *part\_feature*(self) -> PartFeature:
+def *part\_geometry*(self) -> PartGeometry:
 
-Return the PartFeature associated with a ApexLineFeature.
+Return the PartGeometry associated with a ApexLineGeometry.
 
-### 9.8 ApexLineFeature.start <a name="apexlinefeature-start"></a>
+### 9.8 ApexLineGeometry.start <a name="apexlinegeometry-start"></a>
 
 def *start*(self) -> ApexCorner:
 
-Return the ApexLineFeature start Vector.
+Return the ApexLineGeometry start Vector.
 
-### 9.9 ApexLineFeature.start\_key <a name="apexlinefeature-start-key"></a>
+### 9.9 ApexLineGeometry.start\_key <a name="apexlinegeometry-start-key"></a>
 
 def *start\_key*(self) -> *int*:
 
-Return the ApexLineFeature start Constraint key.
+Return the ApexLineGeometry start Constraint key.
 
-### 9.10 ApexLineFeature.type\_name <a name="apexlinefeature-type-name"></a>
+### 9.10 ApexLineGeometry.type\_name <a name="apexlinegeometry-type-name"></a>
 
 def *type\_name*(self) -> *str*:  # *pragma*:  *no* *unit* *cover*
 
-Return the ApexLineFeature type name.
+Return the ApexLineGeometry type name.
 
 ## 10 Class ApexOperation <a name="apexoperation"></a>
 
@@ -710,11 +710,11 @@ Arguments:
 * *constraints* (List[SketcherConstraint]): The constraints list to append to.
 
 
-### 10.3 ApexOperation.features\_get <a name="apexoperation-features-get"></a>
+### 10.3 ApexOperation.geometrys\_get <a name="apexoperation-geometrys-get"></a>
 
-def *features\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[ApexFeature, ...]:
+def *geometrys\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[ApexGeometry, ...]:
 
-Return the features associated with an operation.
+Return the geometrys associated with an operation.
 
 ### 10.4 ApexOperation.reorient <a name="apexoperation-reorient"></a>
 
@@ -778,11 +778,11 @@ Arguments:
 * *constraints* (List[SketcherConstraint]): The constraints list to append to.
 
 
-### 11.4 ApexPad.features\_get <a name="apexpad-features-get"></a>
+### 11.4 ApexPad.geometrys\_get <a name="apexpad-geometrys-get"></a>
 
-def *features\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[ApexFeature, ...]:
+def *geometrys\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[ApexGeometry, ...]:
 
-Return the features associated with an operation.
+Return the geometrys associated with an operation.
 
 ### 11.5 ApexPad.reorient <a name="apexpad-reorient"></a>
 
@@ -846,41 +846,41 @@ Arguments:
 * *constraints* (List[SketcherConstraint]): The constraints list to append to.
 
 
-## 13 Class ApexPointFeature <a name="apexpointfeature"></a>
+## 13 Class ApexPointGeometry <a name="apexpointgeometry"></a>
 
-class ApexPointFeature(ApexFeature):
+class ApexPointGeometry(ApexGeometry):
 
 Represents a point in a sketch.
 
-### 13.1 ApexPointFeature.\_\_init\_\_ <a name="apexpointfeature---init--"></a>
+### 13.1 ApexPointGeometry.\_\_init\_\_ <a name="apexpointgeometry---init--"></a>
 
 def \_\_init\_\_(self, *drawing*:  "ApexDrawing", *point*:  Vector, *name*:  *str* = "") -> None:
 
-Initialize a ApexPointFeature.
+Initialize a ApexPointGeometry.
 
-### 13.2 ApexPointFeature.\_\_str\_\_ <a name="apexpointfeature---str--"></a>
+### 13.2 ApexPointGeometry.\_\_str\_\_ <a name="apexpointgeometry---str--"></a>
 
 def \_\_str\_\_(self) -> *str*:  # *pragma*:  *no* *unit* *cover*
 
-Return ApexPointFeature string .
+Return ApexPointGeometry string .
 
-### 13.3 ApexPointFeature.part\_feature <a name="apexpointfeature-part-feature"></a>
+### 13.3 ApexPointGeometry.part\_geometry <a name="apexpointgeometry-part-geometry"></a>
 
-def *part\_feature*(self) -> PartFeature:
+def *part\_geometry*(self) -> PartGeometry:
 
-Return the  ApexPointFeature.
+Return the  ApexPointGeometry.
 
-### 13.4 ApexPointFeature.point <a name="apexpointfeature-point"></a>
+### 13.4 ApexPointGeometry.point <a name="apexpointgeometry-point"></a>
 
 def *point*(self) -> Vector:  # *pragma*:  *no* *unit* *cover*
 
-Return the ApexPointFeature Vector.
+Return the ApexPointGeometry Vector.
 
-### 13.5 ApexPointFeature.type\_name <a name="apexpointfeature-type-name"></a>
+### 13.5 ApexPointGeometry.type\_name <a name="apexpointgeometry-type-name"></a>
 
 def *type\_name*(self) -> *str*:  # *pragma*:  *no* *unit* *cover*
 
-Return the ApexPointFeature type name.
+Return the ApexPointGeometry type name.
 
 ## 14 Class ApexPolygon <a name="apexpolygon"></a>
 
@@ -926,11 +926,11 @@ def *constraints\_append*(self, *drawing*:  "ApexDrawing", *constraints*:  List[
 
 Return the ApexPolygon constraints for a ApexDrawing.
 
-### 14.5 ApexPolygon.features\_get <a name="apexpolygon-features-get"></a>
+### 14.5 ApexPolygon.geometrys\_get <a name="apexpolygon-geometrys-get"></a>
 
-def *features\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[ApexFeature, ...]:
+def *geometrys\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[ApexGeometry, ...]:
 
-Return the ApexPolygon ApexFeatures tuple.
+Return the ApexPolygon ApexGeometrys tuple.
 
 ### 14.6 ApexPolygon.reorient <a name="apexpolygon-reorient"></a>
 
@@ -970,17 +970,17 @@ Arguments:
 * *constraints* (List[SketcherConstraint]): The constraints list to append to.
 
 
-### 15.2 ApexShape.features\_get <a name="apexshape-features-get"></a>
+### 15.2 ApexShape.geometrys\_get <a name="apexshape-geometrys-get"></a>
 
-def *features\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[ApexFeature, ...]:
+def *geometrys\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[ApexGeometry, ...]:
 
-Return the ApexShape ApexFeatures tuple.
+Return the ApexShape ApexGeometrys tuple.
 
 Arguments:
-* *drawing* (ApexDrawing): The associated drawing to use for feature extraction.
+* *drawing* (ApexDrawing): The associated drawing to use for geometry extraction.
 
 Returns:
-* (Tuple[ApexFeature, ...]) of extracted ApexFeature's.
+* (Tuple[ApexGeometry, ...]) of extracted ApexGeometry's.
 
 
 ### 15.3 ApexShape.reorient <a name="apexshape-reorient"></a>
