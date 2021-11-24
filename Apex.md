@@ -13,10 +13,8 @@ Table of Contents:
   * 5.1 [ApexMaterial.\_\_init\_\_](#apexmaterial---init--)
 * 6 [Class ApexPoint](#apexpoint)
   * 6.1 [ApexPoint.\_\_init\_\_](#apexpoint---init--)
-  * 6.2 [ApexPoint.atan2](#apexpoint-atan2)
-  * 6.3 [ApexPoint.magnitude](#apexpoint-magnitude)
-  * 6.4 [float\_fix](#float-fix)
-  * 6.5 [vector\_fix](#vector-fix)
+  * 6.2 [float\_fix](#float-fix)
+  * 6.3 [vector\_fix](#vector-fix)
 
 ## 1 <a name="introduction"></a>Introduction
 
@@ -268,25 +266,13 @@ Arguments:
     (Default: Vector(0.0, 0.0, 0.0)
   * *fix* (bool): If True, fix float values that are close to hole numbers to be whole.
 
-### 6.2 ApexPoint.atan2 <a name="apexpoint-atan2"></a>
-
-def *atan2*(self) -> *float*:
-
-Return the atan2 of the x and y values.
-
-### 6.3 ApexPoint.magnitude <a name="apexpoint-magnitude"></a>
-
-def *magnitude*(self) -> *float*:
-
-Return the magnitude of the point vector.
-
-### 6.4 float\_fix <a name="float-fix"></a>
+### 6.2 float\_fix <a name="float-fix"></a>
 
 def *float\_fix*(length:  *float*) -> *float*:
 
 Return a length that is rounded to a whole number when appropriate.
 
-### 6.5 vector\_fix <a name="vector-fix"></a>
+### 6.3 vector\_fix <a name="vector-fix"></a>
 
 def *vector\_fix*(vector:  Vector) -> Vector:
 

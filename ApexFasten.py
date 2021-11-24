@@ -71,7 +71,7 @@ from dataclasses import dataclass
 from typing import cast, Tuple
 
 from Apex import ApexCheck, ApexMaterial
-from ApexSketch import ApexElement
+from ApexSketch import ApexShape
 from FreeCAD import Vector  # type: ignore
 
 #  https://github.com/shaise/FreeCAD_FastenersWB
@@ -969,8 +969,8 @@ class ApexScrew(object):
         if value_error:
             raise ValueError(value_error)
 
-    def element(self) -> ApexElement:
-        """Return the ApexElmenent for ApexScrew."""
+    def element(self) -> ApexShape:
+        """Return the ApexShape for ApexScrew."""
         assert False  # pragma: no unit cover
 
     # ApexScrew._unit_tests():

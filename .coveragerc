@@ -26,3 +26,6 @@ exclude_lines =
 
     # Ignore various execption blocks.
     raise NotImplementedError
+
+    # Ignore `assert False`, since it can't really ever covered.
+    assert False

@@ -20,7 +20,7 @@ import FreeCADGui as Gui  # type: ignore
 from FreeCAD import Placement, Rotation, Vector  # type: ignore
 from Apex import ApexBox, ApexCheck, ApexColor, ApexMaterial, ApexPoint
 from ApexNode import ApexContext, ApexNode
-from ApexSketch import ApexDrawing, ApexElement, ApexPolygon
+from ApexSketch import ApexCorner, ApexDrawing, ApexOperation, ApexPad, ApexPolygon
 from ApexFasten import ApexScrew, ApexStack, ApexStackBody
 import PartDesign  # type: ignore
 
@@ -132,7 +132,7 @@ class ApexEnclosure(ApexNode):
                                         box.BSW + Vector(0.0, 0.0, dw), box.B, box.N, "red",
                                         bottom_screws)
 
-        if False:
+        if True:
             self.north_side: Block = Block("North", self,
                                            box.TNE + Vector(0.0, 0.0, -dw),
                                            box.BNW + Vector(0.0, -dw, dw), box.N, box.B, "green",
@@ -262,15 +262,11 @@ class Block(ApexNode):
 
         # depth: float = realigned_box.DZ
         diameter: float = 0.0
-        corners: Tuple[ApexPoint, ...] = (
-            ApexPoint(vector=back_placement * top_box.TNE, diameter=diameter,
-                      name=f"{full_path}.Corner1", fix=True),
-            ApexPoint(vector=back_placement * top_box.TNW, diameter=diameter,
-                      name=f"{full_path}.Corner2", fix=True),
-            ApexPoint(vector=back_placement * top_box.TSW, diameter=diameter,
-                      name=f"{full_path}.Corner3", fix=True),
-            ApexPoint(vector=back_placement * top_box.TSE, diameter=diameter,
-                      name=f"{full_path}.Corner4", fix=True),
+        corners: Tuple[ApexCorner, ...] = (
+            ApexCorner(back_placement * top_box.TNE, diameter, f"{full_path}.Corner1"),
+            ApexCorner(back_placement * top_box.TNW, diameter, f"{full_path}.Corner2"),
+            ApexCorner(back_placement * top_box.TSW, diameter, f"{full_path}.Corner3"),
+            ApexCorner(back_placement * top_box.TSE, diameter, f"{full_path}.Corner4"),
         )
         if tracing:
             print(f"{tracing}{corners[0]=}")
@@ -278,9 +274,8 @@ class Block(ApexNode):
             print(f"{tracing}{corners[2]=}")
             print(f"{tracing}{corners[3]=}")
         depth: float = top_box.DZ
-        flat: bool = True  # Polygon is flat.
-        block_polygon: ApexPolygon = ApexPolygon(corners, depth, flat, name=f"{full_path}.Polygon",
-                                                 tracing=next_tracing)
+        block_polygon: ApexPolygon = ApexPolygon(corners, "block_polygon")
+        block_pad: ApexPad = ApexPad(block_polygon, depth, "block_op")
         # Create the *drawing*:
         app_document: App.Document = context.app_document
         document_name: str = app_document.Name
@@ -313,15 +308,14 @@ class Block(ApexNode):
         app_document.recompute()
 
         screw: ApexScrew
-        # screw_elements: Tuple[ApexElement, ...] = tuple(
+        # screw_elements: Tuple[ApexShape, ...] = tuple(
         #     [screw.element() for screw in self.screws]
         # )
-        elements: Tuple[ApexElement, ...] = (block_polygon,)  # + screw_elements
+        operations: Tuple[ApexOperation, ...] = (block_pad,)  # + screw_elements
         if tracing:
             print(f"{tracing}{top_face=}")
             print(f"{tracing}{z_align=}")
-        drawing: ApexDrawing = ApexDrawing(top_face, z_align, elements, block_polygon,
-                                           f"{full_path}.Drawing", tracing=next_tracing)
+        drawing: ApexDrawing = ApexDrawing(top_face, z_align, operations, f"{full_path}.Drawing")
         drawing.plane_process(body, document_name, tracing=next_tracing)
 
         if tracing:

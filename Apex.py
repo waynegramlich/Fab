@@ -34,7 +34,6 @@ from FreeCAD import BoundBox, Placement, Rotation, Vector  # type: ignore
 
 # import colorsys  # Color conversion routines.
 from dataclasses import dataclass
-import math
 from typing import Any, cast, List, Dict, Optional, Sequence, Tuple, Union
 
 
@@ -640,12 +639,12 @@ class ApexCheck(object):
 
             # Get associated *apex_check* and unpack it:
             apex_check: "ApexCheck" = apex_checks[index]
-            if not isinstance(apex_check, cls):
-                raise ValueError(f"[{index}]:{apex_check} is not ApexCheck:  {apex_checks}")
+            # if not isinstance(apex_check, cls):
+            #     raise ValueError(f"[{index}]:{apex_check} is not ApexCheck:  {apex_checks}")
             name: str = apex_check.name
             options: Tuple[Any, ...] = apex_check.options
-            if not options:
-                raise ValueError(f"[{index}]:{apex_check} has empty options")
+            # if not options:
+            #    raise ValueError(f"[{index}]:{apex_check} has empty options")
             flags: str = ""
             if isinstance(options[0], str):
                 flags = options[0]
@@ -1359,17 +1358,9 @@ class ApexPoint:
         """Return associated Vector."""
         return Vector(self.x, self.y, self.z)
 
-    def __add__(self, vector: "ApexPoint") -> "ApexPoint":
-        """Return the sum of two ApexPoint's."""
-        return ApexPoint(self.x + vector.x, self.y + vector.y, self.z + vector.z)
-
     def __neg__(self) -> "ApexPoint":
         """Return the negative of an ApexPoint."""
         return ApexPoint(-self.x, -self.y, -self.z, self.radius, self.name)
-
-    def __mul__(self, scale: float) -> "ApexPoint":
-        """Return a Point that has been scaled."""
-        return ApexPoint(self.x * scale, self.y * scale, self.z * scale)
 
     def __repr__(self) -> str:
         """Return representation of ApexPoint."""
@@ -1385,23 +1376,6 @@ class ApexPoint:
     def __truediv__(self, divisor: float) -> "ApexPoint":
         """Return a Point that has been scaleddown."""
         return ApexPoint(self.x / divisor, self.y / divisor, self.z / divisor)
-
-    def __sub__(self, vector: "ApexPoint") -> "ApexPoint":
-        """Return the difference of two Point's."""
-        return ApexPoint(self.x - vector.x, self.y - vector.y, self.z - vector.z)
-
-    # ApexPoint.atan2():
-    def atan2(self) -> float:
-        """Return the atan2 of the x and y values."""
-        return math.atan2(self.x, self.y)
-
-    # ApexPoint.magnitude():
-    def magnitude(self) -> float:
-        """Return the magnitude of the point vector."""
-        x: float = float(self.x)
-        y: float = float(self.y)
-        z: float = float(self.z)
-        return math.sqrt(x * x + y * y + z * z)
 
     # ApexPoint.Reorient():
     REORIENT_CHECKS = (
