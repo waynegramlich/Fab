@@ -113,6 +113,7 @@ Table of Contents:
   * 15.2 [ApexShape.geometries\_get](#apexshape-geometries-get)
   * 15.3 [ApexShape.reorient](#apexshape-reorient)
   * 15.4 [ApexShape.show](#apexshape-show)
+* 16 [Class \_ApexCornerExtra](#-apexcornerextra)
 
 ## 1 <a name="introduction"></a>Introduction
 
@@ -981,3 +982,9 @@ Arguments:
 def *show*(self) -> *str*:
 
 Return compact string for ApexShape.
+
+## 16 Class \_ApexCornerExtra <a name="-apexcornerextra"></a>
+
+class \_ApexCornerExtra(object):
+
+\_ApexCornerExtra: An internal mutable class that corresponds to an ApexCorner.

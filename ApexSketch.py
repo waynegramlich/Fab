@@ -37,6 +37,11 @@ All of this information is collected into an ApexDrawing instance.
 The ApexDrawing.body_apply() takes a FreeCAD Part Design Body and applies operations drawing to it.
 """
 
+# (Sketcher Constrain Angle)[https://wiki.freecadweb.org/Sketcher_ConstrainAngle]
+# (Sketcher Scripting)[https://wiki.freecadweb.org/Sketcher_ConstrainAngle]
+# (Sketcher Switch Between Multiple Solutions)[https://www.youtube.com/watch?v=Q43K23k1noo&t=20s]
+# (Sketcher Toggle Constructions)[https://wiki.freecadweb.org/Sketcher_ToggleConstruction]
+
 # Note this code uses nested dataclasses that are frozen.  Computed attributes are tricky.
 # See (Set frozen data class files in __post_init__)[https://stackoverflow.com/questions/53756788]
 
@@ -850,6 +855,21 @@ class ApexShape(object):
         raise NotImplementedError()
 
 
+# _ApexCornerExtra:
+@dataclass
+class _ApexCornerExtra(object):
+    """_ApexCornerExtra: An internal mutable class that corresponds to an ApexCorner."""
+
+    Corner: ApexCorner
+    Point: Vector
+    Radius: float
+    Name: str
+    Geometries: Tuple[ApexGeometry, ...] = field(init=False, default=())
+    Arc: Optional[ApexArcGeometry] = field(init=False, default=None)
+    Construction: Optional[ApexLineGeometry] = field(init=False, default=None)
+    Line: Optional[ApexLineGeometry] = field(init=False, default=None)
+
+
 # ApexPolygon:
 @dataclass
 class ApexPolygon(ApexShape):
@@ -871,7 +891,8 @@ class ApexPolygon(ApexShape):
     # Computed attributes:
     InternalRadius: float = field(init=False)
     Clockwise: bool = field(init=False)
-    _geometries: Optional[Tuple[ApexGeometry, ...]] = None
+    _geometries: Optional[Tuple[ApexGeometry, ...]] = field(init=False, default=None)
+    _corners: Tuple[_ApexCornerExtra, ...] = field(init=False)
 
     POST_INIT_CHECKS = (
         ApexCheck("corners", ("T+", ApexCorner)),
@@ -886,12 +907,17 @@ class ApexPolygon(ApexShape):
         if value_error:
             raise ValueError(value_error)
 
+        corner: ApexCorner
+        _corners: Tuple[_ApexCornerExtra, ...] = tuple(
+            [_ApexCornerExtra(corner, corner.Point, corner.Radius, corner.Name)
+             for corner in self.Corners]
+        )
+
         # Determine the value of Clockwise attribute:
         corners: Tuple[ApexCorner, ...] = self.Corners
         corners_size: int = len(corners)
         index: int
         total_angle: float = 0.0
-        corner: ApexCorner
         for index, corner in enumerate(corners):
             start: Vector = corner.Point
             finish: Vector = corners[(index + 1) % corners_size].Point
@@ -911,6 +937,7 @@ class ApexPolygon(ApexShape):
         object.__setattr__(self, "Box", box)
         object.__setattr__(self, "Clockwise", total_angle >= 0.0)
         object.__setattr__(self, "InternalRadius", internal_radius)
+        object.__setattr__(self, "_corners", _corners)
 
     # ApexPolygon.__repr__():
     def __repr__(self) -> str:
@@ -1091,38 +1118,53 @@ class ApexPolygon(ApexShape):
     # ApexPolygon.geometries_get():
     def geometries_get(self, drawing: "ApexDrawing", tracing: str = "") -> Tuple[ApexGeometry, ...]:
         """Return the ApexPolygon ApexGeometries tuple."""
-        # This is a 4 pass process.
+        # Overview:
         #
-        # In absence of any arcs, pair of points produces a single line segment where the
-        # When an arc is requested, (i.e. radius > 0), an additional arc is added after
-        # the line segment, where the end of the line segment shares the same point as
-        # the beginning of the  arc.  In this case the preceding line segment is shortened
-        # to touch where the arc is.
+        # This code has the task of providing a sequence of ApexGeometry's that represent
+        # the polygon with whatever corner rounding is requested for each corner.
+        # A further complication is to structure the result ApexGeometry's so that they are
+        # neither under constrained nor over constrained.  This condition is called
+        # "fully constrained" and is a requirement for subsequent usage of the resulting sketches.
+        #
+        # Properly constraining arc's in FreeCAD is challenging.  After much research, it was
+        # determined that excellent way to provide a fully constrained arc is with the addition
+        # of a construction line.  A construction line is shown in blue in the sketch and is only
+        # used by the sketch constraint solver.  Each arc that is needed for a rounded corner
+        # generates a construction line from the arc center to the start point of the arc.
+        #
+        # To quickly summarize:
+        # * Each ApexCorner with a non-zero radius, produces a construction line segment and an arc.
+        # * Each ApexCorner with a zero radius only produces a single line segment.
+        # * There is one special case where two corners smoothly transition from one arc to
+        #   the next without any bridging line segment.
         #
         # Terminology:
         # * before: The point/arc/line before the current index.
         # * at: The point/arc/line at the current index.
         # * after: The point/arc/line after the current index.
+        #
+        # This is a 4 pass algorithm:
 
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>ApexPolygon.geometries_get(*)")
 
+        # Only compute the geometries once:
         if not self._geometries:
             # Some variable declarations (re)used in the code below:
-            after_corner: ApexCorner
+            after_corner: _ApexCornerExtra
             arc: Optional[ApexArcGeometry]
             at_arc: Optional[ApexArcGeometry]
             at_index: int
             at_line: Optional[ApexLineGeometry]
             at_name: str
-            at_corner: ApexCorner
-            before_corner: ApexCorner
+            at_corner: _ApexCornerExtra
+            before_corner: _ApexCornerExtra
 
-            # Pass 1: Create a list of *arcs* for each point with a non-zero radius.
+            # Pass 1: Create a list of *arcs* for each corner with a non-zero radius.
             # This list is 1-to-1 with the *points*.
 
-            corners: Tuple[ApexCorner, ...] = self.Corners
+            corners: Tuple[_ApexCornerExtra, ...] = self._corners
             corners_size: int = len(corners)
             arcs: List[Optional[ApexArcGeometry]] = []
             for at_index, at_corner in enumerate(corners):
@@ -1131,11 +1173,12 @@ class ApexPolygon(ApexShape):
                 at_name = at_corner.Name
                 arc_geometry: Optional[ApexArcGeometry] = None
                 if at_corner.Radius > 0.0:
-                    arc_geometry = ApexArcGeometry(drawing, before_corner, at_corner,
-                                                   after_corner, at_name, next_tracing)
+                    arc_geometry = ApexArcGeometry(drawing, before_corner.Corner, at_corner.Corner,
+                                                   after_corner.Corner, at_name, next_tracing)
+                    at_corner.Arc = arc_geometry
                 arcs.append(arc_geometry)
 
-            # Pass 2: Create any *lines* associated with a each point.
+            # Pass 2: Create any *lines* associated with a each corner.
             # This list is 1-to-1 with the points.  Occasionally, a line is omitted when 2 arcs
             # connect with no intermediate line segment.
             epsilon: float = 1e-9  # 1 nano meter (used to detect when two points are close.)
@@ -1172,20 +1215,22 @@ class ApexPolygon(ApexShape):
                 if generate_at_line:
                     line_geometry = ApexLineGeometry(drawing, start,
                                                      finish, at_name, tracing=next_tracing)
+                    at_corner.Line = line_geometry
                 lines.append(line_geometry)
 
-            # Pass 3: Assemble the final *geometries* list:
+            # Pass 3: Assemble the *final_geometries* list:
             geometries: List[ApexGeometry] = []
-            for at_index in range(corners_size):
-                at_line = lines[at_index]
+            # for at_index in range(corners_size):
+            for at_index, at_corner in enumerate(corners):
+                at_line = at_corner.Line
                 if at_line:
                     geometries.append(at_line)
-                at_arc = arcs[at_index]
+                at_arc = at_corner.Arc
                 if at_arc:
                     geometries.append(at_arc)
             final_geometries: Tuple[ApexGeometry, ...] = tuple(geometries)
 
-            # Pass 4: Make bi-directional doubly linked list geometries that is used for constraints
+            # Pass 4: Make bi-directional doubly linked geometries that is used for constraints
             # generation.
             at_geometry: ApexGeometry
             geometries_size: int = len(geometries)
@@ -2334,7 +2379,7 @@ def _integration_test() -> int:
         lower_left_bottom: ApexCorner = ApexCorner(
             Vector(left_x + notch_x, lower_y, 0.0), 0.0, "lower_left_bottom")
         lower_right: ApexCorner = ApexCorner(Vector(right_x, lower_y, 0.0), 0.0, "lower_right")
-        # upper_right: Vector = Vector(right_x, upper_y, 0.0, "upper_right", radius)
+        upper_right: Vector = ApexCorner(Vector(right_x, upper_y, 0.0), radius2, "upper_right")
         notch1: ApexCorner = ApexCorner(Vector(right_x, upper_y - notch_y, 0.0), radius1, "notch1")
         notch2: ApexCorner = ApexCorner(
             Vector(right_x - notch_x, upper_y - notch_y, 0.0), radius2, "notch2")
@@ -2342,13 +2387,17 @@ def _integration_test() -> int:
         upper_left: ApexCorner = ApexCorner(Vector(left_x, upper_y, 0.0), radius1, "upper_left")
         lower_left_left: ApexCorner = ApexCorner(
             Vector(left_x, lower_y + notch_y, 0.0), radius1, "lower_left_left")
+        _ = upper_right
+        _ = notch1
+        _ = notch2
+        _ = notch3
         contour_corners: Tuple[ApexCorner, ...] = (
             lower_left_bottom,
             lower_right,
-            # upper_right,
-            notch1,
-            notch2,
-            notch3,
+            upper_right,
+            # notch1,
+            # notch2,
+            # notch3,
             upper_left,
             lower_left_left,
         )

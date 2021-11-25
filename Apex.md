@@ -25,9 +25,6 @@ The Apex base classes are:
   Also, it called a box rather than a bounding box.
 * ApexCheck:
   This is some common code to check argument types for public functions.
-* ApexLength:
-  This is sub-class of *float* and provides a way of specifying a length in different units
-  (e.g. mm, cm, inch, ft, etc.) and an optional name.
 * ApexMaterial:
   This is a class that describes material properties.
   sub-class of Vector.
