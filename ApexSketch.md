@@ -26,14 +26,16 @@ Table of Contents:
 * 3 [Class ApexCircle](#apexcircle)
   * 3.1 [ApexCircle.\_\_post\_init](#apexcircle---post-init)
   * 3.2 [ApexCircle.constraints\_append](#apexcircle-constraints-append)
-  * 3.3 [ApexCircle.geometrys\_get](#apexcircle-geometrys-get)
+  * 3.3 [ApexCircle.geometries\_get](#apexcircle-geometries-get)
   * 3.4 [ApexCircle.reorient](#apexcircle-reorient)
 * 4 [Class ApexCircleGeometry](#apexcirclegeometry)
   * 4.1 [ApexCircleGeometry.\_\_init\_\_](#apexcirclegeometry---init--)
-  * 4.2 [ApexCircleGeometry.center](#apexcirclegeometry-center)
-  * 4.3 [ApexCircleGeometry.part\_element](#apexcirclegeometry-part-element)
-  * 4.4 [ApexCircleGeometry.radius](#apexcirclegeometry-radius)
-  * 4.5 [ApexCircleGeometry.type\_name](#apexcirclegeometry-type-name)
+  * 4.2 [ApexCircleGeometry.\_\_repr\_\_](#apexcirclegeometry---repr--)
+  * 4.3 [ApexCircleGeometry.\_\_str\_\_](#apexcirclegeometry---str--)
+  * 4.4 [ApexCircleGeometry.center](#apexcirclegeometry-center)
+  * 4.5 [ApexCircleGeometry.part\_element](#apexcirclegeometry-part-element)
+  * 4.6 [ApexCircleGeometry.radius](#apexcirclegeometry-radius)
+  * 4.7 [ApexCircleGeometry.type\_name](#apexcirclegeometry-type-name)
 * 5 [Class ApexCorner](#apexcorner)
   * 5.1 [ApexCorner.\_\_post\_init\_\_](#apexcorner---post-init--)
   * 5.2 [ApexCorner.\_\_repr\_\_](#apexcorner---repr--)
@@ -42,31 +44,27 @@ Table of Contents:
 * 6 [Class ApexDrawing](#apexdrawing)
   * 6.1 [ApexDrawing.\_\_post\_init\_\_](#apexdrawing---post-init--)
   * 6.2 [ApexDrawing.create\_datum\_plane](#apexdrawing-create-datum-plane)
-  * 6.3 [ApexDrawing.geometrys\_get](#apexdrawing-geometrys-get)
+  * 6.3 [ApexDrawing.geometries\_get](#apexdrawing-geometries-get)
   * 6.4 [ApexDrawing.plane\_process](#apexdrawing-plane-process)
   * 6.5 [ApexDrawing.point\_constraints\_append](#apexdrawing-point-constraints-append)
   * 6.6 [ApexDrawing.reorient](#apexdrawing-reorient)
   * 6.7 [ApexDrawing.sketch](#apexdrawing-sketch)
 * 7 [Class ApexGeometry](#apexgeometry)
   * 7.1 [ApexGeometry.\_\_init\_\_](#apexgeometry---init--)
-  * 7.2 [ApexGeometry.\_\_repr\_\_](#apexgeometry---repr--)
-  * 7.3 [ApexGeometry.\_\_str\_\_](#apexgeometry---str--)
-  * 7.4 [ApexGeometry.constraints\_append](#apexgeometry-constraints-append)
-  * 7.5 [ApexGeometry.drawing](#apexgeometry-drawing)
-  * 7.6 [ApexGeometry.finish](#apexgeometry-finish)
-  * 7.7 [ApexGeometry.index](#apexgeometry-index)
-  * 7.8 [ApexGeometry.name](#apexgeometry-name)
-  * 7.9 [ApexGeometry.part\_geometry](#apexgeometry-part-geometry)
-  * 7.10 [ApexGeometry.previous](#apexgeometry-previous)
-  * 7.11 [ApexGeometry.start](#apexgeometry-start)
-  * 7.12 [ApexGeometry.type\_name](#apexgeometry-type-name)
+  * 7.2 [ApexGeometry.constraints\_append](#apexgeometry-constraints-append)
+  * 7.3 [ApexGeometry.drawing](#apexgeometry-drawing)
+  * 7.4 [ApexGeometry.finish](#apexgeometry-finish)
+  * 7.5 [ApexGeometry.index](#apexgeometry-index)
+  * 7.6 [ApexGeometry.name](#apexgeometry-name)
+  * 7.7 [ApexGeometry.part\_geometry](#apexgeometry-part-geometry)
+  * 7.8 [ApexGeometry.previous](#apexgeometry-previous)
+  * 7.9 [ApexGeometry.start](#apexgeometry-start)
+  * 7.10 [ApexGeometry.type\_name](#apexgeometry-type-name)
 * 8 [Class ApexHole](#apexhole)
   * 8.1 [ApexHole.\_\_post\_init\_\_](#apexhole---post-init--)
   * 8.2 [ApexHole.body\_apply](#apexhole-body-apply)
-  * 8.3 [ApexHole.constraints\_append](#apexhole-constraints-append)
-  * 8.4 [ApexHole.geometrys\_get](#apexhole-geometrys-get)
-  * 8.5 [ApexHole.reorient](#apexhole-reorient)
-  * 8.6 [ApexHole.shape\_get](#apexhole-shape-get)
+  * 8.3 [ApexHole.reorient](#apexhole-reorient)
+  * 8.4 [ApexHole.shape\_get](#apexhole-shape-get)
 * 9 [Class ApexLineGeometry](#apexlinegeometry)
   * 9.1 [ApexLineGeometry.\_\_init\_\_](#apexlinegeometry---init--)
   * 9.2 [ApexLineGeometry.\_\_repr\_\_](#apexlinegeometry---repr--)
@@ -81,22 +79,20 @@ Table of Contents:
 * 10 [Class ApexOperation](#apexoperation)
   * 10.1 [ApexOperation.body\_apply](#apexoperation-body-apply)
   * 10.2 [ApexOperation.constraints\_append](#apexoperation-constraints-append)
-  * 10.3 [ApexOperation.geometrys\_get](#apexoperation-geometrys-get)
+  * 10.3 [ApexOperation.geometries\_get](#apexoperation-geometries-get)
   * 10.4 [ApexOperation.reorient](#apexoperation-reorient)
   * 10.5 [ApexOperation.shape\_get](#apexoperation-shape-get)
   * 10.6 [ApexOperation.show](#apexoperation-show)
 * 11 [Class ApexPad](#apexpad)
   * 11.1 [ApexPad.\_\_post\_init\_\_](#apexpad---post-init--)
   * 11.2 [ApexPad.body\_apply](#apexpad-body-apply)
-  * 11.3 [ApexPad.constraints\_append](#apexpad-constraints-append)
-  * 11.4 [ApexPad.geometrys\_get](#apexpad-geometrys-get)
-  * 11.5 [ApexPad.reorient](#apexpad-reorient)
-  * 11.6 [ApexPad.shape\_get](#apexpad-shape-get)
-  * 11.7 [ApexPad.shape\_get](#apexpad-shape-get)
+  * 11.3 [ApexPad.reorient](#apexpad-reorient)
+  * 11.4 [ApexPad.shape\_get](#apexpad-shape-get)
 * 12 [Class ApexPocket](#apexpocket)
   * 12.1 [ApexPocket.\_\_post\_init\_\_](#apexpocket---post-init--)
   * 12.2 [ApexPocket.body\_apply](#apexpocket-body-apply)
-  * 12.3 [ApexPocket.constraints\_append](#apexpocket-constraints-append)
+  * 12.3 [ApexPocket.reorient](#apexpocket-reorient)
+  * 12.4 [ApexPocket.shape\_get](#apexpocket-shape-get)
 * 13 [Class ApexPointGeometry](#apexpointgeometry)
   * 13.1 [ApexPointGeometry.\_\_init\_\_](#apexpointgeometry---init--)
   * 13.2 [ApexPointGeometry.\_\_str\_\_](#apexpointgeometry---str--)
@@ -107,13 +103,14 @@ Table of Contents:
   * 14.1 [ApexPolygon.\_\_post\_init\_\_](#apexpolygon---post-init--)
   * 14.2 [ApexPolygon.\_\_repr\_\_](#apexpolygon---repr--)
   * 14.3 [ApexPolygon.\_\_str\_\_](#apexpolygon---str--)
-  * 14.4 [ApexPolygon.constraints\_append](#apexpolygon-constraints-append)
-  * 14.5 [ApexPolygon.geometrys\_get](#apexpolygon-geometrys-get)
-  * 14.6 [ApexPolygon.reorient](#apexpolygon-reorient)
-  * 14.7 [ApexPolygon.show](#apexpolygon-show)
+  * 14.4 [ApexPolygon.\_unit\_tests](#apexpolygon--unit-tests)
+  * 14.5 [ApexPolygon.constraints\_append](#apexpolygon-constraints-append)
+  * 14.6 [ApexPolygon.geometries\_get](#apexpolygon-geometries-get)
+  * 14.7 [ApexPolygon.reorient](#apexpolygon-reorient)
+  * 14.8 [ApexPolygon.show](#apexpolygon-show)
 * 15 [Class ApexShape](#apexshape)
   * 15.1 [ApexShape.constraints\_append](#apexshape-constraints-append)
-  * 15.2 [ApexShape.geometrys\_get](#apexshape-geometrys-get)
+  * 15.2 [ApexShape.geometries\_get](#apexshape-geometries-get)
   * 15.3 [ApexShape.reorient](#apexshape-reorient)
   * 15.4 [ApexShape.show](#apexshape-show)
 
@@ -126,9 +123,18 @@ the FreeCAD Path workbench.
 
 The are 4 base classes of used in this module:
 * ApexDrawing: Create one or more FreeCAD Sketches and applies Part Design and Path operations.
-* ApexShape: This is the geometric shapes that go into the ApexDrawing.
 * ApexOperation: This is the Part Design and Path operation information.
-* ApexGeometry: This is an internal class used to construct a fully constrained FreeCAD sketch.
+* ApexShape: This is the geometric shapes that go into the ApexDrawing.
+* ApexGeometry: The class of objects represents 2D geometric constructs (point, line, arc, circle).
+
+There is a rich set of FreeCAD PartDesign operations that can be applied to sketches.
+The construction operations are pad, revolve, loft, sweep and helix.
+The subtraction operations are pocket, hole, groove, loft, sweep and helix.
+The current ApexOperation sub-classes are:
+* ApexPad: Performs a FreeCAD Part Design pad operation.
+* ApexPocket: Performs a FreeCAD Part Design pocket operation
+* ApexHole: Performs a FreeCAD Part Design pocket operation
+Each of these these operations takes either an ApexCircle or an ApexPolygon as an argument.
 
 The ApexShape sub-classes are:
 * ApexCircle: This represents a circle in the ApexDrawing.
@@ -137,14 +143,11 @@ The ApexShape sub-classes are:
 * ApexCorner: This represents one corner of an ApexPolygon and specifies the fillet radius.
 Each ApexShape has an associated ApexOperation (see below).
 
-There is a rich set of FreeCAD PartDesign operations that can be applied to sketches.
-The construction operations are pad, revolve, loft, sweep and helix.
-The subtraction operations are pocket, hole, groove, loft, sweep and helix.
-
-The current ApexOperation sub-classes are:
-* ApexPad: Performs a FreeCAD Part Design pad operation.
-* ApexPocket: Performs a FreeCAD Part Design pocket operation
-* ApexHole: Performs a FreeCAD Part Design pocket operation
+The internal ApexGeometry sub-classes are:
+* ApexPoint: This represents a single point geometry.
+* ApexLine: This represents a line segment geometry.
+* ApexArc: This represents an arc on a circle geometry.
+* ApexCircle This represents a circle geometry.
 
 All of this information is collected into an ApexDrawing instance.
 The ApexDrawing.body_apply() takes a FreeCAD Part Design Body and applies operations drawing to it.
@@ -165,7 +168,7 @@ Initialize an ApexArcGeometry.
 
 def \_\_str\_\_(self) -> *str*:
 
-Return string reprentation of ApexGeometry.
+Return string representation of ApexGeometry.
 
 ### 2.3 ApexArcGeometry.apex <a name="apexarcgeometry-apex"></a>
 
@@ -303,9 +306,9 @@ def *constraints\_append*(self, *drawing*:  "ApexDrawing", *constraints*:  List[
 
 Return the ApexCircleGeometry constraints.
 
-### 3.3 ApexCircle.geometrys\_get <a name="apexcircle-geometrys-get"></a>
+### 3.3 ApexCircle.geometries\_get <a name="apexcircle-geometries-get"></a>
 
-def *geometrys\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[ApexGeometry, ...]:
+def *geometries\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[ApexGeometry, ...]:
 
 Return the ApexCircleGeometry.
 
@@ -333,25 +336,37 @@ def \_\_init\_\_(self, *drawing*:  "ApexDrawing", *center*:  Vector, *radius*:  
 
 Initialize a ApexCircleGeometry.
 
-### 4.2 ApexCircleGeometry.center <a name="apexcirclegeometry-center"></a>
+### 4.2 ApexCircleGeometry.\_\_repr\_\_ <a name="apexcirclegeometry---repr--"></a>
+
+def \_\_repr\_\_(self) -> *str*:
+
+Return string representation of ApexGeometry.
+
+### 4.3 ApexCircleGeometry.\_\_str\_\_ <a name="apexcirclegeometry---str--"></a>
+
+def \_\_str\_\_(self) -> *str*:
+
+Return string representation of ApexGeometry.
+
+### 4.4 ApexCircleGeometry.center <a name="apexcirclegeometry-center"></a>
 
 def *center*(self) -> Vector:  # *pragma*:  *no* *unit* *cover*
 
 Return the ApexCircleGeometry center.
 
-### 4.3 ApexCircleGeometry.part\_element <a name="apexcirclegeometry-part-element"></a>
+### 4.5 ApexCircleGeometry.part\_element <a name="apexcirclegeometry-part-element"></a>
 
 def *part\_geometry*(self) -> PartGeometry:
 
 Return the ApexCircleGeometry PartGeometry.
 
-### 4.4 ApexCircleGeometry.radius <a name="apexcirclegeometry-radius"></a>
+### 4.6 ApexCircleGeometry.radius <a name="apexcirclegeometry-radius"></a>
 
 def *radius*(self) -> *float*:  # *pragma*:  *no* *unit* *cover*
 
 Return the ApexCircleGeometry radius.
 
-### 4.5 ApexCircleGeometry.type\_name <a name="apexcirclegeometry-type-name"></a>
+### 4.7 ApexCircleGeometry.type\_name <a name="apexcirclegeometry-type-name"></a>
 
 def *type\_name*(self) -> *str*:  # *pragma*:  *no* *unit* *cover*
 
@@ -367,9 +382,9 @@ Usage: ApexCorner(point, radius, name)
 
 Attributes:
 * *Point* (Vector): A point for a polygon.
-* *Radius (float): The corner radius in millmeters.  (Default: 0.0)
+* *Radius (float): The corner radius in millimeters.  (Default: 0.0)
 * *Name* (str): The corner name. (Default: "")
-* *Box* (ApexBox): Box that encloses the corner as if it was a sphere of size Radis.
+* *Box* (ApexBox): A computed ApexBox that encloses corner as if it was a sphere of size Radius.
 
 
 ### 5.1 ApexCorner.\_\_post\_init\_\_ <a name="apexcorner---post-init--"></a>
@@ -431,9 +446,9 @@ Arguments:
 * Returns:
   * (Part.ApexGeometry) that is the datum\_plane.
 
-### 6.3 ApexDrawing.geometrys\_get <a name="apexdrawing-geometrys-get"></a>
+### 6.3 ApexDrawing.geometries\_get <a name="apexdrawing-geometries-get"></a>
 
-def *point\_geometrys\_get*(self, *point*:  Vector, *tracing*:  *str* = "") -> Tuple["ApexGeometry", ...]:
+def *point\_geometries\_get*(self, *point*:  Vector, *tracing*:  *str* = "") -> Tuple["ApexGeometry", ...]:
 
 Return the ApexPointGeometry Geometry's.
 
@@ -474,7 +489,10 @@ Arguments:
 
 class ApexGeometry(object):
 
-Base class a sketch geometry.
+ApexGeometry: Internal Base class for 2D geometry objects.
+
+This is basically a wrapper around the arguments need to create Sketch elements.
+It is mutable and always contains a bunch of helper functions.
 
 ### 7.1 ApexGeometry.\_\_init\_\_ <a name="apexgeometry---init--"></a>
 
@@ -482,19 +500,7 @@ def \_\_init\_\_(self, *drawing*:  "ApexDrawing", *start*:  Vector, *finish*:  V
 
 Initialize a ApexGeometry.
 
-### 7.2 ApexGeometry.\_\_repr\_\_ <a name="apexgeometry---repr--"></a>
-
-def \_\_repr\_\_(self) -> *str*:
-
-Return string reprentation of ApexGeometry.
-
-### 7.3 ApexGeometry.\_\_str\_\_ <a name="apexgeometry---str--"></a>
-
-def \_\_str\_\_(self) -> *str*:
-
-Return string reprentation of ApexGeometry.
-
-### 7.4 ApexGeometry.constraints\_append <a name="apexgeometry-constraints-append"></a>
+### 7.2 ApexGeometry.constraints\_append <a name="apexgeometry-constraints-append"></a>
 
 def *constraints\_append*(self, *drawing*:  "ApexDrawing", *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
 
@@ -505,49 +511,49 @@ Arguments:
 * *constraints* (List[SketcherConstraint]): The constraints list to append to.
 
 
-### 7.5 ApexGeometry.drawing <a name="apexgeometry-drawing"></a>
+### 7.3 ApexGeometry.drawing <a name="apexgeometry-drawing"></a>
 
 def *drawing*(self) -> "ApexDrawing":  # *pragma*:  *no* *unit* *test*
 
 Return the ApexGeometry ApexDrawing.
 
-### 7.6 ApexGeometry.finish <a name="apexgeometry-finish"></a>
+### 7.4 ApexGeometry.finish <a name="apexgeometry-finish"></a>
 
 def *finish*(self) -> Vector:  # *pragma*:  *no* *unit* *test*
 
 Return the ApexGeometry finish point.
 
-### 7.7 ApexGeometry.index <a name="apexgeometry-index"></a>
+### 7.5 ApexGeometry.index <a name="apexgeometry-index"></a>
 
 def *index*(self) -> *int*:
 
 Return the ApexGeometry index.
 
-### 7.8 ApexGeometry.name <a name="apexgeometry-name"></a>
+### 7.6 ApexGeometry.name <a name="apexgeometry-name"></a>
 
 def *name*(self) -> *str*:
 
 Return ApexGeometry name.
 
-### 7.9 ApexGeometry.part\_geometry <a name="apexgeometry-part-geometry"></a>
+### 7.7 ApexGeometry.part\_geometry <a name="apexgeometry-part-geometry"></a>
 
 def *part\_geometry*(self) -> PartGeometry:
 
 Return the PartGeometry associated with ApexGeometry.
 
-### 7.10 ApexGeometry.previous <a name="apexgeometry-previous"></a>
+### 7.8 ApexGeometry.previous <a name="apexgeometry-previous"></a>
 
 def *previous*(self) -> "ApexGeometry":  # *pragma*:  *no* *unit* *test*
 
 Return the previous Part ApexGeometry in circular list.
 
-### 7.11 ApexGeometry.start <a name="apexgeometry-start"></a>
+### 7.9 ApexGeometry.start <a name="apexgeometry-start"></a>
 
 def *start*(self) -> Vector:  # *pragma*:  *no* *unit* *test*
 
 Return the ApexGeometry start point.
 
-### 7.12 ApexGeometry.type\_name <a name="apexgeometry-type-name"></a>
+### 7.10 ApexGeometry.type\_name <a name="apexgeometry-type-name"></a>
 
 def *type\_name*(self) -> *str*:
 
@@ -576,28 +582,11 @@ Verify argument types.
 
 ### 8.2 ApexHole.body\_apply <a name="apexhole-body-apply"></a>
 
-def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *sketch*:  "Sketcher.SketchObject", *gui\_document*:  Optional["Gui.ActiveDocument"]) -> None:
+def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *sketch*:  "Sketcher.SketchObject", *gui\_document*:  Optional["Gui.ActiveDocument"], *tracing*:  *str* = "") -> None:
 
 Apply hole operation to PartDesign body.
 
-### 8.3 ApexHole.constraints\_append <a name="apexhole-constraints-append"></a>
-
-def *constraints\_append*(self, *drawing*:  "ApexDrawing", *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
-
-Append the ApexOperation constraints to drawing.
-
-Arguments:
-* *drawing* (ApexDrawing): The drawing to use.
-* *constraints* (List[SketcherConstraint]): The constraints list to append to.
-
-
-### 8.4 ApexHole.geometrys\_get <a name="apexhole-geometrys-get"></a>
-
-def *geometrys\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[ApexGeometry, ...]:
-
-Return the ApexHole drawing geometrys.
-
-### 8.5 ApexHole.reorient <a name="apexhole-reorient"></a>
+### 8.3 ApexHole.reorient <a name="apexhole-reorient"></a>
 
 def *reorient*(self, *placement*:  Placement, *suffix*:  *str* = None, *tracing*:  *str* = "") -> "ApexHole":
 
@@ -609,7 +598,7 @@ Arguments:
   that an empty name is to be used.  (Default: "")
 
 
-### 8.6 ApexHole.shape\_get <a name="apexhole-shape-get"></a>
+### 8.4 ApexHole.shape\_get <a name="apexhole-shape-get"></a>
 
 def *shape\_get*(self) -> ApexShape:
 
@@ -695,7 +684,7 @@ Attributes:
 
 ### 10.1 ApexOperation.body\_apply <a name="apexoperation-body-apply"></a>
 
-def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *sketch*:  "Sketcher.SketchObject", *gui\_document*:  Optional["Gui.ActiveDocument"]) -> None:
+def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *sketch*:  "Sketcher.SketchObject", *gui\_document*:  Optional["Gui.ActiveDocument"], *tracing*:  *str* = "") -> None:
 
 Apply operation to a Part Design body.
 
@@ -710,11 +699,11 @@ Arguments:
 * *constraints* (List[SketcherConstraint]): The constraints list to append to.
 
 
-### 10.3 ApexOperation.geometrys\_get <a name="apexoperation-geometrys-get"></a>
+### 10.3 ApexOperation.geometries\_get <a name="apexoperation-geometries-get"></a>
 
-def *geometrys\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[ApexGeometry, ...]:
+def *geometries\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[ApexGeometry, ...]:
 
-Return the geometrys associated with an operation.
+Return the geometries associated with an operation.
 
 ### 10.4 ApexOperation.reorient <a name="apexoperation-reorient"></a>
 
@@ -763,28 +752,11 @@ Verify argument types.
 
 ### 11.2 ApexPad.body\_apply <a name="apexpad-body-apply"></a>
 
-def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *sketch*:  "Sketcher.SketchObject", *gui\_document*:  Optional["Gui.ActiveDocument"]) -> None:
+def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *sketch*:  "Sketcher.SketchObject", *gui\_document*:  Optional["Gui.ActiveDocument"], *tracing*:  *str* = "") -> None:
 
 Apply ApexPad opertation to PartDesign Body.
 
-### 11.3 ApexPad.constraints\_append <a name="apexpad-constraints-append"></a>
-
-def *constraints\_append*(self, *drawing*:  "ApexDrawing", *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
-
-Append the ApexOperation constraints to drawing.
-
-Arguments:
-* *drawing* (ApexDrawing): The drawing to use.
-* *constraints* (List[SketcherConstraint]): The constraints list to append to.
-
-
-### 11.4 ApexPad.geometrys\_get <a name="apexpad-geometrys-get"></a>
-
-def *geometrys\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[ApexGeometry, ...]:
-
-Return the geometrys associated with an operation.
-
-### 11.5 ApexPad.reorient <a name="apexpad-reorient"></a>
+### 11.3 ApexPad.reorient <a name="apexpad-reorient"></a>
 
 def *reorient*(self, *placement*:  Placement, *suffix*:  *str* = None, *tracing*:  *str* = "") -> "ApexPad":
 
@@ -796,17 +768,11 @@ Arguments:
   that an empty name is to be used.  (Default: "")
 
 
-### 11.6 ApexPad.shape\_get <a name="apexpad-shape-get"></a>
+### 11.4 ApexPad.shape\_get <a name="apexpad-shape-get"></a>
 
 def *shape\_get*(self) -> ApexShape:
 
 Return the associated ApexShape's.
-
-### 11.7 ApexPad.shape\_get <a name="apexpad-shape-get"></a>
-
-def *shape\_get*(self) -> ApexShape:
-
-Return the ApexPad ApexShape.
 
 ## 12 Class ApexPocket <a name="apexpocket"></a>
 
@@ -831,20 +797,27 @@ Verify argument types.
 
 ### 12.2 ApexPocket.body\_apply <a name="apexpocket-body-apply"></a>
 
-def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *sketch*:  "Sketcher.SketchObject", *gui\_document*:  Optional["Gui.ActiveDocument"]) -> None:
+def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *sketch*:  "Sketcher.SketchObject", *gui\_document*:  Optional["Gui.ActiveDocument"], *tracing*:  *str* = "") -> None:
 
 Apply pocket operation to PartDesign Body.
 
-### 12.3 ApexPocket.constraints\_append <a name="apexpocket-constraints-append"></a>
+### 12.3 ApexPocket.reorient <a name="apexpocket-reorient"></a>
 
-def *constraints\_append*(self, *drawing*:  "ApexDrawing", *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
+def *reorient*(self, *placement*:  Placement, *suffix*:  *str* = None, *tracing*:  *str* = "") -> "ApexPocket":
 
-Append the ApexPocket constraints to drawing.
+Reorient an ApexPocket .
 
 Arguments:
-* *drawing* (ApexDrawing): The drawing to use.
-* *constraints* (List[SketcherConstraint]): The constraints list to append to.
+* *placement* (Placement): The FreeCAD Placement reorient with.
+* *suffix* (str): The suffix to append to the current name string.  None, specifies
+  that an empty name is to be used.  (Default: "")
 
+
+### 12.4 ApexPocket.shape\_get <a name="apexpocket-shape-get"></a>
+
+def *shape\_get*(self) -> ApexShape:
+
+Return the ApexPad ApexShape.
 
 ## 13 Class ApexPointGeometry <a name="apexpointgeometry"></a>
 
@@ -920,19 +893,25 @@ Arguments:
 * *short* (bool): If true, a shorter versions returned.
 
 
-### 14.4 ApexPolygon.constraints\_append <a name="apexpolygon-constraints-append"></a>
+### 14.4 ApexPolygon.\_unit\_tests <a name="apexpolygon--unit-tests"></a>
+
+def \_unit\_tests() -> None:
+
+Run ApexPolygon unit tests.
+
+### 14.5 ApexPolygon.constraints\_append <a name="apexpolygon-constraints-append"></a>
 
 def *constraints\_append*(self, *drawing*:  "ApexDrawing", *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
 
 Return the ApexPolygon constraints for a ApexDrawing.
 
-### 14.5 ApexPolygon.geometrys\_get <a name="apexpolygon-geometrys-get"></a>
+### 14.6 ApexPolygon.geometries\_get <a name="apexpolygon-geometries-get"></a>
 
-def *geometrys\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[ApexGeometry, ...]:
+def *geometries\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[ApexGeometry, ...]:
 
-Return the ApexPolygon ApexGeometrys tuple.
+Return the ApexPolygon ApexGeometries tuple.
 
-### 14.6 ApexPolygon.reorient <a name="apexpolygon-reorient"></a>
+### 14.7 ApexPolygon.reorient <a name="apexpolygon-reorient"></a>
 
 def *reorient*(self, *placement*:  Placement, *suffix*:  Optional[str] = "", *tracing*:  *str* = "") -> "ApexPolygon":
 
@@ -945,7 +924,7 @@ Arguments:
   A suffix to append to the name.  If None, an empty name is used. (Default: "")
 
 
-### 14.7 ApexPolygon.show <a name="apexpolygon-show"></a>
+### 14.8 ApexPolygon.show <a name="apexpolygon-show"></a>
 
 def *show*(self) -> *str*:
 
@@ -970,11 +949,11 @@ Arguments:
 * *constraints* (List[SketcherConstraint]): The constraints list to append to.
 
 
-### 15.2 ApexShape.geometrys\_get <a name="apexshape-geometrys-get"></a>
+### 15.2 ApexShape.geometries\_get <a name="apexshape-geometries-get"></a>
 
-def *geometrys\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[ApexGeometry, ...]:
+def *geometries\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[ApexGeometry, ...]:
 
-Return the ApexShape ApexGeometrys tuple.
+Return the ApexShape ApexGeometries tuple.
 
 Arguments:
 * *drawing* (ApexDrawing): The associated drawing to use for geometry extraction.

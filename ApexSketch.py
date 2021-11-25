@@ -7,9 +7,18 @@ the FreeCAD Path workbench.
 
 The are 4 base classes of used in this module:
 * ApexDrawing: Create one or more FreeCAD Sketches and applies Part Design and Path operations.
-* ApexShape: This is the geometric shapes that go into the ApexDrawing.
 * ApexOperation: This is the Part Design and Path operation information.
-* ApexGeometry: This is an internal class used to construct a fully constrained FreeCAD sketch.
+* ApexShape: This is the geometric shapes that go into the ApexDrawing.
+* ApexGeometry: The class of objects represents 2D geometric constructs (point, line, arc, circle).
+
+There is a rich set of FreeCAD PartDesign operations that can be applied to sketches.
+The construction operations are pad, revolve, loft, sweep and helix.
+The subtraction operations are pocket, hole, groove, loft, sweep and helix.
+The current ApexOperation sub-classes are:
+* ApexPad: Performs a FreeCAD Part Design pad operation.
+* ApexPocket: Performs a FreeCAD Part Design pocket operation
+* ApexHole: Performs a FreeCAD Part Design pocket operation
+Each of these these operations takes either an ApexCircle or an ApexPolygon as an argument.
 
 The ApexShape sub-classes are:
 * ApexCircle: This represents a circle in the ApexDrawing.
@@ -18,14 +27,11 @@ The ApexShape sub-classes are:
 * ApexCorner: This represents one corner of an ApexPolygon and specifies the fillet radius.
 Each ApexShape has an associated ApexOperation (see below).
 
-There is a rich set of FreeCAD PartDesign operations that can be applied to sketches.
-The construction operations are pad, revolve, loft, sweep and helix.
-The subtraction operations are pocket, hole, groove, loft, sweep and helix.
-
-The current ApexOperation sub-classes are:
-* ApexPad: Performs a FreeCAD Part Design pad operation.
-* ApexPocket: Performs a FreeCAD Part Design pocket operation
-* ApexHole: Performs a FreeCAD Part Design pocket operation
+The internal ApexGeometry sub-classes are:
+* ApexPoint: This represents a single point geometry.
+* ApexLine: This represents a line segment geometry.
+* ApexArc: This represents an arc on a circle geometry.
+* ApexCircle This represents a circle geometry.
 
 All of this information is collected into an ApexDrawing instance.
 The ApexDrawing.body_apply() takes a FreeCAD Part Design Body and applies operations drawing to it.
@@ -58,6 +64,8 @@ import Sketcher  # type: ignore
 
 PartGeometry = Union[Part.Circle, Part.LineSegment, Part.Point, Part.Arc]
 
+# In general, the classes are organized from lowest level to highest level.
+# This is primarily to avoid have to add addition quotes around mypy type hints.
 
 # ApexCorner:
 @dataclass(frozen=True)
@@ -68,16 +76,16 @@ class ApexCorner(object):
 
     Attributes:
     * *Point* (Vector): A point for a polygon.
-    * *Radius (float): The corner radius in millmeters.  (Default: 0.0)
+    * *Radius (float): The corner radius in millimeters.  (Default: 0.0)
     * *Name* (str): The corner name. (Default: "")
-    * *Box* (ApexBox): Box that encloses the corner as if it was a sphere of size Radis.
+    * *Box* (ApexBox): A computed ApexBox that encloses corner as if it was a sphere of size Radius.
 
     """
 
     Point: Vector
-    Radius: float = 0.0
+    Radius: float = field(default=0.0)
+    Name: str = field(default="")
     Box: ApexBox = field(init=False)
-    Name: str = ""
 
     POST_INIT_CHECKS = (
         ApexCheck("Point", (Vector,)),
@@ -156,7 +164,11 @@ class ApexCorner(object):
 
 # ApexGeometry:
 class ApexGeometry(object):
-    """Base class a sketch geometry."""
+    """ApexGeometry: Internal Base class for 2D geometry objects.
+
+    This is basically a wrapper around the arguments need to create Sketch elements.
+    It is mutable and always contains a bunch of helper functions.
+    """
 
     # ApexGeometry.__init__():
     def __init__(self, drawing: "ApexDrawing",
@@ -258,14 +270,14 @@ class ApexGeometry(object):
         raise NotImplementedError(f"{self}.kind() not implemented yet")
 
     # ApexGeometry.__repr__():
-    def __repr__(self) -> str:
-        """Return string reprentation of ApexGeometry."""
-        return self.__str__()
+    # def __repr__(self) -> str:
+    #     """Return string representation of ApexGeometry."""
+    #     return self.__str__()
 
     # ApexGeometry.__str__():
-    def __str__(self) -> str:
-        """Return string reprentation of ApexGeometry."""
-        raise NotImplementedError(f"ApexGeometry.__str__() not implemented")
+    # def __str__(self) -> str:
+    #     """Return string representation of ApexGeometry."""
+    #     raise NotImplementedError(f"ApexGeometry.__str__() not implemented for {type(self)}")
 
     # ApexGeometry.constraints_append():
     def constraints_append(self, drawing: "ApexDrawing", constraints: List[Sketcher.Constraint],
@@ -277,7 +289,8 @@ class ApexGeometry(object):
         * *constraints* (List[SketcherConstraint]): The constraints list to append to.
 
         """
-        raise NotImplementedError(f"ApexGeometry.constraints_append() not implmentent {self}")
+        raise NotImplementedError(
+            f"ApexGeometry.constraints_append() not implmented for {type(self)}")
 
 
 # ApexArcGeometry:
@@ -403,6 +416,7 @@ class ApexArcGeometry(ApexGeometry):
         # * |SC| = |AC| * sin(<SAC)
         # Solve for |AC| given |SC| and sin(<SAC):
         # * |AC| = |SC| / sin(<SAC) = r / sin(<SAC)
+        assert sac_angle != 0.0, (begin, at, end)
         ac_length: float = r / math.sin(sac_angle)  # |AC|
         if trace_level >= 2:  # pragma: no unit cover
             print(f"{tracing}{ac_length=:.2f}")
@@ -602,12 +616,12 @@ class ApexArcGeometry(ApexGeometry):
 
     # ApexArcGeometry.__repr__():
     # def __repr__(self) -> str:
-    #     """Return string reprentation of ApexGeometry."""
+    #     """Return string representation of ApexGeometry."""
     #     return self.__str__()
 
     # ApexArcGeometry.__str__():
     def __str__(self) -> str:
-        """Return string reprentation of ApexGeometry."""
+        """Return string representation of ApexGeometry."""
         return f"ApexArcGeometry({self._begin}, {self._at}, {self._finish})"
 
 
@@ -648,6 +662,16 @@ class ApexCircleGeometry(ApexGeometry):
     def type_name(self) -> str:  # pragma: no unit cover
         """Return the ApexCircleGeometry type name."""
         return "ApexCircleGeometry"
+
+    # ApexCircleGeometry.__repr__():
+    def __repr__(self) -> str:
+        """Return string representation of ApexGeometry."""
+        return self.__str__()
+
+    # ApexCircleGeometry.__str__():
+    def __str__(self) -> str:
+        """Return string representation of ApexGeometry."""
+        return f"ApexArcGeometry({self._center}, {self._radius})"
 
 
 # ApexLineGeometry:
@@ -792,9 +816,9 @@ class ApexShape(object):
         """
         raise NotImplementedError()
 
-    # ApexShape.geometrys_get():
-    def geometrys_get(self, drawing: "ApexDrawing", tracing: str = "") -> Tuple[ApexGeometry, ...]:
-        """Return the ApexShape ApexGeometrys tuple.
+    # ApexShape.geometries_get():
+    def geometries_get(self, drawing: "ApexDrawing", tracing: str = "") -> Tuple[ApexGeometry, ...]:
+        """Return the ApexShape ApexGeometries tuple.
 
         Arguments:
         * *drawing* (ApexDrawing): The associated drawing to use for geometry extraction.
@@ -847,7 +871,7 @@ class ApexPolygon(ApexShape):
     # Computed attributes:
     InternalRadius: float = field(init=False)
     Clockwise: bool = field(init=False)
-    _geometrys: Optional[Tuple[ApexGeometry, ...]] = None
+    _geometries: Optional[Tuple[ApexGeometry, ...]] = None
 
     POST_INIT_CHECKS = (
         ApexCheck("corners", ("T+", ApexCorner)),
@@ -922,30 +946,30 @@ class ApexPolygon(ApexShape):
                   f"*, {len(constraints)=}):")
 
         origin_index: int = drawing.OriginIndex
-        geometrys: Optional[Tuple[ApexGeometry, ...]] = (
-            self.geometrys_get(drawing, tracing=next_tracing))
-        assert geometrys, "ApexGeometrys not set"
-        geometrys_size: int = len(geometrys)
+        geometries: Optional[Tuple[ApexGeometry, ...]] = (
+            self.geometries_get(drawing, tracing=next_tracing))
+        assert geometries, "ApexGeometries not set"
+        geometries_size: int = len(geometries)
         if tracing:
-            print(f"{tracing}|geometrys| == {geometrys_size}")
+            print(f"{tracing}|geometries| == {geometries_size}")
         # degrees45: float = math.pi / 4.0
         # degrees135: float = 3.0 * degrees45
         # deg: Callable[[float], float] = math.degrees
 
         at_index: int
         # Iterate through adjacent ApexGeometry pairs and apply constraints;
-        for at_index, at_geometry in enumerate(geometrys):
+        for at_index, at_geometry in enumerate(geometries):
             # Grab a bunch of field from *at_geometry* and *before_geometry*
             at_geometry_index: int = at_geometry.index
             at_name: str = at_geometry.name
             at_start: Vector = at_geometry.start
             at_start_key: int = at_geometry.start_key
-            before_geometry: ApexGeometry = geometrys[(at_index - 1) % geometrys_size]
+            before_geometry: ApexGeometry = geometries[(at_index - 1) % geometries_size]
             before_geometry_index: int = before_geometry.index
             before_name: str = before_geometry.name
             # before_finish: Vector = before_geometry.finish
             before_finish_key: int = before_geometry.finish_key
-            after_geometry: ApexGeometry = geometrys[(at_index + 1) % geometrys_size]
+            after_geometry: ApexGeometry = geometries[(at_index + 1) % geometries_size]
             assert at_geometry is not before_geometry
             if tracing:
                 print("")
@@ -1015,7 +1039,7 @@ class ApexPolygon(ApexShape):
             # an X and Y.
             if before_arc or at_arc:
                 # Make coincident:
-                # Just force the two geometrys to be tangent:
+                # Just force the two geometries to be tangent:
                 constraints.append(Sketcher.Constraint(
                     "Tangent",
                     before_geometry_index, before_finish_key,
@@ -1064,9 +1088,9 @@ class ApexPolygon(ApexShape):
             print(f"{tracing}<=ApexPolygon.contraints_append('{self.Name}', "
                   f"*, , {len(constraints)=})")
 
-    # ApexPolygon.geometrys_get():
-    def geometrys_get(self, drawing: "ApexDrawing", tracing: str = "") -> Tuple[ApexGeometry, ...]:
-        """Return the ApexPolygon ApexGeometrys tuple."""
+    # ApexPolygon.geometries_get():
+    def geometries_get(self, drawing: "ApexDrawing", tracing: str = "") -> Tuple[ApexGeometry, ...]:
+        """Return the ApexPolygon ApexGeometries tuple."""
         # This is a 4 pass process.
         #
         # In absence of any arcs, pair of points produces a single line segment where the
@@ -1082,9 +1106,9 @@ class ApexPolygon(ApexShape):
 
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>ApexPolygon.geometrys_get(*)")
+            print(f"{tracing}=>ApexPolygon.geometries_get(*)")
 
-        if not self._geometrys:
+        if not self._geometries:
             # Some variable declarations (re)used in the code below:
             after_corner: ApexCorner
             arc: Optional[ApexArcGeometry]
@@ -1150,29 +1174,29 @@ class ApexPolygon(ApexShape):
                                                      finish, at_name, tracing=next_tracing)
                 lines.append(line_geometry)
 
-            # Pass 3: Assemble the final *geometrys* list:
-            geometrys: List[ApexGeometry] = []
+            # Pass 3: Assemble the final *geometries* list:
+            geometries: List[ApexGeometry] = []
             for at_index in range(corners_size):
                 at_line = lines[at_index]
                 if at_line:
-                    geometrys.append(at_line)
+                    geometries.append(at_line)
                 at_arc = arcs[at_index]
                 if at_arc:
-                    geometrys.append(at_arc)
-            final_geometrys: Tuple[ApexGeometry, ...] = tuple(geometrys)
+                    geometries.append(at_arc)
+            final_geometries: Tuple[ApexGeometry, ...] = tuple(geometries)
 
-            # Pass 4: Make bi-directional doubly linked list geometrys that is used for constraints
+            # Pass 4: Make bi-directional doubly linked list geometries that is used for constraints
             # generation.
             at_geometry: ApexGeometry
-            geometrys_size: int = len(geometrys)
-            for at_index, geometry in enumerate(final_geometrys):
-                geometry.previous = geometrys[(at_index - 1) % geometrys_size]
-                geometry.next = geometrys[(at_index + 1) % geometrys_size]
+            geometries_size: int = len(geometries)
+            for at_index, geometry in enumerate(final_geometries):
+                geometry.previous = geometries[(at_index - 1) % geometries_size]
+                geometry.next = geometries[(at_index + 1) % geometries_size]
 
-            self._geometrys = final_geometrys
+            self._geometries = final_geometries
         if tracing:
-            print(f"{tracing}<=ApexPolygon.geometrys_get(*)=>|*|={len(self._geometrys)}")
-        return self._geometrys
+            print(f"{tracing}<=ApexPolygon.geometries_get(*)=>|*|={len(self._geometries)}")
+        return self._geometries
 
     REORIENT_CHECKS = (
         ApexCheck("placement", (Placement,)),
@@ -1209,6 +1233,27 @@ class ApexPolygon(ApexShape):
             print(f"{tracing}<=ApexPolygon.reorient{arguments}=>*")
         return result
 
+    # ApexPolygon._unit_tests():
+    @staticmethod
+    def _unit_tests() -> None:
+        """Run ApexPolygon unit tests."""
+        # Create *polygon*:
+        n: float = 10.0
+        s: float = -10.0
+        e: float = 20.0
+        w: float = -20.0
+        radius: float = 1.0
+        ne_corner: ApexCorner = ApexCorner(Vector(n, e, 0), radius)
+        nw_corner: ApexCorner = ApexCorner(Vector(n, w, 0), radius)
+        se_corner: ApexCorner = ApexCorner(Vector(s, e, 0), radius)
+        sw_corner: ApexCorner = ApexCorner(Vector(s, w, 0), radius)
+        corners: Tuple[ApexCorner, ...] = (ne_corner, nw_corner, sw_corner, se_corner)
+        name: str = "name"
+        polygon: ApexPolygon = ApexPolygon(corners, name)
+
+        # Verify attribute access:
+        _ = polygon
+
 
 # ApexCircle:
 @dataclass
@@ -1232,6 +1277,7 @@ class ApexCircle(ApexShape):
     Diameter: float
     Name: str = ""
     _circle_geometry: Optional[ApexCircleGeometry] = None
+    _circle_geometries: Tuple[ApexCircleGeometry, ...] = ()
 
     POST_INIT_CHECKS = (
         ApexCheck("center", (Vector,)),
@@ -1306,20 +1352,21 @@ class ApexCircle(ApexShape):
                   f"{center.y:.2f})) # ApexCircle Center Y")
             print(f"{tracing}<=ApexCircle.constraints_append(*, *): {len(constraints)=}")
 
-    # ApexCircle.geometrys_get():
-    def geometrys_get(self, drawing: "ApexDrawing", tracing: str = "") -> Tuple[ApexGeometry, ...]:
+    # ApexCircle.geometries_get():
+    def geometries_get(self, drawing: "ApexDrawing", tracing: str = "") -> Tuple[ApexGeometry, ...]:
         """Return the ApexCircleGeometry."""
         if tracing:
-            print(f"{tracing}=>ApexCircle.geometrys_get()")
+            print(f"{tracing}=>ApexCircle.geometries_get()")
         circle_geometry: Optional[ApexCircleGeometry] = self._circle_geometry
         if not circle_geometry:
             circle_geometry = ApexCircleGeometry(
                 drawing, self.Center, self.Diameter / 2.0, self.Name)
             self._circle_geometry = circle_geometry
+            self._circle_geometries = (circle_geometry,)
         assert isinstance(circle_geometry, ApexCircleGeometry)
         if tracing:
-            print(f"{tracing}<=ApexCircle.geometrys_get()=>{(circle_geometry,)}")
-        return (circle_geometry,)
+            print(f"{tracing}<=ApexCircle.geometries_get()=>{self._circle_geometries}")
+        return self._circle_geometries
 
     # ApexCircle.reorient():
     def reorient(self, placement: Placement, suffix: Optional[str] = "",
@@ -1383,9 +1430,8 @@ class ApexOperation(object):
         raise NotImplementedError(f"ApexOperation.show() not implemented for {self}")
 
     # ApexOperation.body_apply():
-    def body_apply(self, body: "PartDesign.Body",
-                   group_name: str, sketch: "Sketcher.SketchObject",
-                   gui_document: Optional["Gui.ActiveDocument"]) -> None:
+    def body_apply(self, body: "PartDesign.Body", group_name: str, sketch: "Sketcher.SketchObject",
+                   gui_document: Optional["Gui.ActiveDocument"], tracing: str = "") -> None:
         """Apply operation to a Part Design body."""
         raise NotImplementedError("Needs be implemented in sub-class")
 
@@ -1401,10 +1447,10 @@ class ApexOperation(object):
         """
         raise NotImplementedError(f"ApexOperation.constraints_append(): {self}")
 
-    # ApexOperation.geometrys_get():
-    def geometrys_get(self, drawing: "ApexDrawing", tracing: str = "") -> Tuple[ApexGeometry, ...]:
-        """Return the geometrys associated with an operation."""
-        raise NotImplementedError(f"ApexOperation.geometrys_get() not implemented {self}")
+    # ApexOperation.geometries_get():
+    def geometries_get(self, drawing: "ApexDrawing", tracing: str = "") -> Tuple[ApexGeometry, ...]:
+        """Return the geometries associated with an operation."""
+        raise NotImplementedError(f"ApexOperation.geometries_get() not implemented {self}")
 
     # ApexOperation.shape_get():
     def shape_get(self) -> ApexShape:
@@ -1452,8 +1498,10 @@ class ApexHole(ApexOperation):
     # ApexHole.body_apply():
     def body_apply(self, body: "PartDesign.Body",
                    group_name: str, sketch: "Sketcher.SketchObject",
-                   gui_document: Optional["Gui.ActiveDocument"]) -> None:
+                   gui_document: Optional["Gui.ActiveDocument"], tracing: str = "") -> None:
         """Apply hole operation to PartDesign body."""
+        if tracing:
+            print(f"{tracing}=>ApexHole.body_apply('{self.Name}', '{group_name}', *, *)")
         # We have bunch of ApexCircles with the same *diameter* and *depth*:
         hole: PartDesign.Geometry = body.newObject("PartDesign::Hole", f"{group_name}.Hole")
         hole.Profile = sketch
@@ -1466,28 +1514,8 @@ class ApexHole(ApexOperation):
         hole.Diameter = float(self.Circle.Diameter)
         hole.Depth = float(self.Depth)
         # hole.DrillPoint = u"Flat" if group0.flat else u"Angled"
-
-    # ApexHole.constraints_append():
-    def constraints_append(self, drawing: "ApexDrawing", constraints: List[Sketcher.Constraint],
-                           tracing: str = "") -> None:
-        """Append the ApexOperation constraints to drawing.
-
-        Arguments:
-        * *drawing* (ApexDrawing): The drawing to use.
-        * *constraints* (List[SketcherConstraint]): The constraints list to append to.
-
-        """
-        next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>ApexHole.constraints_append('{self.Name}', *, *)")
-        self.Circle.constraints_append(drawing, constraints, tracing=next_tracing)
-        if tracing:
-            print(f"{tracing}<=ApexHole.constraints_append('{self.Name}', *, *)")
-
-    # ApexHole.geometrys_get():
-    def geometrys_get(self, drawing: "ApexDrawing", tracing: str = "") -> Tuple[ApexGeometry, ...]:
-        """Return the ApexHole drawing geometrys."""
-        return self.Circle.geometrys_get(drawing)
+            print(f"{tracing}<=ApexHole.body_apply('{self.Name}', '{group_name}', *, *)")
 
     # ApexHole.reorient():
     def reorient(self, placement: Placement, suffix: str = None,
@@ -1550,16 +1578,17 @@ class ApexPad(ApexOperation):
         object.__setattr__(self, "SortKey", ("0Pad", f"{self.Depth}"))
 
     # ApexPad.body_apply():
-    def body_apply(self, body: "PartDesign.Body",
-                   group_name: str, sketch: "Sketcher.SketchObject",
-                   gui_document: Optional["Gui.ActiveDocument"]) -> None:
+    def body_apply(self, body: "PartDesign.Body", group_name: str, sketch: "Sketcher.SketchObject",
+                   gui_document: Optional["Gui.ActiveDocument"], tracing: str = "") -> None:
         """Apply ApexPad opertation to PartDesign Body."""
+        if tracing:
+            print(f"{tracing}=>ApexPad.body_apply('{self.Name}', '{group_name}', *, *)")
         # Pad:
         pad: PartDesign.ApexGeometry = body.newObject("PartDesign::Pad", f"{group_name}.Pad")
         pad.Profile = sketch
         pad.Length = float(self.Depth)
         pad.Reversed = True
-        # Unclear what most of these geometrys do:
+        # Unclear what most of these geometries do:
         pad.Length2 = 0
         pad.UseCustomVector = 0
         pad.Direction = (1, 1, 1)
@@ -1582,28 +1611,8 @@ class ApexPad(ApexOperation):
             # The following code appears to disable edge highlighting:
             # pad.ViewObject.DisplayMode = getattr(
             #    view_object, "DisplayMode", pad.ViewObject.DisplayMode)
-
-    # ApexPad.constraints_append():
-    def constraints_append(self, drawing: "ApexDrawing", constraints: List[Sketcher.Constraint],
-                           tracing: str = "") -> None:
-        """Append the ApexOperation constraints to drawing.
-
-        Arguments:
-        * *drawing* (ApexDrawing): The drawing to use.
-        * *constraints* (List[SketcherConstraint]): The constraints list to append to.
-
-        """
-        next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>ApexPad.constraints_append('{self.Name}, *, *')")
-        self.Shape.constraints_append(drawing, constraints, tracing=next_tracing)
-        if tracing:
-            print(f"{tracing}<=ApexPad.constraints_append('{self.Name}, *, *')")
-
-    # ApexPad.geometrys_get():
-    def geometrys_get(self, drawing: "ApexDrawing", tracing: str = "") -> Tuple[ApexGeometry, ...]:
-        """Return the geometrys associated with an operation."""
-        return self.Shape.geometrys_get(drawing)
+            print(f"{tracing}<=ApexPad.body_apply('{self.Name}', '{group_name}', *, *)")
 
     # ApexPad.reorient():
     def reorient(self, placement: Placement, suffix: str = None,
@@ -1663,33 +1672,34 @@ class ApexPocket(ApexOperation):
         object.__setattr__(self, "SortKey", ("1Pocket", f"{self.Depth}"))
 
     # ApexPocket.body_apply():
-    def body_apply(self, body: "PartDesign.Body",
-                   group_name: str, sketch: "Sketcher.SketchObject",
-                   gui_document: Optional["Gui.ActiveDocument"]) -> None:
+    def body_apply(self, body: "PartDesign.Body", group_name: str, sketch: "Sketcher.SketchObject",
+                   gui_document: Optional["Gui.ActiveDocument"], tracing: str = "") -> None:
         """Apply pocket operation to PartDesign Body."""
+        if tracing:
+            print(f"{tracing}=>ApexPocket.body_apply('{self.Name}', '{group_name}', *, *)")
         pocket: "PartDesign.Geometry" = body.newObject(
             "PartDesign::Pocket", f"{group_name}.Pocket")
         pocket.Profile = sketch
         pocket.Length = float(self.Depth)
+        if tracing:
+            print(f"{tracing}<=ApexPocket.body_apply('{self.Name}', '{group_name}', *, *)")
 
-    # ApexPocket.constraints_append():
-    def constraints_append(self, drawing: "ApexDrawing", constraints: List[Sketcher.Constraint],
-                           tracing: str = "") -> None:
-        """Append the ApexPocket constraints to drawing.
+    # ApexPocket.reorient():
+    def reorient(self, placement: Placement, suffix: str = None,
+                 tracing: str = "") -> "ApexPocket":
+        """Reorient an ApexPocket .
 
         Arguments:
-        * *drawing* (ApexDrawing): The drawing to use.
-        * *constraints* (List[SketcherConstraint]): The constraints list to append to.
+        * *placement* (Placement): The FreeCAD Placement reorient with.
+        * *suffix* (str): The suffix to append to the current name string.  None, specifies
+          that an empty name is to be used.  (Default: "")
 
         """
-        next_tracing: str = tracing + " " if tracing else ""
-        if tracing:
-            print(f"{tracing}=>ApexPocket.constraints_append('{self.Name}', *, *)")
-        assert False, ("FIXME", next_tracing)
-        if tracing:
-            print(f"{tracing}<=ApexPocket.constraints_append('{self.Name}', *, *)")
+        name: str = "" if suffix is None else f"{self.Name}{suffix}"
+        reoriented_shape: ApexShape = self.Shape.reorient(placement, suffix, name)
+        return ApexPocket(reoriented_shape, self.Depth, name)
 
-    # ApexPad.shape_get():
+    # ApexPocket.shape_get():
     def shape_get(self) -> ApexShape:
         """Return the ApexPad ApexShape."""
         return self.Shape
@@ -1925,20 +1935,20 @@ class ApexDrawing(object):
             print(f"{tracing}{groups.keys()=}")
 
         # Generate one *sketch* per *group*:
-        for index, key in enumerate(sorted(groups.keys())):
-            group: Tuple[ApexOperation, ...] = groups[key]
+        for index, sort_key in enumerate(sorted(groups.keys())):
+            operations: Tuple[ApexOperation, ...] = groups[sort_key]
             if tracing:
                 print("")
-                print(f"{tracing}Groups[{key}]: {group=}")
+                print(f"{tracing}Groups[{index}:{sort_key}]:|operations|={len(operations)}")
 
-            group0: ApexOperation = group[0]
+            operation0: ApexOperation = operations[0]
 
             # Create a new *drawing* using elements:
-            group_name: str = f"{group0.Name}_{len(group)}"
-            drawing = ApexDrawing(self.Contact, self.Normal, group, group_name)
+            operation_name: str = f"{operation0.Name}_{len(operations)}"
+            drawing = ApexDrawing(self.Contact, self.Normal, operations, operation_name)
 
             # Create the *sketch* and attach it to *datum_plane*:
-            sketch_name: str = f"{group0.Name}.sketch"
+            sketch_name: str = f"{operation0.Name}.sketch"
             sketch: Sketcher.SketchObject = body.newObject("Sketcher::SketchObject", sketch_name)
             if tracing:
                 print(f"{tracing}{sketch=} {sketch.Name=}")
@@ -1958,7 +1968,8 @@ class ApexDrawing(object):
             # Fill in the *sketch* from *drawing*:
             drawing.sketch(sketch, tracing=next_tracing)
 
-            operation.body_apply(body, group_name, sketch, gui_document)
+            for operation in operations:
+                operation.body_apply(body, operation_name, sketch, gui_document)
 
         if tracing:
             print(f"{tracing}<=ApexDrawing.plane_process('self._name', '{body.Name}')")
@@ -1991,8 +2002,8 @@ class ApexDrawing(object):
                   f"'{point.name}':({origin_index}, 1), {point.y:.2f})")
             print(f"{tracing}<=Vector.constraints_append(*, |*|={len(constraints)})")
 
-    # ApexDrawing.geometrys_get():
-    def point_geometrys_get(self, point: Vector, tracing: str = "") -> Tuple["ApexGeometry", ...]:
+    # ApexDrawing.geometries_get():
+    def point_geometries_get(self, point: Vector, tracing: str = "") -> Tuple["ApexGeometry", ...]:
         """Return the ApexPointGeometry Geometry's."""
         assert isinstance(point, Vector)
         return (ApexPointGeometry(self, point, ""),)
@@ -2063,7 +2074,7 @@ class ApexDrawing(object):
         contact: Vector = self.Contact
         normal: Vector = self.Normal
 
-        # Rotate all geometrys around *contact* such that *normal* is aligned with the +Z axis:
+        # Rotate all geometries around *contact* such that *normal* is aligned with the +Z axis:
         origin: Vector = Vector(0, 0, 0)
         z_axis: Vector = Vector(0, 0, 1)
         rotation: Rotation = Rotation(normal, z_axis)
@@ -2104,36 +2115,36 @@ class ApexDrawing(object):
         final_shapes: Tuple[ApexShape, ...] = tuple(shapes)
 
         # Now extract all of the ApexGeometry's:
-        geometrys: List[ApexGeometry] = []
+        geometries: List[ApexGeometry] = []
 
         # Extract the ApexGeometry's from *points* (this must be first):
         point: Vector
         for point in points:
-            geometrys.extend(self.point_geometrys_get(point))
+            geometries.extend(self.point_geometries_get(point))
 
         # Now extract all of the ApexGeometry's from *final_shapes*::
         shape: ApexShape
         for shape in final_shapes:
-            f: Tuple[ApexGeometry, ...] = shape.geometrys_get(self)
-            assert f is shape.geometrys_get(self)
-            geometrys.extend(f)
+            f: Tuple[ApexGeometry, ...] = shape.geometries_get(self)
+            assert f is shape.geometries_get(self), f"{shape=} {f=}"
+            geometries.extend(f)
 
         # The first Geometry corresponds to *lower_left* and it is the "origin" for the sketch.
-        lower_left_geometry: ApexGeometry = geometrys[0]
+        lower_left_geometry: ApexGeometry = geometries[0]
         assert isinstance(lower_left_geometry, ApexPointGeometry)
 
-        def indices_check(geometrys: Tuple[ApexGeometry, ...]) -> None:
-            for index, geometry in enumerate(geometrys):
+        def indices_check(geometries: Tuple[ApexGeometry, ...]) -> None:
+            for index, geometry in enumerate(geometries):
                 assert geometry.index == index
 
-        # Set the *index* for each Geometry in *final_geometrys*:
-        for index, geometry in enumerate(geometrys):
+        # Set the *index* for each Geometry in *final_geometries*:
+        for index, geometry in enumerate(geometries):
             geometry.index = index
             if tracing:
-                print(f"{tracing}Geometrys[{index}]: {geometry}")
-        final_geometrys: Tuple[ApexGeometry, ...] = tuple(geometrys)
-        indices_check(final_geometrys)
-        indices_check(final_geometrys)
+                print(f"{tracing}Geometries[{index}]: {geometry}")
+        final_geometries: Tuple[ApexGeometry, ...] = tuple(geometries)
+        indices_check(final_geometries)
+        indices_check(final_geometries)
 
         if tracing:
             print(f"{tracing}indices set")
@@ -2147,15 +2158,15 @@ class ApexDrawing(object):
         if tracing:
             print(f"{tracing}{origin_index=}")
 
-        # Extract *part_geometrys* from *geometrys*:
+        # Extract *part_geometries* from *geometries*:
         part_geometry: PartGeometry
-        part_geometrys: List[PartGeometry] = []
-        for index, geometry in enumerate(final_geometrys):
+        part_geometries: List[PartGeometry] = []
+        for index, geometry in enumerate(final_geometries):
             part_geometry = geometry.part_geometry
-            part_geometrys.append(part_geometry)
+            part_geometries.append(part_geometry)
             if tracing:
-                print(f"{tracing}part_geometrys[{index}]: {part_geometry}")
-        sketcher.addGeometry(part_geometrys, False)
+                print(f"{tracing}part_geometries[{index}]: {part_geometry}")
+        sketcher.addGeometry(part_geometries, False)
 
         # The *points* and *operations* Constraint's are extracted next:
         constraints: List[Sketcher.Constraint] = []
@@ -2352,34 +2363,43 @@ def _integration_test() -> int:
         # contour_polygon = ApexPolygon(simple_corners, "contour_polygon")
         _ = simple_corners
 
+        depth: float = 10.0
+        through: float = depth + 1.0
         assert contour_polygon.Name == "contour_polygon", contour_polygon.Name
-        contour_operation: ApexPad = ApexPad(contour_polygon, 20.0, "contour_operation")
+        contour_operation: ApexPad = ApexPad(contour_polygon, depth, "contour_operation")
 
         # Create the *hole_center*:
-        center_circle = ApexCircle(Vector(0.0, 0.0, 0.0), 5.0, "center_hole")
+        center_circle = ApexCircle(Vector(0.0, 0.0, 0.0), through, "center_hole")
         assert center_circle.Name == "center_hole", center_circle.Name
-        center_operation: ApexHole = ApexHole(center_circle, 8.0, "center")
+        center_operation: ApexHole = ApexHole(center_circle, through, "center")
 
-        sides: int = 4
+        sides: int = 6
         angle_increment: float = 2 * math.pi / float(sides)
+        print(f"{math.degrees(angle_increment)=}")
         x_offset: float = -20.0
         y_offset: float = 5.0
         hex_radius: float = 8.0
         hexagon_corners: List[ApexCorner] = []
         index: int
-        for index in range(6):
+        for index in range(sides):
             angle: float = index * angle_increment
             x: float = x_offset + hex_radius * math.cos(angle)
             y: float = y_offset + hex_radius * math.sin(angle)
-            hexagon_corners.append(ApexCorner(Vector(x, y, 0.0), 2.0, f"hex{index}"))
+            hexagon_corner: ApexCorner = ApexCorner(Vector(x, y, 0.0), 2.0, f"hex{index}")
+            print(f"HexegonCorner[{index}]: {hexagon_corner}")
+            hexagon_corners.append(hexagon_corner)
         hexagon: ApexPolygon = ApexPolygon(tuple(hexagon_corners), "hexagon")
-        hexagon_operation: ApexPocket = ApexPocket(hexagon, 10.0, "hexagon")
+        hexagon_operation: ApexPocket = ApexPocket(hexagon, through, "hexagon")
+        _ = hexagon_operation
 
         # Create the *drawing*:
         operations: Tuple[ApexOperation, ...] = (
-            contour_operation,)  # hexagon_operation, center_operation)
-        _ = hexagon_operation
-        _ = center_operation
+            contour_operation, center_operation, hexagon_operation)
+        operation: ApexOperation
+        for index, operation in enumerate(operations):
+            print(f"Operation[{index}]: {operation}")
+        # _ = hexagon_operation
+        # _ = center_operation
         drawing = ApexDrawing(origin, z_axis, operations, "test_drawing")
 
         # Create the FreeCAD Part Design Workbench *body* object:
@@ -2426,4 +2446,5 @@ def attributes_show(some_object: Any) -> None:  # pragma: no unit cover
 
 if __name__ == "__main__":
     ApexCorner._unit_tests()
+    ApexPolygon._unit_tests()
     _integration_test()
