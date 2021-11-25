@@ -27,9 +27,9 @@ Attributes:
 * *dz* (float): height in Z direction in millimeters.
 * *material* (ApexMaterial): Material to use.
 * *dw* (float): material thickness in millimeters.
-* *center*: (ApexPoint): Center of box:
-* *z\_align*: (ApexPoint): Axis to align with +Z axis.
-* *y\_align: (ApexPoint): Axis to align with +Y axis.
+* *center*: (Vector): Center of box:
+* *z\_align*: (Vector): Axis to align with +Z axis.
+* *y\_align: (Vector): Axis to align with +Y axis.
 
 
 ## 3 Class Block <a name="block"></a>

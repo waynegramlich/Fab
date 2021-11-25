@@ -42,7 +42,7 @@ sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 import FreeCAD as App  # type: ignore
 from FreeCAD import Vector  # type: ignore
 import FreeCADGui as Gui  # type:ignore
-from Apex import ApexPoint, ApexBox
+from Apex import ApexBox
 
 
 # ApexContext:
@@ -234,7 +234,7 @@ class ApexNode(object):
         value: Any
         for name, value in self.__dict__.items():
             if name not in ignore_names and name[0] != "_":
-                if isinstance(value, (bool, int, float, ApexPoint)):
+                if isinstance(value, (bool, int, float, Vector)):
                     values[f"{self.full_path}:{name}"] = value
                 elif isinstance(value, ApexNode):
                     value._configure_helper(values)
@@ -253,8 +253,8 @@ def unit_tests() -> None:
             self.skin_volume: float = 0
             self.outer_volume: float = 0
             self.inner_volume: float = 0
-            self.tne: ApexPoint = ApexPoint(dx / 2.0, dy / 2.0, dz / 2.0)
-            self.bsw: ApexPoint = ApexPoint(-dx / 2.0, -dy / 2.0, -dz / 2.0)
+            self.tne: Vector = Vector(dx / 2.0, dy / 2.0, dz / 2.0)
+            self.bsw: Vector = Vector(-dx / 2.0, -dy / 2.0, -dz / 2.0)
             self.bb: ApexBox = ApexBox((self.tne, self.bsw))
             bb: ApexBox = self.bb
 

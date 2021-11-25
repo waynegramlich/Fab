@@ -18,7 +18,7 @@ from typing import Any, Sequence, Optional, Tuple
 import FreeCAD as App  # type: ignore
 import FreeCADGui as Gui  # type: ignore
 from FreeCAD import Placement, Rotation, Vector  # type: ignore
-from Apex import ApexBox, ApexCheck, ApexColor, ApexMaterial, ApexPoint
+from Apex import ApexBox, ApexCheck, ApexColor, ApexMaterial
 from ApexNode import ApexContext, ApexNode
 from ApexSketch import ApexCorner, ApexDrawing, ApexOperation, ApexPad, ApexPolygon
 from ApexFasten import ApexScrew, ApexStack, ApexStackBody
@@ -37,9 +37,9 @@ class ApexEnclosure(ApexNode):
     * *dz* (float): height in Z direction in millimeters.
     * *material* (ApexMaterial): Material to use.
     * *dw* (float): material thickness in millimeters.
-    * *center*: (ApexPoint): Center of box:
-    * *z_align*: (ApexPoint): Axis to align with +Z axis.
-    * *y_align: (ApexPoint): Axis to align with +Y axis.
+    * *center*: (Vector): Center of box:
+    * *z_align*: (Vector): Axis to align with +Z axis.
+    * *y_align: (Vector): Axis to align with +Y axis.
 
     """
 
@@ -50,14 +50,14 @@ class ApexEnclosure(ApexNode):
         ApexCheck("dz", (float,)),
         ApexCheck("material", (ApexMaterial,)),
         ApexCheck("dw", (float,)),
-        ApexCheck("center", (ApexPoint,)),
-        ApexCheck("z_align", (ApexPoint,)),
-        ApexCheck("y_align", (ApexPoint,)),
+        ApexCheck("center", (Vector,)),
+        ApexCheck("z_align", (Vector,)),
+        ApexCheck("y_align", (Vector,)),
     )
 
     # ApexEnclosure.__ init__():
     def __init__(self, name: str, dx: float, dy: float, dz: float, material: ApexMaterial,
-                 dw: float, center: ApexPoint, z_align: ApexPoint, y_align: ApexPoint,
+                 dw: float, center: Vector, z_align: Vector, y_align: Vector,
                  tracing: str = "") -> None:
         """Initialize a ApexEnclosure.
 
@@ -68,9 +68,9 @@ class ApexEnclosure(ApexNode):
           * *dz* (float): height in Z direction in millimeters.
           * *material* (ApexMaterial): ApexEnclosure material.
           * *dw* (float): material thickness in millimeters.
-          * *center* (ApexPoint): Center of box.
-          * *z_align* (ApexPoint): Axis to align top normal to.
-          * *y_align* (ApexPoint): Axis to align "back" normal to.
+          * *center* (Vector): Center of box.
+          * *z_align* (Vector): Axis to align top normal to.
+          * *y_align* (Vector): Axis to align "back" normal to.
 
         Raises:
         * ValueError: If *dx*, *dy*, *dz*, and *dw* are not positive or if *z_align* or *y_align*
@@ -92,9 +92,9 @@ class ApexEnclosure(ApexNode):
         self.dz: float = dz
         self.material: ApexMaterial = material
         self.dw: float = dw
-        self.center: ApexPoint = center
-        self.z_align: ApexPoint = z_align
-        self.y_align: ApexPoint = y_align
+        self.center: Vector = center
+        self.z_align: Vector = z_align
+        self.y_align: Vector = y_align
 
         # For testing, use 0 (int) instead of 0.0 (float)to cause an extra iteration:
         tne: Vector = Vector(dx / 2.0, dy / 2.0, dz / 2.0)
@@ -330,9 +330,9 @@ def main() -> None:
     height: float = 100.0  # DZ
     material: ApexMaterial = ApexMaterial(("Plastic", "HDPE"), "yellow")
     thickness: float = 10.0  # DW
-    origin: ApexPoint = ApexPoint(0.0, 0.0, 0.0, name="Origin")  # Center
-    z_axis: ApexPoint = ApexPoint(0.0, 0.0, 1.0, name="+Z")  # +Z Axis
-    y_axis: ApexPoint = ApexPoint(0.0, 1.0, 0.0, name="+Y")  # +Y Axis
+    origin: Vector = Vector(0.0, 0.0, 0.0)  # Center
+    z_axis: Vector = Vector(0.0, 0.0, 1.0)  # +Z Axis
+    y_axis: Vector = Vector(0.0, 1.0, 0.0)  # +Y Axis
 
     enclosure: "ApexEnclosure" = ApexEnclosure(name, length, width, height, material, thickness,
                                                origin, z_axis, y_axis)

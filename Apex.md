@@ -11,10 +11,8 @@ Table of Contents:
 * 4 [Class ApexColor](#apexcolor)
 * 5 [Class ApexMaterial](#apexmaterial)
   * 5.1 [ApexMaterial.\_\_init\_\_](#apexmaterial---init--)
-* 6 [Class ApexPoint](#apexpoint)
-  * 6.1 [ApexPoint.\_\_init\_\_](#apexpoint---init--)
-  * 6.2 [float\_fix](#float-fix)
-  * 6.3 [vector\_fix](#vector-fix)
+  * 5.2 [float\_fix](#float-fix)
+  * 5.3 [vector\_fix](#vector-fix)
 
 ## 1 <a name="introduction"></a>Introduction
 
@@ -32,9 +30,6 @@ The Apex base classes are:
   (e.g. mm, cm, inch, ft, etc.) and an optional name.
 * ApexMaterial:
   This is a class that describes material properties.
-* ApexPoint:
-  This is a wrapper class around the FreeCAD Vector class that adds an optional diameter
-  and name for each 3D Vector point.  For the same technical reasons, this is not a true
   sub-class of Vector.
 
 
@@ -105,12 +100,12 @@ is written in C++ and for technical reasons does not support sub-classing.
 
 ### 2.1 ApexBox.\_\_init\_\_ <a name="apexbox---init--"></a>
 
-def \_\_init\_\_(self, *corners*:  Sequence[Union[Vector, "ApexPoint", BoundBox, "ApexBox"]], *name*:  *str* = "") -> None:
+def \_\_init\_\_(self, *corners*:  Sequence[Union[Vector, BoundBox, "ApexBox"]], *name*:  *str* = "") -> None:
 
 Initialize an ApexBox.
 
 Arguments:
-  * *corners* (Sequence[Union[Vector, ApexPoint, BoundBox, ApexBox]]):
+  * *corners* (Sequence[Union[Vector, BoundBox, ApexBox]]):
     A sequence of points/corners to enclose by the box.
 
 Raises:
@@ -234,45 +229,13 @@ def \_\_post\_init\_\_(self) -> None:
 
 Post process.
 
-## 6 Class ApexPoint <a name="apexpoint"></a>
-
-class ApexPoint:
-
-An ApexPoint is basically just a Vector with an optional diameter and/or name.
-
-* Attributes:
-  * *vector* (Vector): The underlying FreeCAD Vector.
-  * *x* (Union[float, Apex]): The x coordinate of the vector.
-  * *y* (float): The y coordinate of the vector.
-  * *z* (float): The z coordinate of the vector.
-  * *diameter* (float): The apex diameter.
-  * *radius* (float): The apex radius.
-  * *name* (str): The apex name.
-  * *box* (ApexBox): The ApexBox that encloses an ApexPoint assuming a *diameter* sphere.
-
-### 6.1 ApexPoint.\_\_init\_\_ <a name="apexpoint---init--"></a>
-
-def \_\_init\_\_( *self*, *x*:  Union[int, *float*] = 0.0, *y*:  Union[int, *float*] = 0.0, *z*:  Union[int, *float*] = 0.0, *diameter*:  Union[int, *float*] = 0.0, *name*:  *str* = "", *vector*:  Optional[Vector] = None, *fix*:  *bool* = False ) -> None:
-
-Initialize an ApexPoint.
-
-Arguments:
-  * *x* (Union[int, float]): The x coordinate of the vector. (Default: 0.0)
-  * *y* (Union[int, float]): The y coordinate of the vector. (Default: 0.0)
-  * *z* (Union[int, float]): The z coordinate of the vector. (Default: 0.0)
-  * *diameter* (Union[int, float]): The apex diameter. (Default: 0.0)
-  * *name* (str): A name primarily used for debugging. (Default: "")
-  * *vector* (Vector): A vector to initialize *x*, *y*, and *z* with.
-    (Default: Vector(0.0, 0.0, 0.0)
-  * *fix* (bool): If True, fix float values that are close to hole numbers to be whole.
-
-### 6.2 float\_fix <a name="float-fix"></a>
+### 5.2 float\_fix <a name="float-fix"></a>
 
 def *float\_fix*(length:  *float*) -> *float*:
 
 Return a length that is rounded to a whole number when appropriate.
 
-### 6.3 vector\_fix <a name="vector-fix"></a>
+### 5.3 vector\_fix <a name="vector-fix"></a>
 
 def *vector\_fix*(vector:  Vector) -> Vector:
 
