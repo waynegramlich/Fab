@@ -216,9 +216,9 @@ class Geometry(object):
 
     # Geometry.part_geometry():
     @property
-    def part_geometry(self) -> PartGeometryUnion:
+    def get_part_geometry(self) -> PartGeometryUnion:
         """Return the PartGeometry associated with Geometry."""
-        raise NotImplementedError(f"{self}.part_geometry not implmented.")
+        raise NotImplementedError(f"{self}.part_geometry not implmented for {type(self)}.")
 
     # Geometry.start():
     @property
@@ -468,6 +468,11 @@ class ArcGeometry(Geometry):
         """Return ArcGeometry string representation."""
         return f"ArcGeometry({self._begin}, {self._at}, {self._end})"  # pragma: no unit test
 
+    # ArcGeometry.part_geometry():
+    def get_part_geometry(self) -> PartGeometryUnion:
+        """Return ArcGeometry Part.Arc."""
+        return self._part_arc
+
     # ArcGeometry.apex():
     @property
     def at(self) -> Vector:
@@ -528,12 +533,6 @@ class ArcGeometry(Geometry):
     def Name(self) -> str:
         """Return name."""
         return self._name
-
-    # ArcGeometry.part_geometry():
-    @property
-    def part_geometry(self) -> PartGeometryUnion:
-        """Return ArcGeometry Part.Arc."""
-        return self._part_arc
 
     # ArcGeometry.radius():
     @property
@@ -602,17 +601,16 @@ class CircleGeometry(Geometry):
         self._part_circle: Part.Circle = Part.Circle(center, App.Vector(0, 0, 1), radius)
         self._radius: float = radius
 
+    # CircleGeometry.part_element():
+    def get_part_geometry(self) -> PartGeometryUnion:
+        """Return the CircleGeometry PartGeometry."""
+        return self._part_circle
+
     # CircleGeometry.center():
     @property
     def center(self) -> Vector:  # pragma: no unit cover
         """Return the CircleGeometry center."""
         return self._center
-
-    # CircleGeometry.part_element():
-    @property
-    def part_geometry(self) -> PartGeometryUnion:
-        """Return the CircleGeometry PartGeometry."""
-        return self._part_circle
 
     # CircleGeometry.radius():
     @property
@@ -669,9 +667,8 @@ class LineGeometery(Geometry):
         if tracing:
             print(f"{tracing}<=LineGeometery({start}, {finish}, '{name}')")
 
-    # LineGeometery.part_geometry():
-    @property
-    def part_geometry(self) -> PartGeometryUnion:
+    # LineGeometery.get_part_geometry():
+    def get_part_geometry(self) -> PartGeometryUnion:
         """Return the PartGeometry associated with a LineGeometery."""
         return self._line_segment
 
@@ -742,17 +739,16 @@ class PointGeometry(Geometry):
         """Return PointGeometry string ."""
         return f"PointGeometry(point={self._point}, name='{self.Name}', index={self._index})"
 
+    # PointGeometry.part_geometry():
+    def get_part_geometry(self) -> PartGeometryUnion:
+        """Return the  PointGeometry."""
+        return self._part_point
+
     # PointGeometry.Name():
     @property
     def Name(self) -> str:
         """Return Name."""
         return self._name
-
-    # PointGeometry.part_geometry():
-    @property
-    def part_geometry(self) -> PartGeometryUnion:
-        """Return the  PointGeometry."""
-        return self._part_point
 
     # PointGeometry.point():
     @property
@@ -2176,7 +2172,7 @@ class ApexDrawing(object):
         part_geometry: PartGeometryUnion
         part_geometries: List[PartGeometryUnion] = []
         for index, geometry in enumerate(final_geometries):
-            part_geometry = geometry.part_geometry
+            part_geometry = geometry.get_part_geometry()
             part_geometries.append(part_geometry)
             if tracing:
                 print(f"{tracing}part_geometries[{index}]: {part_geometry}")

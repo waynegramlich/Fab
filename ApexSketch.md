@@ -101,7 +101,7 @@ Table of Contents:
   * 14.4 [LineGeometery.\_\_str\_\_](#linegeometery---str--)
   * 14.5 [LineGeometery.finish](#linegeometery-finish)
   * 14.6 [LineGeometery.finish\_key](#linegeometery-finish-key)
-  * 14.7 [LineGeometery.part\_geometry](#linegeometery-part-geometry)
+  * 14.7 [LineGeometery.get\_part\_geometry](#linegeometery-get-part-geometry)
   * 14.8 [LineGeometery.start](#linegeometery-start)
   * 14.9 [LineGeometery.start\_key](#linegeometery-start-key)
   * 14.10 [LineGeometry.Name](#linegeometry-name)
@@ -718,7 +718,7 @@ Return name.
 
 ### 11.14 ArcGeometry.part\_geometry <a name="arcgeometry-part-geometry"></a>
 
-def *part\_geometry*(self) -> PartGeometryUnion:
+def *get\_part\_geometry*(self) -> PartGeometryUnion:
 
 Return ArcGeometry Part.Arc.
 
@@ -796,7 +796,7 @@ Return the CircleGeometry center.
 
 ### 12.5 CircleGeometry.part\_element <a name="circlegeometry-part-element"></a>
 
-def *part\_geometry*(self) -> PartGeometryUnion:
+def *get\_part\_geometry*(self) -> PartGeometryUnion:
 
 Return the CircleGeometry PartGeometry.
 
@@ -858,7 +858,7 @@ Return the Geometry finish point.
 
 ### 13.6 Geometry.part\_geometry <a name="geometry-part-geometry"></a>
 
-def *part\_geometry*(self) -> PartGeometryUnion:
+def *get\_part\_geometry*(self) -> PartGeometryUnion:
 
 Return the PartGeometry associated with Geometry.
 
@@ -910,9 +910,9 @@ def *finish\_key*(self) -> *int*:
 
 Return the LineGeometery finish Constraint key.
 
-### 14.7 LineGeometery.part\_geometry <a name="linegeometery-part-geometry"></a>
+### 14.7 LineGeometery.get\_part\_geometry <a name="linegeometery-get-part-geometry"></a>
 
-def *part\_geometry*(self) -> PartGeometryUnion:
+def *get\_part\_geometry*(self) -> PartGeometryUnion:
 
 Return the PartGeometry associated with a LineGeometery.
 
@@ -960,7 +960,7 @@ Return PointGeometry string .
 
 ### 15.4 PointGeometry.part\_geometry <a name="pointgeometry-part-geometry"></a>
 
-def *part\_geometry*(self) -> PartGeometryUnion:
+def *get\_part\_geometry*(self) -> PartGeometryUnion:
 
 Return the  PointGeometry.
 
