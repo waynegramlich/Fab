@@ -79,13 +79,8 @@ Table of Contents:
   * 11.20 [ArcGeometry.start\_length](#arcgeometry-start-length)
   * 11.21 [ArcGeometry.sweep\_angle](#arcgeometry-sweep-angle)
 * 12 [Class CircleGeometry](#circlegeometry)
-  * 12.1 [CircleGeometry.\_\_init\_\_](#circlegeometry---init--)
-  * 12.2 [CircleGeometry.\_\_repr\_\_](#circlegeometry---repr--)
-  * 12.3 [CircleGeometry.\_\_str\_\_](#circlegeometry---str--)
-  * 12.4 [CircleGeometry.center](#circlegeometry-center)
-  * 12.5 [CircleGeometry.part\_element](#circlegeometry-part-element)
-  * 12.6 [CircleGeometry.radius](#circlegeometry-radius)
-  * 12.7 [CircleGeometry.type\_name](#circlegeometry-type-name)
+  * 12.1 [CircleGeometry.get\_part\_geometry](#circlegeometry-get-part-geometry)
+  * 12.2 [CircleGeometry.type\_name](#circlegeometry-type-name)
 * 13 [Class Geometry](#geometry)
   * 13.1 [Geometry.Index](#geometry-index)
   * 13.2 [Geometry.Name](#geometry-name)
@@ -766,43 +761,13 @@ class CircleGeometry(Geometry):
 
 Represents a circle in a sketch.
 
-### 12.1 CircleGeometry.\_\_init\_\_ <a name="circlegeometry---init--"></a>
-
-def \_\_init\_\_(self, *center*:  Vector, *radius*:  *float*, *name*:  *str* = "") -> None:
-
-Initialize a CircleGeometry.
-
-### 12.2 CircleGeometry.\_\_repr\_\_ <a name="circlegeometry---repr--"></a>
-
-def \_\_repr\_\_(self) -> *str*:
-
-Return string representation of Geometry.
-
-### 12.3 CircleGeometry.\_\_str\_\_ <a name="circlegeometry---str--"></a>
-
-def \_\_str\_\_(self) -> *str*:
-
-Return string representation of Geometry.
-
-### 12.4 CircleGeometry.center <a name="circlegeometry-center"></a>
-
-def *center*(self) -> Vector:  # *pragma*:  *no* *unit* *cover*
-
-Return the CircleGeometry center.
-
-### 12.5 CircleGeometry.part\_element <a name="circlegeometry-part-element"></a>
+### 12.1 CircleGeometry.get\_part\_geometry <a name="circlegeometry-get-part-geometry"></a>
 
 def *get\_part\_geometry*(self) -> PartGeometryUnion:
 
-Return the CircleGeometry PartGeometry.
+Return the PartGeometry.
 
-### 12.6 CircleGeometry.radius <a name="circlegeometry-radius"></a>
-
-def *radius*(self) -> *float*:  # *pragma*:  *no* *unit* *cover*
-
-Return the CircleGeometry radius.
-
-### 12.7 CircleGeometry.type\_name <a name="circlegeometry-type-name"></a>
+### 12.2 CircleGeometry.type\_name <a name="circlegeometry-type-name"></a>
 
 def *type\_name*(self) -> *str*:  # *pragma*:  *no* *unit* *cover*
 

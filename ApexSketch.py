@@ -589,55 +589,27 @@ class ArcGeometry(Geometry):
 
 
 # CircleGeometry:
+@dataclass
 class CircleGeometry(Geometry):
     """Represents a circle in a sketch."""
 
-    # CircleGeometry.__init__():
-    def __init__(self, center: Vector, radius: float, name: str = "") -> None:
-        """Initialize a CircleGeometry."""
-        super().__init__()
-        self._center: Vector = center
-        self._name: str = name
-        self._part_circle: Part.Circle = Part.Circle(center, App.Vector(0, 0, 1), radius)
-        self._radius: float = radius
+    Center: Vector
+    Radius: float
+    Name: str = ""
+    _part_circle: Optional[Part.Circle] = field(init=False, default=None)
 
-    # CircleGeometry.part_element():
+    # CircleGeometry.get_part_geometry():
     def get_part_geometry(self) -> PartGeometryUnion:
-        """Return the CircleGeometry PartGeometry."""
+        """Return the PartGeometry."""
+        if not self._part_circle:
+            self._part_circle = Part.Circle(self.Center, App.Vector(0, 0, 1), self.Radius)
         return self._part_circle
-
-    # CircleGeometry.center():
-    @property
-    def center(self) -> Vector:  # pragma: no unit cover
-        """Return the CircleGeometry center."""
-        return self._center
-
-    # CircleGeometry.radius():
-    @property
-    def radius(self) -> float:  # pragma: no unit cover
-        """Return the CircleGeometry radius."""
-        return self._radius
-
-    @property
-    def Name(self) -> str:
-        """Return name."""
-        return self._name
 
     # CircleGeometry.type_name():
     @property
     def type_name(self) -> str:  # pragma: no unit cover
         """Return the CircleGeometry type name."""
         return "CircleGeometry"
-
-    # CircleGeometry.__repr__():
-    def __repr__(self) -> str:
-        """Return string representation of Geometry."""
-        return self.__str__()
-
-    # CircleGeometry.__str__():
-    def __str__(self) -> str:
-        """Return string representation of Geometry."""
-        return f"ArcGeometry({self._center}, {self._radius})"
 
 
 # LineGeometery:
