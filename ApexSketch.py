@@ -28,10 +28,10 @@ The ApexShape sub-classes are:
 Each ApexShape has an associated ApexOperation (see below).
 
 The internal Geometry sub-classes are:
-* ApexPoint: This represents a single point geometry.
-* ApexLine: This represents a line segment geometry.
-* ApexArc: This represents an arc on a circle geometry.
-* ApexCircle This represents a circle geometry.
+* PointGeometry: This represents a single point geometry.
+* LineGeometry: This represents a line segment geometry.
+* ArcGeometry: This represents an arc on a circle geometry.
+* CircleGeometry This represents a circle geometry.
 
 All of this information is collected into an ApexDrawing instance.
 The ApexDrawing.body_apply() takes a FreeCAD Part Design Body and applies operations drawing to it.
@@ -168,6 +168,7 @@ class ApexCorner(object):
 
 
 # Geometry:
+@dataclass
 class Geometry(object):
     """Geometry: Internal Base class for 2D geometry objects.
 
@@ -175,14 +176,19 @@ class Geometry(object):
     It is mutable and always contains a bunch of helper functions.
     """
 
+    Name: str
+    _index: int = field(init=False, default=-999)
+    Next: Optional["Geometry"] = field(init=False, default=None)
+    Previous: Optional["Geometry"] = field(init=False, default=None)
+
     # Geometry.__init__():
-    def __init__(self, start: Vector, finish: Vector, name: str = "") -> None:
-        """Initialize a Geometry."""
-        self._index: int = -999
-        self._name: str = name
-        self._next: Geometry = self
-        self._previous: Geometry = self
-        # print(f"<=>Geometry.__init__(*, {self._part_geometry}, '{self._name}')")
+    # def __init__(self, start: Vector, finish: Vector, name: str = "") -> None:
+    #     """Initialize a Geometry."""
+    #     self._index: int = -999
+    #     self._name: str = name
+    #     self._next: Geometry = self
+    #     self._previous: Geometry = self
+    #     # print(f"<=>Geometry.__init__(*, {self._part_geometry}, '{self._name}')")
 
     # Geometry.finish():
     @property
@@ -190,16 +196,15 @@ class Geometry(object):
         """Return the Geometry finish point."""
         raise NotImplementedError(f"Geometry.start() not implemented for {self}")
 
-    # Geometry.index():
     @property
-    def index(self) -> int:
+    def Index(self) -> int:
         """Return the Geometry index."""
         assert self._index >= -1, f"index is not set: {self}"
         return self._index
 
     # Geometry.index.setter():
-    @index.setter
-    def index(self, index: int) -> None:
+    @Index.setter
+    def Index(self, index: int) -> None:
         """Set the Geometry index."""
         if self._index >= -1:
             raise ValueError("index is already set")  # pragma: no unit test
@@ -211,12 +216,6 @@ class Geometry(object):
     def finish_key(self) -> int:  # pragma: no unit test
         """Return the Geometry Constraint key for the finish point."""
         raise NotImplementedError(f"{self}.finish_key() not implemented yet.")
-
-    # Geometry.name():
-    @property
-    def name(self) -> str:
-        """Return Geometry name."""
-        return self._name
 
     # Geometry.next()
     @property
@@ -469,7 +468,7 @@ class ArcGeometry(Geometry):
         part_arc: Part.Arc = Part.ArcOfCircle(part_circle, start_angle, end_angle)
 
         # Now we can create the *ArcGeometry*:
-        super().__init__(s, f, name)
+        super().__init__(name)
         self._at: Vector = at.Point
         self._begin: Vector = begin.Point
         self._center: Vector = c
@@ -629,7 +628,7 @@ class CircleGeometry(Geometry):
     def __init__(self, drawing: "ApexDrawing",
                  center: Vector, radius: float, name: str = "") -> None:
         """Initialize a CircleGeometry."""
-        super().__init__(center, center, name)
+        super().__init__(name)
         self._center: Vector = center
         self._drawing: ApexDrawing = drawing
         self._part_circle: Part.Circle = Part.Circle(center, App.Vector(0, 0, 1), radius)
@@ -691,7 +690,7 @@ class LineGeometery(Geometry):
             raise ValueError(value_error)
         if tracing:
             print(f"{tracing}=>LineGeometery({start}, {finish}, '{name}')")
-        super().__init__(start, finish, name)
+        super().__init__(name)
         self._drawing: ApexDrawing = drawing
         self._line_segment: Part.LineSegment = Part.LineSegment(start, finish)
         self._start: Vector = start
@@ -761,7 +760,7 @@ class PointGeometry(Geometry):
     # PointGeometry.__init__():
     def __init__(self, drawing: "ApexDrawing", point: Vector, name: str = "") -> None:
         """Initialize a PointGeometry."""
-        super().__init__(point, point, name)
+        super().__init__(name)
         self._point: Vector = point
         self._part_point: PartGeometry = Part.Point(point)
         # print(f"PointGeometry.__init__({point.vector=}): ")
@@ -769,7 +768,7 @@ class PointGeometry(Geometry):
     # PointGeometry.__str__():
     def __str__(self) -> str:  # pragma: no unit cover
         """Return PointGeometry string ."""
-        return f"PointGeometry(point={self._point}, name='{self._name}', index={self._index})"
+        return f"PointGeometry(point={self._point}, name='{self.Name}', index={self._index})"
 
     # PointGeometry.part_geometry():
     @property
@@ -978,13 +977,13 @@ class ApexPolygon(ApexShape):
         # Iterate through adjacent Geometry pairs and apply constraints;
         for at_index, at_geometry in enumerate(geometries):
             # Grab a bunch of field from *at_geometry* and *before_geometry*
-            at_geometry_index: int = at_geometry.index
-            at_name: str = at_geometry.name
+            at_geometry_index: int = at_geometry.Index
+            at_name: str = at_geometry.Name
             at_start: Vector = at_geometry.start
             at_start_key: int = at_geometry.start_key
             before_geometry: Geometry = geometries[(at_index - 1) % geometries_size]
-            before_geometry_index: int = before_geometry.index
-            before_name: str = before_geometry.name
+            before_geometry_index: int = before_geometry.Index
+            before_name: str = before_geometry.Name
             # before_finish: Vector = before_geometry.finish
             before_finish_key: int = before_geometry.finish_key
             after_geometry: Geometry = geometries[(at_index + 1) % geometries_size]
@@ -1359,7 +1358,7 @@ class ApexCircle(ApexShape):
         circle_name: str = self.Name
         circle_geometry: Optional[CircleGeometry] = self._circle_geometry
         assert isinstance(circle_geometry, CircleGeometry), "circle geometry is not present."
-        circle_geometry_index: int = circle_geometry.index
+        circle_geometry_index: int = circle_geometry.Index
 
         # Append the Radius constraint:
         constraints.append(Sketcher.Constraint("Radius", circle_geometry_index, diameter / 2.0))
@@ -2174,11 +2173,11 @@ class ApexDrawing(object):
 
         def indices_check(geometries: Tuple[Geometry, ...]) -> None:
             for index, geometry in enumerate(geometries):
-                assert geometry.index == index
+                assert geometry.Index == index
 
         # Set the *index* for each Geometry in *final_geometries*:
         for index, geometry in enumerate(geometries):
-            geometry.index = index
+            geometry.Index = index
             if tracing:
                 print(f"{tracing}Geometries[{index}]: {geometry}")
         final_geometries: Tuple[Geometry, ...] = tuple(geometries)
@@ -2189,7 +2188,7 @@ class ApexDrawing(object):
             print(f"{tracing}indices set")
 
         # Now that the Geometry indices are set, *origin_index* can be extracted:
-        origin_index: int = lower_left_geometry.index
+        origin_index: int = lower_left_geometry.Index
         assert origin_index >= -1
         self._origin_index = origin_index
         self.OriginIndex = origin_index

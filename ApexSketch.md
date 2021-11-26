@@ -86,15 +86,12 @@ Table of Contents:
   * 12.6 [CircleGeometry.radius](#circlegeometry-radius)
   * 12.7 [CircleGeometry.type\_name](#circlegeometry-type-name)
 * 13 [Class Geometry](#geometry)
-  * 13.1 [Geometry.\_\_init\_\_](#geometry---init--)
-  * 13.2 [Geometry.constraints\_append](#geometry-constraints-append)
-  * 13.3 [Geometry.finish](#geometry-finish)
-  * 13.4 [Geometry.index](#geometry-index)
-  * 13.5 [Geometry.name](#geometry-name)
-  * 13.6 [Geometry.part\_geometry](#geometry-part-geometry)
-  * 13.7 [Geometry.previous](#geometry-previous)
-  * 13.8 [Geometry.start](#geometry-start)
-  * 13.9 [Geometry.type\_name](#geometry-type-name)
+  * 13.1 [Geometry.constraints\_append](#geometry-constraints-append)
+  * 13.2 [Geometry.finish](#geometry-finish)
+  * 13.3 [Geometry.part\_geometry](#geometry-part-geometry)
+  * 13.4 [Geometry.previous](#geometry-previous)
+  * 13.5 [Geometry.start](#geometry-start)
+  * 13.6 [Geometry.type\_name](#geometry-type-name)
 * 14 [Class LineGeometery](#linegeometery)
   * 14.1 [LineGeometery.\_\_init\_\_](#linegeometery---init--)
   * 14.2 [LineGeometery.\_\_repr\_\_](#linegeometery---repr--)
@@ -144,10 +141,10 @@ The ApexShape sub-classes are:
 Each ApexShape has an associated ApexOperation (see below).
 
 The internal Geometry sub-classes are:
-* ApexPoint: This represents a single point geometry.
-* ApexLine: This represents a line segment geometry.
-* ApexArc: This represents an arc on a circle geometry.
-* ApexCircle This represents a circle geometry.
+* PointGeometry: This represents a single point geometry.
+* LineGeometry: This represents a line segment geometry.
+* ArcGeometry: This represents an arc on a circle geometry.
+* CircleGeometry This represents a circle geometry.
 
 All of this information is collected into an ApexDrawing instance.
 The ApexDrawing.body_apply() takes a FreeCAD Part Design Body and applies operations drawing to it.
@@ -815,13 +812,7 @@ Geometry: Internal Base class for 2D geometry objects.
 This is basically a wrapper around the arguments need to create Sketch elements.
 It is mutable and always contains a bunch of helper functions.
 
-### 13.1 Geometry.\_\_init\_\_ <a name="geometry---init--"></a>
-
-def \_\_init\_\_(self, *start*:  Vector, *finish*:  Vector, *name*:  *str* = "") -> None:
-
-Initialize a Geometry.
-
-### 13.2 Geometry.constraints\_append <a name="geometry-constraints-append"></a>
+### 13.1 Geometry.constraints\_append <a name="geometry-constraints-append"></a>
 
 def *constraints\_append*(self, *drawing*:  "ApexDrawing", *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
 
@@ -832,43 +823,31 @@ Arguments:
 * *constraints* (List[SketcherConstraint]): The constraints list to append to.
 
 
-### 13.3 Geometry.finish <a name="geometry-finish"></a>
+### 13.2 Geometry.finish <a name="geometry-finish"></a>
 
 def *finish*(self) -> Vector:  # *pragma*:  *no* *unit* *test*
 
 Return the Geometry finish point.
 
-### 13.4 Geometry.index <a name="geometry-index"></a>
-
-def *index*(self) -> *int*:
-
-Return the Geometry index.
-
-### 13.5 Geometry.name <a name="geometry-name"></a>
-
-def *name*(self) -> *str*:
-
-Return Geometry name.
-
-### 13.6 Geometry.part\_geometry <a name="geometry-part-geometry"></a>
+### 13.3 Geometry.part\_geometry <a name="geometry-part-geometry"></a>
 
 def *part\_geometry*(self) -> PartGeometry:
 
 Return the PartGeometry associated with Geometry.
 
-### 13.7 Geometry.previous <a name="geometry-previous"></a>
+### 13.4 Geometry.previous <a name="geometry-previous"></a>
 
 def *previous*(self) -> "Geometry":  # *pragma*:  *no* *unit* *test*
 
 Return the previous Part Geometry in circular list.
 
-### 13.8 Geometry.start <a name="geometry-start"></a>
+### 13.5 Geometry.start <a name="geometry-start"></a>
 
 def *start*(self) -> Vector:  # *pragma*:  *no* *unit* *test*
 
 Return the Geometry start point.
 
-### 13.9 Geometry.type\_name <a name="geometry-type-name"></a>
+### 13.6 Geometry.type\_name <a name="geometry-type-name"></a>
 
 def *type\_name*(self) -> *str*:
 
