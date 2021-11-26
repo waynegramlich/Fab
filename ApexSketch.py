@@ -231,11 +231,11 @@ class Geometry(object):
         """Return the Geometry Constraint key for the start point."""
         raise NotImplementedError(f"{self}.start_key() not implemented yet.")
 
-    # Geometry.type_name():
+    # Geometry.TypeName:
     @property
-    def type_name(self) -> str:
+    def TypeName(self) -> str:
         """Return the Geometry type name."""
-        raise NotImplementedError(f"{self}.kind() not implemented yet")
+        raise NotImplementedError(f"{self}.TypeName() not implemented for {type(self)}")
 
     # Geometry.constraints_append():
     def constraints_append(self, drawing: "ApexDrawing", constraints: List[Sketcher.Constraint],
@@ -572,9 +572,9 @@ class ArcGeometry(Geometry):
         """Return the ArcGeometry sweep angle from start angle to end angle."""
         return self._sweep_angle
 
-    # ArcGeometry.type_name():
+    # ArcGeometry.TypeName():
     @property
-    def type_name(self) -> str:  # pragma: no unit cover
+    def TypeName(self) -> str:  # pragma: no unit cover
         """Return the ArcGeometry type name."""
         return "ArcGeometry"
 
@@ -705,9 +705,9 @@ class LineGeometery(Geometry):
         """Return the LineGeometery start Constraint key."""
         return 1  # 1 => End point (never changes for a LineGeometery)
 
-    # LineGeometery.type_name():
+    # LineGeometery.TypeName():
     @property
-    def type_name(self) -> str:  # pragma: no unit cover
+    def TypeName(self) -> str:  # pragma: no unit cover
         """Return the LineGeometery type name."""
         return "LineGeometery"
 
@@ -969,8 +969,8 @@ class ApexPolygon(ApexShape):
             if tracing:
                 print("")
                 print(f"{tracing}[{at_index}]: "
-                      f"at={at_geometry.type_name}('{at_name}'):{at_geometry_index} "
-                      f"before={before_geometry.type_name}('{before_name}'):"
+                      f"at={at_geometry.TypeName}('{at_name}'):{at_geometry_index} "
+                      f"before={before_geometry.TypeName}('{before_name}'):"
                       f"{before_geometry_index}")
 
             # Extract *at_arc* and/or *before_arc* if they are present:
