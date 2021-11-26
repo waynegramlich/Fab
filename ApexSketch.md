@@ -86,10 +86,10 @@ Table of Contents:
   * 12.6 [CircleGeometry.radius](#circlegeometry-radius)
   * 12.7 [CircleGeometry.type\_name](#circlegeometry-type-name)
 * 13 [Class Geometry](#geometry)
-  * 13.1 [Geometry.constraints\_append](#geometry-constraints-append)
-  * 13.2 [Geometry.finish](#geometry-finish)
-  * 13.3 [Geometry.part\_geometry](#geometry-part-geometry)
-  * 13.4 [Geometry.previous](#geometry-previous)
+  * 13.1 [Geometry.Index](#geometry-index)
+  * 13.2 [Geometry.constraints\_append](#geometry-constraints-append)
+  * 13.3 [Geometry.finish](#geometry-finish)
+  * 13.4 [Geometry.part\_geometry](#geometry-part-geometry)
   * 13.5 [Geometry.start](#geometry-start)
   * 13.6 [Geometry.type\_name](#geometry-type-name)
 * 14 [Class LineGeometery](#linegeometery)
@@ -812,7 +812,13 @@ Geometry: Internal Base class for 2D geometry objects.
 This is basically a wrapper around the arguments need to create Sketch elements.
 It is mutable and always contains a bunch of helper functions.
 
-### 13.1 Geometry.constraints\_append <a name="geometry-constraints-append"></a>
+### 13.1 Geometry.Ind <a name="geometry-index"></a>
+
+def Index(self) -> *int*:
+
+Return the Geometry index.
+
+### 13.2 Geometry.constraints\_append <a name="geometry-constraints-append"></a>
 
 def *constraints\_append*(self, *drawing*:  "ApexDrawing", *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
 
@@ -823,23 +829,17 @@ Arguments:
 * *constraints* (List[SketcherConstraint]): The constraints list to append to.
 
 
-### 13.2 Geometry.finish <a name="geometry-finish"></a>
+### 13.3 Geometry.finish <a name="geometry-finish"></a>
 
 def *finish*(self) -> Vector:  # *pragma*:  *no* *unit* *test*
 
 Return the Geometry finish point.
 
-### 13.3 Geometry.part\_geometry <a name="geometry-part-geometry"></a>
+### 13.4 Geometry.part\_geometry <a name="geometry-part-geometry"></a>
 
 def *part\_geometry*(self) -> PartGeometry:
 
 Return the PartGeometry associated with Geometry.
-
-### 13.4 Geometry.previous <a name="geometry-previous"></a>
-
-def *previous*(self) -> "Geometry":  # *pragma*:  *no* *unit* *test*
-
-Return the previous Part Geometry in circular list.
 
 ### 13.5 Geometry.start <a name="geometry-start"></a>
 

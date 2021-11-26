@@ -181,28 +181,14 @@ class Geometry(object):
     Next: Optional["Geometry"] = field(init=False, default=None)
     Previous: Optional["Geometry"] = field(init=False, default=None)
 
-    # Geometry.__init__():
-    # def __init__(self, start: Vector, finish: Vector, name: str = "") -> None:
-    #     """Initialize a Geometry."""
-    #     self._index: int = -999
-    #     self._name: str = name
-    #     self._next: Geometry = self
-    #     self._previous: Geometry = self
-    #     # print(f"<=>Geometry.__init__(*, {self._part_geometry}, '{self._name}')")
-
-    # Geometry.finish():
-    @property
-    def finish(self) -> Vector:  # pragma: no unit test
-        """Return the Geometry finish point."""
-        raise NotImplementedError(f"Geometry.start() not implemented for {self}")
-
+    # Geometry.Index:
     @property
     def Index(self) -> int:
         """Return the Geometry index."""
         assert self._index >= -1, f"index is not set: {self}"
         return self._index
 
-    # Geometry.index.setter():
+    # Geometry.Index.setter():
     @Index.setter
     def Index(self, index: int) -> None:
         """Set the Geometry index."""
@@ -212,40 +198,22 @@ class Geometry(object):
             raise ValueError(f"index(={index} must >= -1")  # pragma: no unit test
         self._index = index
 
+    # Geometry.finish():
+    @property
+    def finish(self) -> Vector:  # pragma: no unit test
+        """Return the Geometry finish point."""
+        raise NotImplementedError(f"Geometry.start() not implemented for {self}")
+
     @property
     def finish_key(self) -> int:  # pragma: no unit test
         """Return the Geometry Constraint key for the finish point."""
         raise NotImplementedError(f"{self}.finish_key() not implemented yet.")
-
-    # Geometry.next()
-    @property
-    def next(self) -> "Geometry":  # pragma: no unit test
-        """Return the next Geometry in circular list."""
-        return self._next  # pragma: no unit test
-
-    # Geometry.index.setter():
-    @next.setter
-    def next(self, next: "Geometry") -> None:
-        """Set the next Geometry in circular list."""
-        self._next = next
 
     # Geometry.part_geometry():
     @property
     def part_geometry(self) -> PartGeometry:
         """Return the PartGeometry associated with Geometry."""
         raise NotImplementedError(f"{self}.part_geometry not implmented.")
-
-    # Geometry.previous():
-    @property
-    def previous(self) -> "Geometry":  # pragma: no unit test
-        """Return the previous Part Geometry in circular list."""
-        return self._previous  # pragma: no unit test
-
-    # Geometry.previous.setter():
-    @previous.setter
-    def previous(self, next: "Geometry") -> None:
-        """Set the previous Part Geometry in circular list."""
-        self._previous = next
 
     # Geometry.start():
     @property
@@ -263,16 +231,6 @@ class Geometry(object):
     def type_name(self) -> str:
         """Return the Geometry type name."""
         raise NotImplementedError(f"{self}.kind() not implemented yet")
-
-    # Geometry.__repr__():
-    # def __repr__(self) -> str:
-    #     """Return string representation of Geometry."""
-    #     return self.__str__()
-
-    # Geometry.__str__():
-    # def __str__(self) -> str:
-    #     """Return string representation of Geometry."""
-    #     raise NotImplementedError(f"Geometry.__str__() not implemented for {type(self)}")
 
     # Geometry.constraints_append():
     def constraints_append(self, drawing: "ApexDrawing", constraints: List[Sketcher.Constraint],
@@ -1228,8 +1186,8 @@ class ApexPolygon(ApexShape):
             at_geometry: Geometry
             geometries_size: int = len(geometries)
             for at_index, geometry in enumerate(final_geometries):
-                geometry.previous = geometries[(at_index - 1) % geometries_size]
-                geometry.next = geometries[(at_index + 1) % geometries_size]
+                geometry.Previous = geometries[(at_index - 1) % geometries_size]
+                geometry.Next = geometries[(at_index + 1) % geometries_size]
 
             self._geometries = final_geometries
         if tracing:
