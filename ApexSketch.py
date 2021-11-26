@@ -180,6 +180,12 @@ class Geometry(object):
     Next: Optional["Geometry"] = field(init=False, default=None)
     Previous: Optional["Geometry"] = field(init=False, default=None)
 
+    # Geometry.get_part_geometry():
+    @property
+    def get_part_geometry(self) -> PartGeometryUnion:
+        """Return the PartGeometry associated with Geometry."""
+        raise NotImplementedError(f"{self}.part_geometry not implmented for {type(self)}.")
+
     # Geometry.Index:
     @property
     def Index(self) -> int:
@@ -203,33 +209,29 @@ class Geometry(object):
         """Return Geometry Name."""
         raise NotImplementedError(f"Geometry.Name() not implemented for {type(self)}")
 
-    # Geometry.finish():
+    # Geometry.Finish():
     @property
-    def finish(self) -> Vector:  # pragma: no unit test
+    def Finish(self) -> Vector:  # pragma: no unit test
         """Return the Geometry finish point."""
-        raise NotImplementedError(f"Geometry.start() not implemented for {self}")
+        raise NotImplementedError(f"Geometry.Start() not implemented for {type(self)}")
 
+    # Geometry.FinishKey():
     @property
-    def finish_key(self) -> int:  # pragma: no unit test
+    def FinishKey(self) -> int:  # pragma: no unit test
         """Return the Geometry Constraint key for the finish point."""
-        raise NotImplementedError(f"{self}.finish_key() not implemented yet.")
+        raise NotImplementedError(f"{self}.FinishKey() not implemented for {type(self)}.")
 
-    # Geometry.part_geometry():
+    # Geometry.Start():
     @property
-    def get_part_geometry(self) -> PartGeometryUnion:
-        """Return the PartGeometry associated with Geometry."""
-        raise NotImplementedError(f"{self}.part_geometry not implmented for {type(self)}.")
-
-    # Geometry.start():
-    @property
-    def start(self) -> Vector:  # pragma: no unit test
+    def Start(self) -> Vector:  # pragma: no unit test
         """Return the Geometry start point."""
-        raise NotImplementedError(f"Geometry.start() not implemented for {self}")
+        raise NotImplementedError(f"Geometry.Start() not implemented for {type(self)}")
 
+    # Geometry.StartKey():
     @property
-    def start_key(self) -> int:
+    def StartKey(self) -> int:
         """Return the Geometry Constraint key for the start point."""
-        raise NotImplementedError(f"{self}.start_key() not implemented yet.")
+        raise NotImplementedError(f"{self}.StartKey() not implemented for ({type(self)}.")
 
     # Geometry.TypeName:
     @property
@@ -497,15 +499,15 @@ class ArcGeometry(Geometry):
         """Return the initial ArcGeometry end Vector."""
         return self._end  # pragma: no unit test
 
-    # ArcGeometry.finish():
+    # ArcGeometry.Finish():
     @property
-    def finish(self) -> Vector:
+    def Finish(self) -> Vector:
         """Return the ArcGeometry arc finish Vector."""
         return self._finish
 
-    # ArcGeometry.finish_key():
+    # ArcGeometry.FinishKey():
     @property
-    def finish_key(self) -> int:
+    def FinishKey(self) -> int:
         """Return the ArcGeometry finish Constraint key."""
         # return 2
         return 2 if self._sweep_angle < 0 else 1
@@ -540,9 +542,9 @@ class ArcGeometry(Geometry):
         """Return the initial ArcGeometry radius."""
         return self._radius
 
-    # ArcGeometry.start():
+    # ArcGeometry.Start():
     @property
-    def start(self) -> Vector:
+    def Start(self) -> Vector:
         """Return the ArcGeometry arc start Vector."""
         return self._start
 
@@ -552,9 +554,9 @@ class ArcGeometry(Geometry):
         """Return the ArcGeometry arc start angle."""
         return self._start_angle  # pragma: no unit test
 
-    # ArcGeometry.start_key():
+    # ArcGeometry.StartKey():
     @property
-    def start_key(self) -> int:
+    def StartKey(self) -> int:
         """Return the ArcGeometry finish Constraint key."""
         # return 1
         return 1 if self._sweep_angle < 0.0 else 2
@@ -612,8 +614,8 @@ class CircleGeometry(Geometry):
         return "CircleGeometry"
 
 
-# LineGeometery:
-class LineGeometery(Geometry):
+# LineGeometry:
+class LineGeometry(Geometry):
     """Represents a line segment in a sketch."""
 
     INIT_CHECKS = (
@@ -622,39 +624,39 @@ class LineGeometery(Geometry):
         ApexCheck("name", (str,)),
     )
 
-    # LineGeometery.__init__():
+    # LineGeometry.__init__():
     def __init__(self, start: Vector, finish: Vector, name: str = "", tracing: str = "") -> None:
-        """Initialize a LineGeometery."""
+        """Initialize a LineGeometry."""
         arguments: Tuple[Any, ...] = (start, finish, name)
-        value_error: str = ApexCheck.check(arguments, LineGeometery.INIT_CHECKS)
+        value_error: str = ApexCheck.check(arguments, LineGeometry.INIT_CHECKS)
         if value_error:
             raise ValueError(value_error)
         if tracing:
-            print(f"{tracing}=>LineGeometery({start}, {finish}, '{name}')")
+            print(f"{tracing}=>LineGeometry({start}, {finish}, '{name}')")
         super().__init__()
         self._name: str = name
         self._line_segment: Part.LineSegment = Part.LineSegment(start, finish)
         self._start: Vector = start
         self._finish: Vector = finish
         if tracing:
-            print(f"{tracing}<=LineGeometery({start}, {finish}, '{name}')")
+            print(f"{tracing}<=LineGeometry({start}, {finish}, '{name}')")
 
-    # LineGeometery.get_part_geometry():
+    # LineGeometry.get_part_geometry():
     def get_part_geometry(self) -> PartGeometryUnion:
-        """Return the PartGeometry associated with a LineGeometery."""
+        """Return the PartGeometry associated with a LineGeometry."""
         return self._line_segment
 
-    # LineGeometery.finish():
+    # LineGeometry.Finish():
     @property
-    def finish(self) -> Vector:  # pragma: no unit cover
-        """Return the LineGeometery finish Vector."""
+    def Finish(self) -> Vector:  # pragma: no unit cover
+        """Return the LineGeometry finish Vector."""
         return self._finish
 
-    # LineGeometery.finish_key():
+    # LineGeometry.FinishKey():
     @property
-    def finish_key(self) -> int:
-        """Return the LineGeometery finish Constraint key."""
-        return 2  # 2 => End point (never changes for a LineGeometery)
+    def FinishKey(self) -> int:
+        """Return the LineGeometry finish Constraint key."""
+        return 2  # 2 => End point (never changes for a LineGeometry)
 
     # LineGeometry.Name():
     @property
@@ -662,35 +664,35 @@ class LineGeometery(Geometry):
         """Return name."""
         return self._name
 
-    # LineGeometery.start():
+    # LineGeometry.Start():
     @property
-    def start(self) -> ApexCorner:
-        """Return the LineGeometery start Vector."""
+    def Start(self) -> ApexCorner:
+        """Return the LineGeometry start Vector."""
         return self._start
 
-    # LineGeometery.start_key():
+    # LineGeometry.StartKey():
     @property
-    def start_key(self) -> int:
-        """Return the LineGeometery start Constraint key."""
-        return 1  # 1 => End point (never changes for a LineGeometery)
+    def StartKey(self) -> int:
+        """Return the LineGeometry start Constraint key."""
+        return 1  # 1 => End point (never changes for a LineGeometry)
 
-    # LineGeometery.TypeName():
+    # LineGeometry.TypeName():
     @property
     def TypeName(self) -> str:  # pragma: no unit cover
-        """Return the LineGeometery type name."""
-        return "LineGeometery"
+        """Return the LineGeometry type name."""
+        return "LineGeometry"
 
-    # LineGeometery.__repr__():
+    # LineGeometry.__repr__():
     def __repr__(self) -> str:
-        """Return string representation of LineGeometery."""
+        """Return string representation of LineGeometry."""
         return self.__str__()
 
-    # LineGeometery.__str__():
+    # LineGeometry.__str__():
     def __str__(self) -> str:
-        """Return string representation of LineGeometery."""
+        """Return string representation of LineGeometry."""
         start: Vector = self._start
         finish: Vector = self._finish
-        return f"LineGeometery({start}, {finish})"
+        return f"LineGeometry({start}, {finish})"
 
 
 # PointGeometry:
@@ -783,8 +785,8 @@ class _ApexCornerExtra(object):
     Name: str
     Geometries: Tuple[Geometry, ...] = field(init=False, default=())
     Arc: Optional[ArcGeometry] = field(init=False, default=None)
-    Construction: Optional[LineGeometery] = field(init=False, default=None)
-    Line: Optional[LineGeometery] = field(init=False, default=None)
+    Construction: Optional[LineGeometry] = field(init=False, default=None)
+    Line: Optional[LineGeometry] = field(init=False, default=None)
 
 
 # ApexPolygon:
@@ -906,13 +908,19 @@ class ApexPolygon(ApexShape):
             # Grab a bunch of field from *at_geometry* and *before_geometry*
             at_geometry_index: int = at_geometry.Index
             at_name: str = at_geometry.Name
-            at_start: Vector = at_geometry.start
-            at_start_key: int = at_geometry.start_key
+            at_start: Vector = at_geometry.Start
+            at_start_key: int = at_geometry.StartKey
             before_geometry: Geometry = geometries[(at_index - 1) % geometries_size]
             before_geometry_index: int = before_geometry.Index
             before_name: str = before_geometry.Name
             # before_finish: Vector = before_geometry.finish
-            before_finish_key: int = before_geometry.finish_key
+            if isinstance(before_geometry, ArcGeometry):
+                print("ArcGeometry")
+            elif isinstance(before_geometry, LineGeometry):
+                print("LineGeometry")
+            else:
+                assert False, f"{type(before_geometry)}"
+            before_finish_key: int = before_geometry.FinishKey
             after_geometry: Geometry = geometries[(at_index + 1) % geometries_size]
             assert at_geometry is not before_geometry
             if tracing:
@@ -1073,7 +1081,7 @@ class ApexPolygon(ApexShape):
             arc: Optional[ArcGeometry]
             at_arc: Optional[ArcGeometry]
             at_index: int
-            at_line: Optional[LineGeometery]
+            at_line: Optional[LineGeometry]
             at_name: str
             at_corner: _ApexCornerExtra
             before_corner: _ApexCornerExtra
@@ -1093,7 +1101,7 @@ class ApexPolygon(ApexShape):
                     arc_geometry = ArcGeometry(before_corner.Corner, at_corner.Corner,
                                                after_corner.Corner, at_name, next_tracing)
                     at_corner.Arc = arc_geometry
-                    construction_geometry: LineGeometery = LineGeometery(
+                    construction_geometry: LineGeometry = LineGeometry(
                         arc_geometry._center, arc_geometry._begin, f"{at_name}.construct")
                     self.Construction = construction_geometry
                 arcs.append(arc_geometry)
@@ -1102,7 +1110,7 @@ class ApexPolygon(ApexShape):
             # This list is 1-to-1 with the points.  Occasionally, a line is omitted when 2 arcs
             # connect with no intermediate line segment.
             epsilon: float = 1e-9  # 1 nano meter (used to detect when two points are close.)
-            lines: List[Optional[LineGeometery]] = []
+            lines: List[Optional[LineGeometry]] = []
             for at_index, at_corner in enumerate(corners):
                 before_index: int = (at_index - 1) % corners_size
                 before_corner = corners[before_index]
@@ -1110,9 +1118,9 @@ class ApexPolygon(ApexShape):
                 at_arc = arcs[at_index]
                 at_name = at_corner.Name
                 # *start* and *finish* are the start and end points of the *line*:
-                start: Vector = before_arc.finish if before_arc else before_corner.Point
+                start: Vector = before_arc.Finish if before_arc else before_corner.Point
                 assert isinstance(start, Vector)
-                finish: Vector = at_arc.start if at_arc else at_corner.Point
+                finish: Vector = at_arc.Start if at_arc else at_corner.Point
                 assert isinstance(finish, Vector)
 
                 # There is possibility that the *before_arc* and *at_arc* could touch one another
@@ -1123,17 +1131,17 @@ class ApexPolygon(ApexShape):
                 if before_arc and at_arc:
                     line_length: float = (before_corner.Point - at_corner.Point).Length
                     # *arc_lengths* is the total amount of line
-                    before_length: float = (before_arc.finish - before_arc.at).Length
-                    at_length: float = (at_arc.start - at_arc.at).Length
+                    before_length: float = (before_arc.Finish - before_arc.at).Length
+                    at_length: float = (at_arc.Start - at_arc.at).Length
                     arc_lengths: float = before_length + at_length
                     if abs(arc_lengths - line_length) < epsilon:
                         # We have "exact" match, so the line segment is suppressed.
                         generate_at_line = False
                     elif arc_lengths > line_length:  # pragma: no unit cover
                         raise ValueError("Arcs are too big")
-                line_geometry: Optional[LineGeometery] = None
+                line_geometry: Optional[LineGeometry] = None
                 if generate_at_line:
-                    line_geometry = LineGeometery(start, finish, at_name, tracing=next_tracing)
+                    line_geometry = LineGeometry(start, finish, at_name, tracing=next_tracing)
                     at_corner.Line = line_geometry
                 lines.append(line_geometry)
 
