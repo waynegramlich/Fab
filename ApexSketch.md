@@ -98,10 +98,9 @@ Table of Contents:
   * 14.4 [LineGeometry.Start](#linegeometry-start)
   * 14.5 [LineGeometry.StartKey](#linegeometry-startkey)
   * 14.6 [LineGeometry.TypeName](#linegeometry-typename)
-  * 14.7 [LineGeometry.\_\_init\_\_](#linegeometry---init--)
-  * 14.8 [LineGeometry.\_\_repr\_\_](#linegeometry---repr--)
-  * 14.9 [LineGeometry.\_\_str\_\_](#linegeometry---str--)
-  * 14.10 [LineGeometry.get\_part\_geometry](#linegeometry-get-part-geometry)
+  * 14.7 [LineGeometry.\_\_repr\_\_](#linegeometry---repr--)
+  * 14.8 [LineGeometry.\_\_str\_\_](#linegeometry---str--)
+  * 14.9 [LineGeometry.get\_part\_geometry](#linegeometry-get-part-geometry)
 * 15 [Class PointGeometry](#pointgeometry)
   * 15.1 [PointGeometry.part\_geometry](#pointgeometry-part-geometry)
   * 15.2 [PointGeometry.type\_name](#pointgeometry-type-name)
@@ -885,25 +884,19 @@ def TypeName(self) -> *str*:  # *pragma*:  *no* *unit* *cover*
 
 Return the LineGeometry type name.
 
-### 14.7 LineGeometry.\_\_init\_\_ <a name="linegeometry---init--"></a>
-
-def \_\_init\_\_(self, *start*:  Vector, *finish*:  Vector, *name*:  *str* = "", *tracing*:  *str* = "") -> None:
-
-Initialize a LineGeometry.
-
-### 14.8 LineGeometry.\_\_repr\_\_ <a name="linegeometry---repr--"></a>
+### 14.7 LineGeometry.\_\_repr\_\_ <a name="linegeometry---repr--"></a>
 
 def \_\_repr\_\_(self) -> *str*:
 
 Return string representation of LineGeometry.
 
-### 14.9 LineGeometry.\_\_str\_\_ <a name="linegeometry---str--"></a>
+### 14.8 LineGeometry.\_\_str\_\_ <a name="linegeometry---str--"></a>
 
 def \_\_str\_\_(self) -> *str*:
 
 Return string representation of LineGeometry.
 
-### 14.10 LineGeometry.get\_part\_geometry <a name="linegeometry-get-part-geometry"></a>
+### 14.9 LineGeometry.get\_part\_geometry <a name="linegeometry-get-part-geometry"></a>
 
 def *get\_part\_geometry*(self) -> PartGeometryUnion:
 

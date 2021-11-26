@@ -615,35 +615,20 @@ class CircleGeometry(Geometry):
 
 
 # LineGeometry:
+@dataclass
 class LineGeometry(Geometry):
     """Represents a line segment in a sketch."""
 
-    INIT_CHECKS = (
-        ApexCheck("start", (Vector,)),
-        ApexCheck("finish", (Vector,)),
-        ApexCheck("name", (str,)),
-    )
-
-    # LineGeometry.__init__():
-    def __init__(self, start: Vector, finish: Vector, name: str = "", tracing: str = "") -> None:
-        """Initialize a LineGeometry."""
-        arguments: Tuple[Any, ...] = (start, finish, name)
-        value_error: str = ApexCheck.check(arguments, LineGeometry.INIT_CHECKS)
-        if value_error:
-            raise ValueError(value_error)
-        if tracing:
-            print(f"{tracing}=>LineGeometry({start}, {finish}, '{name}')")
-        super().__init__()
-        self._name: str = name
-        self._line_segment: Part.LineSegment = Part.LineSegment(start, finish)
-        self._start: Vector = start
-        self._finish: Vector = finish
-        if tracing:
-            print(f"{tracing}<=LineGeometry({start}, {finish}, '{name}')")
+    _start: Vector
+    _finish: Vector
+    _name: str = ""
+    _line_segment: Optional[Part.LineSegment] = field(init=False, default=None)
 
     # LineGeometry.get_part_geometry():
     def get_part_geometry(self) -> PartGeometryUnion:
         """Return the PartGeometry associated with a LineGeometry."""
+        if not self._line_segment:
+            self._line_segment = Part.LineSegment(self._start, self._finish)
         return self._line_segment
 
     # LineGeometry.Finish():
@@ -914,12 +899,6 @@ class ApexPolygon(ApexShape):
             before_geometry_index: int = before_geometry.Index
             before_name: str = before_geometry.Name
             # before_finish: Vector = before_geometry.finish
-            if isinstance(before_geometry, ArcGeometry):
-                print("ArcGeometry")
-            elif isinstance(before_geometry, LineGeometry):
-                print("LineGeometry")
-            else:
-                assert False, f"{type(before_geometry)}"
             before_finish_key: int = before_geometry.FinishKey
             after_geometry: Geometry = geometries[(at_index + 1) % geometries_size]
             assert at_geometry is not before_geometry
@@ -1141,7 +1120,7 @@ class ApexPolygon(ApexShape):
                         raise ValueError("Arcs are too big")
                 line_geometry: Optional[LineGeometry] = None
                 if generate_at_line:
-                    line_geometry = LineGeometry(start, finish, at_name, tracing=next_tracing)
+                    line_geometry = LineGeometry(start, finish, at_name)
                     at_corner.Line = line_geometry
                 lines.append(line_geometry)
 
