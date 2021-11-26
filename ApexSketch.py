@@ -722,39 +722,20 @@ class LineGeometery(Geometry):
 
 
 # PointGeometry:
+@dataclass
 class PointGeometry(Geometry):
     """Represents a point in a sketch."""
 
-    # PointGeometry.__init__():
-    def __init__(self, point: Vector, name: str = "") -> None:
-        """Initialize a PointGeometry."""
-        super().__init__()
-        self._name: str = name
-        self._point: Vector = point
-        self._part_point: PartGeometryUnion = Part.Point(point)
-        # print(f"PointGeometry.__init__({point.vector=}): ")
-
-    # PointGeometry.__str__():
-    def __str__(self) -> str:  # pragma: no unit cover
-        """Return PointGeometry string ."""
-        return f"PointGeometry(point={self._point}, name='{self.Name}', index={self._index})"
+    Point: Vector
+    Name: str = ""
+    _part_point: Optional[PartGeometryUnion] = field(init=False, default=None)
 
     # PointGeometry.part_geometry():
     def get_part_geometry(self) -> PartGeometryUnion:
         """Return the  PointGeometry."""
+        if not self._part_point:
+            self._part_point = Part.Point(self.Point)
         return self._part_point
-
-    # PointGeometry.Name():
-    @property
-    def Name(self) -> str:
-        """Return Name."""
-        return self._name
-
-    # PointGeometry.point():
-    @property
-    def point(self) -> Vector:  # pragma: no unit cover
-        """Return the PointGeometry Vector."""
-        return self._point
 
     # PointGeometry.type_name():
     @property

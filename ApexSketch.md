@@ -106,12 +106,8 @@ Table of Contents:
   * 14.9 [LineGeometery.start\_key](#linegeometery-start-key)
   * 14.10 [LineGeometry.Name](#linegeometry-name)
 * 15 [Class PointGeometry](#pointgeometry)
-  * 15.1 [PointGeometry.Name](#pointgeometry-name)
-  * 15.2 [PointGeometry.\_\_init\_\_](#pointgeometry---init--)
-  * 15.3 [PointGeometry.\_\_str\_\_](#pointgeometry---str--)
-  * 15.4 [PointGeometry.part\_geometry](#pointgeometry-part-geometry)
-  * 15.5 [PointGeometry.point](#pointgeometry-point)
-  * 15.6 [PointGeometry.type\_name](#pointgeometry-type-name)
+  * 15.1 [PointGeometry.part\_geometry](#pointgeometry-part-geometry)
+  * 15.2 [PointGeometry.type\_name](#pointgeometry-type-name)
 * 16 [Class \_ApexCornerExtra](#-apexcornerextra)
 
 ## 1 <a name="introduction"></a>Introduction
@@ -940,37 +936,13 @@ class PointGeometry(Geometry):
 
 Represents a point in a sketch.
 
-### 15.1 PointGeometry.Name <a name="pointgeometry-name"></a>
-
-def Name(self) -> *str*:
-
-Return Name.
-
-### 15.2 PointGeometry.\_\_init\_\_ <a name="pointgeometry---init--"></a>
-
-def \_\_init\_\_(self, *point*:  Vector, *name*:  *str* = "") -> None:
-
-Initialize a PointGeometry.
-
-### 15.3 PointGeometry.\_\_str\_\_ <a name="pointgeometry---str--"></a>
-
-def \_\_str\_\_(self) -> *str*:  # *pragma*:  *no* *unit* *cover*
-
-Return PointGeometry string .
-
-### 15.4 PointGeometry.part\_geometry <a name="pointgeometry-part-geometry"></a>
+### 15.1 PointGeometry.part\_geometry <a name="pointgeometry-part-geometry"></a>
 
 def *get\_part\_geometry*(self) -> PartGeometryUnion:
 
 Return the  PointGeometry.
 
-### 15.5 PointGeometry.point <a name="pointgeometry-point"></a>
-
-def *point*(self) -> Vector:  # *pragma*:  *no* *unit* *cover*
-
-Return the PointGeometry Vector.
-
-### 15.6 PointGeometry.type\_name <a name="pointgeometry-type-name"></a>
+### 15.2 PointGeometry.type\_name <a name="pointgeometry-type-name"></a>
 
 def *type\_name*(self) -> *str*:  # *pragma*:  *no* *unit* *cover*
 
