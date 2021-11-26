@@ -256,9 +256,8 @@ class ArcGeometry(Geometry):
     """Represents an an arc in a sketch."""
 
     # ArcGeometry.__init__():
-    def __init__(self, drawing: "ApexDrawing",
-                 begin: ApexCorner, at: ApexCorner, end: ApexCorner,
-                 name: str = "", tracing: str = "") -> None:
+    def __init__(self, begin: ApexCorner, at: ApexCorner, end: ApexCorner, name: str = "",
+                 tracing: str = "") -> None:
         """Initialize an ArcGeometry."""
         # next_tracing: str = tracing + " " if tracing else ""
         trace_level: int = 0
@@ -595,12 +594,10 @@ class CircleGeometry(Geometry):
     """Represents a circle in a sketch."""
 
     # CircleGeometry.__init__():
-    def __init__(self, drawing: "ApexDrawing",
-                 center: Vector, radius: float, name: str = "") -> None:
+    def __init__(self, center: Vector, radius: float, name: str = "") -> None:
         """Initialize a CircleGeometry."""
         super().__init__()
         self._center: Vector = center
-        self._drawing: ApexDrawing = drawing
         self._name: str = name
         self._part_circle: Part.Circle = Part.Circle(center, App.Vector(0, 0, 1), radius)
         self._radius: float = radius
@@ -650,36 +647,27 @@ class LineGeometery(Geometry):
     """Represents a line segment in a sketch."""
 
     INIT_CHECKS = (
-        ApexCheck("drawing", ("?", object)),
         ApexCheck("start", (Vector,)),
         ApexCheck("finish", (Vector,)),
         ApexCheck("name", (str,)),
     )
 
     # LineGeometery.__init__():
-    def __init__(self, drawing: "ApexDrawing",
-                 start: Vector, finish: Vector, name: str = "", tracing: str = "") -> None:
+    def __init__(self, start: Vector, finish: Vector, name: str = "", tracing: str = "") -> None:
         """Initialize a LineGeometery."""
-        arguments: Tuple[Any, ...] = (drawing, start, finish, name)
+        arguments: Tuple[Any, ...] = (start, finish, name)
         value_error: str = ApexCheck.check(arguments, LineGeometery.INIT_CHECKS)
         if value_error:
             raise ValueError(value_error)
         if tracing:
             print(f"{tracing}=>LineGeometery({start}, {finish}, '{name}')")
         super().__init__()
-        self._drawing: ApexDrawing = drawing
         self._name: str = name
         self._line_segment: Part.LineSegment = Part.LineSegment(start, finish)
         self._start: Vector = start
         self._finish: Vector = finish
         if tracing:
             print(f"{tracing}<=LineGeometery({start}, {finish}, '{name}')")
-
-    # LineGeometery.drawing():
-    @property
-    def drawing(self) -> "ApexDrawing":  # pragma: no unit cover
-        """Return the LineGeometery ApexDrawing."""
-        return self._drawing
 
     # LineGeometery.part_geometry():
     @property
@@ -741,7 +729,7 @@ class PointGeometry(Geometry):
     """Represents a point in a sketch."""
 
     # PointGeometry.__init__():
-    def __init__(self, drawing: "ApexDrawing", point: Vector, name: str = "") -> None:
+    def __init__(self, point: Vector, name: str = "") -> None:
         """Initialize a PointGeometry."""
         super().__init__()
         self._name: str = name
@@ -1153,11 +1141,11 @@ class ApexPolygon(ApexShape):
                 at_name = at_corner.Name
                 arc_geometry: Optional[ArcGeometry] = None
                 if at_corner.Radius > 0.0:
-                    arc_geometry = ArcGeometry(drawing, before_corner.Corner, at_corner.Corner,
+                    arc_geometry = ArcGeometry(before_corner.Corner, at_corner.Corner,
                                                after_corner.Corner, at_name, next_tracing)
                     at_corner.Arc = arc_geometry
                     construction_geometry: LineGeometery = LineGeometery(
-                        drawing, arc_geometry._center, arc_geometry._begin, f"{at_name}.construct")
+                        arc_geometry._center, arc_geometry._begin, f"{at_name}.construct")
                     self.Construction = construction_geometry
                 arcs.append(arc_geometry)
 
@@ -1196,8 +1184,7 @@ class ApexPolygon(ApexShape):
                         raise ValueError("Arcs are too big")
                 line_geometry: Optional[LineGeometery] = None
                 if generate_at_line:
-                    line_geometry = LineGeometery(drawing, start,
-                                                  finish, at_name, tracing=next_tracing)
+                    line_geometry = LineGeometery(start, finish, at_name, tracing=next_tracing)
                     at_corner.Line = line_geometry
                 lines.append(line_geometry)
 
@@ -1387,8 +1374,7 @@ class ApexCircle(ApexShape):
             print(f"{tracing}=>ApexCircle.geometries_get()")
         circle_geometry: Optional[CircleGeometry] = self._circle_geometry
         if not circle_geometry:
-            circle_geometry = CircleGeometry(
-                drawing, self.Center, self.Diameter / 2.0, self.Name)
+            circle_geometry = CircleGeometry(self.Center, self.Diameter / 2.0, self.Name)
             self._circle_geometry = circle_geometry
             self._circle_geometries = (circle_geometry,)
         assert isinstance(circle_geometry, CircleGeometry)
@@ -2034,7 +2020,7 @@ class ApexDrawing(object):
     def point_geometries_get(self, point: Vector, tracing: str = "") -> Tuple["Geometry", ...]:
         """Return the PointGeometry Geometry's."""
         assert isinstance(point, Vector)
-        return (PointGeometry(self, point, ""),)
+        return (PointGeometry(point, ""),)
 
     # ApexDrawing.reorient():
     def reorient(self, placement: Placement, suffix: Optional[str] = "",

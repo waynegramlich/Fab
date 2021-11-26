@@ -98,14 +98,13 @@ Table of Contents:
   * 14.1 [LineGeometery.\_\_init\_\_](#linegeometery---init--)
   * 14.2 [LineGeometery.\_\_repr\_\_](#linegeometery---repr--)
   * 14.3 [LineGeometery.\_\_str\_\_](#linegeometery---str--)
-  * 14.4 [LineGeometery.drawing](#linegeometery-drawing)
-  * 14.5 [LineGeometery.finish](#linegeometery-finish)
-  * 14.6 [LineGeometery.finish\_key](#linegeometery-finish-key)
-  * 14.7 [LineGeometery.part\_geometry](#linegeometery-part-geometry)
-  * 14.8 [LineGeometery.start](#linegeometery-start)
-  * 14.9 [LineGeometery.start\_key](#linegeometery-start-key)
-  * 14.10 [LineGeometery.type\_name](#linegeometery-type-name)
-  * 14.11 [LineGeometry.Name](#linegeometry-name)
+  * 14.4 [LineGeometery.finish](#linegeometery-finish)
+  * 14.5 [LineGeometery.finish\_key](#linegeometery-finish-key)
+  * 14.6 [LineGeometery.part\_geometry](#linegeometery-part-geometry)
+  * 14.7 [LineGeometery.start](#linegeometery-start)
+  * 14.8 [LineGeometery.start\_key](#linegeometery-start-key)
+  * 14.9 [LineGeometery.type\_name](#linegeometery-type-name)
+  * 14.10 [LineGeometry.Name](#linegeometry-name)
 * 15 [Class PointGeometry](#pointgeometry)
   * 15.1 [PointGeometry.Name](#pointgeometry-name)
   * 15.2 [PointGeometry.\_\_init\_\_](#pointgeometry---init--)
@@ -641,7 +640,7 @@ Represents an an arc in a sketch.
 
 ### 11.1 ArcGeometry.\_\_init\_\_ <a name="arcgeometry---init--"></a>
 
-def \_\_init\_\_(self, *drawing*:  "ApexDrawing", *begin*:  ApexCorner, *at*:  ApexCorner, *end*:  ApexCorner, *name*:  *str* = "", *tracing*:  *str* = "") -> None:
+def \_\_init\_\_(self, *begin*:  ApexCorner, *at*:  ApexCorner, *end*:  ApexCorner, *name*:  *str* = "", *tracing*:  *str* = "") -> None:
 
 Initialize an ArcGeometry.
 
@@ -773,7 +772,7 @@ Represents a circle in a sketch.
 
 ### 12.1 CircleGeometry.\_\_init\_\_ <a name="circlegeometry---init--"></a>
 
-def \_\_init\_\_(self, *drawing*:  "ApexDrawing", *center*:  Vector, *radius*:  *float*, *name*:  *str* = "") -> None:
+def \_\_init\_\_(self, *center*:  Vector, *radius*:  *float*, *name*:  *str* = "") -> None:
 
 Initialize a CircleGeometry.
 
@@ -877,7 +876,7 @@ Represents a line segment in a sketch.
 
 ### 14.1 LineGeometery.\_\_init\_\_ <a name="linegeometery---init--"></a>
 
-def \_\_init\_\_(self, *drawing*:  "ApexDrawing", *start*:  Vector, *finish*:  Vector, *name*:  *str* = "", *tracing*:  *str* = "") -> None:
+def \_\_init\_\_(self, *start*:  Vector, *finish*:  Vector, *name*:  *str* = "", *tracing*:  *str* = "") -> None:
 
 Initialize a LineGeometery.
 
@@ -893,49 +892,43 @@ def \_\_str\_\_(self) -> *str*:
 
 Return string representation of LineGeometery.
 
-### 14.4 LineGeometery.drawing <a name="linegeometery-drawing"></a>
-
-def *drawing*(self) -> "ApexDrawing":  # *pragma*:  *no* *unit* *cover*
-
-Return the LineGeometery ApexDrawing.
-
-### 14.5 LineGeometery.finish <a name="linegeometery-finish"></a>
+### 14.4 LineGeometery.finish <a name="linegeometery-finish"></a>
 
 def *finish*(self) -> Vector:  # *pragma*:  *no* *unit* *cover*
 
 Return the LineGeometery finish Vector.
 
-### 14.6 LineGeometery.finish\_key <a name="linegeometery-finish-key"></a>
+### 14.5 LineGeometery.finish\_key <a name="linegeometery-finish-key"></a>
 
 def *finish\_key*(self) -> *int*:
 
 Return the LineGeometery finish Constraint key.
 
-### 14.7 LineGeometery.part\_geometry <a name="linegeometery-part-geometry"></a>
+### 14.6 LineGeometery.part\_geometry <a name="linegeometery-part-geometry"></a>
 
 def *part\_geometry*(self) -> PartGeometry:
 
 Return the PartGeometry associated with a LineGeometery.
 
-### 14.8 LineGeometery.start <a name="linegeometery-start"></a>
+### 14.7 LineGeometery.start <a name="linegeometery-start"></a>
 
 def *start*(self) -> ApexCorner:
 
 Return the LineGeometery start Vector.
 
-### 14.9 LineGeometery.start\_key <a name="linegeometery-start-key"></a>
+### 14.8 LineGeometery.start\_key <a name="linegeometery-start-key"></a>
 
 def *start\_key*(self) -> *int*:
 
 Return the LineGeometery start Constraint key.
 
-### 14.10 LineGeometery.type\_name <a name="linegeometery-type-name"></a>
+### 14.9 LineGeometery.type\_name <a name="linegeometery-type-name"></a>
 
 def *type\_name*(self) -> *str*:  # *pragma*:  *no* *unit* *cover*
 
 Return the LineGeometery type name.
 
-### 14.11 LineGeometry.Name <a name="linegeometry-name"></a>
+### 14.10 LineGeometry.Name <a name="linegeometry-name"></a>
 
 def Name(self) -> *str*:
 
@@ -955,7 +948,7 @@ Return Name.
 
 ### 15.2 PointGeometry.\_\_init\_\_ <a name="pointgeometry---init--"></a>
 
-def \_\_init\_\_(self, *drawing*:  "ApexDrawing", *point*:  Vector, *name*:  *str* = "") -> None:
+def \_\_init\_\_(self, *point*:  Vector, *name*:  *str* = "") -> None:
 
 Initialize a PointGeometry.
 
