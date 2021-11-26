@@ -67,7 +67,7 @@ import PartDesign  # type: ignore
 import Sketcher  # type: ignore
 
 
-PartGeometry = Union[Part.Circle, Part.LineSegment, Part.Point, Part.Arc]
+PartGeometryUnion = Union[Part.Circle, Part.LineSegment, Part.Point, Part.Arc]
 
 # In general, the classes are organized from lowest level to highest level.
 # This is primarily to avoid have to add addition quotes around mypy type hints.
@@ -216,7 +216,7 @@ class Geometry(object):
 
     # Geometry.part_geometry():
     @property
-    def part_geometry(self) -> PartGeometry:
+    def part_geometry(self) -> PartGeometryUnion:
         """Return the PartGeometry associated with Geometry."""
         raise NotImplementedError(f"{self}.part_geometry not implmented.")
 
@@ -531,7 +531,7 @@ class ArcGeometry(Geometry):
 
     # ArcGeometry.part_geometry():
     @property
-    def part_geometry(self) -> PartGeometry:
+    def part_geometry(self) -> PartGeometryUnion:
         """Return ArcGeometry Part.Arc."""
         return self._part_arc
 
@@ -610,7 +610,7 @@ class CircleGeometry(Geometry):
 
     # CircleGeometry.part_element():
     @property
-    def part_geometry(self) -> PartGeometry:
+    def part_geometry(self) -> PartGeometryUnion:
         """Return the CircleGeometry PartGeometry."""
         return self._part_circle
 
@@ -671,7 +671,7 @@ class LineGeometery(Geometry):
 
     # LineGeometery.part_geometry():
     @property
-    def part_geometry(self) -> PartGeometry:
+    def part_geometry(self) -> PartGeometryUnion:
         """Return the PartGeometry associated with a LineGeometery."""
         return self._line_segment
 
@@ -734,7 +734,7 @@ class PointGeometry(Geometry):
         super().__init__()
         self._name: str = name
         self._point: Vector = point
-        self._part_point: PartGeometry = Part.Point(point)
+        self._part_point: PartGeometryUnion = Part.Point(point)
         # print(f"PointGeometry.__init__({point.vector=}): ")
 
     # PointGeometry.__str__():
@@ -750,7 +750,7 @@ class PointGeometry(Geometry):
 
     # PointGeometry.part_geometry():
     @property
-    def part_geometry(self) -> PartGeometry:
+    def part_geometry(self) -> PartGeometryUnion:
         """Return the  PointGeometry."""
         return self._part_point
 
@@ -2173,8 +2173,8 @@ class ApexDrawing(object):
             print(f"{tracing}{origin_index=}")
 
         # Extract *part_geometries* from *geometries*:
-        part_geometry: PartGeometry
-        part_geometries: List[PartGeometry] = []
+        part_geometry: PartGeometryUnion
+        part_geometries: List[PartGeometryUnion] = []
         for index, geometry in enumerate(final_geometries):
             part_geometry = geometry.part_geometry
             part_geometries.append(part_geometry)

@@ -718,7 +718,7 @@ Return name.
 
 ### 11.14 ArcGeometry.part\_geometry <a name="arcgeometry-part-geometry"></a>
 
-def *part\_geometry*(self) -> PartGeometry:
+def *part\_geometry*(self) -> PartGeometryUnion:
 
 Return ArcGeometry Part.Arc.
 
@@ -796,7 +796,7 @@ Return the CircleGeometry center.
 
 ### 12.5 CircleGeometry.part\_element <a name="circlegeometry-part-element"></a>
 
-def *part\_geometry*(self) -> PartGeometry:
+def *part\_geometry*(self) -> PartGeometryUnion:
 
 Return the CircleGeometry PartGeometry.
 
@@ -858,7 +858,7 @@ Return the Geometry finish point.
 
 ### 13.6 Geometry.part\_geometry <a name="geometry-part-geometry"></a>
 
-def *part\_geometry*(self) -> PartGeometry:
+def *part\_geometry*(self) -> PartGeometryUnion:
 
 Return the PartGeometry associated with Geometry.
 
@@ -912,7 +912,7 @@ Return the LineGeometery finish Constraint key.
 
 ### 14.7 LineGeometery.part\_geometry <a name="linegeometery-part-geometry"></a>
 
-def *part\_geometry*(self) -> PartGeometry:
+def *part\_geometry*(self) -> PartGeometryUnion:
 
 Return the PartGeometry associated with a LineGeometery.
 
@@ -960,7 +960,7 @@ Return PointGeometry string .
 
 ### 15.4 PointGeometry.part\_geometry <a name="pointgeometry-part-geometry"></a>
 
-def *part\_geometry*(self) -> PartGeometry:
+def *part\_geometry*(self) -> PartGeometryUnion:
 
 Return the  PointGeometry.
 
