@@ -176,7 +176,6 @@ class Geometry(object):
     It is mutable and always contains a bunch of helper functions.
     """
 
-    Name: str
     _index: int = field(init=False, default=-999)
     Next: Optional["Geometry"] = field(init=False, default=None)
     Previous: Optional["Geometry"] = field(init=False, default=None)
@@ -197,6 +196,12 @@ class Geometry(object):
         if index < -1:
             raise ValueError(f"index(={index} must >= -1")  # pragma: no unit test
         self._index = index
+
+    # Geometry.Name():
+    @property
+    def Name(self) -> str:
+        """Return Geometry Name."""
+        raise NotImplementedError(f"Geometry.Name() not implemented for {type(self)}")
 
     # Geometry.finish():
     @property
@@ -426,10 +431,11 @@ class ArcGeometry(Geometry):
         part_arc: Part.Arc = Part.ArcOfCircle(part_circle, start_angle, end_angle)
 
         # Now we can create the *ArcGeometry*:
-        super().__init__(name)
+        super().__init__()
         self._at: Vector = at.Point
         self._begin: Vector = begin.Point
         self._center: Vector = c
+        self._name: str = name
         self._end: Vector = end.Point
         self._finish: Vector = f
         self._finish_angle: float = finish_angle
@@ -518,6 +524,12 @@ class ArcGeometry(Geometry):
         """Return the initial ArcGeometry arc start Vector."""
         return self._start  # pragma: no unit test
 
+    # ArcGeometry.name():
+    @property
+    def Name(self) -> str:
+        """Return name."""
+        return self._name
+
     # ArcGeometry.part_geometry():
     @property
     def part_geometry(self) -> PartGeometry:
@@ -586,9 +598,10 @@ class CircleGeometry(Geometry):
     def __init__(self, drawing: "ApexDrawing",
                  center: Vector, radius: float, name: str = "") -> None:
         """Initialize a CircleGeometry."""
-        super().__init__(name)
+        super().__init__()
         self._center: Vector = center
         self._drawing: ApexDrawing = drawing
+        self._name: str = name
         self._part_circle: Part.Circle = Part.Circle(center, App.Vector(0, 0, 1), radius)
         self._radius: float = radius
 
@@ -609,6 +622,11 @@ class CircleGeometry(Geometry):
     def radius(self) -> float:  # pragma: no unit cover
         """Return the CircleGeometry radius."""
         return self._radius
+
+    @property
+    def Name(self) -> str:
+        """Return name."""
+        return self._name
 
     # CircleGeometry.type_name():
     @property
@@ -648,8 +666,9 @@ class LineGeometery(Geometry):
             raise ValueError(value_error)
         if tracing:
             print(f"{tracing}=>LineGeometery({start}, {finish}, '{name}')")
-        super().__init__(name)
+        super().__init__()
         self._drawing: ApexDrawing = drawing
+        self._name: str = name
         self._line_segment: Part.LineSegment = Part.LineSegment(start, finish)
         self._start: Vector = start
         self._finish: Vector = finish
@@ -679,6 +698,12 @@ class LineGeometery(Geometry):
     def finish_key(self) -> int:
         """Return the LineGeometery finish Constraint key."""
         return 2  # 2 => End point (never changes for a LineGeometery)
+
+    # LineGeometry.Name():
+    @property
+    def Name(self) -> str:
+        """Return name."""
+        return self._name
 
     # LineGeometery.start():
     @property
@@ -718,7 +743,8 @@ class PointGeometry(Geometry):
     # PointGeometry.__init__():
     def __init__(self, drawing: "ApexDrawing", point: Vector, name: str = "") -> None:
         """Initialize a PointGeometry."""
-        super().__init__(name)
+        super().__init__()
+        self._name: str = name
         self._point: Vector = point
         self._part_point: PartGeometry = Part.Point(point)
         # print(f"PointGeometry.__init__({point.vector=}): ")
@@ -727,6 +753,12 @@ class PointGeometry(Geometry):
     def __str__(self) -> str:  # pragma: no unit cover
         """Return PointGeometry string ."""
         return f"PointGeometry(point={self._point}, name='{self.Name}', index={self._index})"
+
+    # PointGeometry.Name():
+    @property
+    def Name(self) -> str:
+        """Return Name."""
+        return self._name
 
     # PointGeometry.part_geometry():
     @property
