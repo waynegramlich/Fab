@@ -168,13 +168,13 @@ Initialize a circle.
 
 ### 2.2 ApexCircle.constraints\_append <a name="apexcircle-constraints-append"></a>
 
-def *constraints\_append*(self, *drawing*:  "ApexDrawing", *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
+def *constraints\_append*(self, *origin\_point*:  PointGeometry, *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
 
 Return the CircleGeometry constraints.
 
 ### 2.3 ApexCircle.geometries\_get <a name="apexcircle-geometries-get"></a>
 
-def *geometries\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[Geometry, ...]:
+def *geometries\_get*(self, *tracing*:  *str* = "") -> Tuple[Geometry, ...]:
 
 Return the CircleGeometry.
 
@@ -265,7 +265,7 @@ Plane\_Process.
 
 ### 4.5 ApexDrawing.point\_constraints\_append <a name="apexdrawing-point-constraints-append"></a>
 
-def *point\_constraints\_append*(self, *point*:  Vector, *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:  # REMOVE
+def *point\_constraints\_append*( *self*, *origin\_point*:  PointGeometry, *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:  # REMOVE
 
 Append Vector constraints to a list.
 
@@ -355,18 +355,18 @@ Apply operation to a Part Design body.
 
 ### 6.2 ApexOperation.constraints\_append <a name="apexoperation-constraints-append"></a>
 
-def *constraints\_append*(self, *drawing*:  "ApexDrawing", *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
+def *constraints\_append*(self, *origin\_point*:  PointGeometry, *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
 
 Append the ApexOperation constraints to drawing.
 
 Arguments:
-* *drawing* (ApexDrawing): The drawing to use.
+* *origin\_point* (PointGeometry): The PointGeometry to use for the origin.
 * *constraints* (List[SketcherConstraint]): The constraints list to append to.
 
 
 ### 6.3 ApexOperation.geometries\_get <a name="apexoperation-geometries-get"></a>
 
-def *geometries\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[Geometry, ...]:
+def *geometries\_get*(self, *tracing*:  *str* = "") -> Tuple[Geometry, ...]:
 
 Return the geometries associated with an operation.
 
@@ -515,13 +515,13 @@ Run ApexPolygon unit tests.
 
 ### 9.3 ApexPolygon.constraints\_append <a name="apexpolygon-constraints-append"></a>
 
-def *constraints\_append*(self, *drawing*:  "ApexDrawing", *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
+def *constraints\_append*(self, *origin\_point*:  PointGeometry, *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
 
-Return the ApexPolygon constraints for a ApexDrawing.
+Append the ApexPolygon constraints to a constraints list.
 
 ### 9.4 ApexPolygon.geometries\_get <a name="apexpolygon-geometries-get"></a>
 
-def *geometries\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[Geometry, ...]:
+def *geometries\_get*(self, *tracing*:  *str* = "") -> Tuple[Geometry, ...]:
 
 Return the ApexPolygon ApexGeometries tuple.
 
@@ -560,23 +560,20 @@ ApexShape is a base class for the various geometric shapes.  See sub-classes for
 
 ### 10.1 ApexShape.constraints\_append <a name="apexshape-constraints-append"></a>
 
-def *constraints\_append*(self, *drawing*:  "ApexDrawing", *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
+def *constraints\_append*(self, *origin\_point*:  PointGeometry, *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
 
 Append the ApexShape constraints to drawing.
 
 Arguments:
-* *drawing* (ApexDrawing): The drawing to use.
+* *origin\_point* (PointGeometry): The PointGeometry to used for the origin.
 * *constraints* (List[SketcherConstraint]): The constraints list to append to.
 
 
 ### 10.2 ApexShape.geometries\_get <a name="apexshape-geometries-get"></a>
 
-def *geometries\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[Geometry, ...]:
+def *geometries\_get*(self, *tracing*:  *str* = "") -> Tuple[Geometry, ...]:
 
 Return the ApexShape ApexGeometries tuple.
-
-Arguments:
-* *drawing* (ApexDrawing): The associated drawing to use for geometry extraction.
 
 Returns:
 * (Tuple[Geometry, ...]) of extracted Geometry's.
@@ -817,12 +814,12 @@ Return the Geometry type name.
 
 ### 14.8 Geometry.constraints\_append <a name="geometry-constraints-append"></a>
 
-def *constraints\_append*(self, *drawing*:  "ApexDrawing", *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
+def *constraints\_append*(self, *origin\_point*:  "PointGeometry", *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
 
 Append the ApexShape constraints to drawing.
 
 Arguments:
-* *drawing* (ApexDrawing): The drawing to use.
+* *origin\_point* (PointGeometry): The PointGeometry to use for the origin
 * *constraints* (List[SketcherConstraint]): The constraints list to append to.
 
 

@@ -229,12 +229,12 @@ class Geometry(object):
         raise NotImplementedError(f"{self}.TypeName() not implemented for {type(self)}")
 
     # Geometry.constraints_append():
-    def constraints_append(self, drawing: "ApexDrawing", constraints: List[Sketcher.Constraint],
-                           tracing: str = "") -> None:
+    def constraints_append(self, origin_point: "PointGeometry",
+                           constraints: List[Sketcher.Constraint], tracing: str = "") -> None:
         """Append the ApexShape constraints to drawing.
 
         Arguments:
-        * *drawing* (ApexDrawing): The drawing to use.
+        * *origin_point* (PointGeometry): The PointGeometry to use for the origin
         * *constraints* (List[SketcherConstraint]): The constraints list to append to.
 
         """
@@ -706,23 +706,20 @@ class ApexShape(object):
         raise NotImplementedError(f"ApexShape.get_box() not implemented for {type(self)}")
 
     # ApexShape.constraints_append():
-    def constraints_append(self, drawing: "ApexDrawing", constraints: List[Sketcher.Constraint],
-                           tracing: str = "") -> None:
+    def constraints_append(self, origin_point: PointGeometry,
+                           constraints: List[Sketcher.Constraint], tracing: str = "") -> None:
         """Append the ApexShape constraints to drawing.
 
         Arguments:
-        * *drawing* (ApexDrawing): The drawing to use.
+        * *origin_point* (PointGeometry): The PointGeometry to used for the origin.
         * *constraints* (List[SketcherConstraint]): The constraints list to append to.
 
         """
         raise NotImplementedError()
 
     # ApexShape.geometries_get():
-    def geometries_get(self, drawing: "ApexDrawing", tracing: str = "") -> Tuple[Geometry, ...]:
+    def geometries_get(self, tracing: str = "") -> Tuple[Geometry, ...]:
         """Return the ApexShape ApexGeometries tuple.
-
-        Arguments:
-        * *drawing* (ApexDrawing): The associated drawing to use for geometry extraction.
 
         Returns:
         * (Tuple[Geometry, ...]) of extracted Geometry's.
@@ -869,18 +866,19 @@ class ApexPolygon(ApexShape):
         return f"ApexPolygon(({corners_text}), '{self.Name}')"
 
     # ApexPolygon.constraints_append():
-    def constraints_append(self, drawing: "ApexDrawing", constraints: List[Sketcher.Constraint],
-                           tracing: str = "") -> None:
-        """Return the ApexPolygon constraints for a ApexDrawing."""
+    def constraints_append(self, origin_point: PointGeometry,
+                           constraints: List[Sketcher.Constraint], tracing: str = "") -> None:
+        """Append the ApexPolygon constraints to a constraints list."""
         # Perform an requested *tracing*:
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>ApexPolygon.contraints_append('{self.Name}', "
                   f"*, {len(constraints)=}):")
 
-        origin_index: int = drawing.OriginIndex
+        assert isinstance(origin_point, PointGeometry)
+        origin_index: int = origin_point.Index
         geometries: Optional[Tuple[Geometry, ...]] = (
-            self.geometries_get(drawing, tracing=next_tracing))
+            self.geometries_get(tracing=next_tracing))
         assert geometries, "ApexGeometries not set"
         geometries_size: int = len(geometries)
         if tracing:
@@ -1022,7 +1020,7 @@ class ApexPolygon(ApexShape):
                   f"*, , {len(constraints)=})")
 
     # ApexPolygon.geometries_get():
-    def geometries_get(self, drawing: "ApexDrawing", tracing: str = "") -> Tuple[Geometry, ...]:
+    def geometries_get(self, tracing: str = "") -> Tuple[Geometry, ...]:
         """Return the ApexPolygon ApexGeometries tuple."""
         # Overview:
         #
@@ -1266,12 +1264,12 @@ class ApexCircle(ApexShape):
         object.__setattr__(self, "Box", box)
 
     # ApexCircle.constraints_append():
-    def constraints_append(self, drawing: "ApexDrawing", constraints: List[Sketcher.Constraint],
-                           tracing: str = "") -> None:
+    def constraints_append(self, origin_point: PointGeometry,
+                           constraints: List[Sketcher.Constraint], tracing: str = "") -> None:
         """Return the CircleGeometry constraints."""
         if tracing:
             print(f"{tracing}=>ApexCircle.constraints_append(*, *): {len(constraints)=}")
-        origin_index: int = drawing.OriginIndex
+        origin_index: int = origin_point.Index
         center: Vector = self.Center
         diameter: float = self.Diameter
         circle_name: str = self.Name
@@ -1311,7 +1309,7 @@ class ApexCircle(ApexShape):
             print(f"{tracing}<=ApexCircle.constraints_append(*, *): {len(constraints)=}")
 
     # ApexCircle.geometries_get():
-    def geometries_get(self, drawing: "ApexDrawing", tracing: str = "") -> Tuple[Geometry, ...]:
+    def geometries_get(self, tracing: str = "") -> Tuple[Geometry, ...]:
         """Return the CircleGeometry."""
         if tracing:
             print(f"{tracing}=>ApexCircle.geometries_get()")
@@ -1396,19 +1394,19 @@ class ApexOperation(object):
         raise NotImplementedError("Needs be implemented in sub-class")
 
     # ApexOperation.constraints_append():
-    def constraints_append(self, drawing: "ApexDrawing", constraints: List[Sketcher.Constraint],
-                           tracing: str = "") -> None:
+    def constraints_append(self, origin_point: PointGeometry,
+                           constraints: List[Sketcher.Constraint], tracing: str = "") -> None:
         """Append the ApexOperation constraints to drawing.
 
         Arguments:
-        * *drawing* (ApexDrawing): The drawing to use.
+        * *origin_point* (PointGeometry): The PointGeometry to use for the origin.
         * *constraints* (List[SketcherConstraint]): The constraints list to append to.
 
         """
         raise NotImplementedError(f"ApexOperation.constraints_append(): {self}")
 
     # ApexOperation.geometries_get():
-    def geometries_get(self, drawing: "ApexDrawing", tracing: str = "") -> Tuple[Geometry, ...]:
+    def geometries_get(self, tracing: str = "") -> Tuple[Geometry, ...]:
         """Return the geometries associated with an operation."""
         raise NotImplementedError(f"ApexOperation.geometries_get() not implemented {self}")
 
@@ -1687,7 +1685,8 @@ class ApexDrawing(object):
     Name: str = ""
     # Computed attributes:
     Box: ApexBox = field(init=False)
-    OriginIndex: int = field(init=False, default=-999)  # Value less than -1 for constraints
+    OriginPoint: PointGeometry = field(init=False,
+                                       default=PointGeometry(Vector(0, 0, 0), "Bad Origin"))
     DatumPlaneCounter: int = field(init=False, default=0)
 
     POST_INIT_CHECKS = (
@@ -1935,13 +1934,16 @@ class ApexDrawing(object):
             print(f"{tracing}<=ApexDrawing.plane_process('self._name', '{body.Name}')")
 
     # ApexDrawing.point_constraints_append():
-    def point_constraints_append(self, point: Vector, constraints: List[Sketcher.Constraint],
-                                 tracing: str = "") -> None:  # REMOVE
+    def point_constraints_append(
+            self, origin_point: PointGeometry,
+            constraints: List[Sketcher.Constraint], tracing: str = "") -> None:  # REMOVE
         """Append Vector constraints to a list."""
         # Now that the *origin_index* is set, is is safe to assemble the *constraints*:
+
         if tracing:
             print(f"{tracing}=>Vector.constraints_append(*, |*|={len(constraints)})")
-        origin_index: int = self.OriginIndex
+        point: Vector = origin_point.Point
+        origin_index: int = origin_point.Index
 
         # Set DistanceX constraint:
         constraints.append(Sketcher.Constraint("DistanceX",
@@ -1950,7 +1952,7 @@ class ApexDrawing(object):
         if tracing:
             print(f"{tracing}     [{len(constraints)}]: "
                   f"DistanceX('RootOrigin':(-1, 1), "
-                  f"'{point.name}':({origin_index}, 1)), {point.x:.2f}")
+                  f"'{origin_point.Name}':({origin_index}, 1)), {point.x:.2f}")
 
         # Set DistanceY constraint:
         constraints.append(Sketcher.Constraint("DistanceY",
@@ -1959,7 +1961,7 @@ class ApexDrawing(object):
         if tracing:
             print(f"{tracing}     [{len(constraints)}]: "
                   f"DistanceY('RootOrigin':(-1, 1), "
-                  f"'{point.name}':({origin_index}, 1), {point.y:.2f})")
+                  f"'{origin_point.Name}':({origin_index}, 1), {point.y:.2f})")
             print(f"{tracing}<=Vector.constraints_append(*, |*|={len(constraints)})")
 
     # ApexDrawing.geometries_get():
@@ -2085,13 +2087,13 @@ class ApexDrawing(object):
         # Now extract all of the Geometry's from *final_shapes*::
         shape: ApexShape
         for shape in final_shapes:
-            f: Tuple[Geometry, ...] = shape.geometries_get(self)
-            assert f is shape.geometries_get(self), f"{shape=} {f=}"
+            f: Tuple[Geometry, ...] = shape.geometries_get()
+            assert f is shape.geometries_get(), f"{shape=} {f=}"
             geometries.extend(f)
 
         # The first Geometry corresponds to *lower_left* and it is the "origin" for the sketch.
-        lower_left_geometry: Geometry = geometries[0]
-        assert isinstance(lower_left_geometry, PointGeometry)
+        origin_point: Geometry = geometries[0]
+        assert isinstance(origin_point, PointGeometry)
 
         def indices_check(geometries: Tuple[Geometry, ...]) -> None:
             for index, geometry in enumerate(geometries):
@@ -2110,9 +2112,10 @@ class ApexDrawing(object):
             print(f"{tracing}indices set")
 
         # Now that the Geometry indices are set, *origin_index* can be extracted:
-        origin_index: int = lower_left_geometry.Index
+        origin_index: int = origin_point.Index
         assert origin_index >= -1
         self._origin_index = origin_index
+        self.OriginPoint = origin_point
         self.OriginIndex = origin_index
 
         if tracing:
@@ -2130,8 +2133,7 @@ class ApexDrawing(object):
 
         # The *points* and *operations* Constraint's are extracted next:
         constraints: List[Sketcher.Constraint] = []
-        for point in points:
-            self.point_constraints_append(point, constraints)
+        self.point_constraints_append(origin_point, constraints)
 
         # Need to iterate over all of the ApexShape's:
         if tracing:
@@ -2140,7 +2142,8 @@ class ApexDrawing(object):
             if tracing:
                 print(f"{tracing}Operation[{index}]: {operation}")
                 print(f"{tracing}Shape[{index}]: {shape}")
-            shape.constraints_append(self, constraints, tracing=next_tracing)
+            assert isinstance(origin_point, PointGeometry)
+            shape.constraints_append(origin_point, constraints, tracing=next_tracing)
 
         if tracing:
             print(f"{tracing}here 1")
