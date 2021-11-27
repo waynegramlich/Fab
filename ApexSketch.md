@@ -9,9 +9,7 @@ Table of Contents:
   * 2.4 [ApexCircle.reorient](#apexcircle-reorient)
 * 3 [Class ApexCorner](#apexcorner)
   * 3.1 [ApexCorner.\_\_post\_init\_\_](#apexcorner---post-init--)
-  * 3.2 [ApexCorner.\_\_repr\_\_](#apexcorner---repr--)
-  * 3.3 [ApexCorner.\_\_str\_\_](#apexcorner---str--)
-  * 3.4 [ApexCorner.\_unit\_tests](#apexcorner--unit-tests)
+  * 3.2 [ApexCorner.\_unit\_tests](#apexcorner--unit-tests)
 * 4 [Class ApexDrawing](#apexdrawing)
   * 4.1 [ApexDrawing.\_\_post\_init\_\_](#apexdrawing---post-init--)
   * 4.2 [ApexDrawing.create\_datum\_plane](#apexdrawing-create-datum-plane)
@@ -44,18 +42,18 @@ Table of Contents:
   * 8.4 [ApexPocket.shape\_get](#apexpocket-shape-get)
 * 9 [Class ApexPolygon](#apexpolygon)
   * 9.1 [ApexPolygon.\_\_post\_init\_\_](#apexpolygon---post-init--)
-  * 9.2 [ApexPolygon.\_\_repr\_\_](#apexpolygon---repr--)
-  * 9.3 [ApexPolygon.\_\_str\_\_](#apexpolygon---str--)
-  * 9.4 [ApexPolygon.\_unit\_tests](#apexpolygon--unit-tests)
-  * 9.5 [ApexPolygon.constraints\_append](#apexpolygon-constraints-append)
-  * 9.6 [ApexPolygon.geometries\_get](#apexpolygon-geometries-get)
-  * 9.7 [ApexPolygon.reorient](#apexpolygon-reorient)
-  * 9.8 [ApexPolygon.show](#apexpolygon-show)
+  * 9.2 [ApexPolygon.\_unit\_tests](#apexpolygon--unit-tests)
+  * 9.3 [ApexPolygon.constraints\_append](#apexpolygon-constraints-append)
+  * 9.4 [ApexPolygon.geometries\_get](#apexpolygon-geometries-get)
+  * 9.5 [ApexPolygon.get\_box](#apexpolygon-get-box)
+  * 9.6 [ApexPolygon.reorient](#apexpolygon-reorient)
+  * 9.7 [ApexPolygon.show](#apexpolygon-show)
 * 10 [Class ApexShape](#apexshape)
   * 10.1 [ApexShape.constraints\_append](#apexshape-constraints-append)
   * 10.2 [ApexShape.geometries\_get](#apexshape-geometries-get)
-  * 10.3 [ApexShape.reorient](#apexshape-reorient)
-  * 10.4 [ApexShape.show](#apexshape-show)
+  * 10.3 [ApexShape.get\_box](#apexshape-get-box)
+  * 10.4 [ApexShape.reorient](#apexshape-reorient)
+  * 10.5 [ApexShape.show](#apexshape-show)
 * 11 [Class ArcGeometry](#arcgeometry)
   * 11.1 [ArcGeometry.Finish](#arcgeometry-finish)
   * 11.2 [ArcGeometry.FinishKey](#arcgeometry-finishkey)
@@ -105,6 +103,8 @@ Table of Contents:
 * 16 [Class PointGeometry](#pointgeometry)
   * 16.1 [PointGeometry.part\_geometry](#pointgeometry-part-geometry)
   * 16.2 [PointGeometry.type\_name](#pointgeometry-type-name)
+* 17 [Class \_InternalCircle](#-internalcircle)
+* 18 [Class \_InternalPolygon](#-internalpolygon)
 
 ## 1 <a name="introduction"></a>Introduction
 
@@ -157,7 +157,7 @@ Attributes:
 * *Diameter* (float): Circle diameter in millimeters
 * *Name* (str):  Name of circle.  (Default: "")
 * *Box* (ApexBox): ApexBox that encloses ApexCircle as if it is a sphere.
-* *Constraints* (Tuple[Sketcher.Constraint, ...):  Computed constraints.
+* *\_internal\_circle* (\_InternalCircle): Internal private/mutatable data.
 
 
 ### 2.1 ApexCircle.\_\_post\_init <a name="apexcircle---post-init"></a>
@@ -202,7 +202,6 @@ Attributes:
 * *Point* (Vector): A point for a polygon.
 * *Radius (float): The corner radius in millimeters.  (Default: 0.0)
 * *Name* (str): The corner name. (Default: "")
-* *Box* (ApexBox): A computed ApexBox that encloses corner as if it was a sphere of size Radius.
 
 
 ### 3.1 ApexCorner.\_\_post\_init\_\_ <a name="apexcorner---post-init--"></a>
@@ -211,19 +210,7 @@ def \_\_post\_init\_\_(self) -> None:
 
 Verify contents of ApexCorner.
 
-### 3.2 ApexCorner.\_\_repr\_\_ <a name="apexcorner---repr--"></a>
-
-def \_\_repr\_\_(self) -> *str*:
-
-Return string representation of ApexCorner.
-
-### 3.3 ApexCorner.\_\_str\_\_ <a name="apexcorner---str--"></a>
-
-def \_\_str\_\_(self) -> *str*:
-
-Return string representation of ApexCorner.
-
-### 3.4 ApexCorner.\_unit\_tests <a name="apexcorner--unit-tests"></a>
+### 3.2 ApexCorner.\_unit\_tests <a name="apexcorner--unit-tests"></a>
 
 def \_unit\_tests() -> None:
 
@@ -508,9 +495,10 @@ Usage: ApexPolygon(corners, name)
 Attributes:
 * *Corners* (Tuple[ApexCorner, ...]): The ApexCorner's of the ApexPoloygon.
 * *Name* (str): The ApexPolygon name.  (Default: "")
-* *Box* (ApexBox): An ApexBox that encloses all of the corners.
-* *Clockwise* (bool): Computed to True the corners are in clockwise order.
+* *Box* (ApexBox): An ApexBox that encloses all of the Corners.
+* *Clockwise* (bool): Computed to be True when the Corners are in clockwise order.
 * *InternalRadius* (float): The computed minimum radius for internal corners in millimeters.
+* *\_internal\_polygon* (\_InternalPolygon): Internal (mutable) ApexPolygon data structures.
 
 
 ### 9.1 ApexPolygon.\_\_post\_init\_\_ <a name="apexpolygon---post-init--"></a>
@@ -519,41 +507,31 @@ def \_\_post\_init\_\_(self) -> None:
 
 Initialize a ApexPolygon.
 
-### 9.2 ApexPolygon.\_\_repr\_\_ <a name="apexpolygon---repr--"></a>
-
-def \_\_repr\_\_(self) -> *str*:
-
-Return string representation of ApexPolygon.
-
-### 9.3 ApexPolygon.\_\_str\_\_ <a name="apexpolygon---str--"></a>
-
-def \_\_str\_\_(self, *short*:  *bool* = False) -> *str*:
-
-Return string representation of ApexPolygon.
-
-Arguments:
-* *short* (bool): If true, a shorter versions returned.
-
-
-### 9.4 ApexPolygon.\_unit\_tests <a name="apexpolygon--unit-tests"></a>
+### 9.2 ApexPolygon.\_unit\_tests <a name="apexpolygon--unit-tests"></a>
 
 def \_unit\_tests() -> None:
 
 Run ApexPolygon unit tests.
 
-### 9.5 ApexPolygon.constraints\_append <a name="apexpolygon-constraints-append"></a>
+### 9.3 ApexPolygon.constraints\_append <a name="apexpolygon-constraints-append"></a>
 
 def *constraints\_append*(self, *drawing*:  "ApexDrawing", *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
 
 Return the ApexPolygon constraints for a ApexDrawing.
 
-### 9.6 ApexPolygon.geometries\_get <a name="apexpolygon-geometries-get"></a>
+### 9.4 ApexPolygon.geometries\_get <a name="apexpolygon-geometries-get"></a>
 
 def *geometries\_get*(self, *drawing*:  "ApexDrawing", *tracing*:  *str* = "") -> Tuple[Geometry, ...]:
 
 Return the ApexPolygon ApexGeometries tuple.
 
-### 9.7 ApexPolygon.reorient <a name="apexpolygon-reorient"></a>
+### 9.5 ApexPolygon.get\_box <a name="apexpolygon-get-box"></a>
+
+def *get\_box*(self) -> ApexBox:
+
+Return the ApexBox for an ApexPolygon.
+
+### 9.6 ApexPolygon.reorient <a name="apexpolygon-reorient"></a>
 
 def *reorient*(self, *placement*:  Placement, *suffix*:  Optional[str] = "", *tracing*:  *str* = "") -> "ApexPolygon":
 
@@ -566,7 +544,7 @@ Arguments:
   A suffix to append to the name.  If None, an empty name is used. (Default: "")
 
 
-### 9.8 ApexPolygon.show <a name="apexpolygon-show"></a>
+### 9.7 ApexPolygon.show <a name="apexpolygon-show"></a>
 
 def *show*(self) -> *str*:
 
@@ -604,7 +582,13 @@ Returns:
 * (Tuple[Geometry, ...]) of extracted Geometry's.
 
 
-### 10.3 ApexShape.reorient <a name="apexshape-reorient"></a>
+### 10.3 ApexShape.get\_box <a name="apexshape-get-box"></a>
+
+def *get\_box*(self) -> ApexBox:
+
+Return ApexBox that enclose the ApexShape.
+
+### 10.4 ApexShape.reorient <a name="apexshape-reorient"></a>
 
 def *reorient*(self, *placement*:  Placement, *suffix*:  Optional[str] = "", *tracing*:  *str* = "") -> "ApexShape":
 
@@ -618,7 +602,7 @@ Arguments:
 # Returns:
 * (ApexShape) that has been reoriented with a new name.
 
-### 10.4 ApexShape.show <a name="apexshape-show"></a>
+### 10.5 ApexShape.show <a name="apexshape-show"></a>
 
 def *show*(self) -> *str*:
 
@@ -925,3 +909,15 @@ Return the  PointGeometry.
 def *type\_name*(self) -> *str*:  # *pragma*:  *no* *unit* *cover*
 
 Return the PointGeometry type name.
+
+## 17 Class \_InternalCircle <a name="-internalcircle"></a>
+
+class \_InternalCircle(object):
+
+InternalCircle: Internal (private/mutable) data structures for an ApexCircle.
+
+## 18 Class \_InternalPolygon <a name="-internalpolygon"></a>
+
+class \_InternalPolygon:
+
+InternalPolygon: A place to store mutable data structures needed for ApexPolygon.

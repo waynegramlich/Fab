@@ -83,14 +83,13 @@ class ApexCorner(object):
     * *Point* (Vector): A point for a polygon.
     * *Radius (float): The corner radius in millimeters.  (Default: 0.0)
     * *Name* (str): The corner name. (Default: "")
-    * *Box* (ApexBox): A computed ApexBox that encloses corner as if it was a sphere of size Radius.
 
     """
 
     Point: Vector
     Radius: float = field(default=0.0)
     Name: str = field(default="")
-    Box: ApexBox = field(init=False)
+    Box: ApexBox = field(init=False, repr=False)
 
     POST_INIT_CHECKS = (
         ApexCheck("Point", (Vector,)),
@@ -114,16 +113,6 @@ class ApexCorner(object):
         # (Why __setattr__?)[https://stackoverflow.com/questions/53756788]
         object.__setattr__(self, "Box", box)
 
-    # ApexCorner.__repr__():
-    def __repr__(self) -> str:
-        """Return string representation of ApexCorner."""
-        return self.__str__()
-
-    # ApexCorner.__str__():
-    def __str__(self) -> str:
-        """Return string representation of ApexCorner."""
-        return f"ApexCorner({self.Point}, {self.Radius}, '{self.Name}')"
-
     # ApexCorner._unit_tests():
     @staticmethod
     def _unit_tests() -> None:
@@ -138,7 +127,7 @@ class ApexCorner(object):
         corner.Name == name, corner.Name
 
         # Verify __repr__() an __str__():
-        want: str = "ApexCorner(Vector (1.0, 2.0, 3.0), 4.0, 'name')"
+        want: str = "ApexCorner(Point=Vector (1.0, 2.0, 3.0), Radius=4.0, Name='name')"
         assert f"{corner}" == want, f"{corner}"
         assert corner.__repr__() == want, corner.__repr__()
         assert str(corner) == want, str(corner)
@@ -704,14 +693,17 @@ class PointGeometry(Geometry):
 
 
 # ApexShape:
-@dataclass
+@dataclass(frozen=True)
 class ApexShape(object):
     """ApexShape: Is a base class for geometric shapes (e.g. ApexPolygon, etc).
 
     ApexShape is a base class for the various geometric shapes.  See sub-classes for attributes.
     """
 
-    Box: ApexBox = field(init=False, repr=False)
+    # ApexShape.get_box():
+    def get_box(self) -> ApexBox:
+        """Return ApexBox that enclose the ApexShape."""
+        raise NotImplementedError(f"ApexShape.get_box() not implemented for {type(self)}")
 
     # ApexShape.constraints_append():
     def constraints_append(self, drawing: "ApexDrawing", constraints: List[Sketcher.Constraint],
@@ -764,17 +756,34 @@ class ApexShape(object):
 class Corner(object):
     """Corner: An internal mutable class that corresponds to an ApexCorner."""
 
-    Corner: ApexCorner
-    Point: Vector
-    Radius: float
-    Name: str
+    FrozenCorner: ApexCorner
+    Point: Vector = field(init=False)
+    Radius: float = field(init=False)
+    Name: str = field(init=False)
+    Box: ApexBox = field(init=False, )
     Arc: Optional[ArcGeometry] = field(init=False, default=None)
     Construction: Optional[LineGeometry] = field(init=False, default=None)
     Line: Optional[LineGeometry] = field(init=False, default=None)
 
+    def __post_init__(self) -> None:
+        """Intialize contents of Corner."""
+        frozen_corner: ApexCorner = self.FrozenCorner
+        self.Point = frozen_corner.Point
+        self.Radius = frozen_corner.Radius
+        self.Name = frozen_corner.Name
+        self.Box = frozen_corner.Box
+
+
+# _InternalPolygon:
+@dataclass
+class _InternalPolygon:
+    """InternalPolygon: A place to store mutable data structures needed for ApexPolygon."""
+
+    corners: Tuple[Corner, ...] = field(init=False, default=())
+    geometries: Optional[Tuple[Geometry, ...]] = field(init=False, default=None)
 
 # ApexPolygon:
-@dataclass
+@dataclass(frozen=True)
 class ApexPolygon(ApexShape):
     """ApexPolyon: A closed polygon of Vectors.
 
@@ -783,19 +792,21 @@ class ApexPolygon(ApexShape):
     Attributes:
     * *Corners* (Tuple[ApexCorner, ...]): The ApexCorner's of the ApexPoloygon.
     * *Name* (str): The ApexPolygon name.  (Default: "")
-    * *Box* (ApexBox): An ApexBox that encloses all of the corners.
-    * *Clockwise* (bool): Computed to True the corners are in clockwise order.
+    * *Box* (ApexBox): An ApexBox that encloses all of the Corners.
+    * *Clockwise* (bool): Computed to be True when the Corners are in clockwise order.
     * *InternalRadius* (float): The computed minimum radius for internal corners in millimeters.
+    * *_internal_polygon* (_InternalPolygon): Internal (mutable) ApexPolygon data structures.
 
     """
 
     Corners: Tuple[ApexCorner, ...]
     Name: str = ""
     # Computed attributes:
-    InternalRadius: float = field(init=False)
+    Box: ApexBox = field(init=False)
     Clockwise: bool = field(init=False)
-    _geometries: Optional[Tuple[Geometry, ...]] = field(init=False, default=None)
-    _corners: Tuple[Corner, ...] = field(init=False)
+    InternalRadius: float = field(init=False)
+    # Internal data structures:
+    _internal_polygon: _InternalPolygon = _InternalPolygon()
 
     POST_INIT_CHECKS = (
         ApexCheck("corners", ("T+", ApexCorner)),
@@ -810,17 +821,16 @@ class ApexPolygon(ApexShape):
         if value_error:
             raise ValueError(value_error)
 
-        corner: ApexCorner
-        _corners: Tuple[Corner, ...] = tuple(
-            [Corner(corner, corner.Point, corner.Radius, corner.Name)
-             for corner in self.Corners]
-        )
+        # Initlialize *internal_polygon*:
+        apex_corner: ApexCorner
+        corners: Tuple[Corner, ...] = tuple(
+            [Corner(apex_corner) for apex_corner in self.Corners])
 
         # Determine the value of Clockwise attribute:
-        corners: Tuple[ApexCorner, ...] = self.Corners
         corners_size: int = len(corners)
         index: int
         total_angle: float = 0.0
+        corner: Corner
         for index, corner in enumerate(corners):
             start: Vector = corner.Point
             finish: Vector = corners[(index + 1) % corners_size].Point
@@ -836,26 +846,19 @@ class ApexPolygon(ApexShape):
 
         box: ApexBox = ApexBox([corner.Box for corner in corners])
 
+        internal_polygon: _InternalPolygon = self._internal_polygon
+        internal_polygon.corners = corners
+        internal_polygon.geometries = None
+
         # (Why __setattr__?)[https://stackoverflow.com/questions/53756788]
         object.__setattr__(self, "Box", box)
         object.__setattr__(self, "Clockwise", total_angle >= 0.0)
         object.__setattr__(self, "InternalRadius", internal_radius)
-        object.__setattr__(self, "_corners", _corners)
 
-    # ApexPolygon.__repr__():
-    def __repr__(self) -> str:
-        """Return string representation of ApexPolygon."""
-        return self.__str__()
-
-    # ApexPolygon.__str__():
-    def __str__(self, short: bool = False) -> str:
-        """Return string representation of ApexPolygon.
-
-        Arguments:
-        * *short* (bool): If true, a shorter versions returned.
-
-        """
-        return f"ApexPolygon({self.Corners}', '{self.Name}')"
+    # ApexPolygon.get_box():
+    def get_box(self) -> ApexBox:
+        """Return the ApexBox for an ApexPolygon."""
+        return self.Box
 
     # ApexPolygon.show():
     def show(self) -> str:
@@ -1052,8 +1055,11 @@ class ApexPolygon(ApexShape):
         if tracing:
             print(f"{tracing}=>ApexPolygon.geometries_get(*)")
 
+        internal_polygon: _InternalPolygon = self._internal_polygon
+        corners: Tuple[Corner, ...] = internal_polygon.corners
+
         # Only compute the geometries once:
-        if not self._geometries:
+        if not internal_polygon.geometries:
             # Some variable declarations (re)used in the code below:
             after_corner: Corner
             arc: Optional[ArcGeometry]
@@ -1067,7 +1073,6 @@ class ApexPolygon(ApexShape):
             # Pass 1: Create a list of *arcs* for each corner with a non-zero radius.
             # This list is 1-to-1 with the *points*.
 
-            corners: Tuple[Corner, ...] = self._corners
             corners_size: int = len(corners)
             arcs: List[Optional[ArcGeometry]] = []
             for at_index, at_corner in enumerate(corners):
@@ -1076,12 +1081,12 @@ class ApexPolygon(ApexShape):
                 at_name = at_corner.Name
                 arc_geometry: Optional[ArcGeometry] = None
                 if at_corner.Radius > 0.0:
-                    arc_geometry = ArcGeometry(before_corner.Corner, at_corner.Corner,
-                                               after_corner.Corner, at_name, next_tracing)
+                    arc_geometry = ArcGeometry(before_corner.FrozenCorner, at_corner.FrozenCorner,
+                                               after_corner.FrozenCorner, at_name, next_tracing)
                     at_corner.Arc = arc_geometry
-                    construction_geometry: LineGeometry = LineGeometry(
-                        arc_geometry._center, arc_geometry._begin, f"{at_name}.construct")
-                    self.Construction = construction_geometry
+                    # construction_geometry: LineGeometry = LineGeometry(
+                    #     arc_geometry._center, arc_geometry._begin, f"{at_name}.construct")
+                    # self.Construction = construction_geometry
                 arcs.append(arc_geometry)
 
             # Pass 2: Create any *lines* associated with a each corner.
@@ -1143,10 +1148,11 @@ class ApexPolygon(ApexShape):
                 geometry.Previous = geometries[(at_index - 1) % geometries_size]
                 geometry.Next = geometries[(at_index + 1) % geometries_size]
 
-            self._geometries = final_geometries
+            internal_polygon.geometries = final_geometries
         if tracing:
-            print(f"{tracing}<=ApexPolygon.geometries_get(*)=>|*|={len(self._geometries)}")
-        return self._geometries
+            print(f"{tracing}<=ApexPolygon.geometries_get(*)=>"
+                  f"|*|={len(internal_polygon.geometries)}")
+        return internal_polygon.geometries
 
     REORIENT_CHECKS = (
         ApexCheck("placement", (Placement,)),
@@ -1205,8 +1211,16 @@ class ApexPolygon(ApexShape):
         _ = polygon
 
 
-# ApexCircle:
+# _InternalCircle:
 @dataclass
+class _InternalCircle(object):
+    """InternalCircle: Internal (private/mutable) data structures for an ApexCircle."""
+
+    circle_geometry: Optional[CircleGeometry] = field(init=False, default=None)
+    circle_geometries: Tuple[CircleGeometry, ...] = field(init=False, default=())
+
+# ApexCircle:
+@dataclass(frozen=True)
 class ApexCircle(ApexShape):
     """ApexCircle: Represents a circle.
 
@@ -1217,17 +1231,16 @@ class ApexCircle(ApexShape):
     * *Diameter* (float): Circle diameter in millimeters
     * *Name* (str):  Name of circle.  (Default: "")
     * *Box* (ApexBox): ApexBox that encloses ApexCircle as if it is a sphere.
-    * *Constraints* (Tuple[Sketcher.Constraint, ...):  Computed constraints.
+    * *_internal_circle* (_InternalCircle): Internal private/mutatable data.
 
     """
 
-    Box: ApexBox = field(init=False)  # Computed attribute
-    Constraints: Tuple[Sketcher.Constraint, ...] = field(init=False)  # Computed attribute
     Center: Vector
     Diameter: float
     Name: str = ""
-    _circle_geometry: Optional[CircleGeometry] = None
-    _circle_geometries: Tuple[CircleGeometry, ...] = ()
+    # Computed attributes:
+    _internal_circle: _InternalCircle = _InternalCircle()
+    Box: ApexBox = field(init=False)  # Computed attribute
 
     POST_INIT_CHECKS = (
         ApexCheck("center", (Vector,)),
@@ -1247,16 +1260,10 @@ class ApexCircle(ApexShape):
 
         radius: float = self.Diameter / 2.0
         offset: Vector = Vector(radius, radius, radius)
-        self.Box = ApexBox([self.Center + offset, self.Center - offset])
-        self.Constraints = ()  # Updated later.
-
-    def __repr__(self) -> str:
-        """Return a string representation of ApexCircle."""
-        return self.__str__()
-
-    def __str__(self) -> str:
-        """Return a string representation of ApexCircle."""
-        return f"ApexCircle({self.Center}, {self.Diameter}, '{self.Name}')"
+        # (Why __setattr__?)[https://stackoverflow.com/questions/53756788]
+        box: ApexBox = ApexBox([self.Center + offset, self.Center - offset])
+        # (Why __setattr__?)[https://stackoverflow.com/questions/53756788]
+        object.__setattr__(self, "Box", box)
 
     # ApexCircle.constraints_append():
     def constraints_append(self, drawing: "ApexDrawing", constraints: List[Sketcher.Constraint],
@@ -1268,7 +1275,8 @@ class ApexCircle(ApexShape):
         center: Vector = self.Center
         diameter: float = self.Diameter
         circle_name: str = self.Name
-        circle_geometry: Optional[CircleGeometry] = self._circle_geometry
+        internal_circle: _InternalCircle = self._internal_circle
+        circle_geometry: Optional[CircleGeometry] = internal_circle.circle_geometry
         assert isinstance(circle_geometry, CircleGeometry), "circle geometry is not present."
         circle_geometry_index: int = circle_geometry.Index
 
@@ -1307,15 +1315,18 @@ class ApexCircle(ApexShape):
         """Return the CircleGeometry."""
         if tracing:
             print(f"{tracing}=>ApexCircle.geometries_get()")
-        circle_geometry: Optional[CircleGeometry] = self._circle_geometry
+        internal_circle: _InternalCircle = self._internal_circle
+        circle_geometry: Optional[CircleGeometry] = internal_circle.circle_geometry
+        circle_geometries: Tuple[CircleGeometry, ...] = internal_circle.circle_geometries
         if not circle_geometry:
             circle_geometry = CircleGeometry(self.Center, self.Diameter / 2.0, self.Name)
-            self._circle_geometry = circle_geometry
-            self._circle_geometries = (circle_geometry,)
+            internal_circle.circle_geometry = circle_geometry
+            circle_geometries = (circle_geometry,)
+            internal_circle.circle_geometries = circle_geometries
         assert isinstance(circle_geometry, CircleGeometry)
         if tracing:
-            print(f"{tracing}<=ApexCircle.geometries_get()=>{self._circle_geometries}")
-        return self._circle_geometries
+            print(f"{tracing}<=ApexCircle.geometries_get()=>{circle_geometries}")
+        return circle_geometries
 
     # ApexCircle.reorient():
     def reorient(self, placement: Placement, suffix: Optional[str] = "",
@@ -1523,7 +1534,7 @@ class ApexPad(ApexOperation):
             raise ValueError(value_error)
 
         # (Why __setattr__?)[https://stackoverflow.com/questions/53756788]
-        object.__setattr__(self, "Box", self.Shape.Box)
+        object.__setattr__(self, "Box", self.Shape.get_box())
         object.__setattr__(self, "SortKey", ("0Pad", f"{self.Depth}"))
 
     # ApexPad.body_apply():
@@ -1617,7 +1628,7 @@ class ApexPocket(ApexOperation):
         if value_error:
             raise ValueError(value_error)
         # (Why __setattr__?)[https://stackoverflow.com/questions/53756788]
-        object.__setattr__(self, "Box", self.Shape.Box)
+        object.__setattr__(self, "Box", self.Shape.get_box())
         object.__setattr__(self, "SortKey", ("1Pocket", f"{self.Depth}"))
 
     # ApexPocket.body_apply():
