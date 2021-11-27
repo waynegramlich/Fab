@@ -918,6 +918,6 @@ InternalCircle: Internal (private/mutable) data structures for an ApexCircle.
 
 ## 18 Class \_InternalPolygon <a name="-internalpolygon"></a>
 
-class \_InternalPolygon:
+class \_InternalPolygon(object):
 
 InternalPolygon: A place to store mutable data structures needed for ApexPolygon.

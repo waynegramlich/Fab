@@ -73,7 +73,7 @@ PartGeometryUnion = Union[Part.Circle, Part.LineSegment, Part.Point, Part.Arc]
 # This is primarily to avoid have to add addition quotes around mypy type hints.
 
 # ApexCorner:
-@dataclass(frozen=True)
+@dataclass(frozen=True)  # ApexCorner(object)
 class ApexCorner(object):
     """ApexCorner: An ApexPolygon corner with a radius.
 
@@ -157,7 +157,7 @@ class ApexCorner(object):
 
 
 # Geometry:
-@dataclass
+@dataclass  # Geometry(object)
 class Geometry(object):
     """Geometry: Internal Base class for 2D geometry objects.
 
@@ -580,7 +580,7 @@ class ArcGeometry(Geometry):
 
 
 # CircleGeometry:
-@dataclass
+@dataclass  # CircleGeometry(Geometry)
 class CircleGeometry(Geometry):
     """Represents a circle in a sketch."""
 
@@ -604,7 +604,7 @@ class CircleGeometry(Geometry):
 
 
 # LineGeometry:
-@dataclass
+@dataclass  # LineGeometry(Geometry)
 class LineGeometry(Geometry):
     """Represents a line segment in a sketch."""
 
@@ -670,7 +670,7 @@ class LineGeometry(Geometry):
 
 
 # PointGeometry:
-@dataclass
+@dataclass  # PointGeometry(Geometry)
 class PointGeometry(Geometry):
     """Represents a point in a sketch."""
 
@@ -693,7 +693,7 @@ class PointGeometry(Geometry):
 
 
 # ApexShape:
-@dataclass(frozen=True)
+@dataclass(frozen=True)  # ApexShape(object)
 class ApexShape(object):
     """ApexShape: Is a base class for geometric shapes (e.g. ApexPolygon, etc).
 
@@ -752,7 +752,7 @@ class ApexShape(object):
 
 
 # Corner:
-@dataclass
+@dataclass  # Corner(object)
 class Corner(object):
     """Corner: An internal mutable class that corresponds to an ApexCorner."""
 
@@ -775,15 +775,15 @@ class Corner(object):
 
 
 # _InternalPolygon:
-@dataclass
-class _InternalPolygon:
+@dataclass  # _InternalPolygon(object)
+class _InternalPolygon(object):
     """InternalPolygon: A place to store mutable data structures needed for ApexPolygon."""
 
     corners: Tuple[Corner, ...] = field(init=False, default=())
     geometries: Optional[Tuple[Geometry, ...]] = field(init=False, default=None)
 
 # ApexPolygon:
-@dataclass(frozen=True)
+@dataclass(frozen=True)  # ApexPolygon
 class ApexPolygon(ApexShape):
     """ApexPolyon: A closed polygon of Vectors.
 
@@ -1212,7 +1212,7 @@ class ApexPolygon(ApexShape):
 
 
 # _InternalCircle:
-@dataclass
+@dataclass  # _InternalCircle(object)
 class _InternalCircle(object):
     """InternalCircle: Internal (private/mutable) data structures for an ApexCircle."""
 
@@ -1220,7 +1220,7 @@ class _InternalCircle(object):
     circle_geometries: Tuple[CircleGeometry, ...] = field(init=False, default=())
 
 # ApexCircle:
-@dataclass(frozen=True)
+@dataclass(frozen=True)  # ApexCircle(ApexShape)
 class ApexCircle(ApexShape):
     """ApexCircle: Represents a circle.
 
@@ -1350,7 +1350,7 @@ class ApexCircle(ApexShape):
 
 
 # ApexOperation:
-@dataclass(frozen=True)
+@dataclass(frozen=True)  # ApexOperation(object)
 class ApexOperation(object):
     """Represents a FreeCAD Part Design workbench operation.
 
@@ -1419,7 +1419,7 @@ class ApexOperation(object):
 
 
 # ApexHole:
-@dataclass(frozen=True)
+@dataclass(frozen=True)  # ApexHole(ApexOperation)
 class ApexHole(ApexOperation):
     """ApexHole represents a FreeCAD Part Design workbench Hole operation.
 
@@ -1501,7 +1501,7 @@ class ApexHole(ApexOperation):
 
 
 # ApexPad:
-@dataclass(frozen=True)
+@dataclass(frozen=True)  # ApexPad(ApexOperation)
 class ApexPad(ApexOperation):
     """ApexPad represents a FreeCAD Part Design workbench Pad operation.
 
@@ -1596,7 +1596,7 @@ class ApexPad(ApexOperation):
 
 
 # ApexPocket:
-@dataclass(frozen=True)
+@dataclass(frozen=True)  # ApexPocket(ApexOperation)
 class ApexPocket(ApexOperation):
     """ApexPocket represents a FreeCAD Part Design workbench Pad operation.
 
@@ -1666,7 +1666,7 @@ class ApexPocket(ApexOperation):
 
 
 # ApexDrawing:
-@dataclass
+@dataclass  # ApexDrawing(object)
 class ApexDrawing(object):
     """ApexDrawing: Used to create fully constrained 2D drawings.
 
