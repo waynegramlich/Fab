@@ -81,30 +81,30 @@ Table of Contents:
 * 12 [Class CircleGeometry](#circlegeometry)
   * 12.1 [CircleGeometry.get\_part\_geometry](#circlegeometry-get-part-geometry)
   * 12.2 [CircleGeometry.type\_name](#circlegeometry-type-name)
-* 13 [Class Geometry](#geometry)
-  * 13.1 [Geometry.Finish](#geometry-finish)
-  * 13.2 [Geometry.FinishKey](#geometry-finishkey)
-  * 13.3 [Geometry.Index](#geometry-index)
-  * 13.4 [Geometry.Name](#geometry-name)
-  * 13.5 [Geometry.Start](#geometry-start)
-  * 13.6 [Geometry.StartKey](#geometry-startkey)
-  * 13.7 [Geometry.TypeName](#geometry-typename)
-  * 13.8 [Geometry.constraints\_append](#geometry-constraints-append)
-  * 13.9 [Geometry.get\_part\_geometry](#geometry-get-part-geometry)
-* 14 [Class LineGeometry](#linegeometry)
-  * 14.1 [LineGeometry.Finish](#linegeometry-finish)
-  * 14.2 [LineGeometry.FinishKey](#linegeometry-finishkey)
-  * 14.3 [LineGeometry.Name](#linegeometry-name)
-  * 14.4 [LineGeometry.Start](#linegeometry-start)
-  * 14.5 [LineGeometry.StartKey](#linegeometry-startkey)
-  * 14.6 [LineGeometry.TypeName](#linegeometry-typename)
-  * 14.7 [LineGeometry.\_\_repr\_\_](#linegeometry---repr--)
-  * 14.8 [LineGeometry.\_\_str\_\_](#linegeometry---str--)
-  * 14.9 [LineGeometry.get\_part\_geometry](#linegeometry-get-part-geometry)
-* 15 [Class PointGeometry](#pointgeometry)
-  * 15.1 [PointGeometry.part\_geometry](#pointgeometry-part-geometry)
-  * 15.2 [PointGeometry.type\_name](#pointgeometry-type-name)
-* 16 [Class \_ApexCornerExtra](#-apexcornerextra)
+* 13 [Class Corner](#corner)
+* 14 [Class Geometry](#geometry)
+  * 14.1 [Geometry.Finish](#geometry-finish)
+  * 14.2 [Geometry.FinishKey](#geometry-finishkey)
+  * 14.3 [Geometry.Index](#geometry-index)
+  * 14.4 [Geometry.Name](#geometry-name)
+  * 14.5 [Geometry.Start](#geometry-start)
+  * 14.6 [Geometry.StartKey](#geometry-startkey)
+  * 14.7 [Geometry.TypeName](#geometry-typename)
+  * 14.8 [Geometry.constraints\_append](#geometry-constraints-append)
+  * 14.9 [Geometry.get\_part\_geometry](#geometry-get-part-geometry)
+* 15 [Class LineGeometry](#linegeometry)
+  * 15.1 [LineGeometry.Finish](#linegeometry-finish)
+  * 15.2 [LineGeometry.FinishKey](#linegeometry-finishkey)
+  * 15.3 [LineGeometry.Name](#linegeometry-name)
+  * 15.4 [LineGeometry.Start](#linegeometry-start)
+  * 15.5 [LineGeometry.StartKey](#linegeometry-startkey)
+  * 15.6 [LineGeometry.TypeName](#linegeometry-typename)
+  * 15.7 [LineGeometry.\_\_repr\_\_](#linegeometry---repr--)
+  * 15.8 [LineGeometry.\_\_str\_\_](#linegeometry---str--)
+  * 15.9 [LineGeometry.get\_part\_geometry](#linegeometry-get-part-geometry)
+* 16 [Class PointGeometry](#pointgeometry)
+  * 16.1 [PointGeometry.part\_geometry](#pointgeometry-part-geometry)
+  * 16.2 [PointGeometry.type\_name](#pointgeometry-type-name)
 
 ## 1 <a name="introduction"></a>Introduction
 
@@ -774,7 +774,13 @@ def *type\_name*(self) -> *str*:  # *pragma*:  *no* *unit* *cover*
 
 Return the CircleGeometry type name.
 
-## 13 Class Geometry <a name="geometry"></a>
+## 13 Class Corner <a name="corner"></a>
+
+class Corner(object):
+
+Corner: An internal mutable class that corresponds to an ApexCorner.
+
+## 14 Class Geometry <a name="geometry"></a>
 
 class Geometry(object):
 
@@ -783,49 +789,49 @@ Geometry: Internal Base class for 2D geometry objects.
 This is basically a wrapper around the arguments need to create Sketch elements.
 It is mutable and always contains a bunch of helper functions.
 
-### 13.1 Geometry.Finish <a name="geometry-finish"></a>
+### 14.1 Geometry.Finish <a name="geometry-finish"></a>
 
 def Finish(self) -> Vector:  # *pragma*:  *no* *unit* *test*
 
 Return the Geometry finish point.
 
-### 13.2 Geometry.FinishKey <a name="geometry-finishkey"></a>
+### 14.2 Geometry.FinishKey <a name="geometry-finishkey"></a>
 
 def FinishKey(self) -> *int*:  # *pragma*:  *no* *unit* *test*
 
 Return the Geometry Constraint key for the finish point.
 
-### 13.3 Geometry.Ind <a name="geometry-index"></a>
+### 14.3 Geometry.Ind <a name="geometry-index"></a>
 
 def Index(self) -> *int*:
 
 Return the Geometry index.
 
-### 13.4 Geometry.Name <a name="geometry-name"></a>
+### 14.4 Geometry.Name <a name="geometry-name"></a>
 
 def Name(self) -> *str*:
 
 Return Geometry Name.
 
-### 13.5 Geometry.Start <a name="geometry-start"></a>
+### 14.5 Geometry.Start <a name="geometry-start"></a>
 
 def Start(self) -> Vector:  # *pragma*:  *no* *unit* *test*
 
 Return the Geometry start point.
 
-### 13.6 Geometry.StartKey <a name="geometry-startkey"></a>
+### 14.6 Geometry.StartKey <a name="geometry-startkey"></a>
 
 def StartKey(self) -> *int*:
 
 Return the Geometry Constraint key for the start point.
 
-### 13.7 Geometry.TypeNa <a name="geometry-typename"></a>
+### 14.7 Geometry.TypeNa <a name="geometry-typename"></a>
 
 def TypeName(self) -> *str*:
 
 Return the Geometry type name.
 
-### 13.8 Geometry.constraints\_append <a name="geometry-constraints-append"></a>
+### 14.8 Geometry.constraints\_append <a name="geometry-constraints-append"></a>
 
 def *constraints\_append*(self, *drawing*:  "ApexDrawing", *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
 
@@ -836,92 +842,86 @@ Arguments:
 * *constraints* (List[SketcherConstraint]): The constraints list to append to.
 
 
-### 13.9 Geometry.get\_part\_geometry <a name="geometry-get-part-geometry"></a>
+### 14.9 Geometry.get\_part\_geometry <a name="geometry-get-part-geometry"></a>
 
 def *get\_part\_geometry*(self) -> PartGeometryUnion:
 
 Return the PartGeometry associated with Geometry.
 
-## 14 Class LineGeometry <a name="linegeometry"></a>
+## 15 Class LineGeometry <a name="linegeometry"></a>
 
 class LineGeometry(Geometry):
 
 Represents a line segment in a sketch.
 
-### 14.1 LineGeometry.Finish <a name="linegeometry-finish"></a>
+### 15.1 LineGeometry.Finish <a name="linegeometry-finish"></a>
 
 def Finish(self) -> Vector:  # *pragma*:  *no* *unit* *cover*
 
 Return the LineGeometry finish Vector.
 
-### 14.2 LineGeometry.FinishKey <a name="linegeometry-finishkey"></a>
+### 15.2 LineGeometry.FinishKey <a name="linegeometry-finishkey"></a>
 
 def FinishKey(self) -> *int*:
 
 Return the LineGeometry finish Constraint key.
 
-### 14.3 LineGeometry.Name <a name="linegeometry-name"></a>
+### 15.3 LineGeometry.Name <a name="linegeometry-name"></a>
 
 def Name(self) -> *str*:
 
 Return name.
 
-### 14.4 LineGeometry.Start <a name="linegeometry-start"></a>
+### 15.4 LineGeometry.Start <a name="linegeometry-start"></a>
 
 def Start(self) -> ApexCorner:
 
 Return the LineGeometry start Vector.
 
-### 14.5 LineGeometry.StartKey <a name="linegeometry-startkey"></a>
+### 15.5 LineGeometry.StartKey <a name="linegeometry-startkey"></a>
 
 def StartKey(self) -> *int*:
 
 Return the LineGeometry start Constraint key.
 
-### 14.6 LineGeometry.TypeName <a name="linegeometry-typename"></a>
+### 15.6 LineGeometry.TypeName <a name="linegeometry-typename"></a>
 
 def TypeName(self) -> *str*:  # *pragma*:  *no* *unit* *cover*
 
 Return the LineGeometry type name.
 
-### 14.7 LineGeometry.\_\_repr\_\_ <a name="linegeometry---repr--"></a>
+### 15.7 LineGeometry.\_\_repr\_\_ <a name="linegeometry---repr--"></a>
 
 def \_\_repr\_\_(self) -> *str*:
 
 Return string representation of LineGeometry.
 
-### 14.8 LineGeometry.\_\_str\_\_ <a name="linegeometry---str--"></a>
+### 15.8 LineGeometry.\_\_str\_\_ <a name="linegeometry---str--"></a>
 
 def \_\_str\_\_(self) -> *str*:
 
 Return string representation of LineGeometry.
 
-### 14.9 LineGeometry.get\_part\_geometry <a name="linegeometry-get-part-geometry"></a>
+### 15.9 LineGeometry.get\_part\_geometry <a name="linegeometry-get-part-geometry"></a>
 
 def *get\_part\_geometry*(self) -> PartGeometryUnion:
 
 Return the PartGeometry associated with a LineGeometry.
 
-## 15 Class PointGeometry <a name="pointgeometry"></a>
+## 16 Class PointGeometry <a name="pointgeometry"></a>
 
 class PointGeometry(Geometry):
 
 Represents a point in a sketch.
 
-### 15.1 PointGeometry.part\_geometry <a name="pointgeometry-part-geometry"></a>
+### 16.1 PointGeometry.part\_geometry <a name="pointgeometry-part-geometry"></a>
 
 def *get\_part\_geometry*(self) -> PartGeometryUnion:
 
 Return the  PointGeometry.
 
-### 15.2 PointGeometry.type\_name <a name="pointgeometry-type-name"></a>
+### 16.2 PointGeometry.type\_name <a name="pointgeometry-type-name"></a>
 
 def *type\_name*(self) -> *str*:  # *pragma*:  *no* *unit* *cover*
 
 Return the PointGeometry type name.
-
-## 16 Class \_ApexCornerExtra <a name="-apexcornerextra"></a>
-
-class \_ApexCornerExtra(object):
-
-\_ApexCornerExtra: An internal mutable class that corresponds to an ApexCorner.

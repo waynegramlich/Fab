@@ -759,16 +759,15 @@ class ApexShape(object):
         raise NotImplementedError()
 
 
-# _ApexCornerExtra:
+# Corner:
 @dataclass
-class _ApexCornerExtra(object):
-    """_ApexCornerExtra: An internal mutable class that corresponds to an ApexCorner."""
+class Corner(object):
+    """Corner: An internal mutable class that corresponds to an ApexCorner."""
 
     Corner: ApexCorner
     Point: Vector
     Radius: float
     Name: str
-    Geometries: Tuple[Geometry, ...] = field(init=False, default=())
     Arc: Optional[ArcGeometry] = field(init=False, default=None)
     Construction: Optional[LineGeometry] = field(init=False, default=None)
     Line: Optional[LineGeometry] = field(init=False, default=None)
@@ -796,7 +795,7 @@ class ApexPolygon(ApexShape):
     InternalRadius: float = field(init=False)
     Clockwise: bool = field(init=False)
     _geometries: Optional[Tuple[Geometry, ...]] = field(init=False, default=None)
-    _corners: Tuple[_ApexCornerExtra, ...] = field(init=False)
+    _corners: Tuple[Corner, ...] = field(init=False)
 
     POST_INIT_CHECKS = (
         ApexCheck("corners", ("T+", ApexCorner)),
@@ -812,8 +811,8 @@ class ApexPolygon(ApexShape):
             raise ValueError(value_error)
 
         corner: ApexCorner
-        _corners: Tuple[_ApexCornerExtra, ...] = tuple(
-            [_ApexCornerExtra(corner, corner.Point, corner.Radius, corner.Name)
+        _corners: Tuple[Corner, ...] = tuple(
+            [Corner(corner, corner.Point, corner.Radius, corner.Name)
              for corner in self.Corners]
         )
 
@@ -1056,19 +1055,19 @@ class ApexPolygon(ApexShape):
         # Only compute the geometries once:
         if not self._geometries:
             # Some variable declarations (re)used in the code below:
-            after_corner: _ApexCornerExtra
+            after_corner: Corner
             arc: Optional[ArcGeometry]
             at_arc: Optional[ArcGeometry]
             at_index: int
             at_line: Optional[LineGeometry]
             at_name: str
-            at_corner: _ApexCornerExtra
-            before_corner: _ApexCornerExtra
+            at_corner: Corner
+            before_corner: Corner
 
             # Pass 1: Create a list of *arcs* for each corner with a non-zero radius.
             # This list is 1-to-1 with the *points*.
 
-            corners: Tuple[_ApexCornerExtra, ...] = self._corners
+            corners: Tuple[Corner, ...] = self._corners
             corners_size: int = len(corners)
             arcs: List[Optional[ArcGeometry]] = []
             for at_index, at_corner in enumerate(corners):
