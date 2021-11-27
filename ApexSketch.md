@@ -4,8 +4,8 @@ Table of Contents:
 * 1 [Introduction](#introduction):
 * 2 [Class ApexCircle](#apexcircle)
   * 2.1 [ApexCircle.\_\_post\_init](#apexcircle---post-init)
-  * 2.2 [ApexCircle.constraints\_append](#apexcircle-constraints-append)
-  * 2.3 [ApexCircle.geometries\_get](#apexcircle-geometries-get)
+  * 2.2 [ApexCircle.get\_constraints](#apexcircle-get-constraints)
+  * 2.3 [ApexCircle.get\_geometries](#apexcircle-get-geometries)
   * 2.4 [ApexCircle.reorient](#apexcircle-reorient)
 * 3 [Class ApexCorner](#apexcorner)
   * 3.1 [ApexCorner.\_\_post\_init\_\_](#apexcorner---post-init--)
@@ -13,45 +13,45 @@ Table of Contents:
 * 4 [Class ApexDrawing](#apexdrawing)
   * 4.1 [ApexDrawing.\_\_post\_init\_\_](#apexdrawing---post-init--)
   * 4.2 [ApexDrawing.create\_datum\_plane](#apexdrawing-create-datum-plane)
-  * 4.3 [ApexDrawing.geometries\_get](#apexdrawing-geometries-get)
-  * 4.4 [ApexDrawing.plane\_process](#apexdrawing-plane-process)
-  * 4.5 [ApexDrawing.point\_constraints\_append](#apexdrawing-point-constraints-append)
+  * 4.3 [ApexDrawing.get\_geometries](#apexdrawing-get-geometries)
+  * 4.4 [ApexDrawing.get\_origin\_constraints](#apexdrawing-get-origin-constraints)
+  * 4.5 [ApexDrawing.plane\_process](#apexdrawing-plane-process)
   * 4.6 [ApexDrawing.reorient](#apexdrawing-reorient)
   * 4.7 [ApexDrawing.sketch](#apexdrawing-sketch)
 * 5 [Class ApexHole](#apexhole)
   * 5.1 [ApexHole.\_\_post\_init\_\_](#apexhole---post-init--)
   * 5.2 [ApexHole.body\_apply](#apexhole-body-apply)
-  * 5.3 [ApexHole.reorient](#apexhole-reorient)
-  * 5.4 [ApexHole.shape\_get](#apexhole-shape-get)
+  * 5.3 [ApexHole.get\_shape](#apexhole-get-shape)
+  * 5.4 [ApexHole.reorient](#apexhole-reorient)
 * 6 [Class ApexOperation](#apexoperation)
   * 6.1 [ApexOperation.body\_apply](#apexoperation-body-apply)
-  * 6.2 [ApexOperation.constraints\_append](#apexoperation-constraints-append)
-  * 6.3 [ApexOperation.geometries\_get](#apexoperation-geometries-get)
-  * 6.4 [ApexOperation.reorient](#apexoperation-reorient)
-  * 6.5 [ApexOperation.shape\_get](#apexoperation-shape-get)
+  * 6.2 [ApexOperation.get\_constraints](#apexoperation-get-constraints)
+  * 6.3 [ApexOperation.get\_geometries](#apexoperation-get-geometries)
+  * 6.4 [ApexOperation.get\_shape](#apexoperation-get-shape)
+  * 6.5 [ApexOperation.reorient](#apexoperation-reorient)
   * 6.6 [ApexOperation.show](#apexoperation-show)
 * 7 [Class ApexPad](#apexpad)
   * 7.1 [ApexPad.\_\_post\_init\_\_](#apexpad---post-init--)
   * 7.2 [ApexPad.body\_apply](#apexpad-body-apply)
-  * 7.3 [ApexPad.reorient](#apexpad-reorient)
-  * 7.4 [ApexPad.shape\_get](#apexpad-shape-get)
+  * 7.3 [ApexPad.get\_shape](#apexpad-get-shape)
+  * 7.4 [ApexPad.reorient](#apexpad-reorient)
 * 8 [Class ApexPocket](#apexpocket)
   * 8.1 [ApexPocket.\_\_post\_init\_\_](#apexpocket---post-init--)
   * 8.2 [ApexPocket.body\_apply](#apexpocket-body-apply)
-  * 8.3 [ApexPocket.reorient](#apexpocket-reorient)
-  * 8.4 [ApexPocket.shape\_get](#apexpocket-shape-get)
+  * 8.3 [ApexPocket.get\_shape](#apexpocket-get-shape)
+  * 8.4 [ApexPocket.reorient](#apexpocket-reorient)
 * 9 [Class ApexPolygon](#apexpolygon)
   * 9.1 [ApexPolygon.\_\_post\_init\_\_](#apexpolygon---post-init--)
   * 9.2 [ApexPolygon.\_unit\_tests](#apexpolygon--unit-tests)
-  * 9.3 [ApexPolygon.constraints\_append](#apexpolygon-constraints-append)
-  * 9.4 [ApexPolygon.geometries\_get](#apexpolygon-geometries-get)
-  * 9.5 [ApexPolygon.get\_box](#apexpolygon-get-box)
+  * 9.3 [ApexPolygon.get\_box](#apexpolygon-get-box)
+  * 9.4 [ApexPolygon.get\_constraints](#apexpolygon-get-constraints)
+  * 9.5 [ApexPolygon.get\_geometries](#apexpolygon-get-geometries)
   * 9.6 [ApexPolygon.reorient](#apexpolygon-reorient)
   * 9.7 [ApexPolygon.show](#apexpolygon-show)
 * 10 [Class ApexShape](#apexshape)
-  * 10.1 [ApexShape.constraints\_append](#apexshape-constraints-append)
-  * 10.2 [ApexShape.geometries\_get](#apexshape-geometries-get)
-  * 10.3 [ApexShape.get\_box](#apexshape-get-box)
+  * 10.1 [ApexShape.get\_box](#apexshape-get-box)
+  * 10.2 [ApexShape.get\_constraints](#apexshape-get-constraints)
+  * 10.3 [ApexShape.get\_geometries](#apexshape-get-geometries)
   * 10.4 [ApexShape.reorient](#apexshape-reorient)
   * 10.5 [ApexShape.show](#apexshape-show)
 * 11 [Class ArcGeometry](#arcgeometry)
@@ -88,7 +88,7 @@ Table of Contents:
   * 14.5 [Geometry.Start](#geometry-start)
   * 14.6 [Geometry.StartKey](#geometry-startkey)
   * 14.7 [Geometry.TypeName](#geometry-typename)
-  * 14.8 [Geometry.constraints\_append](#geometry-constraints-append)
+  * 14.8 [Geometry.get\_constraints](#geometry-get-constraints)
   * 14.9 [Geometry.get\_part\_geometry](#geometry-get-part-geometry)
 * 15 [Class LineGeometry](#linegeometry)
   * 15.1 [LineGeometry.Finish](#linegeometry-finish)
@@ -166,15 +166,19 @@ def \_\_post\_init\_\_(self) -> None:
 
 Initialize a circle.
 
-### 2.2 ApexCircle.constraints\_append <a name="apexcircle-constraints-append"></a>
+### 2.2 ApexCircle.get\_constraints <a name="apexcircle-get-constraints"></a>
 
-def *constraints\_append*(self, *origin\_point*:  PointGeometry, *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
+def *get\_constraints*(self, *origin\_point*:  PointGeometry, *tracing*:  *str* = "") -> Tuple[Sketcher.Constraint, ...]:
 
 Return the CircleGeometry constraints.
 
-### 2.3 ApexCircle.geometries\_get <a name="apexcircle-geometries-get"></a>
+Arguments:
+* *origin\_point* (PointGeometry): The origin to use.
 
-def *geometries\_get*(self, *tracing*:  *str* = "") -> Tuple[Geometry, ...]:
+
+### 2.3 ApexCircle.get\_geometries <a name="apexcircle-get-geometries"></a>
+
+def *get\_geometries*(self, *tracing*:  *str* = "") -> Tuple[Geometry, ...]:
 
 Return the CircleGeometry.
 
@@ -251,23 +255,26 @@ Arguments:
 * Returns:
   * (Part.Geometry) that is the datum\_plane.
 
-### 4.3 ApexDrawing.geometries\_get <a name="apexdrawing-geometries-get"></a>
+### 4.3 ApexDrawing.get\_geometries <a name="apexdrawing-get-geometries"></a>
 
-def *point\_geometries\_get*(self, *point*:  Vector, *tracing*:  *str* = "") -> Tuple["Geometry", ...]:
+def *point\_get\_geometries*(self, *point*:  Vector, *tracing*:  *str* = "") -> Tuple["Geometry", ...]:
 
 Return the PointGeometry Geometry's.
 
-### 4.4 ApexDrawing.plane\_process <a name="apexdrawing-plane-process"></a>
+### 4.4 ApexDrawing.get\_origin\_constraints <a name="apexdrawing-get-origin-constraints"></a>
+
+def *get\_origin\_constraints*(self, *origin\_point*:  PointGeometry, *tracing*:  *str* = "") -> Tuple[Sketcher.Constraint, ...]:
+
+Return constraints associated for the origin point.
+
+Arguments:
+* *origin\_point* (PointGeometry): The origin point to constrain.
+
+### 4.5 ApexDrawing.plane\_process <a name="apexdrawing-plane-process"></a>
 
 def *plane\_process*(self, *body*:  "PartDesign.Body", *document\_name*:  *str*, *tracing*:  *str* = "") -> None:
 
 Plane\_Process.
-
-### 4.5 ApexDrawing.point\_constraints\_append <a name="apexdrawing-point-constraints-append"></a>
-
-def *point\_constraints\_append*( *self*, *origin\_point*:  PointGeometry, *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:  # REMOVE
-
-Append Vector constraints to a list.
 
 ### 4.6 ApexDrawing.reorient <a name="apexdrawing-reorient"></a>
 
@@ -317,7 +324,13 @@ def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *sket
 
 Apply hole operation to PartDesign body.
 
-### 5.3 ApexHole.reorient <a name="apexhole-reorient"></a>
+### 5.3 ApexHole.get\_shape <a name="apexhole-get-shape"></a>
+
+def *get\_shape*(self) -> ApexShape:
+
+Return the ApexHole ApexShape.
+
+### 5.4 ApexHole.reorient <a name="apexhole-reorient"></a>
 
 def *reorient*(self, *placement*:  Placement, *suffix*:  *str* = None, *tracing*:  *str* = "") -> "ApexHole":
 
@@ -328,12 +341,6 @@ Arguments:
 * *suffix* (str): The suffix to append to the current name string.  None, specifies
   that an empty name is to be used.  (Default: "")
 
-
-### 5.4 ApexHole.shape\_get <a name="apexhole-shape-get"></a>
-
-def *shape\_get*(self) -> ApexShape:
-
-Return the ApexHole ApexShape.
 
 ## 6 Class ApexOperation <a name="apexoperation"></a>
 
@@ -353,24 +360,29 @@ def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *sket
 
 Apply operation to a Part Design body.
 
-### 6.2 ApexOperation.constraints\_append <a name="apexoperation-constraints-append"></a>
+### 6.2 ApexOperation.get\_constraints <a name="apexoperation-get-constraints"></a>
 
-def *constraints\_append*(self, *origin\_point*:  PointGeometry, *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
+def *get\_constraints*(self, *origin\_point*:  PointGeometry, *tracing*:  *str* = "") -> Tuple[Sketcher.Constraint, ...]:
 
-Append the ApexOperation constraints to drawing.
+Return ApexOperation constraints.
 
 Arguments:
 * *origin\_point* (PointGeometry): The PointGeometry to use for the origin.
-* *constraints* (List[SketcherConstraint]): The constraints list to append to.
 
 
-### 6.3 ApexOperation.geometries\_get <a name="apexoperation-geometries-get"></a>
+### 6.3 ApexOperation.get\_geometries <a name="apexoperation-get-geometries"></a>
 
-def *geometries\_get*(self, *tracing*:  *str* = "") -> Tuple[Geometry, ...]:
+def *get\_geometries*(self, *tracing*:  *str* = "") -> Tuple[Geometry, ...]:
 
 Return the geometries associated with an operation.
 
-### 6.4 ApexOperation.reorient <a name="apexoperation-reorient"></a>
+### 6.4 ApexOperation.get\_shape <a name="apexoperation-get-shape"></a>
+
+def *get\_shape*(self) -> ApexShape:
+
+Return the associated ApexOperation ApexShape.
+
+### 6.5 ApexOperation.reorient <a name="apexoperation-reorient"></a>
 
 def *reorient*(self, *placement*:  Placement, *suffix*:  *str* = None, *tracing*:  *str* = "") -> "ApexOperation":
 
@@ -381,12 +393,6 @@ Arguments:
 * *suffix* (str): The suffix to append to the current name string.  None, specifies
   that an empty name is to be used.  (Default: "")
 
-
-### 6.5 ApexOperation.shape\_get <a name="apexoperation-shape-get"></a>
-
-def *shape\_get*(self) -> ApexShape:
-
-Return the associated ApexOperation ApexShape.
 
 ### 6.6 ApexOperation.show <a name="apexoperation-show"></a>
 
@@ -421,7 +427,13 @@ def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *sket
 
 Apply ApexPad opertation to PartDesign Body.
 
-### 7.3 ApexPad.reorient <a name="apexpad-reorient"></a>
+### 7.3 ApexPad.get\_shape <a name="apexpad-get-shape"></a>
+
+def *get\_shape*(self) -> ApexShape:
+
+Return the associated ApexShape's.
+
+### 7.4 ApexPad.reorient <a name="apexpad-reorient"></a>
 
 def *reorient*(self, *placement*:  Placement, *suffix*:  *str* = None, *tracing*:  *str* = "") -> "ApexPad":
 
@@ -432,12 +444,6 @@ Arguments:
 * *suffix* (str): The suffix to append to the current name string.  None, specifies
   that an empty name is to be used.  (Default: "")
 
-
-### 7.4 ApexPad.shape\_get <a name="apexpad-shape-get"></a>
-
-def *shape\_get*(self) -> ApexShape:
-
-Return the associated ApexShape's.
 
 ## 8 Class ApexPocket <a name="apexpocket"></a>
 
@@ -466,7 +472,13 @@ def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *sket
 
 Apply pocket operation to PartDesign Body.
 
-### 8.3 ApexPocket.reorient <a name="apexpocket-reorient"></a>
+### 8.3 ApexPocket.get\_shape <a name="apexpocket-get-shape"></a>
+
+def *get\_shape*(self) -> ApexShape:
+
+Return the ApexPad ApexShape.
+
+### 8.4 ApexPocket.reorient <a name="apexpocket-reorient"></a>
 
 def *reorient*(self, *placement*:  Placement, *suffix*:  *str* = None, *tracing*:  *str* = "") -> "ApexPocket":
 
@@ -477,12 +489,6 @@ Arguments:
 * *suffix* (str): The suffix to append to the current name string.  None, specifies
   that an empty name is to be used.  (Default: "")
 
-
-### 8.4 ApexPocket.shape\_get <a name="apexpocket-shape-get"></a>
-
-def *shape\_get*(self) -> ApexShape:
-
-Return the ApexPad ApexShape.
 
 ## 9 Class ApexPolygon <a name="apexpolygon"></a>
 
@@ -513,23 +519,27 @@ def \_unit\_tests() -> None:
 
 Run ApexPolygon unit tests.
 
-### 9.3 ApexPolygon.constraints\_append <a name="apexpolygon-constraints-append"></a>
-
-def *constraints\_append*(self, *origin\_point*:  PointGeometry, *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
-
-Append the ApexPolygon constraints to a constraints list.
-
-### 9.4 ApexPolygon.geometries\_get <a name="apexpolygon-geometries-get"></a>
-
-def *geometries\_get*(self, *tracing*:  *str* = "") -> Tuple[Geometry, ...]:
-
-Return the ApexPolygon ApexGeometries tuple.
-
-### 9.5 ApexPolygon.get\_box <a name="apexpolygon-get-box"></a>
+### 9.3 ApexPolygon.get\_box <a name="apexpolygon-get-box"></a>
 
 def *get\_box*(self) -> ApexBox:
 
 Return the ApexBox for an ApexPolygon.
+
+### 9.4 ApexPolygon.get\_constraints <a name="apexpolygon-get-constraints"></a>
+
+def *get\_constraints*(self, *origin\_point*:  PointGeometry, *tracing*:  *str* = "") -> Tuple[Sketcher.Constraint, ...]:
+
+Return the constraints for an ApexPolygon.
+
+Arguments:
+* *origin\_point* (PointGeometry): The origin to use.
+
+
+### 9.5 ApexPolygon.get\_geometries <a name="apexpolygon-get-geometries"></a>
+
+def *get\_geometries*(self, *tracing*:  *str* = "") -> Tuple[Geometry, ...]:
+
+Return the ApexPolygon ApexGeometries tuple.
 
 ### 9.6 ApexPolygon.reorient <a name="apexpolygon-reorient"></a>
 
@@ -558,32 +568,31 @@ ApexShape: Is a base class for geometric shapes (e.g. ApexPolygon, etc).
 
 ApexShape is a base class for the various geometric shapes.  See sub-classes for attributes.
 
-### 10.1 ApexShape.constraints\_append <a name="apexshape-constraints-append"></a>
+### 10.1 ApexShape.get\_box <a name="apexshape-get-box"></a>
 
-def *constraints\_append*(self, *origin\_point*:  PointGeometry, *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
+def *get\_box*(self) -> ApexBox:
 
-Append the ApexShape constraints to drawing.
+Return ApexBox that enclose the ApexShape.
+
+### 10.2 ApexShape.get\_constraints <a name="apexshape-get-constraints"></a>
+
+def *get\_constraints*(self, *origin\_point*:  PointGeometry, *tracing*:  *str* = "") -> Tuple[Sketcher.Constraint, ...]:
+
+Return The contstraints for an ApexShape.
 
 Arguments:
 * *origin\_point* (PointGeometry): The PointGeometry to used for the origin.
-* *constraints* (List[SketcherConstraint]): The constraints list to append to.
 
 
-### 10.2 ApexShape.geometries\_get <a name="apexshape-geometries-get"></a>
+### 10.3 ApexShape.get\_geometries <a name="apexshape-get-geometries"></a>
 
-def *geometries\_get*(self, *tracing*:  *str* = "") -> Tuple[Geometry, ...]:
+def *get\_geometries*(self, *tracing*:  *str* = "") -> Tuple[Geometry, ...]:
 
 Return the ApexShape ApexGeometries tuple.
 
 Returns:
 * (Tuple[Geometry, ...]) of extracted Geometry's.
 
-
-### 10.3 ApexShape.get\_box <a name="apexshape-get-box"></a>
-
-def *get\_box*(self) -> ApexBox:
-
-Return ApexBox that enclose the ApexShape.
 
 ### 10.4 ApexShape.reorient <a name="apexshape-reorient"></a>
 
@@ -812,16 +821,16 @@ def TypeName(self) -> *str*:
 
 Return the Geometry type name.
 
-### 14.8 Geometry.constraints\_append <a name="geometry-constraints-append"></a>
+### 14.8 Geometry.get\_constraints <a name="geometry-get-constraints"></a>
 
-def *constraints\_append*(self, *origin\_point*:  "PointGeometry", *constraints*:  List[Sketcher.Constraint], *tracing*:  *str* = "") -> None:
+def *get\_constraints*(self, *origin\_point*:  "PointGeometry", *tracing*:  *str* = "") -> Tuple[Sketcher.Constraint, ...]:
 
-Append the ApexShape constraints to drawing.
+Return the constraints associated with the Geometry.
 
 Arguments:
 * *origin\_point* (PointGeometry): The PointGeometry to use for the origin
-* *constraints* (List[SketcherConstraint]): The constraints list to append to.
 
+Returns the assoicated contraints as a tuple.
 
 ### 14.9 Geometry.get\_part\_geometry <a name="geometry-get-part-geometry"></a>
 
