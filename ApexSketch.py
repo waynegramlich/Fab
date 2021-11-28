@@ -188,15 +188,30 @@ class Geometry(object):
         raise NotImplementedError(
             f"Geometry.get_constraints() not implmented for {type(self)}")
 
-    # Geometry.get_start():
-    def get_start(self) -> Vector:
-        """Return starting location of Geometry."""
-        raise NotImplementedError(f"Geometry.get_start() not implemented {type(self)}")
+    # Geometry.get_begin_pair():
+    def get_begin_pair(self) -> Tuple[int, int]:
+        """Return the Geometry index/start key pair."""
+        raise NotImplementedError(f"Geometry.get_begin_pair() not implemented: {type(self)}")
 
-    # Geometry.get_start():
-    def get_finish(self) -> Vector:
-        """Return ending location of Geometry."""
-        raise NotImplementedError(f"Geometry.get_finish() not implemented {type(self)}")
+    # Geometry.get_begin_point():
+    def get_begin_point(self) -> Vector:
+        """Return start location of Geometry."""
+        raise NotImplementedError(f"Geometry.get_begin_point() not implemented {type(self)}")
+
+    # Geometry.get_center_pair():
+    def get_center_pair(self) -> Tuple[int, int]:
+        """Return the Geometry index/center key pair."""
+        raise NotImplementedError(f"Geometry.get_center_pair() not implemented: {type(self)}")
+
+    # Geometry.get_end_point():
+    def get_end_point(self) -> Vector:
+        """Return starting location of Geometry."""
+        raise NotImplementedError(f"Geometry.get_end_point() not implemented {type(self)}")
+
+    # Geometry.get_end_pair():
+    def get_end_pair(self) -> Tuple[int, int]:
+        """Return the Geometry index/start key pair."""
+        raise NotImplementedError(f"Geometry.get_end_pair() not implemented: {type(self)}")
 
     # Geometry.Index:
     @property
@@ -464,20 +479,30 @@ class ArcGeometry(Geometry):
             print(f"{tracing}<=ArcGeometry('{begin.Name}', "
                   f"'{at.Name}', '{end.Name}', '{name}')")
 
-    # ArcGeometry.get_start():
-    def get_start(self) -> Vector:
-        """Return the start location of the Vector."""
+    # ArcGeometry.get_begin_pair():
+    def get_begin_pair(self) -> Tuple[int, int]:
+        """Return the ArcGeometry begin pair."""
+        return (self.Index, 1)
+
+    # ArcGeometry.get_begin_point():
+    def get_begin_point(self) -> Vector:
+        """Return the ArcGeometry begin point."""
         return self._begin
 
-    # ArcGeometry.get_finish():
-    def get_finish(self) -> Vector:
-        """Return the start location of the Vector."""
-        return self._end
+    # ArcGeometry.get_center_pair():
+    def get_center_pair(self) -> Tuple[int, int]:
+        """Return the ArcGeometry center pair."""
+        return (self.Index, 0)
 
-    # ArcGeometry.repr():
-    def __repr__(self) -> str:  # pragma: no unit test
-        """Return ArcGeometry string representation."""
-        return f"ArcGeometry({self._begin}, {self._at}, {self._end})"  # pragma: no unit test
+    # ArcGeometry.get_end_pair():
+    def get_end_pair(self) -> Vector:
+        """Return the ArcGGeometry end point."""
+        return (self.Index, 2)
+
+    # ArcGeometry.get_end_point():
+    def get_end_point(self) -> Vector:
+        """Return the ArcGGeometry end point."""
+        return self._end
 
     # ArcGeometry.part_geometry():
     def get_part_geometry(self) -> PartGeometryUnion:
@@ -545,9 +570,9 @@ class ArcGeometry(Geometry):
         """Return name."""
         return self._name
 
-    # ArcGeometry.radius():
+    # ArcGeometry.Radius():
     @property
-    def radius(self) -> float:
+    def Radius(self) -> float:
         """Return the initial ArcGeometry radius."""
         return self._radius
 
@@ -633,15 +658,30 @@ class LineGeometry(Geometry):
     _name: str = ""
     _line_segment: Optional[Part.LineSegment] = field(init=False, default=None)
 
-    # LineGeometry.get_start():
-    def get_start(self) -> Vector:
+    # LineGeometry.get_begin_pair():
+    def get_begin_pair(self) -> Tuple[int, int]:
+        """Return the LineGeometry start location."""
+        return (self.Index, 1)
+
+    # LineGeometry.get_begin_point():
+    def get_begin_point(self) -> Vector:
         """Return the LineGeometry start location."""
         return self._start
 
-    # LineGeometry.get_finish():
-    def get_finish(self) -> Vector:
+    # LineGeometry.get_center_pair():
+    def get_center_pair(self) -> Tuple[int, int]:
+        """Return index/key for line start."""
+        return (self.Index, 0)
+
+    # LineGeometry.get_end_point():
+    def get_end_point(self) -> Vector:
         """Return the LineGeometry start location."""
         return self._finish
+
+    # LineGeometry.get_end_pair():
+    def get_end_pair(self) -> Tuple[int, int]:
+        """Return index/key for line start."""
+        return (self.Index, 2)
 
     # LineGeometry.get_part_geometry():
     def get_part_geometry(self) -> PartGeometryUnion:
@@ -715,6 +755,11 @@ class PointGeometry(Geometry):
             self._part_point = Part.Point(self.Point)
         return self._part_point
 
+    # PointGeometry.get_center_pair():
+    def get_center_pair(self) -> Tuple[int, int]:
+        """Return the PointGeometry center pair."""
+        return (self.Index, 1)
+
     # PointGeometry.type_name():
     @property
     def type_name(self) -> str:  # pragma: no unit cover
@@ -746,6 +791,17 @@ class ApexShape(object):
         """
         raise NotImplementedError(f"ApexShape.get_constraints() not implemented: {type(self)}")
 
+    # ApexShape._get_constraints():
+    def _get_constraints(self, origin_point: PointGeometry,
+                         tracing: str = "") -> Tuple[Sketcher.Constraint, ...]:
+        """Return The contstraints for an ApexShape.
+
+        Arguments:
+        * *origin_point* (PointGeometry): The PointGeometry to used for the origin.
+
+        """
+        raise NotImplementedError(f"ApexShape._get_constraints() not implemented: {type(self)}")
+
     # ApexShape.get_geometries():
     def get_geometries(self, tracing: str = "") -> Tuple[Geometry, ...]:
         """Return the ApexShape ApexGeometries tuple.
@@ -755,16 +811,6 @@ class ApexShape(object):
 
         """
         raise NotImplementedError("ApexShape.get_geometries() not implemented: {type(self)}")
-
-    # ApexShape._get_geometries():
-    def _get_geometries(self, tracing: str = "") -> Tuple[Geometry, ...]:
-        """Return the ApexShape ApexGeometries tuple.
-
-        Returns:
-        * (Tuple[Geometry, ...]) of extracted Geometry's.
-
-        """
-        raise NotImplementedError("ApexShape._get_geometries() not implemented: {type(self)}")
 
     # ApexShape.reorient():
     def reorient(self, placement: Placement, suffix: Optional[str] = "",
@@ -803,8 +849,9 @@ class Corner(object):
     After: "Corner" = field(init=False)
     Before: "Corner" = field(init=False)
 
+    # Corner.__post_init__():
     def __post_init__(self) -> None:
-        """Intialize contents of Corner."""
+        """Initialize contents of Corner."""
         frozen_corner: ApexCorner = self.FrozenCorner
         self.Point = frozen_corner.Point
         self.Radius = frozen_corner.Radius
@@ -813,32 +860,104 @@ class Corner(object):
         self.After = self
         self.Before = self
 
-    def get_start(self) -> Vector:
-        """Return the starting point for the corner."""
-        start: Optional[Vector] = None
-        if self.Line:
-            # Line occurs before Arc.
-            start = self.Line.get_start()
-        elif self.Arc:
-            # With no line, the Arc start.
-            start = self.Arc.get_start()
-        else:
-            raise ValueError("Corner.get_start(): Has neither Line nor Arc")
-        return start
+    # Corner.get_constraints():
+    def get_constraints(self, origin_point: PointGeometry,
+                        tracing: str = "") -> Tuple[Sketcher.Constraint, ...]:
+        """Return the Corner sketch constraints."""
+        if tracing:
+            print(f"{tracing}=>Corner.get_constraints('{self.Name}', *)")
+        constraints: List[Sketcher.Constraint] = []
+        origin_index: int = origin_point.Index
+        assert origin_index >= 0, f"{origin_index=}"
+        origin_center_pair: Tuple[int, int] = origin_point.get_center_pair()
 
-    def get_finish(self) -> Vector:
-        """Return the starting point for the corner."""
-        finish: Optional[Vector] = None
+        # Make end point of before Corner to coincide with start point of this Corner:
+        before_corner: Corner = self.Before
+        if tracing:
+            print(f"{tracing}{id(self)=} {id(before_corner)=}")
+            print(f"{tracing}{before_corner.Arc=} {before_corner.Line=}")
+        before_last: Geometry = before_corner.get_last_geometry()
+        before_last_end_pair: Tuple[int, int] = before_last.get_end_pair()
+        at_first: Geometry = self.get_first_geometry()
+        at_first_begin_pair: Tuple[int, int] = at_first.get_begin_pair()
+        assert before_last.Index != at_first.Index, (
+            f"{self.Name=} {before_corner.Name=} {id(self)=} {id(before_last)=} "
+            f"{before_last=} {before_last.Index=} {at_first=} {at_first.Index=}")
+        constraints.append(Sketcher.Constraint(
+            "Coincident", *before_last_end_pair, *at_first_begin_pair))
+
+        # When line is present, add constraints for Line start:
+        if self.Line:
+            line_begin_point: Vector = self.Line.get_begin_point()
+            line_begin_pair: Tuple[int, int] = self.Line.get_begin_pair()
+            constraints.append(Sketcher.Constraint(
+                "DistanceX", *origin_center_pair, *line_begin_pair, line_begin_point.x))
+            constraints.append(Sketcher.Constraint(
+                "DistanceY", *origin_center_pair, *line_begin_pair, line_begin_point.y))
+
         if self.Arc:
-            # Arc occurs after line, so use Arc first:
-            finish = self.Arc.get_finish()
-        if self.Line:
-            # With no Arc, the line is the finish:
-            finish = self.Line.get_finish()
-        else:
-            raise ValueError("Corner.get_start(): Has neither Line nor Arc")
-        return finish
+            # When arc is present, add constraints for Line start:
+            arc_begin_point: Vector = self.Arc.get_begin_point()
+            arc_begin_pair: Tuple[int, int] = self.Arc.get_begin_pair()
+            constraints.append(Sketcher.Constraint(
+                "DistanceX", *origin_center_pair, *arc_begin_pair, arc_begin_point.x))
+            constraints.append(Sketcher.Constraint(
+                "DistanceY", *origin_center_pair, *arc_begin_pair, arc_begin_point.y))
 
+            # Also add constraint for radius:
+            arc_center_pair: Tuple[int, int] = self.Arc.get_center_pair()
+            constraints.append(Sketcher.Constraint(
+                "Radius", *arc_center_pair, self.Arc.Radius))
+
+            # Add constraints for construction line:
+            pass
+
+        if tracing:
+            print(f"{tracing}<=Corner.get_constraints('{self.Name}', *)=>|{len(constraints)}|")
+        return tuple(constraints)
+
+    # Corner.get_begin_point():
+    def get_begin_point(self) -> Vector:
+        """Return the Corner beginning point."""
+        before_corner: Corner = self.Before
+        assert before_corner is not self, "double link was not called"
+        return before_corner.get_end_point()
+
+    # Corner.get_end_point():
+    def get_end_point(self) -> Vector:
+        """Return the Corner ending point."""
+        # If there is no Arc, *end_point* is at corner:
+        end_point: Vector = self.Point
+        # If there is an Arc, *end_point* as at the end of the arc:
+        if self.Arc:
+            end_point = self.Arc.get_end_point()
+        return end_point
+
+    # Corner.get_first_geometry():
+    def get_first_geometry(self) -> Geometry:
+        """Return the last Geometry in Corner."""
+        first_geometry: Optional[Geometry] = None
+        if self.Line:
+            first_geometry = self.Line
+        elif self.Arc:
+            first_geometry = self.Arc
+        else:
+            assert False, "Neither Line nor Arc is present"
+        return first_geometry
+
+    # Corner.get_last_geometry():
+    def get_last_geometry(self) -> Geometry:
+        """Return the last Geometry in Corner."""
+        last_geometry: Optional[Geometry] = None
+        if self.Arc:
+            last_geometry = self.Arc
+        elif self.Line:
+            last_geometry = self.Line
+        else:
+            assert False, "Neither Line nor Arc is present"
+        return last_geometry
+
+    # Corner.get_geometries():
     def get_geometries(self) -> Tuple[Geometry, ...]:
         """Return the Corner Geometry's."""
         geometries: List[Geometry] = []
@@ -888,6 +1007,8 @@ class ApexPolygon(ApexShape):
         ApexCheck("name", (str,)),
     )
 
+    NEW_MODE = True
+
     # ApexPolygon.__post_init__():
     def __post_init__(self) -> None:
         """Initialize a ApexPolygon."""
@@ -930,7 +1051,7 @@ class ApexPolygon(ApexShape):
         object.__setattr__(self, "Clockwise", total_angle >= 0.0)
         object.__setattr__(self, "InternalRadius", internal_radius)
 
-    # ApexPolygon._double_link():
+    # ApexPolygon._double_link):
     def _double_link(self):
         """Force the internal Corner's to be double-linked."""
         internal: _InternalPolygon = self._internal_polygon
@@ -938,9 +1059,11 @@ class ApexPolygon(ApexShape):
         corners_size: int = len(corners)
         corner: Corner
         index: int
-        for index, corner in corners:
+        for index, corner in enumerate(corners):
             corner.Before = corners[(index - 1) % corners_size]
             corner.After = corners[(index + 1) % corners_size]
+            # print(f"DoubleLink[{index}]: "
+            #       f"@:{id(corner)} B:{id(corner.Before)} A:{id(corner.After)}")
 
     # ApexPolygon._radii_overlap_check():
     def _radii_overlap_check(self) -> None:
@@ -957,56 +1080,78 @@ class ApexPolygon(ApexShape):
                 raise ValueError(f"'{corner.Name}' overlaps with '{before.Name}'")
 
     # ApexPolygon._arcs_create():
-    def _arcs_create(self) -> None:
+    def _arcs_create(self, tracing: str = "") -> None:
         """Create all of the needed ArcGeometry's."""
+        if tracing:
+            print(f"{tracing}=>ApexPolygon._arcs_create()")
         internal: _InternalPolygon = self._internal_polygon
         corners: Tuple[Corner, ...] = internal.corners
-        for corner in corners:
+        index: int
+        for index, corner in enumerate(corners):
             if corner.Radius > 0.0:
                 corner.Arc = ArcGeometry(corner.Before.FrozenCorner,
                                          corner.FrozenCorner,
                                          corner.After.FrozenCorner)
+                if tracing:
+                    print(f"{tracing}Arc[{index}]: {corner.Arc}")
                 # TODO: Create the construction line here.
+        if tracing:
+            print(f"{tracing}<=ApexPolygon._arcs_create()")
 
     # ApexPolygon._lines_create():
-    def _lines_create(self) -> None:
+    def _lines_create(self, tracing: str = "") -> None:
         """Create all of the needed LineGemomety's."""
+        if tracing:
+            print(f"{tracing}=>ApexPolygon._lines_create('{self.Name}')")
         internal: _InternalPolygon = self._internal_polygon
         corners: Tuple[Corner, ...] = internal.corners
         epsilon: float = 1.0e-8
-        for corner in corners:
-            before: Corner = corner.Before
-            start: Vector = before.Arc.get_finish() if before.Arc else before.Point
-            finish: Vector = corner.Arc.get_start() if corner.Arc else corner.Point
-            name: str = f"{corner.Name}.line" if corner.Name else ""
-            # Do not install Line if *start* and *finish* coincide:
-            if abs(start - finish) > epsilon:
-                self.Line = LineGeometry(start, finish, name)
+        index: int
+        at_corner: Corner
+        for index, at_corner in enumerate(corners):
+            before_corner: Corner = at_corner.Before
+            before_arc: Optional[ArcGeometry] = before_corner.Arc
+            at_arc: Optional[ArcGeometry] = at_corner.Arc
+
+            begin_point: Vector = before_arc.get_end_point() if before_arc else before_corner.Point
+            end_point: Vector = at_arc.get_begin_point() if at_arc else at_corner.Point
+            if tracing:
+                print(f"{tracing}{begin_point=} {end_point=}")
+            name: str = f"{at_corner.Name}.line" if at_corner.Name else ""
+            # Do not install Line if *begin_point* and *end_point* coincide:
+            if abs((begin_point - end_point).Length) > epsilon:
+                at_corner.Line = LineGeometry(begin_point, end_point, name)
+                if tracing:
+                    print(f"{tracing}Line[{index}]:{at_corner.Line}")
+        if tracing:
+            print(f"{tracing}<=ApexPolygon._lines_create('{self.Name}')")
 
     # ApexPolygon._get_geometries():
     def _get_geometries(self, tracing: str = "") -> Tuple[Geometry, ...]:
         """Return the ApexPolygon Geometry's."""
         # next_tracing: str = tracing + " " if tracing else ""
+        next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>ApexPolygon._get_geometries()")
 
-        self._double_link()
-        self._radii_overlap_check()
-        self._arcs_create()
-        self._lines_create()
-
         internal: _InternalPolygon = self._internal_polygon
-        corners: Tuple[Corner, ...] = internal.corners
         final_geometries: Optional[Tuple[Geometry, ...]] = internal.final_geometries
         if not final_geometries:
-            geometries: List[Geometry] = []
-            for corner in corners:
-                geometries.extend(corner.get_geometries())
+            self._double_link()
+            self._radii_overlap_check()
+            self._arcs_create(tracing=next_tracing)
+            self._lines_create(tracing=next_tracing)
+
+            corners: Tuple[Corner, ...] = internal.corners
+            if not final_geometries:
+                geometries: List[Geometry] = []
+                for corner in corners:
+                    geometries.extend(corner.get_geometries())
             final_geometries = tuple(geometries)
             internal.final_geometries = final_geometries
-
         if tracing:
             print(f"{tracing}<=ApexPolygon._get_geometries()=>|{len(final_geometries)}|")
+            print("")
         return tuple(final_geometries)
 
     # ApexPolygon.get_box():
@@ -1022,6 +1167,27 @@ class ApexPolygon(ApexShape):
                                        for corner in self.Corners])
         return f"ApexPolygon(({corners_text}), '{self.Name}')"
 
+    # ApexPolygon._get_constraints():
+    def _get_constraints(self, origin_point: PointGeometry,
+                         tracing: str = "") -> Tuple[Sketcher.Constraint, ...]:
+        """Return the constraints for an ApexPolygon.
+
+        Arguments:
+        * *origin_point* (PointGeometry): The origin to use.
+
+        """
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>ApexPolygon._get_constraints()")
+        internal_polygon: _InternalPolygon = self._internal_polygon
+        constraints: List[Sketcher.Constraint] = []
+        corners: Tuple[Corner, ...] = internal_polygon.corners
+        for corner in corners:
+            constraints.extend(corner.get_constraints(origin_point, tracing=next_tracing))
+        if tracing:
+            print(f"{tracing}<=ApexPolygon._get_constraints()=>|{len(constraints)}|")
+        return tuple(constraints)
+
     # ApexPolygon.get_constraints():
     def get_constraints(self, origin_point: PointGeometry,
                         tracing: str = "") -> Tuple[Sketcher.Constraint, ...]:
@@ -1031,6 +1197,9 @@ class ApexPolygon(ApexShape):
         * *origin_point* (PointGeometry): The origin to use.
 
         """
+        if ApexPolygon.NEW_MODE:
+            return self._get_constraints(origin_point, tracing=tracing)
+
         # Perform an requested *tracing*:
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
@@ -1043,7 +1212,8 @@ class ApexPolygon(ApexShape):
         assert geometries, "ApexGeometries not set"
         geometries_size: int = len(geometries)
         if tracing:
-            print(f"{tracing}|geometries| == {geometries_size}")
+            # print(f"{tracing}|geometries| == {geometries_size}")
+            pass
         # degrees45: float = math.pi / 4.0
         # degrees135: float = 3.0 * degrees45
         # deg: Callable[[float], float] = math.degrees
@@ -1064,7 +1234,7 @@ class ApexPolygon(ApexShape):
             after_geometry: Geometry = geometries[(at_index + 1) % geometries_size]
             assert at_geometry is not before_geometry
             if tracing:
-                print("")
+                # print("")
                 print(f"{tracing}[{at_index}]: "
                       f"at={at_geometry.TypeName}('{at_name}'):{at_geometry_index} "
                       f"before={before_geometry.TypeName}('{before_name}'):"
@@ -1087,7 +1257,7 @@ class ApexPolygon(ApexShape):
             # two other arcs with no intervening line segments.  In this case the X/Y
             # coordinates are not needed since they will over constrain the drawing.
             if at_arc:
-                at_radius: float = at_arc.radius
+                at_radius: float = at_arc.Radius
                 at_center: Vector = at_arc.center
 
                 # Set Radius constraint:
@@ -1210,6 +1380,9 @@ class ApexPolygon(ApexShape):
         # * after: The point/arc/line after the current index.
         #
         # This is a 4 pass algorithm:
+
+        if ApexPolygon.NEW_MODE:
+            return self._get_geometries(tracing=tracing)
 
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
@@ -1754,8 +1927,14 @@ class ApexPad(ApexOperation):
           that an empty name is to be used.  (Default: "")
 
         """
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>ApexPad('{self.Name}', {placement}, '{suffix}'")
         name: str = "" if suffix is None else f"{self.Name}{suffix}"
-        reoriented_shape: ApexShape = self.Shape.reorient(placement, suffix, name)
+        reoriented_shape: ApexShape = self.Shape.reorient(
+            placement, suffix, tracing=next_tracing)
+        if tracing:
+            print(f"{tracing}<=ApexPad('{self.Name}', {placement}, '{suffix}')=>*")
         return ApexPad(reoriented_shape, self.Depth, name)
 
     # ApexPad.get_shape():
@@ -2160,7 +2339,7 @@ class ApexDrawing(object):
             print(f"{tracing}=>ApexDrawing.reorient('{self.Name}', {placement}, '{suffix}')")
 
         operation: ApexOperation
-        if tracing:
+        if tracing and False:
             index: int
             for index, operation in enumerate(self.Operations):
                 print(f"{tracing}[{index}]:'{operation.Name}'")
@@ -2168,7 +2347,7 @@ class ApexDrawing(object):
             [operation.reorient(placement, suffix, tracing=next_tracing)
              for operation in self.Operations]
         )
-        if tracing:
+        if tracing and False:
             print(f"{tracing}{reoriented_operations=}")
 
         # Reorient the plane *contact* point.
@@ -2180,7 +2359,7 @@ class ApexDrawing(object):
         apex_drawing: ApexDrawing = ApexDrawing(
             reoriented_contact, reoriented_normal, reoriented_operations, f"{self.Name}{suffix}")
 
-        if tracing:
+        if tracing and False:
             print(f"{tracing}{self.Contact=} >= {reoriented_contact}")
             print(f"{tracing}{self.Normal=} >= {reoriented_normal}")
             for index, operation in enumerate(self.Operations):
@@ -2235,12 +2414,8 @@ class ApexDrawing(object):
         z_aligned_box: ApexBox = z_aligned_drawing.Box
         tsw: Vector = z_aligned_box.TSW  # Lower left is along the SW bounding box edge.
         quadrant1_placement: Placement = Placement(Vector(-tsw.x, -tsw.y, 0.0), Rotation())
-        if tracing:
-            print(f"{tracing}before reorient")
         quadrant1_drawing: "ApexDrawing" = z_aligned_drawing.reorient(
             quadrant1_placement, ".q1")
-        if tracing:
-            print(f"{tracing}after reorient")
 
         points: Tuple[Vector, ...] = (Vector(tsw.x, tsw.y, 0.0),)
         # quadrant1_exterior: Optional[ApexShape] = quadrant1_drawing._exterior
@@ -2252,23 +2427,20 @@ class ApexDrawing(object):
 
         # Now extract all of the Geometry's:
         geometries: List[Geometry] = []
-        _geometries: List[Geometry] = []
 
         # Extract the Geometry's from *points* (this must be first):
         point: Vector
         for point in points:
             geometries.extend(self.point_get_geometries(point))
-            _geometries.extend(self.point_get_geometries(point))
 
         # Now extract all of the Geometry's from *final_shapes*::
+        if tracing:
+            print(f"{tracing}>>>>>>>>>>>>>>>>")
         shape: ApexShape
         for shape in final_shapes:
-            f: Tuple[Geometry, ...] = shape.get_geometries()
+            f: Tuple[Geometry, ...] = shape.get_geometries(tracing=next_tracing)
             assert f is shape.get_geometries(), f"{shape=} {f=}"
             geometries.extend(f)
-            _geometries.extend(shape.get_geometries())
-        assert len(geometries) == len(_geometries)
-        geometries = _geometries
 
         # geometry: Geometry
         # for index, geometry in enumerate(geometries):
@@ -2287,7 +2459,7 @@ class ApexDrawing(object):
         for index, geometry in enumerate(geometries):
             geometry.Index = index
             if tracing:
-                print(f"{tracing}Geometries[{index}]: {geometry}")
+                print(f"{tracing}Geometries[{index}]: {geometry} {geometry.Index} {id(geometry)}")
         final_geometries: Tuple[Geometry, ...] = tuple(geometries)
         indices_check(final_geometries)
         indices_check(final_geometries)
@@ -2312,7 +2484,8 @@ class ApexDrawing(object):
             part_geometry = geometry.get_part_geometry()
             part_geometries.append(part_geometry)
             if tracing:
-                print(f"{tracing}part_geometries[{index}]: {part_geometry}")
+                # print(f"{tracing}part_geometries[{index}]: {part_geometry}")
+                pass
         sketcher.addGeometry(part_geometries, False)
 
         # Assemble all *constraints* staring with *origin_point*:
@@ -2323,8 +2496,7 @@ class ApexDrawing(object):
         if tracing:
             print(f"{tracing}Apex Shape's iteration")
         for index, shape in enumerate(final_shapes):
-            if tracing:
-                print(f"{tracing}Operation[{index}]: {operation}")
+            if tracing and False:
                 print(f"{tracing}Shape[{index}]: {shape}")
             assert isinstance(origin_point, PointGeometry)
             constraints.extend(shape.get_constraints(origin_point, tracing=next_tracing))
@@ -2549,7 +2721,8 @@ def _integration_test() -> int:
             contour_operation,)  # center_operation, hexagon_operation)
         operation: ApexOperation
         for index, operation in enumerate(operations):
-            print(f"Operation[{index}]: {operation}")
+            # print(f"Operation[{index}]: {operation}")
+            pass
         # _ = hexagon_operation
         # _ = center_operation
         drawing = ApexDrawing(origin, z_axis, operations, "test_drawing")

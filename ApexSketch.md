@@ -43,7 +43,7 @@ Table of Contents:
 * 9 [Class ApexPolygon](#apexpolygon)
   * 9.1 [ApexPolygon.\_\_post\_init\_\_](#apexpolygon---post-init--)
   * 9.2 [ApexPolygon.\_arcs\_create](#apexpolygon--arcs-create)
-  * 9.3 [ApexPolygon.\_double\_link](#apexpolygon--double-link)
+  * 9.3 [ApexPolygon.\_get\_constraints](#apexpolygon--get-constraints)
   * 9.4 [ApexPolygon.\_get\_geometries](#apexpolygon--get-geometries)
   * 9.5 [ApexPolygon.\_lines\_create](#apexpolygon--lines-create)
   * 9.6 [ApexPolygon.\_radii\_overlap\_check](#apexpolygon--radii-overlap-check)
@@ -54,7 +54,7 @@ Table of Contents:
   * 9.11 [ApexPolygon.reorient](#apexpolygon-reorient)
   * 9.12 [ApexPolygon.show](#apexpolygon-show)
 * 10 [Class ApexShape](#apexshape)
-  * 10.1 [ApexShape.\_get\_geometries](#apexshape--get-geometries)
+  * 10.1 [ApexShape.\_get\_constraints](#apexshape--get-constraints)
   * 10.2 [ApexShape.get\_box](#apexshape-get-box)
   * 10.3 [ApexShape.get\_constraints](#apexshape-get-constraints)
   * 10.4 [ApexShape.get\_geometries](#apexshape-get-geometries)
@@ -63,31 +63,40 @@ Table of Contents:
 * 11 [Class ArcGeometry](#arcgeometry)
   * 11.1 [ArcGeometry.Finish](#arcgeometry-finish)
   * 11.2 [ArcGeometry.FinishKey](#arcgeometry-finishkey)
-  * 11.3 [ArcGeometry.Start](#arcgeometry-start)
-  * 11.4 [ArcGeometry.StartKey](#arcgeometry-startkey)
-  * 11.5 [ArcGeometry.TypeName](#arcgeometry-typename)
-  * 11.6 [ArcGeometry.\_\_init\_\_](#arcgeometry---init--)
-  * 11.7 [ArcGeometry.\_\_str\_\_](#arcgeometry---str--)
-  * 11.8 [ArcGeometry.apex](#arcgeometry-apex)
-  * 11.9 [ArcGeometry.begin](#arcgeometry-begin)
-  * 11.10 [ArcGeometry.center](#arcgeometry-center)
-  * 11.11 [ArcGeometry.end](#arcgeometry-end)
-  * 11.12 [ArcGeometry.finish\_angle](#arcgeometry-finish-angle)
-  * 11.13 [ArcGeometry.finish\_length](#arcgeometry-finish-length)
-  * 11.14 [ArcGeometry.get\_finish](#arcgeometry-get-finish)
-  * 11.15 [ArcGeometry.get\_start](#arcgeometry-get-start)
-  * 11.16 [ArcGeometry.input](#arcgeometry-input)
-  * 11.17 [ArcGeometry.name](#arcgeometry-name)
-  * 11.18 [ArcGeometry.part\_geometry](#arcgeometry-part-geometry)
-  * 11.19 [ArcGeometry.radius](#arcgeometry-radius)
-  * 11.20 [ArcGeometry.repr](#arcgeometry-repr)
-  * 11.21 [ArcGeometry.start\_angle](#arcgeometry-start-angle)
-  * 11.22 [ArcGeometry.start\_length](#arcgeometry-start-length)
-  * 11.23 [ArcGeometry.sweep\_angle](#arcgeometry-sweep-angle)
+  * 11.3 [ArcGeometry.Radius](#arcgeometry-radius)
+  * 11.4 [ArcGeometry.Start](#arcgeometry-start)
+  * 11.5 [ArcGeometry.StartKey](#arcgeometry-startkey)
+  * 11.6 [ArcGeometry.TypeName](#arcgeometry-typename)
+  * 11.7 [ArcGeometry.\_\_init\_\_](#arcgeometry---init--)
+  * 11.8 [ArcGeometry.\_\_str\_\_](#arcgeometry---str--)
+  * 11.9 [ArcGeometry.apex](#arcgeometry-apex)
+  * 11.10 [ArcGeometry.begin](#arcgeometry-begin)
+  * 11.11 [ArcGeometry.center](#arcgeometry-center)
+  * 11.12 [ArcGeometry.end](#arcgeometry-end)
+  * 11.13 [ArcGeometry.finish\_angle](#arcgeometry-finish-angle)
+  * 11.14 [ArcGeometry.finish\_length](#arcgeometry-finish-length)
+  * 11.15 [ArcGeometry.get\_begin\_pair](#arcgeometry-get-begin-pair)
+  * 11.16 [ArcGeometry.get\_begin\_point](#arcgeometry-get-begin-point)
+  * 11.17 [ArcGeometry.get\_center\_pair](#arcgeometry-get-center-pair)
+  * 11.18 [ArcGeometry.get\_end\_pair](#arcgeometry-get-end-pair)
+  * 11.19 [ArcGeometry.get\_end\_point](#arcgeometry-get-end-point)
+  * 11.20 [ArcGeometry.input](#arcgeometry-input)
+  * 11.21 [ArcGeometry.name](#arcgeometry-name)
+  * 11.22 [ArcGeometry.part\_geometry](#arcgeometry-part-geometry)
+  * 11.23 [ArcGeometry.start\_angle](#arcgeometry-start-angle)
+  * 11.24 [ArcGeometry.start\_length](#arcgeometry-start-length)
+  * 11.25 [ArcGeometry.sweep\_angle](#arcgeometry-sweep-angle)
 * 12 [Class CircleGeometry](#circlegeometry)
   * 12.1 [CircleGeometry.get\_part\_geometry](#circlegeometry-get-part-geometry)
   * 12.2 [CircleGeometry.type\_name](#circlegeometry-type-name)
 * 13 [Class Corner](#corner)
+  * 13.1 [Corner.\_\_post\_init\_\_](#corner---post-init--)
+  * 13.2 [Corner.get\_begin\_point](#corner-get-begin-point)
+  * 13.3 [Corner.get\_constraints](#corner-get-constraints)
+  * 13.4 [Corner.get\_end\_point](#corner-get-end-point)
+  * 13.5 [Corner.get\_first\_geometry](#corner-get-first-geometry)
+  * 13.6 [Corner.get\_geometries](#corner-get-geometries)
+  * 13.7 [Corner.get\_last\_geometry](#corner-get-last-geometry)
 * 14 [Class Geometry](#geometry)
   * 14.1 [Geometry.Finish](#geometry-finish)
   * 14.2 [Geometry.FinishKey](#geometry-finishkey)
@@ -96,10 +105,13 @@ Table of Contents:
   * 14.5 [Geometry.Start](#geometry-start)
   * 14.6 [Geometry.StartKey](#geometry-startkey)
   * 14.7 [Geometry.TypeName](#geometry-typename)
-  * 14.8 [Geometry.get\_constraints](#geometry-get-constraints)
-  * 14.9 [Geometry.get\_part\_geometry](#geometry-get-part-geometry)
-  * 14.10 [Geometry.get\_start](#geometry-get-start)
-  * 14.11 [Geometry.get\_start](#geometry-get-start)
+  * 14.8 [Geometry.get\_begin\_pair](#geometry-get-begin-pair)
+  * 14.9 [Geometry.get\_begin\_point](#geometry-get-begin-point)
+  * 14.10 [Geometry.get\_center\_pair](#geometry-get-center-pair)
+  * 14.11 [Geometry.get\_constraints](#geometry-get-constraints)
+  * 14.12 [Geometry.get\_end\_pair](#geometry-get-end-pair)
+  * 14.13 [Geometry.get\_end\_point](#geometry-get-end-point)
+  * 14.14 [Geometry.get\_part\_geometry](#geometry-get-part-geometry)
 * 15 [Class LineGeometry](#linegeometry)
   * 15.1 [LineGeometry.Finish](#linegeometry-finish)
   * 15.2 [LineGeometry.FinishKey](#linegeometry-finishkey)
@@ -109,12 +121,16 @@ Table of Contents:
   * 15.6 [LineGeometry.TypeName](#linegeometry-typename)
   * 15.7 [LineGeometry.\_\_repr\_\_](#linegeometry---repr--)
   * 15.8 [LineGeometry.\_\_str\_\_](#linegeometry---str--)
-  * 15.9 [LineGeometry.get\_finish](#linegeometry-get-finish)
-  * 15.10 [LineGeometry.get\_part\_geometry](#linegeometry-get-part-geometry)
-  * 15.11 [LineGeometry.get\_start](#linegeometry-get-start)
+  * 15.9 [LineGeometry.get\_begin\_pair](#linegeometry-get-begin-pair)
+  * 15.10 [LineGeometry.get\_begin\_point](#linegeometry-get-begin-point)
+  * 15.11 [LineGeometry.get\_center\_pair](#linegeometry-get-center-pair)
+  * 15.12 [LineGeometry.get\_end\_pair](#linegeometry-get-end-pair)
+  * 15.13 [LineGeometry.get\_end\_point](#linegeometry-get-end-point)
+  * 15.14 [LineGeometry.get\_part\_geometry](#linegeometry-get-part-geometry)
 * 16 [Class PointGeometry](#pointgeometry)
-  * 16.1 [PointGeometry.part\_geometry](#pointgeometry-part-geometry)
-  * 16.2 [PointGeometry.type\_name](#pointgeometry-type-name)
+  * 16.1 [PointGeometry.get\_center\_pair](#pointgeometry-get-center-pair)
+  * 16.2 [PointGeometry.part\_geometry](#pointgeometry-part-geometry)
+  * 16.3 [PointGeometry.type\_name](#pointgeometry-type-name)
 * 17 [Class \_InternalCircle](#-internalcircle)
 * 18 [Class \_InternalPolygon](#-internalpolygon)
 
@@ -527,15 +543,19 @@ Initialize a ApexPolygon.
 
 ### 9.2 ApexPolygon.\_arcs\_create <a name="apexpolygon--arcs-create"></a>
 
-def \_arcs\_create(self) -> None:
+def \_arcs\_create(self, *tracing*:  *str* = "") -> None:
 
 Create all of the needed ArcGeometry's.
 
-### 9.3 ApexPolygon.\_double\_link <a name="apexpolygon--double-link"></a>
+### 9.3 ApexPolygon.\_get\_constraints <a name="apexpolygon--get-constraints"></a>
 
-def \_double\_link(self):
+def \_get\_constraints(self, *origin\_point*:  PointGeometry, *tracing*:  *str* = "") -> Tuple[Sketcher.Constraint, ...]:
 
-Force the internal Corner's to be double-linked.
+Return the constraints for an ApexPolygon.
+
+Arguments:
+* *origin\_point* (PointGeometry): The origin to use.
+
 
 ### 9.4 ApexPolygon.\_get\_geometries <a name="apexpolygon--get-geometries"></a>
 
@@ -545,7 +565,7 @@ Return the ApexPolygon Geometry's.
 
 ### 9.5 ApexPolygon.\_lines\_create <a name="apexpolygon--lines-create"></a>
 
-def \_lines\_create(self) -> None:
+def \_lines\_create(self, *tracing*:  *str* = "") -> None:
 
 Create all of the needed LineGemomety's.
 
@@ -610,14 +630,14 @@ ApexShape: Is a base class for geometric shapes (e.g. ApexPolygon, etc).
 
 ApexShape is a base class for the various geometric shapes.  See sub-classes for attributes.
 
-### 10.1 ApexShape.\_get\_geometries <a name="apexshape--get-geometries"></a>
+### 10.1 ApexShape.\_get\_constraints <a name="apexshape--get-constraints"></a>
 
-def \_get\_geometries(self, *tracing*:  *str* = "") -> Tuple[Geometry, ...]:
+def \_get\_constraints(self, *origin\_point*:  PointGeometry, *tracing*:  *str* = "") -> Tuple[Sketcher.Constraint, ...]:
 
-Return the ApexShape ApexGeometries tuple.
+Return The contstraints for an ApexShape.
 
-Returns:
-* (Tuple[Geometry, ...]) of extracted Geometry's.
+Arguments:
+* *origin\_point* (PointGeometry): The PointGeometry to used for the origin.
 
 
 ### 10.2 ApexShape.get\_box <a name="apexshape-get-box"></a>
@@ -684,127 +704,139 @@ def FinishKey(self) -> *int*:
 
 Return the ArcGeometry finish Constraint key.
 
-### 11.3 ArcGeometry.Start <a name="arcgeometry-start"></a>
+### 11.3 ArcGeometry.Radius <a name="arcgeometry-radius"></a>
+
+def Radius(self) -> *float*:
+
+Return the initial ArcGeometry radius.
+
+### 11.4 ArcGeometry.Start <a name="arcgeometry-start"></a>
 
 def Start(self) -> Vector:
 
 Return the ArcGeometry arc start Vector.
 
-### 11.4 ArcGeometry.StartKey <a name="arcgeometry-startkey"></a>
+### 11.5 ArcGeometry.StartKey <a name="arcgeometry-startkey"></a>
 
 def StartKey(self) -> *int*:
 
 Return the ArcGeometry finish Constraint key.
 
-### 11.5 ArcGeometry.TypeName <a name="arcgeometry-typename"></a>
+### 11.6 ArcGeometry.TypeName <a name="arcgeometry-typename"></a>
 
 def TypeName(self) -> *str*:  # *pragma*:  *no* *unit* *cover*
 
 Return the ArcGeometry type name.
 
-### 11.6 ArcGeometry.\_\_init\_\_ <a name="arcgeometry---init--"></a>
+### 11.7 ArcGeometry.\_\_init\_\_ <a name="arcgeometry---init--"></a>
 
 def \_\_init\_\_(self, *begin*:  ApexCorner, *at*:  ApexCorner, *end*:  ApexCorner, *name*:  *str* = "", *tracing*:  *str* = "") -> None:
 
 Initialize an ArcGeometry.
 
-### 11.7 ArcGeometry.\_\_str\_\_ <a name="arcgeometry---str--"></a>
+### 11.8 ArcGeometry.\_\_str\_\_ <a name="arcgeometry---str--"></a>
 
 def \_\_str\_\_(self) -> *str*:
 
 Return string representation of Geometry.
 
-### 11.8 ArcGeometry.apex <a name="arcgeometry-apex"></a>
+### 11.9 ArcGeometry.apex <a name="arcgeometry-apex"></a>
 
 def *at*(self) -> Vector:
 
 Return the ArcGeometry apex Vector.
 
-### 11.9 ArcGeometry.begin <a name="arcgeometry-begin"></a>
+### 11.10 ArcGeometry.begin <a name="arcgeometry-begin"></a>
 
 def *begin*(self) -> Vector:  # *pragma*:  *no* *unit* *test*
 
 Return the ArcGeometry arc begin Vector.
 
-### 11.10 ArcGeometry.center <a name="arcgeometry-center"></a>
+### 11.11 ArcGeometry.center <a name="arcgeometry-center"></a>
 
 def *center*(self) -> Vector:
 
 Return the ArcGeometry arc center.
 
-### 11.11 ArcGeometry.end <a name="arcgeometry-end"></a>
+### 11.12 ArcGeometry.end <a name="arcgeometry-end"></a>
 
 def *end*(self) -> Vector:  # *pragma*:  *no* *unit* *test*
 
 Return the initial ArcGeometry end Vector.
 
-### 11.12 ArcGeometry.finish\_angle <a name="arcgeometry-finish-angle"></a>
+### 11.13 ArcGeometry.finish\_angle <a name="arcgeometry-finish-angle"></a>
 
 def *finish\_angle*(self) -> *float*:  # *pragma*:  *no* *unit* *test*
 
 Return the ArcGeometry arc finish angle.
 
-### 11.13 ArcGeometry.finish\_length <a name="arcgeometry-finish-length"></a>
+### 11.14 ArcGeometry.finish\_length <a name="arcgeometry-finish-length"></a>
 
 def *finish\_length*(self) -> *float*:  # *pragma*:  *no* *unit* *test*
 
 Return distance from arc finish Vector to the apex Vector.
 
-### 11.14 ArcGeometry.get\_finish <a name="arcgeometry-get-finish"></a>
+### 11.15 ArcGeometry.get\_begin\_pair <a name="arcgeometry-get-begin-pair"></a>
 
-def *get\_finish*(self) -> Vector:
+def *get\_begin\_pair*(self) -> Tuple[int, *int*]:
 
-Return the start location of the Vector.
+Return the ArcGeometry begin pair.
 
-### 11.15 ArcGeometry.get\_start <a name="arcgeometry-get-start"></a>
+### 11.16 ArcGeometry.get\_begin\_point <a name="arcgeometry-get-begin-point"></a>
 
-def *get\_start*(self) -> Vector:
+def *get\_begin\_point*(self) -> Vector:
 
-Return the start location of the Vector.
+Return the ArcGeometry begin point.
 
-### 11.16 ArcGeometry.input <a name="arcgeometry-input"></a>
+### 11.17 ArcGeometry.get\_center\_pair <a name="arcgeometry-get-center-pair"></a>
+
+def *get\_center\_pair*(self) -> Tuple[int, *int*]:
+
+Return the ArcGeometry center pair.
+
+### 11.18 ArcGeometry.get\_end\_pair <a name="arcgeometry-get-end-pair"></a>
+
+def *get\_end\_pair*(self) -> Vector:
+
+Return the ArcGGeometry end point.
+
+### 11.19 ArcGeometry.get\_end\_point <a name="arcgeometry-get-end-point"></a>
+
+def *get\_end\_point*(self) -> Vector:
+
+Return the ArcGGeometry end point.
+
+### 11.20 ArcGeometry.input <a name="arcgeometry-input"></a>
 
 def *input*(self) -> Vector:  # *pragma*:  *no* *unit* *test*
 
 Return the initial ArcGeometry arc start Vector.
 
-### 11.17 ArcGeometry.name <a name="arcgeometry-name"></a>
+### 11.21 ArcGeometry.name <a name="arcgeometry-name"></a>
 
 def Name(self) -> *str*:
 
 Return name.
 
-### 11.18 ArcGeometry.part\_geometry <a name="arcgeometry-part-geometry"></a>
+### 11.22 ArcGeometry.part\_geometry <a name="arcgeometry-part-geometry"></a>
 
 def *get\_part\_geometry*(self) -> PartGeometryUnion:
 
 Return ArcGeometry Part.Arc.
 
-### 11.19 ArcGeometry.radius <a name="arcgeometry-radius"></a>
-
-def *radius*(self) -> *float*:
-
-Return the initial ArcGeometry radius.
-
-### 11.20 ArcGeometry.repr <a name="arcgeometry-repr"></a>
-
-def \_\_repr\_\_(self) -> *str*:  # *pragma*:  *no* *unit* *test*
-
-Return ArcGeometry string representation.
-
-### 11.21 ArcGeometry.start\_angle <a name="arcgeometry-start-angle"></a>
+### 11.23 ArcGeometry.start\_angle <a name="arcgeometry-start-angle"></a>
 
 def *start\_angle*(self) -> *float*:  # *pragma*:  *no* *unit* *test*
 
 Return the ArcGeometry arc start angle.
 
-### 11.22 ArcGeometry.start\_length <a name="arcgeometry-start-length"></a>
+### 11.24 ArcGeometry.start\_length <a name="arcgeometry-start-length"></a>
 
 def *start\_length*(self) -> *float*:  # *pragma*:  *no* *unit* *test*
 
 Return the ArcGeometry distance from start Vector to apex Vector.
 
-### 11.23 ArcGeometry.sweep\_angle <a name="arcgeometry-sweep-angle"></a>
+### 11.25 ArcGeometry.sweep\_angle <a name="arcgeometry-sweep-angle"></a>
 
 def *sweep\_angle*(self) -> *float*:  # *pragma*:  *no* *unit* *cover*
 
@@ -833,6 +865,48 @@ Return the CircleGeometry type name.
 class Corner(object):
 
 Corner: An internal mutable class that corresponds to an ApexCorner.
+
+### 13.1 Corner.\_\_post\_init\_\_ <a name="corner---post-init--"></a>
+
+def \_\_post\_init\_\_(self) -> None:
+
+Initialize contents of Corner.
+
+### 13.2 Corner.get\_begin\_point <a name="corner-get-begin-point"></a>
+
+def *get\_begin\_point*(self) -> Vector:
+
+Return the Corner beginning point.
+
+### 13.3 Corner.get\_constraints <a name="corner-get-constraints"></a>
+
+def *get\_constraints*(self, *origin\_point*:  PointGeometry, *tracing*:  *str* = "") -> Tuple[Sketcher.Constraint, ...]:
+
+Return the Corner sketch constraints.
+
+### 13.4 Corner.get\_end\_point <a name="corner-get-end-point"></a>
+
+def *get\_end\_point*(self) -> Vector:
+
+Return the Corner ending point.
+
+### 13.5 Corner.get\_first\_geometry <a name="corner-get-first-geometry"></a>
+
+def *get\_first\_geometry*(self) -> Geometry:
+
+Return the last Geometry in Corner.
+
+### 13.6 Corner.get\_geometries <a name="corner-get-geometries"></a>
+
+def *get\_geometries*(self) -> Tuple[Geometry, ...]:
+
+Return the Corner Geometry's.
+
+### 13.7 Corner.get\_last\_geometry <a name="corner-get-last-geometry"></a>
+
+def *get\_last\_geometry*(self) -> Geometry:
+
+Return the last Geometry in Corner.
 
 ## 14 Class Geometry <a name="geometry"></a>
 
@@ -885,7 +959,25 @@ def TypeName(self) -> *str*:
 
 Return the Geometry type name.
 
-### 14.8 Geometry.get\_constraints <a name="geometry-get-constraints"></a>
+### 14.8 Geometry.get\_begin\_pair <a name="geometry-get-begin-pair"></a>
+
+def *get\_begin\_pair*(self) -> Tuple[int, *int*]:
+
+Return the Geometry index/start key pair.
+
+### 14.9 Geometry.get\_begin\_point <a name="geometry-get-begin-point"></a>
+
+def *get\_begin\_point*(self) -> Vector:
+
+Return start location of Geometry.
+
+### 14.10 Geometry.get\_center\_pair <a name="geometry-get-center-pair"></a>
+
+def *get\_center\_pair*(self) -> Tuple[int, *int*]:
+
+Return the Geometry index/center key pair.
+
+### 14.11 Geometry.get\_constraints <a name="geometry-get-constraints"></a>
 
 def *get\_constraints*(self, *origin\_point*:  "PointGeometry", *tracing*:  *str* = "") -> Tuple[Sketcher.Constraint, ...]:
 
@@ -896,23 +988,23 @@ Arguments:
 
 Returns the assoicated contraints as a tuple.
 
-### 14.9 Geometry.get\_part\_geometry <a name="geometry-get-part-geometry"></a>
+### 14.12 Geometry.get\_end\_pair <a name="geometry-get-end-pair"></a>
+
+def *get\_end\_pair*(self) -> Tuple[int, *int*]:
+
+Return the Geometry index/start key pair.
+
+### 14.13 Geometry.get\_end\_point <a name="geometry-get-end-point"></a>
+
+def *get\_end\_point*(self) -> Vector:
+
+Return starting location of Geometry.
+
+### 14.14 Geometry.get\_part\_geometry <a name="geometry-get-part-geometry"></a>
 
 def *get\_part\_geometry*(self) -> PartGeometryUnion:
 
 Return the PartGeometry associated with Geometry.
-
-### 14.10 Geometry.get\_start <a name="geometry-get-start"></a>
-
-def *get\_start*(self) -> Vector:
-
-Return starting location of Geometry.
-
-### 14.11 Geometry.get\_start <a name="geometry-get-start"></a>
-
-def *get\_finish*(self) -> Vector:
-
-Return ending location of Geometry.
 
 ## 15 Class LineGeometry <a name="linegeometry"></a>
 
@@ -968,23 +1060,41 @@ def \_\_str\_\_(self) -> *str*:
 
 Return string representation of LineGeometry.
 
-### 15.9 LineGeometry.get\_finish <a name="linegeometry-get-finish"></a>
+### 15.9 LineGeometry.get\_begin\_pair <a name="linegeometry-get-begin-pair"></a>
 
-def *get\_finish*(self) -> Vector:
+def *get\_begin\_pair*(self) -> Tuple[int, *int*]:
 
 Return the LineGeometry start location.
 
-### 15.10 LineGeometry.get\_part\_geometry <a name="linegeometry-get-part-geometry"></a>
+### 15.10 LineGeometry.get\_begin\_point <a name="linegeometry-get-begin-point"></a>
+
+def *get\_begin\_point*(self) -> Vector:
+
+Return the LineGeometry start location.
+
+### 15.11 LineGeometry.get\_center\_pair <a name="linegeometry-get-center-pair"></a>
+
+def *get\_center\_pair*(self) -> Tuple[int, *int*]:
+
+Return index/key for line start.
+
+### 15.12 LineGeometry.get\_end\_pair <a name="linegeometry-get-end-pair"></a>
+
+def *get\_end\_pair*(self) -> Tuple[int, *int*]:
+
+Return index/key for line start.
+
+### 15.13 LineGeometry.get\_end\_point <a name="linegeometry-get-end-point"></a>
+
+def *get\_end\_point*(self) -> Vector:
+
+Return the LineGeometry start location.
+
+### 15.14 LineGeometry.get\_part\_geometry <a name="linegeometry-get-part-geometry"></a>
 
 def *get\_part\_geometry*(self) -> PartGeometryUnion:
 
 Return the PartGeometry associated with a LineGeometry.
-
-### 15.11 LineGeometry.get\_start <a name="linegeometry-get-start"></a>
-
-def *get\_start*(self) -> Vector:
-
-Return the LineGeometry start location.
 
 ## 16 Class PointGeometry <a name="pointgeometry"></a>
 
@@ -992,13 +1102,19 @@ class PointGeometry(Geometry):
 
 Represents a point in a sketch.
 
-### 16.1 PointGeometry.part\_geometry <a name="pointgeometry-part-geometry"></a>
+### 16.1 PointGeometry.get\_center\_pair <a name="pointgeometry-get-center-pair"></a>
+
+def *get\_center\_pair*(self) -> Tuple[int, *int*]:
+
+Return the PointGeometry center pair.
+
+### 16.2 PointGeometry.part\_geometry <a name="pointgeometry-part-geometry"></a>
 
 def *get\_part\_geometry*(self) -> PartGeometryUnion:
 
 Return the  PointGeometry.
 
-### 16.2 PointGeometry.type\_name <a name="pointgeometry-type-name"></a>
+### 16.3 PointGeometry.type\_name <a name="pointgeometry-type-name"></a>
 
 def *type\_name*(self) -> *str*:  # *pragma*:  *no* *unit* *cover*
 
