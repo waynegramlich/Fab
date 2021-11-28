@@ -188,6 +188,16 @@ class Geometry(object):
         raise NotImplementedError(
             f"Geometry.get_constraints() not implmented for {type(self)}")
 
+    # Geometry.get_start():
+    def get_start(self) -> Vector:
+        """Return starting location of Geometry."""
+        raise NotImplementedError(f"Geometry.get_start() not implemented {type(self)}")
+
+    # Geometry.get_start():
+    def get_finish(self) -> Vector:
+        """Return ending location of Geometry."""
+        raise NotImplementedError(f"Geometry.get_finish() not implemented {type(self)}")
+
     # Geometry.Index:
     @property
     def Index(self) -> int:
@@ -310,7 +320,7 @@ class ArcGeometry(Geometry):
 
         # Do some initial float and variable assignments:
         deg: Callable[[float], float] = math.degrees
-        epsilon: float = 1.0e-10  # Small number
+        epsilon: float = 1.0e-8  # Small number
         pi: float = math.pi  # Pi constant (e.g. 3.14159...)
         r: float = at.Radius
         if r < epsilon:
@@ -453,6 +463,16 @@ class ArcGeometry(Geometry):
         if tracing:
             print(f"{tracing}<=ArcGeometry('{begin.Name}', "
                   f"'{at.Name}', '{end.Name}', '{name}')")
+
+    # ArcGeometry.get_start():
+    def get_start(self) -> Vector:
+        """Return the start location of the Vector."""
+        return self._begin
+
+    # ArcGeometry.get_finish():
+    def get_finish(self) -> Vector:
+        """Return the start location of the Vector."""
+        return self._end
 
     # ArcGeometry.repr():
     def __repr__(self) -> str:  # pragma: no unit test
@@ -613,6 +633,16 @@ class LineGeometry(Geometry):
     _name: str = ""
     _line_segment: Optional[Part.LineSegment] = field(init=False, default=None)
 
+    # LineGeometry.get_start():
+    def get_start(self) -> Vector:
+        """Return the LineGeometry start location."""
+        return self._start
+
+    # LineGeometry.get_finish():
+    def get_finish(self) -> Vector:
+        """Return the LineGeometry start location."""
+        return self._finish
+
     # LineGeometry.get_part_geometry():
     def get_part_geometry(self) -> PartGeometryUnion:
         """Return the PartGeometry associated with a LineGeometry."""
@@ -760,6 +790,8 @@ class Corner(object):
     Arc: Optional[ArcGeometry] = field(init=False, default=None)
     Construction: Optional[LineGeometry] = field(init=False, default=None)
     Line: Optional[LineGeometry] = field(init=False, default=None)
+    After: "Corner" = field(init=False)
+    Before: "Corner" = field(init=False)
 
     def __post_init__(self) -> None:
         """Intialize contents of Corner."""
@@ -768,7 +800,44 @@ class Corner(object):
         self.Radius = frozen_corner.Radius
         self.Name = frozen_corner.Name
         self.Box = frozen_corner.Box
+        self.After = self
+        self.Before = self
 
+    def get_start(self) -> Vector:
+        """Return the starting point for the corner."""
+        start: Optional[Vector] = None
+        if self.Line:
+            # Line occurs before Arc.
+            start = self.Line.get_start()
+        elif self.Arc:
+            # With no line, the Arc start.
+            start = self.Arc.get_start()
+        else:
+            raise ValueError("Corner.get_start(): Has neither Line nor Arc")
+        return start
+
+    def get_finish(self) -> Vector:
+        """Return the starting point for the corner."""
+        finish: Optional[Vector] = None
+        if self.Arc:
+            # Arc occurs after line, so use Arc first:
+            finish = self.Arc.get_finish()
+        if self.Line:
+            # With no Arc, the line is the finish:
+            finish = self.Line.get_finish()
+        else:
+            raise ValueError("Corner.get_start(): Has neither Line nor Arc")
+        return finish
+
+    def get_geometries(self) -> Tuple[Geometry, ...]:
+        """Return the Corner Geometry's."""
+        geometries: List[Geometry] = []
+        if self.Line:
+            geometries.append(self.Line)
+        if self.Arc:
+            geometries.append(self.Arc)
+            # Add in construction line here.
+        return tuple(geometries)
 
 # _InternalPolygon:
 @dataclass  # _InternalPolygon(object)
@@ -776,7 +845,7 @@ class _InternalPolygon(object):
     """InternalPolygon: A place to store mutable data structures needed for ApexPolygon."""
 
     corners: Tuple[Corner, ...] = field(init=False, default=())
-    geometries: Optional[Tuple[Geometry, ...]] = field(init=False, default=None)
+    final_geometries: Optional[Tuple[Geometry, ...]] = field(init=False, default=None)
 
 # ApexPolygon:
 @dataclass(frozen=True)  # ApexPolygon
@@ -844,12 +913,79 @@ class ApexPolygon(ApexShape):
 
         internal_polygon: _InternalPolygon = self._internal_polygon
         internal_polygon.corners = corners
-        internal_polygon.geometries = None
+        internal_polygon.final_geometries = None
 
         # (Why __setattr__?)[https://stackoverflow.com/questions/53756788]
         object.__setattr__(self, "Box", box)
         object.__setattr__(self, "Clockwise", total_angle >= 0.0)
         object.__setattr__(self, "InternalRadius", internal_radius)
+
+    # ApexPolygon._double_link():
+    def _double_link(self):
+        """Force the internal Corner's to be double-linked."""
+        internal: _InternalPolygon = self._internal_polygon
+        corners: Tuple[Corner, ...] = internal.corners
+        corners_size: int = len(corners)
+        corner: Corner
+        index: int
+        for index, corner in corners:
+            corner.Before = corners[(index - 1) % corners_size]
+            corner.After = corners[(index + 1) % corners_size]
+
+    # ApexPolygon._radii_overlap_check():
+    def _radius_overlap_check(self) -> None:
+        """Verify that the corner radii do not overlap."""
+        internal: _InternalPolygon = self._internal_polygon
+        corners: Tuple[Corner, ...] = internal.corners
+        epsilon = 1.0e-8
+        for corner in corners:
+            before: Corner = corner.Before
+            total_distance: float = (corner.Point - before.Point).Length
+            radii_distance: float = corner.Radius + before.Radius
+            remaining_distance: float = total_distance - radii_distance
+            if remaining_distance < 0.0 and abs(remaining_distance) > epsilon:
+                raise ValueError(f"'{corner.Name}' overlaps with '{before.Name}'")
+
+    # ApexPolygon._arcs_create():
+    def _arcs_create(self) -> None:
+        """Create all of the needed ArcGeometry's."""
+        internal: _InternalPolygon = self._internal_polygon
+        corners: Tuple[Corner, ...] = internal.corners
+        for corner in corners:
+            if corner.Radius > 0.0:
+                corner.Arc = ArcGeometry(corner.Before.FrozenCorner,
+                                         corner.FrozenCorner,
+                                         corner.After.FrozenCorner)
+                # TODO: Create the construction line here.
+
+    # ApexPolygon._lines_create():
+    def _lines_create(self) -> None:
+        """Create all of the needed LineGemomety's."""
+        internal: _InternalPolygon = self._internal_polygon
+        corners: Tuple[Corner, ...] = internal.corners
+        epsilon: float = 1.0e-8
+        for corner in corners:
+            before: Corner = corner.Before
+            start: Vector = before.Arc.get_finish() if before.Arc else before.Point
+            finish: Vector = corner.Arc.get_start() if corner.Arc else corner.Point
+            name: str = f"{corner.Name}.line" if corner.Name else ""
+            # Do not install Line if *start* and *finish* coincide:
+            if abs(start - finish) > epsilon:
+                self.Line = LineGeometry(start, finish, name)
+
+    # ApexPolygon._get_geometries():
+    def _get_geometries(self) -> Tuple[Geometry, ...]:
+        """Return the ApexPolygon Geometry's."""
+        internal: _InternalPolygon = self._internal_polygon
+        corners: Tuple[Corner, ...] = internal.corners
+        final_geometries: Optional[Tuple[Geometry, ...]] = internal.final_geometries
+        if not final_geometries:
+            geometries: List[Geometry] = []
+            for corner in corners:
+                geometries.extend(corner.get_geometries())
+            final_geometries = tuple(geometries)
+            internal.final_geometries = final_geometries
+        return tuple(final_geometries)
 
     # ApexPolygon.get_box():
     def get_box(self) -> ApexBox:
@@ -1061,7 +1197,8 @@ class ApexPolygon(ApexShape):
         corners: Tuple[Corner, ...] = internal_polygon.corners
 
         # Only compute the geometries once:
-        if not internal_polygon.geometries:
+        final_geometries: Optional[Tuple[Geometry, ...]] = internal_polygon.final_geometries
+        if not final_geometries:
             # Some variable declarations (re)used in the code below:
             after_corner: Corner
             arc: Optional[ArcGeometry]
@@ -1140,7 +1277,8 @@ class ApexPolygon(ApexShape):
                 at_arc = at_corner.Arc
                 if at_arc:
                     geometries.append(at_arc)
-            final_geometries: Tuple[Geometry, ...] = tuple(geometries)
+            final_geometries = tuple(geometries)
+            internal_polygon.final_geometries = final_geometries
 
             # Pass 4: Make bi-directional doubly linked geometries that is used for constraints
             # generation.
@@ -1150,11 +1288,10 @@ class ApexPolygon(ApexShape):
                 geometry.Previous = geometries[(at_index - 1) % geometries_size]
                 geometry.Next = geometries[(at_index + 1) % geometries_size]
 
-            internal_polygon.geometries = final_geometries
         if tracing:
             print(f"{tracing}<=ApexPolygon.get_geometries(*)=>"
-                  f"|*|={len(internal_polygon.geometries)}")
-        return internal_polygon.geometries
+                  f"|*|={len(final_geometries)}")
+        return final_geometries
 
     REORIENT_CHECKS = (
         ApexCheck("placement", (Placement,)),

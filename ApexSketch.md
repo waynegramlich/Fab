@@ -42,12 +42,17 @@ Table of Contents:
   * 8.4 [ApexPocket.reorient](#apexpocket-reorient)
 * 9 [Class ApexPolygon](#apexpolygon)
   * 9.1 [ApexPolygon.\_\_post\_init\_\_](#apexpolygon---post-init--)
-  * 9.2 [ApexPolygon.\_unit\_tests](#apexpolygon--unit-tests)
-  * 9.3 [ApexPolygon.get\_box](#apexpolygon-get-box)
-  * 9.4 [ApexPolygon.get\_constraints](#apexpolygon-get-constraints)
-  * 9.5 [ApexPolygon.get\_geometries](#apexpolygon-get-geometries)
-  * 9.6 [ApexPolygon.reorient](#apexpolygon-reorient)
-  * 9.7 [ApexPolygon.show](#apexpolygon-show)
+  * 9.2 [ApexPolygon.\_arcs\_create](#apexpolygon--arcs-create)
+  * 9.3 [ApexPolygon.\_double\_link](#apexpolygon--double-link)
+  * 9.4 [ApexPolygon.\_get\_geometries](#apexpolygon--get-geometries)
+  * 9.5 [ApexPolygon.\_lines\_create](#apexpolygon--lines-create)
+  * 9.6 [ApexPolygon.\_radii\_overlap\_check](#apexpolygon--radii-overlap-check)
+  * 9.7 [ApexPolygon.\_unit\_tests](#apexpolygon--unit-tests)
+  * 9.8 [ApexPolygon.get\_box](#apexpolygon-get-box)
+  * 9.9 [ApexPolygon.get\_constraints](#apexpolygon-get-constraints)
+  * 9.10 [ApexPolygon.get\_geometries](#apexpolygon-get-geometries)
+  * 9.11 [ApexPolygon.reorient](#apexpolygon-reorient)
+  * 9.12 [ApexPolygon.show](#apexpolygon-show)
 * 10 [Class ApexShape](#apexshape)
   * 10.1 [ApexShape.get\_box](#apexshape-get-box)
   * 10.2 [ApexShape.get\_constraints](#apexshape-get-constraints)
@@ -68,14 +73,16 @@ Table of Contents:
   * 11.11 [ArcGeometry.end](#arcgeometry-end)
   * 11.12 [ArcGeometry.finish\_angle](#arcgeometry-finish-angle)
   * 11.13 [ArcGeometry.finish\_length](#arcgeometry-finish-length)
-  * 11.14 [ArcGeometry.input](#arcgeometry-input)
-  * 11.15 [ArcGeometry.name](#arcgeometry-name)
-  * 11.16 [ArcGeometry.part\_geometry](#arcgeometry-part-geometry)
-  * 11.17 [ArcGeometry.radius](#arcgeometry-radius)
-  * 11.18 [ArcGeometry.repr](#arcgeometry-repr)
-  * 11.19 [ArcGeometry.start\_angle](#arcgeometry-start-angle)
-  * 11.20 [ArcGeometry.start\_length](#arcgeometry-start-length)
-  * 11.21 [ArcGeometry.sweep\_angle](#arcgeometry-sweep-angle)
+  * 11.14 [ArcGeometry.get\_finish](#arcgeometry-get-finish)
+  * 11.15 [ArcGeometry.get\_start](#arcgeometry-get-start)
+  * 11.16 [ArcGeometry.input](#arcgeometry-input)
+  * 11.17 [ArcGeometry.name](#arcgeometry-name)
+  * 11.18 [ArcGeometry.part\_geometry](#arcgeometry-part-geometry)
+  * 11.19 [ArcGeometry.radius](#arcgeometry-radius)
+  * 11.20 [ArcGeometry.repr](#arcgeometry-repr)
+  * 11.21 [ArcGeometry.start\_angle](#arcgeometry-start-angle)
+  * 11.22 [ArcGeometry.start\_length](#arcgeometry-start-length)
+  * 11.23 [ArcGeometry.sweep\_angle](#arcgeometry-sweep-angle)
 * 12 [Class CircleGeometry](#circlegeometry)
   * 12.1 [CircleGeometry.get\_part\_geometry](#circlegeometry-get-part-geometry)
   * 12.2 [CircleGeometry.type\_name](#circlegeometry-type-name)
@@ -90,6 +97,8 @@ Table of Contents:
   * 14.7 [Geometry.TypeName](#geometry-typename)
   * 14.8 [Geometry.get\_constraints](#geometry-get-constraints)
   * 14.9 [Geometry.get\_part\_geometry](#geometry-get-part-geometry)
+  * 14.10 [Geometry.get\_start](#geometry-get-start)
+  * 14.11 [Geometry.get\_start](#geometry-get-start)
 * 15 [Class LineGeometry](#linegeometry)
   * 15.1 [LineGeometry.Finish](#linegeometry-finish)
   * 15.2 [LineGeometry.FinishKey](#linegeometry-finishkey)
@@ -99,7 +108,9 @@ Table of Contents:
   * 15.6 [LineGeometry.TypeName](#linegeometry-typename)
   * 15.7 [LineGeometry.\_\_repr\_\_](#linegeometry---repr--)
   * 15.8 [LineGeometry.\_\_str\_\_](#linegeometry---str--)
-  * 15.9 [LineGeometry.get\_part\_geometry](#linegeometry-get-part-geometry)
+  * 15.9 [LineGeometry.get\_finish](#linegeometry-get-finish)
+  * 15.10 [LineGeometry.get\_part\_geometry](#linegeometry-get-part-geometry)
+  * 15.11 [LineGeometry.get\_start](#linegeometry-get-start)
 * 16 [Class PointGeometry](#pointgeometry)
   * 16.1 [PointGeometry.part\_geometry](#pointgeometry-part-geometry)
   * 16.2 [PointGeometry.type\_name](#pointgeometry-type-name)
@@ -513,19 +524,49 @@ def \_\_post\_init\_\_(self) -> None:
 
 Initialize a ApexPolygon.
 
-### 9.2 ApexPolygon.\_unit\_tests <a name="apexpolygon--unit-tests"></a>
+### 9.2 ApexPolygon.\_arcs\_create <a name="apexpolygon--arcs-create"></a>
+
+def \_arcs\_create(self) -> None:
+
+Create all of the needed ArcGeometry's.
+
+### 9.3 ApexPolygon.\_double\_link <a name="apexpolygon--double-link"></a>
+
+def \_double\_link(self):
+
+Force the internal Corner's to be double-linked.
+
+### 9.4 ApexPolygon.\_get\_geometries <a name="apexpolygon--get-geometries"></a>
+
+def \_get\_geometries(self) -> Tuple[Geometry, ...]:
+
+Return the ApexPolygon Geometry's.
+
+### 9.5 ApexPolygon.\_lines\_create <a name="apexpolygon--lines-create"></a>
+
+def \_lines\_create(self) -> None:
+
+Create all of the needed LineGemomety's.
+
+### 9.6 ApexPolygon.\_radii\_overlap\_check <a name="apexpolygon--radii-overlap-check"></a>
+
+def \_radius\_overlap\_check(self) -> None:
+
+Verify that the corner radii do not overlap.
+
+### 9.7 ApexPolygon.\_unit\_tests <a name="apexpolygon--unit-tests"></a>
 
 def \_unit\_tests() -> None:
 
 Run ApexPolygon unit tests.
 
-### 9.3 ApexPolygon.get\_box <a name="apexpolygon-get-box"></a>
+### 9.8 ApexPolygon.get\_box <a name="apexpolygon-get-box"></a>
 
 def *get\_box*(self) -> ApexBox:
 
 Return the ApexBox for an ApexPolygon.
 
-### 9.4 ApexPolygon.get\_constraints <a name="apexpolygon-get-constraints"></a>
+### 9.9 ApexPolygon.get\_constraints <a name="apexpolygon-get-constraints"></a>
 
 def *get\_constraints*(self, *origin\_point*:  PointGeometry, *tracing*:  *str* = "") -> Tuple[Sketcher.Constraint, ...]:
 
@@ -535,13 +576,13 @@ Arguments:
 * *origin\_point* (PointGeometry): The origin to use.
 
 
-### 9.5 ApexPolygon.get\_geometries <a name="apexpolygon-get-geometries"></a>
+### 9.10 ApexPolygon.get\_geometries <a name="apexpolygon-get-geometries"></a>
 
 def *get\_geometries*(self, *tracing*:  *str* = "") -> Tuple[Geometry, ...]:
 
 Return the ApexPolygon ApexGeometries tuple.
 
-### 9.6 ApexPolygon.reorient <a name="apexpolygon-reorient"></a>
+### 9.11 ApexPolygon.reorient <a name="apexpolygon-reorient"></a>
 
 def *reorient*(self, *placement*:  Placement, *suffix*:  Optional[str] = "", *tracing*:  *str* = "") -> "ApexPolygon":
 
@@ -554,7 +595,7 @@ Arguments:
   A suffix to append to the name.  If None, an empty name is used. (Default: "")
 
 
-### 9.7 ApexPolygon.show <a name="apexpolygon-show"></a>
+### 9.12 ApexPolygon.show <a name="apexpolygon-show"></a>
 
 def *show*(self) -> *str*:
 
@@ -698,49 +739,61 @@ def *finish\_length*(self) -> *float*:  # *pragma*:  *no* *unit* *test*
 
 Return distance from arc finish Vector to the apex Vector.
 
-### 11.14 ArcGeometry.input <a name="arcgeometry-input"></a>
+### 11.14 ArcGeometry.get\_finish <a name="arcgeometry-get-finish"></a>
+
+def *get\_finish*(self) -> Vector:
+
+Return the start location of the Vector.
+
+### 11.15 ArcGeometry.get\_start <a name="arcgeometry-get-start"></a>
+
+def *get\_start*(self) -> Vector:
+
+Return the start location of the Vector.
+
+### 11.16 ArcGeometry.input <a name="arcgeometry-input"></a>
 
 def *input*(self) -> Vector:  # *pragma*:  *no* *unit* *test*
 
 Return the initial ArcGeometry arc start Vector.
 
-### 11.15 ArcGeometry.name <a name="arcgeometry-name"></a>
+### 11.17 ArcGeometry.name <a name="arcgeometry-name"></a>
 
 def Name(self) -> *str*:
 
 Return name.
 
-### 11.16 ArcGeometry.part\_geometry <a name="arcgeometry-part-geometry"></a>
+### 11.18 ArcGeometry.part\_geometry <a name="arcgeometry-part-geometry"></a>
 
 def *get\_part\_geometry*(self) -> PartGeometryUnion:
 
 Return ArcGeometry Part.Arc.
 
-### 11.17 ArcGeometry.radius <a name="arcgeometry-radius"></a>
+### 11.19 ArcGeometry.radius <a name="arcgeometry-radius"></a>
 
 def *radius*(self) -> *float*:
 
 Return the initial ArcGeometry radius.
 
-### 11.18 ArcGeometry.repr <a name="arcgeometry-repr"></a>
+### 11.20 ArcGeometry.repr <a name="arcgeometry-repr"></a>
 
 def \_\_repr\_\_(self) -> *str*:  # *pragma*:  *no* *unit* *test*
 
 Return ArcGeometry string representation.
 
-### 11.19 ArcGeometry.start\_angle <a name="arcgeometry-start-angle"></a>
+### 11.21 ArcGeometry.start\_angle <a name="arcgeometry-start-angle"></a>
 
 def *start\_angle*(self) -> *float*:  # *pragma*:  *no* *unit* *test*
 
 Return the ArcGeometry arc start angle.
 
-### 11.20 ArcGeometry.start\_length <a name="arcgeometry-start-length"></a>
+### 11.22 ArcGeometry.start\_length <a name="arcgeometry-start-length"></a>
 
 def *start\_length*(self) -> *float*:  # *pragma*:  *no* *unit* *test*
 
 Return the ArcGeometry distance from start Vector to apex Vector.
 
-### 11.21 ArcGeometry.sweep\_angle <a name="arcgeometry-sweep-angle"></a>
+### 11.23 ArcGeometry.sweep\_angle <a name="arcgeometry-sweep-angle"></a>
 
 def *sweep\_angle*(self) -> *float*:  # *pragma*:  *no* *unit* *cover*
 
@@ -838,6 +891,18 @@ def *get\_part\_geometry*(self) -> PartGeometryUnion:
 
 Return the PartGeometry associated with Geometry.
 
+### 14.10 Geometry.get\_start <a name="geometry-get-start"></a>
+
+def *get\_start*(self) -> Vector:
+
+Return starting location of Geometry.
+
+### 14.11 Geometry.get\_start <a name="geometry-get-start"></a>
+
+def *get\_finish*(self) -> Vector:
+
+Return ending location of Geometry.
+
 ## 15 Class LineGeometry <a name="linegeometry"></a>
 
 class LineGeometry(Geometry):
@@ -892,11 +957,23 @@ def \_\_str\_\_(self) -> *str*:
 
 Return string representation of LineGeometry.
 
-### 15.9 LineGeometry.get\_part\_geometry <a name="linegeometry-get-part-geometry"></a>
+### 15.9 LineGeometry.get\_finish <a name="linegeometry-get-finish"></a>
+
+def *get\_finish*(self) -> Vector:
+
+Return the LineGeometry start location.
+
+### 15.10 LineGeometry.get\_part\_geometry <a name="linegeometry-get-part-geometry"></a>
 
 def *get\_part\_geometry*(self) -> PartGeometryUnion:
 
 Return the PartGeometry associated with a LineGeometry.
+
+### 15.11 LineGeometry.get\_start <a name="linegeometry-get-start"></a>
+
+def *get\_start*(self) -> Vector:
+
+Return the LineGeometry start location.
 
 ## 16 Class PointGeometry <a name="pointgeometry"></a>
 
