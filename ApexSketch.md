@@ -54,11 +54,12 @@ Table of Contents:
   * 9.11 [ApexPolygon.reorient](#apexpolygon-reorient)
   * 9.12 [ApexPolygon.show](#apexpolygon-show)
 * 10 [Class ApexShape](#apexshape)
-  * 10.1 [ApexShape.get\_box](#apexshape-get-box)
-  * 10.2 [ApexShape.get\_constraints](#apexshape-get-constraints)
-  * 10.3 [ApexShape.get\_geometries](#apexshape-get-geometries)
-  * 10.4 [ApexShape.reorient](#apexshape-reorient)
-  * 10.5 [ApexShape.show](#apexshape-show)
+  * 10.1 [ApexShape.\_get\_geometries](#apexshape--get-geometries)
+  * 10.2 [ApexShape.get\_box](#apexshape-get-box)
+  * 10.3 [ApexShape.get\_constraints](#apexshape-get-constraints)
+  * 10.4 [ApexShape.get\_geometries](#apexshape-get-geometries)
+  * 10.5 [ApexShape.reorient](#apexshape-reorient)
+  * 10.6 [ApexShape.show](#apexshape-show)
 * 11 [Class ArcGeometry](#arcgeometry)
   * 11.1 [ArcGeometry.Finish](#arcgeometry-finish)
   * 11.2 [ArcGeometry.FinishKey](#arcgeometry-finishkey)
@@ -538,7 +539,7 @@ Force the internal Corner's to be double-linked.
 
 ### 9.4 ApexPolygon.\_get\_geometries <a name="apexpolygon--get-geometries"></a>
 
-def \_get\_geometries(self) -> Tuple[Geometry, ...]:
+def \_get\_geometries(self, *tracing*:  *str* = "") -> Tuple[Geometry, ...]:
 
 Return the ApexPolygon Geometry's.
 
@@ -550,7 +551,7 @@ Create all of the needed LineGemomety's.
 
 ### 9.6 ApexPolygon.\_radii\_overlap\_check <a name="apexpolygon--radii-overlap-check"></a>
 
-def \_radius\_overlap\_check(self) -> None:
+def \_radii\_overlap\_check(self) -> None:
 
 Verify that the corner radii do not overlap.
 
@@ -609,13 +610,23 @@ ApexShape: Is a base class for geometric shapes (e.g. ApexPolygon, etc).
 
 ApexShape is a base class for the various geometric shapes.  See sub-classes for attributes.
 
-### 10.1 ApexShape.get\_box <a name="apexshape-get-box"></a>
+### 10.1 ApexShape.\_get\_geometries <a name="apexshape--get-geometries"></a>
+
+def \_get\_geometries(self, *tracing*:  *str* = "") -> Tuple[Geometry, ...]:
+
+Return the ApexShape ApexGeometries tuple.
+
+Returns:
+* (Tuple[Geometry, ...]) of extracted Geometry's.
+
+
+### 10.2 ApexShape.get\_box <a name="apexshape-get-box"></a>
 
 def *get\_box*(self) -> ApexBox:
 
 Return ApexBox that enclose the ApexShape.
 
-### 10.2 ApexShape.get\_constraints <a name="apexshape-get-constraints"></a>
+### 10.3 ApexShape.get\_constraints <a name="apexshape-get-constraints"></a>
 
 def *get\_constraints*(self, *origin\_point*:  PointGeometry, *tracing*:  *str* = "") -> Tuple[Sketcher.Constraint, ...]:
 
@@ -625,7 +636,7 @@ Arguments:
 * *origin\_point* (PointGeometry): The PointGeometry to used for the origin.
 
 
-### 10.3 ApexShape.get\_geometries <a name="apexshape-get-geometries"></a>
+### 10.4 ApexShape.get\_geometries <a name="apexshape-get-geometries"></a>
 
 def *get\_geometries*(self, *tracing*:  *str* = "") -> Tuple[Geometry, ...]:
 
@@ -635,7 +646,7 @@ Returns:
 * (Tuple[Geometry, ...]) of extracted Geometry's.
 
 
-### 10.4 ApexShape.reorient <a name="apexshape-reorient"></a>
+### 10.5 ApexShape.reorient <a name="apexshape-reorient"></a>
 
 def *reorient*(self, *placement*:  Placement, *suffix*:  Optional[str] = "", *tracing*:  *str* = "") -> "ApexShape":
 
@@ -649,7 +660,7 @@ Arguments:
 # Returns:
 * (ApexShape) that has been reoriented with a new name.
 
-### 10.5 ApexShape.show <a name="apexshape-show"></a>
+### 10.6 ApexShape.show <a name="apexshape-show"></a>
 
 def *show*(self) -> *str*:
 

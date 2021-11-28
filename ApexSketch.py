@@ -756,6 +756,16 @@ class ApexShape(object):
         """
         raise NotImplementedError("ApexShape.get_geometries() not implemented: {type(self)}")
 
+    # ApexShape._get_geometries():
+    def _get_geometries(self, tracing: str = "") -> Tuple[Geometry, ...]:
+        """Return the ApexShape ApexGeometries tuple.
+
+        Returns:
+        * (Tuple[Geometry, ...]) of extracted Geometry's.
+
+        """
+        raise NotImplementedError("ApexShape._get_geometries() not implemented: {type(self)}")
+
     # ApexShape.reorient():
     def reorient(self, placement: Placement, suffix: Optional[str] = "",
                  tracing: str = "") -> "ApexShape":
@@ -933,7 +943,7 @@ class ApexPolygon(ApexShape):
             corner.After = corners[(index + 1) % corners_size]
 
     # ApexPolygon._radii_overlap_check():
-    def _radius_overlap_check(self) -> None:
+    def _radii_overlap_check(self) -> None:
         """Verify that the corner radii do not overlap."""
         internal: _InternalPolygon = self._internal_polygon
         corners: Tuple[Corner, ...] = internal.corners
@@ -974,8 +984,17 @@ class ApexPolygon(ApexShape):
                 self.Line = LineGeometry(start, finish, name)
 
     # ApexPolygon._get_geometries():
-    def _get_geometries(self) -> Tuple[Geometry, ...]:
+    def _get_geometries(self, tracing: str = "") -> Tuple[Geometry, ...]:
         """Return the ApexPolygon Geometry's."""
+        # next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>ApexPolygon._get_geometries()")
+
+        self._double_link()
+        self._radii_overlap_check()
+        self._arcs_create()
+        self._lines_create()
+
         internal: _InternalPolygon = self._internal_polygon
         corners: Tuple[Corner, ...] = internal.corners
         final_geometries: Optional[Tuple[Geometry, ...]] = internal.final_geometries
@@ -985,6 +1004,9 @@ class ApexPolygon(ApexShape):
                 geometries.extend(corner.get_geometries())
             final_geometries = tuple(geometries)
             internal.final_geometries = final_geometries
+
+        if tracing:
+            print(f"{tracing}<=ApexPolygon._get_geometries()=>|{len(final_geometries)}|")
         return tuple(final_geometries)
 
     # ApexPolygon.get_box():
@@ -2230,11 +2252,13 @@ class ApexDrawing(object):
 
         # Now extract all of the Geometry's:
         geometries: List[Geometry] = []
+        _geometries: List[Geometry] = []
 
         # Extract the Geometry's from *points* (this must be first):
         point: Vector
         for point in points:
             geometries.extend(self.point_get_geometries(point))
+            _geometries.extend(self.point_get_geometries(point))
 
         # Now extract all of the Geometry's from *final_shapes*::
         shape: ApexShape
@@ -2242,6 +2266,14 @@ class ApexDrawing(object):
             f: Tuple[Geometry, ...] = shape.get_geometries()
             assert f is shape.get_geometries(), f"{shape=} {f=}"
             geometries.extend(f)
+            _geometries.extend(shape.get_geometries())
+        assert len(geometries) == len(_geometries)
+        geometries = _geometries
+
+        # geometry: Geometry
+        # for index, geometry in enumerate(geometries):
+        #     print(f"Geometry[{index}]: A:{geometry} B:{_geometries[index]}")
+        # assert False
 
         # The first Geometry corresponds to *lower_left* and it is the "origin" for the sketch.
         origin_point: Geometry = geometries[0]
@@ -2474,13 +2506,13 @@ def _integration_test() -> int:
         contour_polygon: ApexPolygon = ApexPolygon(contour_corners, "contour_polygon")
         assert contour_polygon.Name == "contour_polygon", contour_polygon.Name
 
-        ne_corner: ApexCorner = ApexCorner(Vector(20, 20, 0), 0.0, "ne_corner")
-        nw_corner: ApexCorner = ApexCorner(Vector(20, 10, 0), 0.0, "nw_corner")
-        sw_corner: ApexCorner = ApexCorner(Vector(10, 10, 0), 0.0, "sw_corner")
-        se_corner: ApexCorner = ApexCorner(Vector(10, 20, 0), 0.0, "se_corner")
+        ne_corner: ApexCorner = ApexCorner(Vector(right_x, upper_y, 0), 0.0, "ne_corner")
+        nw_corner: ApexCorner = ApexCorner(Vector(left_x, upper_y, 0), 0.0, "nw_corner")
+        sw_corner: ApexCorner = ApexCorner(Vector(left_x, lower_y, 0), 0.0, "sw_corner")
+        se_corner: ApexCorner = ApexCorner(Vector(right_x, lower_y, 0), 0.0, "se_corner")
         simple_corners: Tuple[ApexCorner, ...] = (ne_corner, nw_corner, sw_corner, se_corner)
-        # contour_polygon = ApexPolygon(simple_corners, "contour_polygon")
         _ = simple_corners
+        contour_polygon = ApexPolygon(simple_corners, "contour_polygon")
 
         depth: float = 10.0
         through: float = depth + 1.0
@@ -2491,6 +2523,7 @@ def _integration_test() -> int:
         center_circle = ApexCircle(Vector(0.0, 0.0, 0.0), through, "center_hole")
         assert center_circle.Name == "center_hole", center_circle.Name
         center_operation: ApexHole = ApexHole(center_circle, through, "center")
+        _ = center_operation
 
         sides: int = 6
         angle_increment: float = 2 * math.pi / float(sides)
@@ -2513,7 +2546,7 @@ def _integration_test() -> int:
 
         # Create the *drawing*:
         operations: Tuple[ApexOperation, ...] = (
-            contour_operation, center_operation, hexagon_operation)
+            contour_operation,)  # center_operation, hexagon_operation)
         operation: ApexOperation
         for index, operation in enumerate(operations):
             print(f"Operation[{index}]: {operation}")
