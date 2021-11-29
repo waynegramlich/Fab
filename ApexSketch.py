@@ -168,6 +168,7 @@ class Geometry(object):
     _index: int = field(init=False, default=-999)
     Next: Optional["Geometry"] = field(init=False, default=None)
     Previous: Optional["Geometry"] = field(init=False, default=None)
+    IsConstruction: bool = field(init=False, default=False)
 
     # Geometry.get_part_geometry():
     @property
@@ -897,12 +898,12 @@ class Corner(object):
 
         if self.Arc:
             # When arc is present, add constraints for Arc start point:
-            arc_begin_point: Vector = self.Arc.get_begin_point()
+            # arc_begin_point: Vector = self.Arc.get_begin_point()
             arc_begin_pair: Tuple[int, int] = self.Arc.get_begin_pair()
-            constraints.append(Sketcher.Constraint(
-                "DistanceX", *origin_center_pair, *arc_begin_pair, arc_begin_point.x))
-            constraints.append(Sketcher.Constraint(
-                "DistanceY", *origin_center_pair, *arc_begin_pair, arc_begin_point.y))
+            # constraints.append(Sketcher.Constraint(
+            #     "DistanceX", *origin_center_pair, *arc_begin_pair, arc_begin_point.x))
+            # constraints.append(Sketcher.Constraint(
+            #     "DistanceY", *origin_center_pair, *arc_begin_pair, arc_begin_point.y))
 
             # Also add constraint for radius:
             arc_index: int = self.Arc.Index
@@ -910,7 +911,39 @@ class Corner(object):
                 "Radius", arc_index, self.Arc.Radius))
 
             # Add constraints for construction line:
-            pass
+            if self.Construction:
+                # Bind one end at the center of the arc:
+                construction_index: int = self.Construction.Index
+                _ = construction_index
+                construction_begin_point: Vector = self.Construction.get_begin_point()
+                construction_begin_pair: Tuple[int, int] = self.Construction.get_begin_pair()
+                constraints.append(Sketcher.Constraint(
+                    "DistanceX", *origin_center_pair,
+                    *construction_begin_pair, construction_begin_point.x))
+                constraints.append(Sketcher.Constraint(
+                    "DistanceY", *origin_center_pair,
+                    *construction_begin_pair, construction_begin_point.y))
+
+                # Bind the other end to the arc begin point:
+                construction_end_pair: Tuple[int, int] = self.Construction.get_end_pair()
+                constraints.append(Sketcher.Constraint(
+                    "Coincident", *construction_end_pair, *arc_begin_pair))
+
+                # Now add 2 90 degree angles contraints.
+                arguments1: Tuple[Any, ...] = ("AngleViaPoint", construction_index,
+                                               arc_index, 1, arc_index, math.pi / 2.0)
+                constraints.append(Sketcher.Constraint(*arguments1))
+                # line_index: int = self.Line.Index if self.Line else self.Before.get_
+                line_index: int = 1  # Kludge
+                arguments2: Tuple[Any, ...] = ("AngleViaPoint", construction_index,
+                                               line_index, 1, arc_index, math.pi / 2.0)
+                constraints.append(Sketcher.Constraint(*arguments2))
+                if tracing:
+                    print(f"{tracing}>>>>>>>>>>>>>>>>AngleConstraint{arguments1}")
+                    print(f"{tracing}>>>>>>>>>>>>>>>>AngleConstraint{arguments2}")
+
+            else:
+                assert False, "no construction line"
 
             # When both line and arc are present, force the two points to coincide:
             if self.Line and self.Arc:
@@ -976,7 +1009,11 @@ class Corner(object):
             geometries.append(self.Line)
         if self.Arc:
             geometries.append(self.Arc)
-            # Add in construction line here.
+            if self.Construction:
+                geometries.append(self.Construction)
+            else:
+                assert self.Line, "No construction line is present."
+
         return tuple(geometries)
 
 # _InternalPolygon:
@@ -1104,15 +1141,28 @@ class ApexPolygon(ApexShape):
                 if tracing and False:
                     print(f"{tracing}Corner[{at_index}]{at_corner.Before.Point=}"
                           f"{at_corner.Point=} {at_corner.After.Point=}")
+                name: str = f"{at_corner.Name}.arc" if at_corner.Name else ""
                 arc: ArcGeometry = ArcGeometry(at_corner.Before.FrozenCorner,
                                                at_corner.FrozenCorner,
-                                               at_corner.After.FrozenCorner)
+                                               at_corner.After.FrozenCorner,
+                                               name)
                 at_corner.Arc = arc
                 if tracing:
                     print(f"{tracing}Arc[{at_index}]: {at_corner.Arc}")
                     print(f"{tracing}Arc[{at_index}]: {arc.get_begin_point()=}")
                     print(f"{tracing}Arc[{at_index}]: {arc.get_end_point()=}")
-                # TODO: Create the construction line here.
+
+                # Create construction line that is used to force the sketcher solver to pick
+                # the correct arc solution.
+                name = f"{at_corner.Name}.construction" if at_corner.Name else ""
+                construction: LineGeometry = LineGeometry(arc.center, arc.end, name)
+                construction.IsConstruction = True
+                at_corner.Construction = construction
+                if tracing:
+                    print(f"{tracing}Arc[{at_index}]: {at_corner.Construction}")
+                    print(f"{tracing}Arc[{at_index}]: {construction.get_begin_point()=}")
+                    print(f"{tracing}Arc[{at_index}]: {construction.get_end_point()=}")
+
         if tracing:
             print(f"{tracing}<=ApexPolygon._arcs_create()")
 
@@ -2518,14 +2568,11 @@ class ApexDrawing(object):
 
         # Extract *part_geometries* from *geometries*:
         part_geometry: PartGeometryUnion
-        part_geometries: List[PartGeometryUnion] = []
         for index, geometry in enumerate(final_geometries):
             part_geometry = geometry.get_part_geometry()
-            part_geometries.append(part_geometry)
-            if tracing:
-                # print(f"{tracing}part_geometries[{index}]: {part_geometry}")
-                pass
-        sketcher.addGeometry(part_geometries, False)
+            sketcher.addGeometry(part_geometry, geometry.IsConstruction)
+            if tracing and False:
+                print(f"{tracing}part_geometries[{index}]: {part_geometry}")
 
         # Assemble all *constraints* staring with *origin_point*:
         constraints: List[Sketcher.Constraint] = []
