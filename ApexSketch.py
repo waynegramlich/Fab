@@ -14,30 +14,30 @@ The are 3 base classes of used in this module:
 There is a rich set of FreeCAD PartDesign operations that can be applied to sketches.
 The construction operations are pad, revolve, loft, sweep and helix.
 The subtraction operations are pocket, hole, groove, loft, sweep and helix.
-The current ApexOperation sub-classes are:
+Currently, only a small subset of these operations are supported with ApexOperation sub-classes:
 * ApexPad: Performs a FreeCAD Part Design pad operation.
 * ApexPocket: Performs a FreeCAD Part Design pocket operation
 * ApexHole: Performs a FreeCAD Part Design pocket operation
-Each of these these operations takes either an ApexCircle or an ApexPolygon as an argument.
+Each of these operations takes either an ApexCircle or an ApexPolygon as an argument.
 
 The ApexShape sub-classes are:
 * ApexCircle: This represents a circle in the ApexDrawing.
 * ApexPolygon: This is basically a sequence of ApexCorner's (see below) that represent a polygon,
   where each corner can optionally have rounded with a fillet.
 * ApexCorner: This represents one corner of an ApexPolygon and specifies the fillet radius.
-Each ApexShape has an associated ApexOperation (see below).
 
 The internal Geometry sub-classes are:
 * PointGeometry: This represents a single point geometry.
 * LineGeometry: This represents a line segment geometry.
 * ArcGeometry: This represents an arc on a circle geometry.
 * CircleGeometry This represents a circle geometry.
+These classes are for internal use only.
 
 All of this information is collected into an ApexDrawing instance.
 The ApexDrawing.body_apply() takes a FreeCAD Part Design Body and applies operations drawing to it.
 """
 
-# (Sketcher Constrain Angle)[https://wiki.freecadweb.org/Sketcher_ConstrainAngle]
+# (Sketcher Constraint Angle)[https://wiki.freecadweb.org/Sketcher_ConstrainAngle]
 # (Sketcher Scripting)[https://wiki.freecadweb.org/Sketcher_ConstrainAngle]
 # (Sketcher Switch Between Multiple Solutions)[https://www.youtube.com/watch?v=Q43K23k1noo&t=20s]
 # (Sketcher Toggle Constructions)[https://wiki.freecadweb.org/Sketcher_ToggleConstruction]
@@ -487,7 +487,7 @@ class ArcGeometry(Geometry):
     # ArcGeometry.get_begin_point():
     def get_begin_point(self) -> Vector:
         """Return the ArcGeometry begin point."""
-        return self._begin
+        return self._start
 
     # ArcGeometry.get_center_pair():
     def get_center_pair(self) -> Tuple[int, int]:
@@ -502,7 +502,7 @@ class ArcGeometry(Geometry):
     # ArcGeometry.get_end_point():
     def get_end_point(self) -> Vector:
         """Return the ArcGGeometry end point."""
-        return self._end
+        return self._finish
 
     # ArcGeometry.part_geometry():
     def get_part_geometry(self) -> PartGeometryUnion:
@@ -621,7 +621,7 @@ class ArcGeometry(Geometry):
     # ArcGeometry.__str__():
     def __str__(self) -> str:
         """Return string representation of Geometry."""
-        return f"ArcGeometry({self._begin}, {self._at}, {self._finish})"
+        return f"ArcGeometry({self._begin}, {self._at}, {self._end})"
 
 
 # CircleGeometry:
@@ -886,7 +886,7 @@ class Corner(object):
         constraints.append(Sketcher.Constraint(
             "Coincident", *before_last_end_pair, *at_first_begin_pair))
 
-        # When line is present, add constraints for Line start:
+        # When line is present, add X/Y constraints for Line start point:
         if self.Line:
             line_begin_point: Vector = self.Line.get_begin_point()
             line_begin_pair: Tuple[int, int] = self.Line.get_begin_pair()
@@ -896,7 +896,7 @@ class Corner(object):
                 "DistanceY", *origin_center_pair, *line_begin_pair, line_begin_point.y))
 
         if self.Arc:
-            # When arc is present, add constraints for Line start:
+            # When arc is present, add constraints for Arc start point:
             arc_begin_point: Vector = self.Arc.get_begin_point()
             arc_begin_pair: Tuple[int, int] = self.Arc.get_begin_pair()
             constraints.append(Sketcher.Constraint(
@@ -905,13 +905,24 @@ class Corner(object):
                 "DistanceY", *origin_center_pair, *arc_begin_pair, arc_begin_point.y))
 
             # Also add constraint for radius:
-            arc_center_pair: Tuple[int, int] = self.Arc.get_center_pair()
+            arc_index: int = self.Arc.Index
             constraints.append(Sketcher.Constraint(
-                "Radius", *arc_center_pair, self.Arc.Radius))
+                "Radius", arc_index, self.Arc.Radius))
 
             # Add constraints for construction line:
             pass
 
+            # When both line and arc are present, force the two points to coincide:
+            if self.Line and self.Arc:
+                line_end_pair: Tuple[int, int] = self.Line.get_end_pair()
+                constraints.append(Sketcher.Constraint(
+                    "Coincident", *line_end_pair, *arc_begin_pair))
+
+        if tracing:
+            index: int
+            constraint: Sketcher.Constraint
+            for index, constraint in enumerate(constraints):
+                print(f"{tracing}Constraints[{index}]:{constraint}")
         if tracing:
             print(f"{tracing}<=Corner.get_constraints('{self.Name}', *)=>|{len(constraints)}|")
         return tuple(constraints)
@@ -1082,18 +1093,25 @@ class ApexPolygon(ApexShape):
     # ApexPolygon._arcs_create():
     def _arcs_create(self, tracing: str = "") -> None:
         """Create all of the needed ArcGeometry's."""
+        # next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>ApexPolygon._arcs_create()")
         internal: _InternalPolygon = self._internal_polygon
         corners: Tuple[Corner, ...] = internal.corners
-        index: int
-        for index, corner in enumerate(corners):
-            if corner.Radius > 0.0:
-                corner.Arc = ArcGeometry(corner.Before.FrozenCorner,
-                                         corner.FrozenCorner,
-                                         corner.After.FrozenCorner)
+        at_index: int
+        for at_index, at_corner in enumerate(corners):
+            if at_corner.Radius > 0.0:
+                if tracing and False:
+                    print(f"{tracing}Corner[{at_index}]{at_corner.Before.Point=}"
+                          f"{at_corner.Point=} {at_corner.After.Point=}")
+                arc: ArcGeometry = ArcGeometry(at_corner.Before.FrozenCorner,
+                                               at_corner.FrozenCorner,
+                                               at_corner.After.FrozenCorner)
+                at_corner.Arc = arc
                 if tracing:
-                    print(f"{tracing}Arc[{index}]: {corner.Arc}")
+                    print(f"{tracing}Arc[{at_index}]: {at_corner.Arc}")
+                    print(f"{tracing}Arc[{at_index}]: {arc.get_begin_point()=}")
+                    print(f"{tracing}Arc[{at_index}]: {arc.get_end_point()=}")
                 # TODO: Create the construction line here.
         if tracing:
             print(f"{tracing}<=ApexPolygon._arcs_create()")
@@ -1108,21 +1126,39 @@ class ApexPolygon(ApexShape):
         epsilon: float = 1.0e-8
         index: int
         at_corner: Corner
-        for index, at_corner in enumerate(corners):
+        for at_index, at_corner in enumerate(corners):
             before_corner: Corner = at_corner.Before
             before_arc: Optional[ArcGeometry] = before_corner.Arc
             at_arc: Optional[ArcGeometry] = at_corner.Arc
-
-            begin_point: Vector = before_arc.get_end_point() if before_arc else before_corner.Point
-            end_point: Vector = at_arc.get_begin_point() if at_arc else at_corner.Point
             if tracing:
-                print(f"{tracing}{begin_point=} {end_point=}")
+                print(f"{tracing}[{at_index}]:{at_corner.Point=}")
+                print(f"{tracing}[{at_index}]:{bool(before_arc)=} {bool(at_arc)=}")
+
+            begin_point: Vector
+            if before_arc:
+                if tracing:
+                    print(f"{tracing}[{at_index}]:{before_arc=}")
+                begin_point = before_arc.get_end_point()
+            else:
+                begin_point = before_corner.Point
+
+            end_point: Vector
+            if at_arc:
+                end_point = at_arc.get_begin_point()
+                if tracing:
+                    print(f"{tracing}[{at_index}]:using_get_begin_point")
+            else:
+                if tracing:
+                    print(f"{tracing}[{at_index}]:{at_arc=}")
+                end_point = at_corner.Point
+            if tracing:
+                print(f"{tracing}[{at_index}]:{begin_point=} {end_point=}")
             name: str = f"{at_corner.Name}.line" if at_corner.Name else ""
             # Do not install Line if *begin_point* and *end_point* coincide:
             if abs((begin_point - end_point).Length) > epsilon:
                 at_corner.Line = LineGeometry(begin_point, end_point, name)
                 if tracing:
-                    print(f"{tracing}Line[{index}]:{at_corner.Line}")
+                    print(f"{tracing}Line[{at_index}]:{at_corner.Line}")
         if tracing:
             print(f"{tracing}<=ApexPolygon._lines_create('{self.Name}')")
 
@@ -1181,8 +1217,11 @@ class ApexPolygon(ApexShape):
             print(f"{tracing}=>ApexPolygon._get_constraints()")
         internal_polygon: _InternalPolygon = self._internal_polygon
         constraints: List[Sketcher.Constraint] = []
+        index: int
         corners: Tuple[Corner, ...] = internal_polygon.corners
-        for corner in corners:
+        for index, corner in enumerate(corners):
+            if tracing:
+                print(f"{tracing}Corner[{index}]:{corner.Point}")
             constraints.extend(corner.get_constraints(origin_point, tracing=next_tracing))
         if tracing:
             print(f"{tracing}<=ApexPolygon._get_constraints()=>|{len(constraints)}|")
@@ -2678,7 +2717,7 @@ def _integration_test() -> int:
         contour_polygon: ApexPolygon = ApexPolygon(contour_corners, "contour_polygon")
         assert contour_polygon.Name == "contour_polygon", contour_polygon.Name
 
-        ne_corner: ApexCorner = ApexCorner(Vector(right_x, upper_y, 0), 0.0, "ne_corner")
+        ne_corner: ApexCorner = ApexCorner(Vector(right_x, upper_y, 0), radius2, "ne_corner")
         nw_corner: ApexCorner = ApexCorner(Vector(left_x, upper_y, 0), 0.0, "nw_corner")
         sw_corner: ApexCorner = ApexCorner(Vector(left_x, lower_y, 0), 0.0, "sw_corner")
         se_corner: ApexCorner = ApexCorner(Vector(right_x, lower_y, 0), 0.0, "se_corner")

@@ -150,24 +150,24 @@ The are 3 base classes of used in this module:
 There is a rich set of FreeCAD PartDesign operations that can be applied to sketches.
 The construction operations are pad, revolve, loft, sweep and helix.
 The subtraction operations are pocket, hole, groove, loft, sweep and helix.
-The current ApexOperation sub-classes are:
+Currently, only a small subset of these operations are supported with ApexOperation sub-classes:
 * ApexPad: Performs a FreeCAD Part Design pad operation.
 * ApexPocket: Performs a FreeCAD Part Design pocket operation
 * ApexHole: Performs a FreeCAD Part Design pocket operation
-Each of these these operations takes either an ApexCircle or an ApexPolygon as an argument.
+Each of these operations takes either an ApexCircle or an ApexPolygon as an argument.
 
 The ApexShape sub-classes are:
 * ApexCircle: This represents a circle in the ApexDrawing.
 * ApexPolygon: This is basically a sequence of ApexCorner's (see below) that represent a polygon,
   where each corner can optionally have rounded with a fillet.
 * ApexCorner: This represents one corner of an ApexPolygon and specifies the fillet radius.
-Each ApexShape has an associated ApexOperation (see below).
 
 The internal Geometry sub-classes are:
 * PointGeometry: This represents a single point geometry.
 * LineGeometry: This represents a line segment geometry.
 * ArcGeometry: This represents an arc on a circle geometry.
 * CircleGeometry This represents a circle geometry.
+These classes are for internal use only.
 
 All of this information is collected into an ApexDrawing instance.
 The ApexDrawing.body_apply() takes a FreeCAD Part Design Body and applies operations drawing to it.
