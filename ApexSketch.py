@@ -2,23 +2,26 @@
 """ApexSketch: An interface to FreeCAD Sketches.
 
 This module provides an interface that both creates FreeCAD sketches and applies those sketches
-to FreeCAD Part Design workbench Body objects.  Addition information is provided to supporting
-the FreeCAD Path workbench.
+to FreeCAD Part Design workbench Body objects.  Additional sketch information is also provided to
+supporting the FreeCAD Path workbench.
 
 The are 3 base classes of used in this module:
-* ApexDrawing: Create one or more FreeCAD Sketches and applies Part Design and Path operations.
-* ApexOperation: This is the Part Design and Path operation information.
-* ApexShape: This is the geometric shapes that go into the ApexDrawing.
-* Geometry: The class of objects represents 2D geometric constructs (point, line, arc, circle).
+* ApexDrawing: Create one or more FreeCAD Sketches and apply Part Design and Path operations.
+* ApexOperation: This base class encapsulates the Part Design and Path operation information.
+* ApexShape: This class class provides geometric shapes that go into the ApexDrawing.
+* Geometry: The internal base class represents 2D geometric constructs (point, line, arc, circle).
+ApexShape is the user facing class for point/line/arc/circle and it gets converted into lower
+level Geometry objects that are 1-to-1 with FreeCAD data structures.
 
 There is a rich set of FreeCAD PartDesign operations that can be applied to sketches.
-The construction operations are pad, revolve, loft, sweep and helix.
-The subtraction operations are pocket, hole, groove, loft, sweep and helix.
+The construction operations are pad, revolve, loft, sweep and helix and
+the subtraction operations are pocket, hole, groove, loft, sweep and helix.
 Currently, only a small subset of these operations are supported with ApexOperation sub-classes:
 * ApexPad: Performs a FreeCAD Part Design pad operation.
 * ApexPocket: Performs a FreeCAD Part Design pocket operation
 * ApexHole: Performs a FreeCAD Part Design pocket operation
 Each of these operations takes either an ApexCircle or an ApexPolygon as an argument.
+Over time, the supported operations will be expanded.
 
 The ApexShape sub-classes are:
 * ApexCircle: This represents a circle in the ApexDrawing.
@@ -888,9 +891,10 @@ class Corner(object):
             "Coincident", *before_last_end_pair, *at_first_begin_pair))
 
         # When line is present, add X/Y constraints for Line start point:
+        line_begin_pair: Tuple[int, int] = (-999, -999)  # Bogus values that are overwritten.
         if self.Line:
             line_begin_point: Vector = self.Line.get_begin_point()
-            line_begin_pair: Tuple[int, int] = self.Line.get_begin_pair()
+            line_begin_pair = self.Line.get_begin_pair()
             constraints.append(Sketcher.Constraint(
                 "DistanceX", *origin_center_pair, *line_begin_pair, line_begin_point.x))
             constraints.append(Sketcher.Constraint(
@@ -931,16 +935,24 @@ class Corner(object):
 
                 # Now add 2 90 degree angles contraints.
                 arguments1: Tuple[Any, ...] = ("AngleViaPoint", construction_index,
-                                               arc_index, 1, arc_index, math.pi / 2.0)
+                                               arc_index, *arc_begin_pair, math.pi / 2.0)
                 constraints.append(Sketcher.Constraint(*arguments1))
-                # line_index: int = self.Line.Index if self.Line else self.Before.get_
-                line_index: int = 1  # Kludge
-                arguments2: Tuple[Any, ...] = ("AngleViaPoint", construction_index,
-                                               line_index, 1, arc_index, math.pi / 2.0)
-                constraints.append(Sketcher.Constraint(*arguments2))
                 if tracing:
                     print(f"{tracing}>>>>>>>>>>>>>>>>AngleConstraint{arguments1}")
-                    print(f"{tracing}>>>>>>>>>>>>>>>>AngleConstraint{arguments2}")
+
+                # line_index: int = self.Line.Index if self.Line else self.Before.get_
+                if self.Line:
+                    line_index: int = self.Line.Index
+                    line_begin_pair = self.Line.get_begin_pair()
+                    # line_index: int = 1  # Kludge
+                    arguments2: Tuple[Any, ...] = ("AngleViaPoint", construction_index,
+                                                   line_index, *line_begin_pair, math.pi / 2.0)
+                    constraints.append(Sketcher.Constraint(*arguments2))
+                    if tracing:
+                        print(f"{tracing}>>>>>>>>>>>>>>>>AngleConstraint{arguments2}")
+
+            # (12,0),(11,0),(11,1)  # Bad   (12,0)(11,0),(10,2)
+            # (12,0),(11,0),(10,1)  # Bad   (12,0)(10,0),(10,2)
 
             else:
                 assert False, "no construction line"
@@ -2765,9 +2777,9 @@ def _integration_test() -> int:
         assert contour_polygon.Name == "contour_polygon", contour_polygon.Name
 
         ne_corner: ApexCorner = ApexCorner(Vector(right_x, upper_y, 0), radius2, "ne_corner")
-        nw_corner: ApexCorner = ApexCorner(Vector(left_x, upper_y, 0), 0.0, "nw_corner")
-        sw_corner: ApexCorner = ApexCorner(Vector(left_x, lower_y, 0), 0.0, "sw_corner")
-        se_corner: ApexCorner = ApexCorner(Vector(right_x, lower_y, 0), 0.0, "se_corner")
+        nw_corner: ApexCorner = ApexCorner(Vector(left_x, upper_y, 0), radius2, "nw_corner")
+        sw_corner: ApexCorner = ApexCorner(Vector(left_x, lower_y, 0), radius2, "sw_corner")
+        se_corner: ApexCorner = ApexCorner(Vector(right_x, lower_y, 0), radius2, "se_corner")
         simple_corners: Tuple[ApexCorner, ...] = (ne_corner, nw_corner, sw_corner, se_corner)
         _ = simple_corners
         contour_polygon = ApexPolygon(simple_corners, "contour_polygon")

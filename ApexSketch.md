@@ -138,23 +138,26 @@ Table of Contents:
 
 
 This module provides an interface that both creates FreeCAD sketches and applies those sketches
-to FreeCAD Part Design workbench Body objects.  Addition information is provided to supporting
-the FreeCAD Path workbench.
+to FreeCAD Part Design workbench Body objects.  Additional sketch information is also provided to
+supporting the FreeCAD Path workbench.
 
 The are 3 base classes of used in this module:
-* ApexDrawing: Create one or more FreeCAD Sketches and applies Part Design and Path operations.
-* ApexOperation: This is the Part Design and Path operation information.
-* ApexShape: This is the geometric shapes that go into the ApexDrawing.
-* Geometry: The class of objects represents 2D geometric constructs (point, line, arc, circle).
+* ApexDrawing: Create one or more FreeCAD Sketches and apply Part Design and Path operations.
+* ApexOperation: This base class encapsulates the Part Design and Path operation information.
+* ApexShape: This class class provides geometric shapes that go into the ApexDrawing.
+* Geometry: The internal base class represents 2D geometric constructs (point, line, arc, circle).
+ApexShape is the user facing class for point/line/arc/circle and it gets converted into lower
+level Geometry objects that are 1-to-1 with FreeCAD data structures.
 
 There is a rich set of FreeCAD PartDesign operations that can be applied to sketches.
-The construction operations are pad, revolve, loft, sweep and helix.
-The subtraction operations are pocket, hole, groove, loft, sweep and helix.
+The construction operations are pad, revolve, loft, sweep and helix and
+the subtraction operations are pocket, hole, groove, loft, sweep and helix.
 Currently, only a small subset of these operations are supported with ApexOperation sub-classes:
 * ApexPad: Performs a FreeCAD Part Design pad operation.
 * ApexPocket: Performs a FreeCAD Part Design pocket operation
 * ApexHole: Performs a FreeCAD Part Design pocket operation
 Each of these operations takes either an ApexCircle or an ApexPolygon as an argument.
+Over time, the supported operations will be expanded.
 
 The ApexShape sub-classes are:
 * ApexCircle: This represents a circle in the ApexDrawing.
