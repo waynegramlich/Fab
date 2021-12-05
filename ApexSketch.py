@@ -40,10 +40,26 @@ All of this information is collected into an ApexDrawing instance.
 The ApexDrawing.body_apply() takes a FreeCAD Part Design Body and applies operations drawing to it.
 """
 
-# (Sketcher Constraint Angle)[https://wiki.freecadweb.org/Sketcher_ConstrainAngle]
-# (Sketcher Scripting)[https://wiki.freecadweb.org/Sketcher_ConstrainAngle]
-# (Sketcher Switch Between Multiple Solutions)[https://www.youtube.com/watch?v=Q43K23k1noo&t=20s]
-# (Sketcher Toggle Constructions)[https://wiki.freecadweb.org/Sketcher_ToggleConstruction]
+# [App FeaturePython](https://wiki.freecadweb.org/App_FeaturePython)
+# [Vidos from "Part Design Scripting" Guy](https://www.youtube.com/c/mwganson/videos)
+# [Part Design Scripting](https://forum.freecadweb.org/viewtopic.php?t=62751)
+# [Scripted Objects](https://wiki.freecadweb.org/Scripted_objects)
+# [FilletArc](https://github.com/FreeCAD/FreeCAD/blob/master/src/Mod/PartDesign/Scripts/FilletArc.py)
+# [Creating and Manipulating Geometry](https://yorikvanhavre.gitbooks.io/
+#    a-freecad-manual/content/python_scripting/creating_and_manipulating_geometry.html)
+# [Use LineSegment instead of Line](https://forum.freecadweb.org/viewtopic.php?p=330999)
+# [Topo Data Scripting](https://wiki.freecadweb.org/index.php?title=Topological_data_scripting)
+# [Part Scripting](https://wiki.freecadweb.org/Part_scripting)
+
+# [Draft SelectPlane](https://wiki.freecadweb.org/Draft_SelectPlane)
+# [Draft Workbench Scripting](https://wiki.freecadweb.org/Draft_Workbench#Scripting)
+
+# [Sketcher Constraint Angle](https://wiki.freecadweb.org/Sketcher_ConstrainAngle)
+# [Sketcher Scripting](https://wiki.freecadweb.org/Sketcher_ConstrainAngle)
+# [Sketcher Switch Between Multiple Solutions](https://www.youtube.com/watch?v=Q43K23k1noo&t=20s)
+# [Sketcher Toggle Constructions](https://wiki.freecadweb.org/Sketcher_ToggleConstruction)
+
+# [Combine Draft and Sketch to simplify Modeling.](https://www.youtube.com/watch?v=lfzGEk727eo)
 
 # Note this code uses nested dataclasses that are frozen.  Computed attributes are tricky.
 # See (Set frozen data class files in __post_init__)[https://stackoverflow.com/questions/53756788]
@@ -806,6 +822,11 @@ class ApexShape(object):
         """
         raise NotImplementedError(f"ApexShape._get_constraints() not implemented: {type(self)}")
 
+    # ApexShape._get_wire():
+    def _get_wire(self, tracing: str = "") -> Part.Wire:
+        """Return wire."""
+        raise NotImplementedError(f"ApexShape._get_wire() not implemented: {type(self)}")
+
     # ApexShape.get_geometries():
     def get_geometries(self, tracing: str = "") -> Tuple[Geometry, ...]:
         """Return the ApexShape ApexGeometries tuple.
@@ -847,9 +868,16 @@ class Corner(object):
     Radius: float = field(init=False)
     Name: str = field(init=False)
     Box: ApexBox = field(init=False, )
+    _Arc: Optional[Part.Arc] = field(init=False, default=None)
+    _ArcStart: Vector = field(init=False, default=Vector())
+    _ArcMiddle: Vector = field(init=False, default=Vector())
+    _ArcEnd: Vector = field(init=False, default=Vector())
     Arc: Optional[ArcGeometry] = field(init=False, default=None)
     Construction: Optional[LineGeometry] = field(init=False, default=None)
     Line: Optional[LineGeometry] = field(init=False, default=None)
+    _Line: Optional[Part.LineSegment] = field(init=False, default=None)
+    _LineStart: Vector = field(init=False, default=Vector())
+    _LineEnd: Vector = field(init=False, default=Vector())
     After: "Corner" = field(init=False)
     Before: "Corner" = field(init=False)
 
@@ -863,6 +891,75 @@ class Corner(object):
         self.Box = frozen_corner.Box
         self.After = self
         self.Before = self
+
+    # Corner.foo():
+    @staticmethod
+    def foo(before: Vector, apex: Vector, after: Vector,
+            radius: float, tracing: str = "") -> Tuple[Vector, Vector, Vector]:
+        """Generate the arc for a corner."""
+        # The crude diagram below shows the basic geomtery:
+        #
+        #       A
+        #       |
+        #       |       r
+        #       E---------------C
+        #       +             / |
+        #       |+          /   |
+        #       | +       /     |
+        #     d | +     /       | r
+        #       |  +  /         |
+        #       |   M++         |
+        #       | /    ++++     |
+        #       X----------+++++S----B
+        #               d
+        #
+        # Fit an arc of *radius* (r) so that it is tangent to the lines XB and XA.
+        # There are three points that define a corner are *before* (B), *apex* (X), and *after* (A).
+        # Compute the arc *center* (C), arc *start* (S), arc *end* (E) and arc *middle* (M).
+        # The *distance* (d) is the distance along XB to reach *start* (S) and along XA to reach
+        # *finish* (F).  For right angles d equals r, but otherwise they are different.
+        # radius: float = self.Radius  # r
+        # before: Vector = self.Before.Point  # B
+        # apex: Vector = self.Point  # X
+        # after: Vector = self.After.Point  # A
+
+        # Compute unit vectors, treating X as if it is at the origin:
+        unit_before: Vector = (before - apex).normalize()  # <XB>
+        unit_after: Vector = (after - apex).normalize()  # <XA>
+        unit_center: Vector = ((unit_before + unit_after) / 2.0).normalize()  # <XC>
+
+        # [Dot Product](https://mathworld.wolfram.com/DotProduct.html)
+        # X . Y = |X|*|Y|*cos(angle)  => angle = acos( (X . Y) / (|X| * |Y|) )
+        # Using dot product find *center_angle* ( <CXS ):
+        center_angle: float = math.acos(unit_center.dot(unit_after))
+
+        # [Right Triangle Overview]
+        #   (http://www.ambrsoft.com/TrigoCalc/Triangle/BasicLaw/BasicTriangle.htm)
+        # We have center *center_angle* (<CXS) and the opposite side is *radius* (r).  We need
+        # the *distance* (d) along the lines where the arc circle (radius r) is tangent.
+        distance: float = radius / math.tan(center_angle)
+
+        # Pythagorean theorem gives us *center_distance* (|XC|) and *center* (C):
+        center_distance: float = math.sqrt(radius * radius + distance * distance)
+        center: Vector = apex + center_distance * unit_center
+        start: Vector = apex + distance * unit_before
+        middle: Vector = center + (-unit_center) * radius
+        finish: Vector = apex + distance * unit_after
+
+        return (start, middle, finish)
+
+    @staticmethod
+    def foo_test() -> None:
+        """Test foo."""
+        radius: float = 5.0
+        apex: Vector = Vector()
+        begin: Vector = Vector(10.0, 0.0, 0.0)
+        acute_after: Vector = Vector(10.0, 10.0, 0.0)
+        right_after: Vector = Vector(0.0, 10.0, 0.0)
+        obtuse_after: Vector = Vector(-10.0, 10.0, 0.0)
+        print(f"accute: {Corner.foo(begin, apex, acute_after, radius)}")
+        print(f"right: {Corner.foo(begin, apex, right_after, radius)}")
+        print(f"obtuse: {Corner.foo(begin, apex, obtuse_after, radius)}")
 
     # Corner.get_constraints():
     def get_constraints(self, origin_point: PointGeometry,
@@ -938,7 +1035,7 @@ class Corner(object):
                                                arc_index, *arc_begin_pair, math.pi / 2.0)
                 constraints.append(Sketcher.Constraint(*arguments1))
                 if tracing:
-                    print(f"{tracing}>>>>>>>>>>>>>>>>AngleConstraint{arguments1}")
+                    print(f"{tracing}AngleConstraint{arguments1}")
 
                 # line_index: int = self.Line.Index if self.Line else self.Before.get_
                 if self.Line:
@@ -949,7 +1046,7 @@ class Corner(object):
                                                    line_index, *line_begin_pair, math.pi / 2.0)
                     constraints.append(Sketcher.Constraint(*arguments2))
                     if tracing:
-                        print(f"{tracing}>>>>>>>>>>>>>>>>AngleConstraint{arguments2}")
+                        print(f"{tracing}AngleConstraint{arguments2}")
 
             # (12,0),(11,0),(11,1)  # Bad   (12,0)(11,0),(10,2)
             # (12,0),(11,0),(10,1)  # Bad   (12,0)(10,0),(10,2)
@@ -988,6 +1085,16 @@ class Corner(object):
         if self.Arc:
             end_point = self.Arc.get_end_point()
         return end_point
+
+    # Corner._get_start_point():
+    def _get_start_point(self) -> Vector:
+        """Return Corner end point."""
+        return self.Before._get_end_point()
+
+    # Corner._get_end_point():
+    def _get_end_point(self) -> Vector:
+        """Return Corner end point."""
+        return self._ArcEnd if self._Arc else self.Point
 
     # Corner.get_first_geometry():
     def get_first_geometry(self) -> Geometry:
@@ -1122,6 +1229,10 @@ class ApexPolygon(ApexShape):
         for index, corner in enumerate(corners):
             corner.Before = corners[(index - 1) % corners_size]
             corner.After = corners[(index + 1) % corners_size]
+            corner._ArcStart = Vector(-99, -99)  # Bogus
+            corner._ArcEnd = Vector(-88, -88)  # Bogus
+            corner._LineStart = corner.Before.Point
+            corner._LineEnd = corner.Point
             # print(f"DoubleLink[{index}]: "
             #       f"@:{id(corner)} B:{id(corner.Before)} A:{id(corner.After)}")
 
@@ -1175,6 +1286,23 @@ class ApexPolygon(ApexShape):
                     print(f"{tracing}Arc[{at_index}]: {construction.get_begin_point()=}")
                     print(f"{tracing}Arc[{at_index}]: {construction.get_end_point()=}")
 
+                arc_start: Vector
+                arc_middle: Vector
+                arc_end: Vector
+                arc_start, arc_middle, arc_end = Corner.foo(
+                    at_corner.Before.Point, at_corner.Point,
+                    at_corner.After.Point, at_corner.Radius)
+                at_corner._Arc = Part.Arc(arc_start, arc_middle, arc_end)
+                assert isinstance(at_corner._Arc, Part.Arc)
+                # at_corner._LineEnd = arc_start
+                at_corner._ArcStart = arc_start
+                at_corner._ArcMiddle = arc_middle
+                at_corner._ArcEnd = arc_end
+                print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+                if tracing:
+                    print(f"{tracing}XArc[{at_index}]:{at_corner._Arc=} {at_corner._LineEnd=}")
+                    print(f"{tracing}xArc[{at_index}]:{arc_start=} {arc_middle=} {arc_end=}")
+
         if tracing:
             print(f"{tracing}<=ApexPolygon._arcs_create()")
 
@@ -1203,6 +1331,9 @@ class ApexPolygon(ApexShape):
                 begin_point = before_arc.get_end_point()
             else:
                 begin_point = before_corner.Point
+            # _start_point: Vector = (
+            #     before_corner._ArcEnd if before_corner._Arc else before_corner._LineEnd)
+            _start_point: Vector = at_corner._get_start_point()
 
             end_point: Vector
             if at_arc:
@@ -1213,6 +1344,8 @@ class ApexPolygon(ApexShape):
                 if tracing:
                     print(f"{tracing}[{at_index}]:{at_arc=}")
                 end_point = at_corner.Point
+            _end_point: Vector = at_corner._ArcStart if at_corner._Arc else at_corner._LineEnd
+
             if tracing:
                 print(f"{tracing}[{at_index}]:{begin_point=} {end_point=}")
             name: str = f"{at_corner.Name}.line" if at_corner.Name else ""
@@ -1221,8 +1354,50 @@ class ApexPolygon(ApexShape):
                 at_corner.Line = LineGeometry(begin_point, end_point, name)
                 if tracing:
                     print(f"{tracing}Line[{at_index}]:{at_corner.Line}")
+            if abs((_start_point - _end_point).Length) > epsilon:
+                at_corner._LineStart = _start_point
+                at_corner._LineEnd = _end_point
+                at_corner._Line = Part.LineSegment(_start_point, _end_point)
+                if tracing:
+                    print(f"{tracing}XLine[{at_index}]:{bool(before_corner._Arc)=} "
+                          f"{bool(at_corner._Arc)=}")
+                    print(f"{tracing}XLine[{at_index}]:{_start_point} "
+                          f"{_end_point} {at_corner._Line}")
+
         if tracing:
             print(f"{tracing}<=ApexPolygon._lines_create('{self.Name}')")
+
+    # ApexPolygon._get_wire():
+    def _get_wire(self, tracing: str = "") -> Part.Wire:
+        """Return the wire formed by ApexPolygon."""
+        if tracing:
+            print(f"{tracing}=>ApexPolygon('{self.Name}')")
+        internal: _InternalPolygon = self._internal_polygon
+        corners: Tuple[Corner, ...] = internal.corners
+        edges: List[Part.Edge] = []
+        corner: Corner
+        for corner in corners:
+            if corner._Line:
+                line_edge: Part.Edge = corner._Line.toShape()
+                assert isinstance(line_edge, Part.Edge)
+                edges.append(line_edge)
+            if corner._Arc:
+                arc_edge: Part.Edge = corner._Arc.toShape()
+                assert isinstance(arc_edge, Part.Edge)
+                edges.append(arc_edge)
+        print(f"{edges=}")
+        wire: Part.Wire = Part.Wire(edges)
+        print(f">>>>>>>>>>>>>>>>{type(wire).__bases__}")
+        assert wire.isClosed, wire
+        if tracing:
+            index: int
+            for index, corner in enumerate(corners):
+                print(f"XCorner[{index}].Point:{corner.Point} {corner.Radius}")
+                print(f"XCorner[{index}].Line:{corner._LineStart} {corner._LineEnd} {corner._Line}")
+                print(f"XCorner[{index}].Arc:{corner._ArcStart} {corner._ArcMiddle} "
+                      f"{corner._ArcEnd} {corner._Arc}")
+            print(f"{tracing}<=ApexPolygon('{self.Name}')=>{wire}")
+        return wire
 
     # ApexPolygon._get_geometries():
     def _get_geometries(self, tracing: str = "") -> Tuple[Geometry, ...]:
@@ -1237,6 +1412,8 @@ class ApexPolygon(ApexShape):
         if not final_geometries:
             self._double_link()
             self._radii_overlap_check()
+            if tracing:
+                print(f"{tracing}****************************************************************")
             self._arcs_create(tracing=next_tracing)
             self._lines_create(tracing=next_tracing)
 
@@ -1302,14 +1479,14 @@ class ApexPolygon(ApexShape):
             return self._get_constraints(origin_point, tracing=tracing)
 
         # Perform an requested *tracing*:
-        next_tracing: str = tracing + " " if tracing else ""
+        # next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>ApexPolygon.contraints_append('{self.Name}', *):")
 
         assert isinstance(origin_point, PointGeometry)
         constraints: List[Sketcher.Constraint] = []
         origin_index: int = origin_point.Index
-        geometries: Optional[Tuple[Geometry, ...]] = self.get_geometries(tracing=next_tracing)
+        geometries: Optional[Tuple[Geometry, ...]] = self.get_geometries()
         assert geometries, "ApexGeometries not set"
         geometries_size: int = len(geometries)
         if tracing:
@@ -1834,7 +2011,7 @@ class ApexOperation(object):
         raise NotImplementedError(f"ApexOperation.show() not implemented for {self}")
 
     # ApexOperation.body_apply():
-    def body_apply(self, body: "PartDesign.Body", group_name: str, sketch: "Sketcher.SketchObject",
+    def body_apply(self, body: "PartDesign.Body", group_name: str, part2d: Part.Part2DObject,
                    gui_document: Optional["Gui.ActiveDocument"], tracing: str = "") -> None:
         """Apply operation to a Part Design body."""
         raise NotImplementedError(f"ApexOperation.body_apply() not implemented: {type(self)}")
@@ -1900,14 +2077,14 @@ class ApexHole(ApexOperation):
 
     # ApexHole.body_apply():
     def body_apply(self, body: "PartDesign.Body",
-                   group_name: str, sketch: "Sketcher.SketchObject",
+                   group_name: str, part2d: Part.Part2DObject,
                    gui_document: Optional["Gui.ActiveDocument"], tracing: str = "") -> None:
         """Apply hole operation to PartDesign body."""
         if tracing:
             print(f"{tracing}=>ApexHole.body_apply('{self.Name}', '{group_name}', *, *)")
         # We have bunch of ApexCircles with the same *diameter* and *depth*:
         hole: PartDesign.Geometry = body.newObject("PartDesign::Hole", f"{group_name}.Hole")
-        hole.Profile = sketch
+        hole.Profile = part2d
         hole.DrillPointAngle = 118.00
         # hole.setExpression("Depth, "10mm")
         hole.ThreadType = 0
@@ -1981,14 +2158,15 @@ class ApexPad(ApexOperation):
         object.__setattr__(self, "SortKey", ("0Pad", f"{self.Depth}"))
 
     # ApexPad.body_apply():
-    def body_apply(self, body: "PartDesign.Body", group_name: str, sketch: "Sketcher.SketchObject",
+    def body_apply(self, body: "PartDesign.Body", group_name: str, part2d: Part.Part2DObject,
                    gui_document: Optional["Gui.ActiveDocument"], tracing: str = "") -> None:
         """Apply ApexPad opertation to PartDesign Body."""
         if tracing:
             print(f"{tracing}=>ApexPad.body_apply('{self.Name}', '{group_name}', *, *)")
+
         # Pad:
         pad: PartDesign.Geometry = body.newObject("PartDesign::Pad", f"{group_name}.Pad")
-        pad.Profile = sketch
+        pad.Profile = part2d
         pad.Length = float(self.Depth)
         pad.Reversed = True
         # Unclear what most of these geometries do:
@@ -2081,14 +2259,14 @@ class ApexPocket(ApexOperation):
         object.__setattr__(self, "SortKey", ("1Pocket", f"{self.Depth}"))
 
     # ApexPocket.body_apply():
-    def body_apply(self, body: "PartDesign.Body", group_name: str, sketch: "Sketcher.SketchObject",
+    def body_apply(self, body: "PartDesign.Body", group_name: str, part2d: Part.Part2DObject,
                    gui_document: Optional["Gui.ActiveDocument"], tracing: str = "") -> None:
         """Apply pocket operation to PartDesign Body."""
         if tracing:
             print(f"{tracing}=>ApexPocket.body_apply('{self.Name}', '{group_name}', *, *)")
         pocket: "PartDesign.Geometry" = body.newObject(
             "PartDesign::Pocket", f"{group_name}.Pocket")
-        pocket.Profile = sketch
+        pocket.Profile = part2d
         pocket.Length = float(self.Depth)
         if tracing:
             print(f"{tracing}<=ApexPocket.body_apply('{self.Name}', '{group_name}', *, *)")
@@ -2376,7 +2554,7 @@ class ApexDrawing(object):
             # visibility_set(sketch, False)
 
             # Fill in the *sketch* from *drawing*:
-            drawing.sketch(sketch, tracing=next_tracing)
+            drawing.sketch(sketch, document_name, tracing=next_tracing)
 
             for operation in operations:
                 operation.body_apply(body, operation_name, sketch, gui_document)
@@ -2471,7 +2649,8 @@ class ApexDrawing(object):
         return apex_drawing
 
     # ApexDrawing.sketch():
-    def sketch(self, sketcher: "Sketcher.SketchObject", tracing: str = "") -> None:
+    def sketch(self, sketcher: Part.Part2DObject,
+               document_name: str, tracing: str = "") -> None:
         """Insert an ApexDrawing into a FreeCAD SketchObject.
 
         Arguments:
@@ -2537,11 +2716,20 @@ class ApexDrawing(object):
         # Now extract all of the Geometry's from *final_shapes*::
         if tracing:
             print(f"{tracing}>>>>>>>>>>>>>>>>")
+        wires: List[Part.Wire] = []
+        app_document = App.getDocument(document_name)
         shape: ApexShape
-        for shape in final_shapes:
-            f: Tuple[Geometry, ...] = shape.get_geometries(tracing=next_tracing)
-            assert f is shape.get_geometries(), f"{shape=} {f=}"
+        for index, shape in enumerate(final_shapes):
+            f: Tuple[Geometry, ...] = shape.get_geometries()
             geometries.extend(f)
+            wire: Part.Wire = shape._get_wire(tracing=" ")
+            wires.append(wire)
+            face: Part.Face = Part.Face(wire)
+            assert isinstance(face, Part.Face)
+            solid: Part.Solid = face.extrude(Vector(0.0, 0.0, 10.0))
+            assert isinstance(solid, Part.Solid)
+            part_object = app_document.addObject("Part::Feature", f"TestSolid-{index}")
+            part_object.Shape = solid
 
         # geometry: Geometry
         # for index, geometry in enumerate(geometries):
@@ -2597,7 +2785,7 @@ class ApexDrawing(object):
             if tracing and False:
                 print(f"{tracing}Shape[{index}]: {shape}")
             assert isinstance(origin_point, PointGeometry)
-            constraints.extend(shape.get_constraints(origin_point, tracing=next_tracing))
+            constraints.extend(shape.get_constraints(origin_point))  # , tracing=next_tracing))
 
         if tracing:
             print(f"{tracing}here 1")
@@ -2743,22 +2931,26 @@ def _integration_test() -> int:
         right_x: float = 40.0
         upper_y: float = 20.0
         lower_y: float = -20.0
-        radius1: float = 0.0
+        radius0: float = 0.0
+        radius1: float = 3.0
         radius2: float = 5.0
+        _ = radius0
+        _ = radius1
         _ = radius2
         notch_x: float = 10.0
         notch_y: float = 10.0
         lower_left_bottom: ApexCorner = ApexCorner(
             Vector(left_x + notch_x, lower_y, 0.0), 0.0, "lower_left_bottom")
-        lower_right: ApexCorner = ApexCorner(Vector(right_x, lower_y, 0.0), 0.0, "lower_right")
-        upper_right: Vector = ApexCorner(Vector(right_x, upper_y, 0.0), radius2, "upper_right")
+        lower_right: ApexCorner = ApexCorner(Vector(right_x, lower_y, 0.0), radius0, "lower_right")
+        upper_right: Vector = ApexCorner(Vector(right_x, upper_y, 0.0), radius0, "upper_right")
+        _ = upper_right
         notch1: ApexCorner = ApexCorner(Vector(right_x, upper_y - notch_y, 0.0), radius1, "notch1")
         notch2: ApexCorner = ApexCorner(
             Vector(right_x - notch_x, upper_y - notch_y, 0.0), radius2, "notch2")
-        notch3: ApexCorner = ApexCorner(Vector(right_x - notch_x, upper_y, 0.0), radius1, "notch3")
-        upper_left: ApexCorner = ApexCorner(Vector(left_x, upper_y, 0.0), radius1, "upper_left")
+        notch3: ApexCorner = ApexCorner(Vector(right_x - notch_x, upper_y, 0.0), radius2, "notch3")
+        upper_left: ApexCorner = ApexCorner(Vector(left_x, upper_y, 0.0), radius0, "upper_left")
         lower_left_left: ApexCorner = ApexCorner(
-            Vector(left_x, lower_y + notch_y, 0.0), radius1, "lower_left_left")
+            Vector(left_x, lower_y + notch_y, 0.0), radius0, "lower_left_left")
         _ = upper_right
         _ = notch1
         _ = notch2
@@ -2766,23 +2958,23 @@ def _integration_test() -> int:
         contour_corners: Tuple[ApexCorner, ...] = (
             lower_left_bottom,
             lower_right,
-            upper_right,
-            # notch1,
-            # notch2,
-            # notch3,
+            # upper_right,
+            notch1,
+            notch2,
+            notch3,
             upper_left,
             lower_left_left,
         )
         contour_polygon: ApexPolygon = ApexPolygon(contour_corners, "contour_polygon")
         assert contour_polygon.Name == "contour_polygon", contour_polygon.Name
 
-        ne_corner: ApexCorner = ApexCorner(Vector(right_x, upper_y, 0), radius2, "ne_corner")
+        ne_corner: ApexCorner = ApexCorner(Vector(right_x, upper_y, 0), radius1, "ne_corner")
         nw_corner: ApexCorner = ApexCorner(Vector(left_x, upper_y, 0), radius2, "nw_corner")
-        sw_corner: ApexCorner = ApexCorner(Vector(left_x, lower_y, 0), radius2, "sw_corner")
+        sw_corner: ApexCorner = ApexCorner(Vector(left_x, lower_y, 0), radius0, "sw_corner")
         se_corner: ApexCorner = ApexCorner(Vector(right_x, lower_y, 0), radius2, "se_corner")
         simple_corners: Tuple[ApexCorner, ...] = (ne_corner, nw_corner, sw_corner, se_corner)
         _ = simple_corners
-        contour_polygon = ApexPolygon(simple_corners, "contour_polygon")
+        # contour_polygon = ApexPolygon(simple_corners, "contour_polygon")
 
         depth: float = 10.0
         through: float = depth + 1.0
@@ -2795,14 +2987,13 @@ def _integration_test() -> int:
         center_operation: ApexHole = ApexHole(center_circle, through, "center")
         _ = center_operation
 
-        sides: int = 6
+        sides: int = 5
         angle_increment: float = 2 * math.pi / float(sides)
         print(f"{math.degrees(angle_increment)=}")
         x_offset: float = -20.0
         y_offset: float = 5.0
         hex_radius: float = 8.0
         hexagon_corners: List[ApexCorner] = []
-        index: int
         for index in range(sides):
             angle: float = index * angle_increment
             x: float = x_offset + hex_radius * math.cos(angle)
@@ -2811,12 +3002,13 @@ def _integration_test() -> int:
             print(f"HexegonCorner[{index}]: {hexagon_corner}")
             hexagon_corners.append(hexagon_corner)
         hexagon: ApexPolygon = ApexPolygon(tuple(hexagon_corners), "hexagon")
+        # contour_operation = ApexPad(hexagon, depth, "hexagon_operation")
         hexagon_operation: ApexPocket = ApexPocket(hexagon, through, "hexagon")
         _ = hexagon_operation
 
         # Create the *drawing*:
         operations: Tuple[ApexOperation, ...] = (
-            contour_operation,)  # center_operation, hexagon_operation)
+            contour_operation,)  # hexagon_operation)  # center_operation, hexagon_operation)
         operation: ApexOperation
         for index, operation in enumerate(operations):
             # print(f"Operation[{index}]: {operation}")
@@ -2868,6 +3060,7 @@ def attributes_show(some_object: Any) -> None:  # pragma: no unit cover
 
 
 if __name__ == "__main__":
+    Corner.foo_test()
     ApexCorner._unit_tests()
     ApexPolygon._unit_tests()
     _integration_test()

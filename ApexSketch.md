@@ -45,21 +45,23 @@ Table of Contents:
   * 9.2 [ApexPolygon.\_arcs\_create](#apexpolygon--arcs-create)
   * 9.3 [ApexPolygon.\_get\_constraints](#apexpolygon--get-constraints)
   * 9.4 [ApexPolygon.\_get\_geometries](#apexpolygon--get-geometries)
-  * 9.5 [ApexPolygon.\_lines\_create](#apexpolygon--lines-create)
-  * 9.6 [ApexPolygon.\_radii\_overlap\_check](#apexpolygon--radii-overlap-check)
-  * 9.7 [ApexPolygon.\_unit\_tests](#apexpolygon--unit-tests)
-  * 9.8 [ApexPolygon.get\_box](#apexpolygon-get-box)
-  * 9.9 [ApexPolygon.get\_constraints](#apexpolygon-get-constraints)
-  * 9.10 [ApexPolygon.get\_geometries](#apexpolygon-get-geometries)
-  * 9.11 [ApexPolygon.reorient](#apexpolygon-reorient)
-  * 9.12 [ApexPolygon.show](#apexpolygon-show)
+  * 9.5 [ApexPolygon.\_get\_wire](#apexpolygon--get-wire)
+  * 9.6 [ApexPolygon.\_lines\_create](#apexpolygon--lines-create)
+  * 9.7 [ApexPolygon.\_radii\_overlap\_check](#apexpolygon--radii-overlap-check)
+  * 9.8 [ApexPolygon.\_unit\_tests](#apexpolygon--unit-tests)
+  * 9.9 [ApexPolygon.get\_box](#apexpolygon-get-box)
+  * 9.10 [ApexPolygon.get\_constraints](#apexpolygon-get-constraints)
+  * 9.11 [ApexPolygon.get\_geometries](#apexpolygon-get-geometries)
+  * 9.12 [ApexPolygon.reorient](#apexpolygon-reorient)
+  * 9.13 [ApexPolygon.show](#apexpolygon-show)
 * 10 [Class ApexShape](#apexshape)
   * 10.1 [ApexShape.\_get\_constraints](#apexshape--get-constraints)
-  * 10.2 [ApexShape.get\_box](#apexshape-get-box)
-  * 10.3 [ApexShape.get\_constraints](#apexshape-get-constraints)
-  * 10.4 [ApexShape.get\_geometries](#apexshape-get-geometries)
-  * 10.5 [ApexShape.reorient](#apexshape-reorient)
-  * 10.6 [ApexShape.show](#apexshape-show)
+  * 10.2 [ApexShape.\_get\_wire](#apexshape--get-wire)
+  * 10.3 [ApexShape.get\_box](#apexshape-get-box)
+  * 10.4 [ApexShape.get\_constraints](#apexshape-get-constraints)
+  * 10.5 [ApexShape.get\_geometries](#apexshape-get-geometries)
+  * 10.6 [ApexShape.reorient](#apexshape-reorient)
+  * 10.7 [ApexShape.show](#apexshape-show)
 * 11 [Class ArcGeometry](#arcgeometry)
   * 11.1 [ArcGeometry.Finish](#arcgeometry-finish)
   * 11.2 [ArcGeometry.FinishKey](#arcgeometry-finishkey)
@@ -91,12 +93,15 @@ Table of Contents:
   * 12.2 [CircleGeometry.type\_name](#circlegeometry-type-name)
 * 13 [Class Corner](#corner)
   * 13.1 [Corner.\_\_post\_init\_\_](#corner---post-init--)
-  * 13.2 [Corner.get\_begin\_point](#corner-get-begin-point)
-  * 13.3 [Corner.get\_constraints](#corner-get-constraints)
-  * 13.4 [Corner.get\_end\_point](#corner-get-end-point)
-  * 13.5 [Corner.get\_first\_geometry](#corner-get-first-geometry)
-  * 13.6 [Corner.get\_geometries](#corner-get-geometries)
-  * 13.7 [Corner.get\_last\_geometry](#corner-get-last-geometry)
+  * 13.2 [Corner.\_get\_end\_point](#corner--get-end-point)
+  * 13.3 [Corner.\_get\_start\_point](#corner--get-start-point)
+  * 13.4 [Corner.foo](#corner-foo)
+  * 13.5 [Corner.get\_begin\_point](#corner-get-begin-point)
+  * 13.6 [Corner.get\_constraints](#corner-get-constraints)
+  * 13.7 [Corner.get\_end\_point](#corner-get-end-point)
+  * 13.8 [Corner.get\_first\_geometry](#corner-get-first-geometry)
+  * 13.9 [Corner.get\_geometries](#corner-get-geometries)
+  * 13.10 [Corner.get\_last\_geometry](#corner-get-last-geometry)
 * 14 [Class Geometry](#geometry)
   * 14.1 [Geometry.Finish](#geometry-finish)
   * 14.2 [Geometry.FinishKey](#geometry-finishkey)
@@ -321,7 +326,7 @@ Arguments:
 
 ### 4.7 ApexDrawing.sketch <a name="apexdrawing-sketch"></a>
 
-def *sketch*(self, *sketcher*:  "Sketcher.SketchObject", *tracing*:  *str* = "") -> None:
+def *sketch*(self, *sketcher*:  Part.Part2DObject, *document\_name*:  *str*, *tracing*:  *str* = "") -> None:
 
 Insert an ApexDrawing into a FreeCAD SketchObject.
 
@@ -351,7 +356,7 @@ Verify argument types.
 
 ### 5.2 ApexHole.body\_apply <a name="apexhole-body-apply"></a>
 
-def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *sketch*:  "Sketcher.SketchObject", *gui\_document*:  Optional["Gui.ActiveDocument"], *tracing*:  *str* = "") -> None:
+def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *part2d*:  Part.Part2DObject, *gui\_document*:  Optional["Gui.ActiveDocument"], *tracing*:  *str* = "") -> None:
 
 Apply hole operation to PartDesign body.
 
@@ -387,7 +392,7 @@ Attributes:
 
 ### 6.1 ApexOperation.body\_apply <a name="apexoperation-body-apply"></a>
 
-def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *sketch*:  "Sketcher.SketchObject", *gui\_document*:  Optional["Gui.ActiveDocument"], *tracing*:  *str* = "") -> None:
+def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *part2d*:  Part.Part2DObject, *gui\_document*:  Optional["Gui.ActiveDocument"], *tracing*:  *str* = "") -> None:
 
 Apply operation to a Part Design body.
 
@@ -454,7 +459,7 @@ Verify argument types.
 
 ### 7.2 ApexPad.body\_apply <a name="apexpad-body-apply"></a>
 
-def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *sketch*:  "Sketcher.SketchObject", *gui\_document*:  Optional["Gui.ActiveDocument"], *tracing*:  *str* = "") -> None:
+def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *part2d*:  Part.Part2DObject, *gui\_document*:  Optional["Gui.ActiveDocument"], *tracing*:  *str* = "") -> None:
 
 Apply ApexPad opertation to PartDesign Body.
 
@@ -499,7 +504,7 @@ Verify argument types.
 
 ### 8.2 ApexPocket.body\_apply <a name="apexpocket-body-apply"></a>
 
-def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *sketch*:  "Sketcher.SketchObject", *gui\_document*:  Optional["Gui.ActiveDocument"], *tracing*:  *str* = "") -> None:
+def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *part2d*:  Part.Part2DObject, *gui\_document*:  Optional["Gui.ActiveDocument"], *tracing*:  *str* = "") -> None:
 
 Apply pocket operation to PartDesign Body.
 
@@ -566,31 +571,37 @@ def \_get\_geometries(self, *tracing*:  *str* = "") -> Tuple[Geometry, ...]:
 
 Return the ApexPolygon Geometry's.
 
-### 9.5 ApexPolygon.\_lines\_create <a name="apexpolygon--lines-create"></a>
+### 9.5 ApexPolygon.\_get\_wire <a name="apexpolygon--get-wire"></a>
+
+def \_get\_wire(self, *tracing*:  *str* = "") -> Part.Wire:
+
+Return the wire formed by ApexPolygon.
+
+### 9.6 ApexPolygon.\_lines\_create <a name="apexpolygon--lines-create"></a>
 
 def \_lines\_create(self, *tracing*:  *str* = "") -> None:
 
 Create all of the needed LineGemomety's.
 
-### 9.6 ApexPolygon.\_radii\_overlap\_check <a name="apexpolygon--radii-overlap-check"></a>
+### 9.7 ApexPolygon.\_radii\_overlap\_check <a name="apexpolygon--radii-overlap-check"></a>
 
 def \_radii\_overlap\_check(self) -> None:
 
 Verify that the corner radii do not overlap.
 
-### 9.7 ApexPolygon.\_unit\_tests <a name="apexpolygon--unit-tests"></a>
+### 9.8 ApexPolygon.\_unit\_tests <a name="apexpolygon--unit-tests"></a>
 
 def \_unit\_tests() -> None:
 
 Run ApexPolygon unit tests.
 
-### 9.8 ApexPolygon.get\_box <a name="apexpolygon-get-box"></a>
+### 9.9 ApexPolygon.get\_box <a name="apexpolygon-get-box"></a>
 
 def *get\_box*(self) -> ApexBox:
 
 Return the ApexBox for an ApexPolygon.
 
-### 9.9 ApexPolygon.get\_constraints <a name="apexpolygon-get-constraints"></a>
+### 9.10 ApexPolygon.get\_constraints <a name="apexpolygon-get-constraints"></a>
 
 def *get\_constraints*(self, *origin\_point*:  PointGeometry, *tracing*:  *str* = "") -> Tuple[Sketcher.Constraint, ...]:
 
@@ -600,13 +611,13 @@ Arguments:
 * *origin\_point* (PointGeometry): The origin to use.
 
 
-### 9.10 ApexPolygon.get\_geometries <a name="apexpolygon-get-geometries"></a>
+### 9.11 ApexPolygon.get\_geometries <a name="apexpolygon-get-geometries"></a>
 
 def *get\_geometries*(self, *tracing*:  *str* = "") -> Tuple[Geometry, ...]:
 
 Return the ApexPolygon ApexGeometries tuple.
 
-### 9.11 ApexPolygon.reorient <a name="apexpolygon-reorient"></a>
+### 9.12 ApexPolygon.reorient <a name="apexpolygon-reorient"></a>
 
 def *reorient*(self, *placement*:  Placement, *suffix*:  Optional[str] = "", *tracing*:  *str* = "") -> "ApexPolygon":
 
@@ -619,7 +630,7 @@ Arguments:
   A suffix to append to the name.  If None, an empty name is used. (Default: "")
 
 
-### 9.12 ApexPolygon.show <a name="apexpolygon-show"></a>
+### 9.13 ApexPolygon.show <a name="apexpolygon-show"></a>
 
 def *show*(self) -> *str*:
 
@@ -643,13 +654,19 @@ Arguments:
 * *origin\_point* (PointGeometry): The PointGeometry to used for the origin.
 
 
-### 10.2 ApexShape.get\_box <a name="apexshape-get-box"></a>
+### 10.2 ApexShape.\_get\_wire <a name="apexshape--get-wire"></a>
+
+def \_get\_wire(self, *tracing*:  *str* = "") -> Part.Wire:
+
+Return wire.
+
+### 10.3 ApexShape.get\_box <a name="apexshape-get-box"></a>
 
 def *get\_box*(self) -> ApexBox:
 
 Return ApexBox that enclose the ApexShape.
 
-### 10.3 ApexShape.get\_constraints <a name="apexshape-get-constraints"></a>
+### 10.4 ApexShape.get\_constraints <a name="apexshape-get-constraints"></a>
 
 def *get\_constraints*(self, *origin\_point*:  PointGeometry, *tracing*:  *str* = "") -> Tuple[Sketcher.Constraint, ...]:
 
@@ -659,7 +676,7 @@ Arguments:
 * *origin\_point* (PointGeometry): The PointGeometry to used for the origin.
 
 
-### 10.4 ApexShape.get\_geometries <a name="apexshape-get-geometries"></a>
+### 10.5 ApexShape.get\_geometries <a name="apexshape-get-geometries"></a>
 
 def *get\_geometries*(self, *tracing*:  *str* = "") -> Tuple[Geometry, ...]:
 
@@ -669,7 +686,7 @@ Returns:
 * (Tuple[Geometry, ...]) of extracted Geometry's.
 
 
-### 10.5 ApexShape.reorient <a name="apexshape-reorient"></a>
+### 10.6 ApexShape.reorient <a name="apexshape-reorient"></a>
 
 def *reorient*(self, *placement*:  Placement, *suffix*:  Optional[str] = "", *tracing*:  *str* = "") -> "ApexShape":
 
@@ -683,7 +700,7 @@ Arguments:
 # Returns:
 * (ApexShape) that has been reoriented with a new name.
 
-### 10.6 ApexShape.show <a name="apexshape-show"></a>
+### 10.7 ApexShape.show <a name="apexshape-show"></a>
 
 def *show*(self) -> *str*:
 
@@ -875,37 +892,55 @@ def \_\_post\_init\_\_(self) -> None:
 
 Initialize contents of Corner.
 
-### 13.2 Corner.get\_begin\_point <a name="corner-get-begin-point"></a>
+### 13.2 Corner.\_get\_end\_point <a name="corner--get-end-point"></a>
+
+def \_get\_end\_point(self) -> Vector:
+
+Return Corner end point.
+
+### 13.3 Corner.\_get\_start\_point <a name="corner--get-start-point"></a>
+
+def \_get\_start\_point(self) -> Vector:
+
+Return Corner end point.
+
+### 13.4 Corner.foo <a name="corner-foo"></a>
+
+def *foo*(before:  Vector, *apex*:  Vector, *after*:  Vector, *radius*:  *float*, *tracing*:  *str* = "") -> Tuple[Vector, Vector, Vector]:
+
+Generate the arc for a corner.
+
+### 13.5 Corner.get\_begin\_point <a name="corner-get-begin-point"></a>
 
 def *get\_begin\_point*(self) -> Vector:
 
 Return the Corner beginning point.
 
-### 13.3 Corner.get\_constraints <a name="corner-get-constraints"></a>
+### 13.6 Corner.get\_constraints <a name="corner-get-constraints"></a>
 
 def *get\_constraints*(self, *origin\_point*:  PointGeometry, *tracing*:  *str* = "") -> Tuple[Sketcher.Constraint, ...]:
 
 Return the Corner sketch constraints.
 
-### 13.4 Corner.get\_end\_point <a name="corner-get-end-point"></a>
+### 13.7 Corner.get\_end\_point <a name="corner-get-end-point"></a>
 
 def *get\_end\_point*(self) -> Vector:
 
 Return the Corner ending point.
 
-### 13.5 Corner.get\_first\_geometry <a name="corner-get-first-geometry"></a>
+### 13.8 Corner.get\_first\_geometry <a name="corner-get-first-geometry"></a>
 
 def *get\_first\_geometry*(self) -> Geometry:
 
 Return the last Geometry in Corner.
 
-### 13.6 Corner.get\_geometries <a name="corner-get-geometries"></a>
+### 13.9 Corner.get\_geometries <a name="corner-get-geometries"></a>
 
 def *get\_geometries*(self) -> Tuple[Geometry, ...]:
 
 Return the Corner Geometry's.
 
-### 13.7 Corner.get\_last\_geometry <a name="corner-get-last-geometry"></a>
+### 13.10 Corner.get\_last\_geometry <a name="corner-get-last-geometry"></a>
 
 def *get\_last\_geometry*(self) -> Geometry:
 
