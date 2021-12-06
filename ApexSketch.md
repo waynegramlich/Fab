@@ -12,29 +12,32 @@ Table of Contents:
   * 3.2 [ApexCorner.\_unit\_tests](#apexcorner--unit-tests)
 * 4 [Class ApexDrawing](#apexdrawing)
   * 4.1 [ApexDrawing.\_\_post\_init\_\_](#apexdrawing---post-init--)
-  * 4.2 [ApexDrawing.create\_datum\_plane](#apexdrawing-create-datum-plane)
-  * 4.3 [ApexDrawing.get\_geometries](#apexdrawing-get-geometries)
-  * 4.4 [ApexDrawing.get\_origin\_constraints](#apexdrawing-get-origin-constraints)
-  * 4.5 [ApexDrawing.plane\_process](#apexdrawing-plane-process)
-  * 4.6 [ApexDrawing.reorient](#apexdrawing-reorient)
-  * 4.7 [ApexDrawing.sketch](#apexdrawing-sketch)
+  * 4.2 [ApexDrawing.\_get\_part2d](#apexdrawing--get-part2d)
+  * 4.3 [ApexDrawing.create\_datum\_plane](#apexdrawing-create-datum-plane)
+  * 4.4 [ApexDrawing.get\_geometries](#apexdrawing-get-geometries)
+  * 4.5 [ApexDrawing.get\_origin\_constraints](#apexdrawing-get-origin-constraints)
+  * 4.6 [ApexDrawing.plane\_process](#apexdrawing-plane-process)
+  * 4.7 [ApexDrawing.reorient](#apexdrawing-reorient)
+  * 4.8 [ApexDrawing.sketch](#apexdrawing-sketch)
 * 5 [Class ApexHole](#apexhole)
   * 5.1 [ApexHole.\_\_post\_init\_\_](#apexhole---post-init--)
   * 5.2 [ApexHole.body\_apply](#apexhole-body-apply)
   * 5.3 [ApexHole.get\_shape](#apexhole-get-shape)
   * 5.4 [ApexHole.reorient](#apexhole-reorient)
 * 6 [Class ApexOperation](#apexoperation)
-  * 6.1 [ApexOperation.body\_apply](#apexoperation-body-apply)
-  * 6.2 [ApexOperation.get\_constraints](#apexoperation-get-constraints)
-  * 6.3 [ApexOperation.get\_geometries](#apexoperation-get-geometries)
-  * 6.4 [ApexOperation.get\_shape](#apexoperation-get-shape)
-  * 6.5 [ApexOperation.reorient](#apexoperation-reorient)
-  * 6.6 [ApexOperation.show](#apexoperation-show)
+  * 6.1 [ApexOperation.\_get\_wire](#apexoperation--get-wire)
+  * 6.2 [ApexOperation.body\_apply](#apexoperation-body-apply)
+  * 6.3 [ApexOperation.get\_constraints](#apexoperation-get-constraints)
+  * 6.4 [ApexOperation.get\_geometries](#apexoperation-get-geometries)
+  * 6.5 [ApexOperation.get\_shape](#apexoperation-get-shape)
+  * 6.6 [ApexOperation.reorient](#apexoperation-reorient)
+  * 6.7 [ApexOperation.show](#apexoperation-show)
 * 7 [Class ApexPad](#apexpad)
   * 7.1 [ApexPad.\_\_post\_init\_\_](#apexpad---post-init--)
-  * 7.2 [ApexPad.body\_apply](#apexpad-body-apply)
-  * 7.3 [ApexPad.get\_shape](#apexpad-get-shape)
-  * 7.4 [ApexPad.reorient](#apexpad-reorient)
+  * 7.2 [ApexPad.\_get\_wire](#apexpad--get-wire)
+  * 7.3 [ApexPad.body\_apply](#apexpad-body-apply)
+  * 7.4 [ApexPad.get\_shape](#apexpad-get-shape)
+  * 7.5 [ApexPad.reorient](#apexpad-reorient)
 * 8 [Class ApexPocket](#apexpocket)
   * 8.1 [ApexPocket.\_\_post\_init\_\_](#apexpocket---post-init--)
   * 8.2 [ApexPocket.body\_apply](#apexpocket-body-apply)
@@ -278,7 +281,13 @@ def \_\_post\_init\_\_(self) -> None:
 
 Initialize a drawing.
 
-### 4.2 ApexDrawing.create\_datum\_plane <a name="apexdrawing-create-datum-plane"></a>
+### 4.2 ApexDrawing.\_get\_part2d <a name="apexdrawing--get-part2d"></a>
+
+def \_get\_part\_2d(self) -> Part.Part2DObject:
+
+Return Part2DObject for ApexDrawing.
+
+### 4.3 ApexDrawing.create\_datum\_plane <a name="apexdrawing-create-datum-plane"></a>
 
 def *create\_datum\_plane*(self, *body*:  "PartDesign.Body", *name*:  Optional[str] = None, *tracing*:  *str* = "") -> "Part.Geometry":
 
@@ -291,13 +300,13 @@ Arguments:
 * Returns:
   * (Part.Geometry) that is the datum\_plane.
 
-### 4.3 ApexDrawing.get\_geometries <a name="apexdrawing-get-geometries"></a>
+### 4.4 ApexDrawing.get\_geometries <a name="apexdrawing-get-geometries"></a>
 
 def *point\_get\_geometries*(self, *point*:  Vector, *tracing*:  *str* = "") -> Tuple["Geometry", ...]:
 
 Return the PointGeometry Geometry's.
 
-### 4.4 ApexDrawing.get\_origin\_constraints <a name="apexdrawing-get-origin-constraints"></a>
+### 4.5 ApexDrawing.get\_origin\_constraints <a name="apexdrawing-get-origin-constraints"></a>
 
 def *get\_origin\_constraints*(self, *origin\_point*:  PointGeometry, *tracing*:  *str* = "") -> Tuple[Sketcher.Constraint, ...]:
 
@@ -306,13 +315,13 @@ Return constraints associated for the origin point.
 Arguments:
 * *origin\_point* (PointGeometry): The origin point to constrain.
 
-### 4.5 ApexDrawing.plane\_process <a name="apexdrawing-plane-process"></a>
+### 4.6 ApexDrawing.plane\_process <a name="apexdrawing-plane-process"></a>
 
 def *plane\_process*(self, *body*:  "PartDesign.Body", *document\_name*:  *str*, *tracing*:  *str* = "") -> None:
 
 Plane\_Process.
 
-### 4.6 ApexDrawing.reorient <a name="apexdrawing-reorient"></a>
+### 4.7 ApexDrawing.reorient <a name="apexdrawing-reorient"></a>
 
 def *reorient*(self, *placement*:  Placement, *suffix*:  Optional[str] = "", *tracing*:  *str* = "") -> "ApexDrawing":
 
@@ -324,7 +333,7 @@ Arguments:
   names are set to "" instead appending the suffix.  (Default: "")
 
 
-### 4.7 ApexDrawing.sketch <a name="apexdrawing-sketch"></a>
+### 4.8 ApexDrawing.sketch <a name="apexdrawing-sketch"></a>
 
 def *sketch*(self, *sketcher*:  Part.Part2DObject, *document\_name*:  *str*, *tracing*:  *str* = "") -> None:
 
@@ -356,7 +365,7 @@ Verify argument types.
 
 ### 5.2 ApexHole.body\_apply <a name="apexhole-body-apply"></a>
 
-def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *part2d*:  Part.Part2DObject, *gui\_document*:  Optional["Gui.ActiveDocument"], *tracing*:  *str* = "") -> None:
+def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *part2d*:  Part.Part2DObject, *document\_name*:  *str*, *tracing*:  *str* = "") -> None:
 
 Apply hole operation to PartDesign body.
 
@@ -390,13 +399,19 @@ Attributes:
 * *SortKey*: (Tuple[str, ...]): A key generated by sub-class used to sort ApexOpertions.
 
 
-### 6.1 ApexOperation.body\_apply <a name="apexoperation-body-apply"></a>
+### 6.1 ApexOperation.\_get\_wire <a name="apexoperation--get-wire"></a>
 
-def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *part2d*:  Part.Part2DObject, *gui\_document*:  Optional["Gui.ActiveDocument"], *tracing*:  *str* = "") -> None:
+def \_get\_wire(self) -> Part.Wire:
+
+Return the ApexOperation 2D Wire operation representation.
+
+### 6.2 ApexOperation.body\_apply <a name="apexoperation-body-apply"></a>
+
+def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *part2d*:  Part.Part2DObject, *document\_name*:  *str*, *tracing*:  *str* = "") -> None:
 
 Apply operation to a Part Design body.
 
-### 6.2 ApexOperation.get\_constraints <a name="apexoperation-get-constraints"></a>
+### 6.3 ApexOperation.get\_constraints <a name="apexoperation-get-constraints"></a>
 
 def *get\_constraints*(self, *origin\_point*:  PointGeometry, *tracing*:  *str* = "") -> Tuple[Sketcher.Constraint, ...]:
 
@@ -406,19 +421,19 @@ Arguments:
 * *origin\_point* (PointGeometry): The PointGeometry to use for the origin.
 
 
-### 6.3 ApexOperation.get\_geometries <a name="apexoperation-get-geometries"></a>
+### 6.4 ApexOperation.get\_geometries <a name="apexoperation-get-geometries"></a>
 
 def *get\_geometries*(self, *tracing*:  *str* = "") -> Tuple[Geometry, ...]:
 
 Return the geometries associated with an operation.
 
-### 6.4 ApexOperation.get\_shape <a name="apexoperation-get-shape"></a>
+### 6.5 ApexOperation.get\_shape <a name="apexoperation-get-shape"></a>
 
 def *get\_shape*(self) -> ApexShape:
 
 Return the associated ApexOperation ApexShape.
 
-### 6.5 ApexOperation.reorient <a name="apexoperation-reorient"></a>
+### 6.6 ApexOperation.reorient <a name="apexoperation-reorient"></a>
 
 def *reorient*(self, *placement*:  Placement, *suffix*:  *str* = None, *tracing*:  *str* = "") -> "ApexOperation":
 
@@ -430,7 +445,7 @@ Arguments:
   that an empty name is to be used.  (Default: "")
 
 
-### 6.6 ApexOperation.show <a name="apexoperation-show"></a>
+### 6.7 ApexOperation.show <a name="apexoperation-show"></a>
 
 def *show*(self) -> *str*:
 
@@ -457,19 +472,25 @@ def \_\_post\_init\_\_(self) -> None:
 
 Verify argument types.
 
-### 7.2 ApexPad.body\_apply <a name="apexpad-body-apply"></a>
+### 7.2 ApexPad.\_get\_wire(sel <a name="apexpad--get-wire"></a>
 
-def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *part2d*:  Part.Part2DObject, *gui\_document*:  Optional["Gui.ActiveDocument"], *tracing*:  *str* = "") -> None:
+def \_get\_wire(self) -> None:
+
+Return the Part.Wire for the ApexPad.
+
+### 7.3 ApexPad.body\_apply <a name="apexpad-body-apply"></a>
+
+def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *part2d*:  Part.Part2DObject, *document\_name*:  *str*, *tracing*:  *str* = "") -> None:
 
 Apply ApexPad opertation to PartDesign Body.
 
-### 7.3 ApexPad.get\_shape <a name="apexpad-get-shape"></a>
+### 7.4 ApexPad.get\_shape <a name="apexpad-get-shape"></a>
 
 def *get\_shape*(self) -> ApexShape:
 
 Return the associated ApexShape's.
 
-### 7.4 ApexPad.reorient <a name="apexpad-reorient"></a>
+### 7.5 ApexPad.reorient <a name="apexpad-reorient"></a>
 
 def *reorient*(self, *placement*:  Placement, *suffix*:  *str* = None, *tracing*:  *str* = "") -> "ApexPad":
 
@@ -504,7 +525,7 @@ Verify argument types.
 
 ### 8.2 ApexPocket.body\_apply <a name="apexpocket-body-apply"></a>
 
-def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *part2d*:  Part.Part2DObject, *gui\_document*:  Optional["Gui.ActiveDocument"], *tracing*:  *str* = "") -> None:
+def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *part2d*:  Part.Part2DObject, *document\_name*:  *str*, *tracing*:  *str* = "") -> None:
 
 Apply pocket operation to PartDesign Body.
 

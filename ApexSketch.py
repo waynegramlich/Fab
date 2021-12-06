@@ -40,6 +40,7 @@ All of this information is collected into an ApexDrawing instance.
 The ApexDrawing.body_apply() takes a FreeCAD Part Design Body and applies operations drawing to it.
 """
 
+# [Part2DObject](http://www.iesensor.com/FreeCADDoc/0.16-dev/d9/d57/classPart_1_1Part2DObject.html)
 # [App FeaturePython](https://wiki.freecadweb.org/App_FeaturePython)
 # [Vidos from "Part Design Scripting" Guy](https://www.youtube.com/c/mwganson/videos)
 # [Part Design Scripting](https://forum.freecadweb.org/viewtopic.php?t=62751)
@@ -1372,6 +1373,13 @@ class ApexPolygon(ApexShape):
         """Return the wire formed by ApexPolygon."""
         if tracing:
             print(f"{tracing}=>ApexPolygon('{self.Name}')")
+
+        # Create the appropriate arcs and lines:
+        # self._double_link()
+        # self._arcs_create()
+        # self._lines_create()
+
+        # Extract all the *edges* from the *corners*:
         internal: _InternalPolygon = self._internal_polygon
         corners: Tuple[Corner, ...] = internal.corners
         edges: List[Part.Edge] = []
@@ -1385,6 +1393,7 @@ class ApexPolygon(ApexShape):
                 arc_edge: Part.Edge = corner._Arc.toShape()
                 assert isinstance(arc_edge, Part.Edge)
                 edges.append(arc_edge)
+
         print(f"{edges=}")
         wire: Part.Wire = Part.Wire(edges)
         print(f">>>>>>>>>>>>>>>>{type(wire).__bases__}")
@@ -1992,6 +2001,11 @@ class ApexOperation(object):
         """Return ApexOperation name."""
         raise NotImplementedError(f"ApexOperation.Name is not implemented for {self}")
 
+    # ApexOperation._get_wire():
+    def _get_wire(self) -> Part.Wire:
+        """Return the ApexOperation 2D Wire operation representation."""
+        raise NotImplementedError(f"ApexOperation._get_wire is not implemented for {self}")
+
     # ApexOperation.reorient():
     def reorient(self, placement: Placement, suffix: str = None,
                  tracing: str = "") -> "ApexOperation":
@@ -2012,7 +2026,7 @@ class ApexOperation(object):
 
     # ApexOperation.body_apply():
     def body_apply(self, body: "PartDesign.Body", group_name: str, part2d: Part.Part2DObject,
-                   gui_document: Optional["Gui.ActiveDocument"], tracing: str = "") -> None:
+                   document_name: str, tracing: str = "") -> None:
         """Apply operation to a Part Design body."""
         raise NotImplementedError(f"ApexOperation.body_apply() not implemented: {type(self)}")
 
@@ -2078,7 +2092,7 @@ class ApexHole(ApexOperation):
     # ApexHole.body_apply():
     def body_apply(self, body: "PartDesign.Body",
                    group_name: str, part2d: Part.Part2DObject,
-                   gui_document: Optional["Gui.ActiveDocument"], tracing: str = "") -> None:
+                   document_name: str, tracing: str = "") -> None:
         """Apply hole operation to PartDesign body."""
         if tracing:
             print(f"{tracing}=>ApexHole.body_apply('{self.Name}', '{group_name}', *, *)")
@@ -2157,9 +2171,16 @@ class ApexPad(ApexOperation):
         object.__setattr__(self, "Box", self.Shape.get_box())
         object.__setattr__(self, "SortKey", ("0Pad", f"{self.Depth}"))
 
+    # ApexPad._get_wire(self):
+    def _get_wire(self) -> None:
+        """Return the Part.Wire for the ApexPad."""
+        wire: Part.Wire = self.Shape._get_wire()
+        assert isinstance(wire, Part.Wire)
+        return wire
+
     # ApexPad.body_apply():
     def body_apply(self, body: "PartDesign.Body", group_name: str, part2d: Part.Part2DObject,
-                   gui_document: Optional["Gui.ActiveDocument"], tracing: str = "") -> None:
+                   document_name: str, tracing: str = "") -> None:
         """Apply ApexPad opertation to PartDesign Body."""
         if tracing:
             print(f"{tracing}=>ApexPad.body_apply('{self.Name}', '{group_name}', *, *)")
@@ -2178,7 +2199,8 @@ class ApexPad(ApexOperation):
         pad.Midplane = 0
         pad.Offset = 0
 
-        if gui_document:  # pragma: no unit cover
+        if App.GuiUp:
+            # gui_document: Any = Gui.getDocument(document_name)
             visibility_set(pad, True)
             view_object: Any = body.getLinkedObject(True).ViewObject
             pad.ViewObject.LineColor = getattr(
@@ -2260,7 +2282,7 @@ class ApexPocket(ApexOperation):
 
     # ApexPocket.body_apply():
     def body_apply(self, body: "PartDesign.Body", group_name: str, part2d: Part.Part2DObject,
-                   gui_document: Optional["Gui.ActiveDocument"], tracing: str = "") -> None:
+                   document_name: str, tracing: str = "") -> None:
         """Apply pocket operation to PartDesign Body."""
         if tracing:
             print(f"{tracing}=>ApexPocket.body_apply('{self.Name}', '{group_name}', *, *)")
@@ -2529,20 +2551,20 @@ class ApexDrawing(object):
                 print("")
                 print(f"{tracing}Groups[{index}:{sort_key}]:|operations|={len(operations)}")
 
-            operation0: ApexOperation = operations[0]
-
             # Create a new *drawing* using elements:
+            operation0: ApexOperation = operations[0]
             operation_name: str = f"{operation0.Name}_{len(operations)}"
-            drawing = ApexDrawing(self.Contact, self.Normal, operations, operation_name)
+            if True:
+                drawing = ApexDrawing(self.Contact, self.Normal, operations, operation_name)
 
-            # Create the *sketch* and attach it to *datum_plane*:
-            sketch_name: str = f"{operation0.Name}.sketch"
-            sketch: Sketcher.SketchObject = body.newObject("Sketcher::SketchObject", sketch_name)
-            if tracing:
-                print(f"{tracing}{sketch=} {sketch.Name=}")
-            sketch.Support = (datum_plane, "")
-            sketch.MapMode = "FlatFace"
-            if App.GuiUp:
+                # Create the *sketch* and attach it to *datum_plane*:
+                sketch_name: str = f"{operation0.Name}.sketch"
+                sketch: Sketcher.SketchObject = body.newObject(
+                    "Sketcher::SketchObject", sketch_name)
+                if tracing:
+                    print(f"{tracing}{sketch=} {sketch.Name=}")
+                sketch.Support = (datum_plane, "")
+                sketch.MapMode = "FlatFace"
                 if gui_document:  # pragma: no unit cover
                     if tracing:
                         print(f"{tracing}{sketch.Name=}")
@@ -2551,13 +2573,31 @@ class ApexDrawing(object):
                         if tracing:
                             print(f"{tracing}Set sketch visibility to false")
                         setattr(gui_sketch, "Visibility", False)
-            # visibility_set(sketch, False)
+                    # visibility_set(sketch, False)
+
+                # Fill in the *sketch* from *drawing*:
+                # drawing.sketch(sketch, document_name, tracing=next_tracing)
+
+                # for operation in operations:
+                #     operation.body_apply(body, operation_name, sketch, document_name)
+            else:
+                wires: List[Part.Wire] = []
+                for operation in operations:
+                    wire: Part.Wire = operation._get_wire()
+                    assert isinstance(wire, Part.Wire)
+                    wires.append(wire)
+                face: Part.Face = Part.Face(wires)
+                assert isinstance(face, Part.Face)
+                assert isinstance(face, Part.Shape)
+                print(f"{type(face).__bases__=}")
+                part2d: Part.Part2DObject = face
+                operation0.body_apply(body, operation_name, part2d, document_name)
 
             # Fill in the *sketch* from *drawing*:
             drawing.sketch(sketch, document_name, tracing=next_tracing)
 
             for operation in operations:
-                operation.body_apply(body, operation_name, sketch, gui_document)
+                operation.body_apply(body, operation_name, sketch, document_name)
 
         if tracing:
             print(f"{tracing}<=ApexDrawing.plane_process('self._name', '{body.Name}')")
@@ -2648,6 +2688,19 @@ class ApexDrawing(object):
             print(f"{tracing}<=ApexDrawing.reorient('{self.Name}', {placement}, '{suffix}')")
         return apex_drawing
 
+    # ApexDrawing._get_part2d():
+    def _get_part_2d(self) -> Part.Part2DObject:
+        """Return Part2DObject for ApexDrawing."""
+        wires: List[Part.Wire] = []
+        operation: ApexOperation
+        for operation in self.Operations:
+            wire: Part.Wire = operation._get_wire()
+            assert wire.isClosed(), f"Unclosed wire: {wire}"
+            wires.append(wire)
+        face: Part.Face = Part.Face(wires)
+        assert isinstance(face, Part.Part2DObject)
+        return face
+
     # ApexDrawing.sketch():
     def sketch(self, sketcher: Part.Part2DObject,
                document_name: str, tracing: str = "") -> None:
@@ -2720,6 +2773,7 @@ class ApexDrawing(object):
         app_document = App.getDocument(document_name)
         shape: ApexShape
         for index, shape in enumerate(final_shapes):
+            assert isinstance(shape, ApexShape), shape
             f: Tuple[Geometry, ...] = shape.get_geometries()
             geometries.extend(f)
             wire: Part.Wire = shape._get_wire(tracing=" ")
@@ -2751,7 +2805,7 @@ class ApexDrawing(object):
                 print(f"{tracing}Geometries[{index}]: {geometry} {geometry.Index} {id(geometry)}")
         final_geometries: Tuple[Geometry, ...] = tuple(geometries)
         indices_check(final_geometries)
-        indices_check(final_geometries)
+        # indices_check(final_geometries)
 
         if tracing:
             print(f"{tracing}indices set")
