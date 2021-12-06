@@ -45,7 +45,8 @@ The ApexDrawing.body_apply() takes a FreeCAD Part Design Body and applies operat
 # [Vidos from "Part Design Scripting" Guy](https://www.youtube.com/c/mwganson/videos)
 # [Part Design Scripting](https://forum.freecadweb.org/viewtopic.php?t=62751)
 # [Scripted Objects](https://wiki.freecadweb.org/Scripted_objects)
-# [FilletArc](https://github.com/FreeCAD/FreeCAD/blob/master/src/Mod/PartDesign/Scripts/FilletArc.py)
+# [FilletArc]
+#     (https://github.com/FreeCAD/FreeCAD/blob/master/src/Mod/PartDesign/Scripts/FilletArc.py)
 # [Creating and Manipulating Geometry](https://yorikvanhavre.gitbooks.io/
 #    a-freecad-manual/content/python_scripting/creating_and_manipulating_geometry.html)
 # [Use LineSegment instead of Line](https://forum.freecadweb.org/viewtopic.php?p=330999)
@@ -2026,7 +2027,7 @@ class ApexOperation(object):
 
     # ApexOperation.body_apply():
     def body_apply(self, body: "PartDesign.Body", group_name: str, part2d: Part.Part2DObject,
-                   document_name: str, tracing: str = "") -> None:
+                   shape: Optional[Any], document_name: str, tracing: str = "") -> None:
         """Apply operation to a Part Design body."""
         raise NotImplementedError(f"ApexOperation.body_apply() not implemented: {type(self)}")
 
@@ -2091,7 +2092,7 @@ class ApexHole(ApexOperation):
 
     # ApexHole.body_apply():
     def body_apply(self, body: "PartDesign.Body",
-                   group_name: str, part2d: Part.Part2DObject,
+                   group_name: str, part2d: Part.Part2DObject, shape: Optional[Any],
                    document_name: str, tracing: str = "") -> None:
         """Apply hole operation to PartDesign body."""
         if tracing:
@@ -2180,14 +2181,21 @@ class ApexPad(ApexOperation):
 
     # ApexPad.body_apply():
     def body_apply(self, body: "PartDesign.Body", group_name: str, part2d: Part.Part2DObject,
-                   document_name: str, tracing: str = "") -> None:
+                   shape: Optional[Any], document_name: str, tracing: str = "") -> None:
         """Apply ApexPad opertation to PartDesign Body."""
         if tracing:
             print(f"{tracing}=>ApexPad.body_apply('{self.Name}', '{group_name}', *, *)")
 
         # Pad:
+        # assert isinstance(part2d, Part.Part2DObject), part2d
+        # document: App.Document = App.getDocument(document_name)
         pad: PartDesign.Geometry = body.newObject("PartDesign::Pad", f"{group_name}.Pad")
-        pad.Profile = part2d
+        if shape:
+            pad_feature: "PartDesign.FeaturePython" = body.newObject("PartDesign::FeaturePython")
+            pad_feature.Shape = part2d
+            pad.Profile = pad_feature
+        else:
+            pad.Profile = part2d
         pad.Length = float(self.Depth)
         pad.Reversed = True
         # Unclear what most of these geometries do:
@@ -2282,7 +2290,7 @@ class ApexPocket(ApexOperation):
 
     # ApexPocket.body_apply():
     def body_apply(self, body: "PartDesign.Body", group_name: str, part2d: Part.Part2DObject,
-                   document_name: str, tracing: str = "") -> None:
+                   shape: Any, document_name: str, tracing: str = "") -> None:
         """Apply pocket operation to PartDesign Body."""
         if tracing:
             print(f"{tracing}=>ApexPocket.body_apply('{self.Name}', '{group_name}', *, *)")
@@ -2522,6 +2530,7 @@ class ApexDrawing(object):
 
         # app_document: App.Document = App.getDocument(document_name)
         gui_document: Optional[Gui.Document] = None
+        app_document: App.Doocument = App.getDocument(document_name)
         if App.GuiUp:  # pragma: no unit cover
             gui_document = Gui.getDocument(document_name)
 
@@ -2529,6 +2538,9 @@ class ApexDrawing(object):
         # by the FreeCAD Part Design workbench. It is not related to the Apex classes.
         # There is commonly used *datum_plane* for all sketches:
         datum_plane: Part.Geometry = self.create_datum_plane(body, tracing=next_tracing)
+
+        body2: PartDesign.Body = app_document.addObject("PartDesign::Body", "NoSketchBody")
+        _ = body2
 
         # Partition *operations* into *groups* based on the associated *sort_key*:
         SortKey = Tuple[str, ...]
@@ -2576,11 +2588,11 @@ class ApexDrawing(object):
                     # visibility_set(sketch, False)
 
                 # Fill in the *sketch* from *drawing*:
-                # drawing.sketch(sketch, document_name, tracing=next_tracing)
+                drawing.sketch(sketch, document_name, tracing=next_tracing)
 
-                # for operation in operations:
-                #     operation.body_apply(body, operation_name, sketch, document_name)
-            else:
+                for operation in operations:
+                    operation.body_apply(body, operation_name, sketch, None, document_name)
+            if True:
                 wires: List[Part.Wire] = []
                 for operation in operations:
                     wire: Part.Wire = operation._get_wire()
@@ -2589,15 +2601,19 @@ class ApexDrawing(object):
                 face: Part.Face = Part.Face(wires)
                 assert isinstance(face, Part.Face)
                 assert isinstance(face, Part.Shape)
-                print(f"{type(face).__bases__=}")
-                part2d: Part.Part2DObject = face
-                operation0.body_apply(body, operation_name, part2d, document_name)
 
-            # Fill in the *sketch* from *drawing*:
-            drawing.sketch(sketch, document_name, tracing=next_tracing)
+                # print(f"{type(face).__bases__=}")
+                # part2d: Part.Part2DObject = face
+                print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+                pad_feature: "PartDesign.FeaturePython" = body2.newObject(
+                    "PartDesign::FeaturePython", "NoSketchBody.Feature")
+                pad_feature.Shape = face
+                pad: PartDesign.Geometry = body2.newObject("PartDesign::Pad", "NoSketchBody.Pad")
+                pad.Profile = pad_feature
+                pad.Length = 10.0
 
-            for operation in operations:
-                operation.body_apply(body, operation_name, sketch, document_name)
+                # operation0.body_apply(
+                #     body2, operation_name, part2d, face, document_name, tracing=next_tracing)
 
         if tracing:
             print(f"{tracing}<=ApexDrawing.plane_process('self._name', '{body.Name}')")
@@ -2770,7 +2786,6 @@ class ApexDrawing(object):
         if tracing:
             print(f"{tracing}>>>>>>>>>>>>>>>>")
         wires: List[Part.Wire] = []
-        app_document = App.getDocument(document_name)
         shape: ApexShape
         for index, shape in enumerate(final_shapes):
             assert isinstance(shape, ApexShape), shape
@@ -2778,12 +2793,12 @@ class ApexDrawing(object):
             geometries.extend(f)
             wire: Part.Wire = shape._get_wire(tracing=" ")
             wires.append(wire)
-            face: Part.Face = Part.Face(wire)
-            assert isinstance(face, Part.Face)
-            solid: Part.Solid = face.extrude(Vector(0.0, 0.0, 10.0))
-            assert isinstance(solid, Part.Solid)
-            part_object = app_document.addObject("Part::Feature", f"TestSolid-{index}")
-            part_object.Shape = solid
+            # face: Part.Face = Part.Face(wire)
+            # assert isinstance(face, Part.Face)
+            # solid: Part.Solid = face.extrude(Vector(0.0, 0.0, 10.0))
+            # assert isinstance(solid, Part.Solid)
+            # part_object = app_document.addObject("Part::Feature", f"TestSolid-{index}")
+            # part_object.Shape = solid
 
         # geometry: Geometry
         # for index, geometry in enumerate(geometries):

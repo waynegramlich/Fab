@@ -365,7 +365,7 @@ Verify argument types.
 
 ### 5.2 ApexHole.body\_apply <a name="apexhole-body-apply"></a>
 
-def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *part2d*:  Part.Part2DObject, *document\_name*:  *str*, *tracing*:  *str* = "") -> None:
+def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *part2d*:  Part.Part2DObject, *shape*:  Optional[Any], *document\_name*:  *str*, *tracing*:  *str* = "") -> None:
 
 Apply hole operation to PartDesign body.
 
@@ -407,7 +407,7 @@ Return the ApexOperation 2D Wire operation representation.
 
 ### 6.2 ApexOperation.body\_apply <a name="apexoperation-body-apply"></a>
 
-def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *part2d*:  Part.Part2DObject, *document\_name*:  *str*, *tracing*:  *str* = "") -> None:
+def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *part2d*:  Part.Part2DObject, *shape*:  Optional[Any], *document\_name*:  *str*, *tracing*:  *str* = "") -> None:
 
 Apply operation to a Part Design body.
 
@@ -480,7 +480,7 @@ Return the Part.Wire for the ApexPad.
 
 ### 7.3 ApexPad.body\_apply <a name="apexpad-body-apply"></a>
 
-def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *part2d*:  Part.Part2DObject, *document\_name*:  *str*, *tracing*:  *str* = "") -> None:
+def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *part2d*:  Part.Part2DObject, *shape*:  Optional[Any], *document\_name*:  *str*, *tracing*:  *str* = "") -> None:
 
 Apply ApexPad opertation to PartDesign Body.
 
@@ -525,7 +525,7 @@ Verify argument types.
 
 ### 8.2 ApexPocket.body\_apply <a name="apexpocket-body-apply"></a>
 
-def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *part2d*:  Part.Part2DObject, *document\_name*:  *str*, *tracing*:  *str* = "") -> None:
+def *body\_apply*(self, *body*:  "PartDesign.Body", *group\_name*:  *str*, *part2d*:  Part.Part2DObject, *shape*:  Any, *document\_name*:  *str*, *tracing*:  *str* = "") -> None:
 
 Apply pocket operation to PartDesign Body.
 
