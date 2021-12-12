@@ -7,13 +7,13 @@ PY2MD := py2md.py
 
 PY_FILES := \
     Apex.py \
-    ApexEnclosure.py \
     ApexFasten.py \
     ApexNode.py \
     ApexPath.py \
-    ApexSketch.py \
     fcstd_tar_sync.py \
-    py2md.py
+    py2md.py \
+    Model.py
+#     ApexEnclosure.py
 OTHER_MD_FILES := \
     LICENSE.md \
     README.md \
@@ -29,6 +29,7 @@ HTML_FILES := ${ALL_MD_FILES:%.md=%.html}
 MODULES := \
     FreeCAD \
     FreeCADGui \
+    Model \
     Part \
     Path \
     Sketcher
