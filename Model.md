@@ -21,6 +21,8 @@ Table of Contents:
   * 5.2 [ModelMount.produce](#modelmount-produce)
 * 6 [Class ModelOperation](#modeloperation)
   * 6.1 [ModelOperation.get\_name](#modeloperation-get-name)
+  * 6.2 [ModelOperation.produce](#modeloperation-produce)
+  * 6.3 [ModelOperation.produce\_shape\_binder](#modeloperation-produce-shape-binder)
 * 7 [Class ModelPad](#modelpad)
   * 7.1 [ModelPad.\_\_post\_init\_\_](#modelpad---post-init--)
   * 7.2 [ModelPad.get\_name](#modelpad-get-name)
@@ -177,7 +179,15 @@ Verify that ModelMount arguments are valid.
 
 def *produce*(self, *model\_file*:  ModelFile, *prefix*:  *str*) -> None:
 
-Process the ModelMount.
+Create the FreeCAD DatumPlane used for the drawing support.
+
+Arguments:
+* *body* (PartDesign.Body): The FreeCAD Part design Body to attach the datum plane to.
+* *name* (Optional[str]): The datum plane name.
+  (Default: "...DatumPlaneN", where N is incremented.)
+* Returns:
+  * (Part.Geometry) that is the datum\_plane.
+
 
 ## 6 Class ModelOperation <a name="modeloperation"></a>
 
@@ -192,6 +202,18 @@ All model operations are immutable (i.e. frozen.)
 def *get\_name*(self) -> *str*:
 
 Return ModelOperation name.
+
+### 6.2 ModelOperation.produce <a name="modeloperation-produce"></a>
+
+def *produce*(self, *model\_file*:  ModelFile, *prefix*:  *str*) -> None:
+
+Return the operation sort key.
+
+### 6.3 ModelOperation.produce\_shape\_binder <a name="modeloperation-produce-shape-binder"></a>
+
+def *produce\_shape\_binder*(self, *model\_file*:  ModelFile, *part\_geometries*:  Tuple[Part.Part2DObject, ...], *prefix*:  *str*) -> Part.Feature:
+
+Produce the shape binder needed for the pad, pocket, hole, ... operations.
 
 ## 7 Class ModelPad <a name="modelpad"></a>
 
@@ -352,6 +374,8 @@ Attributes:
 * *Start* (Vector): The Arc start point.
 * *Middle* (Vector): The Arc midpoint.
 * *Finish* (Vector): The Arc finish point.
+
+# Old:
 * *StartAngle* (float): The start arc angle in radians.
 * *FinishAngle* (float): The finish arc angle in radiuns.
 * *DeltaAngle* (float):

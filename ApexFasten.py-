@@ -71,7 +71,7 @@ from dataclasses import dataclass
 from typing import cast, Tuple
 
 from Apex import ApexCheck, ApexMaterial
-from ApexSketch import ApexShape
+# from ApexSketch import ApexShape
 from FreeCAD import Vector  # type: ignore
 
 #  https://github.com/shaise/FreeCAD_FastenersWB

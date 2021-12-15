@@ -7,12 +7,12 @@ PY2MD := py2md.py
 
 PY_FILES := \
     Apex.py \
-    ApexFasten.py \
     ApexNode.py \
     ApexPath.py \
     fcstd_tar_sync.py \
     py2md.py \
     Model.py
+#     ApexFasten.py
 #     ApexEnclosure.py
 OTHER_MD_FILES := \
     LICENSE.md \

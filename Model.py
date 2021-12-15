@@ -36,16 +36,17 @@ sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 
 from dataclasses import dataclass, field
 import math
-from typing import List, Optional, Set, Tuple, Union
+from typing import Any, cast, List, Optional, Set, Tuple, Union
 from pathlib import Path
 
 import FreeCAD  # type: ignore
 import Draft  # type: ignore
 import Part  # type: ignore
 import FreeCAD as App  # type: ignore
+import FreeCADGui as Gui  # type: ignore
 
 # from Apex import ApexBox, ApexCheck, vector_fix
-from FreeCAD import Placement, Vector
+from FreeCAD import Placement, Rotation, Vector
 # import Part  # type: ignore
 
 
@@ -56,9 +57,12 @@ class ModelFile(object):
 
     Parts: Tuple["ModelPart", ...]
     FilePath: Path
-    AppDocument: App.Document = field(init=False)
-    GeometryGroup: App.DocumentObjectGroup = field(init=False)
-    Body: Part.BodyBase = field(init=False)
+    AppDocument: App.Document = field(init=False, repr=False)
+    GuiDocument: Optional["Gui.Document"] = field(init=False, default=None, repr=False)
+    GeometryGroup: App.DocumentObjectGroup = field(init=False, repr=False)
+    Body: Part.BodyBase = field(init=False, repr=False)
+    Mount: "ModelMount" = field(init=False, repr=False)
+    DatumPlane: "Part.Geometry" = field(init=False, repr=False)
 
     # ModelFile.__post_init__():
     def __post_init__(self) -> None:
@@ -71,6 +75,11 @@ class ModelFile(object):
             if part.Name in part_names:
                 raise ValueError(f"There are two or more Part's with the same name '{part.Name}'")
             part_names.add(part.Name)
+
+        self.GeometryGroup = cast(App.DocumentObjectGroup, None)
+        self.Body = cast(Part.BodyBase, None)
+        self.Mount = cast("ModelMount", None)
+        self.DatumPlane = cast("Part.Geometry", None)
 
         stem: str = self.FilePath.stem
         self.AppDocument = App.newDocument(stem)
@@ -121,6 +130,8 @@ class _ModelArc(_ModelGeometry):
     * *Start* (Vector): The Arc start point.
     * *Middle* (Vector): The Arc midpoint.
     * *Finish* (Vector): The Arc finish point.
+
+    # Old:
     * *StartAngle* (float): The start arc angle in radians.
     * *FinishAngle* (float): The finish arc angle in radiuns.
     * *DeltaAngle* (float):
@@ -134,24 +145,27 @@ class _ModelArc(_ModelGeometry):
     Start: Vector
     Middle: Vector
     Finish: Vector
-    StartAngle: float
-    FinishAngle: float
-    DeltaAngle: float
+    # StartAngle: float
+    # FinishAngle: float
+    # DeltaAngle: float
 
     # _ModelArc.produce():
     def produce(self, model_file: ModelFile, prefix: str, index: int) -> Part.Part2DObject:
         """Return line segment after moving it into Geometry group."""
         label: str = f"{prefix}_Arc_{index:03d}"
         placement: Placement = Placement()
-        placement.Rotation.Q = (0.0, 0.0, 0.0, 1.0)
+        placement.Rotation = model_file.DatumPlane.Placement.Rotation
+        # placement.Rotation.Q = (0.0, 0.0, 0.0, 1.0)
         placement.Base = self.Center
 
         # Create and label *part_arc*:
-        part_arc: Part.Part2DObject = Draft.makeCircle(
-            self.Radius, placement=placement, face=True,
-            startangle=math.degrees(self.StartAngle),
-            endangle=math.degrees(self.StartAngle + self.DeltaAngle),
-            support=None)
+        # part_arc: Part.Part2DObject = Draft.makeCircle(
+        #     self.Radius, placement=placement, face=False,  # face=True,
+        #     startangle=math.degrees(self.StartAngle),
+        #     endangle=math.degrees(self.StartAngle + self.DeltaAngle),
+        #     support=None)
+        part_arc: Part.Part2DObject = Draft.make_arc_3points([self.Start, self.Middle, self.Finish])
+
         assert isinstance(part_arc, Part.Part2DObject)
         part_arc.Label = label
 
@@ -274,12 +288,28 @@ class _ModelFillet(object):
     # _ModelFillet.compute_arc():
     def compute_arc(self, tracing: str = "") -> _ModelArc:
         """Return the arc associated with a _ModelFillet with non-zero radius."""
-        # The crude diagram below shows the basic _ModelFillet geomtery:
+        # A fillet is represented as an arc that traverses a sphere with a specified radius.
+        #
+        # Each fillet specifies an 3D apex point and a radius.  The this fillet the apex point is
+        # X and the radius is r.  Each fillet also has two neighbors on the polygon (called before
+        # and after) and each of the respectively have apex points called B and A.  These three
+        # points specify line segment XB and XA respectively.  XB and XA also specify a plane
+        # called AXB.  The goal is to find a center point C of a sphere of radius r that is on
+        # the plane AXB and it tangent to line segment XB and XA.  (If r too large, there is no
+        # solution, but the radius check code elsewhere will detect that situation and raise an
+        # exception.  The plane AXB slices the sphere into a circle of radius r.  The arc lies
+        # on this circle.  The start tangent point S is on the circle on line segment XB.
+        # The finish tangent point F is on the circle on line segment XA.  The circle is now
+        # cleaved into a smaller arc and larger arc.  The smaller arc is the desired one.
+        # The XC line segment from X to C crosses the circle at the arc midpoint M.  The points
+        # S, M, and F uniquely specify an arc of radius r in 3D space around the C center point.
+        #
+        # The crude 2D diagram below shows the basic _ModelFillet geometry:
         #
         #       A
         #       |
         #       |       r
-        #       E---------------C
+        #       F---------------C
         #       +             / |
         #       |+          /   |
         #       | +       /     |
@@ -290,18 +320,23 @@ class _ModelFillet(object):
         #       X----------+++++S----B
         #               d
         #
-        # Fit an arc of *radius* (r) so that it is tangent to the lines XB and XA.
-        # There are three points that define a corner are *before* (B), *apex* (X), and
-        # *after* (A).
-        # Compute the arc *center* (C), arc *start* (S), arc *end* (E) and arc *middle* (M).
-        # The *distance* (d) is the distance along XB to reach *start* (S) and similarly
-        # along XA to reach *finish* (F).  For right angles d equals r, but otherwise they
-        # are different.
-        # radius: float = self.Radius  # r
-        # before: Vector = self.Before.Point  # B
-        # apex: Vector = self.Point  # X
-        # after: Vector = self.After.Point  # A
+        # Try to use your imagination that '+' characters represent the arc.
+        # Also, note the distances r and d are the same for a 90 degree angle <AXB,
+        # but otherwise they are different.
+        #
+        # The algorithm to compute this is:
+        # 1. Compute unit vectors <XB> and <XA> the point from X to A and X to B respectively.
+        # 2. Compute center unit vector <XC> that points from X to C.
+        # 3. Compute the angle <BXC using a dot product and arc cosine.
+        # 4. There is a right triangle /_\SXC, where <XSC is 90 degrees (it is tangent) and
+        #    |SC| = r.  The goal is to compute |XS| = d) which the length of the XS line segment.
+        #    Using standard triangle formulas, |XS| = d is computed.
+        # 5. Using X, d, <XB> and <XA>, both S and F are computed.
+        # 6. Given d and r, using the Pythagorean theorem, |XC| is computed
+        # 7. Now C is computed using X and <XC> and |XC|.
+        # 8. The arc mid-point is computed using X, <XC>, |XC| and r.
 
+        # Step 0: Extract *radius*, *before* (B), *apex* (X) and *after* (A) points:
         radius: float = self.Radius
         before: Vector = self.Before.Apex
         apex: Vector = self.Apex
@@ -310,20 +345,22 @@ class _ModelFillet(object):
             print(f"{tracing}=>_ModelFillet.compute_arc({apex})")
             print(f"{tracing}{radius=} {before=} {apex=} {after=}")
 
-        # Compute unit vectors, treating X as if it is at the origin:
+        # Steps 1 and 2: Compute unit vectors <XB>, <XA>, and <XC>
         unit_before: Vector = (before - apex).normalize()  # <XB>
         unit_after: Vector = (after - apex).normalize()  # <XA>
-        unit_center: Vector = ((unit_before + unit_after) / 2.0).normalize()  # <XC>
+        unit_center: Vector = (unit_before + unit_after).normalize()  # <XC>
         if tracing:
             print(f"{tracing}{unit_before=} {unit_center=} {unit_after=}")
 
+        # Step 3: Compute the angle <BXC> using a dot product and arc cosine:
         # [Dot Product](https://mathworld.wolfram.com/DotProduct.html)
         # X . Y = |X|*|Y|*cos(angle)  => angle = acos( (X . Y) / (|X| * |Y|) )
-        # Using dot product find *center_angle* ( <CXS ):
+        # In our case |X| and |Y| are both 1, so we can skip the division.
         center_angle: float = math.acos(unit_center.dot(unit_after))
         if tracing:
             print(f"{tracing}center_angle={math.degrees(center_angle)}")
 
+        # Step 4: Compute *distance* == |XS| == d:
         # [Right Triangle Overview]
         #   (http://www.ambrsoft.com/TrigoCalc/Triangle/BasicLaw/BasicTriangle.htm)
         # We have center *center_angle* (<CXS) and the opposite side is *radius* (r).  We need
@@ -332,38 +369,48 @@ class _ModelFillet(object):
         if tracing:
             print(f"{tracing}{distance=}")
 
-        # Pythagorean theorem gives us *center_distance* (|XC|) and *center* (C):
-        center_distance: float = math.sqrt(radius * radius + distance * distance)
-        center: Vector = apex + center_distance * unit_center
+        # Step 5: Compute *start* (S) an *finish* (F):
         start: Vector = apex + distance * unit_before
-        middle: Vector = center + (-unit_center) * radius
         finish: Vector = apex + distance * unit_after
 
-        start_direction: Vector = start - center
-        finish_direction: Vector = finish - center
-        start_angle: float = math.atan2(start_direction.y, start_direction.x)
-        finish_angle: float = math.atan2(finish_direction.y, finish_direction.x)
+        # Step 6: Compute the *center_distance* (|XC|) and the *center*:
+        # Pythagorean theorem gives us *center_distance* (|XC|)
+        center_distance: float = math.sqrt(radius * radius + distance * distance)
+
+        # Step 7: Compute the *center* (C).
+        center: Vector = apex + center_distance * unit_center
+
+        # Step 8: Compute the arc *middle* (M):
+        middle: Vector = apex + (center_distance - radius) * unit_center
 
         # Find the smallest angle to take us from *start_angle* to *finish_angle*:
         # [Finding the shortest distance between two angles]
         # (https://stackoverflow.com/questions/28036652/
         #  finding-the-shortest-distance-between-two-angles)
         # The `smallesAngle` Python function was converted from degrees to radians.
-        pi: float = math.pi
-        pi2 = 2.0 * pi  # 360 degrees.
+        # start_direction: Vector = start - center
+        # finish_direction: Vector = finish - center
+        # middle: Vector = center + (-unit_center) * radius
+        # start_angle: float = math.atan2(start_direction.y, start_direction.x)
+        # finish_angle: float = math.atan2(finish_direction.y, finish_direction.x)
+
+        # pi: float = math.pi
+        # pi2 = 2.0 * pi  # 360 degrees.
         # Subtract the angles, constraining the value to [0, 2*pi)
         # Python modulo always returns non-negative (i.e. >= 0.0) values:
-        delta_angle: float = (finish_angle - start_angle) % pi2
+        # delta_angle: float = (finish_angle - start_angle) % pi2
         # If we are more than 180 we're taking the long way around.
         # Let's instead go in the shorter, negative direction.
-        if delta_angle > pi:
-            delta_angle = -(pi2 - delta_angle)
-        arc: _ModelArc = _ModelArc(apex, radius, center, start, middle, finish,
-                                   start_angle, finish_angle, delta_angle)
+        # if delta_angle > pi:
+        #    delta_angle = -(pi2 - delta_angle)
+        # arc: _ModelArc = _ModelArc(apex, radius, center, start, middle, finish,
+        #                            start_angle, finish_angle, delta_angle)
+        arc: _ModelArc = _ModelArc(apex, radius, center, start, middle, finish)
+
         # Do a sanity check:
-        finish_angle = finish_angle % pi2
-        start_plus_delta_angle: float = (start_angle + delta_angle) % pi2
-        assert abs(start_plus_delta_angle - finish_angle) < 1.0e-8, "Delta angle is wrong."
+        # finish_angle = finish_angle % pi2
+        # start_plus_delta_angle: float = (start_angle + delta_angle) % pi2
+        # assert abs(start_plus_delta_angle - finish_angle) < 1.0e-8, "Delta angle is wrong."
 
         if tracing:
             print(f"{tracing}<=_ModelFillet.compute_arc({apex})=>{arc}")
@@ -583,10 +630,12 @@ class ModelOperation(object):
         """Return ModelOperation name."""
         raise NotImplementedError(f"{type(self)}.get_name() is not implemented")
 
+    # ModelOperation.produce():
     def produce(self, model_file: ModelFile, prefix: str) -> None:
         """Return the operation sort key."""
         raise NotImplementedError(f"{type(self)}.produce() is not implemented")
 
+    # ModelOperation.produce_shape_binder():
     def produce_shape_binder(self, model_file: ModelFile,
                              part_geometries: Tuple[Part.Part2DObject, ...],
                              prefix: str) -> Part.Feature:
@@ -637,7 +686,7 @@ class ModelPad(ModelOperation):
         next_prefix: str = f"{prefix}_{self.Name}"
         part_geometries: Tuple[Part.Part2DObject, ...] = self.Geometry.produce(model_file,
                                                                                next_prefix)
-        shape_binder: Part.Featrue = self.produce_shape_binder(
+        shape_binder: Part.Feature = self.produce_shape_binder(
             model_file, part_geometries, next_prefix)
         assert isinstance(shape_binder, Part.Feature)
 
@@ -645,16 +694,16 @@ class ModelPad(ModelOperation):
         body: Part.BodyBase = model_file.Body
         pad: Part.Feature = body.newObject("PartDesign::Pad", next_prefix)
         assert isinstance(pad, Part.Feature)
+        pad.Type = "Length"  # Type in ("Length", "TwoLengths", "UpToLast", "UpToFirst", "UpToFace")
         pad.Profile = shape_binder
         pad.Length = self.Depth
-        pad.Length2 = 100.000000
-        pad.UseCustomVector = 0
-        pad.Direction = (1, 1, 1)  # This is probably bogus
-        pad.Type = 0
+        pad.Length2 = 0  # Only for Type == "TwoLengths"
+        pad.UseCustomVector = True
+        pad.Direction = model_file.Mount.Normal  # This is probably bogus
         pad.UpToFace = None
-        pad.Reversed = 1
-        pad.Midplane = 0
-        pad.Offset = 0
+        pad.Reversed = True
+        pad.Midplane = False
+        pad.Offset = 0  # Only for Type in ("UpToLast", "UpToFirst", "UpToFace")
         # Missing pad.Support = datum_plane
 
         shape_binder.Visibility = False
@@ -812,10 +861,100 @@ class ModelMount(object):
 
     # ModelMount.produce():
     def produce(self, model_file: ModelFile, prefix: str) -> None:
-        """Process the ModelMount."""
+        """Create the FreeCAD DatumPlane used for the drawing support.
+
+        Arguments:
+        * *body* (PartDesign.Body): The FreeCAD Part design Body to attach the datum plane to.
+        * *name* (Optional[str]): The datum plane name.
+          (Default: "...DatumPlaneN", where N is incremented.)
+        * Returns:
+          * (Part.Geometry) that is the datum_plane.
+
+        """
+        # This is where the math for FreeCAD DatumPlane's is discussed.
+        #
+        # Here is the notation used in this comment:
+        #
+        # Scalars: a, b, c, ...  (i.e. a lower case letter)
+        # Vectors: P, N, Pa, ... (i.e. an upper case letter with optional suffix letter)
+        # Magnitude: |N|, |P|, ... (i.e. a vector with vertical bars on each side.)
+        # Unit Normal: <N>, <P>, ... (i.e. a vector enclosed in angle brakcets < ...>).)
+        # Dot Product: N . P (i.e. two vectors separated by a period.)
+        # Vector scaling: s * V (i.e. a scalar times a vector.)
+        # Note that:  |N| * <N> = N
+        #
+        # The section on Hessian normal plane representation from:
+        # * [MathWorld Planes](https://mathworld.wolfram.com/Plane.html)
+        # is worth reading.
+        #
+        # The base coordinate system ('b' suffix) has an origin (Ob=(0,0,0)), X axis (<Xb>=(1,0,0)),
+        # Y axis (<Yb>=(0,1,0), and Z axis (<Zb>=(0,0,1).
+        #
+        # A datum plane specifies a new coordinate system ('d' suffix) that has an Origin (Od),
+        # X axis (<Xd>), Y axis (<Yd>), and Z axis (<Zd>).
+        #
+        # The math for computing these values is discussed immediately below:
+        #
+        # A plane is specified by a contact point Pd on the plane and a normal Nd to the plane.
+        # The normal can be at any point on the plane.
+        #
+        # The datum plane origin is computed as:
+        #
+        #     Od = Os + d * <Nd>
+        #
+        # where d is a signed distance computed as:
+        #
+        #     d = - (<Nd> . Pd)
+
+        # Compute *rotation* from <Zb> to <Nd>:
+        contact: Vector = self.Contact  # Pd
+        normal: Vector = self.Normal  # <Nd>
+        distance: float = normal.dot(contact)  # d = - (<Nd> . Pd)
+        origin: Vector = normal * distance  # Od = Os + d * <Nd>
+        z_axis: Vector = Vector(0, 0, 1)  # <Zb>
+        rotation: Rotation = Rotation(z_axis, normal)  # Rotation from <Zb> to <Nd>.
+
+        tracing: str = ""
+        if tracing:
+            print(f"{tracing}{contact=}")
+            print(f"{tracing}{normal=}")
+            print(f"{tracing}{origin=}")
+            print(f"{tracing}{rotation=}")
+
+        # Create, save and return the *datum_plane*:
+        body: Part.BodyBase = model_file.Body
+        datum_plane: Part.Geometry = body.newObject("PartDesign::Plane", f"{self.Name}_Datum_Plane")
+        # xy_plane: App.GeoGeometry = body.getObject("XY_Plane")
+        placement: Placement = Placement(origin, rotation)
+        if tracing:
+            print(f"{tracing}{placement=}")
+        datum_plane.AttachmentOffset = Placement()  # Null placement:  Use Placement instead
+        datum_plane.Placement = placement
+        datum_plane.MapMode = "Translate"
+        datum_plane.MapPathParameter = 0.0
+        datum_plane.MapReversed = False
+        datum_plane.Support = None
+        datum_plane.recompute()
+        model_file.DatumPlane = datum_plane
+
+        # Turn datum plane visibility off:
+        gui_document: Optional[Gui.Document] = model_file.GuiDocument
+        if gui_document:  # pragma: no unit cover
+            object_name: str = datum_plane.Name
+            gui_datum_plane: Any = gui_document.getObject(object_name)
+            if gui_datum_plane is not None and hasattr(gui_datum_plane, "Visibility"):
+                setattr(gui_datum_plane, "Visibility", False)
+
+        # Install the ModelMount (i.e. *self*) and *datum_plane* into *model_file* prior
+        # to recursively performing the *operations*:
+        model_file.Mount = self
+        model_file.DatumPlane = datum_plane
         operation: ModelOperation
         for operation in self.Operations:
             operation.produce(model_file, prefix)
+
+        # Do not leave behind a stale *datum_plane*:
+        model_file.DatumPlane = cast("Part.Geometry", None)
 
 # ModelPart:
 @dataclass(frozen=True)
@@ -892,46 +1031,66 @@ class ModelPart(object):
 
 def main() -> None:
     """Run main program."""
+    # Create *top_part*:
+    z_offset: float = 40.0
     pad_fillet_radius: float = 10.0
     pad_polygon: ModelPolygon = ModelPolygon((
-        (Vector(-40, -20, 0), pad_fillet_radius),
-        (Vector(40, -20, 0), pad_fillet_radius),
-        (Vector(40, 20, 0), pad_fillet_radius),
-        (Vector(-40, 20, 0), pad_fillet_radius),
+        (Vector(-40, -60, z_offset), pad_fillet_radius),  # SW
+        (Vector(40, -60, z_offset), pad_fillet_radius),  # SE
+        (Vector(40, 20, z_offset), pad_fillet_radius),  # NE
+        (Vector(-40, 20, z_offset), pad_fillet_radius),  # NW
     ), "Pad")
     pocket_fillet_radius: float = 2.5
     left_pocket: ModelPolygon = ModelPolygon((
-        (Vector(-30, -10, 0), pocket_fillet_radius),
-        (Vector(-10, -10, 0), pocket_fillet_radius),
-        (Vector(-10, 10, 0), pocket_fillet_radius),
-        (Vector(-30, 10, 0), pocket_fillet_radius),
+        (Vector(-30, -10, z_offset), pocket_fillet_radius),
+        (Vector(-10, -10, z_offset), pocket_fillet_radius),
+        (Vector(-10, 10, z_offset), pocket_fillet_radius),
+        (Vector(-30, 10, z_offset), pocket_fillet_radius),
     ), "LeftPocket")
     right_pocket: ModelPolygon = ModelPolygon((
-        (Vector(10, -10, 0), pocket_fillet_radius),
-        (Vector(30, -10, 0), pocket_fillet_radius),
-        (Vector(30, 10, 0), pocket_fillet_radius),
-        (Vector(10, 10, 0), pocket_fillet_radius),
+        (Vector(10, -10, z_offset), pocket_fillet_radius),
+        (Vector(30, -10, z_offset), pocket_fillet_radius),
+        (Vector(30, 10, z_offset), pocket_fillet_radius),
+        (Vector(10, 10, z_offset), pocket_fillet_radius),
     ), "RightPocket")
     _ = right_pocket
-    right_circle: ModelCircle = ModelCircle(Vector(20, 0, 0), 10)
-    center_circle: ModelCircle = ModelCircle(Vector(0, 0, 0), 10)
+    right_circle: ModelCircle = ModelCircle(Vector(20, 0, z_offset), 10)
+    center_circle: ModelCircle = ModelCircle(Vector(0, 0, z_offset), 10)
 
-    origin: Vector = Vector(0, 0, 0)
-    z_axis: Vector = Vector(0, 0, 1)
-    y_axis: Vector = Vector(0, 1, 0)
-    top_north_mount: ModelMount = ModelMount(origin, z_axis, y_axis, (
-        ModelPad(pad_polygon, 10.0, "Pad"),
+    contact: Vector = Vector(0, 0, z_offset)
+    normal: Vector = Vector(0, 0, 1)
+    north: Vector = Vector(0, 1, 0)
+    top_north_mount: ModelMount = ModelMount(contact, normal, north, (
+        ModelPad(pad_polygon, 50.0, "Pad"),
         ModelPocket(left_pocket, 10.0, "LeftPocket"),
         ModelPocket(right_circle, 8.0, "RightPocket"),
         ModelHole(center_circle, 5.0, "CenterHole"),
     ), "TopNorth")
-
-    part: ModelPart = ModelPart("hdpe", "red", (
+    top_part: ModelPart = ModelPart("hdpe", "red", (
         top_north_mount,
-    ), "MyPart")
+    ), "TopPart")
 
+    # Create *side_part*
+    side_radius: float = 3.0
+    y_offset: float = -50.0
+    side_pad: ModelPolygon = ModelPolygon((
+        (Vector(-50, y_offset, -20), side_radius),
+        (Vector(-50, y_offset, 20), side_radius),
+        (Vector(50, y_offset, 20), side_radius),
+        (Vector(50, y_offset, -20), side_radius),
+    ), "SidePad")
+    contact = Vector(0, y_offset)
+    normal = Vector(0, -1, 0)
+    side_north_mount: ModelMount = ModelMount(contact, normal, north, (
+        ModelPad(side_pad, 10, "Pad"),
+    ), "SideNorth")
+    side_part: ModelPart = ModelPart("hdpe", "green", (
+        side_north_mount,
+    ), "SidePart")
+
+    # Create the models:
     model_file: ModelFile
-    with ModelFile((part,), Path("/tmp/my_model.fcstd")) as model_file:
+    with ModelFile((top_part, side_part,), Path("/tmp/test.fcstd")) as model_file:
         model_file.produce()
 
 
