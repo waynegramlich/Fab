@@ -38,12 +38,15 @@ from dataclasses import dataclass, field
 import math
 from typing import Any, cast, List, Optional, Set, Tuple, Union
 from pathlib import Path
+from Apex import ApexColor
 
 import FreeCAD  # type: ignore
 import Draft  # type: ignore
 import Part  # type: ignore
 import FreeCAD as App  # type: ignore
 import FreeCADGui as Gui  # type: ignore
+if App.GuiUp:
+    from FreeCADGui import ViewProviderDocumentObject
 
 # from Apex import ApexBox, ApexCheck, vector_fix
 from FreeCAD import Placement, Rotation, Vector
@@ -59,8 +62,10 @@ class ModelFile(object):
     FilePath: Path
     AppDocument: App.Document = field(init=False, repr=False)
     GuiDocument: Optional["Gui.Document"] = field(init=False, default=None, repr=False)
+    Part: "ModelPart" = field(init=False, repr=False)
+    ViewObject: Optional["ViewProviderDocumentObject"] = field(init=False, default=None, repr=False)
     GeometryGroup: App.DocumentObjectGroup = field(init=False, repr=False)
-    Body: Part.BodyBase = field(init=False, repr=False)
+    Body: "Part.BodyBase" = field(init=False, repr=False)
     Mount: "ModelMount" = field(init=False, repr=False)
     DatumPlane: "Part.Geometry" = field(init=False, repr=False)
 
@@ -77,12 +82,15 @@ class ModelFile(object):
             part_names.add(part.Name)
 
         self.GeometryGroup = cast(App.DocumentObjectGroup, None)
+        self.Part = cast(ModelPart, None)
         self.Body = cast(Part.BodyBase, None)
         self.Mount = cast("ModelMount", None)
         self.DatumPlane = cast("Part.Geometry", None)
 
         stem: str = self.FilePath.stem
         self.AppDocument = App.newDocument(stem)
+        if App.GuiUp:
+            self.GuiDocument = Gui.getDocument(stem)
 
     # ModelFile.__enter__():
     def __enter__(self) -> "ModelFile":
@@ -102,7 +110,9 @@ class ModelFile(object):
         """Produce all of the ModelPart's."""
         part: "ModelPart"
         for part in self.Parts:
+            self.Part = part
             part.produce(self)
+            self.Part = cast(ModelPart, None)
 
 
 # _ModelGeometry:
@@ -168,6 +178,7 @@ class _ModelArc(_ModelGeometry):
 
         assert isinstance(part_arc, Part.Part2DObject)
         part_arc.Label = label
+        part_arc.Visibility = False
 
         # Move *part_arc* into *geometry_group*:
         geometry_group: App.DocumentObjectGroup = model_file.GeometryGroup
@@ -205,6 +216,7 @@ class _ModelCircle(_ModelGeometry):
             support=None)
         assert isinstance(part_circle, Part.Part2DObject)
         part_circle.Label = label
+        part_circle.Visibility = False
 
         # Move *part_arc* into *geometry_group*:
         geometry_group: App.DocumentObjectGroup = model_file.GeometryGroup
@@ -252,6 +264,7 @@ class _ModelLine(_ModelGeometry):
         geometry_group: App.DocumentObjectGroup = model_file.GeometryGroup
         assert isinstance(geometry_group, App.DocumentObjectGroup)
         line_segment.adjustRelativeLinks(geometry_group)
+        line_segment.Visibility = False
         geometry_group.addObject(line_segment)
 
         return line_segment
@@ -708,6 +721,35 @@ class ModelPad(ModelOperation):
 
         shape_binder.Visibility = False
 
+        part: ModelPart = model_file.Part
+        gui_document: Optional["Gui.Document"] = model_file.GuiDocument
+        if gui_document:  # pragma: no unit cover
+            gui_body: Any = gui_document.getObject(body.Name)
+            assert hasattr(gui_body, "ShapeColor"), (body.Name, gui_body.Name, dir(gui_body))
+            if gui_body:
+                if hasattr(gui_body, "Proxy"):
+                    setattr(gui_body, "Proxy", 0)  # Must not be `None`
+                if hasattr(gui_body, "DisplayMode"):
+                    setattr(gui_body, "DisplayMode", "Shaded")
+                if hasattr(gui_body, "ShapeColor"):
+                    rgb: Tuple[float, float, float] = ApexColor.svg_to_rgb(part.Color)
+                    setattr(gui_body, "ShapeColor", rgb)
+
+        if App.GuiUp:
+            visibility_set(pad, True)
+            view_object: Any = body.getLinkedObject(True).ViewObject
+            pad.ViewObject.LineColor = getattr(
+                view_object, "LineColor", pad.ViewObject.LineColor)
+            pad.ViewObject.ShapeColor = getattr(
+                view_object, "ShapeColor", pad.ViewObject.ShapeColor)
+            pad.ViewObject.PointColor = getattr(
+                view_object, "PointColor", pad.ViewObject.PointColor)
+            pad.ViewObject.Transparency = getattr(
+                view_object, "Transparency", pad.ViewObject.Transparency)
+            # The following code appears to disable edge highlighting:
+            # pad.ViewObject.DisplayMode = getattr(
+            #    view_object, "DisplayMode", pad.ViewObject.DisplayMode)
+
 # ModelPocket:
 @dataclass(frozen=True)
 class ModelPocket(ModelOperation):
@@ -924,6 +966,8 @@ class ModelMount(object):
         # Create, save and return the *datum_plane*:
         body: Part.BodyBase = model_file.Body
         datum_plane: Part.Geometry = body.newObject("PartDesign::Plane", f"{self.Name}_Datum_Plane")
+        # visibility_set(datum_plane, False)
+        datum_plane.Visibility = False
         # xy_plane: App.GeoGeometry = body.getObject("XY_Plane")
         placement: Placement = Placement(origin, rotation)
         if tracing:
@@ -962,9 +1006,9 @@ class ModelPart(object):
     """Model: Represents a single part constructed using FreeCAD Part Design paradigm.
 
     Attributes:
-    * *Name*: The model name.
-    * *Material*: The material to use.
-    * *Color*: The color to use.
+    * *Name* (str): The model name.
+    * *Material* (str): The material to use.
+    * *Color* (str): The color to use.
     * *Mounts* (Tuple[ModelMount, ...]): The various model mounts to use to construct the part.
 
     """
@@ -1018,15 +1062,26 @@ class ModelPart(object):
         app_document: App.Document = model_file.AppDocument
         geometry_group: App.DocumentObjectGroup = app_document.addObject(
             "App::DocumentObjectGroup", f"{self.Name}_Geometry")
+        geometry_group.Visibility = False
         model_file.GeometryGroup = geometry_group
 
         # Create the *body*
         body: Part.BodyBase = app_document.addObject("PartDesign::Body", self.Name)
         model_file.Body = body
+        if App.GuiUp:
+            view_object: "ViewProviderDocumentObject"  = body.getLinkedObject(True).ViewObject
+            assert isinstance(view_object, ViewProviderDocumentObject), type(view_object)
+            model_file.ViewObject = view_object
 
+        # Process each *mount*:
         mount: ModelMount
         for mount in self.Mounts:
-            mount.produce(model_file, mount.Name)
+            prefix: str = mount.Name
+            mount.produce(model_file, prefix)
+
+        # Null out these objects just to prevent accidental access when a part is not active:
+        model_file.Body = cast("Part.BodyBase", None)
+        model_file.ViewObject = cast("ViewProviderDocumentObject", None)
 
 
 # Box:
@@ -1111,7 +1166,7 @@ class Box(object):
             )
         )
         west_mount: ModelMount = ModelMount("WestNorth",
-            Vector(dx2, 0, 0), west_axis, north_axis, (
+            Vector(-dx2, 0, 0), west_axis, north_axis, (
                 ModelPad("Pad", west_polygon, dw),
             ),
         )
@@ -1125,7 +1180,7 @@ class Box(object):
             )
         )
         bottom_mount: ModelMount = ModelMount("BottomNorth",
-            Vector(0, 0, dz2), bottom_axis, north_axis, (
+            Vector(0, 0, -dz2), bottom_axis, north_axis, (
                 ModelPad("Pad", bottom_polygon, dw),
             ),
         )
@@ -1153,7 +1208,7 @@ class Box(object):
             )
         )
         south_mount: ModelMount = ModelMount("SouthBottom",
-            Vector(0, dy2, 0), south_axis, bottom_axis, (
+            Vector(0, -dy2, 0), south_axis, bottom_axis, (
                 ModelPad("Pad", south_polygon, dw),
             ),
         )
@@ -1230,6 +1285,63 @@ def main() -> None:
     # with ModelFile((top_part, side_part,), Path("/tmp/test.fcstd")) as model_file:
     with ModelFile(box_parts, Path("/tmp/test.fcstd")) as model_file:
         model_file.produce()
+
+def visibility_set(element: Any, new_value: bool = True, tracing: str = "") -> None:
+    """Set the visibility of an element.
+
+    Arguments:
+    * *element* (Any): Any FreeCAD element.<
+    * *new_value* (bool): The new visibility to use.  (Default True):
+
+    """
+    if tracing:
+        print(f"{tracing}=>visibility_set({element}, {new_value})")
+    if App.GuiUp:   # pragma: no unit cover
+        if tracing:
+            print(f"{tracing}App.GuiUp")
+        gui_document: Optional[Any] = (
+            Gui.ActiveDocument if hasattr(Gui, "ActiveDocument") else None)
+        if tracing:
+            print(f"{tracing}{gui_document=}")
+            print(f"{tracing}{dir(gui_document)=}")
+            print(f"{tracing}{hasattr(gui_document, 'Name')=})")
+        if gui_document and hasattr(gui_document, "Name"):
+            name: str = getattr(element, "Name")
+            if tracing:
+                print(f"{tracing}{name=}")
+            sub_element: Any = gui_document.getObject(name)
+            if sub_element is not None and hasattr(sub_element, "Visibility"):
+                if isinstance(getattr(sub_element, "Visibility"), bool):
+                    setattr(sub_element, "Visibility", new_value)
+    if tracing:
+        print(f"{tracing}<=visibility_set({element}, {new_value})")
+
+    if False:  # pragma: no unit cover
+        pass
+        # App.getDocument('Unnamed').getObject('Body').newObject('PartDesign::Plane', 'DatumPlane')
+        # App.getDocument('Unnamed').getObject('DatumPlane').Support = [
+        #     (App.getDocument('Unnamed').getObject('XY_Plane'), '')]
+        # App.getDocument('Unnamed').getObject('DatumPlane').MapMode = 'FlatFace'
+        # App.activeDocument().recompute()
+        # Gui.getDocument('Unnamed').setEdit(
+        #     App.getDocument('Unnamed').getObject('Body'), 0, 'DatumPlane.')
+        # Gui.Selection.clearSelection()
+
+    if False:  # pragma: no unit cover
+        # Click on [Plane face]
+        pass
+        # App.getDocument('Unnamed').getObject('DatumPlane').AttachmentOffset = (
+        #     App.Placement(App.Vector(0.0000000000, 0.0000000000, 0.0000000000),
+        #                   App.Rotation(0.0000000000, 0.0000000000, 0.0000000000)))
+        # App.getDocument('Unnamed').getObject('DatumPlane').MapReversed = False
+        # App.getDocument('Unnamed').getObject('DatumPlane').Support = [
+        #     (App.getDocument('Unnamed').getObject('XY_Plane'), '')]
+        # App.getDocument('Unnamed').getObject('DatumPlane').MapPathParameter = 0.000000
+        # App.getDocument('Unnamed').getObject('DatumPlane').MapMode = 'FlatFace'
+        # App.getDocument('Unnamed').getObject('DatumPlane').recompute()
+        # Gui.getDocument('Unnamed').resetEdit()
+        # _tv_DatumPlane.restore()
+        # del(_tv_DatumPlane)
 
 
 if __name__ == "__main__":
