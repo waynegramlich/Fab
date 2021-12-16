@@ -723,17 +723,18 @@ class ModelPad(ModelOperation):
 
         part: ModelPart = model_file.Part
         gui_document: Optional["Gui.Document"] = model_file.GuiDocument
-        if gui_document:  # pragma: no unit cover
-            gui_body: Any = gui_document.getObject(body.Name)
-            assert hasattr(gui_body, "ShapeColor"), (body.Name, gui_body.Name, dir(gui_body))
-            if gui_body:
-                if hasattr(gui_body, "Proxy"):
-                    setattr(gui_body, "Proxy", 0)  # Must not be `None`
-                if hasattr(gui_body, "DisplayMode"):
-                    setattr(gui_body, "DisplayMode", "Shaded")
-                if hasattr(gui_body, "ShapeColor"):
-                    rgb: Tuple[float, float, float] = ApexColor.svg_to_rgb(part.Color)
-                    setattr(gui_body, "ShapeColor", rgb)
+        # This code belongs on Part creation:
+        # if gui_document:  # pragma: no unit cover
+        #     gui_body: Any = gui_document.getObject(body.Name)
+        #     assert hasattr(gui_body, "ShapeColor"), (body.Name, gui_body.Name, dir(gui_body))
+        #     if gui_body:
+        #         if hasattr(gui_body, "Proxy"):
+        #             setattr(gui_body, "Proxy", 0)  # Must not be `None`
+        #         if hasattr(gui_body, "DisplayMode"):
+        #             setattr(gui_body, "DisplayMode", "Shaded")
+        #         if hasattr(gui_body, "ShapeColor"):
+        #             rgb: Tuple[float, float, float] = ApexColor.svg_to_rgb(part.Color)
+        #             setattr(gui_body, "ShapeColor", rgb)
 
         if App.GuiUp:
             visibility_set(pad, True)
@@ -982,7 +983,7 @@ class ModelMount(object):
         model_file.DatumPlane = datum_plane
 
         # Turn datum plane visibility off:
-        gui_document: Optional[Gui.Document] = model_file.GuiDocument
+        gui_document: Optional["Gui.Document"] = model_file.GuiDocument
         if gui_document:  # pragma: no unit cover
             object_name: str = datum_plane.Name
             gui_datum_plane: Any = gui_document.getObject(object_name)
@@ -1068,10 +1069,26 @@ class ModelPart(object):
         # Create the *body*
         body: Part.BodyBase = app_document.addObject("PartDesign::Body", self.Name)
         model_file.Body = body
+
+        # Copy "view" fields from *body* to *gui_body* (if we are in graphical mode):
         if App.GuiUp:
-            view_object: "ViewProviderDocumentObject"  = body.getLinkedObject(True).ViewObject
-            assert isinstance(view_object, ViewProviderDocumentObject), type(view_object)
-            model_file.ViewObject = view_object
+            gui_document: Optional["Gui.Document"] = model_file.GuiDocument
+            assert gui_document, "No GUI document"
+            gui_body: Any = gui_document.getObject(body.Name)
+            assert gui_body, "No GUI body"
+            assert hasattr(gui_body, "ShapeColor"), "Something is wrong"
+            if hasattr(gui_body, "Proxy"):
+                # This magical line seems to get a view provider object into the Proxy field:
+                setattr(gui_body, "Proxy", 0)  # Must not be `None`
+            if hasattr(gui_body, "DisplayMode"):
+                setattr(gui_body, "DisplayMode", "Shaded")
+            if hasattr(gui_body, "ShapeColor"):
+                rgb = ApexColor.svg_to_rgb(self.Color)
+                setattr(gui_body, "ShapeColor", rgb)
+
+            # view_object: "ViewProviderDocumentObject"  = body.getLinkedObject(True).ViewObject
+            # assert isinstance(view_object, ViewProviderDocumentObject), type(view_object)
+            # model_file.ViewObject = view_object
 
         # Process each *mount*:
         mount: ModelMount
