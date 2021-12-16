@@ -501,17 +501,17 @@ class ModelPolygon(ModelGeometry):
          ), "Name")
 
     Attributes:
+    * *Name* (str): The name of the polygon.  (Default: "")
     * *Corners* (Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]):
       See description below for more on corners.
-    * *Name* (str): The name of the polygon.  (Default: "")
 
     Raises:
     * ValueError for improper corner specifications.
 
     """
 
+    Name: str
     Corners: Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]
-    Name: str = ""
     _Fillets: Tuple[_ModelFillet, ...] = field(init=False, repr=False)
 
     EPSILON = 1.0e-8
@@ -609,7 +609,7 @@ class ModelPolygon(ModelGeometry):
         v2: Vector = Vector(40, -20, 0)
         v3: Vector = Vector(40, 20, 0)
         v4: Vector = Vector(-40, 20, 0)
-        polygon: ModelPolygon = ModelPolygon((v1, v2, (v3, 10), v4))
+        polygon: ModelPolygon = ModelPolygon("TestPolygon", (v1, v2, (v3, 10), v4))
 
         geometries: Tuple[_ModelGeometry, ...] = polygon.get_geometries()
         index: int
@@ -656,15 +656,15 @@ class ModelPad(ModelOperation):
     """ModelPad: A FreeCAD PartDesign Pad operation.
 
     Attributes:
+        *Name* (str): The operation name.
         *Geometry* (ModelGeometry): The ModlePolygon or ModelCircle to pad with.
         *Depth* (float): The depth to pad to in millimeters.
-        *Name* (str): The operation name.
 
     """
 
+    Name: str
     Geometry: ModelGeometry
     Depth: float
-    Name: str
 
     # ModelPad.__post_init__():
     def __post_init__(self) -> None:
@@ -714,15 +714,15 @@ class ModelPocket(ModelOperation):
     """ModelPocket: A FreeCAD PartDesign Pocket operation.
 
     Attributes:
+        *Name* (str): The operation name.
         *Geometry* (ModelGeometry): The Polygon or Circle to pocket.
         *Depth* (float): The depth
-        *Name* (str): The operation name.
 
     """
 
+    Name: str
     Geometry: ModelGeometry
     Depth: float
-    Name: str
 
     # ModelPocket__post_init__():
     def __post_init__(self) -> None:
@@ -769,15 +769,15 @@ class ModelHole(ModelOperation):
     """ModelHole: A FreeCAD PartDesign Pocket operation.
 
     Attributes:
+        *Name* (str): The operation name.
         *Circle* (ModelCircle): The Circle to drill.
         *Depth* (float): The depth
-        *Name* (str): The operation name.
 
     """
 
+    Name: str
     Circle: ModelCircle
     Depth: float
-    Name: str
 
     # ModelHole.__post_init__():
     def __post_init__(self) -> None:
@@ -826,20 +826,20 @@ class ModelMount(object):
     This class is immutable (i.e. frozen.)
 
     Attributes:
+    * *Name*: (str): The name of the ModelPlane.
     * *Contact* (Vector): A point on the plane.
     * *Normal* (Vector): A normal to the plane
     * *North* (Vector):
       A vector in the plane that specifies the north direction when mounted  in a machining vice.
     * *Operations* (Tuple[ModelOperation, ...]): The operations to perform.
-    * *Name*: (str): The name of the ModelPlane.
 
     """
 
+    Name: str
     Contact: Vector
     Normal: Vector
     North: Vector
     Operations: Tuple[ModelOperation, ...]
-    Name: str
 
     # ModelMount.__post_init__():
     def __post_init__(self) -> None:
@@ -962,17 +962,17 @@ class ModelPart(object):
     """Model: Represents a single part constructed using FreeCAD Part Design paradigm.
 
     Attributes:
+    * *Name*: The model name.
     * *Material*: The material to use.
     * *Color*: The color to use.
     * *Mounts* (Tuple[ModelMount, ...]): The various model mounts to use to construct the part.
-    * *Name*: The model name.
 
     """
 
+    Name: str
     Material: str
     Color: str
     Mounts: Tuple[ModelMount, ...]
-    Name: str
 
     # ModelPart.__post_init__():
     def __post_init__(self) -> None:
@@ -1029,30 +1029,163 @@ class ModelPart(object):
             mount.produce(model_file, mount.Name)
 
 
+# Box:
+@dataclass
+class Box(object):
+    """Model a box.
+    Builds a box given a length, width, height, material, thickness and centerpoint"
+
+    Attributes:
+    * *Length* (float): length in X direction in millimeters.
+    * *Width* (float): width in Y direction in millimeters.
+    * *Height* (float): height in Z direction in millimeters.
+    * *Thickness* (float): Material thickness in millimeters.
+    * *Material* (str): Material to use.
+    * *Name* (str): Box name.
+
+    """
+
+    Name: str
+    Length: float
+    Width: float
+    Height: float
+    Thickness: float
+    Material: str
+    
+    # Box.compute():
+    def compute(self) -> None:
+        """Compute a box."""
+        pass
+
+    def produce(self) -> Tuple[ModelPart, ...]:
+        """Produce a box."""
+        dx: float = self.Length
+        dy: float = self.Width
+        dz: float = self.Height
+        dw: float = self.Thickness
+
+        dx2: float = dx / 2
+        dy2: float = dy / 2
+        dz2: float = dz / 2
+
+        east_axis: Vector = Vector(1, 0, 0)
+        north_axis: Vector = Vector(0, 1, 0)
+        top_axis: Vector = Vector(0, 0, 1)
+        west_axis: Vector = -east_axis
+        south_axis: Vector = -north_axis
+        bottom_axis: Vector = -top_axis
+
+        top_polygon: ModelPolygon = ModelPolygon("Top",
+            (Vector(dx2, dy2, dz2),  # TNE
+             Vector(-dx2, dy2, dz2),  # TNW
+             Vector(-dx2, -dy2, dz2),  # TSW
+             Vector(dx2, -dy2, dz2),  # TSE
+            )
+        )
+        top_mount: ModelMount = ModelMount("TopNorth",
+            Vector(0, 0, dz2), top_axis, north_axis, (
+                ModelPad("Pad", top_polygon, dw),
+            ),
+        )
+        top_part: ModelPart = ModelPart("Top", "hdpe", "red", (top_mount,))
+
+        north_polygon: ModelPolygon = ModelPolygon("North",
+            (Vector(dx2, dy2, dz2 - dw),  # TNE
+             Vector(-dx2, dy2, dz2 - dw),  # TNW
+             Vector(-dx2, dy2, -dz2),  # BNW
+             Vector(dx2, dy2, -dz2),  # BNE
+            )
+        )
+        north_mount: ModelMount = ModelMount("NorthBottom",
+            Vector(0, dy2, 0), north_axis, bottom_axis, (
+                ModelPad("Pad", north_polygon, dw),
+            ),
+        )
+        north_part: ModelPart = ModelPart("North", "hdpe", "green", (north_mount,))
+
+        west_polygon: ModelPolygon = ModelPolygon("West",
+            (Vector(-dx2, dy2 - dw, dz2 - dw),  # TNW
+             Vector(-dx2, -dy2 + dw, dz2 - dw),  # TSW
+             Vector(-dx2, -dy2 + dw, -dz2 + dw),  # BSW
+             Vector(-dx2, dy2 - dw, -dz2 + dw),  # BNW
+            )
+        )
+        west_mount: ModelMount = ModelMount("WestNorth",
+            Vector(dx2, 0, 0), west_axis, north_axis, (
+                ModelPad("Pad", west_polygon, dw),
+            ),
+        )
+        west_part: ModelPart = ModelPart("West", "hdpe", "blue", (west_mount,))
+
+        bottom_polygon: ModelPolygon = ModelPolygon("Bottom",
+            (Vector(dx2, dy2 - dw, -dz2),  # BNE
+             Vector(-dx2, dy2 - dw, -dz2),  # BNW
+             Vector(-dx2, -dy2 + dw, -dz2),  # BSW
+             Vector(dx2, -dy2 + dw, -dz2),  # BSE
+            )
+        )
+        bottom_mount: ModelMount = ModelMount("BottomNorth",
+            Vector(0, 0, dz2), bottom_axis, north_axis, (
+                ModelPad("Pad", bottom_polygon, dw),
+            ),
+        )
+        bottom_part: ModelPart = ModelPart("Bottom", "hdpe", "red", (bottom_mount,))
+
+        east_polygon: ModelPolygon = ModelPolygon("East",
+            (Vector(dx2, dy2 - dw, dz2 - dw),  # TNE
+             Vector(dx2, -dy2 + dw, dz2 - dw),  # TSE
+             Vector(dx2, -dy2 + dw, -dz2 + dw),  # BSE
+             Vector(dx2, dy2 - dw, -dz2 + dw),  # BNE
+            )
+        )
+        east_mount: ModelMount = ModelMount("EastNorth",
+            Vector(dx2, 0, 0), east_axis, north_axis, (
+                ModelPad("Pad", east_polygon, dw),
+            ),
+        )
+        east_part: ModelPart = ModelPart("East", "hdpe", "blue", (east_mount,))
+
+        south_polygon: ModelPolygon = ModelPolygon("South",
+            (Vector(dx2, -dy2, dz2 - dw),  # TSE
+             Vector(-dx2, -dy2, dz2 - dw),  # TSW
+             Vector(-dx2, -dy2, -dz2),  # BSW
+             Vector(dx2, -dy2, -dz2),  # BsE
+            )
+        )
+        south_mount: ModelMount = ModelMount("SouthBottom",
+            Vector(0, dy2, 0), south_axis, bottom_axis, (
+                ModelPad("Pad", south_polygon, dw),
+            ),
+        )
+        south_part: ModelPart = ModelPart("South", "hdpe", "green", (south_mount,))
+
+        return (top_part, north_part, west_part, bottom_part, east_part, south_part)
+
+
 def main() -> None:
     """Run main program."""
     # Create *top_part*:
     z_offset: float = 40.0
     pad_fillet_radius: float = 10.0
-    pad_polygon: ModelPolygon = ModelPolygon((
+    pad_polygon: ModelPolygon = ModelPolygon("Pad", (
         (Vector(-40, -60, z_offset), pad_fillet_radius),  # SW
         (Vector(40, -60, z_offset), pad_fillet_radius),  # SE
         (Vector(40, 20, z_offset), pad_fillet_radius),  # NE
         (Vector(-40, 20, z_offset), pad_fillet_radius),  # NW
-    ), "Pad")
+    ))
     pocket_fillet_radius: float = 2.5
-    left_pocket: ModelPolygon = ModelPolygon((
+    left_pocket: ModelPolygon = ModelPolygon("LeftPocket", (
         (Vector(-30, -10, z_offset), pocket_fillet_radius),
         (Vector(-10, -10, z_offset), pocket_fillet_radius),
         (Vector(-10, 10, z_offset), pocket_fillet_radius),
         (Vector(-30, 10, z_offset), pocket_fillet_radius),
-    ), "LeftPocket")
-    right_pocket: ModelPolygon = ModelPolygon((
+    ))
+    right_pocket: ModelPolygon = ModelPolygon("RightPocket", (
         (Vector(10, -10, z_offset), pocket_fillet_radius),
         (Vector(30, -10, z_offset), pocket_fillet_radius),
         (Vector(30, 10, z_offset), pocket_fillet_radius),
         (Vector(10, 10, z_offset), pocket_fillet_radius),
-    ), "RightPocket")
+    ))
     _ = right_pocket
     right_circle: ModelCircle = ModelCircle(Vector(20, 0, z_offset), 10)
     center_circle: ModelCircle = ModelCircle(Vector(0, 0, z_offset), 10)
@@ -1060,37 +1193,42 @@ def main() -> None:
     contact: Vector = Vector(0, 0, z_offset)
     normal: Vector = Vector(0, 0, 1)
     north: Vector = Vector(0, 1, 0)
-    top_north_mount: ModelMount = ModelMount(contact, normal, north, (
-        ModelPad(pad_polygon, 50.0, "Pad"),
-        ModelPocket(left_pocket, 10.0, "LeftPocket"),
-        ModelPocket(right_circle, 8.0, "RightPocket"),
-        ModelHole(center_circle, 5.0, "CenterHole"),
-    ), "TopNorth")
-    top_part: ModelPart = ModelPart("hdpe", "red", (
+    top_north_mount: ModelMount = ModelMount("TopNorth", contact, normal, north, (
+        ModelPad("Pad", pad_polygon, 50.0),
+        ModelPocket("LeftPocket", left_pocket, 10.0),
+        ModelPocket("RightPocket", right_circle, 8.0),
+        ModelHole("CenterHole", center_circle, 5.0),
+    ))
+    top_part: ModelPart = ModelPart("TopPart", "hdpe", "red", (
         top_north_mount,
-    ), "TopPart")
+    ))
 
     # Create *side_part*
     side_radius: float = 3.0
     y_offset: float = -50.0
-    side_pad: ModelPolygon = ModelPolygon((
+    side_pad: ModelPolygon = ModelPolygon("SidePad", (
         (Vector(-50, y_offset, -20), side_radius),
         (Vector(-50, y_offset, 20), side_radius),
         (Vector(50, y_offset, 20), side_radius),
         (Vector(50, y_offset, -20), side_radius),
-    ), "SidePad")
+    ))
     contact = Vector(0, y_offset)
     normal = Vector(0, -1, 0)
-    side_north_mount: ModelMount = ModelMount(contact, normal, north, (
-        ModelPad(side_pad, 10, "Pad"),
-    ), "SideNorth")
-    side_part: ModelPart = ModelPart("hdpe", "green", (
+    side_north_mount: ModelMount = ModelMount("SideNorth", contact, normal, north, (
+        ModelPad("Pad", side_pad, 10),
+    ))
+    side_part: ModelPart = ModelPart("SidePart", "hdpe", "green", (
         side_north_mount,
-    ), "SidePart")
+    ))
+
+    box: Box = Box("MyBox", 200, 100, 100, 10, "HDPE")
+    box.compute()
+    box_parts: Tuple[ModelPart, ...] = box.produce()
 
     # Create the models:
     model_file: ModelFile
-    with ModelFile((top_part, side_part,), Path("/tmp/test.fcstd")) as model_file:
+    # with ModelFile((top_part, side_part,), Path("/tmp/test.fcstd")) as model_file:
+    with ModelFile(box_parts, Path("/tmp/test.fcstd")) as model_file:
         model_file.produce()
 
 
