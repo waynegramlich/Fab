@@ -2,155 +2,192 @@
 
 Table of Contents:
 * 1 [Introduction](#introduction):
-* 2 [Class ModelCircle](#modelcircle)
-  * 2.1 [ModelCircle.\_\_post\_init\_\_](#modelcircle---post-init--)
-  * 2.2 [ModelCircle.get\_geometries](#modelcircle-get-geometries)
-  * 2.3 [ModelCircle.produce](#modelcircle-produce)
-  * 2.4 [ModelFile.\_\_enter\_\_](#modelfile---enter--)
-  * 2.5 [ModelFile.\_\_exit\_\_](#modelfile---exit--)
-  * 2.6 [ModelFile.\_\_post\_init\_\_](#modelfile---post-init--)
-  * 2.7 [ModelFile.produce](#modelfile-produce)
-* 3 [Class ModelGeometry](#modelgeometry)
-  * 3.1 [ModelGeometry.produce](#modelgeometry-produce)
-* 4 [Class ModelHole](#modelhole)
-  * 4.1 [ModelHole.\_\_post\_init\_\_](#modelhole---post-init--)
-  * 4.2 [ModelHole.get\_name](#modelhole-get-name)
-  * 4.3 [ModelHole.produce](#modelhole-produce)
-* 5 [Class ModelMount](#modelmount)
-  * 5.1 [ModelMount.\_\_post\_init\_\_](#modelmount---post-init--)
-  * 5.2 [ModelMount.produce](#modelmount-produce)
-* 6 [Class ModelOperation](#modeloperation)
-  * 6.1 [ModelOperation.get\_name](#modeloperation-get-name)
-  * 6.2 [ModelOperation.produce](#modeloperation-produce)
-  * 6.3 [ModelOperation.produce\_shape\_binder](#modeloperation-produce-shape-binder)
-* 7 [Class ModelPad](#modelpad)
-  * 7.1 [ModelPad.\_\_post\_init\_\_](#modelpad---post-init--)
-  * 7.2 [ModelPad.get\_name](#modelpad-get-name)
-  * 7.3 [ModelPad.produce](#modelpad-produce)
-* 8 [Class ModelPart](#modelpart)
-  * 8.1 [ModelPart.\_\_post\_init\_\_](#modelpart---post-init--)
-  * 8.2 [ModelPart.produce](#modelpart-produce)
-* 9 [Class ModelPocket](#modelpocket)
-  * 9.1 [ModelPocket.get\_name](#modelpocket-get-name)
-  * 9.2 [ModelPocket.produce](#modelpocket-produce)
-* 10 [Class ModelPolygon](#modelpolygon)
-  * 10.1 [ModelPolygon.\_\_post\_init\_\_](#modelpolygon---post-init--)
-  * 10.2 [ModelPolygon.compute\_arcs](#modelpolygon-compute-arcs)
-  * 10.3 [ModelPolygon.compute\_lines](#modelpolygon-compute-lines)
-  * 10.4 [ModelPolygon.get\_geometries](#modelpolygon-get-geometries)
-  * 10.5 [ModelPolygon.produce](#modelpolygon-produce)
-  * 10.6 [ModelPolygon.unit\_test](#modelpolygon-unit-test)
-* 11 [Class \_ModelArc](#-modelarc)
-  * 11.1 [\_ModelArc.produce](#-modelarc-produce)
-  * 11.2 [\_ModelCircle.produce](#-modelcircle-produce)
-* 12 [Class \_ModelFillet](#-modelfillet)
-  * 12.1 [\_ModelFillet.\_\_post\_init\_\_](#-modelfillet---post-init--)
-  * 12.2 [\_ModelFillet.compute\_arc](#-modelfillet-compute-arc)
-  * 12.3 [\_ModelFillet.double\_link](#-modelfillet-double-link)
-* 13 [Class \_ModelGeometry](#-modelgeometry)
-* 14 [Class \_ModelLine](#-modelline)
-  * 14.1 [\_ModelLine.produce](#-modelline-produce)
-  * 14.2 [ModelPocket\_\_post\_init\_\_](#modelpocket--post-init--)
+* 2 [Class Box](#box)
+  * 2.1 [Box.compute](#box-compute)
+* 3 [Class ModelCircle](#modelcircle)
+  * 3.1 [ModelCircle.\_\_post\_init\_\_](#modelcircle---post-init--)
+  * 3.2 [ModelCircle.get\_geometries](#modelcircle-get-geometries)
+  * 3.3 [ModelCircle.produce](#modelcircle-produce)
+  * 3.4 [ModelFile.\_\_enter\_\_](#modelfile---enter--)
+  * 3.5 [ModelFile.\_\_exit\_\_](#modelfile---exit--)
+  * 3.6 [ModelFile.\_\_post\_init\_\_](#modelfile---post-init--)
+  * 3.7 [ModelFile.\_unit\_tests](#modelfile--unit-tests)
+  * 3.8 [ModelFile.produce](#modelfile-produce)
+* 4 [Class ModelGeometry](#modelgeometry)
+  * 4.1 [ModelGeometry.produce](#modelgeometry-produce)
+* 5 [Class ModelHole](#modelhole)
+  * 5.1 [ModelHole.\_\_post\_init\_\_](#modelhole---post-init--)
+  * 5.2 [ModelHole.get\_name](#modelhole-get-name)
+  * 5.3 [ModelHole.produce](#modelhole-produce)
+* 6 [Class ModelMount](#modelmount)
+  * 6.1 [ModelMount.\_\_post\_init\_\_](#modelmount---post-init--)
+  * 6.2 [ModelMount.produce](#modelmount-produce)
+* 7 [Class ModelOperation](#modeloperation)
+  * 7.1 [ModelOperation.get\_name](#modeloperation-get-name)
+  * 7.2 [ModelOperation.produce](#modeloperation-produce)
+  * 7.3 [ModelOperation.produce\_shape\_binder](#modeloperation-produce-shape-binder)
+* 8 [Class ModelPad](#modelpad)
+  * 8.1 [ModelPad.\_\_post\_init\_\_](#modelpad---post-init--)
+  * 8.2 [ModelPad.get\_name](#modelpad-get-name)
+  * 8.3 [ModelPad.produce](#modelpad-produce)
+* 9 [Class ModelPart](#modelpart)
+  * 9.1 [ModelPart.\_\_post\_init\_\_](#modelpart---post-init--)
+  * 9.2 [ModelPart.produce](#modelpart-produce)
+* 10 [Class ModelPocket](#modelpocket)
+  * 10.1 [ModelPocket.get\_name](#modelpocket-get-name)
+  * 10.2 [ModelPocket.produce](#modelpocket-produce)
+* 11 [Class ModelPolygon](#modelpolygon)
+  * 11.1 [ModelPolygon.\_\_post\_init\_\_](#modelpolygon---post-init--)
+  * 11.2 [ModelPolygon.\_unit\_tests](#modelpolygon--unit-tests)
+  * 11.3 [ModelPolygon.compute\_arcs](#modelpolygon-compute-arcs)
+  * 11.4 [ModelPolygon.compute\_lines](#modelpolygon-compute-lines)
+  * 11.5 [ModelPolygon.get\_geometries](#modelpolygon-get-geometries)
+  * 11.6 [ModelPolygon.produce](#modelpolygon-produce)
+* 12 [Class \_ModelArc](#-modelarc)
+  * 12.1 [\_ModelArc.\_make\_arc\_3points](#-modelarc--make-arc-3points)
+  * 12.2 [\_ModelArc.produce](#-modelarc-produce)
+  * 12.3 [\_ModelCircle.produce](#-modelcircle-produce)
+* 13 [Class \_ModelFillet](#-modelfillet)
+  * 13.1 [\_ModelFillet.\_\_post\_init\_\_](#-modelfillet---post-init--)
+  * 13.2 [\_ModelFillet.compute\_arc](#-modelfillet-compute-arc)
+  * 13.3 [\_ModelFillet.double\_link](#-modelfillet-double-link)
+* 14 [Class \_ModelGeometry](#-modelgeometry)
+* 15 [Class \_ModelLine](#-modelline)
+  * 15.1 [\_ModelLine.produce](#-modelline-produce)
+  * 15.2 [ModelPocket\_\_post\_init\_\_](#modelpocket--post-init--)
 
 ## 1 <a name="introduction"></a>Introduction
 
 
-## 2 Class ModelCircle <a name="modelcircle"></a>
+## 2 Class Box <a name="box"></a>
+
+class Box(object):
+
+Model a box.
+
+Builds a box given a length, width, height, material, thickness and center point"
+
+Attributes:
+* *Name* (str): Box name.
+* *Length* (float): length in X direction in millimeters.
+* *Width* (float): width in Y direction in millimeters.
+* *Height* (float): height in Z direction in millimeters.
+* *Thickness* (float): Material thickness in millimeters.
+* *Material* (str): Material to use.
+* *Center* Vector: Center of Box.
+
+
+### 2.1 Box.compute <a name="box-compute"></a>
+
+def *compute*(self) -> None:
+
+Compute a box.
+
+## 3 Class ModelCircle <a name="modelcircle"></a>
 
 class ModelCircle(ModelGeometry):
 
 ModelCircle: A circle with a center and a radius.
+
+This is actually a sphere of at a specified location and diameter.  It gets cut into
+circle later on.
 
 Attributes:
 * *Center* (Vector): The circle center.
 * *Diameter* (float): The diameter in radians.
 
 
-### 2.1 ModelCircle.\_\_post\_init\_\_ <a name="modelcircle---post-init--"></a>
+### 3.1 ModelCircle.\_\_post\_init\_\_ <a name="modelcircle---post-init--"></a>
 
 def \_\_post\_init\_\_(self) -> None:
 
 Make private copy of Center.
 
-### 2.2 ModelCircle.get\_geometries <a name="modelcircle-get-geometries"></a>
+### 3.2 ModelCircle.get\_geometries <a name="modelcircle-get-geometries"></a>
 
 def *get\_geometries*(self) -> Tuple[\_ModelGeometry, ...]:
 
 Return the ModelPolygon lines and arcs.
 
-### 2.3 ModelCircle.produce <a name="modelcircle-produce"></a>
+### 3.3 ModelCircle.produce <a name="modelcircle-produce"></a>
 
 def *produce*(self, *model\_file*:  ModelFile, *prefix*:  *str*) -> Tuple[Part.Part2DObject, ...]:
 
 Produce the FreeCAD objects needed for ModelPolygon.
 
-### 2.4 ModelFile.\_\_enter\_\_ <a name="modelfile---enter--"></a>
+### 3.4 ModelFile.\_\_enter\_\_ <a name="modelfile---enter--"></a>
 
 def \_\_enter\_\_(self) -> "ModelFile":
 
 Open the ModelFile.
 
-### 2.5 ModelFile.\_\_exit\_\_ <a name="modelfile---exit--"></a>
+### 3.5 ModelFile.\_\_exit\_\_ <a name="modelfile---exit--"></a>
 
 def \_\_exit\_\_(self, *exec\_type*, *exec\_value*, *exec\_table*) -> None:
 
 Close the ModelFile.
 
-### 2.6 ModelFile.\_\_post\_init\_\_ <a name="modelfile---post-init--"></a>
+### 3.6 ModelFile.\_\_post\_init\_\_ <a name="modelfile---post-init--"></a>
 
 def \_\_post\_init\_\_(self) -> None:
 
 Initialize the AppDocument.
 
-### 2.7 ModelFile.produce <a name="modelfile-produce"></a>
+### 3.7 ModelFile.\_unit\_tests <a name="modelfile--unit-tests"></a>
+
+def \_unit\_tests() -> None:
+
+Run ModelFile unit tests.
+
+### 3.8 ModelFile.produce <a name="modelfile-produce"></a>
 
 def *produce*(self) -> None:
 
 Produce all of the ModelPart's.
 
-## 3 Class ModelGeometry <a name="modelgeometry"></a>
+## 4 Class ModelGeometry <a name="modelgeometry"></a>
 
 class ModelGeometry(object):
 
 ModelGeometry: The base class for ModelPolygon and ModelCircle.
 
-### 3.1 ModelGeometry.produce <a name="modelgeometry-produce"></a>
+### 4.1 ModelGeometry.produce <a name="modelgeometry-produce"></a>
 
 def *produce*(self, *model\_context*:  ModelFile, *prefix*:  *str*) -> Tuple[Part.Part2DObject, ...]:
 
 Produce the necessary FreeCAD objects for the ModelGeometry.
 
-## 4 Class ModelHole <a name="modelhole"></a>
+## 5 Class ModelHole <a name="modelhole"></a>
 
 class ModelHole(ModelOperation):
 
 ModelHole: A FreeCAD PartDesign Pocket operation.
 
 Attributes:
+    *Name* (str): The operation name.
     *Circle* (ModelCircle): The Circle to drill.
     *Depth* (float): The depth
-    *Name* (str): The operation name.
 
 
-### 4.1 ModelHole.\_\_post\_init\_\_ <a name="modelhole---post-init--"></a>
+### 5.1 ModelHole.\_\_post\_init\_\_ <a name="modelhole---post-init--"></a>
 
 def \_\_post\_init\_\_(self) -> None:
 
 Verify ModelPad values.
 
-### 4.2 ModelHole.get\_name <a name="modelhole-get-name"></a>
+### 5.2 ModelHole.get\_name <a name="modelhole-get-name"></a>
 
 def *get\_name*(self) -> *str*:
 
 Return ModelHole name.
 
-### 4.3 ModelHole.produce <a name="modelhole-produce"></a>
+### 5.3 ModelHole.produce <a name="modelhole-produce"></a>
 
 def *produce*(self, *model\_file*:  ModelFile, *prefix*:  *str*) -> None:
 
 Produce the Pad.
 
-## 5 Class ModelMount <a name="modelmount"></a>
+## 6 Class ModelMount <a name="modelmount"></a>
 
 class ModelMount(object):
 
@@ -161,21 +198,21 @@ to which the 2D ModelGeometry's are mapped onto prior to performing each operati
 This class is immutable (i.e. frozen.)
 
 Attributes:
+* *Name*: (str): The name of the ModelPlane.
 * *Contact* (Vector): A point on the plane.
 * *Normal* (Vector): A normal to the plane
 * *North* (Vector):
   A vector in the plane that specifies the north direction when mounted  in a machining vice.
 * *Operations* (Tuple[ModelOperation, ...]): The operations to perform.
-* *Name*: (str): The name of the ModelPlane.
 
 
-### 5.1 ModelMount.\_\_post\_init\_\_ <a name="modelmount---post-init--"></a>
+### 6.1 ModelMount.\_\_post\_init\_\_ <a name="modelmount---post-init--"></a>
 
 def \_\_post\_init\_\_(self) -> None:
 
 Verify that ModelMount arguments are valid.
 
-### 5.2 ModelMount.produce <a name="modelmount-produce"></a>
+### 6.2 ModelMount.produce <a name="modelmount-produce"></a>
 
 def *produce*(self, *model\_file*:  ModelFile, *prefix*:  *str*) -> None:
 
@@ -189,7 +226,7 @@ Arguments:
   * (Part.Geometry) that is the datum\_plane.
 
 
-## 6 Class ModelOperation <a name="modeloperation"></a>
+## 7 Class ModelOperation <a name="modeloperation"></a>
 
 class ModelOperation(object):
 
@@ -197,104 +234,104 @@ ModelOperation: An base class for operations -- ModelPad, ModelPocket, ModelHole
 
 All model operations are immutable (i.e. frozen.)
 
-### 6.1 ModelOperation.get\_name <a name="modeloperation-get-name"></a>
+### 7.1 ModelOperation.get\_name <a name="modeloperation-get-name"></a>
 
 def *get\_name*(self) -> *str*:
 
 Return ModelOperation name.
 
-### 6.2 ModelOperation.produce <a name="modeloperation-produce"></a>
+### 7.2 ModelOperation.produce <a name="modeloperation-produce"></a>
 
 def *produce*(self, *model\_file*:  ModelFile, *prefix*:  *str*) -> None:
 
 Return the operation sort key.
 
-### 6.3 ModelOperation.produce\_shape\_binder <a name="modeloperation-produce-shape-binder"></a>
+### 7.3 ModelOperation.produce\_shape\_binder <a name="modeloperation-produce-shape-binder"></a>
 
 def *produce\_shape\_binder*(self, *model\_file*:  ModelFile, *part\_geometries*:  Tuple[Part.Part2DObject, ...], *prefix*:  *str*) -> Part.Feature:
 
 Produce the shape binder needed for the pad, pocket, hole, ... operations.
 
-## 7 Class ModelPad <a name="modelpad"></a>
+## 8 Class ModelPad <a name="modelpad"></a>
 
 class ModelPad(ModelOperation):
 
 ModelPad: A FreeCAD PartDesign Pad operation.
 
 Attributes:
+    *Name* (str): The operation name.
     *Geometry* (ModelGeometry): The ModlePolygon or ModelCircle to pad with.
     *Depth* (float): The depth to pad to in millimeters.
-    *Name* (str): The operation name.
 
 
-### 7.1 ModelPad.\_\_post\_init\_\_ <a name="modelpad---post-init--"></a>
+### 8.1 ModelPad.\_\_post\_init\_\_ <a name="modelpad---post-init--"></a>
 
 def \_\_post\_init\_\_(self) -> None:
 
 Verify ModelPad values.
 
-### 7.2 ModelPad.get\_name <a name="modelpad-get-name"></a>
+### 8.2 ModelPad.get\_name <a name="modelpad-get-name"></a>
 
 def *get\_name*(self) -> *str*:
 
 Return ModelPad name.
 
-### 7.3 ModelPad.produce <a name="modelpad-produce"></a>
+### 8.3 ModelPad.produce <a name="modelpad-produce"></a>
 
 def *produce*(self, *model\_file*:  ModelFile, *prefix*:  *str*) -> None:
 
 Produce the Pad.
 
-## 8 Class ModelPart <a name="modelpart"></a>
+## 9 Class ModelPart <a name="modelpart"></a>
 
 class ModelPart(object):
 
 Model: Represents a single part constructed using FreeCAD Part Design paradigm.
 
 Attributes:
-* *Material*: The material to use.
-* *Color*: The color to use.
+* *Name* (str): The model name.
+* *Material* (str): The material to use.
+* *Color* (str): The color to use.
 * *Mounts* (Tuple[ModelMount, ...]): The various model mounts to use to construct the part.
-* *Name*: The model name.
 
 
-### 8.1 ModelPart.\_\_post\_init\_\_ <a name="modelpart---post-init--"></a>
+### 9.1 ModelPart.\_\_post\_init\_\_ <a name="modelpart---post-init--"></a>
 
 def \_\_post\_init\_\_(self) -> None:
 
 Verify ModelPart arguments.
 
-### 8.2 ModelPart.produce <a name="modelpart-produce"></a>
+### 9.2 ModelPart.produce <a name="modelpart-produce"></a>
 
 def *produce*(self, *model\_file*:  ModelFile) -> None:
 
 Produce the ModelPart.
 
-## 9 Class ModelPocket <a name="modelpocket"></a>
+## 10 Class ModelPocket <a name="modelpocket"></a>
 
 class ModelPocket(ModelOperation):
 
 ModelPocket: A FreeCAD PartDesign Pocket operation.
 
 Attributes:
+    *Name* (str): The operation name.
     *Geometry* (ModelGeometry): The Polygon or Circle to pocket.
     *Depth* (float): The depth
-    *Name* (str): The operation name.
 
 
-### 9.1 ModelPocket.get\_name <a name="modelpocket-get-name"></a>
+### 10.1 ModelPocket.get\_name <a name="modelpocket-get-name"></a>
 
 def *get\_name*(self) -> *str*:
 
 Return ModelPocket name.
 
-### 9.2 ModelPocket.produce <a name="modelpocket-produce"></a>
+### 10.2 ModelPocket.produce <a name="modelpocket-produce"></a>
 
 def *produce*(self, *model\_file*:  ModelFile, *prefix*:  *str*) -> None:
 
 Produce the Pad.
 
-## 10 Class ModelPolygon <a name="modelpolygon"></a>
+## 11 Class ModelPolygon <a name="modelpolygon"></a>
 
 class ModelPolygon(ModelGeometry):
 
@@ -317,51 +354,51 @@ Example:
      ), "Name")
 
 Attributes:
+* *Name* (str): The name of the polygon.  (Default: "")
 * *Corners* (Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]):
   See description below for more on corners.
-* *Name* (str): The name of the polygon.  (Default: "")
 
 Raises:
 * ValueError for improper corner specifications.
 
 
-### 10.1 ModelPolygon.\_\_post\_init\_\_ <a name="modelpolygon---post-init--"></a>
+### 11.1 ModelPolygon.\_\_post\_init\_\_ <a name="modelpolygon---post-init--"></a>
 
 def \_\_post\_init\_\_(self) -> None:
 
 Verify that the corners passed in are correct.
 
-### 10.2 ModelPolygon.compute\_arcs <a name="modelpolygon-compute-arcs"></a>
+### 11.2 ModelPolygon.\_unit\_tests <a name="modelpolygon--unit-tests"></a>
+
+def \_unit\_tests() -> None:
+
+Do some unit tests.
+
+### 11.3 ModelPolygon.compute\_arcs <a name="modelpolygon-compute-arcs"></a>
 
 def *compute\_arcs*(self) -> None:
 
 Create any Arc's needed for non-zero radius \_ModelFillet's.
 
-### 10.3 ModelPolygon.compute\_lines <a name="modelpolygon-compute-lines"></a>
+### 11.4 ModelPolygon.compute\_lines <a name="modelpolygon-compute-lines"></a>
 
 def *compute\_lines*(self) -> None:
 
 Create Create any Line's need for \_ModelFillet's.
 
-### 10.4 ModelPolygon.get\_geometries <a name="modelpolygon-get-geometries"></a>
+### 11.5 ModelPolygon.get\_geometries <a name="modelpolygon-get-geometries"></a>
 
 def *get\_geometries*(self) -> Tuple[\_ModelGeometry, ...]:
 
 Return the ModelPolygon lines and arcs.
 
-### 10.5 ModelPolygon.produce <a name="modelpolygon-produce"></a>
+### 11.6 ModelPolygon.produce <a name="modelpolygon-produce"></a>
 
 def *produce*(self, *model\_file*:  ModelFile, *prefix*:  *str*) -> Tuple[Part.Part2DObject, ...]:
 
 Produce the FreeCAD objects needed for ModelPolygon.
 
-### 10.6 ModelPolygon.unit\_test <a name="modelpolygon-unit-test"></a>
-
-def *unit\_test*() -> None:
-
-Do some unit tests.
-
-## 11 Class \_ModelArc <a name="-modelarc"></a>
+## 12 Class \_ModelArc <a name="-modelarc"></a>
 
 class \_ModelArc(\_ModelGeometry):
 
@@ -382,19 +419,25 @@ Attributes:
   The value to add to *StartAngle* to get *FinishAngle* (module 2 radians):
 
 
-### 11.1 \_ModelArc.produce <a name="-modelarc-produce"></a>
+### 12.1 \_ModelArc.\_make\_arc\_3points <a name="-modelarc--make-arc-3points"></a>
+
+def *make\_arc\_3points*(points:  Tuple[Vector, ...], *placement*=None, *face*=False, *support*=None, *map\_mode*="Deactivated", *primitive*=False) -> Any:
+
+Make arc using a copy of Draft.make\_arc\_3points without print statements.
+
+### 12.2 \_ModelArc.produce <a name="-modelarc-produce"></a>
 
 def *produce*(self, *model\_file*:  ModelFile, *prefix*:  *str*, *index*:  *int*) -> Part.Part2DObject:
 
 Return line segment after moving it into Geometry group.
 
-### 11.2 \_ModelCircle.produce <a name="-modelcircle-produce"></a>
+### 12.3 \_ModelCircle.produce <a name="-modelcircle-produce"></a>
 
 def *produce*(self, *model\_file*:  ModelFile, *prefix*:  *str*, *index*:  *int*) -> Part.Part2DObject:
 
 Return line segment after moving it into Geometry group.
 
-## 12 Class \_ModelFillet <a name="-modelfillet"></a>
+## 13 Class \_ModelFillet <a name="-modelfillet"></a>
 
 class \_ModelFillet(object):
 
@@ -409,25 +452,25 @@ Attributes:
 * *Line* (Optional[\_ModelLine]): The line that connects to the previous \_ModelFillet
 
 
-### 12.1 \_ModelFillet.\_\_post\_init\_\_ <a name="-modelfillet---post-init--"></a>
+### 13.1 \_ModelFillet.\_\_post\_init\_\_ <a name="-modelfillet---post-init--"></a>
 
 def \_\_post\_init\_\_(self) -> None:
 
 Initialize \_ModelFillet.
 
-### 12.2 \_ModelFillet.compute\_arc <a name="-modelfillet-compute-arc"></a>
+### 13.2 \_ModelFillet.compute\_arc <a name="-modelfillet-compute-arc"></a>
 
 def *compute\_arc*(self, *tracing*:  *str* = "") -> \_ModelArc:
 
 Return the arc associated with a \_ModelFillet with non-zero radius.
 
-### 12.3 \_ModelFillet.double\_link <a name="-modelfillet-double-link"></a>
+### 13.3 \_ModelFillet.double\_link <a name="-modelfillet-double-link"></a>
 
 def *double\_link*(self) -> None:
 
 Double link the \_ModelFillet's together.
 
-## 13 Class \_ModelGeometry <a name="-modelgeometry"></a>
+## 14 Class \_ModelGeometry <a name="-modelgeometry"></a>
 
 class \_ModelGeometry(object):
 
@@ -435,7 +478,7 @@ class \_ModelGeometry(object):
 
 All \_ModelGeometry classes are immutable (i.e. frozen.)
 
-## 14 Class \_ModelLine <a name="-modelline"></a>
+## 15 Class \_ModelLine <a name="-modelline"></a>
 
 class \_ModelLine(\_ModelGeometry):
 
@@ -446,13 +489,13 @@ Attributes:
 * *Finish (Vector): The line segment finish point.
 
 
-### 14.1 \_ModelLine.produce <a name="-modelline-produce"></a>
+### 15.1 \_ModelLine.produce <a name="-modelline-produce"></a>
 
 def *produce*(self, *model\_file*:  ModelFile, *prefix*:  *str*, *index*:  *int*) -> Part.Part2DObject:
 
 Return line segment after moving it into Geometry group.
 
-### 14.2 ModelPocket\_\_post\_init\_\_ <a name="modelpocket--post-init--"></a>
+### 15.2 ModelPocket\_\_post\_init\_\_ <a name="modelpocket--post-init--"></a>
 
 def \_\_post\_init\_\_(self) -> None:
 

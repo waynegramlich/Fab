@@ -45,8 +45,6 @@ import Draft  # type: ignore
 import Part  # type: ignore
 import FreeCAD as App  # type: ignore
 import FreeCADGui as Gui  # type: ignore
-if App.GuiUp:
-    from FreeCADGui import ViewProviderDocumentObject
 
 # from Apex import ApexBox, ApexCheck, vector_fix
 from FreeCAD import Placement, Rotation, Vector
@@ -58,12 +56,12 @@ from FreeCAD import Placement, Rotation, Vector
 class ModelFile(object):
     """ModelFile: Represents a FreeCAD document file."""
 
-    Parts: Tuple["ModelPart", ...]
     FilePath: Path
+    Parts: Tuple["ModelPart", ...]
     AppDocument: App.Document = field(init=False, repr=False)
     GuiDocument: Optional["Gui.Document"] = field(init=False, default=None, repr=False)
     Part: "ModelPart" = field(init=False, repr=False)
-    ViewObject: Optional["ViewProviderDocumentObject"] = field(init=False, default=None, repr=False)
+    ViewObject: Optional[Any] = field(init=False, default=None, repr=False)
     GeometryGroup: App.DocumentObjectGroup = field(init=False, repr=False)
     Body: "Part.BodyBase" = field(init=False, repr=False)
     Mount: "ModelMount" = field(init=False, repr=False)
@@ -74,6 +72,8 @@ class ModelFile(object):
         """Initialize the AppDocument."""
         part: ModelPart
         part_names: Set[str] = set()
+        if len(self.Parts) == 0:
+            raise ValueError("At least one ModelPart needs to be specified")
         for part in self.Parts:
             if not isinstance(part, ModelPart):
                 raise ValueError(f"{part} is not a ModelPart")
@@ -90,7 +90,7 @@ class ModelFile(object):
         stem: str = self.FilePath.stem
         self.AppDocument = App.newDocument(stem)
         if App.GuiUp:
-            self.GuiDocument = Gui.getDocument(stem)
+            self.GuiDocument = Gui.getDocument(stem)  # pragma: no unit cover
 
     # ModelFile.__enter__():
     def __enter__(self) -> "ModelFile":
@@ -113,6 +113,54 @@ class ModelFile(object):
             self.Part = part
             part.produce(self)
             self.Part = cast(ModelPart, None)
+
+    # ModelFile._unit_tests():
+    @staticmethod
+    def _unit_tests() -> None:
+        """Run ModelFile unit tests."""
+        # Empty parts error:
+        fcstd_path: Path = Path("/tmp/part_file_test.fcstd")
+        try:
+            ModelFile(fcstd_path, ())
+            assert False
+        except ValueError as value_error:
+            assert str(value_error) == "At least one ModelPart needs to be specified"
+
+        # Bogus parts error:
+        try:
+            ModelFile(fcstd_path, (cast(ModelPart, None),))
+            assert False
+        except ValueError as value_error:
+            assert str(value_error) == "None is not a ModelPart"
+
+        # Duplicate part name error:
+        contact: Vector = Vector()
+        z_axis: Vector = Vector(0, 0, 1)
+        y_axis: Vector = Vector(0, 1, 0)
+        origin: Vector = Vector()
+        circle1: ModelCircle = ModelCircle(origin, 10.0)
+        depth1: float = 10.0
+        pad1: ModelPad = ModelPad("Cylinder1", circle1, depth1)
+        operations1: Tuple[ModelOperation, ...] = (pad1,)
+        mount1: ModelMount = ModelMount("Mount1", contact, z_axis, y_axis, operations1)
+        part1: ModelPart = ModelPart("Part1", "hdpe", "orange", (mount1,))
+
+        # Duplicate Part Names:
+        try:
+            ModelFile(fcstd_path, (part1, part1))
+            assert False
+        except ValueError as value_error:
+            assert str(value_error) == "There are two or more Part's with the same name 'Part1'"
+
+        # Test Open/Produce/Close
+        _ = fcstd_path.unlink if fcstd_path.exists() else None
+        model_file: ModelFile
+        with ModelFile(fcstd_path, (part1,)) as model_file:
+            assert isinstance(model_file, ModelFile)
+            model_file.produce()
+        assert fcstd_path.exists(), f"{fcstd_path} file not generated."
+        fcstd_path.unlink()
+        assert not fcstd_path.exists()
 
 
 # _ModelGeometry:
@@ -159,6 +207,105 @@ class _ModelArc(_ModelGeometry):
     # FinishAngle: float
     # DeltaAngle: float
 
+    # _ModelArc._make_arc_3points():
+    @staticmethod
+    def make_arc_3points(points: Tuple[Vector, ...], placement=None, face=False,
+                         support=None, map_mode="Deactivated",
+                         primitive=False) -> Any:
+        """Make arc using a copy of Draft.make_arc_3points without print statements."""
+        # _name = "make_arc_3points"
+        # utils.print_header(_name, "Arc by 3 points")
+
+        # try:
+        #     utils.type_check([(points, (list, tuple))], name=_name)
+        # except TypeError:
+        #     _err(translate("draft","Points: ") + "{}".format(points))
+        #     _err(translate("draft","Wrong input: must be list or tuple of three points exactly."))
+        #     return None
+
+        # if len(points) != 3:
+        #     _err(translate("draft","Points: ") + "{}".format(points))
+        #     _err(translate("draft","Wrong input: must be list or tuple of three points exactly."))
+        #     return None
+
+        # if placement is not None:
+        #     try:
+        #         utils.type_check([(placement, App.Placement)], name=_name)
+        #     except TypeError:
+        #         _err(translate("draft","Placement: ") + "{}".format(placement))
+        #         _err(translate("draft","Wrong input: incorrect type of placement."))
+        #         return None
+
+        p1, p2, p3 = points
+
+        # _msg("p1: {}".format(p1))
+        # _msg("p2: {}".format(p2))
+        # _msg("p3: {}".format(p3))
+
+        # try:
+        #     utils.type_check([(p1, App.Vector),
+        #                       (p2, App.Vector),
+        #                       (p3, App.Vector)], name=_name)
+        # except TypeError:
+        #     _err(translate("draft","Wrong input: incorrect type of points."))
+        #     return None
+
+        try:
+            _edge = Part.Arc(p1, p2, p3)
+        except Part.OCCError as error:
+            # _err(translate("draft","Cannot generate shape: ") + "{}".format(error))
+            _ = error
+            assert False
+            return None
+
+        edge = _edge.toShape()
+        radius = edge.Curve.Radius
+        center = edge.Curve.Center
+
+        # _msg(translate("draft","Radius:") + " " + "{}".format(radius))
+        # _msg(translate("draft","Center:") + " " + "{}".format(center))
+
+        if primitive:
+            # _msg(translate("draft","Create primitive object"))
+            obj = App.ActiveDocument.addObject("Part::Feature", "Arc")
+            obj.Shape = edge
+            return obj
+
+        rot = App.Rotation(edge.Curve.XAxis,
+                           edge.Curve.YAxis,
+                           edge.Curve.Axis, "ZXY")
+        _placement = App.Placement(center, rot)
+        start = edge.FirstParameter
+        end = math.degrees(edge.LastParameter)
+        obj = Draft.makeCircle(radius,
+                               placement=_placement, face=face,
+                               startangle=start, endangle=end,
+                               support=support)
+
+        # This codes seems to require the draft toolbar to be presnt to do anything.
+        # if App.GuiUp:
+        #     gui_utils.autogroup(obj)
+
+        original_placement = obj.Placement
+
+        if placement and not support:
+            obj.Placement.Base = placement.Base
+            # _msg(translate("draft","Final placement:") + " " + "{}".format(obj.Placement))
+        if face:
+            # _msg(translate("draft","Face: True"))
+            pass
+        if support:
+            # _msg(translate("draft","Support:") + " " + "{}".format(support))
+            # _msg(translate("draft","Map mode:") + " " + "{}".format(map_mode))
+            obj.MapMode = map_mode
+            if placement:
+                obj.AttachmentOffset.Base = placement.Base
+                obj.AttachmentOffset.Rotation = original_placement.Rotation
+                # msg(translate("draft","Attachment offset: {}".format(obj.AttachmentOffset)))
+            # _msg(translate("draft","Final placement:") + " " + "{}".format(obj.Placement))
+
+        return obj
+
     # _ModelArc.produce():
     def produce(self, model_file: ModelFile, prefix: str, index: int) -> Part.Part2DObject:
         """Return line segment after moving it into Geometry group."""
@@ -174,7 +321,9 @@ class _ModelArc(_ModelGeometry):
         #     startangle=math.degrees(self.StartAngle),
         #     endangle=math.degrees(self.StartAngle + self.DeltaAngle),
         #     support=None)
-        part_arc: Part.Part2DObject = Draft.make_arc_3points([self.Start, self.Middle, self.Finish])
+        part_arc: Part.Part2DObject = _ModelArc.make_arc_3points(
+            (self.Start, self.Middle, self.Finish))
+        # part_arc: Part.Part2DObject=Draft.make_arc_3points([self.Start, self.Middle, self.Finish])
 
         assert isinstance(part_arc, Part.Part2DObject)
         part_arc.Label = label
@@ -455,6 +604,9 @@ class ModelGeometry(object):
 class ModelCircle(ModelGeometry):
     """ModelCircle: A circle with a center and a radius.
 
+    This is actually a sphere of at a specified location and diameter.  It gets cut into
+    circle later on.
+
     Attributes:
     * *Center* (Vector): The circle center.
     * *Diameter* (float): The diameter in radians.
@@ -490,6 +642,22 @@ class ModelCircle(ModelGeometry):
     def get_geometries(self) -> Tuple[_ModelGeometry, ...]:
         """Return the ModelPolygon lines and arcs."""
         return (_ModelCircle(self.Center, self.Diameter),)
+
+    @staticmethod
+    # ModelCircle._unit_tests():
+    def _unit_tests():
+        """Run ModelCircle unit tests."""
+        center: Vector = Vector(1, 2, 3)
+        try:
+            ModelCircle(center, 0.0)
+            assert False
+        except ValueError as value_error:
+            assert str(value_error) == "Diameter (0.0) must be positive.", value_error
+        try:
+            ModelCircle(center, -1.0)
+            assert False
+        except ValueError as value_error:
+            assert str(value_error) == "Diameter (-1.0) must be positive.", value_error
 
 
 # ModelPolygon:
@@ -535,12 +703,13 @@ class ModelPolygon(ModelGeometry):
         corner: Union[Vector, Tuple[Vector, Union[int, float]]]
         fillets: List[_ModelFillet] = []
         fillet: _ModelFillet
+        # TODO: Check for polygon points that are colinear.
+        # TODO: Check for polygon corners with overlapping radii.
         copy: Vector = Vector()  # Vector's are mutable, add *copy* to make a private Vector copy.
         index: int
         for index, corner in enumerate(self.Corners):
             if isinstance(corner, Vector):
                 fillet = _ModelFillet(corner + copy, 0.0)
-                pass
             elif isinstance(corner, tuple):
                 if len(corner) != 2:
                     raise ValueError(f"Polygon Corner[{index}]: {corner} tuple length is not 2")
@@ -614,21 +783,22 @@ class ModelPolygon(ModelGeometry):
             part_geometries.append(part_geometry)
         return tuple(part_geometries)
 
-    # ModelPolygon.unit_test():
+    # ModelPolygon._unit_tests():
     @staticmethod
-    def unit_test() -> None:
+    def _unit_tests() -> None:
         """Do some unit tests."""
         v1: Vector = Vector(-40, -20, 0)
         v2: Vector = Vector(40, -20, 0)
         v3: Vector = Vector(40, 20, 0)
         v4: Vector = Vector(-40, 20, 0)
         polygon: ModelPolygon = ModelPolygon("TestPolygon", (v1, v2, (v3, 10), v4))
+        _ = polygon
 
-        geometries: Tuple[_ModelGeometry, ...] = polygon.get_geometries()
-        index: int
-        geometry: _ModelGeometry
-        for index, geometry in enumerate(geometries):
-            print(f"Geometry[{index}]: {geometry}")
+        # geometries: Tuple[_ModelGeometry, ...] = polygon.get_geometries()
+        # index: int
+        # geometry: _ModelGeometry
+        # for index, geometry in enumerate(geometries):
+        #     print(f"Geometry[{index}]: {geometry}")
 
 # ModelOperation:
 @dataclass(frozen=True)
@@ -721,22 +891,8 @@ class ModelPad(ModelOperation):
 
         shape_binder.Visibility = False
 
-        part: ModelPart = model_file.Part
-        gui_document: Optional["Gui.Document"] = model_file.GuiDocument
-        # This code belongs on Part creation:
-        # if gui_document:  # pragma: no unit cover
-        #     gui_body: Any = gui_document.getObject(body.Name)
-        #     assert hasattr(gui_body, "ShapeColor"), (body.Name, gui_body.Name, dir(gui_body))
-        #     if gui_body:
-        #         if hasattr(gui_body, "Proxy"):
-        #             setattr(gui_body, "Proxy", 0)  # Must not be `None`
-        #         if hasattr(gui_body, "DisplayMode"):
-        #             setattr(gui_body, "DisplayMode", "Shaded")
-        #         if hasattr(gui_body, "ShapeColor"):
-        #             rgb: Tuple[float, float, float] = ApexColor.svg_to_rgb(part.Color)
-        #             setattr(gui_body, "ShapeColor", rgb)
-
-        if App.GuiUp:
+        # part: ModelPart = model_file.Part
+        if App.GuiUp:  # pragma: no unit cover
             visibility_set(pad, True)
             view_object: Any = body.getLinkedObject(True).ViewObject
             pad.ViewObject.LineColor = getattr(
@@ -788,7 +944,7 @@ class ModelPocket(ModelOperation):
         part_geometries: Tuple[Part.Part2DObject, ...] = self.Geometry.produce(model_file,
                                                                                next_prefix)
         # Create the *shape_binder*:
-        shape_binder: Part.Featrue = self.produce_shape_binder(
+        shape_binder: Part.Feature = self.produce_shape_binder(
             model_file, part_geometries, next_prefix)
         assert isinstance(shape_binder, Part.Feature)
 
@@ -805,6 +961,21 @@ class ModelPocket(ModelOperation):
         pocket.Midplane = 0
         pocket.Offset = 0
 
+        # Update the view information:
+        if App.GuiUp:  # pragma: no unit cover
+            visibility_set(pocket, True)
+            view_object: Any = body.getLinkedObject(True).ViewObject
+            pocket.ViewObject.LineColor = getattr(
+                view_object, "LineColor", pocket.ViewObject.LineColor)
+            pocket.ViewObject.ShapeColor = getattr(
+                view_object, "ShapeColor", pocket.ViewObject.ShapeColor)
+            pocket.ViewObject.PointColor = getattr(
+                view_object, "PointColor", pocket.ViewObject.PointColor)
+            pocket.ViewObject.Transparency = getattr(
+                view_object, "Transparency", pocket.ViewObject.Transparency)
+            # The following code appears to disable edge highlighting:
+            # pocket.ViewObject.DisplayMode = getattr(
+            #    view_object, "DisplayMode", pad.ViewObject.DisplayMode)
 
 # ModelHole:
 @dataclass(frozen=True)
@@ -858,6 +1029,21 @@ class ModelHole(ModelOperation):
         hole.Reversed = 0
         hole.Midplane = 0
 
+        # Update the view information:
+        if App.GuiUp:  # pragma: no unit cover
+            visibility_set(hole, True)
+            view_object: Any = body.getLinkedObject(True).ViewObject
+            hole.ViewObject.LineColor = getattr(
+                view_object, "LineColor", hole.ViewObject.LineColor)
+            hole.ViewObject.ShapeColor = getattr(
+                view_object, "ShapeColor", hole.ViewObject.ShapeColor)
+            hole.ViewObject.PointColor = getattr(
+                view_object, "PointColor", hole.ViewObject.PointColor)
+            hole.ViewObject.Transparency = getattr(
+                view_object, "Transparency", hole.ViewObject.Transparency)
+            # The following code appears to disable edge highlighting:
+            # hole.ViewObject.DisplayMode = getattr(
+            #    view_object, "DisplayMode", pad.ViewObject.DisplayMode)
 
 # ModelMount:
 @dataclass(frozen=True)
@@ -1071,7 +1257,7 @@ class ModelPart(object):
         model_file.Body = body
 
         # Copy "view" fields from *body* to *gui_body* (if we are in graphical mode):
-        if App.GuiUp:
+        if App.GuiUp:  # pragma: no cover
             gui_document: Optional["Gui.Document"] = model_file.GuiDocument
             assert gui_document, "No GUI document"
             gui_body: Any = gui_document.getObject(body.Name)
@@ -1098,22 +1284,24 @@ class ModelPart(object):
 
         # Null out these objects just to prevent accidental access when a part is not active:
         model_file.Body = cast("Part.BodyBase", None)
-        model_file.ViewObject = cast("ViewProviderDocumentObject", None)
+        model_file.ViewObject = None
 
 
 # Box:
 @dataclass
 class Box(object):
     """Model a box.
-    Builds a box given a length, width, height, material, thickness and centerpoint"
+
+    Builds a box given a length, width, height, material, thickness and center point"
 
     Attributes:
+    * *Name* (str): Box name.
     * *Length* (float): length in X direction in millimeters.
     * *Width* (float): width in Y direction in millimeters.
     * *Height* (float): height in Z direction in millimeters.
     * *Thickness* (float): Material thickness in millimeters.
     * *Material* (str): Material to use.
-    * *Name* (str): Box name.
+    * *Center* Vector: Center of Box.
 
     """
 
@@ -1123,7 +1311,8 @@ class Box(object):
     Height: float
     Thickness: float
     Material: str
-    
+    Center: Vector
+
     # Box.compute():
     def compute(self) -> None:
         """Compute a box."""
@@ -1140,6 +1329,8 @@ class Box(object):
         dy2: float = dy / 2
         dz2: float = dz / 2
 
+        corner_radius: float = 3.0
+
         east_axis: Vector = Vector(1, 0, 0)
         north_axis: Vector = Vector(0, 1, 0)
         top_axis: Vector = Vector(0, 0, 1)
@@ -1147,88 +1338,90 @@ class Box(object):
         south_axis: Vector = -north_axis
         bottom_axis: Vector = -top_axis
 
-        top_polygon: ModelPolygon = ModelPolygon("Top",
-            (Vector(dx2, dy2, dz2),  # TNE
-             Vector(-dx2, dy2, dz2),  # TNW
-             Vector(-dx2, -dy2, dz2),  # TSW
-             Vector(dx2, -dy2, dz2),  # TSE
-            )
+        Corners = Tuple[Tuple[Vector, float], ...]
+        center: Vector = self.Center
+        top_corners: Corners = (
+            (center + Vector(dx2, dy2, dz2), corner_radius),  # TNE
+            (center + Vector(-dx2, dy2, dz2), corner_radius),  # TNW
+            (center + Vector(-dx2, -dy2, dz2), corner_radius),  # TSW
+            (center + Vector(dx2, -dy2, dz2), corner_radius),  # TSE
         )
-        top_mount: ModelMount = ModelMount("TopNorth",
-            Vector(0, 0, dz2), top_axis, north_axis, (
-                ModelPad("Pad", top_polygon, dw),
-            ),
+        top_polygon: ModelPolygon = ModelPolygon("Top", top_corners)
+        top_operations: Tuple[ModelOperation, ...] = (
+            ModelPad("Pad", top_polygon, dw),
         )
+        top_mount: ModelMount = ModelMount(
+            "TopNorth", Vector(0, 0, dz2), top_axis, north_axis, top_operations)
         top_part: ModelPart = ModelPart("Top", "hdpe", "red", (top_mount,))
 
-        north_polygon: ModelPolygon = ModelPolygon("North",
-            (Vector(dx2, dy2, dz2 - dw),  # TNE
-             Vector(-dx2, dy2, dz2 - dw),  # TNW
-             Vector(-dx2, dy2, -dz2),  # BNW
-             Vector(dx2, dy2, -dz2),  # BNE
-            )
+        north_corners: Corners = (
+            (center + Vector(dx2, dy2, dz2 - dw), corner_radius),  # TNE
+            (center + Vector(-dx2, dy2, dz2 - dw), corner_radius),  # TNW
+            (center + Vector(-dx2, dy2, -dz2), corner_radius),  # BNW
+            (center + Vector(dx2, dy2, -dz2), corner_radius),  # BNE
         )
-        north_mount: ModelMount = ModelMount("NorthBottom",
-            Vector(0, dy2, 0), north_axis, bottom_axis, (
-                ModelPad("Pad", north_polygon, dw),
-            ),
+        north_polygon: ModelPolygon = ModelPolygon("North", north_corners)
+        north_operations: Tuple[ModelOperation, ...] = (
+            ModelPad("Pad", north_polygon, dw),
         )
+        north_mount: ModelMount = ModelMount(
+            "NorthBottom", Vector(0, dy2, 0), north_axis, bottom_axis, north_operations)
         north_part: ModelPart = ModelPart("North", "hdpe", "green", (north_mount,))
 
-        west_polygon: ModelPolygon = ModelPolygon("West",
-            (Vector(-dx2, dy2 - dw, dz2 - dw),  # TNW
-             Vector(-dx2, -dy2 + dw, dz2 - dw),  # TSW
-             Vector(-dx2, -dy2 + dw, -dz2 + dw),  # BSW
-             Vector(-dx2, dy2 - dw, -dz2 + dw),  # BNW
-            )
+        west_corners: Corners = (
+            (center + Vector(-dx2, dy2 - dw, dz2 - dw), corner_radius),  # TNW
+            (center + Vector(-dx2, -dy2 + dw, dz2 - dw), corner_radius),  # TSW
+            (center + Vector(-dx2, -dy2 + dw, -dz2 + dw), corner_radius),  # BSW
+            (center + Vector(-dx2, dy2 - dw, -dz2 + dw), corner_radius),  # BNW
         )
-        west_mount: ModelMount = ModelMount("WestNorth",
-            Vector(-dx2, 0, 0), west_axis, north_axis, (
-                ModelPad("Pad", west_polygon, dw),
-            ),
+        west_polygon: ModelPolygon = ModelPolygon("West", west_corners)
+        west_operations: Tuple[ModelOperation, ...] = (
+            ModelPad("Pad", west_polygon, dw),
         )
+        west_mount: ModelMount = ModelMount(
+            "WestNorth", Vector(-dx2, 0, 0), west_axis, north_axis, west_operations)
         west_part: ModelPart = ModelPart("West", "hdpe", "blue", (west_mount,))
 
-        bottom_polygon: ModelPolygon = ModelPolygon("Bottom",
-            (Vector(dx2, dy2 - dw, -dz2),  # BNE
-             Vector(-dx2, dy2 - dw, -dz2),  # BNW
-             Vector(-dx2, -dy2 + dw, -dz2),  # BSW
-             Vector(dx2, -dy2 + dw, -dz2),  # BSE
-            )
+        bottom_corners: Corners = (
+            (center + Vector(dx2, dy2 - dw, -dz2), corner_radius),  # BNE
+            (center + Vector(-dx2, dy2 - dw, -dz2), corner_radius),  # BNW
+            (center + Vector(-dx2, -dy2 + dw, -dz2), corner_radius),  # BSW
+            (center + Vector(dx2, -dy2 + dw, -dz2), corner_radius),  # BSE
         )
-        bottom_mount: ModelMount = ModelMount("BottomNorth",
-            Vector(0, 0, -dz2), bottom_axis, north_axis, (
-                ModelPad("Pad", bottom_polygon, dw),
-            ),
+        bottom_polygon: ModelPolygon = ModelPolygon("Bottom", bottom_corners)
+        bottom_operations: Tuple[ModelOperation, ...] = (
+            ModelPad("Pad", bottom_polygon, dw),
         )
+        bottom_mount: ModelMount = ModelMount(
+            "BottomNorth", Vector(0, 0, -dz2), bottom_axis, north_axis, bottom_operations)
         bottom_part: ModelPart = ModelPart("Bottom", "hdpe", "red", (bottom_mount,))
 
-        east_polygon: ModelPolygon = ModelPolygon("East",
-            (Vector(dx2, dy2 - dw, dz2 - dw),  # TNE
-             Vector(dx2, -dy2 + dw, dz2 - dw),  # TSE
-             Vector(dx2, -dy2 + dw, -dz2 + dw),  # BSE
-             Vector(dx2, dy2 - dw, -dz2 + dw),  # BNE
-            )
+        east_corners: Corners = (
+            (center + Vector(dx2, dy2 - dw, dz2 - dw), corner_radius),  # TNE
+            (center + Vector(dx2, -dy2 + dw, dz2 - dw), corner_radius),  # TSE
+            (center + Vector(dx2, -dy2 + dw, -dz2 + dw), corner_radius),  # BSE
+            (center + Vector(dx2, dy2 - dw, -dz2 + dw), corner_radius),  # BNE
         )
-        east_mount: ModelMount = ModelMount("EastNorth",
-            Vector(dx2, 0, 0), east_axis, north_axis, (
-                ModelPad("Pad", east_polygon, dw),
-            ),
+        east_polygon: ModelPolygon = ModelPolygon("East", east_corners)
+        east_operations: Tuple[ModelOperation, ...] = (
+            ModelPad("Pad", east_polygon, dw),
         )
+        east_mount: ModelMount = ModelMount(
+            "EastNorth", Vector(dx2, 0, 0), east_axis, north_axis, east_operations)
         east_part: ModelPart = ModelPart("East", "hdpe", "blue", (east_mount,))
 
-        south_polygon: ModelPolygon = ModelPolygon("South",
-            (Vector(dx2, -dy2, dz2 - dw),  # TSE
-             Vector(-dx2, -dy2, dz2 - dw),  # TSW
-             Vector(-dx2, -dy2, -dz2),  # BSW
-             Vector(dx2, -dy2, -dz2),  # BsE
-            )
+        south_corners: Corners = (
+            (center + Vector(dx2, -dy2, dz2 - dw), corner_radius),  # TSE
+            (center + Vector(-dx2, -dy2, dz2 - dw), corner_radius),  # TSW
+            (center + Vector(-dx2, -dy2, -dz2), corner_radius),  # BSW
+            (center + Vector(dx2, -dy2, -dz2), corner_radius),  # BSE
         )
-        south_mount: ModelMount = ModelMount("SouthBottom",
-            Vector(0, -dy2, 0), south_axis, bottom_axis, (
-                ModelPad("Pad", south_polygon, dw),
-            ),
+        south_polygon: ModelPolygon = ModelPolygon("South", south_corners)
+        south_operations: Tuple[ModelOperation, ...] = (
+            ModelPad("Pad", south_polygon, dw),
         )
+        south_mount: ModelMount = ModelMount(
+            "SouthBottom", Vector(0, -dy2, 0), south_axis, bottom_axis, south_operations)
         south_part: ModelPart = ModelPart("South", "hdpe", "green", (south_mount,))
 
         return (top_part, north_part, west_part, bottom_part, east_part, south_part)
@@ -1271,9 +1464,10 @@ def main() -> None:
         ModelPocket("RightPocket", right_circle, 8.0),
         ModelHole("CenterHole", center_circle, 5.0),
     ))
-    top_part: ModelPart = ModelPart("TopPart", "hdpe", "red", (
+    top_part: ModelPart = ModelPart("TopPart", "hdpe", "purple", (
         top_north_mount,
     ))
+    top_parts: Tuple[ModelPart, ...] = (top_part,)
 
     # Create *side_part*
     side_radius: float = 3.0
@@ -1292,16 +1486,21 @@ def main() -> None:
     side_part: ModelPart = ModelPart("SidePart", "hdpe", "green", (
         side_north_mount,
     ))
+    _ = side_part
 
-    box: Box = Box("MyBox", 200, 100, 100, 10, "HDPE")
+    center: Vector = Vector(0.0, -250, 0.0)
+    box: Box = Box("MyBox", 200, 100, 100, 10, "HDPE", center)
     box.compute()
     box_parts: Tuple[ModelPart, ...] = box.produce()
+
+    all_parts: Tuple[ModelPart, ...] = top_parts + box_parts
 
     # Create the models:
     model_file: ModelFile
     # with ModelFile((top_part, side_part,), Path("/tmp/test.fcstd")) as model_file:
-    with ModelFile(box_parts, Path("/tmp/test.fcstd")) as model_file:
+    with ModelFile(Path("/tmp/test.fcstd"), all_parts) as model_file:
         model_file.produce()
+
 
 def visibility_set(element: Any, new_value: bool = True, tracing: str = "") -> None:
     """Set the visibility of an element.
@@ -1363,4 +1562,7 @@ def visibility_set(element: Any, new_value: bool = True, tracing: str = "") -> N
 
 if __name__ == "__main__":
     # ModelPolygon.unit_test()
+    ModelCircle._unit_tests()
+    # ModelFile._unit_tests()  # needs work
+    ModelPolygon._unit_tests()
     main()
