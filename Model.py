@@ -832,6 +832,23 @@ class ModelOperation(object):
         shape_binder.Visibility = False
         return shape_binder
 
+    # ModelOperation._viewer_upate():
+    def _viewer_update(self, body: Part.BodyBase, part_feature: Part.Feature) -> None:
+        """Update the view Body view provider."""
+        if App.GuiUp:  # pragma: no unit cover
+            visibility_set(part_feature, True)
+            view_object: Any = body.getLinkedObject(True).ViewObject
+            part_feature.ViewObject.LineColor = getattr(
+                view_object, "LineColor", part_feature.ViewObject.LineColor)
+            part_feature.ViewObject.ShapeColor = getattr(
+                view_object, "ShapeColor", part_feature.ViewObject.ShapeColor)
+            part_feature.ViewObject.PointColor = getattr(
+                view_object, "PointColor", part_feature.ViewObject.PointColor)
+            part_feature.ViewObject.Transparency = getattr(
+                view_object, "Transparency", part_feature.ViewObject.Transparency)
+            # The following code appears to disable edge highlighting:
+            # part_feature.ViewObject.DisplayMode = getattr(
+            #    view_object, "DisplayMode", part_feature.ViewObject.DisplayMode)
 
 # ModelPad:
 @dataclass(frozen=True)
@@ -865,16 +882,18 @@ class ModelPad(ModelOperation):
     # ModelPad.produce():
     def produce(self, model_file: ModelFile, prefix: str) -> None:
         """Produce the Pad."""
-        # Extract the *part_geometries*:
+        # Extract the *part_geometries* and create the assocated *shape_binder*:
         next_prefix: str = f"{prefix}_{self.Name}"
         part_geometries: Tuple[Part.Part2DObject, ...] = self.Geometry.produce(model_file,
                                                                                next_prefix)
         shape_binder: Part.Feature = self.produce_shape_binder(
             model_file, part_geometries, next_prefix)
         assert isinstance(shape_binder, Part.Feature)
+        shape_binder.Visibility = False
 
-        # Perform The Pad
+        # Perform The Pad operation:
         body: Part.BodyBase = model_file.Body
+        assert isinstance(body, Part.BodyBase)
         pad: Part.Feature = body.newObject("PartDesign::Pad", next_prefix)
         assert isinstance(pad, Part.Feature)
         pad.Type = "Length"  # Type in ("Length", "TwoLengths", "UpToLast", "UpToFirst", "UpToFace")
@@ -887,25 +906,10 @@ class ModelPad(ModelOperation):
         pad.Reversed = True
         pad.Midplane = False
         pad.Offset = 0  # Only for Type in ("UpToLast", "UpToFirst", "UpToFace")
-        # Missing pad.Support = datum_plane
 
-        shape_binder.Visibility = False
+        # For the GUI, update the view provider:
+        self._viewer_update(body, pad)
 
-        # part: ModelPart = model_file.Part
-        if App.GuiUp:  # pragma: no unit cover
-            visibility_set(pad, True)
-            view_object: Any = body.getLinkedObject(True).ViewObject
-            pad.ViewObject.LineColor = getattr(
-                view_object, "LineColor", pad.ViewObject.LineColor)
-            pad.ViewObject.ShapeColor = getattr(
-                view_object, "ShapeColor", pad.ViewObject.ShapeColor)
-            pad.ViewObject.PointColor = getattr(
-                view_object, "PointColor", pad.ViewObject.PointColor)
-            pad.ViewObject.Transparency = getattr(
-                view_object, "Transparency", pad.ViewObject.Transparency)
-            # The following code appears to disable edge highlighting:
-            # pad.ViewObject.DisplayMode = getattr(
-            #    view_object, "DisplayMode", pad.ViewObject.DisplayMode)
 
 # ModelPocket:
 @dataclass(frozen=True)
@@ -948,8 +952,9 @@ class ModelPocket(ModelOperation):
             model_file, part_geometries, next_prefix)
         assert isinstance(shape_binder, Part.Feature)
 
-        # Create the *pocket*:
+        # Create the *pocket* into *body*:
         body: Part.BodyBase = model_file.Body
+        assert isinstance(body, Part.BodyBase)
         pocket: Part.Feature = body.newObject("PartDesign::Pocket", f"{next_prefix}_Pocket")
         assert isinstance(pocket, Part.Feature)
         pocket.Profile = shape_binder
@@ -961,21 +966,9 @@ class ModelPocket(ModelOperation):
         pocket.Midplane = 0
         pocket.Offset = 0
 
-        # Update the view information:
-        if App.GuiUp:  # pragma: no unit cover
-            visibility_set(pocket, True)
-            view_object: Any = body.getLinkedObject(True).ViewObject
-            pocket.ViewObject.LineColor = getattr(
-                view_object, "LineColor", pocket.ViewObject.LineColor)
-            pocket.ViewObject.ShapeColor = getattr(
-                view_object, "ShapeColor", pocket.ViewObject.ShapeColor)
-            pocket.ViewObject.PointColor = getattr(
-                view_object, "PointColor", pocket.ViewObject.PointColor)
-            pocket.ViewObject.Transparency = getattr(
-                view_object, "Transparency", pocket.ViewObject.Transparency)
-            # The following code appears to disable edge highlighting:
-            # pocket.ViewObject.DisplayMode = getattr(
-            #    view_object, "DisplayMode", pad.ViewObject.DisplayMode)
+        # For the GUI, update the view provider:
+        self._viewer_update(body, pocket)
+
 
 # ModelHole:
 @dataclass(frozen=True)
@@ -1008,7 +1001,7 @@ class ModelHole(ModelOperation):
 
     # ModelHole.produce():
     def produce(self, model_file: ModelFile, prefix: str) -> None:
-        """Produce the Pad."""
+        """Produce the Hole."""
         # Extract the *part_geometries*:
         next_prefix: str = f"{prefix}_{self.Name}"
         part_geometries: Tuple[Part.Part2DObject, ...] = self.Circle.produce(model_file,
@@ -1018,7 +1011,7 @@ class ModelHole(ModelOperation):
             model_file, part_geometries, next_prefix)
         assert isinstance(shape_binder, Part.Feature)
 
-        # Create the *pocket*:
+        # Create the *pocket* and upstate the view provider for GUI mode:
         body: Part.BodyBase = model_file.Body
         hole: Part.Feature = body.newObject("PartDesign::Hole", f"{next_prefix}_Hole")
         assert isinstance(hole, Part.Feature)
@@ -1029,21 +1022,9 @@ class ModelHole(ModelOperation):
         hole.Reversed = 0
         hole.Midplane = 0
 
-        # Update the view information:
-        if App.GuiUp:  # pragma: no unit cover
-            visibility_set(hole, True)
-            view_object: Any = body.getLinkedObject(True).ViewObject
-            hole.ViewObject.LineColor = getattr(
-                view_object, "LineColor", hole.ViewObject.LineColor)
-            hole.ViewObject.ShapeColor = getattr(
-                view_object, "ShapeColor", hole.ViewObject.ShapeColor)
-            hole.ViewObject.PointColor = getattr(
-                view_object, "PointColor", hole.ViewObject.PointColor)
-            hole.ViewObject.Transparency = getattr(
-                view_object, "Transparency", hole.ViewObject.Transparency)
-            # The following code appears to disable edge highlighting:
-            # hole.ViewObject.DisplayMode = getattr(
-            #    view_object, "DisplayMode", pad.ViewObject.DisplayMode)
+        # For the GUI, update the view provider:
+        self._viewer_update(body, hole)
+
 
 # ModelMount:
 @dataclass(frozen=True)

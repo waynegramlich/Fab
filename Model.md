@@ -23,9 +23,10 @@ Table of Contents:
   * 6.1 [ModelMount.\_\_post\_init\_\_](#modelmount---post-init--)
   * 6.2 [ModelMount.produce](#modelmount-produce)
 * 7 [Class ModelOperation](#modeloperation)
-  * 7.1 [ModelOperation.get\_name](#modeloperation-get-name)
-  * 7.2 [ModelOperation.produce](#modeloperation-produce)
-  * 7.3 [ModelOperation.produce\_shape\_binder](#modeloperation-produce-shape-binder)
+  * 7.1 [ModelOperation.\_viewer\_upate](#modeloperation--viewer-upate)
+  * 7.2 [ModelOperation.get\_name](#modeloperation-get-name)
+  * 7.3 [ModelOperation.produce](#modeloperation-produce)
+  * 7.4 [ModelOperation.produce\_shape\_binder](#modeloperation-produce-shape-binder)
 * 8 [Class ModelPad](#modelpad)
   * 8.1 [ModelPad.\_\_post\_init\_\_](#modelpad---post-init--)
   * 8.2 [ModelPad.get\_name](#modelpad-get-name)
@@ -185,7 +186,7 @@ Return ModelHole name.
 
 def *produce*(self, *model\_file*:  ModelFile, *prefix*:  *str*) -> None:
 
-Produce the Pad.
+Produce the Hole.
 
 ## 6 Class ModelMount <a name="modelmount"></a>
 
@@ -234,19 +235,25 @@ ModelOperation: An base class for operations -- ModelPad, ModelPocket, ModelHole
 
 All model operations are immutable (i.e. frozen.)
 
-### 7.1 ModelOperation.get\_name <a name="modeloperation-get-name"></a>
+### 7.1 ModelOperation.\_viewer\_upate <a name="modeloperation--viewer-upate"></a>
+
+def \_viewer\_update(self, *body*:  Part.BodyBase, *part\_feature*:  Part.Feature) -> None:
+
+Update the view Body view provider.
+
+### 7.2 ModelOperation.get\_name <a name="modeloperation-get-name"></a>
 
 def *get\_name*(self) -> *str*:
 
 Return ModelOperation name.
 
-### 7.2 ModelOperation.produce <a name="modeloperation-produce"></a>
+### 7.3 ModelOperation.produce <a name="modeloperation-produce"></a>
 
 def *produce*(self, *model\_file*:  ModelFile, *prefix*:  *str*) -> None:
 
 Return the operation sort key.
 
-### 7.3 ModelOperation.produce\_shape\_binder <a name="modeloperation-produce-shape-binder"></a>
+### 7.4 ModelOperation.produce\_shape\_binder <a name="modeloperation-produce-shape-binder"></a>
 
 def *produce\_shape\_binder*(self, *model\_file*:  ModelFile, *part\_geometries*:  Tuple[Part.Part2DObject, ...], *prefix*:  *str*) -> Part.Feature:
 
