@@ -354,10 +354,17 @@ class _ModelCircle(_ModelGeometry):
     # _ModelCircle.produce():
     def produce(self, model_file: ModelFile, prefix: str, index: int) -> Part.Part2DObject:
         """Return line segment after moving it into Geometry group."""
+        # Extract mount plane *contact* and *normal* from *model_file* to use for 2D projection:
+        mount: ModelMount = model_file.Mount
+        contact: Vector = mount.Contact
+        normal: Vector = mount.Normal
+        center_on_plane: Vector = self.Center.projectToPlane(contact, normal)
+
         label: str = f"{prefix}_Circle_{index:03d}"
-        placement: Placement = Placement()
-        placement.Rotation.Q = (0.0, 0.0, 0.0, 1.0)
-        placement.Base = self.Center
+        # placement: Placement = Placement()
+        # placement.Rotation.Q = (0.0, 0.0, 0.0, 1.0)
+        # placement.Base = center2d
+        placement: Placement = Placement(center_on_plane, normal, 0.0)  # Base, Axis, Angle
 
         # Create and label *part_arc*:
         part_circle: Part.Part2DObject = Draft.makeCircle(
@@ -518,6 +525,7 @@ class _ModelFillet(object):
         # [Dot Product](https://mathworld.wolfram.com/DotProduct.html)
         # X . Y = |X|*|Y|*cos(angle)  => angle = acos( (X . Y) / (|X| * |Y|) )
         # In our case |X| and |Y| are both 1, so we can skip the division.
+        # TODO: Use  Vector.getAngle() instead.
         center_angle: float = math.acos(unit_center.dot(unit_after))
         if tracing:
             print(f"{tracing}center_angle={math.degrees(center_angle)}")
@@ -577,6 +585,17 @@ class _ModelFillet(object):
         if tracing:
             print(f"{tracing}<=_ModelFillet.compute_arc({apex})=>{arc}")
         return arc
+
+    # _ModelFillet.plane_2d_project:
+    def plane_2d_project(self, contact: Vector, normal: Vector) -> None:
+        """Project the Apex onto a plane.
+
+        Arguments:
+        * *contact* (Vector): A point on the projection plane.
+        * *normal* (Vector): A normal to the projection plane.
+
+        """
+        self.Apex = self.Apex.projectToPlane(contact, normal)
 
     # _ModelFillet.get_geometries():
     def get_geometries(self) -> Tuple[_ModelGeometry, ...]:
@@ -726,13 +745,21 @@ class ModelPolygon(ModelGeometry):
         # (Why __setattr__?)[https://stackoverflow.com/questions/53756788]
         object.__setattr__(self, "_Fillets", tuple(fillets))
 
-        # Double link the fillets and compute the arcs/lines:
-        self.double_link()
-        self.compute_arcs()
-        self.compute_lines()
+        # Double link the fillets and look for errors:
+        self._double_link()
+        radius_error: str = self._radii_check()
+        if radius_error:
+            raise ValueError(radius_error)
+        colinear_error: str = self._colinear_check()
+        if colinear_error:
+            raise ValueError(colinear_error)
+        # These checks are repeated after 2D projection.
 
-    # _ModelFillet.double_link():
-    def double_link(self) -> None:
+        # self._compute_arcs()
+        # self._compute_lines()
+
+    # ModelPolygon._double_link():
+    def _double_link(self) -> None:
         """Double link the _ModelFillet's together."""
         fillets: Tuple[_ModelFillet, ...] = self._Fillets
         size: int = len(fillets)
@@ -742,16 +769,47 @@ class ModelPolygon(ModelGeometry):
             fillet.Before = fillets[(index - 1) % size]
             fillet.After = fillets[(index + 1) % size]
 
-    # ModelPolygon.compute_arcs():
-    def compute_arcs(self) -> None:
+    # ModelPolygon._radii_check():
+    def _radii_check(self) -> str:
+        """Check for radius overlap errors."""
+        at_fillet: _ModelFillet
+        for at_fillet in self._Fillets:
+            before_fillet: _ModelFillet = at_fillet.Before
+            actual_distance: float = (before_fillet.Apex - at_fillet.Apex).Length
+            radii_distance: float = before_fillet.Radius + at_fillet.Radius
+            if radii_distance > actual_distance:
+                return (f"Requested radii distance {radii_distance}mm "
+                        f"(={before_fillet.Radius}+{at_fillet.Radius}) < {actual_distance}mm "
+                        "between {at_fillet.Before} and {after_fillet.After}")
+        return ""
+
+    # ModelPolygon._colinear_check():
+    def _colinear_check(self) -> str:
+        """Check for colinearity errors."""
+        at_fillet: _ModelFillet
+        epsilon: float = ModelPolygon.EPSILON
+        degrees180: float = math.pi
+        for at_fillet in self._Fillets:
+            before_apex: Vector = at_fillet.Before.Apex
+            at_apex: Vector = at_fillet.Apex
+            after_apex: Vector = at_fillet.After.Apex
+            to_before_apex: Vector = before_apex - at_apex
+            to_after_apex: Vector = after_apex - at_apex
+            between_angle: float = abs(to_before_apex.getAngle(to_after_apex))
+            if between_angle < epsilon or abs(degrees180 - between_angle) < epsilon:
+                return f"Points [{before_apex}, {at_apex}, {after_apex}] are colinear"
+        return ""
+
+    # ModelPolygon._compute_arcs():
+    def _compute_arcs(self) -> None:
         """Create any Arc's needed for non-zero radius _ModelFillet's."""
         fillet: _ModelFillet
         for fillet in self._Fillets:
             if fillet.Radius > 0.0:
                 fillet.Arc = fillet.compute_arc()
 
-    # ModelPolygon.compute_lines():
-    def compute_lines(self) -> None:
+    # ModelPolygon._compute_lines():
+    def _compute_lines(self) -> None:
         """Create Create any Line's need for _ModelFillet's."""
         fillet: _ModelFillet
         for fillet in self._Fillets:
@@ -762,7 +820,7 @@ class ModelPolygon(ModelGeometry):
                 fillet.Line = _ModelLine(start, finish)
 
     # ModelPolygon.get_geometries():
-    def get_geometries(self) -> Tuple[_ModelGeometry, ...]:
+    def get_geometries(self, contact: Vector, Normal: Vector) -> Tuple[_ModelGeometry, ...]:
         """Return the ModelPolygon lines and arcs."""
         geometries: List[_ModelGeometry] = []
         fillet: _ModelFillet
@@ -770,10 +828,42 @@ class ModelPolygon(ModelGeometry):
             geometries.extend(fillet.get_geometries())
         return tuple(geometries)
 
+    # ModelPolygon._plane_2d_project():
+    def _plane_2d_project(self, contact: Vector, normal: Vector) -> None:
+        """Update the _ModelFillet's to be projected onto a Plane.
+
+        Arguments:
+        * *contact* (Vector): A point on the plane.
+        * *normal* (Vector): A plane normal.
+
+        """
+        fillet: _ModelFillet
+        for fillet in self._Fillets:
+            fillet.plane_2d_project(contact, normal)
+
     # ModelPolygon.produce():
     def produce(self, model_file: ModelFile, prefix: str) -> Tuple[Part.Part2DObject, ...]:
         """Produce the FreeCAD objects needed for ModelPolygon."""
-        geometries: Tuple[_ModelGeometry, ...] = self.get_geometries()
+        # Extract mount plane *contact* and *normal* from *model_file* to use for 2D projection:
+        mount: ModelMount = model_file.Mount
+        contact: Vector = mount.Contact
+        normal: Vector = mount.Normal
+        self._plane_2d_project(contact, normal)
+
+        # Double check for radii and colinear errors that result from 2D projection:
+        radius_error: str = self._radii_check()
+        if radius_error:
+            raise RuntimeError(radius_error)
+        colinear_error: str = self._colinear_check()
+        if colinear_error:
+            raise RuntimeError(colinear_error)
+
+        # Now compute the arcs and lines:
+        self._compute_arcs()
+        self._compute_lines()
+
+        # Extract the geometries using *contact* and *normal* to specify the projecton plane:
+        geometries: Tuple[_ModelGeometry, ...] = self.get_geometries(contact, normal)
         geometry: _ModelGeometry
         index: int
         part_geometries: List[Part.Part2DObject] = []
@@ -1332,7 +1422,7 @@ class Box(object):
             ModelPad("Pad", top_polygon, dw),
         )
         top_mount: ModelMount = ModelMount(
-            "TopNorth", Vector(0, 0, dz2), top_axis, north_axis, top_operations)
+            "TopNorth", center + Vector(0, 0, dz2), top_axis, north_axis, top_operations)
         top_part: ModelPart = ModelPart("Top", "hdpe", "red", (top_mount,))
 
         north_corners: Corners = (
@@ -1346,7 +1436,7 @@ class Box(object):
             ModelPad("Pad", north_polygon, dw),
         )
         north_mount: ModelMount = ModelMount(
-            "NorthBottom", Vector(0, dy2, 0), north_axis, bottom_axis, north_operations)
+            "NorthBottom", center + Vector(0, dy2, 0), north_axis, bottom_axis, north_operations)
         north_part: ModelPart = ModelPart("North", "hdpe", "green", (north_mount,))
 
         west_corners: Corners = (
@@ -1360,7 +1450,7 @@ class Box(object):
             ModelPad("Pad", west_polygon, dw),
         )
         west_mount: ModelMount = ModelMount(
-            "WestNorth", Vector(-dx2, 0, 0), west_axis, north_axis, west_operations)
+            "WestNorth", center + Vector(-dx2, 0, 0), west_axis, north_axis, west_operations)
         west_part: ModelPart = ModelPart("West", "hdpe", "blue", (west_mount,))
 
         bottom_corners: Corners = (
@@ -1374,7 +1464,7 @@ class Box(object):
             ModelPad("Pad", bottom_polygon, dw),
         )
         bottom_mount: ModelMount = ModelMount(
-            "BottomNorth", Vector(0, 0, -dz2), bottom_axis, north_axis, bottom_operations)
+            "BottomNorth", center + Vector(0, 0, -dz2), bottom_axis, north_axis, bottom_operations)
         bottom_part: ModelPart = ModelPart("Bottom", "hdpe", "red", (bottom_mount,))
 
         east_corners: Corners = (
@@ -1388,7 +1478,7 @@ class Box(object):
             ModelPad("Pad", east_polygon, dw),
         )
         east_mount: ModelMount = ModelMount(
-            "EastNorth", Vector(dx2, 0, 0), east_axis, north_axis, east_operations)
+            "EastNorth", center + Vector(dx2, 0, 0), east_axis, north_axis, east_operations)
         east_part: ModelPart = ModelPart("East", "hdpe", "blue", (east_mount,))
 
         south_corners: Corners = (
@@ -1402,7 +1492,7 @@ class Box(object):
             ModelPad("Pad", south_polygon, dw),
         )
         south_mount: ModelMount = ModelMount(
-            "SouthBottom", Vector(0, -dy2, 0), south_axis, bottom_axis, south_operations)
+            "SouthBottom", center + Vector(0, -dy2, 0), south_axis, bottom_axis, south_operations)
         south_part: ModelPart = ModelPart("South", "hdpe", "green", (south_mount,))
 
         return (top_part, north_part, west_part, bottom_part, east_part, south_part)

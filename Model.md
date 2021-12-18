@@ -39,11 +39,15 @@ Table of Contents:
   * 10.2 [ModelPocket.produce](#modelpocket-produce)
 * 11 [Class ModelPolygon](#modelpolygon)
   * 11.1 [ModelPolygon.\_\_post\_init\_\_](#modelpolygon---post-init--)
-  * 11.2 [ModelPolygon.\_unit\_tests](#modelpolygon--unit-tests)
-  * 11.3 [ModelPolygon.compute\_arcs](#modelpolygon-compute-arcs)
-  * 11.4 [ModelPolygon.compute\_lines](#modelpolygon-compute-lines)
-  * 11.5 [ModelPolygon.get\_geometries](#modelpolygon-get-geometries)
-  * 11.6 [ModelPolygon.produce](#modelpolygon-produce)
+  * 11.2 [ModelPolygon.\_colinear\_check](#modelpolygon--colinear-check)
+  * 11.3 [ModelPolygon.\_compute\_arcs](#modelpolygon--compute-arcs)
+  * 11.4 [ModelPolygon.\_compute\_lines](#modelpolygon--compute-lines)
+  * 11.5 [ModelPolygon.\_double\_link](#modelpolygon--double-link)
+  * 11.6 [ModelPolygon.\_plane\_2d\_project](#modelpolygon--plane-2d-project)
+  * 11.7 [ModelPolygon.\_radii\_check](#modelpolygon--radii-check)
+  * 11.8 [ModelPolygon.\_unit\_tests](#modelpolygon--unit-tests)
+  * 11.9 [ModelPolygon.get\_geometries](#modelpolygon-get-geometries)
+  * 11.10 [ModelPolygon.produce](#modelpolygon-produce)
 * 12 [Class \_ModelArc](#-modelarc)
   * 12.1 [\_ModelArc.\_make\_arc\_3points](#-modelarc--make-arc-3points)
   * 12.2 [\_ModelArc.produce](#-modelarc-produce)
@@ -51,7 +55,7 @@ Table of Contents:
 * 13 [Class \_ModelFillet](#-modelfillet)
   * 13.1 [\_ModelFillet.\_\_post\_init\_\_](#-modelfillet---post-init--)
   * 13.2 [\_ModelFillet.compute\_arc](#-modelfillet-compute-arc)
-  * 13.3 [\_ModelFillet.double\_link](#-modelfillet-double-link)
+  * 13.3 [\_ModelFillet.plane\_2d\_project](#-modelfillet-plane-2d-project)
 * 14 [Class \_ModelGeometry](#-modelgeometry)
 * 15 [Class \_ModelLine](#-modelline)
   * 15.1 [\_ModelLine.produce](#-modelline-produce)
@@ -375,31 +379,60 @@ def \_\_post\_init\_\_(self) -> None:
 
 Verify that the corners passed in are correct.
 
-### 11.2 ModelPolygon.\_unit\_tests <a name="modelpolygon--unit-tests"></a>
+### 11.2 ModelPolygon.\_colinear\_check <a name="modelpolygon--colinear-check"></a>
+
+def \_colinear\_check(self) -> *str*:
+
+Check for colinearity errors.
+
+### 11.3 ModelPolygon.\_compute\_arcs <a name="modelpolygon--compute-arcs"></a>
+
+def \_compute\_arcs(self) -> None:
+
+Create any Arc's needed for non-zero radius \_ModelFillet's.
+
+### 11.4 ModelPolygon.\_compute\_lines <a name="modelpolygon--compute-lines"></a>
+
+def \_compute\_lines(self) -> None:
+
+Create Create any Line's need for \_ModelFillet's.
+
+### 11.5 ModelPolygon.\_double\_link <a name="modelpolygon--double-link"></a>
+
+def \_double\_link(self) -> None:
+
+Double link the \_ModelFillet's together.
+
+### 11.6 ModelPolygon.\_plane\_2d\_project <a name="modelpolygon--plane-2d-project"></a>
+
+def \_plane\_2d\_project(self, *contact*:  Vector, *normal*:  Vector) -> None:
+
+Update the \_ModelFillet's to be projected onto a Plane.
+
+Arguments:
+* *contact* (Vector): A point on the plane.
+* *normal* (Vector): A plane normal.
+
+
+### 11.7 ModelPolygon.\_radii\_check <a name="modelpolygon--radii-check"></a>
+
+def \_radii\_check(self) -> *str*:
+
+Check for radius overlap errors.
+
+### 11.8 ModelPolygon.\_unit\_tests <a name="modelpolygon--unit-tests"></a>
 
 def \_unit\_tests() -> None:
 
 Do some unit tests.
 
-### 11.3 ModelPolygon.compute\_arcs <a name="modelpolygon-compute-arcs"></a>
+### 11.9 ModelPolygon.get\_geometries <a name="modelpolygon-get-geometries"></a>
 
-def *compute\_arcs*(self) -> None:
-
-Create any Arc's needed for non-zero radius \_ModelFillet's.
-
-### 11.4 ModelPolygon.compute\_lines <a name="modelpolygon-compute-lines"></a>
-
-def *compute\_lines*(self) -> None:
-
-Create Create any Line's need for \_ModelFillet's.
-
-### 11.5 ModelPolygon.get\_geometries <a name="modelpolygon-get-geometries"></a>
-
-def *get\_geometries*(self) -> Tuple[\_ModelGeometry, ...]:
+def *get\_geometries*(self, *contact*:  Vector, Normal:  Vector) -> Tuple[\_ModelGeometry, ...]:
 
 Return the ModelPolygon lines and arcs.
 
-### 11.6 ModelPolygon.produce <a name="modelpolygon-produce"></a>
+### 11.10 ModelPolygon.produce <a name="modelpolygon-produce"></a>
 
 def *produce*(self, *model\_file*:  ModelFile, *prefix*:  *str*) -> Tuple[Part.Part2DObject, ...]:
 
@@ -471,11 +504,16 @@ def *compute\_arc*(self, *tracing*:  *str* = "") -> \_ModelArc:
 
 Return the arc associated with a \_ModelFillet with non-zero radius.
 
-### 13.3 \_ModelFillet.double\_link <a name="-modelfillet-double-link"></a>
+### 13.3 \_ModelFillet.plane\_2d\_proje <a name="-modelfillet-plane-2d-project"></a>
 
-def *double\_link*(self) -> None:
+def *plane\_2d\_project*(self, *contact*:  Vector, *normal*:  Vector) -> None:
 
-Double link the \_ModelFillet's together.
+Project the Apex onto a plane.
+
+Arguments:
+* *contact* (Vector): A point on the projection plane.
+* *normal* (Vector): A normal to the projection plane.
+
 
 ## 14 Class \_ModelGeometry <a name="-modelgeometry"></a>
 
