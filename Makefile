@@ -6,12 +6,14 @@ COVERAGE := $(PYTHON) -m coverage
 PY2MD := py2md.py
 
 PY_FILES := \
-    Apex.py \
-    ApexNode.py \
     ApexPath.py \
     fcstd_tar_sync.py \
     py2md.py \
-    Model.py
+    Join.py \
+    Model.py \
+    Tree.py
+#     ApexNode.py \
+#     Apex.py \
 #     ApexFasten.py
 #     ApexEnclosure.py
 OTHER_MD_FILES := \
@@ -29,10 +31,10 @@ HTML_FILES := ${ALL_MD_FILES:%.md=%.html}
 MODULES := \
     FreeCAD \
     FreeCADGui \
+    Join \
     Model \
     Part \
-    Path \
-    Sketcher
+    Path
 MODULES_TXTS := ${MODULES:%=/tmp/%.txt}
 
 
