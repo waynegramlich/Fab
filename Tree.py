@@ -132,6 +132,22 @@ class ModelNode(object):
             print(f"{tracing}<=ModelNode.configure('{self.Name}', {context})=>{current_values}")
         return tuple(current_values)
 
+    # ModelNode.get_configurations():
+    def get_configurations(self, attribute_names: Tuple[str, ...]) -> Tuple[str, ...]:
+        """Return configurations strings for named attributes."""
+        if not isinstance(attribute_names, tuple):
+            raise ValueError(f"Attribute names is not a tuple (of strings)")
+        configurations: List[str] = []
+        attribute_name: str
+        for attribute_name in attribute_names:
+            if not isinstance(attribute_name, str):
+                raise ValueError(f"Atribute name {attribute_name} is not a string")
+            if not hasattr(self, attribute_name):
+                raise ValueError(f"ModelNode {self} does not have attribute '{attribute_name}'")
+            value: Any = getattr(self, attribute_name)
+            configurations.append(f"{self.FullPath}.{attribute_name}.{value}")
+        return tuple(configurations)
+
     # ModelNode.produce():
     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
         """Produce ModelNode."""
@@ -360,10 +376,10 @@ class MyNode1(ModelNode):
         b: int = cast(int, self[("^MyNode2.B", int)])
         c: int = cast(int, self[("^MyNode3.C", int)])
         self.A = b + c
-        updates: Tuple[str, ...] = (f"{self.FullPath}:A:{self.A}",)
+        configurations: Tuple[str, ...] = self.get_configurations(("A",))
         if tracing:
-            print(f"{tracing}=>MyNode1.configure('{self.Name}', {context})=>{updates}")
-        return updates
+            print(f"{tracing}=>MyNode1.configure('{self.Name}', {context})=>{configurations}")
+        return configurations
 
 
 @dataclass
@@ -372,16 +388,16 @@ class MyNode2(ModelNode):
 
     B: int = 0
 
-    def configure(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str]:
+    def configure(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
         """Configure MyNode1."""
         if tracing:
             print(f"{tracing}=>MyNode2.configure('{self.Name}', {context}")
         c: int = cast(int, self[("^MyNode3.C", int)])
         self.B = c + 1
-        updates: Tuple[str] = (f"{self.FullPath}:B:{self.B}",)
+        configurations: Tuple[str, ...] = self.get_configurations(("B",))
         if tracing:
-            print(f"{tracing}<=MyNode2.configure('{self.Name}', {context}=>{updates}")
-        return updates
+            print(f"{tracing}<=MyNode2.configure('{self.Name}', {context}=>{configurations}")
+        return configurations
 
 
 @dataclass
@@ -390,15 +406,15 @@ class MyNode3(ModelNode):
 
     C: int = 1
 
-    def configure(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str]:
+    def configure(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
         """Configure MyNode1."""
         if tracing:
             print(f"{tracing}=>MYNode1.configure('{self.Name}', {context}")
         self.C = 1
-        updates: Tuple[str] = (f"{self.FullPath}:C:{self.C}",)
+        configurations: Tuple[str, ...] = self.get_configurations(("C",))
         if tracing:
-            print(f"{tracing}<=MYNode2.configure('{self.Name}', {context}=>{updates}")
-        return updates
+            print(f"{tracing}<=MYNode2.configure('{self.Name}', {context}=>{configurations}")
+        return configurations
 
 
 def _unit_tests(tracing: str = "") -> None:

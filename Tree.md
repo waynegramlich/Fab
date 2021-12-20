@@ -6,8 +6,9 @@ Table of Contents:
   * 1.2 [ModelNode.\_setup](#modelnode--setup)
   * 1.3 [ModelNode.check](#modelnode-check)
   * 1.4 [ModelNode.configure](#modelnode-configure)
-  * 1.5 [ModelNode.produce](#modelnode-produce)
-  * 1.6 [ModelRoot.\_\_post\_init\_\_](#modelroot---post-init--)
+  * 1.5 [ModelNode.get\_configurations](#modelnode-get-configurations)
+  * 1.6 [ModelNode.produce](#modelnode-produce)
+  * 1.7 [ModelRoot.\_\_post\_init\_\_](#modelroot---post-init--)
 
 ## 1 <a name="introduction"></a>Introduction
 
@@ -94,13 +95,19 @@ def *configure*(self, *context*:  Dict[str, Any], *tracing*:  *str* = "") -> Tup
 
 Configure ModelNode.
 
-### 1.5 ModelNode.produce <a name="modelnode-produce"></a>
+### 1.5 ModelNode.get\_configurations <a name="modelnode-get-configurations"></a>
+
+def *get\_configurations*(self, *attribute\_names*:  Tuple[str, ...]) -> Tuple[str, ...]:
+
+Return configurations strings for named attributes.
+
+### 1.6 ModelNode.produce <a name="modelnode-produce"></a>
 
 def *produce*(self, *context*:  Dict[str, Any], *tracing*:  *str* = "") -> Tuple[str, ...]:
 
 Produce ModelNode.
 
-### 1.6 ModelRoot.\_\_post\_init\_\_ <a name="modelroot---post-init--"></a>
+### 1.7 ModelRoot.\_\_post\_init\_\_ <a name="modelroot---post-init--"></a>
 
 def \_\_post\_init\_\_(self) -> None:
 
