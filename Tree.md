@@ -36,6 +36,8 @@ Each ModelNode has a *FullPath* property which is string that contains the Model
 from the ModelRoot downwards separated by a '.'.  The "Root." is skipped because it is redundant.
 Each ModelNode has an Parent attribute that specifies the parent ModelNode
 
+ModelNode implement
+
 The ModelNode base class implements three recursive methods:
 
 * configure(context) -> Tuple[str, ...]:

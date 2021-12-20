@@ -26,6 +26,8 @@ Each ModelNode has a *FullPath* property which is string that contains the Model
 from the ModelRoot downwards separated by a '.'.  The "Root." is skipped because it is redundant.
 Each ModelNode has an Parent attribute that specifies the parent ModelNode
 
+ModelNode implement
+
 The ModelNode base class implements three recursive methods:
 
 * configure(context) -> Tuple[str, ...]:
@@ -59,8 +61,6 @@ There are three phases:
 
 """
 
-from typing import Any, Dict, List, Set, Tuple
-
 # <--------------------------------------- 100 characters ---------------------------------------> #
 
 import os
@@ -71,6 +71,7 @@ assert sys.version_info.minor == 8  # Python 3.8
 sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 
 from dataclasses import dataclass, field
+from typing import cast, Any, Dict, List, Optional, Set, Tuple, Union
 
 
 @dataclass
@@ -152,7 +153,6 @@ class ModelNode(object):
         """Recursively setup the ModelNode tree."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
             print(f"{tracing}=>ModelNode._setup('{self.Name}', '{parent.Name}')")
             print(f"{tracing}{self.Children=}")
 
@@ -209,8 +209,8 @@ class ModelNode(object):
                 # else: it is already an attribute.
             else:
                 setattr(self, name, child)
-        if tracing:
-            print(f"{tracing}{dir(self)=}")
+        # if tracing:
+        #     print(f"{tracing}{dir(self)=}")
 
         # Now setup each *child*:
         names: Tuple[str, ...] = tuple(children_table.keys())
@@ -223,8 +223,67 @@ class ModelNode(object):
         self.ChildrenNames = tuple(names)
 
         if tracing:
-            print(f"{tracing}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
             print(f"{tracing}<=ModelNode._setup('{self.Name}', '{parent.Name}')")
+
+    def __getitem__(self, key: Union[str, Tuple[str, type]]) -> Any:
+        """Return value using a relative path with option type."""
+        tracing: str = ""  # Manually set to debug.
+        if tracing:
+            print(f"=>ModelNode.__get_item__({key})")
+
+        # Perform argument checking:
+        path: str
+        desired_type: Optional[type] = None
+        if isinstance(key, tuple):
+            if len(key) != 2:
+                raise ValueError(f"ModelNode key {key} tuple must be of length 2")
+            path = key[0]
+            if not isinstance(path, str):
+                raise ValueError("ModelNode key {path} path is not a string")
+            desired_type = key[1]
+            if not isinstance(desired_type, type):
+                raise ValueError("ModelNode desired type {desired_type } is not a type")
+        elif isinstance(key, str):
+            path = key
+        else:
+            raise ValueError(f"ModeNode key {key} is neither a string nor a tuple")
+
+        # Move *focus* from *self* by parsing *path*:
+        focus: ModelNode = self
+        size: int = len(path)
+        index: int = 0
+        while index < size:
+            dispatch: str = path[index]
+            if tracing:
+                print(f"ModelNode.__get_item__(): {path[index:]=} {focus=}")
+            if dispatch == "^":
+                # Move *focus* up:
+                focus = focus.Parent
+                index += 1
+            elif dispatch == ".":
+                index += 1
+            elif dispatch.isalpha():
+                # Extract the Node or Attribute Name:
+                dot_index: int = path.find(".", index + 1)
+                name: str
+                if dot_index > 0:
+                    name = path[index:dot_index]
+                    index = dot_index
+                else:
+                    name = path[index:]
+                    index = size
+                if hasattr(focus, name):
+                    focus = getattr(focus, name)
+                else:
+                    raise ValueError(f"Path '{path}' not able to find '{name}'")
+            else:
+                raise ValueError(f"Path '{path}' is not properly formatted")
+        if desired_type:
+            if not isinstance(focus, desired_type):
+                raise ValueError(f"Path '{path}' is of type {type(focus)} not {desired_type}")
+        if tracing:
+            print(f"=>ModelNode.__get_item__({key})=>{focus}")
+        return focus
 
 
 @dataclass
@@ -239,7 +298,52 @@ class ModelRoot(ModelNode):
         super().__post_init__()
         if self.Name != "Root":
             raise ValueError("The Root node must be named root rather than '{self.Name}'")
+        self._setup(self)
         # print(f"<=Model_Root.__post_init__():")
+
+    def configure_constraints(self, maximum_iterations: int = 20,
+                              verbosity: int = 4, tracing: str = "") -> None:
+        """Configure the ModelNode tree until is constraints are stable.
+
+        Arguments:
+        * *maximum_iterations* (int): The maximum number of iterations (default: 20).
+        * *verbosity* (int): Verbosity level:
+          0: No messages.
+          1: Iteration messages only.
+          N: Iteration messages with N-1 of the differences:
+
+        """
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>ModelRoot.configure_constraints()")
+
+        previous_values: Set[str] = set()
+        count: int
+        for count in range(maximum_iterations):
+            current_values: Set[str] = set(self.configure({}, next_tracing))
+            difference_values: Set[str] = previous_values ^ current_values
+            if tracing:
+                print(f"{tracing}Iteration[{count}]: {sorted(previous_values)=}")
+                print(f"{tracing}Iteration[{count}]:  {sorted(current_values)=}")
+                print(f"{tracing}Iteration[{count}]: {len(difference_values)} Differences.")
+                print("")
+
+            # Deal with *verbosity*:
+            if verbosity >= 1:
+                print(f"Configure[{count}]: {len(difference_values)} differences:")
+            if verbosity >= 2:
+                sorted_difference_values: List[str] = sorted(tuple(difference_values))
+                index: int
+                difference: str
+                for index, difference in enumerate(sorted_difference_values[:verbosity]):
+                    print(f"  Difference[{index}]: {difference}")
+
+            if not difference_values:
+                break
+            previous_values = current_values
+
+        if tracing:
+            print(f"{tracing}<=ModelRoot.configure_constraints()")
 
 
 @dataclass
@@ -253,10 +357,10 @@ class MyNode1(ModelNode):
         if tracing:
             print(f"{tracing}=>MyNode1.configure('{self.Name}', {context}")
         assert isinstance(self.Parent, ModelRoot)
-        b: int = self.Parent.MyNode2.B  # type: ignore
-        c: int = self.Parent.MyNode3.C  # type: ignore
+        b: int = cast(int, self[("^MyNode2.B", int)])
+        c: int = cast(int, self[("^MyNode3.C", int)])
         self.A = b + c
-        updates: Tuple[str, ...] = ("f{self.FullPath}:A:{self.A})",)
+        updates: Tuple[str, ...] = (f"{self.FullPath}:A:{self.A}",)
         if tracing:
             print(f"{tracing}=>MyNode1.configure('{self.Name}', {context})=>{updates}")
         return updates
@@ -272,7 +376,7 @@ class MyNode2(ModelNode):
         """Configure MyNode1."""
         if tracing:
             print(f"{tracing}=>MyNode2.configure('{self.Name}', {context}")
-        c: int = self.Parent.MyNode3.C  # type:ignore
+        c: int = cast(int, self[("^MyNode3.C", int)])
         self.B = c + 1
         updates: Tuple[str] = (f"{self.FullPath}:B:{self.B}",)
         if tracing:
@@ -291,7 +395,7 @@ class MyNode3(ModelNode):
         if tracing:
             print(f"{tracing}=>MYNode1.configure('{self.Name}', {context}")
         self.C = 1
-        updates: Tuple[str] = (f"{self.FullPath}:C:,{str(self.C)}",)
+        updates: Tuple[str] = (f"{self.FullPath}:C:{self.C}",)
         if tracing:
             print(f"{tracing}<=MYNode2.configure('{self.Name}', {context}=>{updates}")
         return updates
@@ -299,248 +403,20 @@ class MyNode3(ModelNode):
 
 def _unit_tests(tracing: str = "") -> None:
     """Run Unit tests on ModelNode."""
-    next_tracing: str = tracing + " " if tracing else ""
     if tracing:
         print(f"{tracing}=>_unit_tests()")
 
     my_node1: MyNode1 = MyNode1("MyNode1")
     my_node2: MyNode2 = MyNode2("MyNode2")
     my_node3: MyNode3 = MyNode3("MyNode3")
-
-    if tracing:
-        print("################################################################")
-        print(f"{tracing}Creating ModeRoot...")
-        print(f"{tracing}=>ModelRoot()")
     root: ModelRoot = ModelRoot("Root", (my_node1, my_node2, my_node3))
-    if tracing:
-        print(f"{tracing}<=ModelRoot()")
     assert isinstance(root, ModelRoot)
 
-    print("ModelRoot._unit_tests(): 1")
-    root._setup(root, next_tracing)
-    print("ModelRoot._unit_tests(): 2")
-    previous_values: Set[str] = set()
-    count: int
-    for count in range(5):
-        current_values: Set[str] = set(root.configure({}, next_tracing))
-        difference_values: Set[str] = previous_values ^ current_values
-        if tracing:
-            print(f"{tracing}Iteration[{count}]: {sorted(previous_values)=}")
-            print(f"{tracing}Iteration[{count}]:  {sorted(current_values)=}")
-            print(f"{tracing}Iteration[{count}]: {len(difference_values)} Differences.")
-            print("")
-        if not difference_values:
-            break
-        previous_values = current_values
+    root.configure_constraints()  # tracing=next_tracing)
 
     if tracing:
         print(f"{tracing}=>_unit_tests()")
 
-
-# # ModelRoot:
-# class ModelRoot(ModelNode):
-#     """ModeRoot: The root ModelNode of the ModelNode Tree."""
-#     pass
-#
-#     # ApexNode.configure_and_build():
-#     def configure_and_build(self, document: "App.Document",
-#                             count: int = 25, tracing: str = "") -> None:
-#         """Recursively configure and build the entire ApexNode tree.
-#
-#         * Arguments:
-#           *count* (int): The maximum number of configuration iterations:
-#         """
-#         next_tracing: str = tracing + " " if tracing else ""
-#         if tracing:
-#             print(f"{tracing}=>ApexNode.configure_and_build('{self.full_path}')")
-#         context: ApexContext = ApexContext(document)
-#         differences: Tuple[Tuple[str, Any, Any], ...] = self._configure_all(count=count)
-#         if differences:
-#             difference: Tuple[str, Any, Any]
-#             difference_names: Tuple[str, ...] = tuple(
-#                 [difference[0]
-#                  for difference in differences]
-#             )
-#             print(f"Constraint issues: {difference_names}")  # pragma: no unit cover
-#         else:
-#             self._build_all(context, tracing=next_tracing)
-#         if tracing:
-#             print(f"{tracing}<=ApexNode.configure_and_build('{self.full_path}')")
-#
-#     def _build_all(self, context: ApexContext, tracing: str = "") -> None:
-#         """Recursively build an ApexNode tree."""
-#         next_tracing: str = tracing + " " if tracing else ""
-#         if tracing:
-#             print(f"{tracing}=>ApexNode._build_all('{self.full_path}')")
-#
-#         if hasattr(self, "build"):
-#             self.build(context, tracing=next_tracing)
-#
-#         name: str
-#         value: Any
-#         for name, value in self.__dict__.items():
-#             if not name.startswith("_") and isinstance(value, ApexNode):
-#                 value._build_all(context, tracing=next_tracing)
-#         if tracing:
-#             print(f"{tracing}<=ApexNode._build_all('{self.full_path}')")
-#
-#     def _configure_all(self,
-#                        count: int = 25, verbose: bool = True) -> Tuple[Tuple[str, Any, Any], ...]:
-#         """Recursively configure an ApexNode Tree.
-#
-#         * Arguments:
-#           * *count* (int): The maximum number of iterations to try.
-#           * *verbose* (bool): If True, print a 1 line progress message for each iteration.
-#
-#         * Returns:
-#           * Return (Tuple[Tuple[str, Any, Any], ...]) which is a sorted tuple of differences,
-#             where [0] is the name, [1] is the previous value, and [2] is the current value.
-#         """
-#         differences: List[Tuple[str, Any, Any]]
-#         previous_key_values: Dict[str, Any] = {}
-#         current_key_values: Dict[str, Any] = {}
-#         index: int
-#         for index in range(count):
-#             # Recursively collect configurable values:
-#             previous_key_values = current_key_values
-#             current_key_values = {}
-#             self._configure_helper(current_key_values)
-#
-#             # Collect each difference onto *differences*:
-#             differences = []
-#             key: str
-#             previous_keys: Set[str] = set(previous_key_values)
-#             current_keys: Set[str] = set(current_key_values)
-#             for key in previous_keys - current_keys:
-#                 differences.append((key, previous_key_values[key], None))  # pragma: no unit cover
-#             for key in current_keys - previous_keys:
-#                 differences.append((key, None, current_key_values[key]))
-#             for key in previous_keys & current_keys:
-#                 previous_value: Any = previous_key_values[key]
-#                 current_value: Any = current_key_values[key]
-#                 if type(previous_value) != type(current_value) or previous_value != current_value:
-#                     differences.append((key, previous_value, current_value))
-#
-#             if verbose:
-#                 print(f"Configure[{index}]: {len(differences)} differences.")
-#             if not differences:
-#                 break
-#
-#         # Sort *differences* and print warning for
-#         if differences:
-#             differences.sort(key=lambda difference: difference[0])  # Sort on first key.
-#             difference: Tuple[str, Any, Any]
-#             difference_keys: Tuple[str, ...] = tuple(
-#                 [difference[0] for difference in differences])
-#             print(f"configure[FINAL]: The following are not stable: {difference_keys}")
-#         return tuple(differences)
-#
-#     def _configure_helper(self, values: Dict[str, Any]) -> None:
-#         """Recursively configure an ApexNode tree."""
-#         if hasattr(self, "configure"):
-#             self.configure()
-#
-#         ignore_names: Tuple[str, ...] = ("", "name", "parent", "full_path", "configure")
-#         name: str
-#         value: Any
-#         for name, value in self.__dict__.items():
-#             if name not in ignore_names and name[0] != "_":
-#                 if isinstance(value, (bool, int, float, Vector)):
-#                     values[f"{self.full_path}:{name}"] = value
-#                 elif isinstance(value, ApexNode):
-#                     value._configure_helper(values)
-#
-#
-# def unit_tests() -> None:
-#     """Run unit tests for ApexNode."""
-#     class Box(ApexNode):
-#         def __init__(self, name: str, dx: float, dy: float, dz: float, dw: float) -> None:
-#             super().__init__(name, None)
-#             self.dx: float = dx
-#             self.dy: float = dy
-#             self.dz: float = dz
-#             self.dw: float = dw
-#             # For testing, use 0 (int) instead of 0.0 (float)to cause an extra iteration:
-#             self.skin_volume: float = 0
-#             self.outer_volume: float = 0
-#             self.inner_volume: float = 0
-#             self.tne: Vector = Vector(dx / 2.0, dy / 2.0, dz / 2.0)
-#             self.bsw: Vector = Vector(-dx / 2.0, -dy / 2.0, -dz / 2.0)
-#             self.bb: ApexBox = ApexBox((self.tne, self.bsw))
-#             bb: ApexBox = self.bb
-#
-#             # x_dw: Vector = Vector(dw, 0.0, 0.0)
-#             y_dw: Vector = Vector(0.0, dw, 0.0)
-#             z_dw: Vector = Vector(0.0, 0.0, dw)
-#
-#             self.top_side: Block = Block(
-#                 "Top", self, bb.TNE, bb.TSW - z_dw, "red")
-#             #    "Top", bb.TNE, bb.TSW - z_dw, "red")
-#             self.bottom_side: Block = Block(
-#                 "Bottom", self, bb.BNE, bb.BSW + z_dw, "red")
-#
-#             self.north_side: Block = Block(
-#                 "North", self, bb.TNE - z_dw, bb.BNW + z_dw - y_dw, "green")
-#             self.south_side: Block = Block(
-#                 "South", self, bb.TSE - z_dw, bb.BSW + z_dw + y_dw, "green")
-#
-#             self.east_side: Block = Block(
-#                 "East", self, bb.TNE - z_dw - y_dw, bb.BSE + z_dw + z_dw, "blue")
-#             self.west_side: Block = Block(
-#                 "West", self, bb.TNW - z_dw + z_dw, bb.BSW + z_dw - z_dw, "blue")
-#
-#         def build(self, context: ApexContext, tracing: str = "") -> None:
-#             if tracing:
-#                 print(f"{tracing}<=>Box.build(*)")
-#
-#         def configure(self) -> None:
-#             bb: ApexBox = self.bb
-#             dxyz: Vector = bb.TNE - bb.BSW
-#             self.skin_volume = (
-#                 self.top_side.volume + self.bottom_side.volume +
-#                 self.north_side.volume + self.south_side.volume +
-#                 self.east_side.volume + self.west_side.volume)
-#             self.outer_volume = dxyz.x * dxyz.y * dxyz.z
-#             self.inner_volume = self.outer_volume - self.skin_volume
-#
-#     class Block(ApexNode):
-#         def __init__(self, name: str, parent: ApexNode, tne: Vector, bsw: Vector,
-#                      color: str = "") -> None:
-#             super().__init__(name, parent)
-#             assert self.parent == parent, "parent is not set?"
-#             self.tne: Vector = tne
-#             self.bsw: Vector = bsw
-#             self.volume = 0
-#
-#         def configure(self):
-#             dxyz: Vector = self.tne - self.bsw
-#             self.volume: float = dxyz.x * dxyz.y * dxyz.z
-#
-#         def build(self, context: ApexContext, tracing: str = "") -> None:
-#             if tracing:
-#                 print(f"{tracing}<=>Block.build({self.full_path})")
-#
-#     # Constraints should down to zero differences with *count*=3.
-#     box: ApexNode = Box("Test_Box", 20.0, 15.0, 10.0, 0.5)
-#     differences: Tuple[Tuple[str, Any, Any], ...] = box._configure_all(count=3)
-#     want: Tuple[Tuple[str, Any, Any], ...] = ()
-#     assert differences == want, f"Got {differences} instead of {want=}"
-#     document_name: str = "ApexNodeTestDocument"
-#     document: App.Document = App.newDocument(document_name)
-#     _ = document
-#     box.configure_and_build(document_name)
-#
-#     # Constraints should be down to 1 difference with *count*=2:
-#     box = Box("Test_Box", 30.0, 25.0, 15.0, 0.75)
-#     differences = box._configure_all(count=2)
-#     want = (('Test_Box:skin_volume', 0.0, 0.0),)
-#     assert differences == want, f"Got {differences} instead of {want=}"
-#
-#     # Do some error testing:
-#     try:
-#         _ = box.parent == "Root"
-#     except RuntimeError as error:
-#         assert str(error) == "Test_Box does not have a parent"
 
 if __name__ == "__main__":
     _unit_tests(" ")
