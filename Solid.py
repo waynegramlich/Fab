@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Model: An interface to FreeCAD Sketches."""
+"""Solid: A module for constructing 3D solids."""
 
 # [Part2DObject](http://www.iesensor.com/FreeCADDoc/0.16-dev/d9/d57/classPart_1_1Part2DObject.html)
 # [App FeaturePython](https://wiki.freecadweb.org/App_FeaturePython)
@@ -57,10 +57,10 @@ class ModelFile(object):
     """ModelFile: Represents a FreeCAD document file."""
 
     FilePath: Path
-    Parts: Tuple["ModelPart", ...]
+    Parts: Tuple["ModelSolid", ...]
     AppDocument: App.Document = field(init=False, repr=False)
     GuiDocument: Optional["Gui.Document"] = field(init=False, default=None, repr=False)
-    Part: "ModelPart" = field(init=False, repr=False)
+    Part: "ModelSolid" = field(init=False, repr=False)
     ViewObject: Optional[Any] = field(init=False, default=None, repr=False)
     GeometryGroup: App.DocumentObjectGroup = field(init=False, repr=False)
     Body: "Part.BodyBase" = field(init=False, repr=False)
@@ -70,19 +70,19 @@ class ModelFile(object):
     # ModelFile.__post_init__():
     def __post_init__(self) -> None:
         """Initialize the AppDocument."""
-        part: ModelPart
+        part: ModelSolid
         part_names: Set[str] = set()
         if len(self.Parts) == 0:
-            raise ValueError("At least one ModelPart needs to be specified")
+            raise ValueError("At least one ModelSolid needs to be specified")
         for part in self.Parts:
-            if not isinstance(part, ModelPart):
-                raise ValueError(f"{part} is not a ModelPart")
+            if not isinstance(part, ModelSolid):
+                raise ValueError(f"{part} is not a ModelSolid")
             if part.Name in part_names:
                 raise ValueError(f"There are two or more Part's with the same name '{part.Name}'")
             part_names.add(part.Name)
 
         self.GeometryGroup = cast(App.DocumentObjectGroup, None)
-        self.Part = cast(ModelPart, None)
+        self.Part = cast(ModelSolid, None)
         self.Body = cast(Part.BodyBase, None)
         self.Mount = cast("ModelMount", None)
         self.DatumPlane = cast("Part.Geometry", None)
@@ -107,12 +107,12 @@ class ModelFile(object):
 
     # ModelFile.produce():
     def produce(self) -> None:
-        """Produce all of the ModelPart's."""
-        part: "ModelPart"
+        """Produce all of the ModelSolid's."""
+        part: "ModelSolid"
         for part in self.Parts:
             self.Part = part
             part.produce(self)
-            self.Part = cast(ModelPart, None)
+            self.Part = cast(ModelSolid, None)
 
     # ModelFile._unit_tests():
     @staticmethod
@@ -124,14 +124,14 @@ class ModelFile(object):
             ModelFile(fcstd_path, ())
             assert False
         except ValueError as value_error:
-            assert str(value_error) == "At least one ModelPart needs to be specified"
+            assert str(value_error) == "At least one ModelSolid needs to be specified"
 
         # Bogus parts error:
         try:
-            ModelFile(fcstd_path, (cast(ModelPart, None),))
+            ModelFile(fcstd_path, (cast(ModelSolid, None),))
             assert False
         except ValueError as value_error:
-            assert str(value_error) == "None is not a ModelPart"
+            assert str(value_error) == "None is not a ModelSolid"
 
         # Duplicate part name error:
         contact: Vector = Vector()
@@ -143,7 +143,7 @@ class ModelFile(object):
         pad1: ModelPad = ModelPad("Cylinder1", circle1, depth1)
         operations1: Tuple[ModelOperation, ...] = (pad1,)
         mount1: ModelMount = ModelMount("Mount1", contact, z_axis, y_axis, operations1)
-        part1: ModelPart = ModelPart("Part1", "hdpe", "orange", (mount1,))
+        part1: ModelSolid = ModelSolid("Part1", "hdpe", "orange", (mount1,))
 
         # Duplicate Part Names:
         try:
@@ -705,9 +705,6 @@ class ModelPolygon(ModelGeometry):
     * *Corners* (Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]):
       See description below for more on corners.
 
-    Raises:
-    * ValueError for improper corner specifications.
-
     """
 
     Name: str
@@ -946,9 +943,9 @@ class ModelPad(ModelOperation):
     """ModelPad: A FreeCAD PartDesign Pad operation.
 
     Attributes:
-        *Name* (str): The operation name.
-        *Geometry* (ModelGeometry): The ModlePolygon or ModelCircle to pad with.
-        *Depth* (float): The depth to pad to in millimeters.
+    * *Name* (str): The operation name.
+    * *Geometry* (ModelGeometry): The ModlePolygon or ModelCircle to pad with.
+    * *Depth* (float): The depth to pad to in millimeters.
 
     """
 
@@ -1007,9 +1004,9 @@ class ModelPocket(ModelOperation):
     """ModelPocket: A FreeCAD PartDesign Pocket operation.
 
     Attributes:
-        *Name* (str): The operation name.
-        *Geometry* (ModelGeometry): The Polygon or Circle to pocket.
-        *Depth* (float): The depth
+    * *Name* (str): The operation name.
+    * *Geometry* (ModelGeometry): The Polygon or Circle to pocket.
+    * *Depth* (float): The pocket depth in millimeters.
 
     """
 
@@ -1066,9 +1063,9 @@ class ModelHole(ModelOperation):
     """ModelHole: A FreeCAD PartDesign Pocket operation.
 
     Attributes:
-        *Name* (str): The operation name.
-        *Circle* (ModelCircle): The Circle to drill.
-        *Depth* (float): The depth
+    * *Name* (str): The operation name.
+    * *Circle* (ModelCircle): The Circle to drill.
+    * *Depth* (float): The depth
 
     """
 
@@ -1258,9 +1255,9 @@ class ModelMount(object):
         # Do not leave behind a stale *datum_plane*:
         model_file.DatumPlane = cast("Part.Geometry", None)
 
-# ModelPart:
+# ModelSolid:
 @dataclass(frozen=True)
-class ModelPart(object):
+class ModelSolid(object):
     """Model: Represents a single part constructed using FreeCAD Part Design paradigm.
 
     Attributes:
@@ -1276,14 +1273,14 @@ class ModelPart(object):
     Color: str
     Mounts: Tuple[ModelMount, ...]
 
-    # ModelPart.__post_init__():
+    # ModelSolid.__post_init__():
     def __post_init__(self) -> None:
-        """Verify ModelPart arguments."""
+        """Verify ModelSolid arguments."""
         # Verify that there is only one pad operation and it is the very first one.
         # Also detect duplicate mount names:
         mounts: Tuple[ModelMount, ...] = self.Mounts
         if not mounts:
-            raise ValueError("ModelPart.produce(): No mounts specified for Part 'self.Name'.")
+            raise ValueError("ModelSolid.produce(): No mounts specified for Part 'self.Name'.")
 
         mount_names: Set[str] = set()
         pad_found: bool = False
@@ -1313,9 +1310,9 @@ class ModelPart(object):
         if not pad_found:
             raise ValueError(f"No Pad operation found for '{self.Name}'")
 
-    # ModelPart.produce():
+    # ModelSolid.produce():
     def produce(self, model_file: ModelFile) -> None:
-        """Produce the ModelPart."""
+        """Produce the ModelSolid."""
         # Create the *geometry_group* that contains all of the 2D geometry (line, arc, circle.):
         app_document: App.Document = model_file.AppDocument
         geometry_group: App.DocumentObjectGroup = app_document.addObject(
@@ -1389,7 +1386,7 @@ class Box(object):
         """Compute a box."""
         pass
 
-    def produce(self) -> Tuple[ModelPart, ...]:
+    def produce(self) -> Tuple[ModelSolid, ...]:
         """Produce a box."""
         dx: float = self.Length
         dy: float = self.Width
@@ -1423,7 +1420,7 @@ class Box(object):
         )
         top_mount: ModelMount = ModelMount(
             "TopNorth", center + Vector(0, 0, dz2), top_axis, north_axis, top_operations)
-        top_part: ModelPart = ModelPart("Top", "hdpe", "red", (top_mount,))
+        top_part: ModelSolid = ModelSolid("Top", "hdpe", "red", (top_mount,))
 
         north_corners: Corners = (
             (center + Vector(dx2, dy2, dz2 - dw), corner_radius),  # TNE
@@ -1437,7 +1434,7 @@ class Box(object):
         )
         north_mount: ModelMount = ModelMount(
             "NorthBottom", center + Vector(0, dy2, 0), north_axis, bottom_axis, north_operations)
-        north_part: ModelPart = ModelPart("North", "hdpe", "green", (north_mount,))
+        north_part: ModelSolid = ModelSolid("North", "hdpe", "green", (north_mount,))
 
         west_corners: Corners = (
             (center + Vector(-dx2, dy2 - dw, dz2 - dw), corner_radius),  # TNW
@@ -1451,7 +1448,7 @@ class Box(object):
         )
         west_mount: ModelMount = ModelMount(
             "WestNorth", center + Vector(-dx2, 0, 0), west_axis, north_axis, west_operations)
-        west_part: ModelPart = ModelPart("West", "hdpe", "blue", (west_mount,))
+        west_part: ModelSolid = ModelSolid("West", "hdpe", "blue", (west_mount,))
 
         bottom_corners: Corners = (
             (center + Vector(dx2, dy2 - dw, -dz2), corner_radius),  # BNE
@@ -1465,7 +1462,7 @@ class Box(object):
         )
         bottom_mount: ModelMount = ModelMount(
             "BottomNorth", center + Vector(0, 0, -dz2), bottom_axis, north_axis, bottom_operations)
-        bottom_part: ModelPart = ModelPart("Bottom", "hdpe", "red", (bottom_mount,))
+        bottom_part: ModelSolid = ModelSolid("Bottom", "hdpe", "red", (bottom_mount,))
 
         east_corners: Corners = (
             (center + Vector(dx2, dy2 - dw, dz2 - dw), corner_radius),  # TNE
@@ -1479,7 +1476,7 @@ class Box(object):
         )
         east_mount: ModelMount = ModelMount(
             "EastNorth", center + Vector(dx2, 0, 0), east_axis, north_axis, east_operations)
-        east_part: ModelPart = ModelPart("East", "hdpe", "blue", (east_mount,))
+        east_part: ModelSolid = ModelSolid("East", "hdpe", "blue", (east_mount,))
 
         south_corners: Corners = (
             (center + Vector(dx2, -dy2, dz2 - dw), corner_radius),  # TSE
@@ -1493,7 +1490,7 @@ class Box(object):
         )
         south_mount: ModelMount = ModelMount(
             "SouthBottom", center + Vector(0, -dy2, 0), south_axis, bottom_axis, south_operations)
-        south_part: ModelPart = ModelPart("South", "hdpe", "green", (south_mount,))
+        south_part: ModelSolid = ModelSolid("South", "hdpe", "green", (south_mount,))
 
         return (top_part, north_part, west_part, bottom_part, east_part, south_part)
 
@@ -1535,10 +1532,10 @@ def main() -> None:
         ModelPocket("RightPocket", right_circle, 8.0),
         ModelHole("CenterHole", center_circle, 5.0),
     ))
-    top_part: ModelPart = ModelPart("TopPart", "hdpe", "purple", (
+    top_part: ModelSolid = ModelSolid("TopPart", "hdpe", "purple", (
         top_north_mount,
     ))
-    top_parts: Tuple[ModelPart, ...] = (top_part,)
+    top_parts: Tuple[ModelSolid, ...] = (top_part,)
 
     # Create *side_part*
     side_radius: float = 3.0
@@ -1554,7 +1551,7 @@ def main() -> None:
     side_north_mount: ModelMount = ModelMount("SideNorth", contact, normal, north, (
         ModelPad("Pad", side_pad, 10),
     ))
-    side_part: ModelPart = ModelPart("SidePart", "hdpe", "green", (
+    side_part: ModelSolid = ModelSolid("SidePart", "hdpe", "green", (
         side_north_mount,
     ))
     _ = side_part
@@ -1562,9 +1559,9 @@ def main() -> None:
     center: Vector = Vector(0.0, -250, 0.0)
     box: Box = Box("MyBox", 200, 100, 100, 10, "HDPE", center)
     box.compute()
-    box_parts: Tuple[ModelPart, ...] = box.produce()
+    box_parts: Tuple[ModelSolid, ...] = box.produce()
 
-    all_parts: Tuple[ModelPart, ...] = top_parts + box_parts
+    all_parts: Tuple[ModelSolid, ...] = top_parts + box_parts
 
     # Create the models:
     model_file: ModelFile

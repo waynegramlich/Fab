@@ -9,8 +9,9 @@ PY_FILES := \
     ApexPath.py \
     fcstd_tar_sync.py \
     py2md.py \
+    Doc.py \
     Join.py \
-    Model.py \
+    Solid.py \
     Tree.py
 #     ApexNode.py \
 #     Apex.py \
