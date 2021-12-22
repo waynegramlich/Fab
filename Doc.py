@@ -280,21 +280,26 @@ class ModelModule(ModelDoc):
     def __post_init__(self) -> None:
         """Recursively extract information from an object."""
         module: Any = self.Module
-        module_name: str = ""
 
-        tracing: str = ""
+        # Get initial *module_name*:
+        module_name: str = ""
         if hasattr(module, "__name__"):
             module_name = getattr(module, "__name__")
-            self.name = module_name
-        if module_name == "__init__":
-            tracing = ""  # Disable
+        is_package: bool = module_name == "__init__"
+
+        tracing: str = "" if is_package else ""  # Change first string to enable package tracing.
         if tracing:
-            print(f"{tracing}Processing {module_name}")
+            print(f"{tracing}Processing {module_name} {is_package=}")
         if hasattr(module, "__doc__"):
-            doc_string = cast(Optional[str], getattr(module, "__doc__"))
-            self.set_lines(doc_string)
+            doc_string = getattr(module, "__doc__")
             if tracing:
-                print(f"{tracing}{doc_string=}{self.Lines=}")
+                print(f"{tracing}{doc_string=}")
+            self.set_lines(doc_string)
+            if is_package:
+                first_line: str = self.Lines[0]
+                colon_index: int = first_line.find(":")
+                if colon_index >= 0:
+                    module_name = first_line[:colon_index]
 
         # The Python import statment can import class to the module namespace.
         # We are only interested in classes that are defined in *module*:
@@ -434,14 +439,21 @@ def process_arguments(arguments: Tuple[str, ...]) -> Tuple[Tuple[str, ...], Path
         else:
             module_names.add(argument)
 
-    sorted_module_names: Tuple[str, ...] = tuple(sorted(module_names))
+    # module_names.add("__init__")
+    # __init__.py get imported as a side-effect of reading the other packages.
+    # Thus, if "__init__" is *model_names*, it must be the first module opened.
+    first_module: Tuple[str, ...] = ()
+    if "__init__" in module_names:
+        module_names.remove("__init__")
+        first_module = ("__init__",)
+    sorted_module_names: Tuple[str, ...] = first_module + tuple(sorted(module_names))
     return tuple(sorted_module_names), documents_directory, markdown_program
 
 
 def main() -> int:
     """Generate markdown files from Python document strings."""
     # Process the command line arguments:
-    module_names: Tuple[str, ...]
+    module_names: Tuple[str, ...] = ("Not Updated",)
     document_directory: Path
     markdown_program: str
 

@@ -1,0 +1,148 @@
+<h1>Doc: Doc: Convert Python doc strings to Markdown files.</h1>
+<p>The Doc program reads Python files and generates Markdown files from embedded doc strings.
+These files can be converted into HTML files via a Markdown program like <code>cmark</code>.</p>
+<pre><code> Usage:
+   python3 Doc.py [--directory=OUTPUT_DIR] [--markdown=CONVERTER] [FILES_NAMES_DIRECTORIES...]
+</code></pre>
+<p>As a convenience, the inputs can be specified as a combination of the following:</p>
+<ul>
+<li>Python File:  A Python file has a suffix of <code>.py</code>.</li>
+<li>Python Module Name:  A Python file without the <code>.py</code>. suffix.</li>
+<li>Python Package Directory: A directory containing Python files.
+If the directory contains an <code>__init__.py</code> file, they <code>__init__.py</code> file is scanned for a doc
+string and processed.  The first line of the doc string must be for the format
+<code>PACKAGE_NAME: ...</code> and it generates a corresponding <code>PACKAGE_NAME.md</code> file name.</li>
+</ul>
+<p>If no output directory is explicitly specified via <code>--directory=...</code>, the default is to
+try to use a local <code>docs</code> directory first, followed by <code>/tmp</code> second.</p>
+<p>If <code>--markdown=CONVERTER</code> is specified, the CONVERTER is run as <code>CONVERTER FILE.md -o FILE.html</code>
+as a convenience.  If <code>--markdown=...</code> is not specified and <code>cmark</code> is in accessible via your
+PATH environment variable.  <code>--markdown=</code> is used to disable automatic conversion via <code>cmark</code>.</p>
+<p>In general, running <code>python3 Doc</code> (or <code>./Doc.py</code>) will scan the current directory, write out
+the markdown files and convert them to HTML files in the local <code>docs</code> sub-directory.</p>
+<p>This is a relatively dumb program.  All Python doc strings need to be written in Markdown notation.</p>
+<h2>Table of Contents (alphabetical order):</h2>
+<ul>
+<li>1 Class: <a href="#doc--modelclass">ModelClass</a>:
+<ul>
+<li>1.1 <a href="#doc----set-annotations">set_annotations()</a>: Set the Markdown anchor.</li>
+<li>1.2 <a href="#doc----summary-lines">summary_lines()</a>: Return ModelModule summary lines.</li>
+<li>1.3 <a href="#doc----documentation-lines">documentation_lines()</a>: Return the ModelModule documentaion lines.</li>
+</ul>
+</li>
+<li>2 Class: <a href="#doc--modeldoc">ModelDoc</a>:
+<ul>
+<li>2.1 <a href="#doc----set-lines">set_lines()</a>: Set the Lines field of a ModelDoc.</li>
+<li>2.2 <a href="#doc----set-annotations">set_annotations()</a>: Set the ModelDoc Anchor and Number attributes.</li>
+</ul>
+</li>
+<li>3 Class: <a href="#doc--modelfunction">ModelFunction</a>:
+<ul>
+<li>3.1 <a href="#doc----set-annotations">set_annotations()</a>: Set the markdown annotations.</li>
+<li>3.2 <a href="#doc----summary-lines">summary_lines()</a>: Return ModelModule table of contents summary lines.</li>
+<li>3.3 <a href="#doc----documentation-lines">documentation_lines()</a>: Return the ModelModule documentaion lines.</li>
+</ul>
+</li>
+<li>4 Class: <a href="#doc--modelmodule">ModelModule</a>:
+<ul>
+<li>4.1 <a href="#doc----set-annotations">set_annotations()</a>: Set the Markdown anchor.</li>
+<li>4.2 <a href="#doc----summary-lines">summary_lines()</a>: Return ModelModule summary lines.</li>
+<li>4.3 <a href="#doc----documentation-lines">documentation_lines()</a>: Return the ModelModule documentaion lines.</li>
+<li>4.4 <a href="#doc----generate">generate()</a>: Generate the markdown and HTML files.</li>
+</ul>
+</li>
+</ul>
+<h2><a name="doc--modelclass"></a>1 Class ModelClass:</h2>
+<p>Represents a class method.
+Attributes:</p>
+<ul>
+<li>Inherited Attributes: <em>Name</em>, <em>Lines</em>, <em>Anchor</em>, <em>Number</em> from ModelDoc.</li>
+<li><em>Class</em> (Any): The underlying Python class object that is imported.</li>
+<li><em>Functions</em> (Tuple[ModelFunction, ...]): The various functions associated with the Class.</li>
+</ul>
+<h3><a name="doc----set-annotations"></a>1.1 <code>ModelClass.</code>set_annotations():</h3>
+<p>ModelClass.set_annotations(self, anchor_prefix: str, number_prefix: str) -&gt; None:</p>
+<p>Set the Markdown anchor.</p>
+<h3><a name="doc----summary-lines"></a>1.2 <code>ModelClass.</code>summary_lines():</h3>
+<p>ModelClass.summary_lines(self, indent: str) -&gt; typing.Tuple[str, ...]:</p>
+<p>Return ModelModule summary lines.</p>
+<h3><a name="doc----documentation-lines"></a>1.3 <code>ModelClass.</code>documentation_lines():</h3>
+<p>ModelClass.documentation_lines(self, prefix: str) -&gt; typing.Tuple[str, ...]:</p>
+<p>Return the ModelModule documentaion lines.</p>
+<h2><a name="doc--modeldoc"></a>2 Class ModelDoc:</h2>
+<p>Base class ModelFunction, ModelClass, and ModelModule classes.
+Attributes:</p>
+<ul>
+<li><em>Name</em> (str):
+The Document element name (i.e. function/class/module name.)</li>
+<li><em>Lines</em> (Tuple[str, ...]):
+The documentation string converted into lines with extraneous indentation removed.
+This attribute is  set by the <em>set_lines</em>() method.</li>
+<li><em>Anchor</em> (str):
+The generated Markdown anchor for the documentation element.
+It is of the form &quot;MODULE--CLASS--FUNCTION&quot;, where the module/class/function names
+have underscores converted to hypen.</li>
+<li><em>Number</em> (str):
+The Table of contents number as a string.  '#&quot; for classes and &quot;#.#&quot; for functions.</li>
+</ul>
+<h3><a name="doc----set-lines"></a>2.1 <code>ModelDoc.</code>set_lines():</h3>
+<p>ModelDoc.set_lines(self, doc_string: typing.Union[str, NoneType]) -&gt; None:</p>
+<p>Set the Lines field of a ModelDoc.
+Arguments:</p>
+<ul>
+<li><em>doc_string</em> (str): A raw doc string.</li>
+</ul>
+<p>This method takes a raw doc string where the first line has no embedded indentation
+space and subsequent non-empty lines have common indentation padding and converts
+them into sequence of lines that have the common inendation removed.</p>
+<h3><a name="doc----set-annotations"></a>2.2 <code>ModelDoc.</code>set_annotations():</h3>
+<p>ModelDoc.set_annotations(self, anchor_prefix: str, number_prefix: str) -&gt; None:</p>
+<p>Set the ModelDoc Anchor and Number attributes.
+Arguments:</p>
+<ul>
+<li><em>anchor_prefix</em> (str):
+The string to prepend to the document element name before setting the Anchor attribute.</li>
+<li><em>number_prefix</em> (str):
+The string to prepend to the document element name before setting the Number attribute.</li>
+</ul>
+<p>This method must be implemented by sub-classes.</p>
+<h2><a name="doc--modelfunction"></a>3 Class ModelFunction:</h2>
+<p>Represents a function method.
+Attributes:</p>
+<ul>
+<li>Inherited Attributes: <em>Name</em>, <em>Lines</em>, <em>Anchor</em>, <em>Number</em> from ModelDoc.</li>
+<li><em>Function</em> (Callable): The actual function object.</li>
+</ul>
+<h3><a name="doc----set-annotations"></a>3.1 <code>ModelFunction.</code>set_annotations():</h3>
+<p>ModelFunction.set_annotations(self, anchor_prefix: str, number_prefix: str) -&gt; None:</p>
+<p>Set the markdown annotations.
+(see <a href="#Doc-ModelDoc-set_annotations">ModeDoc.set_annoations</a></p>
+<h3><a name="doc----summary-lines"></a>3.2 <code>ModelFunction.</code>summary_lines():</h3>
+<p>ModelFunction.summary_lines(self, class_name: str, indent: str) -&gt; typing.Tuple[str, ...]:</p>
+<p>Return ModelModule table of contents summary lines.
+Arguments:</p>
+<ul>
+<li><em>class_name</em>: The class name the function is a member of.</li>
+<li><em>indent</em> (int) The prefix spaces to make the markdown work.</li>
+</ul>
+<h3><a name="doc----documentation-lines"></a>3.3 <code>ModelFunction.</code>documentation_lines():</h3>
+<p>ModelFunction.documentation_lines(self, class_name: str, prefix: str) -&gt; typing.Tuple[str, ...]:</p>
+<p>Return the ModelModule documentaion lines.
+Arguments:</p>
+<ul>
+<li><em>prefix</em> (str): The prefix to use to make the markdown work.</li>
+</ul>
+<h2><a name="doc--modelmodule"></a>4 Class ModelModule:</h2>
+<p>ModelMethod: Represents a class method.</p>
+<h3><a name="doc----set-annotations"></a>4.1 <code>ModelModule.</code>set_annotations():</h3>
+<p>ModelModule.set_annotations(self, anchor_prefix: str, number_prefix: str) -&gt; None:</p>
+<p>Set the Markdown anchor.</p>
+<h3><a name="doc----summary-lines"></a>4.2 <code>ModelModule.</code>summary_lines():</h3>
+<p>ModelModule.summary_lines(self) -&gt; typing.Tuple[str, ...]:</p>
+<p>Return ModelModule summary lines.</p>
+<h3><a name="doc----documentation-lines"></a>4.3 <code>ModelModule.</code>documentation_lines():</h3>
+<p>ModelModule.documentation_lines(self, prefix: str) -&gt; typing.Tuple[str, ...]:</p>
+<p>Return the ModelModule documentaion lines.</p>
+<h3><a name="doc----generate"></a>4.4 <code>ModelModule.</code>generate():</h3>
+<p>ModelModule.generate(self, document_directory: pathlib.Path, markdown_program: str) -&gt; None:</p>
+<p>Generate the markdown and HTML files.</p>

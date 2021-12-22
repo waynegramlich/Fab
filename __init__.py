@@ -1,4 +1,4 @@
-"""Model Package: Python Focused Device Design and Fabrication.
+"""Model: Python Focused Device Design and Fabrication.
 
 # Table of Contents:
 
@@ -62,19 +62,19 @@ Once the ModelRoot is present there are 4 phases perfomed:
 ## Python Modules <a name="python-modules"></a>
 
 The bottom up module list is:
-* [Utilitys](Utilitys.md):
+* [Utilitys](Utilitys.html):
   Utility module of miscellaneous classes -- Bounding Box, Colors, Materials, etc.
-* [Tree](Tree.md):
+* [Tree](Tree.html):
   This defines the basic ModeNode classes.
-* [Geometry](Geometry.md):
+* [Geometry](Geometry.html):
   The defines the 2D geometry ModelNode classes for using the FreeCAD Draft workbench.
-* [Part](ApexNode.md):
+* [Part](ApexNode.html):
   A library that supports generating parts using the FreeCAD PartDesign workbench.
-* [Shop](Shop.md):
+* [Shop](Shop.html):
   A library that defines machines and tooling available in a given shop.
-* [CNC](CNC.md):
+* [CNC](CNC.html):
   A library that interfaces with the FreeCAD Path workbench for producing CNC files.
-* [Doc](Doc.md):
+* [Doc](Doc.html):
   A documentation extraction utility that reads the Python documentation strings and
   generates both markdown and HTML documentation files.
 
