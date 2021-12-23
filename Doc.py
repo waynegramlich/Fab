@@ -416,7 +416,7 @@ def process_arguments(arguments: Tuple[str, ...]) -> Tuple[Tuple[str, ...], Path
     directory_flag_prefix = "--directory="
     markdown_flag_prefix = "--markdown="
 
-    non_flag_arguments: List[str] = list(arguments)  # For now.
+    non_flag_arguments: List[str] = []
     argument: str
     for argument in arguments:
         if argument.startswith(directory_flag_prefix):
@@ -425,6 +425,8 @@ def process_arguments(arguments: Tuple[str, ...]) -> Tuple[Tuple[str, ...], Path
                 raise RuntimeError(f"{document_directory} is not a directory")
         elif argument.startswith(markdown_flag_prefix):
             markdown_program = argument[len(markdown_flag_prefix):]
+        elif argument == "--unit-test":
+            pass
         else:
             non_flag_arguments.append(argument)
     if not non_flag_arguments:

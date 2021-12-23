@@ -7,61 +7,44 @@
 <li>1.2 <a href="#solid----produce">produce()</a>: Produce a box.</li>
 </ul>
 </li>
-<li>2 Class: <a href="#solid--modfabcircle">ModFabCircle</a>:
+<li>2 Class: <a href="#solid--modfabfile">ModFabFile</a>:
 <ul>
-<li>2.1 <a href="#solid----produce">produce()</a>: Produce the FreeCAD objects needed for ModFabPolygon.</li>
-<li>2.2 <a href="#solid----get-geometries">get_geometries()</a>: Return the ModFabPolygon lines and arcs.</li>
+<li>2.1 <a href="#solid----produce">produce()</a>: Produce all of the ModFabSolid's.</li>
 </ul>
 </li>
-<li>3 Class: <a href="#solid--modfabfile">ModFabFile</a>:
+<li>3 Class: <a href="#solid--modfabhole">ModFabHole</a>:
 <ul>
-<li>3.1 <a href="#solid----produce">produce()</a>: Produce all of the ModFabSolid's.</li>
+<li>3.1 <a href="#solid----get-name">get_name()</a>: Return ModFabHole name.</li>
+<li>3.2 <a href="#solid----produce">produce()</a>: Produce the Hole.</li>
 </ul>
 </li>
-<li>4 Class: <a href="#solid--modfabgeometry">ModFabGeometry</a>:
+<li>4 Class: <a href="#solid--modfabmount">ModFabMount</a>:
 <ul>
-<li>4.1 <a href="#solid----produce">produce()</a>: Produce the necessary FreeCAD objects for the ModFabGeometry.</li>
+<li>4.1 <a href="#solid----produce">produce()</a>: Create the FreeCAD DatumPlane used for the drawing support.</li>
 </ul>
 </li>
-<li>5 Class: <a href="#solid--modfabhole">ModFabHole</a>:
+<li>5 Class: <a href="#solid--modfaboperation">ModFabOperation</a>:
 <ul>
-<li>5.1 <a href="#solid----get-name">get_name()</a>: Return ModFabHole name.</li>
-<li>5.2 <a href="#solid----produce">produce()</a>: Produce the Hole.</li>
+<li>5.1 <a href="#solid----get-name">get_name()</a>: Return ModFabOperation name.</li>
+<li>5.2 <a href="#solid----produce">produce()</a>: Return the operation sort key.</li>
+<li>5.3 <a href="#solid----produce-shape-binder">produce_shape_binder()</a>: Produce the shape binder needed for the pad, pocket, hole, ... operations.</li>
 </ul>
 </li>
-<li>6 Class: <a href="#solid--modfabmount">ModFabMount</a>:
+<li>6 Class: <a href="#solid--modfabpad">ModFabPad</a>:
 <ul>
-<li>6.1 <a href="#solid----produce">produce()</a>: Create the FreeCAD DatumPlane used for the drawing support.</li>
+<li>6.1 <a href="#solid----get-name">get_name()</a>: Return ModFabPad name.</li>
+<li>6.2 <a href="#solid----produce">produce()</a>: Produce the Pad.</li>
 </ul>
 </li>
-<li>7 Class: <a href="#solid--modfaboperation">ModFabOperation</a>:
+<li>7 Class: <a href="#solid--modfabpocket">ModFabPocket</a>:
 <ul>
-<li>7.1 <a href="#solid----get-name">get_name()</a>: Return ModFabOperation name.</li>
-<li>7.2 <a href="#solid----produce">produce()</a>: Return the operation sort key.</li>
-<li>7.3 <a href="#solid----produce-shape-binder">produce_shape_binder()</a>: Produce the shape binder needed for the pad, pocket, hole, ... operations.</li>
+<li>7.1 <a href="#solid----get-name">get_name()</a>: Return ModFabPocket name.</li>
+<li>7.2 <a href="#solid----produce">produce()</a>: Produce the Pad.</li>
 </ul>
 </li>
-<li>8 Class: <a href="#solid--modfabpad">ModFabPad</a>:
+<li>8 Class: <a href="#solid--modfabsolid">ModFabSolid</a>:
 <ul>
-<li>8.1 <a href="#solid----get-name">get_name()</a>: Return ModFabPad name.</li>
-<li>8.2 <a href="#solid----produce">produce()</a>: Produce the Pad.</li>
-</ul>
-</li>
-<li>9 Class: <a href="#solid--modfabpocket">ModFabPocket</a>:
-<ul>
-<li>9.1 <a href="#solid----get-name">get_name()</a>: Return ModFabPocket name.</li>
-<li>9.2 <a href="#solid----produce">produce()</a>: Produce the Pad.</li>
-</ul>
-</li>
-<li>10 Class: <a href="#solid--modfabpolygon">ModFabPolygon</a>:
-<ul>
-<li>10.1 <a href="#solid----get-geometries">get_geometries()</a>: Return the ModFabPolygon lines and arcs.</li>
-<li>10.2 <a href="#solid----produce">produce()</a>: Produce the FreeCAD objects needed for ModFabPolygon.</li>
-</ul>
-</li>
-<li>11 Class: <a href="#solid--modfabsolid">ModFabSolid</a>:
-<ul>
-<li>11.1 <a href="#solid----produce">produce()</a>: Produce the ModFabSolid.</li>
+<li>8.1 <a href="#solid----produce">produce()</a>: Produce the ModFabSolid.</li>
 </ul>
 </li>
 </ul>
@@ -84,32 +67,12 @@ Builds a box given a length, width, height, material, thickness and center point
 <h3><a name="solid----produce"></a>1.2 <code>Box.</code>produce():</h3>
 <p>Box.produce(self) -&gt; typing.Tuple[Solid.ModFabSolid, ...]:</p>
 <p>Produce a box.</p>
-<h2><a name="solid--modfabcircle"></a>2 Class ModFabCircle:</h2>
-<p>A circle with a center and a radius.
-This is actually a sphere of at a specified location and diameter.  It gets cut into
-circle later on.</p>
-<p>Attributes:</p>
-<ul>
-<li><em>Center</em> (Vector): The circle center.</li>
-<li><em>Diameter</em> (float): The diameter in radians.</li>
-</ul>
-<h3><a name="solid----produce"></a>2.1 <code>ModFabCircle.</code>produce():</h3>
-<p>ModFabCircle.produce(self, model_file: Solid.ModFabFile, prefix: str) -&gt; typing.Tuple[Part.Part2DObject, ...]:</p>
-<p>Produce the FreeCAD objects needed for ModFabPolygon.</p>
-<h3><a name="solid----get-geometries"></a>2.2 <code>ModFabCircle.</code>get_geometries():</h3>
-<p>ModFabCircle.get_geometries(self) -&gt; typing.Tuple[Solid._ModFabGeometry, ...]:</p>
-<p>Return the ModFabPolygon lines and arcs.</p>
-<h2><a name="solid--modfabfile"></a>3 Class ModFabFile:</h2>
+<h2><a name="solid--modfabfile"></a>2 Class ModFabFile:</h2>
 <p>Represents a FreeCAD document file.</p>
-<h3><a name="solid----produce"></a>3.1 <code>ModFabFile.</code>produce():</h3>
-<p>ModFabFile.produce(self) -&gt; None:</p>
+<h3><a name="solid----produce"></a>2.1 <code>ModFabFile.</code>produce():</h3>
+<p>ModFabFile.produce(self, context: typing.Dict[str, typing.Any]) -&gt; None:</p>
 <p>Produce all of the ModFabSolid's.</p>
-<h2><a name="solid--modfabgeometry"></a>4 Class ModFabGeometry:</h2>
-<p>The base class for ModFabPolygon and ModFabCircle.</p>
-<h3><a name="solid----produce"></a>4.1 <code>ModFabGeometry.</code>produce():</h3>
-<p>ModFabGeometry.produce(self, model_context: Solid.ModFabFile, prefix: str) -&gt; typing.Tuple[Part.Part2DObject, ...]:</p>
-<p>Produce the necessary FreeCAD objects for the ModFabGeometry.</p>
-<h2><a name="solid--modfabhole"></a>5 Class ModFabHole:</h2>
+<h2><a name="solid--modfabhole"></a>3 Class ModFabHole:</h2>
 <p>A FreeCAD PartDesign Pocket operation.
 Attributes:</p>
 <ul>
@@ -117,13 +80,13 @@ Attributes:</p>
 <li><em>Circle</em> (ModFabCircle): The Circle to drill.</li>
 <li><em>Depth</em> (float): The depth</li>
 </ul>
-<h3><a name="solid----get-name"></a>5.1 <code>ModFabHole.</code>get_name():</h3>
+<h3><a name="solid----get-name"></a>3.1 <code>ModFabHole.</code>get_name():</h3>
 <p>ModFabHole.get_name(self) -&gt; str:</p>
 <p>Return ModFabHole name.</p>
-<h3><a name="solid----produce"></a>5.2 <code>ModFabHole.</code>produce():</h3>
-<p>ModFabHole.produce(self, model_file: Solid.ModFabFile, prefix: str) -&gt; None:</p>
+<h3><a name="solid----produce"></a>3.2 <code>ModFabHole.</code>produce():</h3>
+<p>ModFabHole.produce(self, context: typing.Dict[str, typing.Any], prefix: str) -&gt; None:</p>
 <p>Produce the Hole.</p>
-<h2><a name="solid--modfabmount"></a>6 Class ModFabMount:</h2>
+<h2><a name="solid--modfabmount"></a>4 Class ModFabMount:</h2>
 <p>An operations plane that can be oriented for subsequent machine operations.
 This class basically corresponds to a FreeCad Datum Plane.  It is basically the surface
 to which the 2D ModFabGeometry's are mapped onto prior to performing each operation.
@@ -137,8 +100,8 @@ This class is immutable (i.e. frozen.)</p>
 A vector in the plane that specifies the north direction when mounted  in a machining vice.</li>
 <li><em>Operations</em> (Tuple[ModFabOperation, ...]): The operations to perform.</li>
 </ul>
-<h3><a name="solid----produce"></a>6.1 <code>ModFabMount.</code>produce():</h3>
-<p>ModFabMount.produce(self, model_file: Solid.ModFabFile, prefix: str) -&gt; None:</p>
+<h3><a name="solid----produce"></a>4.1 <code>ModFabMount.</code>produce():</h3>
+<p>ModFabMount.produce(self, context: typing.Dict[str, typing.Any], prefix: str) -&gt; None:</p>
 <p>Create the FreeCAD DatumPlane used for the drawing support.
 Arguments:</p>
 <ul>
@@ -151,19 +114,19 @@ Arguments:</p>
 </ul>
 </li>
 </ul>
-<h2><a name="solid--modfaboperation"></a>7 Class ModFabOperation:</h2>
+<h2><a name="solid--modfaboperation"></a>5 Class ModFabOperation:</h2>
 <p>An base class for operations -- ModFabPad, ModFabPocket, ModFabHole, etc.
 All model operations are immutable (i.e. frozen.)</p>
-<h3><a name="solid----get-name"></a>7.1 <code>ModFabOperation.</code>get_name():</h3>
+<h3><a name="solid----get-name"></a>5.1 <code>ModFabOperation.</code>get_name():</h3>
 <p>ModFabOperation.get_name(self) -&gt; str:</p>
 <p>Return ModFabOperation name.</p>
-<h3><a name="solid----produce"></a>7.2 <code>ModFabOperation.</code>produce():</h3>
-<p>ModFabOperation.produce(self, model_file: Solid.ModFabFile, prefix: str) -&gt; None:</p>
+<h3><a name="solid----produce"></a>5.2 <code>ModFabOperation.</code>produce():</h3>
+<p>ModFabOperation.produce(self, context: typing.Dict[str, typing.Any], prefix: str) -&gt; None:</p>
 <p>Return the operation sort key.</p>
-<h3><a name="solid----produce-shape-binder"></a>7.3 <code>ModFabOperation.</code>produce_shape_binder():</h3>
-<p>ModFabOperation.produce_shape_binder(self, model_file: Solid.ModFabFile, part_geometries: typing.Tuple[Part.Part2DObject, ...], prefix: str) -&gt; Part.Feature:</p>
+<h3><a name="solid----produce-shape-binder"></a>5.3 <code>ModFabOperation.</code>produce_shape_binder():</h3>
+<p>ModFabOperation.produce_shape_binder(self, context: typing.Dict[str, typing.Any], part_geometries: typing.Tuple[Part.Part2DObject, ...], prefix: str) -&gt; Part.Feature:</p>
 <p>Produce the shape binder needed for the pad, pocket, hole, ... operations.</p>
-<h2><a name="solid--modfabpad"></a>8 Class ModFabPad:</h2>
+<h2><a name="solid--modfabpad"></a>6 Class ModFabPad:</h2>
 <p>A FreeCAD PartDesign Pad operation.
 Attributes:</p>
 <ul>
@@ -171,13 +134,13 @@ Attributes:</p>
 <li><em>Geometry</em> (ModFabGeometry): The ModlePolygon or ModFabCircle to pad with.</li>
 <li><em>Depth</em> (float): The depth to pad to in millimeters.</li>
 </ul>
-<h3><a name="solid----get-name"></a>8.1 <code>ModFabPad.</code>get_name():</h3>
+<h3><a name="solid----get-name"></a>6.1 <code>ModFabPad.</code>get_name():</h3>
 <p>ModFabPad.get_name(self) -&gt; str:</p>
 <p>Return ModFabPad name.</p>
-<h3><a name="solid----produce"></a>8.2 <code>ModFabPad.</code>produce():</h3>
-<p>ModFabPad.produce(self, model_file: Solid.ModFabFile, prefix: str) -&gt; None:</p>
+<h3><a name="solid----produce"></a>6.2 <code>ModFabPad.</code>produce():</h3>
+<p>ModFabPad.produce(self, context: typing.Dict[str, typing.Any], prefix: str) -&gt; None:</p>
 <p>Produce the Pad.</p>
-<h2><a name="solid--modfabpocket"></a>9 Class ModFabPocket:</h2>
+<h2><a name="solid--modfabpocket"></a>7 Class ModFabPocket:</h2>
 <p>A FreeCAD PartDesign Pocket operation.
 Attributes:</p>
 <ul>
@@ -185,41 +148,13 @@ Attributes:</p>
 <li><em>Geometry</em> (ModFabGeometry): The Polygon or Circle to pocket.</li>
 <li><em>Depth</em> (float): The pocket depth in millimeters.</li>
 </ul>
-<h3><a name="solid----get-name"></a>9.1 <code>ModFabPocket.</code>get_name():</h3>
+<h3><a name="solid----get-name"></a>7.1 <code>ModFabPocket.</code>get_name():</h3>
 <p>ModFabPocket.get_name(self) -&gt; str:</p>
 <p>Return ModFabPocket name.</p>
-<h3><a name="solid----produce"></a>9.2 <code>ModFabPocket.</code>produce():</h3>
-<p>ModFabPocket.produce(self, model_file: Solid.ModFabFile, prefix: str) -&gt; None:</p>
+<h3><a name="solid----produce"></a>7.2 <code>ModFabPocket.</code>produce():</h3>
+<p>ModFabPocket.produce(self, context: typing.Dict[str, typing.Any], prefix: str) -&gt; None:</p>
 <p>Produce the Pad.</p>
-<h2><a name="solid--modfabpolygon"></a>10 Class ModFabPolygon:</h2>
-<p>An immutable polygon with rounded corners.
-A ModFabPolygon is represented as a sequence of corners (i.e. a Vector) where each corner can
-optionally be filleted with a radius.  In order to make it easier to use, a corner can be
-specified as simple Vector or as a tuple that specifes a Vector and a radius.  The radius
-is in millimeters and can be provided as either Python int or float.  When an explicit
-fillet radius is not specified, higher levels in the software stack will typically substitute
-in a deburr radius for external corners and an interal tool radius for internal corners.
-ModFabPolygon's are frozen and can not be modified after creation.</p>
-<p>Example:
-polygon: ModFab.ModFabPolyon = ModFab.ModFabPolygon((
-Vector(-10, -10, 0),  # Lower left (no radius)
-Vector(10, -10, 0),  # Lower right (no radius)
-(Vector(10, 10, 0), 5),  # Upper right (5mm radius)
-(Vector(-0, 10, 0), 5.5),  # Upper right (5.5mm radius)
-), &quot;Name&quot;)</p>
-<p>Attributes:</p>
-<ul>
-<li><em>Name</em> (str): The name of the polygon.  (Default: &quot;&quot;)</li>
-<li><em>Corners</em> (Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]):
-See description below for more on corners.</li>
-</ul>
-<h3><a name="solid----get-geometries"></a>10.1 <code>ModFabPolygon.</code>get_geometries():</h3>
-<p>ModFabPolygon.get_geometries(self, contact: Base.Vector, Normal: Base.Vector) -&gt; typing.Tuple[Solid._ModFabGeometry, ...]:</p>
-<p>Return the ModFabPolygon lines and arcs.</p>
-<h3><a name="solid----produce"></a>10.2 <code>ModFabPolygon.</code>produce():</h3>
-<p>ModFabPolygon.produce(self, model_file: Solid.ModFabFile, prefix: str) -&gt; typing.Tuple[Part.Part2DObject, ...]:</p>
-<p>Produce the FreeCAD objects needed for ModFabPolygon.</p>
-<h2><a name="solid--modfabsolid"></a>11 Class ModFabSolid:</h2>
+<h2><a name="solid--modfabsolid"></a>8 Class ModFabSolid:</h2>
 <p>ModFab: Represents a single part constructed using FreeCAD Part Design paradigm.
 Attributes:</p>
 <ul>
@@ -228,6 +163,6 @@ Attributes:</p>
 <li><em>Color</em> (str): The color to use.</li>
 <li><em>Mounts</em> (Tuple[ModFabMount, ...]): The various model mounts to use to construct the part.</li>
 </ul>
-<h3><a name="solid----produce"></a>11.1 <code>ModFabSolid.</code>produce():</h3>
-<p>ModFabSolid.produce(self, model_file: Solid.ModFabFile) -&gt; None:</p>
+<h3><a name="solid----produce"></a>8.1 <code>ModFabSolid.</code>produce():</h3>
+<p>ModFabSolid.produce(self, context: typing.Dict[str, typing.Any]) -&gt; None:</p>
 <p>Produce the ModFabSolid.</p>

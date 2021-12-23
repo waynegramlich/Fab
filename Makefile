@@ -10,6 +10,7 @@ PY2MD := py2md.py
 #     py2md.py
 PY_FILES := \
     Doc.py \
+    Geometry.py \
     Join.py \
     Solid.py \
     Tree.py
@@ -20,7 +21,7 @@ OTHER_MD_FILES := \
     coding_documentation.md \
     embedded_freecad.md
 
-COVER_FILES := ${PY_FILES:%.py=%.py,cover}
+COVER_FILES := ${PY_FILES:%.py=%.py,cover} __init__.py,cover
 LINT_FILES := ${PY_FILES:%.py=.%.lint}
 # ModFab is generated from __init__.py using a special rule:
 HTML_FILES := README.html docs/ModFab.html ${PY_FILES:%.py=docs/%.html}
