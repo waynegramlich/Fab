@@ -51,40 +51,40 @@ from FreeCAD import Placement, Rotation, Vector
 # import Part  # type: ignore
 
 
-# ModelFile
+# ModFabFile
 @dataclass
-class ModelFile(object):
-    """ModelFile: Represents a FreeCAD document file."""
+class ModFabFile(object):
+    """ModFabFile: Represents a FreeCAD document file."""
 
     FilePath: Path
-    Parts: Tuple["ModelSolid", ...]
+    Parts: Tuple["ModFabSolid", ...]
     AppDocument: App.Document = field(init=False, repr=False)
     GuiDocument: Optional["Gui.Document"] = field(init=False, default=None, repr=False)
-    Part: "ModelSolid" = field(init=False, repr=False)
+    Part: "ModFabSolid" = field(init=False, repr=False)
     ViewObject: Optional[Any] = field(init=False, default=None, repr=False)
     GeometryGroup: App.DocumentObjectGroup = field(init=False, repr=False)
     Body: "Part.BodyBase" = field(init=False, repr=False)
-    Mount: "ModelMount" = field(init=False, repr=False)
+    Mount: "ModFabMount" = field(init=False, repr=False)
     DatumPlane: "Part.Geometry" = field(init=False, repr=False)
 
-    # ModelFile.__post_init__():
+    # ModFabFile.__post_init__():
     def __post_init__(self) -> None:
         """Initialize the AppDocument."""
-        part: ModelSolid
+        part: ModFabSolid
         part_names: Set[str] = set()
         if len(self.Parts) == 0:
-            raise ValueError("At least one ModelSolid needs to be specified")
+            raise ValueError("At least one ModFabSolid needs to be specified")
         for part in self.Parts:
-            if not isinstance(part, ModelSolid):
-                raise ValueError(f"{part} is not a ModelSolid")
+            if not isinstance(part, ModFabSolid):
+                raise ValueError(f"{part} is not a ModFabSolid")
             if part.Name in part_names:
                 raise ValueError(f"There are two or more Part's with the same name '{part.Name}'")
             part_names.add(part.Name)
 
         self.GeometryGroup = cast(App.DocumentObjectGroup, None)
-        self.Part = cast(ModelSolid, None)
+        self.Part = cast(ModFabSolid, None)
         self.Body = cast(Part.BodyBase, None)
-        self.Mount = cast("ModelMount", None)
+        self.Mount = cast("ModFabMount", None)
         self.DatumPlane = cast("Part.Geometry", None)
 
         stem: str = self.FilePath.stem
@@ -92,94 +92,94 @@ class ModelFile(object):
         if App.GuiUp:
             self.GuiDocument = Gui.getDocument(stem)  # pragma: no unit cover
 
-    # ModelFile.__enter__():
-    def __enter__(self) -> "ModelFile":
-        """Open the ModelFile."""
+    # ModFabFile.__enter__():
+    def __enter__(self) -> "ModFabFile":
+        """Open the ModFabFile."""
         return self
 
-    # ModelFile.__exit__():
+    # ModFabFile.__exit__():
     def __exit__(self, exec_type, exec_value, exec_table) -> None:
-        """Close the ModelFile."""
+        """Close the ModFabFile."""
         if self.AppDocument:
             print(f"saving {self.FilePath}")
             self.AppDocument.recompute()
             self.AppDocument.saveAs(str(self.FilePath))
 
-    # ModelFile.produce():
+    # ModFabFile.produce():
     def produce(self) -> None:
-        """Produce all of the ModelSolid's."""
-        part: "ModelSolid"
+        """Produce all of the ModFabSolid's."""
+        part: "ModFabSolid"
         for part in self.Parts:
             self.Part = part
             part.produce(self)
-            self.Part = cast(ModelSolid, None)
+            self.Part = cast(ModFabSolid, None)
 
-    # ModelFile._unit_tests():
+    # ModFabFile._unit_tests():
     @staticmethod
     def _unit_tests() -> None:
-        """Run ModelFile unit tests."""
+        """Run ModFabFile unit tests."""
         # Empty parts error:
         fcstd_path: Path = Path("/tmp/part_file_test.fcstd")
         try:
-            ModelFile(fcstd_path, ())
+            ModFabFile(fcstd_path, ())
             assert False
         except ValueError as value_error:
-            assert str(value_error) == "At least one ModelSolid needs to be specified"
+            assert str(value_error) == "At least one ModFabSolid needs to be specified"
 
         # Bogus parts error:
         try:
-            ModelFile(fcstd_path, (cast(ModelSolid, None),))
+            ModFabFile(fcstd_path, (cast(ModFabSolid, None),))
             assert False
         except ValueError as value_error:
-            assert str(value_error) == "None is not a ModelSolid"
+            assert str(value_error) == "None is not a ModFabSolid"
 
         # Duplicate part name error:
         contact: Vector = Vector()
         z_axis: Vector = Vector(0, 0, 1)
         y_axis: Vector = Vector(0, 1, 0)
         origin: Vector = Vector()
-        circle1: ModelCircle = ModelCircle(origin, 10.0)
+        circle1: ModFabCircle = ModFabCircle(origin, 10.0)
         depth1: float = 10.0
-        pad1: ModelPad = ModelPad("Cylinder1", circle1, depth1)
-        operations1: Tuple[ModelOperation, ...] = (pad1,)
-        mount1: ModelMount = ModelMount("Mount1", contact, z_axis, y_axis, operations1)
-        part1: ModelSolid = ModelSolid("Part1", "hdpe", "orange", (mount1,))
+        pad1: ModFabPad = ModFabPad("Cylinder1", circle1, depth1)
+        operations1: Tuple[ModFabOperation, ...] = (pad1,)
+        mount1: ModFabMount = ModFabMount("Mount1", contact, z_axis, y_axis, operations1)
+        part1: ModFabSolid = ModFabSolid("Part1", "hdpe", "orange", (mount1,))
 
         # Duplicate Part Names:
         try:
-            ModelFile(fcstd_path, (part1, part1))
+            ModFabFile(fcstd_path, (part1, part1))
             assert False
         except ValueError as value_error:
             assert str(value_error) == "There are two or more Part's with the same name 'Part1'"
 
         # Test Open/Produce/Close
         _ = fcstd_path.unlink if fcstd_path.exists() else None
-        model_file: ModelFile
-        with ModelFile(fcstd_path, (part1,)) as model_file:
-            assert isinstance(model_file, ModelFile)
+        model_file: ModFabFile
+        with ModFabFile(fcstd_path, (part1,)) as model_file:
+            assert isinstance(model_file, ModFabFile)
             model_file.produce()
         assert fcstd_path.exists(), f"{fcstd_path} file not generated."
         fcstd_path.unlink()
         assert not fcstd_path.exists()
 
 
-# _ModelGeometry:
+# _ModFabGeometry:
 @dataclass(frozen=True)
-class _ModelGeometry(object):
-    """_ModelGeometry: An Internal base class for _ModelArc, _ModelCircle, and _ModelLine.
+class _ModFabGeometry(object):
+    """_ModFabGeometry: An Internal base class for _ModFabArc, _ModFabCircle, and _ModFabLine.
 
-    All _ModelGeometry classes are immutable (i.e. frozen.)
+    All _ModFabGeometry classes are immutable (i.e. frozen.)
     """
 
-    # _ModelGeometry.produce():
-    def produce(self, model_file: ModelFile, prefix: str, index: int) -> Part.Part2DObject:
+    # _ModFabGeometry.produce():
+    def produce(self, model_file: ModFabFile, prefix: str, index: int) -> Part.Part2DObject:
         raise NotImplementedError(f"{type(self)}.produce() is not implemented yet")
 
 
-# _ModelArc:
+# _ModFabArc:
 @dataclass(frozen=True)
-class _ModelArc(_ModelGeometry):
-    """_ModelArc: An internal representation an arc geometry.
+class _ModFabArc(_ModFabGeometry):
+    """_ModFabArc: An internal representation an arc geometry.
 
     Attributes:
     * *Apex* (Vector): The fillet apex point.
@@ -207,7 +207,7 @@ class _ModelArc(_ModelGeometry):
     # FinishAngle: float
     # DeltaAngle: float
 
-    # _ModelArc._make_arc_3points():
+    # _ModFabArc._make_arc_3points():
     @staticmethod
     def make_arc_3points(points: Tuple[Vector, ...], placement=None, face=False,
                          support=None, map_mode="Deactivated",
@@ -306,8 +306,8 @@ class _ModelArc(_ModelGeometry):
 
         return obj
 
-    # _ModelArc.produce():
-    def produce(self, model_file: ModelFile, prefix: str, index: int) -> Part.Part2DObject:
+    # _ModFabArc.produce():
+    def produce(self, model_file: ModFabFile, prefix: str, index: int) -> Part.Part2DObject:
         """Return line segment after moving it into Geometry group."""
         label: str = f"{prefix}_Arc_{index:03d}"
         placement: Placement = Placement()
@@ -321,7 +321,7 @@ class _ModelArc(_ModelGeometry):
         #     startangle=math.degrees(self.StartAngle),
         #     endangle=math.degrees(self.StartAngle + self.DeltaAngle),
         #     support=None)
-        part_arc: Part.Part2DObject = _ModelArc.make_arc_3points(
+        part_arc: Part.Part2DObject = _ModFabArc.make_arc_3points(
             (self.Start, self.Middle, self.Finish))
         # part_arc: Part.Part2DObject=Draft.make_arc_3points([self.Start, self.Middle, self.Finish])
 
@@ -339,8 +339,8 @@ class _ModelArc(_ModelGeometry):
 
 
 @dataclass(frozen=True)
-class _ModelCircle(_ModelGeometry):
-    """_ModelCircle: An internal representation of a circle geometry.
+class _ModFabCircle(_ModFabGeometry):
+    """_ModFabCircle: An internal representation of a circle geometry.
 
     Attributes:
     * *Center (Vector): The circle center.
@@ -351,11 +351,11 @@ class _ModelCircle(_ModelGeometry):
     Center: Vector
     Diameter: float
 
-    # _ModelCircle.produce():
-    def produce(self, model_file: ModelFile, prefix: str, index: int) -> Part.Part2DObject:
+    # _ModFabCircle.produce():
+    def produce(self, model_file: ModFabFile, prefix: str, index: int) -> Part.Part2DObject:
         """Return line segment after moving it into Geometry group."""
         # Extract mount plane *contact* and *normal* from *model_file* to use for 2D projection:
-        mount: ModelMount = model_file.Mount
+        mount: ModFabMount = model_file.Mount
         contact: Vector = mount.Contact
         normal: Vector = mount.Normal
         center_on_plane: Vector = self.Center.projectToPlane(contact, normal)
@@ -383,10 +383,10 @@ class _ModelCircle(_ModelGeometry):
         return part_circle
 
 
-# _ModelLine:
+# _ModFabLine:
 @dataclass(frozen=True)
-class _ModelLine(_ModelGeometry):
-    """_ModelLine: An internal representation of a line segment geometry.
+class _ModFabLine(_ModFabGeometry):
+    """_ModFabLine: An internal representation of a line segment geometry.
 
     Attributes:
     * *Start (Vector): The line segment start point.
@@ -397,8 +397,8 @@ class _ModelLine(_ModelGeometry):
     Start: Vector
     Finish: Vector
 
-    # _ModelLine.produce():
-    def produce(self, model_file: ModelFile, prefix: str, index: int) -> Part.Part2DObject:
+    # _ModFabLine.produce():
+    def produce(self, model_file: ModFabFile, prefix: str, index: int) -> Part.Part2DObject:
         """Return line segment after moving it into Geometry group."""
         label: str = f"{prefix}_Line_{index:03d}"
         placement: Placement = Placement()
@@ -426,37 +426,37 @@ class _ModelLine(_ModelGeometry):
         return line_segment
 
 
-# _ModelFillet:
+# _ModFabFillet:
 @dataclass
-class _ModelFillet(object):
-    """_ModelFillet: An object that represents one fillet of a ModelPolygon.
+class _ModFabFillet(object):
+    """_ModFabFillet: An object that represents one fillet of a ModFabPolygon.
 
     Attributes:
     * *Apex* (Vector): The apex corner point for the fillet.
     * *Radius* (float): The fillet radius in millimeters.
-    * *Before* (_ModelFillet): The previous _ModelFillet in the ModelPolygon.
-    * *After* (_ModelFillet): The next _ModelFillet in the ModelPolygon.
-    * *Arc* (Optional[_ModelArc]): The fillet Arc if Radius is non-zero.
-    * *Line* (Optional[_ModelLine]): The line that connects to the previous _ModelFillet
+    * *Before* (_ModFabFillet): The previous _ModFabFillet in the ModFabPolygon.
+    * *After* (_ModFabFillet): The next _ModFabFillet in the ModFabPolygon.
+    * *Arc* (Optional[_ModFabArc]): The fillet Arc if Radius is non-zero.
+    * *Line* (Optional[_ModFabLine]): The line that connects to the previous _ModFabFillet
 
     """
 
     Apex: Vector
     Radius: float
-    Before: "_ModelFillet" = field(init=False, repr=False)  # Filled in by __post_init__()
-    After: "_ModelFillet" = field(init=False, repr=False)  # Filled in by __post_init__()
-    Arc: Optional["_ModelArc"] = field(init=False, default=None)  # Filled in by compute_arcs()
-    Line: Optional["_ModelLine"] = field(init=False, default=None)  # Filled in by compute_lines()
+    Before: "_ModFabFillet" = field(init=False, repr=False)  # Filled in by __post_init__()
+    After: "_ModFabFillet" = field(init=False, repr=False)  # Filled in by __post_init__()
+    Arc: Optional["_ModFabArc"] = field(init=False, default=None)  # Filled in by compute_arcs()
+    Line: Optional["_ModFabLine"] = field(init=False, default=None)  # Filled in by compute_lines()
 
-    # _ModelFillet.__post_init__():
+    # _ModFabFillet.__post_init__():
     def __post_init__(self) -> None:
-        """Initialize _ModelFillet."""
+        """Initialize _ModFabFillet."""
         self.Before = self
         self.After = self
 
-    # _ModelFillet.compute_arc():
-    def compute_arc(self, tracing: str = "") -> _ModelArc:
-        """Return the arc associated with a _ModelFillet with non-zero radius."""
+    # _ModFabFillet.compute_arc():
+    def compute_arc(self, tracing: str = "") -> _ModFabArc:
+        """Return the arc associated with a _ModFabFillet with non-zero radius."""
         # A fillet is represented as an arc that traverses a sphere with a specified radius.
         #
         # Each fillet specifies an 3D apex point and a radius.  The this fillet the apex point is
@@ -473,7 +473,7 @@ class _ModelFillet(object):
         # The XC line segment from X to C crosses the circle at the arc midpoint M.  The points
         # S, M, and F uniquely specify an arc of radius r in 3D space around the C center point.
         #
-        # The crude 2D diagram below shows the basic _ModelFillet geometry:
+        # The crude 2D diagram below shows the basic _ModFabFillet geometry:
         #
         #       A
         #       |
@@ -511,7 +511,7 @@ class _ModelFillet(object):
         apex: Vector = self.Apex
         after: Vector = self.After.Apex
         if tracing:
-            print(f"{tracing}=>_ModelFillet.compute_arc({apex})")
+            print(f"{tracing}=>_ModFabFillet.compute_arc({apex})")
             print(f"{tracing}{radius=} {before=} {apex=} {after=}")
 
         # Steps 1 and 2: Compute unit vectors <XB>, <XA>, and <XC>
@@ -573,9 +573,9 @@ class _ModelFillet(object):
         # Let's instead go in the shorter, negative direction.
         # if delta_angle > pi:
         #    delta_angle = -(pi2 - delta_angle)
-        # arc: _ModelArc = _ModelArc(apex, radius, center, start, middle, finish,
+        # arc: _ModFabArc = _ModFabArc(apex, radius, center, start, middle, finish,
         #                            start_angle, finish_angle, delta_angle)
-        arc: _ModelArc = _ModelArc(apex, radius, center, start, middle, finish)
+        arc: _ModFabArc = _ModFabArc(apex, radius, center, start, middle, finish)
 
         # Do a sanity check:
         # finish_angle = finish_angle % pi2
@@ -583,10 +583,10 @@ class _ModelFillet(object):
         # assert abs(start_plus_delta_angle - finish_angle) < 1.0e-8, "Delta angle is wrong."
 
         if tracing:
-            print(f"{tracing}<=_ModelFillet.compute_arc({apex})=>{arc}")
+            print(f"{tracing}<=_ModFabFillet.compute_arc({apex})=>{arc}")
         return arc
 
-    # _ModelFillet.plane_2d_project:
+    # _ModFabFillet.plane_2d_project:
     def plane_2d_project(self, contact: Vector, normal: Vector) -> None:
         """Project the Apex onto a plane.
 
@@ -597,9 +597,9 @@ class _ModelFillet(object):
         """
         self.Apex = self.Apex.projectToPlane(contact, normal)
 
-    # _ModelFillet.get_geometries():
-    def get_geometries(self) -> Tuple[_ModelGeometry, ...]:
-        geometries: List[_ModelGeometry] = []
+    # _ModFabFillet.get_geometries():
+    def get_geometries(self) -> Tuple[_ModFabGeometry, ...]:
+        geometries: List[_ModFabGeometry] = []
         if self.Line:
             geometries.append(self.Line)
         if self.Arc:
@@ -607,21 +607,21 @@ class _ModelFillet(object):
         return tuple(geometries)
 
 
-# ModelGeometry:
+# ModFabGeometry:
 @dataclass(frozen=True)
-class ModelGeometry(object):
-    """ModelGeometry: The base class for ModelPolygon and ModelCircle."""
+class ModFabGeometry(object):
+    """ModFabGeometry: The base class for ModFabPolygon and ModFabCircle."""
 
-    # ModelGeometry.produce():
-    def produce(self, model_context: ModelFile, prefix: str) -> Tuple[Part.Part2DObject, ...]:
-        """Produce the necessary FreeCAD objects for the ModelGeometry."""
+    # ModFabGeometry.produce():
+    def produce(self, model_context: ModFabFile, prefix: str) -> Tuple[Part.Part2DObject, ...]:
+        """Produce the necessary FreeCAD objects for the ModFabGeometry."""
         raise NotImplementedError(f"{type(self)}.produce() is not implemented")
 
 
-# ModelCircle:
+# ModFabCircle:
 @dataclass(frozen=True)
-class ModelCircle(ModelGeometry):
-    """ModelCircle: A circle with a center and a radius.
+class ModFabCircle(ModFabGeometry):
+    """ModFabCircle: A circle with a center and a radius.
 
     This is actually a sphere of at a specified location and diameter.  It gets cut into
     circle later on.
@@ -635,7 +635,7 @@ class ModelCircle(ModelGeometry):
     Center: Vector
     Diameter: float
 
-    # ModelCircle.__post_init__():
+    # ModFabCircle.__post_init__():
     def __post_init__(self) -> None:
         """Make private copy of Center."""
         if self.Diameter <= 0.0:
@@ -644,11 +644,11 @@ class ModelCircle(ModelGeometry):
         copy: Vector = Vector()
         object.__setattr__(self, "Center", self.Center + copy)  # Makes a copy.
 
-    # ModelCircle.produce():
-    def produce(self, model_file: ModelFile, prefix: str) -> Tuple[Part.Part2DObject, ...]:
-        """Produce the FreeCAD objects needed for ModelPolygon."""
-        geometries: Tuple[_ModelGeometry, ...] = self.get_geometries()
-        geometry: _ModelGeometry
+    # ModFabCircle.produce():
+    def produce(self, model_file: ModFabFile, prefix: str) -> Tuple[Part.Part2DObject, ...]:
+        """Produce the FreeCAD objects needed for ModFabPolygon."""
+        geometries: Tuple[_ModFabGeometry, ...] = self.get_geometries()
+        geometry: _ModFabGeometry
         index: int
         part_geometries: List[Part.Part2DObject] = []
         for index, geometry in enumerate(geometries):
@@ -657,43 +657,43 @@ class ModelCircle(ModelGeometry):
             part_geometries.append(part_geometry)
         return tuple(part_geometries)
 
-    # ModelCircle.get_geometries():
-    def get_geometries(self) -> Tuple[_ModelGeometry, ...]:
-        """Return the ModelPolygon lines and arcs."""
-        return (_ModelCircle(self.Center, self.Diameter),)
+    # ModFabCircle.get_geometries():
+    def get_geometries(self) -> Tuple[_ModFabGeometry, ...]:
+        """Return the ModFabPolygon lines and arcs."""
+        return (_ModFabCircle(self.Center, self.Diameter),)
 
     @staticmethod
-    # ModelCircle._unit_tests():
+    # ModFabCircle._unit_tests():
     def _unit_tests():
-        """Run ModelCircle unit tests."""
+        """Run ModFabCircle unit tests."""
         center: Vector = Vector(1, 2, 3)
         try:
-            ModelCircle(center, 0.0)
+            ModFabCircle(center, 0.0)
             assert False
         except ValueError as value_error:
             assert str(value_error) == "Diameter (0.0) must be positive.", value_error
         try:
-            ModelCircle(center, -1.0)
+            ModFabCircle(center, -1.0)
             assert False
         except ValueError as value_error:
             assert str(value_error) == "Diameter (-1.0) must be positive.", value_error
 
 
-# ModelPolygon:
+# ModFabPolygon:
 @dataclass(frozen=True)
-class ModelPolygon(ModelGeometry):
-    """ModelPolygon: An immutable polygon with rounded corners.
+class ModFabPolygon(ModFabGeometry):
+    """ModFabPolygon: An immutable polygon with rounded corners.
 
-    A ModelPolygon is represented as a sequence of corners (i.e. a Vector) where each corner can
+    A ModFabPolygon is represented as a sequence of corners (i.e. a Vector) where each corner can
     optionally be filleted with a radius.  In order to make it easier to use, a corner can be
     specified as simple Vector or as a tuple that specifes a Vector and a radius.  The radius
     is in millimeters and can be provided as either Python int or float.  When an explicit
     fillet radius is not specified, higher levels in the software stack will typically substitute
     in a deburr radius for external corners and an interal tool radius for internal corners.
-    ModelPolygon's are frozen and can not be modified after creation.
+    ModFabPolygon's are frozen and can not be modified after creation.
 
     Example:
-         polygon: Model.ModelPolyon = Model.ModelPolygon((
+         polygon: ModFab.ModFabPolyon = ModFab.ModFabPolygon((
              Vector(-10, -10, 0),  # Lower left (no radius)
              Vector(10, -10, 0),  # Lower right (no radius)
              (Vector(10, 10, 0), 5),  # Upper right (5mm radius)
@@ -709,23 +709,23 @@ class ModelPolygon(ModelGeometry):
 
     Name: str
     Corners: Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]
-    _Fillets: Tuple[_ModelFillet, ...] = field(init=False, repr=False)
+    _Fillets: Tuple[_ModFabFillet, ...] = field(init=False, repr=False)
 
     EPSILON = 1.0e-8
 
-    # ModelPolygon.__post_init__():
+    # ModFabPolygon.__post_init__():
     def __post_init__(self) -> None:
         """Verify that the corners passed in are correct."""
         corner: Union[Vector, Tuple[Vector, Union[int, float]]]
-        fillets: List[_ModelFillet] = []
-        fillet: _ModelFillet
+        fillets: List[_ModFabFillet] = []
+        fillet: _ModFabFillet
         # TODO: Check for polygon points that are colinear.
         # TODO: Check for polygon corners with overlapping radii.
         copy: Vector = Vector()  # Vector's are mutable, add *copy* to make a private Vector copy.
         index: int
         for index, corner in enumerate(self.Corners):
             if isinstance(corner, Vector):
-                fillet = _ModelFillet(corner + copy, 0.0)
+                fillet = _ModFabFillet(corner + copy, 0.0)
             elif isinstance(corner, tuple):
                 if len(corner) != 2:
                     raise ValueError(f"Polygon Corner[{index}]: {corner} tuple length is not 2")
@@ -733,7 +733,7 @@ class ModelPolygon(ModelGeometry):
                     raise ValueError(f"Polygon Corner[{index}]: {corner} first entry is not Vector")
                 if not isinstance(corner[1], (int, float)):
                     raise ValueError(f"Polygon Corner[{index}]: {corner} first entry is not number")
-                fillet = _ModelFillet(corner[0] + copy, corner[1])
+                fillet = _ModFabFillet(corner[0] + copy, corner[1])
             else:
                 raise ValueError(
                     f"Polygon Corner[{index}] is {corner} which is neither a Vector nor "
@@ -755,23 +755,23 @@ class ModelPolygon(ModelGeometry):
         # self._compute_arcs()
         # self._compute_lines()
 
-    # ModelPolygon._double_link():
+    # ModFabPolygon._double_link():
     def _double_link(self) -> None:
-        """Double link the _ModelFillet's together."""
-        fillets: Tuple[_ModelFillet, ...] = self._Fillets
+        """Double link the _ModFabFillet's together."""
+        fillets: Tuple[_ModFabFillet, ...] = self._Fillets
         size: int = len(fillets)
-        fillet: _ModelFillet
+        fillet: _ModFabFillet
         index: int
         for index, fillet in enumerate(fillets):
             fillet.Before = fillets[(index - 1) % size]
             fillet.After = fillets[(index + 1) % size]
 
-    # ModelPolygon._radii_check():
+    # ModFabPolygon._radii_check():
     def _radii_check(self) -> str:
         """Check for radius overlap errors."""
-        at_fillet: _ModelFillet
+        at_fillet: _ModFabFillet
         for at_fillet in self._Fillets:
-            before_fillet: _ModelFillet = at_fillet.Before
+            before_fillet: _ModFabFillet = at_fillet.Before
             actual_distance: float = (before_fillet.Apex - at_fillet.Apex).Length
             radii_distance: float = before_fillet.Radius + at_fillet.Radius
             if radii_distance > actual_distance:
@@ -780,11 +780,11 @@ class ModelPolygon(ModelGeometry):
                         "between {at_fillet.Before} and {after_fillet.After}")
         return ""
 
-    # ModelPolygon._colinear_check():
+    # ModFabPolygon._colinear_check():
     def _colinear_check(self) -> str:
         """Check for colinearity errors."""
-        at_fillet: _ModelFillet
-        epsilon: float = ModelPolygon.EPSILON
+        at_fillet: _ModFabFillet
+        epsilon: float = ModFabPolygon.EPSILON
         degrees180: float = math.pi
         for at_fillet in self._Fillets:
             before_apex: Vector = at_fillet.Before.Apex
@@ -797,52 +797,52 @@ class ModelPolygon(ModelGeometry):
                 return f"Points [{before_apex}, {at_apex}, {after_apex}] are colinear"
         return ""
 
-    # ModelPolygon._compute_arcs():
+    # ModFabPolygon._compute_arcs():
     def _compute_arcs(self) -> None:
-        """Create any Arc's needed for non-zero radius _ModelFillet's."""
-        fillet: _ModelFillet
+        """Create any Arc's needed for non-zero radius _ModFabFillet's."""
+        fillet: _ModFabFillet
         for fillet in self._Fillets:
             if fillet.Radius > 0.0:
                 fillet.Arc = fillet.compute_arc()
 
-    # ModelPolygon._compute_lines():
+    # ModFabPolygon._compute_lines():
     def _compute_lines(self) -> None:
-        """Create Create any Line's need for _ModelFillet's."""
-        fillet: _ModelFillet
+        """Create Create any Line's need for _ModFabFillet's."""
+        fillet: _ModFabFillet
         for fillet in self._Fillets:
-            before: _ModelFillet = fillet.Before
+            before: _ModFabFillet = fillet.Before
             start: Vector = before.Arc.Finish if before.Arc else before.Apex
             finish: Vector = fillet.Arc.Start if fillet.Arc else fillet.Apex
-            if (start - finish).Length > ModelPolygon.EPSILON:
-                fillet.Line = _ModelLine(start, finish)
+            if (start - finish).Length > ModFabPolygon.EPSILON:
+                fillet.Line = _ModFabLine(start, finish)
 
-    # ModelPolygon.get_geometries():
-    def get_geometries(self, contact: Vector, Normal: Vector) -> Tuple[_ModelGeometry, ...]:
-        """Return the ModelPolygon lines and arcs."""
-        geometries: List[_ModelGeometry] = []
-        fillet: _ModelFillet
+    # ModFabPolygon.get_geometries():
+    def get_geometries(self, contact: Vector, Normal: Vector) -> Tuple[_ModFabGeometry, ...]:
+        """Return the ModFabPolygon lines and arcs."""
+        geometries: List[_ModFabGeometry] = []
+        fillet: _ModFabFillet
         for fillet in self._Fillets:
             geometries.extend(fillet.get_geometries())
         return tuple(geometries)
 
-    # ModelPolygon._plane_2d_project():
+    # ModFabPolygon._plane_2d_project():
     def _plane_2d_project(self, contact: Vector, normal: Vector) -> None:
-        """Update the _ModelFillet's to be projected onto a Plane.
+        """Update the _ModFabFillet's to be projected onto a Plane.
 
         Arguments:
         * *contact* (Vector): A point on the plane.
         * *normal* (Vector): A plane normal.
 
         """
-        fillet: _ModelFillet
+        fillet: _ModFabFillet
         for fillet in self._Fillets:
             fillet.plane_2d_project(contact, normal)
 
-    # ModelPolygon.produce():
-    def produce(self, model_file: ModelFile, prefix: str) -> Tuple[Part.Part2DObject, ...]:
-        """Produce the FreeCAD objects needed for ModelPolygon."""
+    # ModFabPolygon.produce():
+    def produce(self, model_file: ModFabFile, prefix: str) -> Tuple[Part.Part2DObject, ...]:
+        """Produce the FreeCAD objects needed for ModFabPolygon."""
         # Extract mount plane *contact* and *normal* from *model_file* to use for 2D projection:
-        mount: ModelMount = model_file.Mount
+        mount: ModFabMount = model_file.Mount
         contact: Vector = mount.Contact
         normal: Vector = mount.Normal
         self._plane_2d_project(contact, normal)
@@ -860,8 +860,8 @@ class ModelPolygon(ModelGeometry):
         self._compute_lines()
 
         # Extract the geometries using *contact* and *normal* to specify the projecton plane:
-        geometries: Tuple[_ModelGeometry, ...] = self.get_geometries(contact, normal)
-        geometry: _ModelGeometry
+        geometries: Tuple[_ModFabGeometry, ...] = self.get_geometries(contact, normal)
+        geometry: _ModFabGeometry
         index: int
         part_geometries: List[Part.Part2DObject] = []
         for index, geometry in enumerate(geometries):
@@ -870,7 +870,7 @@ class ModelPolygon(ModelGeometry):
             part_geometries.append(part_geometry)
         return tuple(part_geometries)
 
-    # ModelPolygon._unit_tests():
+    # ModFabPolygon._unit_tests():
     @staticmethod
     def _unit_tests() -> None:
         """Do some unit tests."""
@@ -878,35 +878,35 @@ class ModelPolygon(ModelGeometry):
         v2: Vector = Vector(40, -20, 0)
         v3: Vector = Vector(40, 20, 0)
         v4: Vector = Vector(-40, 20, 0)
-        polygon: ModelPolygon = ModelPolygon("TestPolygon", (v1, v2, (v3, 10), v4))
+        polygon: ModFabPolygon = ModFabPolygon("TestPolygon", (v1, v2, (v3, 10), v4))
         _ = polygon
 
-        # geometries: Tuple[_ModelGeometry, ...] = polygon.get_geometries()
+        # geometries: Tuple[_ModFabGeometry, ...] = polygon.get_geometries()
         # index: int
-        # geometry: _ModelGeometry
+        # geometry: _ModFabGeometry
         # for index, geometry in enumerate(geometries):
         #     print(f"Geometry[{index}]: {geometry}")
 
-# ModelOperation:
+# ModFabOperation:
 @dataclass(frozen=True)
-class ModelOperation(object):
-    """ModelOperation: An base class for operations -- ModelPad, ModelPocket, ModelHole, etc.
+class ModFabOperation(object):
+    """ModFabOperation: An base class for operations -- ModFabPad, ModFabPocket, ModFabHole, etc.
 
     All model operations are immutable (i.e. frozen.)
     """
 
-    # ModelOperation.get_name():
+    # ModFabOperation.get_name():
     def get_name(self) -> str:
-        """Return ModelOperation name."""
+        """Return ModFabOperation name."""
         raise NotImplementedError(f"{type(self)}.get_name() is not implemented")
 
-    # ModelOperation.produce():
-    def produce(self, model_file: ModelFile, prefix: str) -> None:
+    # ModFabOperation.produce():
+    def produce(self, model_file: ModFabFile, prefix: str) -> None:
         """Return the operation sort key."""
         raise NotImplementedError(f"{type(self)}.produce() is not implemented")
 
-    # ModelOperation.produce_shape_binder():
-    def produce_shape_binder(self, model_file: ModelFile,
+    # ModFabOperation.produce_shape_binder():
+    def produce_shape_binder(self, model_file: ModFabFile,
                              part_geometries: Tuple[Part.Part2DObject, ...],
                              prefix: str) -> Part.Feature:
         """Produce the shape binder needed for the pad, pocket, hole, ... operations."""
@@ -919,7 +919,7 @@ class ModelOperation(object):
         shape_binder.Visibility = False
         return shape_binder
 
-    # ModelOperation._viewer_upate():
+    # ModFabOperation._viewer_upate():
     def _viewer_update(self, body: Part.BodyBase, part_feature: Part.Feature) -> None:
         """Update the view Body view provider."""
         if App.GuiUp:  # pragma: no unit cover
@@ -937,37 +937,37 @@ class ModelOperation(object):
             # part_feature.ViewObject.DisplayMode = getattr(
             #    view_object, "DisplayMode", part_feature.ViewObject.DisplayMode)
 
-# ModelPad:
+# ModFabPad:
 @dataclass(frozen=True)
-class ModelPad(ModelOperation):
-    """ModelPad: A FreeCAD PartDesign Pad operation.
+class ModFabPad(ModFabOperation):
+    """ModFabPad: A FreeCAD PartDesign Pad operation.
 
     Attributes:
     * *Name* (str): The operation name.
-    * *Geometry* (ModelGeometry): The ModlePolygon or ModelCircle to pad with.
+    * *Geometry* (ModFabGeometry): The ModlePolygon or ModFabCircle to pad with.
     * *Depth* (float): The depth to pad to in millimeters.
 
     """
 
     Name: str
-    Geometry: ModelGeometry
+    Geometry: ModFabGeometry
     Depth: float
 
-    # ModelPad.__post_init__():
+    # ModFabPad.__post_init__():
     def __post_init__(self) -> None:
-        """Verify ModelPad values."""
-        if not isinstance(self.Geometry, ModelGeometry):
-            raise ValueError(f"{self.Geometry} is not a ModelGeometry")
+        """Verify ModFabPad values."""
+        if not isinstance(self.Geometry, ModFabGeometry):
+            raise ValueError(f"{self.Geometry} is not a ModFabGeometry")
         if self.Depth <= 0.0:
             raise ValueError(f"Depth ({self.Depth}) is not positive.")
 
-    # ModelPad.get_name():
+    # ModFabPad.get_name():
     def get_name(self) -> str:
-        """Return ModelPad name."""
+        """Return ModFabPad name."""
         return self.Name
 
-    # ModelPad.produce():
-    def produce(self, model_file: ModelFile, prefix: str) -> None:
+    # ModFabPad.produce():
+    def produce(self, model_file: ModFabFile, prefix: str) -> None:
         """Produce the Pad."""
         # Extract the *part_geometries* and create the assocated *shape_binder*:
         next_prefix: str = f"{prefix}_{self.Name}"
@@ -998,37 +998,37 @@ class ModelPad(ModelOperation):
         self._viewer_update(body, pad)
 
 
-# ModelPocket:
+# ModFabPocket:
 @dataclass(frozen=True)
-class ModelPocket(ModelOperation):
-    """ModelPocket: A FreeCAD PartDesign Pocket operation.
+class ModFabPocket(ModFabOperation):
+    """ModFabPocket: A FreeCAD PartDesign Pocket operation.
 
     Attributes:
     * *Name* (str): The operation name.
-    * *Geometry* (ModelGeometry): The Polygon or Circle to pocket.
+    * *Geometry* (ModFabGeometry): The Polygon or Circle to pocket.
     * *Depth* (float): The pocket depth in millimeters.
 
     """
 
     Name: str
-    Geometry: ModelGeometry
+    Geometry: ModFabGeometry
     Depth: float
 
-    # ModelPocket__post_init__():
+    # ModFabPocket__post_init__():
     def __post_init__(self) -> None:
-        """Verify ModelPad values."""
-        if not isinstance(self.Geometry, ModelGeometry):
-            raise ValueError(f"{self.Geometry} is not a ModelGeometry")
+        """Verify ModFabPad values."""
+        if not isinstance(self.Geometry, ModFabGeometry):
+            raise ValueError(f"{self.Geometry} is not a ModFabGeometry")
         if self.Depth <= 0.0:
             raise ValueError(f"Depth ({self.Depth}) is not positive.")
 
-    # ModelPocket.get_name():
+    # ModFabPocket.get_name():
     def get_name(self) -> str:
-        """Return ModelPocket name."""
+        """Return ModFabPocket name."""
         return self.Name
 
-    # ModelPocket.produce():
-    def produce(self, model_file: ModelFile, prefix: str) -> None:
+    # ModFabPocket.produce():
+    def produce(self, model_file: ModFabFile, prefix: str) -> None:
         """Produce the Pad."""
         # Extract the *part_geometries*:
         next_prefix: str = f"{prefix}_{self.Name}"
@@ -1057,37 +1057,37 @@ class ModelPocket(ModelOperation):
         self._viewer_update(body, pocket)
 
 
-# ModelHole:
+# ModFabHole:
 @dataclass(frozen=True)
-class ModelHole(ModelOperation):
-    """ModelHole: A FreeCAD PartDesign Pocket operation.
+class ModFabHole(ModFabOperation):
+    """ModFabHole: A FreeCAD PartDesign Pocket operation.
 
     Attributes:
     * *Name* (str): The operation name.
-    * *Circle* (ModelCircle): The Circle to drill.
+    * *Circle* (ModFabCircle): The Circle to drill.
     * *Depth* (float): The depth
 
     """
 
     Name: str
-    Circle: ModelCircle
+    Circle: ModFabCircle
     Depth: float
 
-    # ModelHole.__post_init__():
+    # ModFabHole.__post_init__():
     def __post_init__(self) -> None:
-        """Verify ModelPad values."""
-        if not isinstance(self.Circle, ModelCircle):
-            raise ValueError(f"{self.Geometry} is not a ModelCircle")
+        """Verify ModFabPad values."""
+        if not isinstance(self.Circle, ModFabCircle):
+            raise ValueError(f"{self.Geometry} is not a ModFabCircle")
         if self.Depth <= 0.0:
             raise ValueError(f"Depth ({self.Depth}) is not positive.")
 
-    # ModelHole.get_name():
+    # ModFabHole.get_name():
     def get_name(self) -> str:
-        """Return ModelHole name."""
+        """Return ModFabHole name."""
         return self.Name
 
-    # ModelHole.produce():
-    def produce(self, model_file: ModelFile, prefix: str) -> None:
+    # ModFabHole.produce():
+    def produce(self, model_file: ModFabFile, prefix: str) -> None:
         """Produce the Hole."""
         # Extract the *part_geometries*:
         next_prefix: str = f"{prefix}_{self.Name}"
@@ -1113,22 +1113,22 @@ class ModelHole(ModelOperation):
         self._viewer_update(body, hole)
 
 
-# ModelMount:
+# ModFabMount:
 @dataclass(frozen=True)
-class ModelMount(object):
-    """ModelMount: An operations plane that can be oriented for subsequent machine operations.
+class ModFabMount(object):
+    """ModFabMount: An operations plane that can be oriented for subsequent machine operations.
 
     This class basically corresponds to a FreeCad Datum Plane.  It is basically the surface
-    to which the 2D ModelGeometry's are mapped onto prior to performing each operation.
+    to which the 2D ModFabGeometry's are mapped onto prior to performing each operation.
     This class is immutable (i.e. frozen.)
 
     Attributes:
-    * *Name*: (str): The name of the ModelPlane.
+    * *Name*: (str): The name of the ModFabPlane.
     * *Contact* (Vector): A point on the plane.
     * *Normal* (Vector): A normal to the plane
     * *North* (Vector):
       A vector in the plane that specifies the north direction when mounted  in a machining vice.
-    * *Operations* (Tuple[ModelOperation, ...]): The operations to perform.
+    * *Operations* (Tuple[ModFabOperation, ...]): The operations to perform.
 
     """
 
@@ -1136,11 +1136,11 @@ class ModelMount(object):
     Contact: Vector
     Normal: Vector
     North: Vector
-    Operations: Tuple[ModelOperation, ...]
+    Operations: Tuple[ModFabOperation, ...]
 
-    # ModelMount.__post_init__():
+    # ModFabMount.__post_init__():
     def __post_init__(self) -> None:
-        """Verify that ModelMount arguments are valid."""
+        """Verify that ModFabMount arguments are valid."""
         # (Why __setattr__?)[https://stackoverflow.com/questions/53756788]
         copy: Vector = Vector()  # Make private copy of Vector's.
         object.__setattr__(self, "Contect", self.Contact + copy)
@@ -1149,15 +1149,15 @@ class ModelMount(object):
 
         # Disallow duplicate operation names:
         operation_names: Set[str] = set()
-        operation: ModelOperation
+        operation: ModFabOperation
         for operation in self.Operations:
             operation_name: str = operation.get_name()
             if operation_name in operation_names:
                 raise ValueError("Mount '{self.Name}' has two operations named '{operation_name}'")
             operation_names.add(operation_name)
 
-    # ModelMount.produce():
-    def produce(self, model_file: ModelFile, prefix: str) -> None:
+    # ModFabMount.produce():
+    def produce(self, model_file: ModFabFile, prefix: str) -> None:
         """Create the FreeCAD DatumPlane used for the drawing support.
 
         Arguments:
@@ -1244,65 +1244,65 @@ class ModelMount(object):
             if gui_datum_plane is not None and hasattr(gui_datum_plane, "Visibility"):
                 setattr(gui_datum_plane, "Visibility", False)
 
-        # Install the ModelMount (i.e. *self*) and *datum_plane* into *model_file* prior
+        # Install the ModFabMount (i.e. *self*) and *datum_plane* into *model_file* prior
         # to recursively performing the *operations*:
         model_file.Mount = self
         model_file.DatumPlane = datum_plane
-        operation: ModelOperation
+        operation: ModFabOperation
         for operation in self.Operations:
             operation.produce(model_file, prefix)
 
         # Do not leave behind a stale *datum_plane*:
         model_file.DatumPlane = cast("Part.Geometry", None)
 
-# ModelSolid:
+# ModFabSolid:
 @dataclass(frozen=True)
-class ModelSolid(object):
-    """Model: Represents a single part constructed using FreeCAD Part Design paradigm.
+class ModFabSolid(object):
+    """ModFab: Represents a single part constructed using FreeCAD Part Design paradigm.
 
     Attributes:
     * *Name* (str): The model name.
     * *Material* (str): The material to use.
     * *Color* (str): The color to use.
-    * *Mounts* (Tuple[ModelMount, ...]): The various model mounts to use to construct the part.
+    * *Mounts* (Tuple[ModFabMount, ...]): The various model mounts to use to construct the part.
 
     """
 
     Name: str
     Material: str
     Color: str
-    Mounts: Tuple[ModelMount, ...]
+    Mounts: Tuple[ModFabMount, ...]
 
-    # ModelSolid.__post_init__():
+    # ModFabSolid.__post_init__():
     def __post_init__(self) -> None:
-        """Verify ModelSolid arguments."""
+        """Verify ModFabSolid arguments."""
         # Verify that there is only one pad operation and it is the very first one.
         # Also detect duplicate mount names:
-        mounts: Tuple[ModelMount, ...] = self.Mounts
+        mounts: Tuple[ModFabMount, ...] = self.Mounts
         if not mounts:
-            raise ValueError("ModelSolid.produce(): No mounts specified for Part 'self.Name'.")
+            raise ValueError("ModFabSolid.produce(): No mounts specified for Part 'self.Name'.")
 
         mount_names: Set[str] = set()
         pad_found: bool = False
         mount_index: int
-        mount: ModelMount
+        mount: ModFabMount
         for mount_index, mount in enumerate(mounts):
-            if not isinstance(mount, ModelMount):
+            if not isinstance(mount, ModFabMount):
                 raise ValueError(f"'{self.Name}': Mount[{mount_index}]: "
-                                 f"{type(mount)} is not a ModelMount")
+                                 f"{type(mount)} is not a ModFabMount")
             if mount.Name in mount_names:
                 raise ValueError(f"Part '{self.Name}' has two mounts named '{mount.Name}')")
             mount_names.add(mount.Name)
 
             # Search for Pad operations:
-            operations: Tuple[ModelOperation, ...] = mount.Operations
+            operations: Tuple[ModFabOperation, ...] = mount.Operations
             operation_index: int
-            operation: ModelOperation
+            operation: ModFabOperation
             for operation_index, operation in enumerate(operations):
-                if not isinstance(operation, ModelOperation):
+                if not isinstance(operation, ModFabOperation):
                     raise ValueError(f"'{self.Name}.{mount.Name}']: Operation[{operation_index}]:"
-                                     "{type(operaton)} is not a ModelOperation")
-                if isinstance(operation, ModelPad):
+                                     "{type(operaton)} is not a ModFabOperation")
+                if isinstance(operation, ModFabPad):
                     if mount_index != 0 or operation_index != 0:
                         raise ValueError(f"'{self.Name}.{mount.Name}.{operation.Name}':"
                                          "Pad is not at the very beginning.")
@@ -1310,9 +1310,9 @@ class ModelSolid(object):
         if not pad_found:
             raise ValueError(f"No Pad operation found for '{self.Name}'")
 
-    # ModelSolid.produce():
-    def produce(self, model_file: ModelFile) -> None:
-        """Produce the ModelSolid."""
+    # ModFabSolid.produce():
+    def produce(self, model_file: ModFabFile) -> None:
+        """Produce the ModFabSolid."""
         # Create the *geometry_group* that contains all of the 2D geometry (line, arc, circle.):
         app_document: App.Document = model_file.AppDocument
         geometry_group: App.DocumentObjectGroup = app_document.addObject(
@@ -1345,7 +1345,7 @@ class ModelSolid(object):
             # model_file.ViewObject = view_object
 
         # Process each *mount*:
-        mount: ModelMount
+        mount: ModFabMount
         for mount in self.Mounts:
             prefix: str = mount.Name
             mount.produce(model_file, prefix)
@@ -1358,7 +1358,7 @@ class ModelSolid(object):
 # Box:
 @dataclass
 class Box(object):
-    """Model a box.
+    """ModFab a box.
 
     Builds a box given a length, width, height, material, thickness and center point"
 
@@ -1386,7 +1386,7 @@ class Box(object):
         """Compute a box."""
         pass
 
-    def produce(self) -> Tuple[ModelSolid, ...]:
+    def produce(self) -> Tuple[ModFabSolid, ...]:
         """Produce a box."""
         dx: float = self.Length
         dy: float = self.Width
@@ -1414,13 +1414,13 @@ class Box(object):
             (center + Vector(-dx2, -dy2, dz2), corner_radius),  # TSW
             (center + Vector(dx2, -dy2, dz2), corner_radius),  # TSE
         )
-        top_polygon: ModelPolygon = ModelPolygon("Top", top_corners)
-        top_operations: Tuple[ModelOperation, ...] = (
-            ModelPad("Pad", top_polygon, dw),
+        top_polygon: ModFabPolygon = ModFabPolygon("Top", top_corners)
+        top_operations: Tuple[ModFabOperation, ...] = (
+            ModFabPad("Pad", top_polygon, dw),
         )
-        top_mount: ModelMount = ModelMount(
+        top_mount: ModFabMount = ModFabMount(
             "TopNorth", center + Vector(0, 0, dz2), top_axis, north_axis, top_operations)
-        top_part: ModelSolid = ModelSolid("Top", "hdpe", "red", (top_mount,))
+        top_part: ModFabSolid = ModFabSolid("Top", "hdpe", "red", (top_mount,))
 
         north_corners: Corners = (
             (center + Vector(dx2, dy2, dz2 - dw), corner_radius),  # TNE
@@ -1428,13 +1428,13 @@ class Box(object):
             (center + Vector(-dx2, dy2, -dz2), corner_radius),  # BNW
             (center + Vector(dx2, dy2, -dz2), corner_radius),  # BNE
         )
-        north_polygon: ModelPolygon = ModelPolygon("North", north_corners)
-        north_operations: Tuple[ModelOperation, ...] = (
-            ModelPad("Pad", north_polygon, dw),
+        north_polygon: ModFabPolygon = ModFabPolygon("North", north_corners)
+        north_operations: Tuple[ModFabOperation, ...] = (
+            ModFabPad("Pad", north_polygon, dw),
         )
-        north_mount: ModelMount = ModelMount(
+        north_mount: ModFabMount = ModFabMount(
             "NorthBottom", center + Vector(0, dy2, 0), north_axis, bottom_axis, north_operations)
-        north_part: ModelSolid = ModelSolid("North", "hdpe", "green", (north_mount,))
+        north_part: ModFabSolid = ModFabSolid("North", "hdpe", "green", (north_mount,))
 
         west_corners: Corners = (
             (center + Vector(-dx2, dy2 - dw, dz2 - dw), corner_radius),  # TNW
@@ -1442,13 +1442,13 @@ class Box(object):
             (center + Vector(-dx2, -dy2 + dw, -dz2 + dw), corner_radius),  # BSW
             (center + Vector(-dx2, dy2 - dw, -dz2 + dw), corner_radius),  # BNW
         )
-        west_polygon: ModelPolygon = ModelPolygon("West", west_corners)
-        west_operations: Tuple[ModelOperation, ...] = (
-            ModelPad("Pad", west_polygon, dw),
+        west_polygon: ModFabPolygon = ModFabPolygon("West", west_corners)
+        west_operations: Tuple[ModFabOperation, ...] = (
+            ModFabPad("Pad", west_polygon, dw),
         )
-        west_mount: ModelMount = ModelMount(
+        west_mount: ModFabMount = ModFabMount(
             "WestNorth", center + Vector(-dx2, 0, 0), west_axis, north_axis, west_operations)
-        west_part: ModelSolid = ModelSolid("West", "hdpe", "blue", (west_mount,))
+        west_part: ModFabSolid = ModFabSolid("West", "hdpe", "blue", (west_mount,))
 
         bottom_corners: Corners = (
             (center + Vector(dx2, dy2 - dw, -dz2), corner_radius),  # BNE
@@ -1456,13 +1456,13 @@ class Box(object):
             (center + Vector(-dx2, -dy2 + dw, -dz2), corner_radius),  # BSW
             (center + Vector(dx2, -dy2 + dw, -dz2), corner_radius),  # BSE
         )
-        bottom_polygon: ModelPolygon = ModelPolygon("Bottom", bottom_corners)
-        bottom_operations: Tuple[ModelOperation, ...] = (
-            ModelPad("Pad", bottom_polygon, dw),
+        bottom_polygon: ModFabPolygon = ModFabPolygon("Bottom", bottom_corners)
+        bottom_operations: Tuple[ModFabOperation, ...] = (
+            ModFabPad("Pad", bottom_polygon, dw),
         )
-        bottom_mount: ModelMount = ModelMount(
+        bottom_mount: ModFabMount = ModFabMount(
             "BottomNorth", center + Vector(0, 0, -dz2), bottom_axis, north_axis, bottom_operations)
-        bottom_part: ModelSolid = ModelSolid("Bottom", "hdpe", "red", (bottom_mount,))
+        bottom_part: ModFabSolid = ModFabSolid("Bottom", "hdpe", "red", (bottom_mount,))
 
         east_corners: Corners = (
             (center + Vector(dx2, dy2 - dw, dz2 - dw), corner_radius),  # TNE
@@ -1470,13 +1470,13 @@ class Box(object):
             (center + Vector(dx2, -dy2 + dw, -dz2 + dw), corner_radius),  # BSE
             (center + Vector(dx2, dy2 - dw, -dz2 + dw), corner_radius),  # BNE
         )
-        east_polygon: ModelPolygon = ModelPolygon("East", east_corners)
-        east_operations: Tuple[ModelOperation, ...] = (
-            ModelPad("Pad", east_polygon, dw),
+        east_polygon: ModFabPolygon = ModFabPolygon("East", east_corners)
+        east_operations: Tuple[ModFabOperation, ...] = (
+            ModFabPad("Pad", east_polygon, dw),
         )
-        east_mount: ModelMount = ModelMount(
+        east_mount: ModFabMount = ModFabMount(
             "EastNorth", center + Vector(dx2, 0, 0), east_axis, north_axis, east_operations)
-        east_part: ModelSolid = ModelSolid("East", "hdpe", "blue", (east_mount,))
+        east_part: ModFabSolid = ModFabSolid("East", "hdpe", "blue", (east_mount,))
 
         south_corners: Corners = (
             (center + Vector(dx2, -dy2, dz2 - dw), corner_radius),  # TSE
@@ -1484,13 +1484,13 @@ class Box(object):
             (center + Vector(-dx2, -dy2, -dz2), corner_radius),  # BSW
             (center + Vector(dx2, -dy2, -dz2), corner_radius),  # BSE
         )
-        south_polygon: ModelPolygon = ModelPolygon("South", south_corners)
-        south_operations: Tuple[ModelOperation, ...] = (
-            ModelPad("Pad", south_polygon, dw),
+        south_polygon: ModFabPolygon = ModFabPolygon("South", south_corners)
+        south_operations: Tuple[ModFabOperation, ...] = (
+            ModFabPad("Pad", south_polygon, dw),
         )
-        south_mount: ModelMount = ModelMount(
+        south_mount: ModFabMount = ModFabMount(
             "SouthBottom", center + Vector(0, -dy2, 0), south_axis, bottom_axis, south_operations)
-        south_part: ModelSolid = ModelSolid("South", "hdpe", "green", (south_mount,))
+        south_part: ModFabSolid = ModFabSolid("South", "hdpe", "green", (south_mount,))
 
         return (top_part, north_part, west_part, bottom_part, east_part, south_part)
 
@@ -1500,47 +1500,47 @@ def main() -> None:
     # Create *top_part*:
     z_offset: float = 40.0
     pad_fillet_radius: float = 10.0
-    pad_polygon: ModelPolygon = ModelPolygon("Pad", (
+    pad_polygon: ModFabPolygon = ModFabPolygon("Pad", (
         (Vector(-40, -60, z_offset), pad_fillet_radius),  # SW
         (Vector(40, -60, z_offset), pad_fillet_radius),  # SE
         (Vector(40, 20, z_offset), pad_fillet_radius),  # NE
         (Vector(-40, 20, z_offset), pad_fillet_radius),  # NW
     ))
     pocket_fillet_radius: float = 2.5
-    left_pocket: ModelPolygon = ModelPolygon("LeftPocket", (
+    left_pocket: ModFabPolygon = ModFabPolygon("LeftPocket", (
         (Vector(-30, -10, z_offset), pocket_fillet_radius),
         (Vector(-10, -10, z_offset), pocket_fillet_radius),
         (Vector(-10, 10, z_offset), pocket_fillet_radius),
         (Vector(-30, 10, z_offset), pocket_fillet_radius),
     ))
-    right_pocket: ModelPolygon = ModelPolygon("RightPocket", (
+    right_pocket: ModFabPolygon = ModFabPolygon("RightPocket", (
         (Vector(10, -10, z_offset), pocket_fillet_radius),
         (Vector(30, -10, z_offset), pocket_fillet_radius),
         (Vector(30, 10, z_offset), pocket_fillet_radius),
         (Vector(10, 10, z_offset), pocket_fillet_radius),
     ))
     _ = right_pocket
-    right_circle: ModelCircle = ModelCircle(Vector(20, 0, z_offset), 10)
-    center_circle: ModelCircle = ModelCircle(Vector(0, 0, z_offset), 10)
+    right_circle: ModFabCircle = ModFabCircle(Vector(20, 0, z_offset), 10)
+    center_circle: ModFabCircle = ModFabCircle(Vector(0, 0, z_offset), 10)
 
     contact: Vector = Vector(0, 0, z_offset)
     normal: Vector = Vector(0, 0, 1)
     north: Vector = Vector(0, 1, 0)
-    top_north_mount: ModelMount = ModelMount("TopNorth", contact, normal, north, (
-        ModelPad("Pad", pad_polygon, 50.0),
-        ModelPocket("LeftPocket", left_pocket, 10.0),
-        ModelPocket("RightPocket", right_circle, 8.0),
-        ModelHole("CenterHole", center_circle, 5.0),
+    top_north_mount: ModFabMount = ModFabMount("TopNorth", contact, normal, north, (
+        ModFabPad("Pad", pad_polygon, 50.0),
+        ModFabPocket("LeftPocket", left_pocket, 10.0),
+        ModFabPocket("RightPocket", right_circle, 8.0),
+        ModFabHole("CenterHole", center_circle, 5.0),
     ))
-    top_part: ModelSolid = ModelSolid("TopPart", "hdpe", "purple", (
+    top_part: ModFabSolid = ModFabSolid("TopPart", "hdpe", "purple", (
         top_north_mount,
     ))
-    top_parts: Tuple[ModelSolid, ...] = (top_part,)
+    top_parts: Tuple[ModFabSolid, ...] = (top_part,)
 
     # Create *side_part*
     side_radius: float = 3.0
     y_offset: float = -50.0
-    side_pad: ModelPolygon = ModelPolygon("SidePad", (
+    side_pad: ModFabPolygon = ModFabPolygon("SidePad", (
         (Vector(-50, y_offset, -20), side_radius),
         (Vector(-50, y_offset, 20), side_radius),
         (Vector(50, y_offset, 20), side_radius),
@@ -1548,10 +1548,10 @@ def main() -> None:
     ))
     contact = Vector(0, y_offset)
     normal = Vector(0, -1, 0)
-    side_north_mount: ModelMount = ModelMount("SideNorth", contact, normal, north, (
-        ModelPad("Pad", side_pad, 10),
+    side_north_mount: ModFabMount = ModFabMount("SideNorth", contact, normal, north, (
+        ModFabPad("Pad", side_pad, 10),
     ))
-    side_part: ModelSolid = ModelSolid("SidePart", "hdpe", "green", (
+    side_part: ModFabSolid = ModFabSolid("SidePart", "hdpe", "green", (
         side_north_mount,
     ))
     _ = side_part
@@ -1559,14 +1559,14 @@ def main() -> None:
     center: Vector = Vector(0.0, -250, 0.0)
     box: Box = Box("MyBox", 200, 100, 100, 10, "HDPE", center)
     box.compute()
-    box_parts: Tuple[ModelSolid, ...] = box.produce()
+    box_parts: Tuple[ModFabSolid, ...] = box.produce()
 
-    all_parts: Tuple[ModelSolid, ...] = top_parts + box_parts
+    all_parts: Tuple[ModFabSolid, ...] = top_parts + box_parts
 
     # Create the models:
-    model_file: ModelFile
-    # with ModelFile((top_part, side_part,), Path("/tmp/test.fcstd")) as model_file:
-    with ModelFile(Path("/tmp/test.fcstd"), all_parts) as model_file:
+    model_file: ModFabFile
+    # with ModFabFile((top_part, side_part,), Path("/tmp/test.fcstd")) as model_file:
+    with ModFabFile(Path("/tmp/test.fcstd"), all_parts) as model_file:
         model_file.produce()
 
 
@@ -1629,8 +1629,8 @@ def visibility_set(element: Any, new_value: bool = True, tracing: str = "") -> N
 
 
 if __name__ == "__main__":
-    # ModelPolygon.unit_test()
-    ModelCircle._unit_tests()
-    # ModelFile._unit_tests()  # needs work
-    ModelPolygon._unit_tests()
+    # ModFabPolygon.unit_test()
+    ModFabCircle._unit_tests()
+    # ModFabFile._unit_tests()  # needs work
+    ModFabPolygon._unit_tests()
     main()
