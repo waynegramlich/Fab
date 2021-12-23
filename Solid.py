@@ -37,14 +37,13 @@ sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 from dataclasses import dataclass, field
 from typing import Any, cast, Dict, Optional, Set, Tuple
 from pathlib import Path
-from Utilities import ApexColor
+from Utilities import ModFabColor
 
 import FreeCAD  # type: ignore
 import Part  # type: ignore
 import FreeCAD as App  # type: ignore
 import FreeCADGui as Gui  # type: ignore
 
-# from Apex import ApexBox, ApexCheck, vector_fix
 from FreeCAD import Placement, Rotation, Vector
 # import Part  # type: ignore
 
@@ -643,7 +642,7 @@ class ModFabSolid(object):
             if hasattr(gui_body, "DisplayMode"):
                 setattr(gui_body, "DisplayMode", "Shaded")
             if hasattr(gui_body, "ShapeColor"):
-                rgb = ApexColor.svg_to_rgb(self.Color)
+                rgb = ModFabColor.svg_to_rgb(self.Color)
                 setattr(gui_body, "ShapeColor", rgb)
 
             # view_object: "ViewProviderDocumentObject"  = body.getLinkedObject(True).ViewObject

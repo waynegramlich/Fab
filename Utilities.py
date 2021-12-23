@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Utilities: Convenice class.
 
-The Apex base classes are:
+The Utilitly classes are:
 * ModFabBox:
   This similar to the FreeCAD BoundBox class, but with way more attributes.
   It introduces some consistent attributes for accessing the faces, corners and edges
@@ -484,10 +484,10 @@ class ModFabBox:
             assert str(value_error) == "123 is not of type Vector/BoundBox/ModFabBox"
 
 
-# ApexCheck:
+# ModFabCheck:
 @dataclass(frozen=True)
-class ApexCheck(object):
-    """ApexCheck: Check arguments for type mismatch errors.
+class ModFabCheck(object):
+    """ModFabCheck: Check arguments for type mismatch errors.
 
     Attributes:
     * *name* (str):
@@ -497,21 +497,21 @@ class ApexCheck(object):
       `float`, `MyClass`, etc.   A constrained type is a tuple of the form (str, Any, Any, ...)
       and are discussed further below.
 
-    An ApexCheck contains is used to type check a single function argument.
-    The static method `ApexCheck.check()` takes a list of argument values and the
-    corresponding tuple ApexCheck's and verifies that they are correct.
+    An ModFabCheck contains is used to type check a single function argument.
+    The static method `ModFabCheck.check()` takes a list of argument values and the
+    corresponding tuple ModFabCheck's and verifies that they are correct.
 
     Example 1:
 
          EXAMPLE1_CHECKS = (
-             ApexCheck("arg1", (int,)),
-             ApexCheck("arg2", (bool,)),
-             ApexCheck("arg3", (type(None), MyType),  # Optional[myType]
-             ApexCheck("arg4," list),   # List[Any]
+             ModFabCheck("arg1", (int,)),
+             ModFabCheck("arg2", (bool,)),
+             ModFabCheck("arg3", (type(None), MyType),  # Optional[myType]
+             ModFabCheck("arg4," list),   # List[Any]
          )
          def my_function(arg1: int, arg2: bool, arg3: Any, arg4: List[str]) -> None:
              '''Doc string here.'''
-            value_error: str = ApexCheck.check((arg1, arg2, arg3, arg4), MY_FUNCTION_CHECKS)
+            value_error: str = ModFabCheck.check((arg1, arg2, arg3, arg4), MY_FUNCTION_CHECKS)
             if value_error:
                 raise ValueError(value_error)
             # Rest of code goes here.
@@ -528,13 +528,13 @@ class ApexCheck(object):
     Example 2:
 
         EXAMPLE2_CHECKS = (
-            ApexCheck("arg1", ("+", str)),  # Arg1 must be a non-empty string
-            ApexCheck("arg2", ("?", str)),  # Arg2 can be a string or None
-            ApexCheck("arg3", ("+?", str)),  # Arg3 can be a non-empty string or None
-            ApexCheck("arg4", ("L", str)),  # Arg4 can be a list of strings
-            ApexCheck("arg5", ("T", str)),  # Arg4 can be a tuple of strings
-            ApexCheck("arg6", ("S", str)),  # Arg6 can be a list or tuple of strings
-            ApexCheck("arg7", ("L", (float, int)),  # Arg7 can be a list of mixed float and int
+            ModFabCheck("arg1", ("+", str)),  # Arg1 must be a non-empty string
+            ModFabCheck("arg2", ("?", str)),  # Arg2 can be a string or None
+            ModFabCheck("arg3", ("+?", str)),  # Arg3 can be a non-empty string or None
+            ModFabCheck("arg4", ("L", str)),  # Arg4 can be a list of strings
+            ModFabCheck("arg5", ("T", str)),  # Arg4 can be a tuple of strings
+            ModFabCheck("arg6", ("S", str)),  # Arg6 can be a list or tuple of strings
+            ModFabCheck("arg7", ("L", (float, int)),  # Arg7 can be a list of mixed float and int
 
     """
 
@@ -551,15 +551,15 @@ class ApexCheck(object):
             name = t.__class__.__name__
         return name
 
-    # ApexCheck.check():
+    # ModFabCheck.check():
     @classmethod
     def check(cls, values: Sequence[Any],
-              apex_checks: Sequence["ApexCheck"], tracing: str = "") -> str:
+              checks: Sequence["ModFabCheck"], tracing: str = "") -> str:
         """Return type mismatch error message."""
         if tracing:
-            print(f"{tracing}=>ApexCheck({values}, {apex_checks}")
-        assert len(values) == len(apex_checks), (
-            f"{len(values)} values do not match {len(apex_checks)} checks")
+            print(f"{tracing}=>ModFabCheck({values}, {checks}")
+        assert len(values) == len(checks), (
+            f"{len(values)} values do not match {len(checks)} checks")
         error: str = ""
         index: int
         value: Any
@@ -576,14 +576,14 @@ class ApexCheck(object):
             if tracing:
                 print(f"{tracing}{is_list=} {is_tuple=} {is_sequence=} {length=}")
 
-            # Get associated *apex_check* and unpack it:
-            apex_check: "ApexCheck" = apex_checks[index]
-            # if not isinstance(apex_check, cls):
-            #     raise ValueError(f"[{index}]:{apex_check} is not ApexCheck:  {apex_checks}")
-            name: str = apex_check.name
-            options: Tuple[Any, ...] = apex_check.options
+            # Get associated *check* and unpack it:
+            check: "ModFabCheck" = checks[index]
+            # if not isinstance(check, cls):
+            #     raise ValueError(f"[{index}]:{check} is not ModFabCheck:  {checks}")
+            name: str = check.name
+            options: Tuple[Any, ...] = check.options
             # if not options:
-            #    raise ValueError(f"[{index}]:{apex_check} has empty options")
+            #    raise ValueError(f"[{index}]:{check} has empty options")
             flags: str = ""
             if isinstance(options[0], str):
                 flags = options[0]
@@ -629,7 +629,7 @@ class ApexCheck(object):
                             if isinstance(element, option):
                                 break
                         else:
-                            type_names = [ApexCheck._type_name(option)
+                            type_names = [ModFabCheck._type_name(option)
                                           for option in options]
                             error = (f"[{index}]: {element} ({cls._type_name(element)}) "
                                      f"is not of type {type_names}")
@@ -640,24 +640,24 @@ class ApexCheck(object):
                         if isinstance(value, option):
                             break  # Type matched
                     else:
-                        type_names = [ApexCheck._type_name(option)
+                        type_names = [ModFabCheck._type_name(option)
                                       for option in options]
                         error = (f"Argument '{name}' is {cls._type_name(value)} "
                                  f"which is not one of {type_names}")
                         break
         if tracing:
-            print(f"{tracing}<=ApexCheck({values}, {apex_checks}=>'{error}'")
+            print(f"{tracing}<=ModFabCheck({values}, {checks}=>'{error}'")
         return error
 
-    # ApexCheck.init_show():
+    # ModFabCheck.init_show():
     @staticmethod
-    def init_show(name: str, arguments: Sequence[Any], apex_checks: Sequence["ApexCheck"]) -> str:
+    def init_show(name: str, arguments: Sequence[Any], checks: Sequence["ModFabCheck"]) -> str:
         """Return string representation based in initializer arguments.
 
         Arguments:
         * *name* (str): Full fuction/method name.
         * *arguments* (Sequence[Any]): All argument values.
-        * *apex_checks*: (Sequence[ApexCheck]): Associated ApexCheck's.
+        * *checks*: (Sequence[ModFabCheck]): Associated ModFabCheck's.
 
         Returns:
         * (str) containing function/method name with associated initialize arguments:
@@ -667,23 +667,23 @@ class ApexCheck(object):
 
         """
         # Assemble *results* which is the list of positional and keyword arguments:
-        if len(arguments) != len(apex_checks):
+        if len(arguments) != len(checks):
             raise ValueError(
-                f"Arguments size ({len(arguments)}) != checks size ({len(apex_checks)})")
+                f"Arguments size ({len(arguments)}) != checks size ({len(checks)})")
         if not isinstance(name, str):
             raise ValueError(f"{name} is not a string")
 
-        # Assemble *results* from *arguments* and *apex_checks*:
+        # Assemble *results* from *arguments* and *checks*:
         keywords_needed: bool = False
         index: int
         argument_value: Any
         results: List[str] = []
         for index, argument_value in enumerate(arguments):
-            apex_check: ApexCheck = apex_checks[index]
-            if not isinstance(apex_check, ApexCheck):
-                raise ValueError(f"{apex_check} is not an ApexCheck")
-            argument_name: str = apex_check.name
-            argument_options: Tuple[Any, ...] = apex_check.options
+            check: ModFabCheck = checks[index]
+            if not isinstance(check, ModFabCheck):
+                raise ValueError(f"{check} is not an ModFabCheck")
+            argument_name: str = check.name
+            argument_options: Tuple[Any, ...] = check.options
             none_allowed: bool = type(None) in argument_options
             is_none: bool = isinstance(argument_value, type(None))
 
@@ -701,30 +701,30 @@ class ApexCheck(object):
 
     @classmethod
     def _unit_tests(cls):
-        """Run ApexCheck unit tests."""
-        # Test *ApexCheck._type_name():
-        assert ApexCheck._type_name(None) == "NoneType"
-        assert ApexCheck._type_name(int) == "int"
-        assert ApexCheck._type_name(float) == "float"
-        assert ApexCheck._type_name(str) == "str"
-        assert ApexCheck._type_name({}) == "dict"
-        assert ApexCheck._type_name([]) == "list"
-        assert ApexCheck._type_name(()) == "tuple"
-        assert ApexCheck._type_name(ApexCheck) == "ApexCheck"
+        """Run ModFabCheck unit tests."""
+        # Test *ModFabCheck._type_name():
+        assert ModFabCheck._type_name(None) == "NoneType"
+        assert ModFabCheck._type_name(int) == "int"
+        assert ModFabCheck._type_name(float) == "float"
+        assert ModFabCheck._type_name(str) == "str"
+        assert ModFabCheck._type_name({}) == "dict"
+        assert ModFabCheck._type_name([]) == "list"
+        assert ModFabCheck._type_name(()) == "tuple"
+        assert ModFabCheck._type_name(ModFabCheck) == "ModFabCheck"
 
-        # Construct some ApexCheck's to use in tests below:
-        int_check: ApexCheck = ApexCheck("int", (int,))
-        float_check: ApexCheck = ApexCheck("float", (float,))
-        number_check: ApexCheck = ApexCheck("number", (int, float))
-        str_check: ApexCheck = ApexCheck("str", (str,))
-        optional_int: ApexCheck = ApexCheck("optional_int", (type(None), int))
-        optional_float: ApexCheck = ApexCheck("optional_float", (type(None), float))
-        optional_number: ApexCheck = ApexCheck(
+        # Construct some ModFabCheck's to use in tests below:
+        int_check: ModFabCheck = ModFabCheck("int", (int,))
+        float_check: ModFabCheck = ModFabCheck("float", (float,))
+        number_check: ModFabCheck = ModFabCheck("number", (int, float))
+        str_check: ModFabCheck = ModFabCheck("str", (str,))
+        optional_int: ModFabCheck = ModFabCheck("optional_int", (type(None), int))
+        optional_float: ModFabCheck = ModFabCheck("optional_float", (type(None), float))
+        optional_number: ModFabCheck = ModFabCheck(
             "optional_int_float", (type(None), int, float))
-        optional_str: ApexCheck = ApexCheck("optional_str", (type(None), str))
+        optional_str: ModFabCheck = ModFabCheck("optional_str", (type(None), str))
 
         # All of the *good_pairs* should not generate an error:
-        good_pairs: Sequence[Tuple[Any, ApexCheck]] = (
+        good_pairs: Sequence[Tuple[Any, ModFabCheck]] = (
             # Simple matches:
             (1, int_check),
             (1.0, float_check),
@@ -743,14 +743,14 @@ class ApexCheck(object):
             (None, optional_str),
             ("", optional_str),
         )
-        pair: Tuple[Any, ApexCheck]
+        pair: Tuple[Any, ModFabCheck]
         values: Sequence[Any] = tuple([pair[0] for pair in good_pairs])
-        apex_checks: Sequence[ApexCheck] = tuple([pair[1] for pair in good_pairs])
-        error: str = ApexCheck.check(values, apex_checks)
+        checks: Sequence[ModFabCheck] = tuple([pair[1] for pair in good_pairs])
+        error: str = ModFabCheck.check(values, checks)
         assert not error, f"Unexpected error='{error}'"
 
         # Each of the *bad_pairs* should generate an error:
-        bad_pairs: Sequence[Tuple[Any, ApexCheck]] = (
+        bad_pairs: Sequence[Tuple[Any, ModFabCheck]] = (
             (None, int_check),
             (1.0, int_check),
             (None, float_check),
@@ -758,20 +758,21 @@ class ApexCheck(object):
             (None, number_check),
         )
         value: Any
-        apex_check: ApexCheck
-        for value, apex_check in bad_pairs:
-            assert ApexCheck.check((value,), (apex_check,)), f"{value=} {apex_check=} did not fail"
+        check: ModFabCheck
+        for value, check in bad_pairs:
+            assert ModFabCheck.check((value,), (check,)), (
+                f"{value=} {check=} did not fail")
 
         # Do some flags based checks:
-        float_list_check: ApexCheck = ApexCheck("float_list_check", ("L", float))
-        float_sequence_check: ApexCheck = ApexCheck("float_sequence_check", ("S", float))
-        float_tuple_check: ApexCheck = ApexCheck("float_tuple_check", ("T", float))
-        int_list_check: ApexCheck = ApexCheck("int_list_check", ("L", int))
-        int_sequence_check: ApexCheck = ApexCheck("int_sequence_check", ("S", int))
-        int_tuple_check: ApexCheck = ApexCheck("int_tuple_check", ("T", int))
-        number_list_check: ApexCheck = ApexCheck("float_list_check", ("L", float, int))
-        number_sequence_check: ApexCheck = ApexCheck("float_sequence_check", ("S", float, int))
-        number_tuple_check: ApexCheck = ApexCheck("float_tuple_check", ("T", float, int))
+        float_list_check: ModFabCheck = ModFabCheck("float_list_check", ("L", float))
+        float_sequence_check: ModFabCheck = ModFabCheck("float_sequence_check", ("S", float))
+        float_tuple_check: ModFabCheck = ModFabCheck("float_tuple_check", ("T", float))
+        int_list_check: ModFabCheck = ModFabCheck("int_list_check", ("L", int))
+        int_sequence_check: ModFabCheck = ModFabCheck("int_sequence_check", ("S", int))
+        int_tuple_check: ModFabCheck = ModFabCheck("int_tuple_check", ("T", int))
+        number_list_check: ModFabCheck = ModFabCheck("float_list_check", ("L", float, int))
+        number_sequence_check: ModFabCheck = ModFabCheck("float_sequence_check", ("S", float, int))
+        number_tuple_check: ModFabCheck = ModFabCheck("float_tuple_check", ("T", float, int))
 
         empty_list: List[Union[int, float]] = []
         empty_tuple: Tuple[Union[int, float], ...] = ()
@@ -782,7 +783,7 @@ class ApexCheck(object):
         number_list: List[Union[int, float], ...] = [1, 2.0, 3]
         number_tuple: Tuple[Union[int, float], ...] = (1, 2.0, 3)
 
-        good_pairs: Sequence[Tuple[Any, ApexCheck]] = (
+        good_pairs: Sequence[Tuple[Any, ModFabCheck]] = (
             # Empty Checks:
             (empty_list, int_list_check),
             (empty_list, float_list_check),
@@ -826,7 +827,7 @@ class ApexCheck(object):
             (number_tuple, number_sequence_check),
         )
 
-        bad_pairs: Sequence[Tuple[Any, ApexCheck]] = (
+        bad_pairs: Sequence[Tuple[Any, ModFabCheck]] = (
             (int_tuple, int_list_check),
             (float_tuple, int_list_check),
             (number_tuple, int_list_check),
@@ -838,69 +839,69 @@ class ApexCheck(object):
 
         index: int
         value: Any
-        apex_check: ApexCheck
+        check: ModFabCheck
         good_pair: Tuple
 
-        good_pair: Tuple[Any, ApexCheck]
+        good_pair: Tuple[Any, ModFabCheck]
         for index, good_pair in enumerate(good_pairs):
-            value, apex_check = good_pair
-            assert isinstance(apex_check, cls), apex_check
-            error = ApexCheck.check((value,), (apex_check,))
-            assert not error, f"[{index}]: {value=} {apex_check=} {error=}"
+            value, check = good_pair
+            assert isinstance(check, cls), check
+            error = ModFabCheck.check((value,), (check,))
+            assert not error, f"[{index}]: {value=} {check=} {error=}"
 
         value: Any
-        apex_check: ApexCheck
-        for value, apex_check in bad_pairs:
-            assert isinstance(apex_check, cls)
-            error = ApexCheck.check((value,), (apex_check,))
+        check: ModFabCheck
+        for value, check in bad_pairs:
+            assert isinstance(check, cls)
+            error = ModFabCheck.check((value,), (check,))
             assert error, "No error generated"
 
         # Test non sequence checks:
-        non_empty_string_check: ApexCheck = ApexCheck("Name", ("+", str))
-        value_error: str = ApexCheck.check(("non-empty",), (non_empty_string_check,))
+        non_empty_string_check: ModFabCheck = ModFabCheck("Name", ("+", str))
+        value_error: str = ModFabCheck.check(("non-empty",), (non_empty_string_check,))
         assert value_error == "", f"{value_error=}"
-        value_error = ApexCheck.check(("",), (non_empty_string_check,))
+        value_error = ModFabCheck.check(("",), (non_empty_string_check,))
         assert value_error == "[0]: Argument 'Name' has no length", value_error
 
-        # Test ApexCheck.init_show():
-        apex_checks: Tuple[ApexCheck, ...] = (
+        # Test ModFabCheck.init_show():
+        checks: Tuple[ModFabCheck, ...] = (
             int_check,
             str_check,
             optional_int,
             optional_str,
             optional_float
         )
-        result: str = ApexCheck.init_show("Foo", (1, "a", 1, "b", 1.0), apex_checks)
+        result: str = ModFabCheck.init_show("Foo", (1, "a", 1, "b", 1.0), checks)
         assert result == "Foo(1, 'a', 1, 'b', 1.0)", result
-        result: str = ApexCheck.init_show("Foo", (1, "a", 1, "b", None), apex_checks)
+        result: str = ModFabCheck.init_show("Foo", (1, "a", 1, "b", None), checks)
         assert result == "Foo(1, 'a', 1, 'b')", result
-        result: str = ApexCheck.init_show("Foo", (1, "a", 1, None, None), apex_checks)
+        result: str = ModFabCheck.init_show("Foo", (1, "a", 1, None, None), checks)
         assert result == "Foo(1, 'a', 1)", result
-        result: str = ApexCheck.init_show("Foo", (1, "a", None, None, None), apex_checks)
+        result: str = ModFabCheck.init_show("Foo", (1, "a", None, None, None), checks)
         assert result == "Foo(1, 'a')", result
-        result: str = ApexCheck.init_show("Foo", (1, "a", None, None, 1.0), apex_checks)
+        result: str = ModFabCheck.init_show("Foo", (1, "a", None, None, 1.0), checks)
         assert result == "Foo(1, 'a', optional_float=1.0)", result
-        result: str = ApexCheck.init_show("Foo", (1, "a", None, "b", 1.0), apex_checks)
+        result: str = ModFabCheck.init_show("Foo", (1, "a", None, "b", 1.0), checks)
         assert result == "Foo(1, 'a', optional_str='b', optional_float=1.0)", result
-        result: str = ApexCheck.init_show("Foo", (1, "a", None, None, 1.0), apex_checks)
+        result: str = ModFabCheck.init_show("Foo", (1, "a", None, None, 1.0), checks)
         assert result == "Foo(1, 'a', optional_float=1.0)", result
         try:
-            ApexCheck.init_show("Foo", (), apex_checks)  # Arguments/ApexCheck's misamtch.
+            ModFabCheck.init_show("Foo", (), checks)  # Arguments/ModFabCheck's misamtch.
         except ValueError as value_error:
             assert str(value_error) == "Arguments size (0) != checks size (5)", str(value_error)
         try:
-            ApexCheck.init_show("Foo", (0,), (cast(ApexCheck, 0),))
+            ModFabCheck.init_show("Foo", (0,), (cast(ModFabCheck, 0),))
         except ValueError as value_error:
-            assert str(value_error) == "0 is not an ApexCheck", str(value_error)
+            assert str(value_error) == "0 is not an ModFabCheck", str(value_error)
         try:
-            ApexCheck.init_show(cast(str, 0), (0,), (int_check,))
+            ModFabCheck.init_show(cast(str, 0), (0,), (int_check,))
         except ValueError as value_error:
             assert str(value_error) == "0 is not a string", str(value_error)
 
 
-# ApexColor:
-class ApexColor(object):
-    """ApexColor: Convert from SVG color names to FreeCAD HSL."""
+# ModFabColor:
+class ModFabColor(object):
+    """ModFabColor: Convert from SVG color names to FreeCAD HSL."""
 
     RGB_COLORS = {
         "alice_blue": 0xf0f8ff,
@@ -1063,7 +1064,7 @@ class ApexColor(object):
         * (Tuple[float, float, float]) as HSV (Hue/Satruation/Value) tuple used by FreeCAD.
 
         """
-        rgb_colors: Dict[str, int] = ApexColor.RGB_COLORS
+        rgb_colors: Dict[str, int] = ModFabColor.RGB_COLORS
         if svg_color_name not in rgb_colors:
             raise ValueError(f"'{svg_color_name}' is not a supported SVG color name.")
         rgb_color: int = rgb_colors[svg_color_name]
@@ -1074,11 +1075,11 @@ class ApexColor(object):
 
     @staticmethod
     def _unit_tests() -> None:
-        """Run ApexColor unit tests."""
-        _ = ApexColor.svg_to_rgb("red")
+        """Run ModFabColor unit tests."""
+        _ = ModFabColor.svg_to_rgb("red")
 
         try:
-            ApexColor.svg_to_rgb("fred")
+            ModFabColor.svg_to_rgb("fred")
         except ValueError as value_error:
             assert str(value_error) == "'fred' is not a supported SVG color name.", str(value_error)
 
@@ -1116,10 +1117,10 @@ def vector_fix(vector: Vector) -> Vector:
     return Vector(float_fix(vector.x), float_fix(vector.y), float_fix(vector.y))
 
 
-# ApexMaterial:
+# ModFabMaterial:
 @dataclass
-class ApexMaterial(object):
-    """ApexMaterial: Represents a stock material.
+class ModFabMaterial(object):
+    """ModFabMaterial: Represents a stock material.
 
     Other properties to be added later (e.g. transparency, shine, machining properties, etc.)
 
@@ -1133,15 +1134,15 @@ class ApexMaterial(object):
     Color: str  # SVG color name to use.
 
     INIT_CHECKS = (
-        ApexCheck("Name", ("T+", str)),
-        ApexCheck("Color", (str,)),
+        ModFabCheck("Name", ("T+", str)),
+        ModFabCheck("Color", (str,)),
     )
 
-    # ApexMaterial.__init__():
+    # ModFabMaterial.__init__():
     def __post_init__(self) -> None:
         """Post process."""
         arguments = (self.Name, self.Color)
-        value_error: str = ApexCheck.check(arguments, ApexMaterial.INIT_CHECKS)
+        value_error: str = ModFabCheck.check(arguments, ModFabMaterial.INIT_CHECKS)
         if value_error:
             raise ValueError(value_error)
         assert isinstance(self.Name, tuple)
@@ -1155,27 +1156,27 @@ class ApexMaterial(object):
             raise ValueError(f"Color name is empty")
 
     def __repr__(self) -> str:
-        """Return string representation of ApexMaterial."""
+        """Return string representation of ModFabMaterial."""
         return self.__str__()
 
     def __str__(self) -> str:
-        """Return string representation of ApexMaterial."""
-        return f"ApexMaterial({self.Name}, '{self.Color}')"
+        """Return string representation of ModFabMaterial."""
+        return f"ModFabMaterial({self.Name}, '{self.Color}')"
 
     @staticmethod
     def _unit_tests() -> None:
-        """Run ApexMaterial unit tests."""
+        """Run ModFabMaterial unit tests."""
         name: Tuple[str, ...] = ("brass",)
         color: str = "orange"
-        material: ApexMaterial = ApexMaterial(name, color)
-        assert material.__repr__() == "ApexMaterial(('brass',), 'orange')"
-        assert f"{material}" == "ApexMaterial(('brass',), 'orange')", f"{material}"
-        material_text: str = f"ApexMaterial({name}, '{color}')"
+        material: ModFabMaterial = ModFabMaterial(name, color)
+        assert material.__repr__() == "ModFabMaterial(('brass',), 'orange')"
+        assert f"{material}" == "ModFabMaterial(('brass',), 'orange')", f"{material}"
+        material_text: str = f"ModFabMaterial({name}, '{color}')"
         assert f"{material}" == material_text, f"{material}"
 
         # Name is not a Tuple:
         try:
-            ApexMaterial(cast(tuple, 0), color)
+            ModFabMaterial(cast(tuple, 0), color)
         except ValueError as value_error:
             want: str = "[0]: Argument 'Name' is not a tuple"
             got: str = str(value_error)
@@ -1183,19 +1184,19 @@ class ApexMaterial(object):
 
         # Name is empty tuple:
         try:
-            ApexMaterial((), color)
+            ModFabMaterial((), color)
         except ValueError as value_error:
             assert str(value_error) == "Material is an empty tuple.", str(value_error)
 
         # Name with an empty string:
         try:
-            ApexMaterial(("",), color)
+            ModFabMaterial(("",), color)
         except ValueError as value_error:
             assert str(value_error) == "Name contains an empty string", str(value_error)
 
         # Name is does not have a string:
         try:
-            ApexMaterial((cast(str, 1),), color)
+            ModFabMaterial((cast(str, 1),), color)
         except ValueError as value_error:
             want = "[0]: 1 (int) is not of type ['str']"
             got = str(value_error)
@@ -1203,7 +1204,7 @@ class ApexMaterial(object):
 
         # Color is empty.
         try:
-            ApexMaterial(("Brass",), "")
+            ModFabMaterial(("Brass",), "")
         except ValueError as value_error:
             assert str(value_error) == "Color name is empty", str(value_error)
 
@@ -1231,10 +1232,10 @@ def _misc_unit_tests() -> None:
 def _unit_tests() -> None:
     """Run the unit tests."""
     _misc_unit_tests()
-    ApexCheck._unit_tests()
-    ApexColor._unit_tests()
+    ModFabCheck._unit_tests()
+    ModFabColor._unit_tests()
     ModFabBox._unit_tests()
-    ApexMaterial._unit_tests()
+    ModFabMaterial._unit_tests()
 
 
 if __name__ == "__main__":

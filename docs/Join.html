@@ -1,4 +1,4 @@
-<h1>Join: Join: A package for managing fasteners in the Model system.</h1>
+<h1>Join: Join: A package for managing fasteners in the ModFab system.</h1>
 <p>While the most common fasteners are screws and bolts, there are others like rivets, set screws,
 cotter pins, etc.  This package centralizes all of the issues associated with fasteners
 so that changing a fastener does not become a nightmare of having to individually find
@@ -30,71 +30,71 @@ The FreeCAD Fasteners workbench is used wherever possible.</li>
 </ul>
 <p>The basic class hierarchy is:</p>
 <ul>
-<li>ModelJoiner: A profile for a set of related hardware for using a fastener.</li>
-<li>ModelJoinerOption: A base class for the sub-classes immediately below:
+<li>ModFabJoiner: A profile for a set of related hardware for using a fastener.</li>
+<li>ModFabJoinerOption: A base class for the sub-classes immediately below:
 <ul>
-<li>ModelHead: The fastener head definition along with counter sink/bore information.</li>
-<li>ModelWasher: washer that is attached on the fastener.</li>
-<li>ModelNut: A nut that threads onto the fastener.</li>
+<li>ModFabHead: The fastener head definition along with counter sink/bore information.</li>
+<li>ModFabWasher: washer that is attached on the fastener.</li>
+<li>ModFabNut: A nut that threads onto the fastener.</li>
 </ul>
 </li>
-<li>ModelJoin: A specific instance of fastener that has a start and end point.</li>
+<li>ModFabJoin: A specific instance of fastener that has a start and end point.</li>
 </ul>
-<p>A ModelJoiner basically lists a thread profile (i.e. #4-4, M3x0.5, etc), the driver head,
+<p>A ModFabJoiner basically lists a thread profile (i.e. #4-4, M3x0.5, etc), the driver head,
 associated lock washers, regular washers, nuts, etc.  These are specified as a list
-of ModelJoinerOption's (i.e. ModelHead, ModelWasher, ModelNut, etc.)</p>
-<p>A ModelJoin specifies a ModelJoiner, a start point and an end point.  The first end point is
+of ModFabJoinerOption's (i.e. ModFabHead, ModFabWasher, ModFabNut, etc.)</p>
+<p>A ModFabJoin specifies a ModFabJoiner, a start point and an end point.  The first end point is
 the specifies a point just under the screw/bolt head and any regular/lock washers just below
 the head.  The end point is where any additional regular/lock washers and nuts go at the other
 end of the fastener.</p>
-<p>The Part module has three basic ModelOperation's -- ModelThread, ModelClose, and ModelLoose,
-which vary the diameter of the Part Hole.  These operations take a ModelJoin, verifies that
+<p>The Part module has three basic ModFabOperation's -- ModFabThread, ModFabClose, and ModFabLoose,
+which vary the diameter of the Part Hole.  These operations take a ModFabJoin, verifies that
 the fastener is perpendicular to the mount plane, and drills the correct diameter hole to
 the correct depth.</p>
 <p>Eventually, the system will create a BOM (Bill Of Materials) that lists all of the needed
 hardware.</p>
 <h2>Table of Contents (alphabetical order):</h2>
 <ul>
-<li>1 Class: <a href="#join--modelfasten">ModelFasten</a>:</li>
-<li>2 Class: <a href="#join--modelhead">ModelHead</a>:</li>
-<li>3 Class: <a href="#join--modeljoin">ModelJoin</a>:</li>
-<li>4 Class: <a href="#join--modelnut">ModelNut</a>:</li>
-<li>5 Class: <a href="#join--modeloption">ModelOption</a>:</li>
-<li>6 Class: <a href="#join--modelwasher">ModelWasher</a>:</li>
+<li>1 Class: <a href="#join--modfabfasten">ModFabFasten</a>:</li>
+<li>2 Class: <a href="#join--modfabhead">ModFabHead</a>:</li>
+<li>3 Class: <a href="#join--modfabjoin">ModFabJoin</a>:</li>
+<li>4 Class: <a href="#join--modfabnut">ModFabNut</a>:</li>
+<li>5 Class: <a href="#join--modfaboption">ModFabOption</a>:</li>
+<li>6 Class: <a href="#join--modfabwasher">ModFabWasher</a>:</li>
 </ul>
-<h2><a name="join--modelfasten"></a>1 Class ModelFasten:</h2>
-<p>ModelFastner: The class of Fastener to use.
+<h2><a name="join--modfabfasten"></a>1 Class ModFabFasten:</h2>
+<p>ModFabFastner: The class of Fastener to use.
 Attributes:</p>
 <ul>
-<li>Name (str): ModelFasten Name.</li>
-<li>Profile (str): ModelFasten Profile.  Must be one of the ModelFasten constants --
+<li>Name (str): ModFabFasten Name.</li>
+<li>Profile (str): ModFabFasten Profile.  Must be one of the ModFabFasten constants --
 <code>ISO_COARSE</code>, <code>ISO_FINE</code>,  <code>UTS_COARSE</code>, <code>UTS_FINE</code>, and `UTS_EXTRA_FINE.</li>
-<li>Size (str): Standard fastener size.  Must be one of the ModelFasten constants --
+<li>Size (str): Standard fastener size.  Must be one of the ModFabFasten constants --
 <code>UTS_N1</code>, <code>UTS_N2</code>, <code>UTS_N3</code>, <code>UTS_N4</code>, <code>UTS_N5</code>, <code>UTS_N6</code>, <code>UTS_N8</code>, <code>UTS_N10</code>, <code>UTS_N12</code>,
 <code>UTS_F1_4</code>, <code>UTS_F5_16</code>, <code>UTS_F3_8</code>, <code>UTS_F7_16</code>, <code>UTS_F1_2</code>, <code>UTS_F9_16</code>, <code>UTS_F5_8</code>,
 <code>UTS_F3_4</code>, <code>UTS_F3_4</code>, <code>M1_6</code>, <code>M2</code>, <code>M2_5</code>, <code>M3</code>, <code>M3_5</code>, <code>M4</code>, <code>M5</code>, <code>M6</code>, <code>M8</code>, <code>M10</code>,
 <code>M12</code>, <code>M14</code>, <code>M16</code>, <code>M18,  </code>M20<code>, </code>M22<code>, </code>M24<code>, </code>M27<code>, </code>M30<code>, </code>M36<code>, </code>M42<code>, </code>M48<code>, </code>M56<code>, </code>M68.</li>
 </ul>
-<h2><a name="join--modelhead"></a>2 Class ModelHead:</h2>
-<p>Represents the Head of the ModelFastener.
+<h2><a name="join--modfabhead"></a>2 Class ModFabHead:</h2>
+<p>Represents the Head of the ModFabFastener.
 Attributes:</p>
 <ul>
 <li><em>Name</em> (str): The name for this head.</li>
-<li><em>Detail</em> (str): Short ModelHead description.</li>
-<li><em>Material</em> (ApexMaterial): The ModelHead fastener material.</li>
-<li><em>Shape</em> (str): The ModelHead shape.</li>
-<li><em>Drive</em> (str): The ModelH drive .</li>
+<li><em>Detail</em> (str): Short ModFabHead description.</li>
+<li><em>Material</em> (ModFabMaterial): The ModFabHead fastener material.</li>
+<li><em>Shape</em> (str): The ModFabHead shape.</li>
+<li><em>Drive</em> (str): The ModFabH drive .</li>
 </ul>
-<h2><a name="join--modeljoin"></a>3 Class ModelJoin:</h2>
+<h2><a name="join--modfabjoin"></a>3 Class ModFabJoin:</h2>
 <p>Specifies a single fastener instance.
 Attributes:</p>
 <ul>
-<li>Fasten (ModelFasten): ModelFasten object to use for basic dimensions.</li>
-<li>Start (Vector): Start point for ModelJoin.</li>
-<li>End (Vector): End point for ModelJoin.</li>
-<li>Options (Tuple[ModelOption]): The various options associated with the ModelJoin.</li>
+<li>Fasten (ModFabFasten): ModFabFasten object to use for basic dimensions.</li>
+<li>Start (Vector): Start point for ModFabJoin.</li>
+<li>End (Vector): End point for ModFabJoin.</li>
+<li>Options (Tuple[ModFabOption]): The various options associated with the ModFabJoin.</li>
 </ul>
-<h2><a name="join--modelnut"></a>4 Class ModelNut:</h2>
+<h2><a name="join--modfabnut"></a>4 Class ModFabNut:</h2>
 <p>A class the represents a fastener nut.
 Attributes:</p>
 <ul>
@@ -103,17 +103,17 @@ Attributes:</p>
 <li>Sides (int): The number of nut sides (either 4 or 6.)</li>
 <li>Width (float): The Nut width between 2 opposite faces.</li>
 <li>Thickness (float): The nut thickness in millimeters.</li>
-<li>Material (ApexMaterial): The nut material</li>
+<li>Material (ModFabMaterial): The nut material</li>
 </ul>
-<h2><a name="join--modeloption"></a>5 Class ModelOption:</h2>
-<p>Base class for ModelFasten options (e.g. washers, nuts, etc...).
+<h2><a name="join--modfaboption"></a>5 Class ModFabOption:</h2>
+<p>Base class for ModFabFasten options (e.g. washers, nuts, etc...).
 Attributes:</p>
 <ul>
 <li><em>Name</em> (str): The option name.</li>
 <li><em>Detail</em> (str): More detailed information about the option.</li>
 </ul>
-<h2><a name="join--modelwasher"></a>6 Class ModelWasher:</h2>
-<p>ModelWahser: Represents a washer.
+<h2><a name="join--modfabwasher"></a>6 Class ModFabWasher:</h2>
+<p>ModFabWahser: Represents a washer.
 Constants:</p>
 <ul>
 <li>PLAIN: Plain washer.</li>
@@ -124,11 +124,11 @@ Constants:</p>
 <p>Attributes:</p>
 <ul>
 <li><em>Name</em> (str): The washer name.</li>
-<li><em>Detail</em> (str): More detail about the ModelWasher.</li>
+<li><em>Detail</em> (str): More detail about the ModFabWasher.</li>
 <li><em>Inner</em> (float): The Inner diameter in millimeters.</li>
 <li><em>Outer</em> (float): The Outer diameter in millimeters.</li>
 <li><em>Thickness</em> (float): The thickness in millimeters.</li>
-<li><em>Material</em> (ApexMaterial): The Material the washer is made out of.</li>
-<li><em>Kind</em> (str): The washer kind -- one of following ModelWasher constants --
+<li><em>Material</em> (ModFabMaterial): The Material the washer is made out of.</li>
+<li><em>Kind</em> (str): The washer kind -- one of following ModFabWasher constants --
 <code>PLAIN</code>, <code>INTERNAL_LOCK</code>, <code>EXTERNAL_LOCK</code>, or <code>SPLIT_LOCK</code>.</li>
 </ul>

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Join: A package for managing fasteners in the Model system.
+"""Join: A package for managing fasteners in the ModFab system.
 
 While the most common fasteners are screws and bolts, there are others like rivets, set screws,
 cotter pins, etc.  This package centralizes all of the issues associated with fasteners
@@ -32,24 +32,24 @@ The Join module deals with the following issues:
 
 The basic class hierarchy is:
 
-* ModelJoiner: A profile for a set of related hardware for using a fastener.
-* ModelJoinerOption: A base class for the sub-classes immediately below:
-  * ModelHead: The fastener head definition along with counter sink/bore information.
-  * ModelWasher: washer that is attached on the fastener.
-  * ModelNut: A nut that threads onto the fastener.
-* ModelJoin: A specific instance of fastener that has a start and end point.
+* ModFabJoiner: A profile for a set of related hardware for using a fastener.
+* ModFabJoinerOption: A base class for the sub-classes immediately below:
+  * ModFabHead: The fastener head definition along with counter sink/bore information.
+  * ModFabWasher: washer that is attached on the fastener.
+  * ModFabNut: A nut that threads onto the fastener.
+* ModFabJoin: A specific instance of fastener that has a start and end point.
 
-A ModelJoiner basically lists a thread profile (i.e. #4-4, M3x0.5, etc), the driver head,
+A ModFabJoiner basically lists a thread profile (i.e. #4-4, M3x0.5, etc), the driver head,
 associated lock washers, regular washers, nuts, etc.  These are specified as a list
-of ModelJoinerOption's (i.e. ModelHead, ModelWasher, ModelNut, etc.)
+of ModFabJoinerOption's (i.e. ModFabHead, ModFabWasher, ModFabNut, etc.)
 
-A ModelJoin specifies a ModelJoiner, a start point and an end point.  The first end point is
+A ModFabJoin specifies a ModFabJoiner, a start point and an end point.  The first end point is
 the specifies a point just under the screw/bolt head and any regular/lock washers just below
 the head.  The end point is where any additional regular/lock washers and nuts go at the other
 end of the fastener.
 
-The Part module has three basic ModelOperation's -- ModelThread, ModelClose, and ModelLoose,
-which vary the diameter of the Part Hole.  These operations take a ModelJoin, verifies that
+The Part module has three basic ModFabOperation's -- ModFabThread, ModFabClose, and ModFabLoose,
+which vary the diameter of the Part Hole.  These operations take a ModFabJoin, verifies that
 the fastener is perpendicular to the mount plane, and drills the correct diameter hole to
 the correct depth.
 
@@ -70,16 +70,16 @@ sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 from dataclasses import dataclass
 from typing import cast, Tuple
 
-from Utilities import ApexCheck, ApexMaterial
+from Utilities import ModFabCheck, ModFabMaterial
 from FreeCAD import Vector  # type: ignore
 
 #  https://github.com/shaise/FreeCAD_FastenersWB
 
 
-# ModelOption:
+# ModFabOption:
 @dataclass(frozen=True)
-class ModelOption(object):
-    """ModelOption: Base class for ModelFasten options (e.g. washers, nuts, etc...).
+class ModFabOption(object):
+    """ModFabOption: Base class for ModFabFasten options (e.g. washers, nuts, etc...).
 
     Attributes:
     * *Name* (str): The option name.
@@ -87,82 +87,82 @@ class ModelOption(object):
 
     """
 
-    Name: str  # ModelOption name
-    Detail: str  # ModelOption description.
+    Name: str  # ModFabOption name
+    Detail: str  # ModFabOption description.
 
     POST_INIT_CHECKS = (
-        ApexCheck("Name", ("+", str)),
-        ApexCheck("Detail", ("+", str)),
+        ModFabCheck("Name", ("+", str)),
+        ModFabCheck("Detail", ("+", str)),
     )
 
     def __post_init__(self) -> None:
         """Ensure values are reasonable."""
         arguments = (self.Name, self.Detail)
-        value_error: str = ApexCheck.check(arguments, ModelOption.POST_INIT_CHECKS)
+        value_error: str = ModFabCheck.check(arguments, ModFabOption.POST_INIT_CHECKS)
         if value_error:
             raise ValueError(value_error)
 
     def __repr__(self) -> str:
-        """Return String representation of ModelOption."""
+        """Return String representation of ModFabOption."""
         return self.__str__()
 
     def __str__(self) -> str:
-        """Return String representation of ModelOption."""
-        return f"ModelOption('{self.Name}', '{self.Detail}')"
+        """Return String representation of ModFabOption."""
+        return f"ModFabOption('{self.Name}', '{self.Detail}')"
 
     @staticmethod
     def _unit_tests() -> None:
-        """Run ModelOption unit tests."""
+        """Run ModFabOption unit tests."""
         name: str = "name"
         detail: str = "detail"
-        option: ModelOption = ModelOption(name, detail)
+        option: ModFabOption = ModFabOption(name, detail)
         assert option.Name == name
         assert option.Detail == detail
-        assert f"{option}" == "ModelOption('name', 'detail')", f"{option}"
+        assert f"{option}" == "ModFabOption('name', 'detail')", f"{option}"
 
         # Error tests:
         # Non string for Name.
         try:
-            ModelOption(cast(str, 1), detail)
+            ModFabOption(cast(str, 1), detail)
         except ValueError as value_error:
             assert str(value_error) == "[0]: Argument 'Name' has no length", str(value_error)
 
         # Empty string for Name:
         try:
-            ModelOption("", detail)
+            ModFabOption("", detail)
         except ValueError as value_error:
             assert str(value_error) == "[0]: Argument 'Name' has no length", str(value_error)
 
         # Non string for Detail.
         try:
-            ModelOption(name, cast(str, 2))
+            ModFabOption(name, cast(str, 2))
         except ValueError as value_error:
             assert str(value_error) == "[1]: Argument 'Detail' has no length", str(value_error)
 
         # Empty string for Detail:
         try:
-            ModelOption(name, "")
+            ModFabOption(name, "")
         except ValueError as value_error:
             assert str(value_error) == "[1]: Argument 'Detail' has no length", str(value_error)
 
 
-# ModelHead:
+# ModFabHead:
 @dataclass(frozen=True)
-class ModelHead(ModelOption):
-    """Represents the Head of the ModelFastener.
+class ModFabHead(ModFabOption):
+    """Represents the Head of the ModFabFastener.
 
     Attributes:
     * *Name* (str): The name for this head.
-    * *Detail* (str): Short ModelHead description.
-    * *Material* (ApexMaterial): The ModelHead fastener material.
-    * *Shape* (str): The ModelHead shape.
-    * *Drive* (str): The ModelH drive .
+    * *Detail* (str): Short ModFabHead description.
+    * *Material* (ModFabMaterial): The ModFabHead fastener material.
+    * *Shape* (str): The ModFabHead shape.
+    * *Drive* (str): The ModFabH drive .
 
     """
 
-    Material: ApexMaterial  # ModelHead material
-    Shape: str  # ModelHead shape
-    Drive: str  # ModelHead drive
+    Material: ModFabMaterial  # ModFabHead material
+    Shape: str  # ModFabHead shape
+    Drive: str  # ModFabHead drive
 
     # Screw Heads:
     CHEESE_HEAD = "Cheese"
@@ -184,49 +184,49 @@ class ModelHead(ModelOption):
     DRIVES = (CARRIAGE, HEX_DRIVE, PHILIPS_DRIVE, SLOT_DRIVE, TORX_DRIVE)
 
     INIT_CHECKS = (
-        ApexCheck("Name", ("+", str,)),
-        ApexCheck("Detail", ("+", str,)),
-        ApexCheck("Material", (ApexMaterial,)),
-        ApexCheck("Shape", (str,)),
-        ApexCheck("Drive", (str,)),
+        ModFabCheck("Name", ("+", str,)),
+        ModFabCheck("Detail", ("+", str,)),
+        ModFabCheck("Material", (ModFabMaterial,)),
+        ModFabCheck("Shape", (str,)),
+        ModFabCheck("Drive", (str,)),
     )
 
     def __post_init__(self) -> None:
-        """Verify ModelHead."""
+        """Verify ModFabHead."""
         arguments = (self.Name, self.Detail, self.Material, self.Shape, self.Drive)
-        value_error: str = ApexCheck.check(arguments, ModelHead.INIT_CHECKS)
+        value_error: str = ModFabCheck.check(arguments, ModFabHead.INIT_CHECKS)
         if value_error:
             raise ValueError(value_error)
-        if self.Shape not in ModelHead.HEADS:
-            raise ValueError(f"Shape (='{self.Shape}') is not in {ModelHead.HEADS}")
-        if self.Drive not in ModelHead.DRIVES:
-            raise ValueError(f"Head (='{self.Drive}') is not in {ModelHead.DRIVES}")
+        if self.Shape not in ModFabHead.HEADS:
+            raise ValueError(f"Shape (='{self.Shape}') is not in {ModFabHead.HEADS}")
+        if self.Drive not in ModFabHead.DRIVES:
+            raise ValueError(f"Head (='{self.Drive}') is not in {ModFabHead.DRIVES}")
 
     def __repr__(self) -> str:
-        """Return ModelHead as a string."""
+        """Return ModFabHead as a string."""
         return self.__str__()
 
     def __str__(self) -> str:
-        """Return ModelHead as a string."""
-        return (f"ModelHead('{self.Name}', '{self.Detail}', "
+        """Return ModFabHead as a string."""
+        return (f"ModFabHead('{self.Name}', '{self.Detail}', "
                 f"{self.Material}, '{self.Shape}', {self.Drive})")
 
     @staticmethod
     def _unit_tests() -> None:
-        """Run ModelHead unit tests."""
+        """Run ModFabHead unit tests."""
         name: str = "PH"
         detail: str = "Brass Philips Pan Head"
-        material: ApexMaterial = ApexMaterial(("Brass",), "orange")
-        shape: str = ModelHead.PAN_HEAD
-        drive: str = ModelHead.PHILIPS_DRIVE
-        apex_head: ModelHead = ModelHead(name, detail, material, shape, drive)
+        material: ModFabMaterial = ModFabMaterial(("Brass",), "orange")
+        shape: str = ModFabHead.PAN_HEAD
+        drive: str = ModFabHead.PHILIPS_DRIVE
+        apex_head: ModFabHead = ModFabHead(name, detail, material, shape, drive)
 
         # Verify __repr__() and attributes work:
         assert f"{apex_head}" == (
-            "ModelHead('PH', 'Brass Philips Pan Head', ApexMaterial(('Brass',), 'orange'), "
+            "ModFabHead('PH', 'Brass Philips Pan Head', ModFabMaterial(('Brass',), 'orange'), "
             "'Pan', Philips)"), f"{apex_head}"
         assert apex_head.__repr__() == (
-            "ModelHead('PH', 'Brass Philips Pan Head', ApexMaterial(('Brass',), 'orange'), "
+            "ModFabHead('PH', 'Brass Philips Pan Head', ModFabMaterial(('Brass',), 'orange'), "
             "'Pan', Philips)"), f"{apex_head}"
         assert apex_head.Name == name, apex_head.Name
         assert apex_head.Material is material, apex_head.Material
@@ -235,27 +235,28 @@ class ModelHead(ModelOption):
 
         # Empty Name Test:
         try:
-            ModelHead("", detail, material, shape, drive)
+            ModFabHead("", detail, material, shape, drive)
             assert False
         except ValueError as value_error:
             assert str(value_error) == "[0]: Argument 'Name' has no length", str(value_error)
 
         # Bad Detail:
         try:
-            ModelHead(name, "", cast(ApexMaterial, 0), shape, drive)
+            ModFabHead(name, "", cast(ModFabMaterial, 0), shape, drive)
         except ValueError as value_error:
             assert str(value_error) == "[1]: Argument 'Detail' has no length", str(value_error)
 
         # Bad Material:
         try:
-            ModelHead(name, detail, cast(ApexMaterial, 0), shape, drive)
+            ModFabHead(name, detail, cast(ModFabMaterial, 0), shape, drive)
         except ValueError as value_error:
             assert str(value_error) == (
-                "Argument 'Material' is int which is not one of ['ApexMaterial']"), str(value_error)
+                "Argument 'Material' is int which is not one of ['ModFabMaterial']"
+            ), str(value_error)
 
         # Bad Shape:
         try:
-            ModelHead(name, detail, material, "", drive)
+            ModFabHead(name, detail, material, "", drive)
             assert False
         except ValueError as value_error:
             assert str(value_error) == ("Shape (='') is not in ('Cheese', 'Fillister', "
@@ -263,17 +264,17 @@ class ModelHead(ModelOption):
 
         # Bad Drive:
         try:
-            ModelHead(name, detail, material, shape, "")
+            ModFabHead(name, detail, material, shape, "")
         except ValueError as value_error:
             got: str = str(value_error)
             assert got == (
                 "Head (='') is not in ('Carriage', 'Hex', 'Philips', 'Slot', 'Torx')"), got
 
 
-# ModelNut:
+# ModFabNut:
 @dataclass(frozen=True)
-class ModelNut(ModelOption):
-    """ModelNut: A class the represents a fastener nut.
+class ModFabNut(ModFabOption):
+    """ModFabNut: A class the represents a fastener nut.
 
     Attributes:
     * Name (str): Nut name.
@@ -281,28 +282,28 @@ class ModelNut(ModelOption):
     * Sides (int): The number of nut sides (either 4 or 6.)
     * Width (float): The Nut width between 2 opposite faces.
     * Thickness (float): The nut thickness in millimeters.
-    * Material (ApexMaterial): The nut material
+    * Material (ModFabMaterial): The nut material
 
     """
 
     Sides: int  # The Nut sides (either, 4 or 6).
     Width: float  # The Nut width between 2 faces in millimeters.
     Thickness: float  # The Nut thickness in millimeters.
-    Material: ApexMaterial  # The Nut material.
+    Material: ModFabMaterial  # The Nut material.
 
     INIT_CHECKS = (
-        ApexCheck("Name", (str,)),
-        ApexCheck("Detail", (str,)),
-        ApexCheck("Sides", (int,)),
-        ApexCheck("Width", (float,)),
-        ApexCheck("Thickness", (float,)),
-        ApexCheck("Material", (ApexMaterial,)),
+        ModFabCheck("Name", (str,)),
+        ModFabCheck("Detail", (str,)),
+        ModFabCheck("Sides", (int,)),
+        ModFabCheck("Width", (float,)),
+        ModFabCheck("Thickness", (float,)),
+        ModFabCheck("Material", (ModFabMaterial,)),
     )
 
     def __post_init__(self) -> None:
         """Verify everything is reasonable."""
         arguments = (self.Name, self.Detail, self.Sides, self.Width, self.Thickness, self.Material)
-        value_error: str = ApexCheck.check(arguments, ModelNut.INIT_CHECKS)
+        value_error: str = ModFabCheck.check(arguments, ModFabNut.INIT_CHECKS)
         if value_error:
             raise ValueError(value_error)
         if not self.Name:
@@ -317,29 +318,29 @@ class ModelNut(ModelOption):
             raise ValueError(f"Thickness (={self.Thickness}) is not positive")
 
     def __repr__(self) -> str:
-        """Return ModelNut string representation."""
+        """Return ModFabNut string representation."""
         return self.__str__()
 
     def __str__(self) -> str:
-        """Return ModelNut string representation."""
-        return (f"ModelNut('{self.Name}', '{self.Detail}', {self.Sides}, {self.Width}, "
+        """Return ModFabNut string representation."""
+        return (f"ModFabNut('{self.Name}', '{self.Detail}', {self.Sides}, {self.Width}, "
                 f"{self.Thickness}, {self.Material})")
 
     @staticmethod
     def _unit_tests() -> None:
-        """Run ModelNut unit tests."""
-        # Create the ModelNut:
+        """Run ModFabNut unit tests."""
+        # Create the ModFabNut:
         name: str = "M3Nut"
         detail: str = "Brass M3 Hex Nut"
         sides: int = 6
         width: float = 6.2
         thickness: float = 2.0
-        material: ApexMaterial = ApexMaterial(("brass",), "orange")
-        nut: ModelNut = ModelNut(name, detail, sides, width, thickness, material)
+        material: ModFabMaterial = ModFabMaterial(("brass",), "orange")
+        nut: ModFabNut = ModFabNut(name, detail, sides, width, thickness, material)
 
         # Verify that __repr__() and __str__() work.
-        want: str = ("ModelNut('M3Nut', 'Brass M3 Hex Nut', 6, 6.2, 2.0, "
-                     "ApexMaterial(('brass',), 'orange'))")
+        want: str = ("ModFabNut('M3Nut', 'Brass M3 Hex Nut', 6, 6.2, 2.0, "
+                     "ModFabMaterial(('brass',), 'orange'))")
         assert f"{nut}" == want, f"{nut}"
         assert nut.__repr__() == want
         assert str(nut) == want
@@ -353,48 +354,50 @@ class ModelNut(ModelOption):
         assert nut.Material == material, nut.Material
 
         # Verify __repr__() and __str__():
-        nut_text: str = f"ModelNut('{name}', '{detail}', {sides}, {width}, {thickness}, {material})"
+        nut_text: str = (
+            f"ModFabNut('{name}', '{detail}', {sides}, {width}, {thickness}, {material})")
         assert f"{nut}" == nut_text, (f"{nut}", nut_text)
 
         # Do argument checking:
         try:
             # Empty name:
-            ModelNut("", detail, sides, width, thickness, material)
+            ModFabNut("", detail, sides, width, thickness, material)
         except ValueError as value_error:
             assert str(value_error) == "Name is empty", str(value_error)
 
         try:
             # Empty detail:
-            ModelNut(name, "", sides, width, thickness, material)
+            ModFabNut(name, "", sides, width, thickness, material)
         except ValueError as value_error:
             assert str(value_error) == "Detail is empty", str(value_error)
 
         try:  # Bad sides:
-            ModelNut(name, detail, 5, width, thickness, material)
+            ModFabNut(name, detail, 5, width, thickness, material)
         except ValueError as value_error:
             assert str(value_error) == "Sides (=5) is neither 4 nor 6", str(value_error)
 
         try:  # Bad width:
-            ModelNut(name, detail, sides, 0.0, thickness, material)
+            ModFabNut(name, detail, sides, 0.0, thickness, material)
         except ValueError as value_error:
             assert str(value_error) == "Width (=0.0) is not positive", str(value_error)
 
         try:  # Bad thickness:
-            ModelNut(name, detail, sides, width, 0.0, material)
+            ModFabNut(name, detail, sides, width, 0.0, material)
         except ValueError as value_error:
             assert str(value_error) == "Thickness (=0.0) is not positive", str(value_error)
 
         try:  # Bad Material:
-            ModelNut(name, detail, sides, width, thickness, cast(ApexMaterial, 0))
+            ModFabNut(name, detail, sides, width, thickness, cast(ModFabMaterial, 0))
         except ValueError as value_error:
             assert str(value_error) == (
-                "Argument 'Material' is int which is not one of ['ApexMaterial']"), str(value_error)
+                "Argument 'Material' is int which is not one of ['ModFabMaterial']"
+            ), str(value_error)
 
 
-# ModelWasher:
+# ModFabWasher:
 @dataclass(frozen=True)
-class ModelWasher(ModelOption):
-    """ModelWahser: Represents a washer.
+class ModFabWasher(ModFabOption):
+    """ModFabWahser: Represents a washer.
 
     Constants:
     * PLAIN: Plain washer.
@@ -404,12 +407,12 @@ class ModelWasher(ModelOption):
 
     Attributes:
     * *Name* (str): The washer name.
-    * *Detail* (str): More detail about the ModelWasher.
+    * *Detail* (str): More detail about the ModFabWasher.
     * *Inner* (float): The Inner diameter in millimeters.
     * *Outer* (float): The Outer diameter in millimeters.
     * *Thickness* (float): The thickness in millimeters.
-    * *Material* (ApexMaterial): The Material the washer is made out of.
-    * *Kind* (str): The washer kind -- one of following ModelWasher constants --
+    * *Material* (ModFabMaterial): The Material the washer is made out of.
+    * *Kind* (str): The washer kind -- one of following ModFabWasher constants --
       `PLAIN`, `INTERNAL_LOCK`, `EXTERNAL_LOCK`, or `SPLIT_LOCK`.
 
     """
@@ -417,7 +420,7 @@ class ModelWasher(ModelOption):
     Inner: float  # Inner diameter
     Outer: float  # Outer diameter
     Thickness: float  # Thickness
-    Material: ApexMaterial  # Material
+    Material: ModFabMaterial  # Material
     Kind: str  # Kind
 
     # Predefined constants for Kind.
@@ -427,22 +430,22 @@ class ModelWasher(ModelOption):
     SPLIT_LOCK = "SPLIT_LOCK"
 
     INIT_CHECKS = (
-        ApexCheck("Name", ("+", str)),
-        ApexCheck("Detail", ("+", str)),
-        ApexCheck("Inner", (float,)),
-        ApexCheck("Outer", (float,)),
-        ApexCheck("Thickness", (float,)),
-        ApexCheck("Material", (ApexMaterial,)),
-        ApexCheck("Kind", ("+", str,)),
+        ModFabCheck("Name", ("+", str)),
+        ModFabCheck("Detail", ("+", str)),
+        ModFabCheck("Inner", (float,)),
+        ModFabCheck("Outer", (float,)),
+        ModFabCheck("Thickness", (float,)),
+        ModFabCheck("Material", (ModFabMaterial,)),
+        ModFabCheck("Kind", ("+", str,)),
     )
 
-    # ModelWasher:
+    # ModFabWasher:
     def __post_init__(self):
-        """Post process ModelWasher looking for errors."""
+        """Post process ModFabWasher looking for errors."""
         # Check the arguments and do any requested *tracing*:
         arguments = (self.Name, self.Detail, self.Inner, self.Outer, self.Thickness,
                      self.Material, self.Kind)
-        value_error: str = ApexCheck.check(arguments, ModelWasher.INIT_CHECKS)
+        value_error: str = ModFabCheck.check(arguments, ModFabWasher.INIT_CHECKS)
         if value_error:
             raise ValueError(value_error)
         if self.Inner <= 0.0:
@@ -454,38 +457,38 @@ class ModelWasher(ModelOption):
         if self.Thickness <= 0.0:
             raise ValueError(f"Thickness (={self.Thickness}) is not positive")
         kinds: Tuple[str, ...] = (
-            ModelWasher.PLAIN,
-            ModelWasher.INTERNAL_LOCK,
-            ModelWasher.EXTERNAL_LOCK,
-            ModelWasher.SPLIT_LOCK,
+            ModFabWasher.PLAIN,
+            ModFabWasher.INTERNAL_LOCK,
+            ModFabWasher.EXTERNAL_LOCK,
+            ModFabWasher.SPLIT_LOCK,
         )
         if self.Kind not in kinds:
             raise ValueError(f"Kind (='{self.Kind}') is not one of {kinds}")
 
     def __repr__(self) -> str:
-        """Return string representation of ModelWasher."""
+        """Return string representation of ModFabWasher."""
         return self.__str__()
 
     def __str__(self) -> str:
-        """Return string representation of ModelWasher."""
-        return (f"ModelWasher('{self.Name}', '{self.Detail}', {self.Inner}, {self.Outer}, "
+        """Return string representation of ModFabWasher."""
+        return (f"ModFabWasher('{self.Name}', '{self.Detail}', {self.Inner}, {self.Outer}, "
                 f"{self.Thickness}, {self.Material}, '{self.Kind}')")
 
     @staticmethod
     def _unit_tests() -> None:
-        """Perform ModelWasher unit tests."""
+        """Perform ModFabWasher unit tests."""
         # Create the *washer*:
         name: str = "W6x.5"
         detail: str = "M3 Washer (ID=3.2 OD=6, Thick=.5)"
         inner: float = 3.2
         outer: float = 6.0
         thickness: float = 0.5
-        material: ApexMaterial = ApexMaterial(("brass",), "orange")
-        kind: str = ModelWasher.PLAIN
-        washer: ModelWasher = ModelWasher(name, detail, inner, outer, thickness, material, kind)
+        material: ModFabMaterial = ModFabMaterial(("brass",), "orange")
+        kind: str = ModFabWasher.PLAIN
+        washer: ModFabWasher = ModFabWasher(name, detail, inner, outer, thickness, material, kind)
 
         # Ensure that the __str__() method works:
-        washer_text: str = (f"ModelWasher('{name}', '{detail}', "
+        washer_text: str = (f"ModFabWasher('{name}', '{detail}', "
                             f"{inner}, {outer}, {thickness}, {material}, '{kind}')")
         assert f"{washer}" == washer_text, (f"{washer}", washer_text)
         assert str(washer) == washer_text
@@ -503,50 +506,51 @@ class ModelWasher(ModelOption):
         # Do argument checks:
         try:
             # Empty name error:
-            ModelWasher("", detail, inner, outer, thickness, material, kind)
+            ModFabWasher("", detail, inner, outer, thickness, material, kind)
         except ValueError as value_error:
             assert str(value_error) == "[0]: Argument 'Name' has no length", str(value_error)
 
         try:
             # Empty detail errora:
-            ModelWasher(name, "", inner, outer, thickness, material, kind)
+            ModFabWasher(name, "", inner, outer, thickness, material, kind)
         except ValueError as value_error:
             assert str(value_error) == "[1]: Argument 'Detail' has no length", str(value_error)
 
         try:
             # Bad Inner:
-            washer = ModelWasher(name, detail, 0.0, outer, thickness, material, kind)
+            washer = ModFabWasher(name, detail, 0.0, outer, thickness, material, kind)
         except ValueError as value_error:
             assert str(value_error) == "Inner (=0.0) is not positive", str(value_error)
 
         try:
             # Bad Outer:
-            ModelWasher(name, detail, inner, 0.0, thickness, material, kind)
+            ModFabWasher(name, detail, inner, 0.0, thickness, material, kind)
         except ValueError as value_error:
             assert str(value_error) == "Outer (=0.0) is not positive", str(value_error)
 
         try:
             # Inner >= Outer:
-            ModelWasher(name, detail, 10.0, 5.0, 0.0, material, kind)
+            ModFabWasher(name, detail, 10.0, 5.0, 0.0, material, kind)
         except ValueError as value_error:
             assert str(value_error) == "Inner (=10.0) >= Outer (=5.0)", str(value_error)
 
         try:
             # Bad Thickness:
-            ModelWasher(name, detail, inner, outer, 0.0, material, kind)
+            ModFabWasher(name, detail, inner, outer, 0.0, material, kind)
         except ValueError as value_error:
             assert str(value_error) == "Thickness (=0.0) is not positive", str(value_error)
 
         try:
             # Bad Material:
-            ModelWasher(name, detail, inner, outer, thickness, cast(ApexMaterial, 0), kind)
+            ModFabWasher(name, detail, inner, outer, thickness, cast(ModFabMaterial, 0), kind)
         except ValueError as value_error:
             assert str(value_error) == (
-                "Argument 'Material' is int which is not one of ['ApexMaterial']"), str(value_error)
+                "Argument 'Material' is int which is not one of ['ModFabMaterial']"
+            ), str(value_error)
 
         try:
             # Bad kind:
-            ModelWasher(name, detail, inner, outer, thickness, material, "BOGUS")
+            ModFabWasher(name, detail, inner, outer, thickness, material, "BOGUS")
         except ValueError as value_error:
             assert str(value_error) == (
                 "Kind (='BOGUS') is not one of "
@@ -554,16 +558,16 @@ class ModelWasher(ModelOption):
             ), str(value_error)
 
 
-# ModelFasten:
+# ModFabFasten:
 @dataclass(frozen=True)
-class ModelFasten:
-    """ModelFastner: The class of Fastener to use.
+class ModFabFasten:
+    """ModFabFastner: The class of Fastener to use.
 
     Attributes:
-    * Name (str): ModelFasten Name.
-    * Profile (str): ModelFasten Profile.  Must be one of the ModelFasten constants --
+    * Name (str): ModFabFasten Name.
+    * Profile (str): ModFabFasten Profile.  Must be one of the ModFabFasten constants --
       `ISO_COARSE`, `ISO_FINE`,  `UTS_COARSE`, `UTS_FINE`, and `UTS_EXTRA_FINE.
-    * Size (str): Standard fastener size.  Must be one of the ModelFasten constants --
+    * Size (str): Standard fastener size.  Must be one of the ModFabFasten constants --
       `UTS_N1`, `UTS_N2`, `UTS_N3`, `UTS_N4`, `UTS_N5`, `UTS_N6`, `UTS_N8`, `UTS_N10`, `UTS_N12`,
       `UTS_F1_4`, `UTS_F5_16`, `UTS_F3_8`, `UTS_F7_16`, `UTS_F1_2`, `UTS_F9_16`, `UTS_F5_8`,
       `UTS_F3_4`, `UTS_F3_4`, `M1_6`, `M2`, `M2_5`, `M3`, `M3_5`, `M4`, `M5`, `M6`, `M8`, `M10`,
@@ -572,10 +576,10 @@ class ModelFasten:
 
     """
 
-    Name: str  # ModelFasten Name
-    Profile: str  # ModelFasten Profile
-    Size: str  # ModelFasten Size
-    Options: Tuple[ModelOption, ...]  # ModelFasten Options
+    Name: str  # ModFabFasten Name
+    Profile: str  # ModFabFasten Profile
+    Size: str  # ModFabFasten Size
+    Options: Tuple[ModFabOption, ...]  # ModFabFasten Options
 
     # Profile:
     ISO_COARSE = "ISO Metric Coarse"
@@ -672,10 +676,10 @@ class ModelFasten:
     #  Reversed bool
 
     INIT_CHECKS = (
-        ApexCheck("Name", (str,)),
-        ApexCheck("Profile", (str,)),
-        ApexCheck("Size", (str,)),
-        ApexCheck("Options", ("T", ModelOption)),
+        ModFabCheck("Name", (str,)),
+        ModFabCheck("Profile", (str,)),
+        ModFabCheck("Size", (str,)),
+        ModFabCheck("Options", ("T", ModFabOption)),
     )
     PROFILES = (
         ISO_COARSE,
@@ -692,30 +696,30 @@ class ModelFasten:
     )
 
     def __repr__(self) -> str:
-        """Return a string representation of an ModelFasten."""
+        """Return a string representation of an ModFabFasten."""
         return self.__str__()
 
     def __str__(self) -> str:
-        """Return a string representation of an ModelFasten."""
-        return f"ModelFasten('{self.Name}', '{self.Profile}', '{self.Size}')"
+        """Return a string representation of an ModFabFasten."""
+        return f"ModFabFasten('{self.Name}', '{self.Profile}', '{self.Size}')"
 
     POST_INIT_CHECKS = (
-        ApexCheck("Name", ("+", str)),
-        ApexCheck("Profile", ("+", str)),
-        ApexCheck("Size", ("+", str)),
-        ApexCheck("Options", ("T", ModelOption)),
+        ModFabCheck("Name", ("+", str)),
+        ModFabCheck("Profile", ("+", str)),
+        ModFabCheck("Size", ("+", str)),
+        ModFabCheck("Options", ("T", ModFabOption)),
     )
 
     def __post_init__(self):
-        """Verify that ModelFasten is properly initialized.
+        """Verify that ModFabFasten is properly initialized.
 
         Arguments:
-        * Profile (str): Profile to use.  Select from the following predefined ModelFasten
+        * Profile (str): Profile to use.  Select from the following predefined ModFabFasten
           constants -- `PROFILE_CUSTOM`, `PROFILE_ISO_COARSE`, `PROFILE_ISO_FINE`,
           `PROFILE_UTS_COARSE`, `PROFILE_UTS_FINE`, `PROFILE_UTS_EXTRA_FINE`.  `PROFILE_CUSTOM`
           requires additional sizes to be specified -- `close_diameter`, `loose_diameter`,
           `thread_diameter`.
-        * Size (str): Size to use. Select from the following predefined ModelFasten constants --
+        * Size (str): Size to use. Select from the following predefined ModFabFasten constants --
           `CUSTOM_SIZE`, `UTS_N1`, `UTS_N2`, `UTS_N3`, `UTS_N4`, `UTS_N5`, `UTS_N6`, `UTS_N8`,
           `UTS_N10`, `UTS_N12`, `UTS_F1_4`, `UTS_F5_16`, `UTS_F3_8`, `UTS_F7_16`, `UTS_F1_2`,
           `UTS_F9_16`, `UTS_F5_8`, `UTS_F3_4`, `UTS_F3_4`, `M1_6`, `M2`, `M2_5`, `M3`, `M3_5`,
@@ -723,36 +727,36 @@ class ModelFasten:
           `M30`, `M36`, `M42`, `M48`, `M56`, `M68`.
         """
         arguments = (self.Name, self.Profile, self.Size, self.Options)
-        value_error: str = ApexCheck.check(arguments, ModelFasten.INIT_CHECKS)
+        value_error: str = ModFabCheck.check(arguments, ModFabFasten.INIT_CHECKS)
         if value_error:
             raise ValueError(value_error)
-        if self.Profile not in ModelFasten.PROFILES:
-            raise ValueError(f"'{self.Profile}' is not one of {ModelFasten.PROFILES}")
-        if self.Size not in ModelFasten.SIZES:
+        if self.Profile not in ModFabFasten.PROFILES:
+            raise ValueError(f"'{self.Profile}' is not one of {ModFabFasten.PROFILES}")
+        if self.Size not in ModFabFasten.SIZES:
             raise ValueError(f"'{self.Size}' is not a valid size")
 
-        # Ensure that Options is a tuple and only contains ModelOptions:
+        # Ensure that Options is a tuple and only contains ModFabOptions:
         if not isinstance(self.Options, tuple):
             raise ValueError("Options is not a tuple")
-        option: ModelOption
+        option: ModFabOption
         for option in self.Options:
-            if not isinstance(option, ModelOption):
-                raise ValueError(f"{option} is not an ModelOption")
+            if not isinstance(option, ModFabOption):
+                raise ValueError(f"{option} is not an ModFabOption")
 
     @staticmethod
     def _unit_tests() -> None:
-        """Run ModelFasten unit tests."""
+        """Run ModFabFasten unit tests."""
         name: str = "#4-40"
-        profile: str = ModelFasten.UTS_FINE
-        size: str = ModelFasten.UTS_N4
-        fasten: ModelFasten = ModelFasten(name, profile, size, ())
+        profile: str = ModFabFasten.UTS_FINE
+        size: str = ModFabFasten.UTS_N4
+        fasten: ModFabFasten = ModFabFasten(name, profile, size, ())
 
         # Verify __repr__() works:
-        assert f"{fasten}" == "ModelFasten('#4-40', 'UTS Fine', 'UTS #4')", f"{fasten}"
+        assert f"{fasten}" == "ModFabFasten('#4-40', 'UTS Fine', 'UTS #4')", f"{fasten}"
 
         # Empty profile:
         try:
-            ModelFasten(name, "bad", size, ())
+            ModFabFasten(name, "bad", size, ())
         except ValueError as value_error:
             got: str = str(value_error)
             want: str = ("'bad' is not one of ('ISO Metric Coarse', 'ISO Metric FINE', "
@@ -760,61 +764,61 @@ class ModelFasten:
             assert want == got, (want, got)
 
 
-# ModelJoin:
+# ModFabJoin:
 @dataclass(frozen=True)
-class ModelJoin(object):
-    """ModelJoin: Specifies a single fastener instance.
+class ModFabJoin(object):
+    """ModFabJoin: Specifies a single fastener instance.
 
     Attributes:
-    * Fasten (ModelFasten): ModelFasten object to use for basic dimensions.
-    * Start (Vector): Start point for ModelJoin.
-    * End (Vector): End point for ModelJoin.
-    * Options (Tuple[ModelOption]): The various options associated with the ModelJoin.
+    * Fasten (ModFabFasten): ModFabFasten object to use for basic dimensions.
+    * Start (Vector): Start point for ModFabJoin.
+    * End (Vector): End point for ModFabJoin.
+    * Options (Tuple[ModFabOption]): The various options associated with the ModFabJoin.
 
     """
 
-    Fasten: ModelFasten  # Parent ModelFasten
+    Fasten: ModFabFasten  # Parent ModFabFasten
     Start: Vector  # Start point (near screw/bolt head)
     End: Vector  # End point (ene screw/bolt tip)
-    Stack: str  # Stack of items that make up the entire ModelJoin stack.
+    Stack: str  # Stack of items that make up the entire ModFabJoin stack.
 
     POST_INIT_CHECKS = (
-        ApexCheck("Fasten", (ModelFasten,)),
-        ApexCheck("Start", (Vector,)),
-        ApexCheck("End", (Vector,)),
-        ApexCheck("Stack", (str,)),
+        ModFabCheck("Fasten", (ModFabFasten,)),
+        ModFabCheck("Start", (Vector,)),
+        ModFabCheck("End", (Vector,)),
+        ModFabCheck("Stack", (str,)),
     )
 
     def __post_init__(self) -> None:
-        """Initialize a single ModelJoin."""
+        """Initialize a single ModFabJoin."""
         arguments = (self.Fasten, self.Start, self.End, self.Stack)
-        value_error: str = ApexCheck.check(arguments, ModelJoin.POST_INIT_CHECKS)
+        value_error: str = ModFabCheck.check(arguments, ModFabJoin.POST_INIT_CHECKS)
         if value_error:
             raise ValueError
 
     @staticmethod
     def _unit_tests() -> None:
-        """Run ModelJoint unit tests."""
-        brass: ApexMaterial = ApexMaterial(("brass",), "orange")
-        apex_head: ModelHead = ModelHead("PH", "Brass Philips Pan Head",
-                                         brass, ModelHead.PAN_HEAD, ModelHead.PHILIPS_DRIVE)
-        options: Tuple[ModelOption, ...] = (apex_head,)
-        apex_fasten: ModelFasten = ModelFasten(
-            "#4-40", ModelFasten.UTS_FINE, ModelFasten.UTS_N4, options)
+        """Run ModFabJoint unit tests."""
+        brass: ModFabMaterial = ModFabMaterial(("brass",), "orange")
+        apex_head: ModFabHead = ModFabHead("PH", "Brass Philips Pan Head",
+                                           brass, ModFabHead.PAN_HEAD, ModFabHead.PHILIPS_DRIVE)
+        options: Tuple[ModFabOption, ...] = (apex_head,)
+        apex_fasten: ModFabFasten = ModFabFasten(
+            "#4-40", ModFabFasten.UTS_FINE, ModFabFasten.UTS_N4, options)
         start: Vector = Vector(0, 0, 0)
         stop: Vector = Vector(1, 1, 1)
-        apex_join: ModelJoin = ModelJoin(apex_fasten, start, stop, "")
+        apex_join: ModFabJoin = ModFabJoin(apex_fasten, start, stop, "")
         _ = apex_join
 
 
 def _unit_tests() -> None:
     """Run unit tests."""
-    ModelOption._unit_tests()
-    ModelHead._unit_tests()
-    ModelFasten._unit_tests()
-    ModelNut._unit_tests()
-    ModelWasher._unit_tests()
-    ModelJoin._unit_tests()
+    ModFabOption._unit_tests()
+    ModFabHead._unit_tests()
+    ModFabFasten._unit_tests()
+    ModFabNut._unit_tests()
+    ModFabWasher._unit_tests()
+    ModFabJoin._unit_tests()
 
 
 if __name__ == "__main__":
