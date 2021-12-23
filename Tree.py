@@ -1,34 +1,34 @@
 #!/usr/bin/env python3
 """
-Tree: Model tree management.
+Tree: ModFab tree management.
 
 The Tree package provides a tree of nodes that mostly corresponds to a FreeCAD tree
 as shown in the FreeCAD model view.
 
-The base class is ModelNode organized as follows:
+The base class is ModFabNode organized as follows:
 
-* ModelNode: Tree node base class.
-  * ModelRoot: The Root of the tree.
-  * ModelGroup: A Group of ModelNode's in a tree.
-    * ModelFile: A Node that corresponds to a `.fcstd` file.
-    * ModelAssembly: A group of ModelAssembly's and/or ModelPart's.  (Defined in ??)
-  * ModelPart: A physical part that is modeled.  (Defined in Part)
-  * ModelLink: ???
+* ModFabNode: Tree node base class.
+  * ModFabRoot: The Root of the tree.
+  * ModFabGroup: A Group of ModFabNode's in a tree.
+    * ModFabFile: A Node that corresponds to a `.fcstd` file.
+    * ModFabAssembly: A group of ModFabAssembly's and/or ModFabPart's.  (Defined in ??)
+  * ModFabPart: A physical part that is modeled.  (Defined in Part)
+  * ModFabLink: ???
 
 The Tree enforces the following constraints:
-* Each ModelNode name must be compatible with a Python variable name
+* Each ModFabNode name must be compatible with a Python variable name
   (i.e. upper/lower letters, digits, and underscores with the character being a letter.)
-* All of the children of a ModelNode must have distinct names.
+* All of the children of a ModFabNode must have distinct names.
 * A node may occur only once in the Tree (i.e. DAG = Direct Acyclic Graph.)
-* The ModelRoot must be named 'Root'.
+* The ModFabRoot must be named 'Root'.
 
-Each ModelNode has a *FullPath* property which is string that contains the ModelNode Names
-from the ModelRoot downwards separated by a '.'.  The "Root." is skipped because it is redundant.
-Each ModelNode has an Parent attribute that specifies the parent ModelNode
+Each ModFabNode has a *FullPath* property which is string that contains the ModFabNode Names
+from the ModFabRoot downwards separated by a '.'.  The "Root." is skipped because it is redundant.
+Each ModFabNode has an Parent attribute that specifies the parent ModFabNode
 
-ModelNode implement
+ModFabNode implement
 
-The ModelNode base class implements three recursive methods:
+The ModFabNode base class implements three recursive methods:
 
 * configure(context) -> Tuple[str, ...]:
   Recursively propagate configuration values during the configuration phase.
@@ -45,15 +45,15 @@ level makes a shallow dictionary copy (i.e. context.copy()).
 
 There are three phases:
 * Configuration Phase:
-  The configuration phase is where constraints get propagated between ModelNode's.  Each
-  ModelNode recomputes its configuration values.  It can do this by reading other values
-  from ModelNode's elsewhere in ModelRoot tree then computing new values.  This is done
+  The configuration phase is where constraints get propagated between ModFabNode's.  Each
+  ModFabNode recomputes its configuration values.  It can do this by reading other values
+  from ModFabNode's elsewhere in ModFabRoot tree then computing new values.  This is done
   repeatably until no more configuration values change or until it is pretty clear that
   there is cyclic dependency will not converge.  When convergence fails, the list of
   configuration values that did not stabilize are presented.  If there are no convergence
   issues, the next phase occurs.
 * Check Phase:
-  The check phase recursively performs sanity checking for each ModelNode in the tree.
+  The check phase recursively performs sanity checking for each ModFabNode in the tree.
   The result is a list of error messages.  If the are no errors, the next phase occurs.
 * Build Phase:
   The build phase recursively performs the build operations.  This includes generating
@@ -75,64 +75,65 @@ from typing import cast, Any, Dict, List, Optional, Set, Tuple, Union
 
 
 @dataclass
-# ModelNode:
-class ModelNode(object):
-    """ModelNode: Represents one node in the tree.
+# ModFabNode:
+class ModFabNode(object):
+    """ModFabNode: Represents one node in the tree.
 
     Attributes:
-    * *Name* (str): The ModelNode name.
-    * *Parent* (ModelNode): The ModelNode parent.
-    * *ChildrenNodes* (Tuple[ModelNode, ...): The children ModelNode's.
-    * *FullPath* (str):  The ModelNode full path.
+    * *Name* (str): The ModFabNode name.
+    * *Parent* (ModFabNode): The ModFabNode parent.
+    * *ChildrenNodes* (Tuple[ModFabNode, ...): The children ModFabNode's.
+    * *FullPath* (str):  The ModFabNode full path.
 
     """
 
     Name: str
-    Children: Tuple["ModelNode", ...] = field(repr=False, default=())
+    Children: Tuple["ModFabNode", ...] = field(repr=False, default=())
     ChildrenNames: Tuple[str, ...] = field(init=False)
-    Parent: "ModelNode" = field(init=False, repr=False)
+    Parent: "ModFabNode" = field(init=False, repr=False)
     FullPath: str = field(init=False)
 
-    # ModelNode.__post_init__():
+    # ModFabNode.__post_init__():
     def __post_init__(self) -> None:
-        """Finish initializing ModelNode."""
-        # print(f"=>ModelNode.__post_init__(): {self.Name=}")
-        if not ModelNode._is_valid_name(self.Name):
+        """Finish initializing ModFabNode."""
+        # print(f"=>ModFabNode.__post_init__(): {self.Name=}")
+        if not ModFabNode._is_valid_name(self.Name):
             raise ValueError(
-                f"ModelNode name '{self.Name}' is not alphanumeric/underscore starts with a letter")
+                f"ModFabNode name '{self.Name}' is not alphanumeric/underscore "
+                "that starts with a letter")
 
         # Initialize the remaining fields to bogus values that get updated by the _setup() method.
         self.ChildrenNames = ()
         self.FullPath = "??"
         self.Parent = self
-        # print(f"<=ModelNode.__post_init__()")
+        # print(f"<=ModFabNode.__post_init__()")
 
-    # ModelNode.check():
+    # ModFabNode.check():
     def check(self, context: Dict[str, Any]) -> Tuple[str, ...]:
-        """Check ModelNode for errors."""
+        """Check ModFabNode for errors."""
         errors: List[str] = []
-        child_node: "ModelNode"
+        child_node: "ModFabNode"
         for child_node in self.Children:
             errors.extend(child_node.check(context.copy()))
         return tuple(errors)
 
-    # ModelNode.configure():
+    # ModFabNode.configure():
     def configure(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
-        """Configure ModelNode."""
+        """Configure ModFabNode."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>ModelNode.configure('{self.Name}', {context})")
+            print(f"{tracing}=>ModFabNode.configure('{self.Name}', {context})")
 
         current_values: List[str] = []
-        child: "ModelNode"
+        child: "ModFabNode"
         for child in self.Children:
             current_values.extend(child.configure(context.copy(), tracing=next_tracing))
 
         if tracing:
-            print(f"{tracing}<=ModelNode.configure('{self.Name}', {context})=>{current_values}")
+            print(f"{tracing}<=ModFabNode.configure('{self.Name}', {context})=>{current_values}")
         return tuple(current_values)
 
-    # ModelNode.get_configurations():
+    # ModFabNode.get_configurations():
     def get_configurations(self, attribute_names: Tuple[str, ...]) -> Tuple[str, ...]:
         """Return configurations strings for named attributes."""
         if not isinstance(attribute_names, tuple):
@@ -143,37 +144,37 @@ class ModelNode(object):
             if not isinstance(attribute_name, str):
                 raise ValueError(f"Atribute name {attribute_name} is not a string")
             if not hasattr(self, attribute_name):
-                raise ValueError(f"ModelNode {self} does not have attribute '{attribute_name}'")
+                raise ValueError(f"ModFabNode {self} does not have attribute '{attribute_name}'")
             value: Any = getattr(self, attribute_name)
             configurations.append(f"{self.FullPath}.{attribute_name}.{value}")
         return tuple(configurations)
 
-    # ModelNode.produce():
+    # ModFabNode.produce():
     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
-        """Produce ModelNode."""
+        """Produce ModFabNode."""
         errors: List[str] = []
-        child: "ModelNode"
+        child: "ModFabNode"
         for child_node in self.Children:
             errors.extend(child_node.produce(context.copy()))
         return tuple(errors)
 
     @staticmethod
-    # ModelNode._is_valid_name():
+    # ModFabNode._is_valid_name():
     def _is_valid_name(name: str) -> bool:
         """Return whether a name is valid or not."""
         no_underscores: str = name.replace("_", "")
         return no_underscores.isalnum() and no_underscores[0].isalpha()
 
-    # ModelNode._setup():
-    def _setup(self, parent: "ModelNode", tracing: str = "") -> None:
-        """Recursively setup the ModelNode tree."""
+    # ModFabNode._setup():
+    def _setup(self, parent: "ModFabNode", tracing: str = "") -> None:
+        """Recursively setup the ModFabNode tree."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>ModelNode._setup('{self.Name}', '{parent.Name}')")
+            print(f"{tracing}=>ModFabNode._setup('{self.Name}', '{parent.Name}')")
             print(f"{tracing}{self.Children=}")
 
-        # A ModelRoot is treated a bit specially
-        if isinstance(self, ModelRoot):
+        # A ModFabRoot is treated a bit specially
+        if isinstance(self, ModFabRoot):
             self.Name = "Root"
             self.Parent = self
             self.FullPath = ""
@@ -183,10 +184,10 @@ class ModelNode(object):
         if tracing:
             print(f"{tracing}{self.Parent=}")
 
-        # Collect all of children ModelNode's into *children_table*, checking for duplicates:
-        children_table: Dict[str, ModelNode] = {}
+        # Collect all of children ModFabNode's into *children_table*, checking for duplicates:
+        children_table: Dict[str, ModFabNode] = {}
         name: str
-        child: ModelNode
+        child: ModFabNode
         for child in self.Children:
             name = child.Name
             if name in children_table:
@@ -199,29 +200,29 @@ class ModelNode(object):
         if tracing:
             print(f"{tracing}{children_table=}")
 
-        # Now look for ModelNode's that are already attributes and add them to *children_table*:
+        # Now look for ModFabNode's that are already attributes and add them to *children_table*:
         obj: Any
         for name, obj in self.__dict__.items():
             if name == "Parent":
                 pass  # The Parent node causes infinite recursion.
             elif name.startswith("_"):
                 pass  # Private nodes are, well, private.
-            elif isinstance(obj, ModelNode):
-                # Simple attribute ModelNode:
+            elif isinstance(obj, ModFabNode):
+                # Simple attribute ModFabNode:
                 if name not in children_table:
                     children_table[name] = obj
             # TODO: search sequences and dictionaries:
 
-        # Make sure that each *child* is a ModelNode attribute:
+        # Make sure that each *child* is a ModFabNode attribute:
         for child in self.Children:
             if tracing:
                 print(f"{tracing}Child[{child.Name}]")
             name = child.Name
             if hasattr(self, name):
-                previous_node: ModelNode = getattr(self, name)
+                previous_node: ModFabNode = getattr(self, name)
                 if child is not previous_node:
                     # Node names match, but they are not the same.
-                    raise RuntimeError(f"Two ModelNode's named '{child.Name}' were found")
+                    raise RuntimeError(f"Two ModFabNode's named '{child.Name}' were found")
                 # else: it is already an attribute.
             else:
                 setattr(self, name, child)
@@ -230,7 +231,7 @@ class ModelNode(object):
 
         # Now setup each *child*:
         names: Tuple[str, ...] = tuple(children_table.keys())
-        children: List[ModelNode] = []
+        children: List[ModFabNode] = []
         for name in names:
             child = children_table[name]
             children.append(child)
@@ -239,39 +240,39 @@ class ModelNode(object):
         self.ChildrenNames = tuple(names)
 
         if tracing:
-            print(f"{tracing}<=ModelNode._setup('{self.Name}', '{parent.Name}')")
+            print(f"{tracing}<=ModFabNode._setup('{self.Name}', '{parent.Name}')")
 
     def __getitem__(self, key: Union[str, Tuple[str, type]]) -> Any:
         """Return value using a relative path with option type."""
         tracing: str = ""  # Manually set to debug.
         if tracing:
-            print(f"=>ModelNode.__get_item__({key})")
+            print(f"=>ModFabNode.__get_item__({key})")
 
         # Perform argument checking:
         path: str
         desired_type: Optional[type] = None
         if isinstance(key, tuple):
             if len(key) != 2:
-                raise ValueError(f"ModelNode key {key} tuple must be of length 2")
+                raise ValueError(f"ModFabNode key {key} tuple must be of length 2")
             path = key[0]
             if not isinstance(path, str):
-                raise ValueError("ModelNode key {path} path is not a string")
+                raise ValueError("ModFabNode key {path} path is not a string")
             desired_type = key[1]
             if not isinstance(desired_type, type):
-                raise ValueError("ModelNode desired type {desired_type } is not a type")
+                raise ValueError("ModFabNode desired type {desired_type } is not a type")
         elif isinstance(key, str):
             path = key
         else:
             raise ValueError(f"ModeNode key {key} is neither a string nor a tuple")
 
         # Move *focus* from *self* by parsing *path*:
-        focus: ModelNode = self
+        focus: ModFabNode = self
         size: int = len(path)
         index: int = 0
         while index < size:
             dispatch: str = path[index]
             if tracing:
-                print(f"ModelNode.__get_item__(): {path[index:]=} {focus=}")
+                print(f"ModFabNode.__get_item__(): {path[index:]=} {focus=}")
             if dispatch == "^":
                 # Move *focus* up:
                 focus = focus.Parent
@@ -298,28 +299,28 @@ class ModelNode(object):
             if not isinstance(focus, desired_type):
                 raise ValueError(f"Path '{path}' is of type {type(focus)} not {desired_type}")
         if tracing:
-            print(f"=>ModelNode.__get_item__({key})=>{focus}")
+            print(f"=>ModFabNode.__get_item__({key})=>{focus}")
         return focus
 
 
 @dataclass
-# ModelRoot:
-class ModelRoot(ModelNode):
-    """ModelRoot: The Root mode a ModelNode tree."""
+# ModFabRoot:
+class ModFabRoot(ModFabNode):
+    """ModFabRoot: The Root mode a ModFabNode tree."""
 
-    # ModelRoot.__post_init__():
+    # ModFabRoot.__post_init__():
     def __post_init__(self) -> None:
-        """Process ModelRoot."""
-        # print(f"=>Model_Root.__post_init__():")
+        """Process ModFabRoot."""
+        # print(f"=>ModFab_Root.__post_init__():")
         super().__post_init__()
         if self.Name != "Root":
             raise ValueError("The Root node must be named root rather than '{self.Name}'")
         self._setup(self)
-        # print(f"<=Model_Root.__post_init__():")
+        # print(f"<=ModFab_Root.__post_init__():")
 
     def configure_constraints(self, maximum_iterations: int = 20,
                               verbosity: int = 4, tracing: str = "") -> None:
-        """Configure the ModelNode tree until is constraints are stable.
+        """Configure the ModFabNode tree until is constraints are stable.
 
         Arguments:
         * *maximum_iterations* (int): The maximum number of iterations (default: 20).
@@ -331,7 +332,7 @@ class ModelRoot(ModelNode):
         """
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>ModelRoot.configure_constraints()")
+            print(f"{tracing}=>ModFabRoot.configure_constraints()")
 
         previous_values: Set[str] = set()
         count: int
@@ -359,12 +360,12 @@ class ModelRoot(ModelNode):
             previous_values = current_values
 
         if tracing:
-            print(f"{tracing}<=ModelRoot.configure_constraints()")
+            print(f"{tracing}<=ModFabRoot.configure_constraints()")
 
 
 @dataclass
-class MyNode1(ModelNode):
-    """MyNode1: First ModelNode."""
+class MyNode1(ModFabNode):
+    """MyNode1: First ModFabNode."""
 
     A: int = 0
 
@@ -372,7 +373,7 @@ class MyNode1(ModelNode):
         """Configure MyNode1."""
         if tracing:
             print(f"{tracing}=>MyNode1.configure('{self.Name}', {context}")
-        assert isinstance(self.Parent, ModelRoot)
+        assert isinstance(self.Parent, ModFabRoot)
         b: int = cast(int, self[("^MyNode2.B", int)])
         c: int = cast(int, self[("^MyNode3.C", int)])
         self.A = b + c
@@ -383,8 +384,8 @@ class MyNode1(ModelNode):
 
 
 @dataclass
-class MyNode2(ModelNode):
-    """MyNode1: First ModelNode."""
+class MyNode2(ModFabNode):
+    """MyNode1: First ModFabNode."""
 
     B: int = 0
 
@@ -401,8 +402,8 @@ class MyNode2(ModelNode):
 
 
 @dataclass
-class MyNode3(ModelNode):
-    """MyNode1: First ModelNode."""
+class MyNode3(ModFabNode):
+    """MyNode1: First ModFabNode."""
 
     C: int = 1
 
@@ -418,15 +419,15 @@ class MyNode3(ModelNode):
 
 
 def _unit_tests(tracing: str = "") -> None:
-    """Run Unit tests on ModelNode."""
+    """Run Unit tests on ModFabNode."""
     if tracing:
         print(f"{tracing}=>_unit_tests()")
 
     my_node1: MyNode1 = MyNode1("MyNode1")
     my_node2: MyNode2 = MyNode2("MyNode2")
     my_node3: MyNode3 = MyNode3("MyNode3")
-    root: ModelRoot = ModelRoot("Root", (my_node1, my_node2, my_node3))
-    assert isinstance(root, ModelRoot)
+    root: ModFabRoot = ModFabRoot("Root", (my_node1, my_node2, my_node3))
+    assert isinstance(root, ModFabRoot)
 
     root.configure_constraints()  # tracing=next_tracing)
 
