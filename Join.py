@@ -70,7 +70,7 @@ sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 from dataclasses import dataclass
 from typing import cast, Tuple
 
-from Apex import ApexCheck, ApexMaterial
+from Utilities import ApexCheck, ApexMaterial
 from FreeCAD import Vector  # type: ignore
 
 #  https://github.com/shaise/FreeCAD_FastenersWB

@@ -13,7 +13,8 @@ PY_FILES := \
     Geometry.py \
     Join.py \
     Solid.py \
-    Tree.py
+    Tree.py \
+    Utilities.py
 DOC_PY_FILES := __init__.py ${PY_FILES}
 OTHER_MD_FILES := \
     LICENSE.md \
@@ -32,7 +33,8 @@ MODULES := \
     Join \
     Model \
     Part \
-    Path
+    Path \
+    Utilities
 MODULES_TXTS := ${MODULES:%=/tmp/%.txt}
 
 all: documentation lint tests

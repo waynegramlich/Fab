@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Apex base classes.
+"""Utilities: Convenice class.
 
 The Apex base classes are:
-* ApexBox:
-  This is a wrapper class around the FreeCAD BoundBox class for specifying bounding boxes.
+* ModFabBox:
+  This similar to the FreeCAD BoundBox class, but with way more attributes.
   It introduces some consistent attributes for accessing the faces, corners and edges
   of a bounding box.  Alas, for technical reasons, this not a true sub-class of BoundBox.
-  Also, it called a box rather than a bounding box.
-* ApexCheck:
+  Also, the name is shortened do "box" rather than "bounding box".
+* ModFabCheck:
   This is some common code to check argument types for public functions.
-* ApexMaterial:
+* ModFabMaterial:
   This is a class that describes material properties.
   sub-class of Vector.
 
@@ -27,24 +27,25 @@ sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 from FreeCAD import BoundBox, Placement, Vector  # type: ignore
 
 # import colorsys  # Color conversion routines.
-from dataclasses import dataclass
-from typing import Any, cast, List, Dict, Optional, Sequence, Tuple, Union
+from dataclasses import dataclass, field
+from typing import Any, cast, List, Dict, Sequence, Tuple, Union
 
 
-# ApexBox:
-class ApexBox:
-    """An ApexBox is FreeCAD BoundBox with some additional attributes.
+# ModFabBox:
+@dataclass(frozen=True, init=False)
+class ModFabBox:
+    """ModFabBox: X/Y/Z Axis Aligned Cubiod.
 
-    An ApexBox is a simple wrapper around a FreeCAD BoundBox object that provides
-    additional attributes that represent various points on the surface of the box.
-    The nomenclature is that East/West represents the +X/-X axes, North/South represents the
-    +Y/-Y axes, nd the Top/Bottom represents the +Z/-Z axes.  Thus, TNE represents the Top
-    North East corner of the box.  NE represents the center of the North East edge of the
-    box.  T represents the center of the top face of the box.  By the way, the C attribute
-    is the same as the BoundBox Center attribute.
+    An ModFabBox is represents a cuboid (i.e. a rectangular parallelpiped, or right prism) where
+    the edges are aligned with the X, Y, and Z axes.  This is basically equivalent to the FreeCad
+    BoundBox object, but with way more attributes to access various points on the cuboid surface.
 
-    The preferred way to do this would be to sub-class BoundBox, but the FreeCAD implementation
-    is written in C++ and for technical reasons does not support sub-classing.
+    The basic attribute nominclature is based on the compass points North, South, East and West
+    for +Y, -Y, +X, and -X.  The +Z and -Z are represented by Top and Bottom respectively.  Thus:
+    * TNE represents the Top North East corner of the box.
+    * NE represents the center of the North East box edge.
+    * T represents the center of the top face of the box.
+    There are a number of other attributes as well.
 
     * Attributes (alphabetical order in each group):
       * The 6 face attributes:
@@ -76,8 +77,15 @@ class ApexBox:
         * TN (Vector): Center of Top North edge.
         * TS (Vector): Center of Top South edge.
         * TW (Vector): Center of Top West edge.
-      * The other ttributes:
-        * BB (BoundBox): The wrapped BoundBox object.
+      * The 6 axis values:
+        * XMax: (float): The X maximum.
+        * XMin: (float): The X minimum.
+        * YMax: (float): The Y maximum.
+        * YMin: (float): The Y minimum.
+        * ZMax: (float): The Z maximum.
+        * ZMin: (float): The Z minimum.
+      * The other attributes:
+        * BB (BoundBox): The Freecad BoundBox object.
         * C (Vector): Center point (same as Center).
         * DB (Vector): Bottom direction (i.e. B - C)
         * DE (Vector): East direction (i.e. E - C)
@@ -85,25 +93,27 @@ class ApexBox:
         * DS (Vector): South direction (i.e. S - C)
         * DT (Vector): Top direction (i.e. T - C)
         * DW (Vector): West direction (i.e. W - C)
-        * DX (float): X box length
-        * DXY (Vector): X box length
-        * DXZ (Vector): X/Y box lengths
-        * DXYZ (Vector): X/Y/Z box lengths
-        * DY (float): Y box length
-        * DYZ (Vector): Y/Z box length
-        * DZ (float): Z box length
-        * Name (str): The ApexBox name.
+        * DX (float): X box length (i.e. (E - W).Length)
+        * DY (float): Y box length (i.e. (N - S).Length)
+        * DZ (float): Z box length (i.e. (T - B).Length)
     """
 
-    # ApexBox.__init__():
+    XMin: float = field(init=False)
+    YMin: float = field(init=False)
+    ZMin: float = field(init=False)
+    XMax: float = field(init=False)
+    YMax: float = field(init=False)
+    ZMax: float = field(init=False)
+
+    # ModFabBox.__init__():
     def __init__(self,
-                 corners: Sequence[Union[Vector, BoundBox, "ApexBox"]],
+                 corners: Sequence[Union[Vector, BoundBox, "ModFabBox"]],
                  name: str = "") -> None:
-        """Initialize an ApexBox.
+        """Initialize a ModFabBox.
 
         Arguments:
-          * *corners* (Sequence[Union[Vector, BoundBox, ApexBox]]):
-            A sequence of points/corners to enclose by the box.
+          * *corners* (Sequence[Union[Vector, BoundBox, ModFabBox]]):
+            A sequence of points or boxes to enclose.
 
         Raises:
           * ValueError: For bad or empty corners.
@@ -113,7 +123,7 @@ class ApexBox:
             raise ValueError(f"{corners} is neither a List nor a Tuple")
 
         # Convert *corners* into *vectors*:
-        corner: Union[Vector, BoundBox, ApexBox]
+        corner: Union[Vector, BoundBox, ModFabBox]
         vectors: List[Vector] = []
         index: int
         for index, corner in enumerate(corners):
@@ -122,12 +132,12 @@ class ApexBox:
             elif isinstance(corner, BoundBox):
                 vectors.append(Vector(corner.XMin, corner.YMin, corner.ZMin))
                 vectors.append(Vector(corner.XMax, corner.YMax, corner.ZMax))
-            elif isinstance(corner, ApexBox):
+            elif isinstance(corner, ModFabBox):
                 vectors.append(corner.TNE)
                 vectors.append(corner.BSW)
             else:
                 raise ValueError(
-                    f"{corner} is not of type Vector/BoundBox/ApexBox")
+                    f"{corner} is not of type Vector/BoundBox/ModFabBox")
         if not vectors:
             raise ValueError("Corners sequence is empty")
 
@@ -146,189 +156,172 @@ class ApexBox:
             x: float = vector.x
             y: float = vector.y
             z: float = vector.z
-            x_min = min(x_min, x)
-            y_min = min(y_min, y)
-            z_min = min(z_min, z)
             x_max = max(x_max, x)
+            x_min = min(x_min, x)
             y_max = max(y_max, y)
+            y_min = min(y_min, y)
             z_max = max(z_max, z)
+            z_min = min(z_min, z)
 
-        self._name: str = name
-        self._bound_box: BoundBox = BoundBox(x_min, y_min, z_min, x_max, y_max, z_max)
+        # (Why __setattr__?)[https://stackoverflow.com/questions/53756788]
+        object.__setattr__(self, "XMin", x_min)
+        object.__setattr__(self, "XMax", x_max)
+        object.__setattr__(self, "YMin", y_min)
+        object.__setattr__(self, "YMax", y_max)
+        object.__setattr__(self, "ZMin", z_min)
+        object.__setattr__(self, "ZMax", z_max)
 
     # Standard BoundBox attributes:
 
     @property
     def B(self) -> Vector:
         """Bottom face center."""
-        bb: BoundBox = self._bound_box
-        return Vector((bb.XMin + bb.XMax) / 2.0, (bb.YMin + bb.YMax) / 2.0, bb.ZMin)
+        return Vector((self.XMin + self.XMax) / 2.0, (self.YMin + self.YMax) / 2.0, self.ZMin)
 
     @property
     def E(self) -> Vector:
         """East face center."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMax, (bb.YMin + bb.YMax) / 2.0, (bb.ZMin + bb.ZMax) / 2.0)
+        return Vector(self.XMax, (self.YMin + self.YMax) / 2.0, (self.ZMin + self.ZMax) / 2.0)
 
     @property
     def N(self) -> Vector:
         """North face center."""
-        bb: BoundBox = self._bound_box
-        return Vector((bb.XMin + bb.XMax) / 2.0, bb.YMax, (bb.ZMin + bb.ZMax) / 2.0)
+        return Vector((self.XMin + self.XMax) / 2.0, self.YMax, (self.ZMin + self.ZMax) / 2.0)
 
     @property
     def S(self) -> Vector:
         """South face center."""
-        bb: BoundBox = self._bound_box
-        return Vector((bb.XMin + bb.XMax) / 2.0, bb.YMin, (bb.ZMin + bb.ZMax) / 2.0)
+        return Vector((self.XMin + self.XMax) / 2.0, self.YMin, (self.ZMin + self.ZMax) / 2.0)
 
     @property
     def T(self) -> Vector:
         """Top face center."""
-        bb: BoundBox = self._bound_box
-        return Vector((bb.XMin + bb.XMax) / 2.0, (bb.YMin + bb.YMax) / 2.0, bb.ZMax)
+        return Vector((self.XMin + self.XMax) / 2.0, (self.YMin + self.YMax) / 2.0, self.ZMax)
 
     @property
     def W(self) -> Vector:
         """Center of bottom face."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMin, (bb.YMin + bb.YMax) / 2.0, (bb.ZMin + bb.ZMax) / 2.0)
+        return Vector(self.XMin, (self.YMin + self.YMax) / 2.0, (self.ZMin + self.ZMax) / 2.0)
 
     # 8 Corner, BNE, BNW, BSE, BSW, TNE, TNW, TSE, TSW:
 
     @property
     def BNE(self) -> Vector:
         """Bottom North East corner."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMax, bb.YMax, bb.ZMin)
+        return Vector(self.XMax, self.YMax, self.ZMin)
 
     @property
     def BNW(self) -> Vector:
         """Bottom North West corner."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMin, bb.YMax, bb.ZMin)
+        return Vector(self.XMin, self.YMax, self.ZMin)
 
     @property
     def BSE(self) -> Vector:
         """Bottom South East corner."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMax, bb.YMin, bb.ZMin)
+        return Vector(self.XMax, self.YMin, self.ZMin)
 
     @property
     def BSW(self) -> Vector:
         """Bottom South West corner."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMin, bb.YMin, bb.ZMin)
+        return Vector(self.XMin, self.YMin, self.ZMin)
 
     @property
     def TNE(self) -> Vector:
         """Top North East corner."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMax, bb.YMax, bb.ZMax)
+        return Vector(self.XMax, self.YMax, self.ZMax)
 
     @property
     def TNW(self) -> Vector:
         """Top North West corner."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMin, bb.YMax, bb.ZMax)
+        return Vector(self.XMin, self.YMax, self.ZMax)
 
     @property
     def TSE(self) -> Vector:
         """Top South East corner."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMax, bb.YMin, bb.ZMax)
+        return Vector(self.XMax, self.YMin, self.ZMax)
 
     @property
     def TSW(self) -> Vector:
         """Top South West corner."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMin, bb.YMin, bb.ZMax)
+        return Vector(self.XMin, self.YMin, self.ZMax)
 
     # 12 Edges BE, BW, BN, BS, NE, NW, SE, SW, TE, TW, TN, TS:
 
     @property
     def BE(self) -> Vector:
         """Bottom East edge center."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMax, (bb.YMin + bb.YMax) / 2.0, bb.ZMin)
+        return Vector(self.XMax, (self.YMin + self.YMax) / 2.0, self.ZMin)
 
     @property
     def BW(self) -> Vector:
         """Bottom West edge center."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMin, (bb.YMin + bb.YMax) / 2.0, bb.ZMin)
+        return Vector(self.XMin, (self.YMin + self.YMax) / 2.0, self.ZMin)
 
     @property
     def BN(self) -> Vector:
         """Bottom North edge center."""
-        bb: BoundBox = self._bound_box
-        return Vector((bb.XMin + bb.XMax) / 2.0, bb.YMax, bb.ZMin)
+        return Vector((self.XMin + self.XMax) / 2.0, self.YMax, self.ZMin)
 
     @property
     def BS(self) -> Vector:
         """Bottom South edge center."""
-        bb: BoundBox = self._bound_box
-        return Vector((bb.XMin + bb.XMax) / 2.0, bb.YMin, bb.ZMin)
+        return Vector((self.XMin + self.XMax) / 2.0, self.YMin, self.ZMin)
 
     @property
     def NE(self) -> Vector:
         """North East edge center."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMax, bb.YMax, (bb.ZMin + bb.ZMax) / 2.0)
+        return Vector(self.XMax, self.YMax, (self.ZMin + self.ZMax) / 2.0)
 
     @property
     def NW(self) -> Vector:
         """North West edge center."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMin, bb.YMax, (bb.ZMin + bb.ZMax) / 2.0)
+        return Vector(self.XMin, self.YMax, (self.ZMin + self.ZMax) / 2.0)
 
     @property
     def SE(self) -> Vector:
         """North East edge center."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMax, bb.YMin, (bb.ZMin + bb.ZMax) / 2.0)
+        return Vector(self.XMax, self.YMin, (self.ZMin + self.ZMax) / 2.0)
 
     @property
     def SW(self) -> Vector:
         """South East edge center."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMin, bb.YMin, (bb.ZMin + bb.ZMax) / 2.0)
+        return Vector(self.XMin, self.YMin, (self.ZMin + self.ZMax) / 2.0)
 
     @property
     def TE(self) -> Vector:
         """Bottom East edge center."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMax, (bb.YMin + bb.YMax) / 2.0, bb.ZMax)
+        return Vector(self.XMax, (self.YMin + self.YMax) / 2.0, self.ZMax)
 
     @property
     def TW(self) -> Vector:
         """Bottom West edge center."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMin, (bb.YMin + bb.YMax) / 2.0, bb.ZMax)
+        return Vector(self.XMin, (self.YMin + self.YMax) / 2.0, self.ZMax)
 
     @property
     def TN(self) -> Vector:
         """Bottom North edge center."""
-        bb: BoundBox = self._bound_box
-        return Vector((bb.XMin + bb.XMax) / 2.0, bb.YMax, bb.ZMax)
+        return Vector((self.XMin + self.XMax) / 2.0, self.YMax, self.ZMax)
 
     @property
     def TS(self) -> Vector:
         """Bottom South edge center."""
-        bb: BoundBox = self._bound_box
-        return Vector((bb.XMin + bb.XMax) / 2.0, bb.YMin, bb.ZMax)
+        return Vector((self.XMin + self.XMax) / 2.0, self.YMin, self.ZMax)
 
     # Miscellaneous attributes:
 
     @property
     def BB(self) -> BoundBox:
-        """Access the wrapped a BoundBox."""
-        return self._bound_box
+        """Return a corresponding FreeCAD BoundBox."""
+        return BoundBox(self.XMin, self.YMin, self.ZMin, self.XMax, self.YMax, self.ZMax)
 
     @property
     def C(self) -> Vector:
         """Center point."""
-        return self._bound_box.Center
+        return Vector(
+            (self.XMax + self.XMin) / 2.0,
+            (self.YMax + self.YMin) / 2.0,
+            (self.ZMax + self.ZMin) / 2.0
+        )
 
     @property
     def DB(self) -> float:
@@ -363,61 +356,21 @@ class ApexBox:
     @property
     def DX(self) -> float:
         """Delta X."""
-        bb: BoundBox = self._bound_box
-        return bb.XMax - bb.XMin
-
-    @property
-    def DXY(self) -> Vector:
-        """Delta X/Y."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMax - bb.XMin, bb.YMax - bb.YMin, 0.0)
-
-    @property
-    def DXYZ(self) -> Vector:
-        """Delta X/Y/Z."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMax - bb.XMin, bb.YMax - bb.YMin, bb.ZMax - bb.ZMin)
-
-    @property
-    def DXZ(self) -> float:
-        """Delta X/Z."""
-        bb: BoundBox = self._bound_box
-        return Vector(bb.XMax - bb.XMin, 0.0, bb.ZMax - bb.ZMin)
+        return self.XMax - self.XMin
 
     @property
     def DY(self) -> float:
         """Delta Y."""
-        bb: BoundBox = self._bound_box
-        return bb.YMax - bb.YMin
-
-    @property
-    def DYZ(self) -> Vector:
-        """Delta Y/Z."""
-        bb: BoundBox = self._bound_box
-        return Vector(0.0, bb.YMax - bb.YMin, bb.ZMax - bb.ZMin)
+        return self.YMax - self.YMin
 
     @property
     def DZ(self) -> float:
         """Delta Z."""
-        bb: BoundBox = self._bound_box
-        return bb.ZMax - bb.ZMin
+        return self.ZMax - self.ZMin
 
-    @property
-    def Name(self) -> str:
-        """Name."""
-        return self._name
-
-    def __repr__(self) -> str:
-        """Return a representation of an ApexBox."""
-        return self.__str__()
-
-    def __str__(self) -> str:
-        """Return a representation of an ApexBox."""
-        return f"ApexBox({self.BB})"
-
-    # ApexBox.reorient():
-    def reorient(self, placement: Placement, suffix: Optional[str] = "") -> "ApexBox":
-        """Reorient ApexBox given a Placement.
+    # ModFabBox.reorient():
+    def reorient(self, placement: Placement) -> "ModFabBox":
+        """Reorient ModFabBox given a Placement.
 
         Note after the *placement* is applied, the resulting box is still rectilinear with the
         X/Y/Z axes.  In particular, box volume is *not* conserved.
@@ -427,33 +380,31 @@ class ApexBox:
         * *suffix* (Optional[str]): The suffix to append at all names.  If None, all
           names are set to "" instead appending the suffix.  (Default: "")
         """
-        reorient_suffix: str = "" if suffix is None else f"{self._name}{suffix}"
         reoriented_bsw: Vector = placement * self.BSW
         reoriented_tne: Vector = placement * self.TNE
-        return ApexBox((reoriented_bsw, reoriented_tne), reorient_suffix)
+        return ModFabBox((reoriented_bsw, reoriented_tne))
 
     @staticmethod
     def _unit_tests() -> None:
-        """Perform ApexBox unit tests."""
+        """Perform ModFabBox unit tests."""
         # Initial tests:
         bound_box: BoundBox = BoundBox(-1.0, -2.0, -3.0, 1.0, 2.0, 3.0)
         assert bound_box == bound_box
-        apex_box: ApexBox = ApexBox([bound_box], name="Test")
-        assert isinstance(apex_box, ApexBox)
-        assert apex_box.Name == "Test"
+        box: ModFabBox = ModFabBox((bound_box,))
+        assert isinstance(box, ModFabBox)
 
         # FreeCAD.BoundBox.__eq__() appears to only compare ids for equality.
         # Thus, it is necessary to test that each value is equal by hand.
-        assert apex_box.BB.XMin == bound_box.XMin
-        assert apex_box.BB.YMin == bound_box.YMin
-        assert apex_box.BB.ZMin == bound_box.ZMin
-        assert apex_box.BB.XMax == bound_box.XMax
-        assert apex_box.BB.YMax == bound_box.YMax
-        assert apex_box.BB.ZMax == bound_box.ZMax
+        assert box.BB.XMin == bound_box.XMin
+        assert box.BB.YMin == bound_box.YMin
+        assert box.BB.ZMin == bound_box.ZMin
+        assert box.BB.XMax == bound_box.XMax
+        assert box.BB.YMax == bound_box.YMax
+        assert box.BB.ZMax == bound_box.ZMax
 
         # Verify __str__() works:
-        want: str = f"ApexBox({bound_box})"
-        assert f"{apex_box}" == want, f"'{apex_box}' != '{want}'"
+        want: str = f"ModFabBox(XMin=-1.0, YMin=-2.0, ZMin=-3.0, XMax=1.0, YMax=2.0, ZMax=3.0)"
+        assert f"{box}" == want, f"'{box}' != '{want}'"
 
         def check(vector: Vector, x: float, y: float, z: float) -> bool:
             assert vector.x == x, f"{vector.x} != {x}"
@@ -462,79 +413,75 @@ class ApexBox:
             return vector.x == x and vector.y == y and vector.z == z
 
         # Do 6 faces:
-        assert check(apex_box.E, 1, 0, 0), "E"
-        assert check(apex_box.W, -1, 0, 0), "W"
-        assert check(apex_box.N, 0, 2, 0), "N"
-        assert check(apex_box.S, 0, -2, 0), "S"
-        assert check(apex_box.T, 0, 0, 3), "T"
-        assert check(apex_box.B, 0, 0, -3), "B"
+        assert check(box.E, 1, 0, 0), "E"
+        assert check(box.W, -1, 0, 0), "W"
+        assert check(box.N, 0, 2, 0), "N"
+        assert check(box.S, 0, -2, 0), "S"
+        assert check(box.T, 0, 0, 3), "T"
+        assert check(box.B, 0, 0, -3), "B"
 
         # Do the 12 edges:
-        assert check(apex_box.BE, 1, 0, -3), "BE"
-        assert check(apex_box.BN, 0, 2, -3), "BN"
-        assert check(apex_box.BS, 0, -2, -3), "BS"
-        assert check(apex_box.BW, -1, 0, -3), "BW"
-        assert check(apex_box.NE, 1, 2, 0), "NE"
-        assert check(apex_box.NW, -1, 2, 0), "NW"
-        assert check(apex_box.SE, 1, -2, 0), "SE"
-        assert check(apex_box.SW, -1, -2, 0), "SW"
-        assert check(apex_box.TE, 1, 0, 3), "TE"
-        assert check(apex_box.TN, 0, 2, 3), "TN"
-        assert check(apex_box.TS, 0, -2, 3), "TS"
-        assert check(apex_box.TW, -1, 0, 3), "TW"
+        assert check(box.BE, 1, 0, -3), "BE"
+        assert check(box.BN, 0, 2, -3), "BN"
+        assert check(box.BS, 0, -2, -3), "BS"
+        assert check(box.BW, -1, 0, -3), "BW"
+        assert check(box.NE, 1, 2, 0), "NE"
+        assert check(box.NW, -1, 2, 0), "NW"
+        assert check(box.SE, 1, -2, 0), "SE"
+        assert check(box.SW, -1, -2, 0), "SW"
+        assert check(box.TE, 1, 0, 3), "TE"
+        assert check(box.TN, 0, 2, 3), "TN"
+        assert check(box.TS, 0, -2, 3), "TS"
+        assert check(box.TW, -1, 0, 3), "TW"
 
         # Do the 8 corners:
-        assert check(apex_box.BNE, 1, 2, -3), "BNE"
-        assert check(apex_box.BNW, -1, 2, -3), "BNW"
-        assert check(apex_box.BSE, 1, -2, -3), "BSE"
-        assert check(apex_box.BSW, -1, -2, -3), "BSW"
-        assert check(apex_box.TNE, 1, 2, 3), "TNE"
-        assert check(apex_box.TNW, -1, 2, 3), "TNW"
-        assert check(apex_box.TSE, 1, -2, 3), "TSE"
-        assert check(apex_box.TSW, -1, -2, 3), "TSW"
+        assert check(box.BNE, 1, 2, -3), "BNE"
+        assert check(box.BNW, -1, 2, -3), "BNW"
+        assert check(box.BSE, 1, -2, -3), "BSE"
+        assert check(box.BSW, -1, -2, -3), "BSW"
+        assert check(box.TNE, 1, 2, 3), "TNE"
+        assert check(box.TNW, -1, 2, 3), "TNW"
+        assert check(box.TSE, 1, -2, 3), "TSE"
+        assert check(box.TSW, -1, -2, 3), "TSW"
 
         # Do the miscellaneous attributes:
-        assert check(apex_box.C, 0, 0, 0), "C"
-        assert check(apex_box.BB.Center, 0, 0, 0), "Center"
-        assert isinstance(apex_box.BB, BoundBox), "BB error"
-        assert apex_box.C == apex_box.BB.Center, "C != Center"
-        assert apex_box.DX == 2.0, "DX"
-        assert apex_box.DXY == Vector(2.0, 4.0, 0.0), "DXY"
-        assert apex_box.DXYZ == Vector(2.0, 4.0, 6.0), "DXYZ"
-        assert apex_box.DXZ == Vector(2.0, 0.0, 6.0), "DXZ"
-        assert apex_box.DY == 4.0, "DY"
-        assert apex_box.DYZ == Vector(0.0, 4.0, 6.0), "DYZ"
-        assert apex_box.DZ == 6.0, "DZ"
-        assert check(apex_box.DB, 0, 0, -3), "DB"
-        assert check(apex_box.DE, 1, 0, 0), "DE"
-        assert check(apex_box.DN, 0, 2, 0), "DN"
-        assert check(apex_box.DS, 0, -2, 0), "DS"
-        assert check(apex_box.DT, 0, 0, 3), "DT"
-        assert check(apex_box.DW, -1, 0, 0), "DW"
+        assert check(box.C, 0, 0, 0), "C"
+        assert isinstance(box.BB, BoundBox), "BB error"
+        assert check(box.BB.Center, 0, 0, 0), "BB"
+        assert box.C == box.BB.Center, "C != Center"
+        assert box.DX == 2.0, "DX"
+        assert box.DY == 4.0, "DY"
+        assert box.DZ == 6.0, "DZ"
+        assert check(box.DB, 0, 0, -3), "DB"
+        assert check(box.DE, 1, 0, 0), "DE"
+        assert check(box.DN, 0, 2, 0), "DN"
+        assert check(box.DS, 0, -2, 0), "DS"
+        assert check(box.DT, 0, 0, 3), "DT"
+        assert check(box.DW, -1, 0, 0), "DW"
 
-        # Test ApexBox() contructors:
+        # Test ModFabBox() contructors:
         vector1: Vector = Vector(-1, -2, -3)
         vector2: Vector = Vector(1, 2, 3)
-        new_apex_box: ApexBox = ApexBox((vector1, vector2))
-        assert f"{new_apex_box.BB}" == f"{apex_box.BB}"
-        next_apex_box: ApexBox = ApexBox((bound_box, new_apex_box))
-        want = "ApexBox(BoundBox (-1, -2, -3, 1, 2, 3))"
-        assert f"{next_apex_box}" == want, f"'{next_apex_box}' != '{want}'"
-        assert next_apex_box.__repr__() == want
-
+        new_box: ModFabBox = ModFabBox((vector1, vector2))
+        assert f"{new_box.BB}" == f"{box.BB}"
+        next_box: ModFabBox = ModFabBox((bound_box, new_box))
+        want = "ModFabBox(XMin=-1.0, YMin=-2.0, ZMin=-3.0, XMax=1.0, YMax=2.0, ZMax=3.0)"
+        assert f"{next_box}" == want, f"'{next_box}' != '{want}'"
+        assert next_box.__repr__() == want
+        assert next_box.__str__() == want
         # Do some error checking:
         try:
-            ApexBox(())
+            ModFabBox(())
         except ValueError as value_error:
             assert str(value_error) == "Corners sequence is empty", str(value_error)
         try:
-            ApexBox(cast(List, 123))  # Force invalid argument type.
+            ModFabBox(cast(List, 123))  # Force invalid argument type.
         except ValueError as value_error:
             assert str(value_error) == "123 is neither a List nor a Tuple", str(value_error)
         try:
-            ApexBox(cast(List, [123]))  # Force invalid corner type
+            ModFabBox(cast(List, [123]))  # Force invalid corner type
         except ValueError as value_error:
-            assert str(value_error) == "123 is not of type Vector/BoundBox/ApexBox"
+            assert str(value_error) == "123 is not of type Vector/BoundBox/ModFabBox"
 
 
 # ApexCheck:
@@ -1286,7 +1233,7 @@ def _unit_tests() -> None:
     _misc_unit_tests()
     ApexCheck._unit_tests()
     ApexColor._unit_tests()
-    ApexBox._unit_tests()
+    ModFabBox._unit_tests()
     ApexMaterial._unit_tests()
 
 

@@ -37,7 +37,7 @@ sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 from dataclasses import dataclass, field
 from typing import Any, cast, Dict, Optional, Set, Tuple
 from pathlib import Path
-from Apex import ApexColor
+from Utilities import ApexColor
 
 import FreeCAD  # type: ignore
 import Part  # type: ignore
