@@ -1,4 +1,4 @@
-# Model: Python Device Design/Fabrication.
+# ModFab: Python Model/Fabrication.
 
-Please see [Model Documentation](docs/Model.html)
+Please see [ModFab Documentation](docs/ModFab.html)
 

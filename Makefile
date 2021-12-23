@@ -5,14 +5,16 @@ PIP := $(PYTHON) -m pip
 COVERAGE := $(PYTHON) -m coverage
 PY2MD := py2md.py
 
+# PY_FILES := \
+#     ApexPath.py \
+#     fcstd_tar_sync.py \
+#     py2md.py
 PY_FILES := \
-    ApexPath.py \
-    fcstd_tar_sync.py \
-    py2md.py \
     Doc.py \
     Join.py \
     Solid.py \
     Tree.py
+DOC_PY_FILES := __init__.py ${PY_FILES}
 #     ApexNode.py \
 #     Apex.py \
 #     ApexFasten.py
@@ -25,9 +27,8 @@ OTHER_MD_FILES := \
 
 COVER_FILES := ${PY_FILES:%.py=%.py,cover}
 LINT_FILES := ${PY_FILES:%.py=.%.lint}
-PY_MD_FILES := ${PY_FILES:%.py=%.md}
-ALL_MD_FILES := ${PY_MD_FILES} ${OTHER_MD_FILES}
-HTML_FILES := ${ALL_MD_FILES:%.md=%.html}
+# ModFab is generated from __init__.py using a special rule:
+HTML_FILES := README.html docs/ModFab.html ${PY_FILES:%.py=docs/%.html}
 
 MODULES := \
     FreeCAD \
@@ -39,11 +40,18 @@ MODULES := \
 MODULES_TXTS := ${MODULES:%=/tmp/%.txt}
 
 
+# Specific rule for "__init__.py" => "docs/ModFab.py":
+DOC_GEN := ./Doc.py
+docs/ModFab.html: __init__.py
+	$(DOC_GEN) __init__
+README.html: README.md
+	cmark $< > $@
+
 all: documentation lint tests
 
 texts: ${MODULES_TXTS}
 
-documentation: ${ALL_MD_FILES} ${HTML_FILES}  # Use *.py => *.md pattern rules
+documentation: ${HTML_FILES}
 
 lint: ${LINT_FILES}
 
@@ -66,15 +74,13 @@ tests: .tests
 
 
 # Pattern Rules:
-%.md: %.py
-	$(PY2MD) $<
+docs/%.html: %.py
+	./Doc.py $<
 .%.lint: %.py
 	mypy  $<
 	flake8 --max-line-length=100 --ignore=E402,W504 $<
 	pydocstyle $<
 	touch $@
-%.html: %.md
-	cmark $< -o $@
 /tmp/%.txt:
 	python3 -c "import os ; import sys ; sys.path.extend([os.path.join(os.getcwd(), 'squashfs-root/usr/lib'), '.']) ; import FreeCAD ; import ${@:/tmp/%.txt=%} ; help(${@:/tmp/%.txt=%})" > $@
 

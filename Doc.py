@@ -300,6 +300,8 @@ class ModelModule(ModelDoc):
                 colon_index: int = first_line.find(":")
                 if colon_index >= 0:
                     module_name = first_line[:colon_index]
+                    first_line = first_line[colon_index + 2:]  # Skip over "...: "
+                    self.Lines = (first_line,) + self.Lines[1:]
 
         # The Python import statment can import class to the module namespace.
         # We are only interested in classes that are defined in *module*:
@@ -343,8 +345,9 @@ class ModelModule(ModelDoc):
             lines.append(f"# {self.Name}: {self.Lines[0]}")
             lines.extend(self.Lines[1:])
             lines.append("")
-            lines.append("## Table of Contents (alphabetical order):")
-            lines.append("")
+            if self.Classes:
+                lines.append("## Table of Contents (alphabetical order):")
+                lines.append("")
 
             # Fill in the rest of the table of contents:
             model_class: ModelClass

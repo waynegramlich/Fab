@@ -1,57 +1,57 @@
-"""Model: Python Focused Device Design and Fabrication.
+"""ModFab: Python Model/Fabrication Tools.
 
-# Table of Contents:
+## Table of Contents:
 
 * [Introduction](#introduction)
 * [Overview](#overview)
 * [Python Modules](#python-modules)
+* [Addtional Documentation](#additional-documentation)
 * [Installation](#installation)
 
 ## Introduction <a name="introduction"></a>
 
-The Model package is a FreeCAD focused Python library that supports a DFM workflow where:
+The ModFab package is a FreeCAD focused Python library that supports a DFM workflow where:
 * FreeCAD is an open source CAD/CAM (Computer Aided Design/Manufacturing) application,
 * Python is rather popular programming language, and
 * DFM stands for Design For Manufacture.
-The Model library aids the process of transforming an idea int a design and eventually
+The ModFab Python package aids the process of transforming an idea int a design and eventually
 into finalized physical object.
 
-In Model, each individual part starts with some stock material followed by operations
+In ModFab, each individual part starts with some stock material followed by operations
 performed on the stock material (e.g. contour outlines, drill holes, remove pockets, etc.)
 All of the individual parts are assembled into a final assembly which can be viewed
 using FreeCAD.
 
-Model supports the concept of multiple different shops, where the specific shop machines
+ModFab supports the concept of multiple different shops, where the specific shop machines
 and tooling are specified.
-The ApexShop part design in conjunction with the ApexShop shop specification generates
-the various files (G-code, STL, DXF) needed to manufacture the part for the specific shop.
-Thus, one ApexShop design can be easily shared among multiple people with different shops
-and still get basically the same physical objects.
+The ModFab design in conjunction with a the ModFab shop specification generates the various files
+(`.cnc`, `.stl`, `.dxf`, etc.) needed to manufacture the part for a specific shop.
+Thus, one ModFab design can be shared among multiple people with different shops and
+still get basically the same physical objects.
 
 ## Overview <a name="overview"></a>
 
-The overall strategy is that an overall project is nested tree of ModelNode's.
-The ModelNode is the primitive base class and roughly (but not exactly) corresponds
-to the FreeCAD object tree.
-There are various sub-classes of ModeNode -- ModelGeometry, ModelOperation, ModelPart,
-ModelAssembly, ModelFile, and ModelRoot, where ModelRoot is the root of the ModeNode tree.
+The ModFab strategy is construct nested tree of ModelFabNode's, where a ModFabNode is the primitive
+base class and roughly (but not exactly) corresponds to an object in the FreeCAD object tree.
+There are various sub-classes of ModFabNode -- ModFabGeometry, ModFabOperation, ModFabSolid,
+ModFabAssembly, ModFabFile, and ModFabRoot, where ModFabRoot is the root of the ModFabNode tree.
 
-The ModelNode tree is constructed in a bottom up fashion:
+The ModFabNode tree is constructed in a bottom up fashion:
 1. Various lengths and angles are defined.
 2. 3D points, called Vectors's, are defined using the various lengths and angles.
 3. Subsets of the Vectors's are projected onto a 2D plane to form lines, arcs, and circles
    which are then converted to form a 2D drawing which based the FreeCAD Draft workbench.
-   The 2D geometry is the ModelGeometry sub-class of ModelNode.
-4. These drawings are converted into solid geometry using the some additional ModelNode's
-   (called ModelOperation's) that basically schedule the FreeCAD PartDesign workbench to
-   perform using a variety of 3D operations (e.g. extrude, pocket, drill, etc.)
-   The result is a the ModelPart sub-class of ModelNode.
-5. The various parts are configured into assemblies with a ModelAssembly sub-class of ModelNode.
-6. The final ModelRoot sub-class of ModeNode is created.
+   The 2D geometry is the ModFabGeometry.
+4. These drawings are converted into solid geometry using the some additional ModFabNode's
+   (called ModFabOperation's) that basically schedule the FreeCAD PartDesign workbench to
+   perform using a variety of 3D operations (e.g. extrude, pocket, drill, etc.) resulting
+   in a ModFabSolid.
+5. The various parts are configured into assemblies (ModFabAssembly) and FreeCAD `.FCstd` files
+   (ModeFabFile) are stored in the root of the tree (ModFabRoot).
 
-Once the ModelRoot is present there are 4 phases perfomed:
+Once the ModFabRoot is present there are 4 phases performed:
 1. The ModelRoot is iterated in configuration mode whereby constraints are propagated through
-   out the ModeTree.  Sometimes there is a constraint loop, which is detected and reported
+   out the ModFab tree.  Sometimes there is a constraint loop, which is detected and reported
    as a failure that needs to get fixed.
 2. The ModelRoot is iterated over to construct the 3D model which can be viewed using FreeCAD.
 3. When the design looks good, all of the manufacturing files are generated
@@ -61,32 +61,32 @@ Once the ModelRoot is present there are 4 phases perfomed:
 
 ## Python Modules <a name="python-modules"></a>
 
-The bottom up module list is:
+The basic Python bottom up Python module list is:
 * [Utilitys](Utilitys.html):
   Utility module of miscellaneous classes -- Bounding Box, Colors, Materials, etc.
 * [Tree](Tree.html):
-  This defines the basic ModeNode classes.
+  This defines the basic ModFabNode classes.
 * [Geometry](Geometry.html):
-  The defines the 2D geometry ModelNode classes for using the FreeCAD Draft workbench.
-* [Part](ApexNode.html):
+  The defines the 2D geometry ModFabNode classes for using the FreeCAD Draft workbench.
+* [Solid](Solid.html):
   A library that supports generating parts using the FreeCAD PartDesign workbench.
 * [Shop](Shop.html):
   A library that defines machines and tooling available in a given shop.
 * [CNC](CNC.html):
   A library that interfaces with the FreeCAD Path workbench for producing CNC files.
-* [Doc](Doc.html):
+
+## Additional documentation <a name="additional-documentation"></a>
+
+There are some additional miscellaneous Python modules:
+* [Doc](docs/Doc.html):
   A documentation extraction utility that reads the Python documentation strings and
   generates both markdown and HTML documentation files.
-
-Some miscellaneous files are:
-* [py2md](py2md.md):
-  A Python documentation string to markdown file generator.
-* [Embedded FreeCAD](embedded_freecad.md):
-  This explains how the Apex modules can be run within or externally from FreeCAD.
-* [fcstd_tar_sync.py](fcstd_tar_sync.md)]:
+* [Embedded FreeCAD](embedded_freecad.html):
+  This explains how the ModFab modules can be run within or externally from FreeCAD.
+* [fcstd_tar_sync.py](fcstd_tar_sync.html)]:
   A program that mirrors FreeCAD `.fcstd` files to `.tar` files that are more easily stored
   under the `git` revision control system.
-* [Coding/Documentation/Testing](coding_documentation.md):
+* [Coding/Documentation/Testing](coding_documentation.html):
   The coding, documentation, and testing standards uses for code in
 * [LICENSE.md](LICENSE.md): The Open Source license for the Model source files.
 
@@ -94,13 +94,18 @@ Some miscellaneous files are:
 
 These installation instructions are currently focused towards the Ubuntu 20.04 Linux distribution.
 
-* Install `build-essential` and `git` packages
+* Install the `build-essential` and `git` packages:
+
      sudo apt install build-essential git
-* Clone repository Apex git repository:
+
+* Clone ModFab git repository:
+
      mkdir -p ~/downloads  # or where you like to download git repositories.
      cd ~/downloads
-     git clone ....
+     git clone ...  # (TBD)
+
 * Run `make install`:
+
      make install
 
 """
