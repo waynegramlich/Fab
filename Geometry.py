@@ -41,23 +41,23 @@ import FreeCAD as App  # type: ignore
 from FreeCAD import Placement, Vector
 
 
-# _ModFabGeometry:
+# _Geometry:
 @dataclass(frozen=True)
-class _ModFabGeometry(object):
-    """_ModFabGeometry: An Internal base class for _ModFabArc, _ModFabCircle, and _ModFabLine.
+class _Geometry(object):
+    """_Geometry: An Internal base class for _Arc, _Circle, and _Line.
 
-    All _ModFabGeometry classes are immutable (i.e. frozen.)
+    All _Geometry classes are immutable (i.e. frozen.)
     """
 
-    # _ModFabGeometry.produce():
+    # _Geometry.produce():
     def produce(self, context: ModFabContext, prefix: str, index: int) -> Part.Part2DObject:
         raise NotImplementedError(f"{type(self)}.produce() is not implemented yet")
 
 
-# _ModFabArc:
+# _Arc:
 @dataclass(frozen=True)
-class _ModFabArc(_ModFabGeometry):
-    """_ModFabArc: An internal representation an arc geometry.
+class _Arc(_Geometry):
+    """_Arc: An internal representation an arc geometry.
 
     Attributes:
     * *Apex* (Vector): The fillet apex point.
@@ -85,7 +85,7 @@ class _ModFabArc(_ModFabGeometry):
     # FinishAngle: float
     # DeltaAngle: float
 
-    # _ModFabArc._make_arc_3points():
+    # _Arc._make_arc_3points():
     @staticmethod
     def make_arc_3points(points: Tuple[Vector, ...], placement=None, face=False,
                          support=None, map_mode="Deactivated",
@@ -184,7 +184,7 @@ class _ModFabArc(_ModFabGeometry):
 
         return obj
 
-    # _ModFabArc.produce():
+    # _Arc.produce():
     def produce(self, context: ModFabContext, prefix: str, index: int) -> Part.Part2DObject:
         """Return line segment after moving it into Geometry group."""
         mount_contact = cast(Vector, context["mount_contact"])
@@ -203,7 +203,7 @@ class _ModFabArc(_ModFabGeometry):
         #     startangle=math.degrees(self.StartAngle),
         #     endangle=math.degrees(self.StartAngle + self.DeltaAngle),
         #     support=None)
-        part_arc: Part.Part2DObject = _ModFabArc.make_arc_3points(
+        part_arc: Part.Part2DObject = _Arc.make_arc_3points(
             (self.Start, self.Middle, self.Finish))
         # part_arc: Part.Part2DObject=Draft.make_arc_3points([self.Start, self.Middle, self.Finish])
 
@@ -221,8 +221,8 @@ class _ModFabArc(_ModFabGeometry):
 
 
 @dataclass(frozen=True)
-class _ModFabCircle(_ModFabGeometry):
-    """_ModFabCircle: An internal representation of a circle geometry.
+class _Circle(_Geometry):
+    """_Circle: An internal representation of a circle geometry.
 
     Attributes:
     * *Center (Vector): The circle center.
@@ -233,7 +233,7 @@ class _ModFabCircle(_ModFabGeometry):
     Center: Vector
     Diameter: float
 
-    # _ModFabCircle.produce():
+    # _Circle.produce():
     def produce(self, context: ModFabContext, prefix: str, index: int) -> Part.Part2DObject:
         """Return line segment after moving it into Geometry group."""
         # Extract mount plane *contact* and *normal* from *context* for 2D projection:
@@ -263,10 +263,10 @@ class _ModFabCircle(_ModFabGeometry):
         return part_circle
 
 
-# _ModFabLine:
+# _Line:
 @dataclass(frozen=True)
-class _ModFabLine(_ModFabGeometry):
-    """_ModFabLine: An internal representation of a line segment geometry.
+class _Line(_Geometry):
+    """_Line: An internal representation of a line segment geometry.
 
     Attributes:
     * *Start (Vector): The line segment start point.
@@ -277,7 +277,7 @@ class _ModFabLine(_ModFabGeometry):
     Start: Vector
     Finish: Vector
 
-    # _ModFabLine.produce():
+    # _Line.produce():
     def produce(self, context: ModFabContext, prefix: str, index: int) -> Part.Part2DObject:
         """Return line segment after moving it into Geometry group."""
         label: str = f"{prefix}_Line_{index:03d}"
@@ -305,37 +305,37 @@ class _ModFabLine(_ModFabGeometry):
         return line_segment
 
 
-# _ModFabFillet:
+# _Fillet:
 @dataclass
-class _ModFabFillet(object):
-    """_ModFabFillet: An object that represents one fillet of a ModFabPolygon.
+class _Fillet(object):
+    """_Fillet: An object that represents one fillet of a ModFabPolygon.
 
     Attributes:
     * *Apex* (Vector): The apex corner point for the fillet.
     * *Radius* (float): The fillet radius in millimeters.
-    * *Before* (_ModFabFillet): The previous _ModFabFillet in the ModFabPolygon.
-    * *After* (_ModFabFillet): The next _ModFabFillet in the ModFabPolygon.
-    * *Arc* (Optional[_ModFabArc]): The fillet Arc if Radius is non-zero.
-    * *Line* (Optional[_ModFabLine]): The line that connects to the previous _ModFabFillet
+    * *Before* (_Fillet): The previous _Fillet in the ModFabPolygon.
+    * *After* (_Fillet): The next _Fillet in the ModFabPolygon.
+    * *Arc* (Optional[_Arc]): The fillet Arc if Radius is non-zero.
+    * *Line* (Optional[_Line]): The line that connects to the previous _Fillet
 
     """
 
     Apex: Vector
     Radius: float
-    Before: "_ModFabFillet" = field(init=False, repr=False)  # Filled in by __post_init__()
-    After: "_ModFabFillet" = field(init=False, repr=False)  # Filled in by __post_init__()
-    Arc: Optional["_ModFabArc"] = field(init=False, default=None)  # Filled in by compute_arcs()
-    Line: Optional["_ModFabLine"] = field(init=False, default=None)  # Filled in by compute_lines()
+    Before: "_Fillet" = field(init=False, repr=False)  # Filled in by __post_init__()
+    After: "_Fillet" = field(init=False, repr=False)  # Filled in by __post_init__()
+    Arc: Optional["_Arc"] = field(init=False, default=None)  # Filled in by compute_arcs()
+    Line: Optional["_Line"] = field(init=False, default=None)  # Filled in by compute_lines()
 
-    # _ModFabFillet.__post_init__():
+    # _Fillet.__post_init__():
     def __post_init__(self) -> None:
-        """Initialize _ModFabFillet."""
+        """Initialize _Fillet."""
         self.Before = self
         self.After = self
 
-    # _ModFabFillet.compute_arc():
-    def compute_arc(self, tracing: str = "") -> _ModFabArc:
-        """Return the arc associated with a _ModFabFillet with non-zero radius."""
+    # _Fillet.compute_arc():
+    def compute_arc(self, tracing: str = "") -> _Arc:
+        """Return the arc associated with a _Fillet with non-zero radius."""
         # A fillet is represented as an arc that traverses a sphere with a specified radius.
         #
         # Each fillet specifies an 3D apex point and a radius.  The this fillet the apex point is
@@ -352,7 +352,7 @@ class _ModFabFillet(object):
         # The XC line segment from X to C crosses the circle at the arc midpoint M.  The points
         # S, M, and F uniquely specify an arc of radius r in 3D space around the C center point.
         #
-        # The crude 2D diagram below shows the basic _ModFabFillet geometry:
+        # The crude 2D diagram below shows the basic _Fillet geometry:
         #
         #       A
         #       |
@@ -390,7 +390,7 @@ class _ModFabFillet(object):
         apex: Vector = self.Apex
         after: Vector = self.After.Apex
         if tracing:
-            print(f"{tracing}=>_ModFabFillet.compute_arc({apex})")
+            print(f"{tracing}=>_Fillet.compute_arc({apex})")
             print(f"{tracing}{radius=} {before=} {apex=} {after=}")
 
         # Steps 1 and 2: Compute unit vectors <XB>, <XA>, and <XC>
@@ -452,9 +452,9 @@ class _ModFabFillet(object):
         # Let's instead go in the shorter, negative direction.
         # if delta_angle > pi:
         #    delta_angle = -(pi2 - delta_angle)
-        # arc: _ModFabArc = _ModFabArc(apex, radius, center, start, middle, finish,
+        # arc: _Arc = _Arc(apex, radius, center, start, middle, finish,
         #                            start_angle, finish_angle, delta_angle)
-        arc: _ModFabArc = _ModFabArc(apex, radius, center, start, middle, finish)
+        arc: _Arc = _Arc(apex, radius, center, start, middle, finish)
 
         # Do a sanity check:
         # finish_angle = finish_angle % pi2
@@ -462,10 +462,10 @@ class _ModFabFillet(object):
         # assert abs(start_plus_delta_angle - finish_angle) < 1.0e-8, "Delta angle is wrong."
 
         if tracing:
-            print(f"{tracing}<=_ModFabFillet.compute_arc({apex})=>{arc}")
+            print(f"{tracing}<=_Fillet.compute_arc({apex})=>{arc}")
         return arc
 
-    # _ModFabFillet.plane_2d_project:
+    # _Fillet.plane_2d_project:
     def plane_2d_project(self, contact: Vector, normal: Vector) -> None:
         """Project the Apex onto a plane.
 
@@ -476,9 +476,9 @@ class _ModFabFillet(object):
         """
         self.Apex = self.Apex.projectToPlane(contact, normal)
 
-    # _ModFabFillet.get_geometries():
-    def get_geometries(self) -> Tuple[_ModFabGeometry, ...]:
-        geometries: List[_ModFabGeometry] = []
+    # _Fillet.get_geometries():
+    def get_geometries(self) -> Tuple[_Geometry, ...]:
+        geometries: List[_Geometry] = []
         if self.Line:
             geometries.append(self.Line)
         if self.Arc:
@@ -526,8 +526,8 @@ class ModFabCircle(ModFabGeometry):
     # ModFabCircle.produce():
     def produce(self, context: ModFabContext, prefix: str) -> Tuple[Part.Part2DObject, ...]:
         """Produce the FreeCAD objects needed for ModFabPolygon."""
-        geometries: Tuple[_ModFabGeometry, ...] = self.get_geometries()
-        geometry: _ModFabGeometry
+        geometries: Tuple[_Geometry, ...] = self.get_geometries()
+        geometry: _Geometry
         index: int
         part_geometries: List[Part.Part2DObject] = []
         for index, geometry in enumerate(geometries):
@@ -537,9 +537,9 @@ class ModFabCircle(ModFabGeometry):
         return tuple(part_geometries)
 
     # ModFabCircle.get_geometries():
-    def get_geometries(self) -> Tuple[_ModFabGeometry, ...]:
+    def get_geometries(self) -> Tuple[_Geometry, ...]:
         """Return the ModFabPolygon lines and arcs."""
-        return (_ModFabCircle(self.Center, self.Diameter),)
+        return (_Circle(self.Center, self.Diameter),)
 
     @staticmethod
     # ModFabCircle._unit_tests():
@@ -588,7 +588,7 @@ class ModFabPolygon(ModFabGeometry):
 
     Name: str
     Corners: Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]
-    _Fillets: Tuple[_ModFabFillet, ...] = field(init=False, repr=False)
+    _Fillets: Tuple[_Fillet, ...] = field(init=False, repr=False)
 
     EPSILON = 1.0e-8
 
@@ -596,15 +596,15 @@ class ModFabPolygon(ModFabGeometry):
     def __post_init__(self) -> None:
         """Verify that the corners passed in are correct."""
         corner: Union[Vector, Tuple[Vector, Union[int, float]]]
-        fillets: List[_ModFabFillet] = []
-        fillet: _ModFabFillet
+        fillets: List[_Fillet] = []
+        fillet: _Fillet
         # TODO: Check for polygon points that are colinear.
         # TODO: Check for polygon corners with overlapping radii.
         copy: Vector = Vector()  # Vector's are mutable, add *copy* to make a private Vector copy.
         index: int
         for index, corner in enumerate(self.Corners):
             if isinstance(corner, Vector):
-                fillet = _ModFabFillet(corner + copy, 0.0)
+                fillet = _Fillet(corner + copy, 0.0)
             elif isinstance(corner, tuple):
                 if len(corner) != 2:
                     raise ValueError(f"Polygon Corner[{index}]: {corner} tuple length is not 2")
@@ -612,7 +612,7 @@ class ModFabPolygon(ModFabGeometry):
                     raise ValueError(f"Polygon Corner[{index}]: {corner} first entry is not Vector")
                 if not isinstance(corner[1], (int, float)):
                     raise ValueError(f"Polygon Corner[{index}]: {corner} first entry is not number")
-                fillet = _ModFabFillet(corner[0] + copy, corner[1])
+                fillet = _Fillet(corner[0] + copy, corner[1])
             else:
                 raise ValueError(
                     f"Polygon Corner[{index}] is {corner} which is neither a Vector nor "
@@ -636,10 +636,10 @@ class ModFabPolygon(ModFabGeometry):
 
     # ModFabPolygon._double_link():
     def _double_link(self) -> None:
-        """Double link the _ModFabFillet's together."""
-        fillets: Tuple[_ModFabFillet, ...] = self._Fillets
+        """Double link the _Fillet's together."""
+        fillets: Tuple[_Fillet, ...] = self._Fillets
         size: int = len(fillets)
-        fillet: _ModFabFillet
+        fillet: _Fillet
         index: int
         for index, fillet in enumerate(fillets):
             fillet.Before = fillets[(index - 1) % size]
@@ -648,9 +648,9 @@ class ModFabPolygon(ModFabGeometry):
     # ModFabPolygon._radii_check():
     def _radii_check(self) -> str:
         """Check for radius overlap errors."""
-        at_fillet: _ModFabFillet
+        at_fillet: _Fillet
         for at_fillet in self._Fillets:
-            before_fillet: _ModFabFillet = at_fillet.Before
+            before_fillet: _Fillet = at_fillet.Before
             actual_distance: float = (before_fillet.Apex - at_fillet.Apex).Length
             radii_distance: float = before_fillet.Radius + at_fillet.Radius
             if radii_distance > actual_distance:
@@ -662,7 +662,7 @@ class ModFabPolygon(ModFabGeometry):
     # ModFabPolygon._colinear_check():
     def _colinear_check(self) -> str:
         """Check for colinearity errors."""
-        at_fillet: _ModFabFillet
+        at_fillet: _Fillet
         epsilon: float = ModFabPolygon.EPSILON
         degrees180: float = math.pi
         for at_fillet in self._Fillets:
@@ -678,42 +678,42 @@ class ModFabPolygon(ModFabGeometry):
 
     # ModFabPolygon._compute_arcs():
     def _compute_arcs(self) -> None:
-        """Create any Arc's needed for non-zero radius _ModFabFillet's."""
-        fillet: _ModFabFillet
+        """Create any Arc's needed for non-zero radius _Fillet's."""
+        fillet: _Fillet
         for fillet in self._Fillets:
             if fillet.Radius > 0.0:
                 fillet.Arc = fillet.compute_arc()
 
     # ModFabPolygon._compute_lines():
     def _compute_lines(self) -> None:
-        """Create Create any Line's need for _ModFabFillet's."""
-        fillet: _ModFabFillet
+        """Create Create any Line's need for _Fillet's."""
+        fillet: _Fillet
         for fillet in self._Fillets:
-            before: _ModFabFillet = fillet.Before
+            before: _Fillet = fillet.Before
             start: Vector = before.Arc.Finish if before.Arc else before.Apex
             finish: Vector = fillet.Arc.Start if fillet.Arc else fillet.Apex
             if (start - finish).Length > ModFabPolygon.EPSILON:
-                fillet.Line = _ModFabLine(start, finish)
+                fillet.Line = _Line(start, finish)
 
     # ModFabPolygon.get_geometries():
-    def get_geometries(self, contact: Vector, Normal: Vector) -> Tuple[_ModFabGeometry, ...]:
+    def get_geometries(self, contact: Vector, Normal: Vector) -> Tuple[_Geometry, ...]:
         """Return the ModFabPolygon lines and arcs."""
-        geometries: List[_ModFabGeometry] = []
-        fillet: _ModFabFillet
+        geometries: List[_Geometry] = []
+        fillet: _Fillet
         for fillet in self._Fillets:
             geometries.extend(fillet.get_geometries())
         return tuple(geometries)
 
     # ModFabPolygon._plane_2d_project():
     def _plane_2d_project(self, contact: Vector, normal: Vector) -> None:
-        """Update the _ModFabFillet's to be projected onto a Plane.
+        """Update the _Fillet's to be projected onto a Plane.
 
         Arguments:
         * *contact* (Vector): A point on the plane.
         * *normal* (Vector): A plane normal.
 
         """
-        fillet: _ModFabFillet
+        fillet: _Fillet
         for fillet in self._Fillets:
             fillet.plane_2d_project(contact, normal)
 
@@ -740,8 +740,8 @@ class ModFabPolygon(ModFabGeometry):
         self._compute_lines()
 
         # Extract the geometries using *contact* and *normal* to specify the projecton plane:
-        geometries: Tuple[_ModFabGeometry, ...] = self.get_geometries(mount_contact, mount_normal)
-        geometry: _ModFabGeometry
+        geometries: Tuple[_Geometry, ...] = self.get_geometries(mount_contact, mount_normal)
+        geometry: _Geometry
         index: int
         part_geometries: List[Part.Part2DObject] = []
         for index, geometry in enumerate(geometries):
@@ -761,9 +761,9 @@ class ModFabPolygon(ModFabGeometry):
         polygon: ModFabPolygon = ModFabPolygon("TestPolygon", (v1, v2, (v3, 10), v4))
         _ = polygon
 
-        # geometries: Tuple[_ModFabGeometry, ...] = polygon.get_geometries()
+        # geometries: Tuple[_Geometry, ...] = polygon.get_geometries()
         # index: int
-        # geometry: _ModFabGeometry
+        # geometry: _Geometry
         # for index, geometry in enumerate(geometries):
         #     print(f"Geometry[{index}]: {geometry}")
 
