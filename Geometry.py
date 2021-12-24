@@ -29,8 +29,10 @@ sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 
 from dataclasses import dataclass, field
 import math
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, cast, List, Optional, Tuple, Union
 
+
+from Tree import ModFabContext
 import FreeCAD  # type: ignore
 import Draft  # type: ignore
 import Part  # type: ignore
@@ -48,7 +50,7 @@ class _ModFabGeometry(object):
     """
 
     # _ModFabGeometry.produce():
-    def produce(self, context: Dict[str, Any], prefix: str, index: int) -> Part.Part2DObject:
+    def produce(self, context: ModFabContext, prefix: str, index: int) -> Part.Part2DObject:
         raise NotImplementedError(f"{type(self)}.produce() is not implemented yet")
 
 
@@ -183,14 +185,10 @@ class _ModFabArc(_ModFabGeometry):
         return obj
 
     # _ModFabArc.produce():
-    def produce(self, context: Dict[str, Any], prefix: str, index: int) -> Part.Part2DObject:
+    def produce(self, context: ModFabContext, prefix: str, index: int) -> Part.Part2DObject:
         """Return line segment after moving it into Geometry group."""
-        assert "mount_contact" in context
-        mount_contact: Any = context["mount_contact"]
-        assert isinstance(mount_contact, Vector)
-        assert "mount_normal" in context
-        mount_normal: Any = context["mount_normal"]
-        assert isinstance(mount_normal, Vector)
+        mount_contact = cast(Vector, context["mount_contact"])
+        mount_normal = cast(Vector, context["mount_normal"])
 
         # TODO: Simplify:
         mount_placement: Any = Placement(mount_contact, mount_normal, 0.0)  # Base, Axis, Angle
@@ -215,10 +213,7 @@ class _ModFabArc(_ModFabGeometry):
         part_arc.Visibility = False
 
         # Move *part_arc* into *geometry_group*:
-        if "geometry_group" not in context:
-            raise RuntimeError(f"'geometry_group' is not in context.")
-        geometry_group: Any = context["geometry_group"]
-        assert isinstance(geometry_group, App.DocumentObjectGroup), geometry_group
+        geometry_group = cast(App.DocumentObjectGroup, context["geometry_group"])
         part_arc.adjustRelativeLinks(geometry_group)
         geometry_group.addObject(part_arc)
 
@@ -239,23 +234,18 @@ class _ModFabCircle(_ModFabGeometry):
     Diameter: float
 
     # _ModFabCircle.produce():
-    def produce(self, context: Dict[str, Any], prefix: str, index: int) -> Part.Part2DObject:
+    def produce(self, context: ModFabContext, prefix: str, index: int) -> Part.Part2DObject:
         """Return line segment after moving it into Geometry group."""
         # Extract mount plane *contact* and *normal* from *context* for 2D projection:
-        assert "mount_contact" in context, context
-        contact: Any = context["mount_contact"]
-        assert isinstance(contact, Vector), contact
-        assert "mount_normal" in context, context
-        normal: Vector = context["mount_normal"]
-        assert isinstance(normal, Vector), normal
-
-        center_on_plane: Vector = self.Center.projectToPlane(contact, normal)
+        mount_contact = cast(Vector, context["mount_contact"])
+        mount_normal = cast(Vector, context["mount_normal"])
+        center_on_plane: Vector = self.Center.projectToPlane(mount_contact, mount_normal)
 
         label: str = f"{prefix}_Circle_{index:03d}"
         # placement: Placement = Placement()
         # placement.Rotation.Q = (0.0, 0.0, 0.0, 1.0)
         # placement.Base = center2d
-        placement: Placement = Placement(center_on_plane, normal, 0.0)  # Base, Axis, Angle
+        placement: Placement = Placement(center_on_plane, mount_normal, 0.0)  # Base, Axis, Angle
 
         # Create and label *part_arc*:
         part_circle: Part.Part2DObject = Draft.makeCircle(
@@ -266,9 +256,7 @@ class _ModFabCircle(_ModFabGeometry):
         part_circle.Visibility = False
 
         # Move *part_arc* into *geometry_group*:
-        assert "geometry_group" in context, context
-        geometry_group: Any = context["geometry_group"]
-        assert isinstance(geometry_group, App.DocumentObjectGroup)
+        geometry_group = cast(App.DocumentObjectGroup, context["geometry_group"])
         part_circle.adjustRelativeLinks(geometry_group)
         geometry_group.addObject(part_circle)
 
@@ -290,7 +278,7 @@ class _ModFabLine(_ModFabGeometry):
     Finish: Vector
 
     # _ModFabLine.produce():
-    def produce(self, context: Dict[str, Any], prefix: str, index: int) -> Part.Part2DObject:
+    def produce(self, context: ModFabContext, prefix: str, index: int) -> Part.Part2DObject:
         """Return line segment after moving it into Geometry group."""
         label: str = f"{prefix}_Line_{index:03d}"
         placement: Placement = Placement()
@@ -309,9 +297,7 @@ class _ModFabLine(_ModFabGeometry):
         # app_document.recompute()
 
         # Move *line_segment* into *geometry_group*:
-        assert "geometry_group" in context, context
-        geometry_group: Any = context["geometry_group"]
-        assert isinstance(geometry_group, App.DocumentObjectGroup)
+        geometry_group = cast(App.DocumentObjectGroup, context["geometry_group"])
         line_segment.adjustRelativeLinks(geometry_group)
         line_segment.Visibility = False
         geometry_group.addObject(line_segment)
@@ -538,7 +524,7 @@ class ModFabCircle(ModFabGeometry):
         object.__setattr__(self, "Center", self.Center + copy)  # Makes a copy.
 
     # ModFabCircle.produce():
-    def produce(self, context: Dict[str, Any], prefix: str) -> Tuple[Part.Part2DObject, ...]:
+    def produce(self, context: ModFabContext, prefix: str) -> Tuple[Part.Part2DObject, ...]:
         """Produce the FreeCAD objects needed for ModFabPolygon."""
         geometries: Tuple[_ModFabGeometry, ...] = self.get_geometries()
         geometry: _ModFabGeometry
@@ -732,15 +718,11 @@ class ModFabPolygon(ModFabGeometry):
             fillet.plane_2d_project(contact, normal)
 
     # ModFabPolygon.produce():
-    def produce(self, context: Dict[str, Any], prefix: str) -> Tuple[Part.Part2DObject, ...]:
+    def produce(self, context: ModFabContext, prefix: str) -> Tuple[Part.Part2DObject, ...]:
         """Produce the FreeCAD objects needed for ModFabPolygon."""
         # Extract mount plane *contact* and *normal* from *context*:
-        assert "mount_contact" in context, context
-        mount_contact: Any = context["mount_contact"]
-        assert isinstance(mount_contact, Vector)
-        assert "mount_normal" in context, context
-        mount_normal: Any = context["mount_normal"]
-        assert isinstance(mount_normal, Vector)
+        mount_contact = cast(Vector, context["mount_contact"])
+        mount_normal = cast(Vector, context["mount_normal"])
 
         # Use *contact*/*normal* for 2D projection:
         self._plane_2d_project(mount_contact, mount_normal)

@@ -39,11 +39,20 @@ The ModFabNode base class implements three recursive methods:
   Recursively used to build the model and generate any production files (CNC, STL, DWG, etc.)
   Any errors and warnings are returned as a tuple of strings.
 
-All of these methods pass a *context* dictionary from level to level.  The rule is that anything
-can be added to the dictionary.  In order to prevent *context* dictionary pollution, each
-level makes a shallow dictionary copy (i.e. context.copy()).
+All of these methods take a ModFabContext (called *context*) that behaves like a dictionary.
+Values inserted inserted into the ModFabContext as ModFabNode tree is recursively traversed.
+Lower levels in the tree traversal can read values from higher in the traversal and insert
+values for lower levels in the traversal.  In order to prevent "dictionary pollution", the
+ModFabContext's are actually copied prior to being used in a lower level.  This is done as follows:
 
-There are three phases:
+     # Iterate across children ModFabNode's:
+     for child_node in self.Children:
+         child_context: ModFabContext
+         # Open a fresh *child_context* the is used by *child_node* and cleaned up upon return:
+         with current_context.child() as child_context:
+             child_node.visit(child_context, ...)
+
+There are currently 3 recursion phases:
 * Configuration Phase:
   The configuration phase is where constraints get propagated between ModFabNode's.  Each
   ModFabNode recomputes its configuration values.  It can do this by reading other values
@@ -72,6 +81,50 @@ sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 
 from dataclasses import dataclass, field
 from typing import cast, Any, Dict, List, Optional, Set, Tuple, Union
+
+
+# ModFabContext:
+@dataclass
+class ModFabContext(dict):
+    """ModeFabContext: ModFabNode tree context.
+
+    A ModeFabContext is a dictionary for storing information needed during the various
+    ModFabNode tree recrusive
+
+    """
+
+    table: Dict[str, Any]
+
+    # ModFabContext.child():
+    def child(self) -> "ModFabContext":
+        """Return child MadFabContext for next recursion level."""
+        return ModFabContext(self.table.copy())
+
+    # ModFabContext.__enter__():
+    def __enter__(self) -> "ModFabContext":
+        """Create a new ModFabContext level."""
+        return self  # The copy occured in the *child* method.
+
+    # ModFabFile.__exit__():
+    def __exit__(self, exec_type, exec_value, exec_table) -> None:
+        """Exit a ModeFabContext level."""
+        pass
+
+    # ModFabContext.__getitem__():
+    def __getitem__(self, key: str) -> Any:
+        """Return the value associated with the Key."""
+        return self.table[key]
+
+    # ModFabContext.__setitem__():
+    def __setitem__(self, key: str, value: Any) -> None:
+        """Store value inot ModeFabContext."""
+        if key in self.table:
+            raise ValueError(f"'{key}' is already present")
+        self.table[key] = value
+
+    def _unit_tests(self) -> None:
+        """Run ModFabContext Unit tests."""
+        pass
 
 
 @dataclass
@@ -109,16 +162,18 @@ class ModFabNode(object):
         # print(f"<=ModFabNode.__post_init__()")
 
     # ModFabNode.check():
-    def check(self, context: Dict[str, Any]) -> Tuple[str, ...]:
+    def check(self, context: "ModFabContext") -> Tuple[str, ...]:
         """Check ModFabNode for errors."""
         errors: List[str] = []
         child_node: "ModFabNode"
+        child_context: ModFabContext
         for child_node in self.Children:
-            errors.extend(child_node.check(context.copy()))
+            with context.child() as child_context:
+                errors.extend(child_node.check(child_context))
         return tuple(errors)
 
     # ModFabNode.configure():
-    def configure(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
+    def configure(self, context: "ModFabContext", tracing: str = "") -> Tuple[str, ...]:
         """Configure ModFabNode."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
@@ -126,8 +181,10 @@ class ModFabNode(object):
 
         current_values: List[str] = []
         child: "ModFabNode"
+        child_context: ModFabContext
         for child in self.Children:
-            current_values.extend(child.configure(context.copy(), tracing=next_tracing))
+            with context.child() as child_context:
+                current_values.extend(child.configure(child_context, tracing=next_tracing))
 
         if tracing:
             print(f"{tracing}<=ModFabNode.configure('{self.Name}', {context})=>{current_values}")
@@ -150,12 +207,14 @@ class ModFabNode(object):
         return tuple(configurations)
 
     # ModFabNode.produce():
-    def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
+    def produce(self, context: "ModFabContext", tracing: str = "") -> Tuple[str, ...]:
         """Produce ModFabNode."""
         errors: List[str] = []
         child: "ModFabNode"
+        child_context: ModFabContext
         for child_node in self.Children:
-            errors.extend(child_node.produce(context.copy()))
+            with context.child() as child_context:
+                errors.extend(child_node.produce(child_context))
         return tuple(errors)
 
     @staticmethod
@@ -334,30 +393,33 @@ class ModFabRoot(ModFabNode):
         if tracing:
             print(f"{tracing}=>ModFabRoot.configure_constraints()")
 
+        context: ModFabContext = ModFabContext({})
         previous_values: Set[str] = set()
         count: int
         for count in range(maximum_iterations):
-            current_values: Set[str] = set(self.configure({}, next_tracing))
-            difference_values: Set[str] = previous_values ^ current_values
-            if tracing:
-                print(f"{tracing}Iteration[{count}]: {sorted(previous_values)=}")
-                print(f"{tracing}Iteration[{count}]:  {sorted(current_values)=}")
-                print(f"{tracing}Iteration[{count}]: {len(difference_values)} Differences.")
-                print("")
+            child_context: ModFabContext
+            with context.child() as child_context:
+                current_values: Set[str] = set(self.configure(child_context, next_tracing))
+                difference_values: Set[str] = previous_values ^ current_values
+                if tracing:
+                    print(f"{tracing}Iteration[{count}]: {sorted(previous_values)=}")
+                    print(f"{tracing}Iteration[{count}]:  {sorted(current_values)=}")
+                    print(f"{tracing}Iteration[{count}]: {len(difference_values)} Differences.")
+                    print("")
 
-            # Deal with *verbosity*:
-            if verbosity >= 1:
-                print(f"Configure[{count}]: {len(difference_values)} differences:")
-            if verbosity >= 2:
-                sorted_difference_values: List[str] = sorted(tuple(difference_values))
-                index: int
-                difference: str
-                for index, difference in enumerate(sorted_difference_values[:verbosity]):
-                    print(f"  Difference[{index}]: {difference}")
+                # Deal with *verbosity*:
+                if verbosity >= 1:
+                    print(f"Configure[{count}]: {len(difference_values)} differences:")
+                if verbosity >= 2:
+                    sorted_difference_values: List[str] = sorted(tuple(difference_values))
+                    index: int
+                    difference: str
+                    for index, difference in enumerate(sorted_difference_values[:verbosity]):
+                        print(f"  Difference[{index}]: {difference}")
 
-            if not difference_values:
-                break
-            previous_values = current_values
+                if not difference_values:
+                    break
+                previous_values = current_values
 
         if tracing:
             print(f"{tracing}<=ModFabRoot.configure_constraints()")

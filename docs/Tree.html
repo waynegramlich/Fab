@@ -41,10 +41,19 @@ Recursively checks for errors during the check phase and returns a tuple of erro
 Recursively used to build the model and generate any production files (CNC, STL, DWG, etc.)
 Any errors and warnings are returned as a tuple of strings.</li>
 </ul>
-<p>All of these methods pass a <em>context</em> dictionary from level to level.  The rule is that anything
-can be added to the dictionary.  In order to prevent <em>context</em> dictionary pollution, each
-level makes a shallow dictionary copy (i.e. context.copy()).</p>
-<p>There are three phases:</p>
+<p>All of these methods take a ModFabContext (called <em>context</em>) that behaves like a dictionary.
+Values inserted inserted into the ModFabContext as ModFabNode tree is recursively traversed.
+Lower levels in the tree traversal can read values from higher in the traversal and insert
+values for lower levels in the traversal.  In order to prevent &quot;dictionary pollution&quot;, the
+ModFabContext's are actually copied prior to being used in a lower level.  This is done as follows:</p>
+<pre><code> # Iterate across children ModFabNode's:
+ for child_node in self.Children:
+     child_context: ModFabContext
+     # Open a fresh *child_context* the is used by *child_node* and cleaned up upon return:
+     with current_context.child() as child_context:
+         child_node.visit(child_context, ...)
+</code></pre>
+<p>There are currently 3 recursion phases:</p>
 <ul>
 <li>Configuration Phase:
 The configuration phase is where constraints get propagated between ModFabNode's.  Each
@@ -63,36 +72,48 @@ the FreeCAD solids/assemblies and the associated output files.</li>
 </ul>
 <h2>Table of Contents (alphabetical order):</h2>
 <ul>
-<li>1 Class: <a href="#tree--modfabnode">ModFabNode</a>:
+<li>1 Class: <a href="#tree--modfabcontext">ModFabContext</a>:
 <ul>
-<li>1.1 <a href="#tree----check">check()</a>: Check ModFabNode for errors.</li>
-<li>1.2 <a href="#tree----configure">configure()</a>: Configure ModFabNode.</li>
-<li>1.3 <a href="#tree----get-configurations">get_configurations()</a>: Return configurations strings for named attributes.</li>
-<li>1.4 <a href="#tree----produce">produce()</a>: Produce ModFabNode.</li>
+<li>1.1 <a href="#tree----child">child()</a>: Return child MadFabContext for next recursion level.</li>
 </ul>
 </li>
-<li>2 Class: <a href="#tree--modfabroot">ModFabRoot</a>:
+<li>2 Class: <a href="#tree--modfabnode">ModFabNode</a>:
 <ul>
-<li>2.1 <a href="#tree----configure-constraints">configure_constraints()</a>: Configure the ModFabNode tree until is constraints are stable.</li>
+<li>2.1 <a href="#tree----check">check()</a>: Check ModFabNode for errors.</li>
+<li>2.2 <a href="#tree----configure">configure()</a>: Configure ModFabNode.</li>
+<li>2.3 <a href="#tree----get-configurations">get_configurations()</a>: Return configurations strings for named attributes.</li>
+<li>2.4 <a href="#tree----produce">produce()</a>: Produce ModFabNode.</li>
 </ul>
 </li>
-<li>3 Class: <a href="#tree--mynode1">MyNode1</a>:
+<li>3 Class: <a href="#tree--modfabroot">ModFabRoot</a>:
 <ul>
-<li>3.1 <a href="#tree----configure">configure()</a>: Configure MyNode1.</li>
+<li>3.1 <a href="#tree----configure-constraints">configure_constraints()</a>: Configure the ModFabNode tree until is constraints are stable.</li>
 </ul>
 </li>
-<li>4 Class: <a href="#tree--mynode2">MyNode2</a>:
+<li>4 Class: <a href="#tree--mynode1">MyNode1</a>:
 <ul>
 <li>4.1 <a href="#tree----configure">configure()</a>: Configure MyNode1.</li>
 </ul>
 </li>
-<li>5 Class: <a href="#tree--mynode3">MyNode3</a>:
+<li>5 Class: <a href="#tree--mynode2">MyNode2</a>:
 <ul>
 <li>5.1 <a href="#tree----configure">configure()</a>: Configure MyNode1.</li>
 </ul>
 </li>
+<li>6 Class: <a href="#tree--mynode3">MyNode3</a>:
+<ul>
+<li>6.1 <a href="#tree----configure">configure()</a>: Configure MyNode1.</li>
 </ul>
-<h2><a name="tree--modfabnode"></a>1 Class ModFabNode:</h2>
+</li>
+</ul>
+<h2><a name="tree--modfabcontext"></a>1 Class ModFabContext:</h2>
+<p>ModeFabContext: ModFabNode tree context.
+A ModeFabContext is a dictionary for storing information needed during the various
+ModFabNode tree recrusive</p>
+<h3><a name="tree----child"></a>1.1 <code>ModFabContext.</code>child():</h3>
+<p>ModFabContext.child(self) -&gt; 'ModFabContext':</p>
+<p>Return child MadFabContext for next recursion level.</p>
+<h2><a name="tree--modfabnode"></a>2 Class ModFabNode:</h2>
 <p>Represents one node in the tree.
 Attributes:</p>
 <ul>
@@ -101,21 +122,21 @@ Attributes:</p>
 <li><em>ChildrenNodes</em> (Tuple[ModFabNode, ...): The children ModFabNode's.</li>
 <li><em>FullPath</em> (str):  The ModFabNode full path.</li>
 </ul>
-<h3><a name="tree----check"></a>1.1 <code>ModFabNode.</code>check():</h3>
-<p>ModFabNode.check(self, context: typing.Dict[str, typing.Any]) -&gt; typing.Tuple[str, ...]:</p>
+<h3><a name="tree----check"></a>2.1 <code>ModFabNode.</code>check():</h3>
+<p>ModFabNode.check(self, context: 'ModFabContext') -&gt; typing.Tuple[str, ...]:</p>
 <p>Check ModFabNode for errors.</p>
-<h3><a name="tree----configure"></a>1.2 <code>ModFabNode.</code>configure():</h3>
-<p>ModFabNode.configure(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
+<h3><a name="tree----configure"></a>2.2 <code>ModFabNode.</code>configure():</h3>
+<p>ModFabNode.configure(self, context: 'ModFabContext', tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
 <p>Configure ModFabNode.</p>
-<h3><a name="tree----get-configurations"></a>1.3 <code>ModFabNode.</code>get_configurations():</h3>
+<h3><a name="tree----get-configurations"></a>2.3 <code>ModFabNode.</code>get_configurations():</h3>
 <p>ModFabNode.get_configurations(self, attribute_names: typing.Tuple[str, ...]) -&gt; typing.Tuple[str, ...]:</p>
 <p>Return configurations strings for named attributes.</p>
-<h3><a name="tree----produce"></a>1.4 <code>ModFabNode.</code>produce():</h3>
-<p>ModFabNode.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
+<h3><a name="tree----produce"></a>2.4 <code>ModFabNode.</code>produce():</h3>
+<p>ModFabNode.produce(self, context: 'ModFabContext', tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
 <p>Produce ModFabNode.</p>
-<h2><a name="tree--modfabroot"></a>2 Class ModFabRoot:</h2>
+<h2><a name="tree--modfabroot"></a>3 Class ModFabRoot:</h2>
 <p>The Root mode a ModFabNode tree.</p>
-<h3><a name="tree----configure-constraints"></a>2.1 <code>ModFabRoot.</code>configure_constraints():</h3>
+<h3><a name="tree----configure-constraints"></a>3.1 <code>ModFabRoot.</code>configure_constraints():</h3>
 <p>ModFabRoot.configure_constraints(self, maximum_iterations: int = 20, verbosity: int = 4, tracing: str = '') -&gt; None:</p>
 <p>Configure the ModFabNode tree until is constraints are stable.
 Arguments:</p>
@@ -126,18 +147,18 @@ Arguments:</p>
 1: Iteration messages only.
 N: Iteration messages with N-1 of the differences:</li>
 </ul>
-<h2><a name="tree--mynode1"></a>3 Class MyNode1:</h2>
+<h2><a name="tree--mynode1"></a>4 Class MyNode1:</h2>
 <p>First ModFabNode.</p>
-<h3><a name="tree----configure"></a>3.1 <code>MyNode1.</code>configure():</h3>
+<h3><a name="tree----configure"></a>4.1 <code>MyNode1.</code>configure():</h3>
 <p>MyNode1.configure(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
 <p>Configure MyNode1.</p>
-<h2><a name="tree--mynode2"></a>4 Class MyNode2:</h2>
+<h2><a name="tree--mynode2"></a>5 Class MyNode2:</h2>
 <p>MyNode1: First ModFabNode.</p>
-<h3><a name="tree----configure"></a>4.1 <code>MyNode2.</code>configure():</h3>
+<h3><a name="tree----configure"></a>5.1 <code>MyNode2.</code>configure():</h3>
 <p>MyNode2.configure(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
 <p>Configure MyNode1.</p>
-<h2><a name="tree--mynode3"></a>5 Class MyNode3:</h2>
+<h2><a name="tree--mynode3"></a>6 Class MyNode3:</h2>
 <p>MyNode1: First ModFabNode.</p>
-<h3><a name="tree----configure"></a>5.1 <code>MyNode3.</code>configure():</h3>
+<h3><a name="tree----configure"></a>6.1 <code>MyNode3.</code>configure():</h3>
 <p>MyNode3.configure(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
 <p>Configure MyNode1.</p>
