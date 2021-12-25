@@ -327,6 +327,7 @@ class FabRoot(FabInterior):
         self.AllNodes = tuple(all_nodes)
         # print(f"<=Fab_Root.__post_init__():")
 
+    # FabRoot: configure_contraints():
     def configure_constraints(self, maximum_iterations: int = 20,
                               verbosity: int = 4, tracing: str = "") -> None:
         """Configure the FabNode tree until is constraints are stable.
@@ -381,7 +382,7 @@ class FabRoot(FabInterior):
         if tracing:
             print(f"{tracing}<=FabRoot.configure_constraints()")
 
-    # FabInterior.produce():
+    # FabRoot.produce():
     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
         """Produce FabNode."""
         errors: List[str] = []
@@ -389,6 +390,12 @@ class FabRoot(FabInterior):
         for child_node in self.Children:
             errors.extend(child_node.produce(context.copy()))
         return tuple(errors)
+
+    # FabRoot.run():
+    def run(self) -> None:
+        """Configure and Produce everything."""
+        self.configure_constraints()
+        self.produce({})
 
 
 @dataclass

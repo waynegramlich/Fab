@@ -125,7 +125,7 @@ The are two ways to get `squashfs-root/usr/lib` into the `PYTHONPATH`.
 
 2. Python code can be used to accomplish the same task:
 
-        import sys
+       import sys
        sys.path.append("./squashfs-root/usr/lib")
 
 Of the two methods, the `sys.path.append` method is preferred because not everybody

@@ -90,6 +90,7 @@ the FreeCAD solids/assemblies and the associated output files.</li>
 <ul>
 <li>3.1 <a href="#tree----configure-constraints">configure_constraints()</a>: Configure the FabNode tree until is constraints are stable.</li>
 <li>3.2 <a href="#tree----produce">produce()</a>: Produce FabNode.</li>
+<li>3.3 <a href="#tree----run">run()</a>: Configure and Produce everything.</li>
 </ul>
 </li>
 <li>4 Class: <a href="#tree--mynode1">MyNode1</a>:
@@ -165,6 +166,9 @@ N: Iteration messages with N-1 of the differences:</li>
 <h3><a name="tree----produce"></a>3.2 <code>FabRoot.</code>produce():</h3>
 <p>FabRoot.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
 <p>Produce FabNode.</p>
+<h3><a name="tree----run"></a>3.3 <code>FabRoot.</code>run():</h3>
+<p>FabRoot.run(self) -&gt; None:</p>
+<p>Configure and Produce everything.</p>
 <h2><a name="tree--mynode1"></a>4 Class MyNode1:</h2>
 <p>First FabNode.</p>
 <h3><a name="tree----configure"></a>4.1 <code>MyNode1.</code>configure():</h3>

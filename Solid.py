@@ -32,7 +32,7 @@ sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 from dataclasses import dataclass
 from typing import Any, cast, Dict, Optional, Set, Tuple
 from pathlib import Path
-from Utilities import FabColor
+
 
 import FreeCAD  # type: ignore
 import Part  # type: ignore
@@ -43,7 +43,8 @@ from FreeCAD import Placement, Rotation, Vector
 # import Part  # type: ignore
 
 from Geometry import FabCircle, FabGeometry, FabPolygon
-from Tree import FabNode, FabInterior
+from Tree import FabInterior, FabNode, FabRoot
+from Utilities import FabColor
 
 # FabFile:
 @dataclass
@@ -53,6 +54,7 @@ class FabFile(FabInterior):
     # Name: str
     # Parts: Tuple["FabSolid", ...]
     FilePath: Path = Path("bogus")
+    # TODO define the actual attributes here:
 
     # FabFile.__post_init__():
     def __post_init__(self) -> None:
@@ -87,29 +89,22 @@ class FabFile(FabInterior):
         """Return the children FabSolid's."""
         return cast(Tuple[FabSolid, ...], self.Children)
 
-    # FabFile.__enter__():
-    def __enter__(self) -> "FabFile":
-        """Open the FabFile."""
-        return self
-
-    # FabFile.__exit__():
-    def __exit__(self, exec_type, exec_value, exec_table) -> None:
-        """Close the FabFile."""
-        if self.AppDocument:
-            print(f"saving {self.FilePath}")
-            self.AppDocument.recompute()
-            self.AppDocument.saveAs(str(self.FilePath))
-
     # FabFile.produce():
     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
         """Produce all of the FabSolid's."""
         if tracing:
             print("=>{tracing}=>FabFile.produce('{self.Name}', *)")
         part: "FabSolid"
+        app_document: App.Document = self.AppDocument
+        context["app_document"] = app_document
+        if App.GuiUp:
+            context["gui_document"] = self.GuiDocument
         for part in self.Parts:
             self.Part = part
             part.produce(context.copy())
             self.Part = cast(FabSolid, None)
+        app_document.recompute()
+        app_document.saveAs(str(self.FilePath))
         if tracing:
             print("<={tracing}=>FabFile.produce('{self.Name}', *)")
         return ()
@@ -154,14 +149,13 @@ class FabFile(FabInterior):
 
         # Test Open/Produce/Close
         _ = fcstd_path.unlink if fcstd_path.exists() else None
-        model_file: FabFile
-        with FabFile("Open_Produce_Close", (solid1,), fcstd_path) as model_file:
-            assert isinstance(model_file, FabFile)
-            context: Dict[str, Any] = {}
-            context["app_document"] = model_file.AppDocument
-            if App.GuiUp:
-                context["gui_document"] = model_file.GuiDocument
-            model_file.produce(context.copy())
+        fab_file: FabFile = FabFile("Open_Produce_Close", (solid1,), fcstd_path)
+        assert isinstance(fab_file, FabFile)
+        context: Dict[str, Any] = {}
+        context["app_document"] = fab_file.AppDocument
+        if App.GuiUp:
+            context["gui_document"] = fab_file.GuiDocument
+        fab_file.produce(context.copy())
         assert fcstd_path.exists(), f"{fcstd_path} file not generated."
         fcstd_path.unlink()
         assert not fcstd_path.exists()
@@ -887,16 +881,19 @@ def main() -> None:
     all_solids: Tuple[FabSolid, ...] = top_solids + box_solids
 
     # Create the models:
-    model_file: FabFile
+    model_file: FabFile = FabFile("Test", all_solids, Path("/tmp/test.fcstd"))
+    root: FabRoot = FabRoot("Root", (model_file,))
+    root.run()
+
     # with FabFile((top_part, side_part,), Path("/tmp/test.fcstd")) as model_file:
-    with FabFile("Test", all_solids, Path("/tmp/test.fcstd")) as model_file:
-        assert isinstance(model_file.AppDocument, App.Document), (
-            type(model_file), type(model_file.AppDocument))
-        context: Dict[str, Any] = {}
-        context["app_document"] = model_file.AppDocument
-        if App.GuiUp:
-            context["gui_document"] = model_file.GuiDocument
-        model_file.produce(context.copy())
+    # with  as model_file:
+    #     assert isinstance(model_file.AppDocument, App.Document), (
+    #         type(model_file), type(model_file.AppDocument))
+    #     context: Dict[str, Any] = {}
+    #     context["app_document"] = model_file.AppDocument
+    #     if App.GuiUp:
+    #        context["gui_document"] = model_file.GuiDocument
+    #     model_file.produce(context.copy())
 
 
 # TODO: Move this to FabNode class and switch to using a *context*.
