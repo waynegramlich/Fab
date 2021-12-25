@@ -74,12 +74,10 @@ There are currently 1 "invisible" and 3 user visible recursion phases:
 
 # <--------------------------------------- 100 characters ---------------------------------------> #
 
-import os
 import sys
-
-assert sys.version_info.major == 3  # Python 3.x
-assert sys.version_info.minor == 8  # Python 3.8
-sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
+sys.path.append(".")
+import Embed
+Embed.setup()
 
 from dataclasses import dataclass, field
 from typing import cast, Any, Dict, List, Optional, Set, Tuple, Union

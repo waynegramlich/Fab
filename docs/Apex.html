@@ -1,0 +1,169 @@
+<h1>Apex: Apex base classes.</h1>
+<p>The Apex base classes are:</p>
+<ul>
+<li>ApexBox:
+This is a wrapper class around the FreeCAD BoundBox class for specifying bounding boxes.
+It introduces some consistent attributes for accessing the faces, corners and edges
+of a bounding box.  Alas, for technical reasons, this not a true sub-class of BoundBox.
+Also, it called a box rather than a bounding box.</li>
+<li>ApexCheck:
+This is some common code to check argument types for public functions.</li>
+<li>ApexMaterial:
+This is a class that describes material properties.
+sub-class of Vector.</li>
+</ul>
+<h2>Table of Contents (alphabetical order):</h2>
+<ul>
+<li>1 Class: <a href="#apex--apexbox">ApexBox</a>:
+<ul>
+<li>1.1 <a href="#apex----reorient">reorient()</a>: Reorient ApexBox given a Placement.</li>
+</ul>
+</li>
+<li>2 Class: <a href="#apex--apexcheck">ApexCheck</a>:</li>
+<li>3 Class: <a href="#apex--apexcolor">ApexColor</a>:</li>
+<li>4 Class: <a href="#apex--apexmaterial">ApexMaterial</a>:</li>
+</ul>
+<h2><a name="apex--apexbox"></a>1 Class ApexBox:</h2>
+<p>An ApexBox is FreeCAD BoundBox with some additional attributes.
+An ApexBox is a simple wrapper around a FreeCAD BoundBox object that provides
+additional attributes that represent various points on the surface of the box.
+The nomenclature is that East/West represents the +X/-X axes, North/South represents the
++Y/-Y axes, nd the Top/Bottom represents the +Z/-Z axes.  Thus, TNE represents the Top
+North East corner of the box.  NE represents the center of the North East edge of the
+box.  T represents the center of the top face of the box.  By the way, the C attribute
+is the same as the BoundBox Center attribute.</p>
+<p>The preferred way to do this would be to sub-class BoundBox, but the FreeCAD implementation
+is written in C++ and for technical reasons does not support sub-classing.</p>
+<ul>
+<li>Attributes (alphabetical order in each group):
+<ul>
+<li>The 6 face attributes:
+<ul>
+<li>B (Vector): Center of bottom face.</li>
+<li>E (Vector): Center of east face.</li>
+<li>N (Vector): Center of north face.</li>
+<li>S (Vector): Center of south face.</li>
+<li>T (Vector): Center of top face.</li>
+<li>W (Vector): Center of west face.</li>
+</ul>
+</li>
+<li>The 8 corner attributes:
+<ul>
+<li>BNE (Vector): Bottom North East corner.</li>
+<li>BNW (Vector): Bottom North West corner.</li>
+<li>BSE (Vector): Bottom South East corner.</li>
+<li>BSW (Vector): Bottom South West corner.</li>
+<li>TNE (Vector): Top North East corner.</li>
+<li>TNW (Vector): Top North West corner.</li>
+<li>TSE (Vector): Top South East corner.</li>
+<li>TSW (Vector): Bottom South West corner.</li>
+</ul>
+</li>
+<li>The 12 edge attributes:
+<ul>
+<li>BE (Vector): Center of Bottom East edge.</li>
+<li>BN (Vector): Center of Bottom North edge.</li>
+<li>BS (Vector): Center of Bottom South edge.</li>
+<li>BW (Vector): Center of Bottom West edge.</li>
+<li>NE (Vector): Center of North East edge</li>
+<li>NW (Vector): Center of North West edge</li>
+<li>SE (Vector): Center of South East edge</li>
+<li>SW (Vector): Center of South West edge</li>
+<li>TE (Vector): Center of Top East edge.</li>
+<li>TN (Vector): Center of Top North edge.</li>
+<li>TS (Vector): Center of Top South edge.</li>
+<li>TW (Vector): Center of Top West edge.</li>
+</ul>
+</li>
+<li>The other ttributes:
+<ul>
+<li>BB (BoundBox): The wrapped BoundBox object.</li>
+<li>C (Vector): Center point (same as Center).</li>
+<li>DB (Vector): Bottom direction (i.e. B - C)</li>
+<li>DE (Vector): East direction (i.e. E - C)</li>
+<li>DN (Vector): North direction (i.e. N - C)</li>
+<li>DS (Vector): South direction (i.e. S - C)</li>
+<li>DT (Vector): Top direction (i.e. T - C)</li>
+<li>DW (Vector): West direction (i.e. W - C)</li>
+<li>DX (float): X box length</li>
+<li>DXY (Vector): X box length</li>
+<li>DXZ (Vector): X/Y box lengths</li>
+<li>DXYZ (Vector): X/Y/Z box lengths</li>
+<li>DY (float): Y box length</li>
+<li>DYZ (Vector): Y/Z box length</li>
+<li>DZ (float): Z box length</li>
+<li>Name (str): The ApexBox name.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3><a name="apex----reorient"></a>1.1 <code>ApexBox.</code>reorient():</h3>
+<p>ApexBox.reorient(self, placement: Base.Placement, suffix: Union[str, NoneType] = '') -&gt; 'ApexBox':</p>
+<p>Reorient ApexBox given a Placement.
+Note after the <em>placement</em> is applied, the resulting box is still rectilinear with the
+X/Y/Z axes.  In particular, box volume is <em>not</em> conserved.</p>
+<p>Arguments:</p>
+<ul>
+<li><em>placement</em> (Placement): The placement of the box corners.</li>
+<li><em>suffix</em> (Optional[str]): The suffix to append at all names.  If None, all
+names are set to &quot;&quot; instead appending the suffix.  (Default: &quot;&quot;)</li>
+</ul>
+<h2><a name="apex--apexcheck"></a>2 Class ApexCheck:</h2>
+<p>Check arguments for type mismatch errors.
+Attributes:</p>
+<ul>
+<li><em>name</em> (str):
+The argument name (used for error messages.)</li>
+<li><em>types</em> (Tuple[Any]):
+A tuple of acceptable types or constrained types.  A type is something line <code>bool</code>, <code>int</code>,
+<code>float</code>, <code>MyClass</code>, etc.   A constrained type is a tuple of the form (str, Any, Any, ...)
+and are discussed further below.</li>
+</ul>
+<p>An ApexCheck contains is used to type check a single function argument.
+The static method <code>ApexCheck.check()</code> takes a list of argument values and the
+corresponding tuple ApexCheck's and verifies that they are correct.</p>
+<p>Example 1:</p>
+<pre><code> EXAMPLE1_CHECKS = (
+     ApexCheck(&quot;arg1&quot;, (int,)),
+     ApexCheck(&quot;arg2&quot;, (bool,)),
+     ApexCheck(&quot;arg3&quot;, (type(None), MyType),  # Optional[myType]
+     ApexCheck(&quot;arg4,&quot; list),   # List[Any]
+ )
+ def my_function(arg1: int, arg2: bool, arg3: Any, arg4: List[str]) -&gt; None:
+     '''Doc string here.'''
+    value_error: str = ApexCheck.check((arg1, arg2, arg3, arg4), MY_FUNCTION_CHECKS)
+    if value_error:
+        raise ValueError(value_error)
+    # Rest of code goes here.
+</code></pre>
+<p>A constrained type looks like <code>(&quot;xxx:yyy:zzz&quot;, XArg, YArg, ZArg)</code>, where the <code>xxx</code> are flag
+characters are associated with <code>XArg</code>, <code>yyy</code> are for <code>YArg</code>, etc.  The flag characters are:</p>
+<ul>
+<li><code>L</code>: A List of Arg</li>
+<li><code>T</code>: A Tuple of Arg</li>
+<li><code>S</code>: A List or Tuple of Arg</li>
+<li><code>+</code>: Len of Arg must be greater than 0</li>
+<li><code>?</code>: None is acceptible.
+Additional flags are added as needed.</li>
+</ul>
+<p>Example 2:</p>
+<pre><code>EXAMPLE2_CHECKS = (
+    ApexCheck(&quot;arg1&quot;, (&quot;+&quot;, str)),  # Arg1 must be a non-empty string
+    ApexCheck(&quot;arg2&quot;, (&quot;?&quot;, str)),  # Arg2 can be a string or None
+    ApexCheck(&quot;arg3&quot;, (&quot;+?&quot;, str)),  # Arg3 can be a non-empty string or None
+    ApexCheck(&quot;arg4&quot;, (&quot;L&quot;, str)),  # Arg4 can be a list of strings
+    ApexCheck(&quot;arg5&quot;, (&quot;T&quot;, str)),  # Arg4 can be a tuple of strings
+    ApexCheck(&quot;arg6&quot;, (&quot;S&quot;, str)),  # Arg6 can be a list or tuple of strings
+    ApexCheck(&quot;arg7&quot;, (&quot;L&quot;, (float, int)),  # Arg7 can be a list of mixed float and int
+</code></pre>
+<h2><a name="apex--apexcolor"></a>3 Class ApexColor:</h2>
+<p>Convert from SVG color names to FreeCAD HSL.</p>
+<h2><a name="apex--apexmaterial"></a>4 Class ApexMaterial:</h2>
+<p>Represents a stock material.
+Other properties to be added later (e.g. transparency, shine, machining properties, etc.)</p>
+<p>Attributes:</p>
+<ul>
+<li><em>Name</em> (Tuple[str, ...]): A list of material names from generict to specific.</li>
+<li><em>Color</em> (str): The color name to use.</li>
+</ul>

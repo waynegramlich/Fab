@@ -1,4 +1,26 @@
-# Embedded FreeCAD
+#!/usr/bin/env python3
+"""
+Embed: Embedded FreeCAD Python Mode
+
+FreeCAD can be run in "embedded mode", which basically means running without bring up
+the FreeCAD Gui.
+
+The amount of code involved is quite trivial:
+
+     import sys
+     sys.path.append(".")
+     import Embed
+     Embed.setup()
+
+That's it.  The explanation of what embedded mode is and the various things required
+to make it work discussed below:
+
+## Table of Contents:
+
+* [Introduction](#Introduction)
+* [The FreeCAD and FreeCadGUI Modules](#the-freecad-and-freecadgui-modules)
+
+## <a name="introduction"></a>Introduction
 
 It is totally awesome that FreeCAD exposes a much of its internals via Python interfaces.
 There are multiple ways of accessing these FreeCAD Python interfaces.
@@ -6,9 +28,10 @@ The pros and cons of each FreeCAD Python access method are discussed in this doc
 
 This document is Linux focused, since the original author uses neither Windows nor MacOS.
 
-## The FreeCAD and FreeCADGui Modules
+## <A name="the-freecad-and-freecadgui-modules"></A>The FreeCAD and FreeCADGui Modules
 
 There are two top level modules in FreeCAD:
+
 * FreeCAD:
   This module is the top level module primarily for managing FreeCAD geometry.
   This module is typically abbreviated as App (e.g. `import FreeCAD as App`.)
@@ -16,12 +39,20 @@ There are two top level modules in FreeCAD:
   This module is used for accessing the GUI (Graphical User Interface)
   presentation issues such as visibility, transparency, color, views, etc.
   This module is typically abbreviated as Gui (e.g. `import FreeCADGui as Gui`.)
-All FreeCAD environments always have the FreeCAD module loaded.
-Some FreeCAD environments have the FreeCADGui module loaded and some do not.
-It should be noted that some FreeCAD environments that do have FreeCADGui loaded,
-only have a very limited amount of available methods.
-Any Python code that needs to access the FreeCADGui module needs to ensure
-it the full set of methods before trying to manipulate the presentation side of FreeCAD.
+
+If your code is doing 100% geometry and does not care about visualization, only the FreeCAD
+module needs to be imported.  The FreeCAD module is traditionally imported as:
+
+     import FreeCAD as App
+
+The FreeCADGui module is concerned with visual presentation of the FreeCAD display tree.
+When the FreeCAD program application is up and running, all Python GUI manipulation features
+are enabled.  The FreeCADGui module is traditionally imported as:
+
+     import FreeCADGui as Gui
+
+When the FreeCADGui module is imported into a stand alone Python interpreter outside of the
+FreeCAD user interface python interpreter, it is has essentially no useful functionality.
 
 ## FreeCAD Macros
 
@@ -150,7 +181,7 @@ This code looks as follows:
 
      import os
      import sys
-	
+
      assert os.version_info.major == 3, "Python 3.x is not running"
      assert os.version_info.minor == 8, "Python 3.8 is not running"
      sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
@@ -164,3 +195,31 @@ The following piece of code will exit the window system when the GUI is up:
      # It might make sense to save any open documents before exiting.
      if App.GuiUp:
          Gui.getMainWindow().close()
+"""
+import os
+import sys
+from pathlib import Path
+
+
+def setup():
+    # print(f"=>Embed.setup(): Before {sys.path=}")
+    assert sys.version_info.major == 3  # Python 3.x
+    assert sys.version_info.minor == 8  # Python 3.8
+
+    current_directory: str = os.getcwd()
+    freecad_directory: str = str(Path(current_directory) / "squashfs-root" / "usr" / "lib")
+
+    index: int
+    directory: str = ""
+    for index, directory in enumerate(sys.path):
+        # print(f"sys.path[{index}]: {directory}")
+        if directory == "." or directory == current_directory:
+            sys.path.insert(index, freecad_directory)
+            directory = ""
+            # print("Inserted {freecad_path} before '.'")
+            break
+    if directory:
+        sys.path.append(freecad_directory)
+        sys.path.append(current_directory)
+        # print(f"Inserted {freecad_path} followed by '.'")
+    # print(f"<=Embed.setup(): After {directory=} {sys.path=}")

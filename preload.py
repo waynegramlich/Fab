@@ -4,12 +4,10 @@
 #    python3 -i preload.py
 
 
-import os
 import sys
-
-assert sys.version_info.major == 3, "Python 3.x is not running"
-assert sys.version_info.minor == 8, "Python 3.8 is not running"
-sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
+sys.path.append(".")
+import Embed
+Embed.setup()
 
 import FreeCAD as App
 import FreeCADGui as Gui

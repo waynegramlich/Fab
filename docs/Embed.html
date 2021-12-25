@@ -1,0 +1,163 @@
+<h1>Embed:</h1>
+<p>Embed: Embedded FreeCAD Python Mode</p>
+<p>FreeCAD can be run in &quot;embedded mode&quot;, which basically means running without bring up
+the FreeCAD Gui.</p>
+<p>The amount of code involved is quite trivial:</p>
+<pre><code> import sys
+ sys.path.append(&quot;.&quot;)
+ import Embed
+ Embed.setup()
+</code></pre>
+<p>That's it.  The explanation of what embedded mode is and the various things required
+to make it work discussed below:</p>
+<h2>Table of Contents:</h2>
+<ul>
+<li><a href="#Introduction">Introduction</a></li>
+<li><a href="#the-freecad-and-freecadgui-modules">The FreeCAD and FreeCadGUI Modules</a></li>
+</ul>
+<h2><a name="introduction"></a>Introduction</h2>
+<p>It is totally awesome that FreeCAD exposes a much of its internals via Python interfaces.
+There are multiple ways of accessing these FreeCAD Python interfaces.
+The pros and cons of each FreeCAD Python access method are discussed in this document.</p>
+<p>This document is Linux focused, since the original author uses neither Windows nor MacOS.</p>
+<h2><A name="the-freecad-and-freecadgui-modules"></A>The FreeCAD and FreeCADGui Modules</h2>
+<p>There are two top level modules in FreeCAD:</p>
+<ul>
+<li>FreeCAD:
+This module is the top level module primarily for managing FreeCAD geometry.
+This module is typically abbreviated as App (e.g. <code>import FreeCAD as App</code>.)</li>
+<li>FreeCADGui:
+This module is used for accessing the GUI (Graphical User Interface)
+presentation issues such as visibility, transparency, color, views, etc.
+This module is typically abbreviated as Gui (e.g. <code>import FreeCADGui as Gui</code>.)</li>
+</ul>
+<p>If your code is doing 100% geometry and does not care about visualization, only the FreeCAD
+module needs to be imported.  The FreeCAD module is traditionally imported as:</p>
+<pre><code> import FreeCAD as App
+</code></pre>
+<p>The FreeCADGui module is concerned with visual presentation of the FreeCAD display tree.
+When the FreeCAD program application is up and running, all Python GUI manipulation features
+are enabled.  The FreeCADGui module is traditionally imported as:</p>
+<pre><code> import FreeCADGui as Gui
+</code></pre>
+<p>When the FreeCADGui module is imported into a stand alone Python interpreter outside of the
+FreeCAD user interface python interpreter, it is has essentially no useful functionality.</p>
+<h2>FreeCAD Macros</h2>
+<p>The most common way of importing Python code into a FreeCAD Python environment is
+via FreeCAD macros.
+A FreeCAD macro is basically Python program that typically has either <code>.py</code> suffix or
+the more common (for FreeCAD) <code>.FCMacro</code> suffix.
+The most common place where macro files reside is in the <code>~/.FreeCAD</code> directory,
+where <code>~</code> stands for current user home directory on Linux.
+All of the macros in this directory are available via the [Macro] tab
+at the top line of FreeCAD window.</p>
+<p>It is also possible to directly execute a Python program via:</p>
+<pre><code> freecad19 my_code.FCStd
+</code></pre>
+<p>This will bring the FreeCAD application and execute the Python code in <code>my_code.FCStd</code>.
+Once the code in <code>my_code.FCStd</code> has some executed,
+the FreeCAD application can be used to inspect the results of the code execution.
+It is possible to add a small piece of code at the end of <code>my_code.FCStd</code> that
+saves out its results into a <code>.FCstd</code> document and then shuts down the FreeCAD application.
+In this situation, the FreeCAD application pops up a window, runs <code>my_code.FCStd</code>,
+and then shuts down the application window and exits.
+In this mode, Python code must be run on a machine with display,
+since it will not successfully run on a headless machine.</p>
+<p>One final comment is that many editors look at the file suffix to enable Python mode
+(e.g. color highlighting, automatic indentation, etc.)
+Python code with a <code>.FCStd</code> will typically not enable Python mode.
+A clever solution is to add a symbolic link (e.g. <code>ln -s my_code.FCStd my_code.py</code>)
+and point the editor at the <code>.py</code> file.</p>
+<p>Another note is that neither the FreeCAD application nor the FreeCAD console
+(see section immediately below) honor the <code>PYTHONPATH</code> environment variable.
+This is deliberate and ensures that is the exact same Python environment is alway used
+and that it is not effected by other Python applications that require PYTHONPATH
+modifications to properly operate.
+The workaround is add code to explicitly modify <code>sys.path</code> as discussed a bit further below.</p>
+<h2>Standalone FreeCAD Console</h2>
+<p>It is also possible to directly bring up the FreeCAD console by:</p>
+<pre><code> freecad19 -c
+</code></pre>
+<p>This brings up a standard Python configured with access to all of the FreeCAD python modules.
+In this mode,
+the FreeCADGui module can be imported (i.e. <code>import FreeCADGui as Gui</code>),
+but it has much reduced functionality.
+Running <code>dir(Gui)</code> in this mode will show a very minimal list of attributes/methods.
+The current Gui methods are <code>embedToWindow</code>, <code>exec_loop</code>, <code>setupWithoutGUI1, and </code>showMainWindow<code>. In general, no attempt should be made to do GUI operations from this console session. The </code>App.GuiUp<code>attribute is</code>True<code>when the GUI is available and</code>False` otherwise.</p>
+<p>To list all of the available modules available to import in this environment type:</p>
+<pre><code> sorted(tuple(sys.modules.keys()))
+</code></pre>
+<p>The <code>~/FreeCAD</code> directory is in the default path for the console.
+Thus, any Python modules (i.e. has a <code>.py</code> suffix) in this directory are available for importing.
+The files ending with a <code>.FCMacro</code> suffix are not importable.</p>
+<h2>FreeCAD in &quot;Embedded Mode&quot;</h2>
+<p>In &quot;embedded mode&quot;, a standard Python interpreter is run and it is configured to be able
+access all of the FreeCAD modules.
+By using a standard Python interpreter,
+it is possible add additional needed packages and modules using <code>python3 -m pip install ...</code>.
+For example, it is possible to install debugger, test suite harness, code coverage, etc.</p>
+<p>Since Python is constantly adding and deprecating features,
+it is important use to run a Python with the same major and minor version numbers.
+In order get the version information, type the following into the Python console:</p>
+<pre><code> import sys
+ sys.version_info
+ # Should print something like &quot;sys.version_info(major=3, minor=8, micro=5, ...&quot;)
+</code></pre>
+<p>Only the <code>major</code> and <code>minor</code> version matter.
+This should be done using the both FreecCAD console (i.e. <code>freecad19 -c</code>) and
+another Python interpreter (i.e. <code>python3</code>).</p>
+<p>Next, it necessary to find a consistent FreeCAD system.
+One possibility is to download and build FreeCAD from source.
+However, it is probably easier is to just download one of the FreeCAD AppImage's,
+and extract the required files.
+For example:</p>
+<pre><code> freecad19 --appimage-extract
+</code></pre>
+<p>will create the <code>squashfs-root</code> directory that contains consistent files.
+All of the relevant files are in <code>squashfs-root/usr/lib</code> which can readily
+be added to the python interpreter path.</p>
+<p>The are two ways to get <code>squashfs-root/usr/lib</code> into the <code>PYTHONPATH</code>.</p>
+<ol>
+<li>
+<p>The easiest way is to simply add <code>squashfs-root/usr/lib</code> to the <code>PYTHONPATH</code>
+environment variable:</p>
+<pre><code> export PYTHONPATH=&quot;$PYTHONPATH:squashfs-root/usr/lib&quot;
+</code></pre>
+</li>
+<li>
+<p>Python code can be used to accomplish the same task:</p>
+<pre><code>import sys
+sys.path.append(&quot;./squashfs-root/usr/lib&quot;)
+</code></pre>
+</li>
+</ol>
+<p>Of the two methods, the <code>sys.path.append</code> method is preferred because not everybody
+will remember to set up PYTHONPATH beforehand.</p>
+<h2>Dual Mode FreeCAD Python Programs</h2>
+<p>A dual mode Python program is one can be run as both FreeCAD macro and in embedded mode.
+The idea is shown immediately below:</p>
+<pre><code> # Create my_code.py
+ ln -s my_code.py my_mycode.FCMacro  # Make a symbolic link for my_code.FCMacro
+ python3 my_code.py                  # Run mycode.py in embedded mode
+ freecad19 mycode.FCMacro            # Run mycode.FCMacro through the FreeCAD application
+</code></pre>
+<p>The first run will produce all of the geometry and second one has access to the FreeCADGui
+module and can add additional presentation information.</p>
+<p>There needs to be a preamble in <code>mycode.py</code> that sets up the paths.
+This code looks as follows:</p>
+<pre><code> import os
+ import sys
+
+ assert os.version_info.major == 3, &quot;Python 3.x is not running&quot;
+ assert os.version_info.minor == 8, &quot;Python 3.8 is not running&quot;
+ sys.path.extend([os.path.join(os.getcwd(), &quot;squashfs-root/usr/lib&quot;), &quot;.&quot;])
+
+ import FreeCAD as App  # type: ignore
+ import FreeCADGui as Gui  # type: ignore
+ # Note: App.GuiUp is only True when Gui is actually active.
+</code></pre>
+<p>The following piece of code will exit the window system when the GUI is up:</p>
+<pre><code> # It might make sense to save any open documents before exiting.
+ if App.GuiUp:
+     Gui.getMainWindow().close()
+</code></pre>

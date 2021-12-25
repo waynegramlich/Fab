@@ -1,0 +1,151 @@
+<h1>py2md:</h1>
+<p><code>py2md</code>: Python document strings to Markdown.</p>
+<p>This project attempted to use the <a href="https://www.sphinx-doc.org/">Sphinx</a> documenation system,
+but it really requires all of the code to be pushed through the Python system.
+Missing imports are a show stopper and configuring Sphinx to find them all is non-trivial.
+The bottom line is that Sphinx is currently unworkable for this project.</p>
+<p><code>py2md</code> is much simpler and just reads the document strings from one
+Python file at a time and writes the corresponding Markdown file.</p>
+<p>Usage: <code>py2md [.py ...] [dir ...]</code></p>
+<p>The requirement is that each comment block that has a <code># CLASS_NAME():</code>, <code># FUNC_NAME():</code>,
+<code># CLASS_NAME.METHOD_NAME():</code> at the front shows up in documentation.  In addition,
+the first comment in the file shows up as the introduction.</p>
+<p>The basic Python file format is shown immediately below (<code>##</code> is for informational comments):</p>
+<pre><code> #!/usr/bin/env python3  ## Optional for executable files.
+ &quot;&quot;&quot;Module line description.   ## One SENTENCE that ends in a period.  Blank line is next.
+
+ More module description here.  Module constants are listed here.
+ &quot;&quot;&quot;
+
+ # CLASS_NAME(PARENT_CLASS):   ## Class definition is preceded by a 1-line comment.
+ class CLASS_NAME(PARENT_CLASS):  ## Use `object` for base classes.
+     &quot;&quot;&quot;Class line description.
+
+     Additional class description goes here.
+     &quot;&quot;&quot;
+
+     # CLASS_NAME.METHOD_NAME():  ## One line comment with both CLASS_NAME and METHOD_NAME.
+     def CLASS_NAME(self, ...) -&gt; ...:   ## Use Python Type Hints.
+         &quot;&quot;&quot;Method one line description.
+
+         Optional more verbose method description goes here.
+
+         * Arguments:  ## Use `* Arguments: None` if there are no arguments.
+           * *arg1* (TYPE1): *arg1 description...
+           ...
+           * *argN* (TYPEn): *argN description...
+         * Returns:   ## Use `* Returns nothing.` if there are no returns.
+           * (TYPE1) first return type description.
+           ...
+           * (TYPEn) Last return type description.
+         * Raises:   ## (Eliminate if no exceptions are raised.)
+           * exception1: ...
+           ...
+           * exceptionN: ...
+         &quot;&quot;&quot;
+</code></pre>
+<h2>Table of Contents (alphabetical order):</h2>
+<ul>
+<li>1 Class: <a href="#py2md--blockcomment">BlockComment</a>:</li>
+<li>2 Class: <a href="#py2md--linedata">LineData</a>:</li>
+<li>3 Class: <a href="#py2md--markdown">Markdown</a>:
+<ul>
+<li>3.1 <a href="#py2md----read">read()</a>: Read in Python file and convert to LineData's.</li>
+<li>3.2 <a href="#py2md----triples-extract">triples_extract()</a>: Extract BlockComment's containing Triples.</li>
+<li>3.3 <a href="#py2md----sharps-extract">sharps_extract()</a>: Return the CommentBlock's that start with <code># ... </code>.</li>
+<li>3.4 <a href="#py2md----generate">generate()</a>: Generate Markdown file containing Python documentation.</li>
+</ul>
+</li>
+<li>4 Class: <a href="#py2md--tag">Tag</a>:</li>
+</ul>
+<h2><a name="py2md--blockcomment"></a>1 Class BlockComment:</h2>
+<p>Represents a sequence of lines constituting a single comment.</p>
+<ul>
+<li>Attributes:
+<ul>
+<li><em>tag</em> (str): The sorting key to use.</li>
+<li><em>index</em> (int):</li>
+<li><em>indent</em> (int): The indentation of the first line.</li>
+<li><em>is_triple</em> (bool): True if the first line started with a triple quote.</li>
+<li><em>preceding</em> (Tuple[LineData, ...]):
+The lines preceding the first line up until a blank line.</li>
+<li><em>body</em> (Tuple[LineData, ...] ): The lines that make up the actual comment.</li>
+</ul>
+</li>
+</ul>
+<h2><a name="py2md--linedata"></a>2 Class LineData:</h2>
+<p>Provides data about one file coment line.</p>
+<ul>
+<li>Attributes:
+<ul>
+<li><em>stripped</em> (str): The line stripped of any preceding spaces and triple quotes.</li>
+<li><em>index</em> (int): The line index of the line (0 for first line).</li>
+<li><em>indent</em> (int): The number of preceding spaces stripped off the front.</li>
+<li><em>sharp_start</em> (bool): True if first non-space character is sharp character.</li>
+<li><em>triple_start</em> (str):
+Set to first 3 non-space characters if they are triple quotes;
+otherwise set to &quot;&quot;.</li>
+<li><em>triple_end</em> (str): Set to last 3 non-space characters are triple quotes;
+otherwise set to &quot;&quot;.</li>
+</ul>
+</li>
+</ul>
+<h2><a name="py2md--markdown"></a>3 Class Markdown:</h2>
+<p>Class containing Python markdown information.</p>
+<h3><a name="py2md----read"></a>3.1 <code>Markdown.</code>read():</h3>
+<p>Markdown.read(self, path: pathlib.Path) -&gt; typing.Tuple[py2md.LineData, ...]:</p>
+<p>Read in Python file and convert to LineData's.</p>
+<ul>
+<li>Arguments:
+<ul>
+<li><em>path</em> (Path): The Python file to read.</li>
+</ul>
+</li>
+<li>Returns (Tuple[LineData, ...]) a tuple of LineData's for each line in the file.</li>
+</ul>
+<h3><a name="py2md----triples-extract"></a>3.2 <code>Markdown.</code>triples_extract():</h3>
+<p>Markdown.triples_extract(self, line_datas: typing.Tuple[py2md.LineData, ...]) -&gt; typing.Tuple[typing.Tuple[py2md.LineData, ...], typing.Tuple[py2md.BlockComment, ...]]:</p>
+<p>Extract BlockComment's containing Triples.</p>
+<ul>
+<li>Arguments:
+<ul>
+<li><em>line_datas</em> (Tuple[LineData, ...]): A tuple of LineData's from the file.</li>
+</ul>
+</li>
+<li>Returns:
+<ul>
+<li>Tuple[LineData, ...] containing remaining LineData's that were not used.</li>
+<li>Tuple[BlockComent, ...] containing extracted BlockComment's.</li>
+</ul>
+</li>
+</ul>
+<h3><a name="py2md----sharps-extract"></a>3.3 <code>Markdown.</code>sharps_extract():</h3>
+<p>Markdown.sharps_extract(self, remaining_line_datas: typing.Tuple[py2md.LineData, ...]) -&gt; typing.Tuple[py2md.BlockComment, ...]:</p>
+<p>Return the CommentBlock's that start with <code># ... </code>.</p>
+<ul>
+<li>Arguments:
+<ul>
+<li><em>remaining_line_datas</em> (Tuple[LineData]):
+The LineData's to scan scan for sharp (<code>#</code>) delineated comment blocks.</li>
+</ul>
+</li>
+<li>Returns:
+<ul>
+<li>(Tuple[BlockComment, ...]) containing the sharp delineated block comments.</li>
+</ul>
+</li>
+</ul>
+<h3><a name="py2md----generate"></a>3.4 <code>Markdown.</code>generate():</h3>
+<p>Markdown.generate(self) -&gt; None:</p>
+<p>Generate Markdown file containing Python documentation.</p>
+<h2><a name="py2md--tag"></a>4 Class Tag:</h2>
+<p>Provides sort able tag for block comments.</p>
+<ul>
+<li>Attributes:
+<ul>
+<li><em>group</em> (str): The class name (or &quot;~&quot;) for no class name.</li>
+<li><em>name</em> (str): The function/method name.  Use empty for class name.</li>
+<li><em>anchor</em> (str): The HTML anchor to use anchor Tag.</li>
+</ul>
+</li>
+</ul>

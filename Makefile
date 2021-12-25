@@ -10,6 +10,7 @@ PY2MD := py2md.py
 #     py2md.py
 PY_FILES := \
     Doc.py \
+    Embed.py \
     Geometry.py \
     Join.py \
     Solid.py \
@@ -28,6 +29,7 @@ LINT_FILES := ${PY_FILES:%.py=.%.lint}
 HTML_FILES := README.html docs/ModFab.html ${PY_FILES:%.py=docs/%.html}
 
 MODULES := \
+    Embed \
     FreeCAD \
     FreeCADGui \
     Join \
