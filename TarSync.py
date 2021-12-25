@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""fcstd_tar_sync.py: Synchronize .fcstd and .tar files.
+"""TarSync.py: Synchronize .fcstd and .tar files.
 
-Usage: fcstd_tar_sync [OPTIONS] [DIR] ...
+Usage: TarSync.py [OPTIONS] [DIR] ...
 
 Recursively scans directories searching for `.fcstd`/`.FCstd` files
 and synchronizes them with associated `.tar` files.  The current
@@ -51,6 +51,18 @@ to again, to keep the `.fcstd` files in sync with any updated `.tar` files.
 
 # [Basic Git Concepts]
 # (https://www.oreilly.com/library/view/version-control-with/9781449345037/ch04.html)
+#
+# FreeCAD forum topics:
+# [https://forum.freecadweb.org/viewtopic.php?t=38353&start=30](1)
+# [https://forum.freecadweb.org/viewtopic.php?f=8&t=36844a](2)
+# [https://forum.freecadweb.org/viewtopic.php?t=40029&start=10](3)
+# [https://forum.freecadweb.org/viewtopic.php?p=1727](4)
+# [https://forum.freecadweb.org/viewtopic.php?t=8688](5)
+# [https://forum.freecadweb.org/viewtopic.php?t=32521](6)
+# [https://forum.freecadweb.org/viewtopic.php?t=57737)(7)
+# [https://blog.lambda.cx/posts/freecad-and-git/](8)
+# [https://tante.cc/2010/06/23/managing-zip-based-file-formats-in-git/](9)
+
 
 from argparse import ArgumentParser
 from io import BytesIO

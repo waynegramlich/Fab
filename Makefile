@@ -15,6 +15,7 @@ PY_FILES := \
     Geometry.py \
     Join.py \
     Solid.py \
+    TarSync.py \
     Tree.py \
     Utilities.py
 DOC_PY_FILES := __init__.py ${PY_FILES}
@@ -38,6 +39,8 @@ MODULES := \
     Model \
     Part \
     Path \
+    Solid \
+    TarSync \
     Utilities
 MODULES_TXTS := ${MODULES:%=/tmp/%.txt}
 
