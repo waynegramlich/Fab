@@ -9,6 +9,7 @@ PY2MD := py2md.py
 #     fcstd_tar_sync.py \
 #     py2md.py
 PY_FILES := \
+    CNC.py \
     Doc.py \
     Embed.py \
     Geometry.py \
@@ -29,6 +30,7 @@ LINT_FILES := ${PY_FILES:%.py=.%.lint}
 HTML_FILES := README.html docs/ModFab.html ${PY_FILES:%.py=docs/%.html}
 
 MODULES := \
+    CNC \
     Embed \
     FreeCAD \
     FreeCADGui \
