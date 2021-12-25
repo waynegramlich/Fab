@@ -1,22 +1,22 @@
 <h1>Tree:</h1>
-<p>Tree: ModFab tree management.</p>
+<p>Tree: Fab tree management.</p>
 <p>The Tree package provides a tree of nodes that mostly corresponds to a FreeCAD tree
 as shown in the FreeCAD model view.</p>
-<p>The base class is ModFabNode organized as follows:</p>
+<p>The base class is FabNode organized as follows:</p>
 <ul>
-<li>ModFabNode: Tree node base class (can be either a &quot;leaf&quot; or &quot;interior node.)
+<li>FabNode: Tree node base class (can be either a &quot;leaf&quot; or &quot;interior node.)
 <ul>
-<li>ModFabInterior: An interior TreeNode with children.
+<li>FabInterior: An interior TreeNode with children.
 <ul>
-<li>ModFabRoot: The Root of the ModFabNode tree.</li>
-<li>ModFabGroup: A Group of ModFabNode's in a tree.
+<li>FabRoot: The Root of the FabNode tree.</li>
+<li>FabGroup: A Group of FabNode's in a tree.
 <ul>
-<li>ModFabFile: A Node that corresponds to a <code>.fcstd</code> file.</li>
-<li>ModFabAssembly: A group of ModFabAssembly's and/or ModFabPart's.  (Defined in ??)</li>
+<li>FabFile: A Node that corresponds to a <code>.fcstd</code> file.</li>
+<li>FabAssembly: A group of FabAssembly's and/or FabPart's.  (Defined in ??)</li>
 </ul>
 </li>
-<li>ModFabSolid: A physical part that is modeled.  (Defined in Solid)</li>
-<li>ModFabLink: ???</li>
+<li>FabSolid: A physical part that is modeled.  (Defined in Solid)</li>
+<li>FabLink: ???</li>
 </ul>
 </li>
 </ul>
@@ -24,17 +24,17 @@ as shown in the FreeCAD model view.</p>
 </ul>
 <p>The Tree enforces the following constraints:</p>
 <ul>
-<li>Each ModFabNode name must be compatible with a Python variable name
+<li>Each FabNode name must be compatible with a Python variable name
 (i.e. upper/lower letters, digits, and underscores with the character being a letter.)</li>
-<li>All of the children of a ModFabNode must have distinct names.</li>
+<li>All of the children of a FabNode must have distinct names.</li>
 <li>A node may occur only once in the Tree (i.e. DAG = Direct Acyclic Graph.)</li>
-<li>The ModFabRoot must be named 'Root'.</li>
+<li>The FabRoot must be named 'Root'.</li>
 </ul>
-<p>Each ModFabNode has a <em>FullPath</em> property which is string that contains the ModFabNode Names
-from the ModFabRoot downwards separated by a '.'.  The &quot;Root.&quot; is skipped because it is redundant.
-Each ModFabNode has an Parent attribute that specifies the parent ModFabNode</p>
-<p>ModFabNode implement</p>
-<p>The ModFabNode base class implements three recursive methods:</p>
+<p>Each FabNode has a <em>FullPath</em> property which is string that contains the FabNode Names
+from the FabRoot downwards separated by a '.'.  The &quot;Root.&quot; is skipped because it is redundant.
+Each FabNode has an Parent attribute that specifies the parent FabNode</p>
+<p>FabNode implement</p>
+<p>The FabNode base class implements three recursive methods:</p>
 <ul>
 <li>configure() -&gt; Tuple[str, ...]:
 Recursively propagate configuration values during the configuration phase.
@@ -51,7 +51,7 @@ The higher level node stuffs a value into the dictionary and lower values can re
 Any values stuffed into a lower level are not accessed by the upper level because by convention
 each recursion step makes a shallow dictionary copy of the context before passing down to the
 next level down.  This is shown below:</p>
-<pre><code> # Iterate across children ModFabNode's:
+<pre><code> # Iterate across children FabNode's:
  for child in self.Children:
      child.visit(context.copy(), ...)
 </code></pre>
@@ -61,15 +61,15 @@ next level down.  This is shown below:</p>
 This phase does consistency checking and fills in values such as FullPath.
 There are no user hooks in this phase.</li>
 <li>Configuration Phase:
-The configuration phase is where constraints get propagated between ModFabNode's.  Each
-ModFabNode recomputes its configuration value using a method called <em>configure</em>.  This method
-can do this by read other values from other ModFabNode's elsewhere in ModFabRoot tree then
+The configuration phase is where constraints get propagated between FabNode's.  Each
+FabNode recomputes its configuration value using a method called <em>configure</em>.  This method
+can do this by read other values from other FabNode's elsewhere in FabRoot tree then
 computing new values.  This is done repeatably until no more configuration values change or
 until it is pretty clear that there is cyclic dependency will not converge.  When convergence
 fails, the list of configuration values that did not stabilize are presented.  If there are no
 convergence issues, the next phase occurs.</li>
 <li>Check Phase:
-The check phase recursively performs sanity checking for each ModFabNode in the tree.
+The check phase recursively performs sanity checking for each FabNode in the tree.
 The result is a list of error messages.  If the are no errors, the next phase occurs.</li>
 <li>Build Phase:
 The build phase recursively performs the build operations.  This includes generating
@@ -77,19 +77,19 @@ the FreeCAD solids/assemblies and the associated output files.</li>
 </ul>
 <h2>Table of Contents (alphabetical order):</h2>
 <ul>
-<li>1 Class: <a href="#tree--modfabinterior">ModFabInterior</a>:</li>
-<li>2 Class: <a href="#tree--modfabnode">ModFabNode</a>:
+<li>1 Class: <a href="#tree--fabinterior">FabInterior</a>:</li>
+<li>2 Class: <a href="#tree--fabnode">FabNode</a>:
 <ul>
-<li>2.1 <a href="#tree----check">check()</a>: Check ModFabNode for errors.</li>
-<li>2.2 <a href="#tree----configure">configure()</a>: Configure ModFabNode.</li>
+<li>2.1 <a href="#tree----check">check()</a>: Check FabNode for errors.</li>
+<li>2.2 <a href="#tree----configure">configure()</a>: Configure FabNode.</li>
 <li>2.3 <a href="#tree----configurations-append">configurations_append()</a>: Append specified attributes to configurations list.</li>
-<li>2.4 <a href="#tree----produce">produce()</a>: Produce ModFabNode.</li>
+<li>2.4 <a href="#tree----produce">produce()</a>: Produce FabNode.</li>
 </ul>
 </li>
-<li>3 Class: <a href="#tree--modfabroot">ModFabRoot</a>:
+<li>3 Class: <a href="#tree--fabroot">FabRoot</a>:
 <ul>
-<li>3.1 <a href="#tree----configure-constraints">configure_constraints()</a>: Configure the ModFabNode tree until is constraints are stable.</li>
-<li>3.2 <a href="#tree----produce">produce()</a>: Produce ModFabNode.</li>
+<li>3.1 <a href="#tree----configure-constraints">configure_constraints()</a>: Configure the FabNode tree until is constraints are stable.</li>
+<li>3.2 <a href="#tree----produce">produce()</a>: Produce FabNode.</li>
 </ul>
 </li>
 <li>4 Class: <a href="#tree--mynode1">MyNode1</a>:
@@ -118,42 +118,42 @@ the FreeCAD solids/assemblies and the associated output files.</li>
 </ul>
 </li>
 </ul>
-<h2><a name="tree--modfabinterior"></a>1 Class ModFabInterior:</h2>
+<h2><a name="tree--fabinterior"></a>1 Class FabInterior:</h2>
 <p>Represents A
 Attributes:</p>
 <ul>
-<li>Inherited Attributes: <em>Name</em> (str), <em>FullPath</em> (str), <em>Parent</em> (ModFabNod).</li>
-<li><em>Children</em> (Tuple[ModFabNode, ...): The children ModFabNode's.</li>
-<li><em>ChildrenNames</em> (Tuple[str, ...]): The name's of the children ModFabNode's.</li>
+<li>Inherited Attributes: <em>Name</em> (str), <em>FullPath</em> (str), <em>Parent</em> (FabNod).</li>
+<li><em>Children</em> (Tuple[FabNode, ...): The children FabNode's.</li>
+<li><em>ChildrenNames</em> (Tuple[str, ...]): The name's of the children FabNode's.</li>
 </ul>
-<h2><a name="tree--modfabnode"></a>2 Class ModFabNode:</h2>
+<h2><a name="tree--fabnode"></a>2 Class FabNode:</h2>
 <p>Represents one node in the tree.
 Attributes:</p>
 <ul>
-<li><em>Name</em> (str): The ModFabNode name.</li>
-<li><em>Parent</em> (ModFabNode): The ModFabNode parent.  (Filled in)</li>
-<li><em>FullPath</em> (str):  The ModFabNode full path.  (Filled in)</li>
+<li><em>Name</em> (str): The FabNode name.</li>
+<li><em>Parent</em> (FabNode): The FabNode parent.  (Filled in)</li>
+<li><em>FullPath</em> (str):  The FabNode full path.  (Filled in)</li>
 <li>*AttributeNames ([Tuple[str, ...]):
 Attribute names to track during configuration.  (Default: () ).
 This field is set in the user's <em>configure</em>() method.</li>
 </ul>
-<h3><a name="tree----check"></a>2.1 <code>ModFabNode.</code>check():</h3>
-<p>ModFabNode.check(self) -&gt; typing.Tuple[str, ...]:</p>
-<p>Check ModFabNode for errors.</p>
-<h3><a name="tree----configure"></a>2.2 <code>ModFabNode.</code>configure():</h3>
-<p>ModFabNode.configure(self, tracing: str = '') -&gt; None:</p>
-<p>Configure ModFabNode.</p>
-<h3><a name="tree----configurations-append"></a>2.3 <code>ModFabNode.</code>configurations_append():</h3>
-<p>ModFabNode.configurations_append(self, configurations: typing.List[str], tracing: str = '') -&gt; None:</p>
+<h3><a name="tree----check"></a>2.1 <code>FabNode.</code>check():</h3>
+<p>FabNode.check(self) -&gt; typing.Tuple[str, ...]:</p>
+<p>Check FabNode for errors.</p>
+<h3><a name="tree----configure"></a>2.2 <code>FabNode.</code>configure():</h3>
+<p>FabNode.configure(self, tracing: str = '') -&gt; None:</p>
+<p>Configure FabNode.</p>
+<h3><a name="tree----configurations-append"></a>2.3 <code>FabNode.</code>configurations_append():</h3>
+<p>FabNode.configurations_append(self, configurations: typing.List[str], tracing: str = '') -&gt; None:</p>
 <p>Append specified attributes to configurations list.</p>
-<h3><a name="tree----produce"></a>2.4 <code>ModFabNode.</code>produce():</h3>
-<p>ModFabNode.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
-<p>Produce ModFabNode.</p>
-<h2><a name="tree--modfabroot"></a>3 Class ModFabRoot:</h2>
-<p>The Root mode a ModFabNode tree.</p>
-<h3><a name="tree----configure-constraints"></a>3.1 <code>ModFabRoot.</code>configure_constraints():</h3>
-<p>ModFabRoot.configure_constraints(self, maximum_iterations: int = 20, verbosity: int = 4, tracing: str = '') -&gt; None:</p>
-<p>Configure the ModFabNode tree until is constraints are stable.
+<h3><a name="tree----produce"></a>2.4 <code>FabNode.</code>produce():</h3>
+<p>FabNode.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
+<p>Produce FabNode.</p>
+<h2><a name="tree--fabroot"></a>3 Class FabRoot:</h2>
+<p>The Root mode a FabNode tree.</p>
+<h3><a name="tree----configure-constraints"></a>3.1 <code>FabRoot.</code>configure_constraints():</h3>
+<p>FabRoot.configure_constraints(self, maximum_iterations: int = 20, verbosity: int = 4, tracing: str = '') -&gt; None:</p>
+<p>Configure the FabNode tree until is constraints are stable.
 Arguments:</p>
 <ul>
 <li><em>maximum_iterations</em> (int): The maximum number of iterations (default: 20).</li>
@@ -162,16 +162,16 @@ Arguments:</p>
 1: Iteration messages only.
 N: Iteration messages with N-1 of the differences:</li>
 </ul>
-<h3><a name="tree----produce"></a>3.2 <code>ModFabRoot.</code>produce():</h3>
-<p>ModFabRoot.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
-<p>Produce ModFabNode.</p>
+<h3><a name="tree----produce"></a>3.2 <code>FabRoot.</code>produce():</h3>
+<p>FabRoot.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
+<p>Produce FabNode.</p>
 <h2><a name="tree--mynode1"></a>4 Class MyNode1:</h2>
-<p>First ModFabNode.</p>
+<p>First FabNode.</p>
 <h3><a name="tree----configure"></a>4.1 <code>MyNode1.</code>configure():</h3>
 <p>MyNode1.configure(self, tracing: str = '') -&gt; None:</p>
 <p>Configure MyNode1.</p>
 <h2><a name="tree--mynode2"></a>5 Class MyNode2:</h2>
-<p>MyNode1: First ModFabNode.</p>
+<p>MyNode1: First FabNode.</p>
 <h3><a name="tree----configure"></a>5.1 <code>MyNode2.</code>configure():</h3>
 <p>MyNode2.configure(self, tracing: str = '') -&gt; None:</p>
 <p>Configure MyNode2.</p>
@@ -186,7 +186,7 @@ N: Iteration messages with N-1 of the differences:</li>
 <p>MyNode2B.configure(self, tracing: str = '') -&gt; None:</p>
 <p>Configure MyNode2B.</p>
 <h2><a name="tree--mynode3"></a>8 Class MyNode3:</h2>
-<p>MyNode1: First ModFabNode.</p>
+<p>MyNode1: First FabNode.</p>
 <h3><a name="tree----configure"></a>8.1 <code>MyNode3.</code>configure():</h3>
 <p>MyNode3.configure(self, tracing: str = '') -&gt; None:</p>
 <p>Configure MyNode3.</p>

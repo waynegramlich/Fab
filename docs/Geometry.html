@@ -1,0 +1,69 @@
+<h1>Geometry: Solid: A module for constructing 3D solids.</h1>
+<h2>Table of Contents (alphabetical order):</h2>
+<ul>
+<li>1 Class: <a href="#geometry--fabcircle">FabCircle</a>:
+<ul>
+<li>1.1 <a href="#geometry----produce">produce()</a>: Produce the FreeCAD objects needed for FabPolygon.</li>
+<li>1.2 <a href="#geometry----get-geometries">get_geometries()</a>: Return the FabPolygon lines and arcs.</li>
+</ul>
+</li>
+<li>2 Class: <a href="#geometry--fabgeometry">FabGeometry</a>:
+<ul>
+<li>2.1 <a href="#geometry----produce">produce()</a>: Produce the necessary FreeCAD objects for the FabGeometry.</li>
+</ul>
+</li>
+<li>3 Class: <a href="#geometry--fabpolygon">FabPolygon</a>:
+<ul>
+<li>3.1 <a href="#geometry----get-geometries">get_geometries()</a>: Return the FabPolygon lines and arcs.</li>
+<li>3.2 <a href="#geometry----produce">produce()</a>: Produce the FreeCAD objects needed for FabPolygon.</li>
+</ul>
+</li>
+</ul>
+<h2><a name="geometry--fabcircle"></a>1 Class FabCircle:</h2>
+<p>A circle with a center and a radius.
+This is actually a sphere of at a specified location and diameter.  It gets cut into
+circle later on.</p>
+<p>Attributes:</p>
+<ul>
+<li><em>Center</em> (Vector): The circle center.</li>
+<li><em>Diameter</em> (float): The diameter in radians.</li>
+</ul>
+<h3><a name="geometry----produce"></a>1.1 <code>FabCircle.</code>produce():</h3>
+<p>FabCircle.produce(self, context: typing.Dict[str, typing.Any], prefix: str) -&gt; typing.Tuple[Part.Part2DObject, ...]:</p>
+<p>Produce the FreeCAD objects needed for FabPolygon.</p>
+<h3><a name="geometry----get-geometries"></a>1.2 <code>FabCircle.</code>get_geometries():</h3>
+<p>FabCircle.get_geometries(self) -&gt; typing.Tuple[Geometry._Geometry, ...]:</p>
+<p>Return the FabPolygon lines and arcs.</p>
+<h2><a name="geometry--fabgeometry"></a>2 Class FabGeometry:</h2>
+<p>The base class for FabPolygon and FabCircle.</p>
+<h3><a name="geometry----produce"></a>2.1 <code>FabGeometry.</code>produce():</h3>
+<p>FabGeometry.produce(self, model_context: typing.Any, prefix: str) -&gt; typing.Tuple[Part.Part2DObject, ...]:</p>
+<p>Produce the necessary FreeCAD objects for the FabGeometry.</p>
+<h2><a name="geometry--fabpolygon"></a>3 Class FabPolygon:</h2>
+<p>An immutable polygon with rounded corners.
+A FabPolygon is represented as a sequence of corners (i.e. a Vector) where each corner can
+optionally be filleted with a radius.  In order to make it easier to use, a corner can be
+specified as simple Vector or as a tuple that specifes a Vector and a radius.  The radius
+is in millimeters and can be provided as either Python int or float.  When an explicit
+fillet radius is not specified, higher levels in the software stack will typically substitute
+in a deburr radius for external corners and an interal tool radius for internal corners.
+FabPolygon's are frozen and can not be modified after creation.</p>
+<p>Example:
+polygon: Fab.FabPolyon = Fab.FabPolygon((
+Vector(-10, -10, 0),  # Lower left (no radius)
+Vector(10, -10, 0),  # Lower right (no radius)
+(Vector(10, 10, 0), 5),  # Upper right (5mm radius)
+(Vector(-0, 10, 0), 5.5),  # Upper right (5.5mm radius)
+), &quot;Name&quot;)</p>
+<p>Attributes:</p>
+<ul>
+<li><em>Name</em> (str): The name of the polygon.  (Default: &quot;&quot;)</li>
+<li><em>Corners</em> (Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]):
+See description below for more on corners.</li>
+</ul>
+<h3><a name="geometry----get-geometries"></a>3.1 <code>FabPolygon.</code>get_geometries():</h3>
+<p>FabPolygon.get_geometries(self, contact: Base.Vector, Normal: Base.Vector) -&gt; typing.Tuple[Geometry._Geometry, ...]:</p>
+<p>Return the FabPolygon lines and arcs.</p>
+<h3><a name="geometry----produce"></a>3.2 <code>FabPolygon.</code>produce():</h3>
+<p>FabPolygon.produce(self, context: typing.Dict[str, typing.Any], prefix: str) -&gt; typing.Tuple[Part.Part2DObject, ...]:</p>
+<p>Produce the FreeCAD objects needed for FabPolygon.</p>

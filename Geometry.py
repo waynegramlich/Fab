@@ -307,13 +307,13 @@ class _Line(_Geometry):
 # _Fillet:
 @dataclass
 class _Fillet(object):
-    """_Fillet: An object that represents one fillet of a ModFabPolygon.
+    """_Fillet: An object that represents one fillet of a FabPolygon.
 
     Attributes:
     * *Apex* (Vector): The apex corner point for the fillet.
     * *Radius* (float): The fillet radius in millimeters.
-    * *Before* (_Fillet): The previous _Fillet in the ModFabPolygon.
-    * *After* (_Fillet): The next _Fillet in the ModFabPolygon.
+    * *Before* (_Fillet): The previous _Fillet in the FabPolygon.
+    * *After* (_Fillet): The next _Fillet in the FabPolygon.
     * *Arc* (Optional[_Arc]): The fillet Arc if Radius is non-zero.
     * *Line* (Optional[_Line]): The line that connects to the previous _Fillet
 
@@ -485,21 +485,21 @@ class _Fillet(object):
         return tuple(geometries)
 
 
-# ModFabGeometry:
+# FabGeometry:
 @dataclass(frozen=True)
-class ModFabGeometry(object):
-    """ModFabGeometry: The base class for ModFabPolygon and ModFabCircle."""
+class FabGeometry(object):
+    """FabGeometry: The base class for FabPolygon and FabCircle."""
 
-    # ModFabGeometry.produce():
+    # FabGeometry.produce():
     def produce(self, model_context: Any, prefix: str) -> Tuple[Part.Part2DObject, ...]:
-        """Produce the necessary FreeCAD objects for the ModFabGeometry."""
+        """Produce the necessary FreeCAD objects for the FabGeometry."""
         raise NotImplementedError(f"{type(self)}.produce() is not implemented")
 
 
-# ModFabCircle:
+# FabCircle:
 @dataclass(frozen=True)
-class ModFabCircle(ModFabGeometry):
-    """ModFabCircle: A circle with a center and a radius.
+class FabCircle(FabGeometry):
+    """FabCircle: A circle with a center and a radius.
 
     This is actually a sphere of at a specified location and diameter.  It gets cut into
     circle later on.
@@ -513,7 +513,7 @@ class ModFabCircle(ModFabGeometry):
     Center: Vector
     Diameter: float
 
-    # ModFabCircle.__post_init__():
+    # FabCircle.__post_init__():
     def __post_init__(self) -> None:
         """Make private copy of Center."""
         if self.Diameter <= 0.0:
@@ -522,9 +522,9 @@ class ModFabCircle(ModFabGeometry):
         copy: Vector = Vector()
         object.__setattr__(self, "Center", self.Center + copy)  # Makes a copy.
 
-    # ModFabCircle.produce():
+    # FabCircle.produce():
     def produce(self, context: Dict[str, Any], prefix: str) -> Tuple[Part.Part2DObject, ...]:
-        """Produce the FreeCAD objects needed for ModFabPolygon."""
+        """Produce the FreeCAD objects needed for FabPolygon."""
         geometries: Tuple[_Geometry, ...] = self.get_geometries()
         geometry: _Geometry
         index: int
@@ -535,43 +535,43 @@ class ModFabCircle(ModFabGeometry):
             part_geometries.append(part_geometry)
         return tuple(part_geometries)
 
-    # ModFabCircle.get_geometries():
+    # FabCircle.get_geometries():
     def get_geometries(self) -> Tuple[_Geometry, ...]:
-        """Return the ModFabPolygon lines and arcs."""
+        """Return the FabPolygon lines and arcs."""
         return (_Circle(self.Center, self.Diameter),)
 
     @staticmethod
-    # ModFabCircle._unit_tests():
+    # FabCircle._unit_tests():
     def _unit_tests():
-        """Run ModFabCircle unit tests."""
+        """Run FabCircle unit tests."""
         center: Vector = Vector(1, 2, 3)
         try:
-            ModFabCircle(center, 0.0)
+            FabCircle(center, 0.0)
             assert False
         except ValueError as value_error:
             assert str(value_error) == "Diameter (0.0) must be positive.", value_error
         try:
-            ModFabCircle(center, -1.0)
+            FabCircle(center, -1.0)
             assert False
         except ValueError as value_error:
             assert str(value_error) == "Diameter (-1.0) must be positive.", value_error
 
 
-# ModFabPolygon:
+# FabPolygon:
 @dataclass(frozen=True)
-class ModFabPolygon(ModFabGeometry):
-    """ModFabPolygon: An immutable polygon with rounded corners.
+class FabPolygon(FabGeometry):
+    """FabPolygon: An immutable polygon with rounded corners.
 
-    A ModFabPolygon is represented as a sequence of corners (i.e. a Vector) where each corner can
+    A FabPolygon is represented as a sequence of corners (i.e. a Vector) where each corner can
     optionally be filleted with a radius.  In order to make it easier to use, a corner can be
     specified as simple Vector or as a tuple that specifes a Vector and a radius.  The radius
     is in millimeters and can be provided as either Python int or float.  When an explicit
     fillet radius is not specified, higher levels in the software stack will typically substitute
     in a deburr radius for external corners and an interal tool radius for internal corners.
-    ModFabPolygon's are frozen and can not be modified after creation.
+    FabPolygon's are frozen and can not be modified after creation.
 
     Example:
-         polygon: ModFab.ModFabPolyon = ModFab.ModFabPolygon((
+         polygon: Fab.FabPolyon = Fab.FabPolygon((
              Vector(-10, -10, 0),  # Lower left (no radius)
              Vector(10, -10, 0),  # Lower right (no radius)
              (Vector(10, 10, 0), 5),  # Upper right (5mm radius)
@@ -591,7 +591,7 @@ class ModFabPolygon(ModFabGeometry):
 
     EPSILON = 1.0e-8
 
-    # ModFabPolygon.__post_init__():
+    # FabPolygon.__post_init__():
     def __post_init__(self) -> None:
         """Verify that the corners passed in are correct."""
         corner: Union[Vector, Tuple[Vector, Union[int, float]]]
@@ -633,7 +633,7 @@ class ModFabPolygon(ModFabGeometry):
         # self._compute_arcs()
         # self._compute_lines()
 
-    # ModFabPolygon._double_link():
+    # FabPolygon._double_link():
     def _double_link(self) -> None:
         """Double link the _Fillet's together."""
         fillets: Tuple[_Fillet, ...] = self._Fillets
@@ -644,7 +644,7 @@ class ModFabPolygon(ModFabGeometry):
             fillet.Before = fillets[(index - 1) % size]
             fillet.After = fillets[(index + 1) % size]
 
-    # ModFabPolygon._radii_check():
+    # FabPolygon._radii_check():
     def _radii_check(self) -> str:
         """Check for radius overlap errors."""
         at_fillet: _Fillet
@@ -658,11 +658,11 @@ class ModFabPolygon(ModFabGeometry):
                         "between {at_fillet.Before} and {after_fillet.After}")
         return ""
 
-    # ModFabPolygon._colinear_check():
+    # FabPolygon._colinear_check():
     def _colinear_check(self) -> str:
         """Check for colinearity errors."""
         at_fillet: _Fillet
-        epsilon: float = ModFabPolygon.EPSILON
+        epsilon: float = FabPolygon.EPSILON
         degrees180: float = math.pi
         for at_fillet in self._Fillets:
             before_apex: Vector = at_fillet.Before.Apex
@@ -675,7 +675,7 @@ class ModFabPolygon(ModFabGeometry):
                 return f"Points [{before_apex}, {at_apex}, {after_apex}] are colinear"
         return ""
 
-    # ModFabPolygon._compute_arcs():
+    # FabPolygon._compute_arcs():
     def _compute_arcs(self) -> None:
         """Create any Arc's needed for non-zero radius _Fillet's."""
         fillet: _Fillet
@@ -683,7 +683,7 @@ class ModFabPolygon(ModFabGeometry):
             if fillet.Radius > 0.0:
                 fillet.Arc = fillet.compute_arc()
 
-    # ModFabPolygon._compute_lines():
+    # FabPolygon._compute_lines():
     def _compute_lines(self) -> None:
         """Create Create any Line's need for _Fillet's."""
         fillet: _Fillet
@@ -691,19 +691,19 @@ class ModFabPolygon(ModFabGeometry):
             before: _Fillet = fillet.Before
             start: Vector = before.Arc.Finish if before.Arc else before.Apex
             finish: Vector = fillet.Arc.Start if fillet.Arc else fillet.Apex
-            if (start - finish).Length > ModFabPolygon.EPSILON:
+            if (start - finish).Length > FabPolygon.EPSILON:
                 fillet.Line = _Line(start, finish)
 
-    # ModFabPolygon.get_geometries():
+    # FabPolygon.get_geometries():
     def get_geometries(self, contact: Vector, Normal: Vector) -> Tuple[_Geometry, ...]:
-        """Return the ModFabPolygon lines and arcs."""
+        """Return the FabPolygon lines and arcs."""
         geometries: List[_Geometry] = []
         fillet: _Fillet
         for fillet in self._Fillets:
             geometries.extend(fillet.get_geometries())
         return tuple(geometries)
 
-    # ModFabPolygon._plane_2d_project():
+    # FabPolygon._plane_2d_project():
     def _plane_2d_project(self, contact: Vector, normal: Vector) -> None:
         """Update the _Fillet's to be projected onto a Plane.
 
@@ -716,9 +716,9 @@ class ModFabPolygon(ModFabGeometry):
         for fillet in self._Fillets:
             fillet.plane_2d_project(contact, normal)
 
-    # ModFabPolygon.produce():
+    # FabPolygon.produce():
     def produce(self, context: Dict[str, Any], prefix: str) -> Tuple[Part.Part2DObject, ...]:
-        """Produce the FreeCAD objects needed for ModFabPolygon."""
+        """Produce the FreeCAD objects needed for FabPolygon."""
         # Extract mount plane *contact* and *normal* from *context*:
         mount_contact = cast(Vector, context["mount_contact"])
         mount_normal = cast(Vector, context["mount_normal"])
@@ -749,7 +749,7 @@ class ModFabPolygon(ModFabGeometry):
             part_geometries.append(part_geometry)
         return tuple(part_geometries)
 
-    # ModFabPolygon._unit_tests():
+    # FabPolygon._unit_tests():
     @staticmethod
     def _unit_tests() -> None:
         """Do some unit tests."""
@@ -757,7 +757,7 @@ class ModFabPolygon(ModFabGeometry):
         v2: Vector = Vector(40, -20, 0)
         v3: Vector = Vector(40, 20, 0)
         v4: Vector = Vector(-40, 20, 0)
-        polygon: ModFabPolygon = ModFabPolygon("TestPolygon", (v1, v2, (v3, 10), v4))
+        polygon: FabPolygon = FabPolygon("TestPolygon", (v1, v2, (v3, 10), v4))
         _ = polygon
 
         # geometries: Tuple[_Geometry, ...] = polygon.get_geometries()
@@ -773,6 +773,6 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    ModFabCircle._unit_tests()
-    ModFabPolygon._unit_tests()
+    FabCircle._unit_tests()
+    FabPolygon._unit_tests()
     main()

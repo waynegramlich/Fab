@@ -2,14 +2,14 @@
 """Utilities: Convenice class.
 
 The Utilitly classes are:
-* ModFabBox:
+* FabBox:
   This similar to the FreeCAD BoundBox class, but with way more attributes.
   It introduces some consistent attributes for accessing the faces, corners and edges
   of a bounding box.  Alas, for technical reasons, this not a true sub-class of BoundBox.
   Also, the name is shortened do "box" rather than "bounding box".
-* ModFabCheck:
+* FabCheck:
   This is some common code to check argument types for public functions.
-* ModFabMaterial:
+* FabMaterial:
   This is a class that describes material properties.
   sub-class of Vector.
 
@@ -31,12 +31,12 @@ from dataclasses import dataclass, field
 from typing import Any, cast, List, Dict, Sequence, Tuple, Union
 
 
-# ModFabBox:
+# FabBox:
 @dataclass(frozen=True, init=False)
-class ModFabBox:
-    """ModFabBox: X/Y/Z Axis Aligned Cubiod.
+class FabBox:
+    """FabBox: X/Y/Z Axis Aligned Cubiod.
 
-    An ModFabBox is represents a cuboid (i.e. a rectangular parallelpiped, or right prism) where
+    An FabBox is represents a cuboid (i.e. a rectangular parallelpiped, or right prism) where
     the edges are aligned with the X, Y, and Z axes.  This is basically equivalent to the FreeCad
     BoundBox object, but with way more attributes to access various points on the cuboid surface.
 
@@ -105,14 +105,14 @@ class ModFabBox:
     YMax: float = field(init=False)
     ZMax: float = field(init=False)
 
-    # ModFabBox.__init__():
+    # FabBox.__init__():
     def __init__(self,
-                 corners: Sequence[Union[Vector, BoundBox, "ModFabBox"]],
+                 corners: Sequence[Union[Vector, BoundBox, "FabBox"]],
                  name: str = "") -> None:
-        """Initialize a ModFabBox.
+        """Initialize a FabBox.
 
         Arguments:
-          * *corners* (Sequence[Union[Vector, BoundBox, ModFabBox]]):
+          * *corners* (Sequence[Union[Vector, BoundBox, FabBox]]):
             A sequence of points or boxes to enclose.
 
         Raises:
@@ -123,7 +123,7 @@ class ModFabBox:
             raise ValueError(f"{corners} is neither a List nor a Tuple")
 
         # Convert *corners* into *vectors*:
-        corner: Union[Vector, BoundBox, ModFabBox]
+        corner: Union[Vector, BoundBox, FabBox]
         vectors: List[Vector] = []
         index: int
         for index, corner in enumerate(corners):
@@ -132,12 +132,12 @@ class ModFabBox:
             elif isinstance(corner, BoundBox):
                 vectors.append(Vector(corner.XMin, corner.YMin, corner.ZMin))
                 vectors.append(Vector(corner.XMax, corner.YMax, corner.ZMax))
-            elif isinstance(corner, ModFabBox):
+            elif isinstance(corner, FabBox):
                 vectors.append(corner.TNE)
                 vectors.append(corner.BSW)
             else:
                 raise ValueError(
-                    f"{corner} is not of type Vector/BoundBox/ModFabBox")
+                    f"{corner} is not of type Vector/BoundBox/FabBox")
         if not vectors:
             raise ValueError("Corners sequence is empty")
 
@@ -368,9 +368,9 @@ class ModFabBox:
         """Delta Z."""
         return self.ZMax - self.ZMin
 
-    # ModFabBox.reorient():
-    def reorient(self, placement: Placement) -> "ModFabBox":
-        """Reorient ModFabBox given a Placement.
+    # FabBox.reorient():
+    def reorient(self, placement: Placement) -> "FabBox":
+        """Reorient FabBox given a Placement.
 
         Note after the *placement* is applied, the resulting box is still rectilinear with the
         X/Y/Z axes.  In particular, box volume is *not* conserved.
@@ -382,16 +382,16 @@ class ModFabBox:
         """
         reoriented_bsw: Vector = placement * self.BSW
         reoriented_tne: Vector = placement * self.TNE
-        return ModFabBox((reoriented_bsw, reoriented_tne))
+        return FabBox((reoriented_bsw, reoriented_tne))
 
     @staticmethod
     def _unit_tests() -> None:
-        """Perform ModFabBox unit tests."""
+        """Perform FabBox unit tests."""
         # Initial tests:
         bound_box: BoundBox = BoundBox(-1.0, -2.0, -3.0, 1.0, 2.0, 3.0)
         assert bound_box == bound_box
-        box: ModFabBox = ModFabBox((bound_box,))
-        assert isinstance(box, ModFabBox)
+        box: FabBox = FabBox((bound_box,))
+        assert isinstance(box, FabBox)
 
         # FreeCAD.BoundBox.__eq__() appears to only compare ids for equality.
         # Thus, it is necessary to test that each value is equal by hand.
@@ -403,7 +403,7 @@ class ModFabBox:
         assert box.BB.ZMax == bound_box.ZMax
 
         # Verify __str__() works:
-        want: str = f"ModFabBox(XMin=-1.0, YMin=-2.0, ZMin=-3.0, XMax=1.0, YMax=2.0, ZMax=3.0)"
+        want: str = f"FabBox(XMin=-1.0, YMin=-2.0, ZMin=-3.0, XMax=1.0, YMax=2.0, ZMax=3.0)"
         assert f"{box}" == want, f"'{box}' != '{want}'"
 
         def check(vector: Vector, x: float, y: float, z: float) -> bool:
@@ -459,35 +459,35 @@ class ModFabBox:
         assert check(box.DT, 0, 0, 3), "DT"
         assert check(box.DW, -1, 0, 0), "DW"
 
-        # Test ModFabBox() contructors:
+        # Test FabBox() contructors:
         vector1: Vector = Vector(-1, -2, -3)
         vector2: Vector = Vector(1, 2, 3)
-        new_box: ModFabBox = ModFabBox((vector1, vector2))
+        new_box: FabBox = FabBox((vector1, vector2))
         assert f"{new_box.BB}" == f"{box.BB}"
-        next_box: ModFabBox = ModFabBox((bound_box, new_box))
-        want = "ModFabBox(XMin=-1.0, YMin=-2.0, ZMin=-3.0, XMax=1.0, YMax=2.0, ZMax=3.0)"
+        next_box: FabBox = FabBox((bound_box, new_box))
+        want = "FabBox(XMin=-1.0, YMin=-2.0, ZMin=-3.0, XMax=1.0, YMax=2.0, ZMax=3.0)"
         assert f"{next_box}" == want, f"'{next_box}' != '{want}'"
         assert next_box.__repr__() == want
         assert next_box.__str__() == want
         # Do some error checking:
         try:
-            ModFabBox(())
+            FabBox(())
         except ValueError as value_error:
             assert str(value_error) == "Corners sequence is empty", str(value_error)
         try:
-            ModFabBox(cast(List, 123))  # Force invalid argument type.
+            FabBox(cast(List, 123))  # Force invalid argument type.
         except ValueError as value_error:
             assert str(value_error) == "123 is neither a List nor a Tuple", str(value_error)
         try:
-            ModFabBox(cast(List, [123]))  # Force invalid corner type
+            FabBox(cast(List, [123]))  # Force invalid corner type
         except ValueError as value_error:
-            assert str(value_error) == "123 is not of type Vector/BoundBox/ModFabBox"
+            assert str(value_error) == "123 is not of type Vector/BoundBox/FabBox"
 
 
-# ModFabCheck:
+# FabCheck:
 @dataclass(frozen=True)
-class ModFabCheck(object):
-    """ModFabCheck: Check arguments for type mismatch errors.
+class FabCheck(object):
+    """FabCheck: Check arguments for type mismatch errors.
 
     Attributes:
     * *name* (str):
@@ -497,21 +497,21 @@ class ModFabCheck(object):
       `float`, `MyClass`, etc.   A constrained type is a tuple of the form (str, Any, Any, ...)
       and are discussed further below.
 
-    An ModFabCheck contains is used to type check a single function argument.
-    The static method `ModFabCheck.check()` takes a list of argument values and the
-    corresponding tuple ModFabCheck's and verifies that they are correct.
+    An FabCheck contains is used to type check a single function argument.
+    The static method `FabCheck.check()` takes a list of argument values and the
+    corresponding tuple FabCheck's and verifies that they are correct.
 
     Example 1:
 
          EXAMPLE1_CHECKS = (
-             ModFabCheck("arg1", (int,)),
-             ModFabCheck("arg2", (bool,)),
-             ModFabCheck("arg3", (type(None), MyType),  # Optional[myType]
-             ModFabCheck("arg4," list),   # List[Any]
+             FabCheck("arg1", (int,)),
+             FabCheck("arg2", (bool,)),
+             FabCheck("arg3", (type(None), MyType),  # Optional[myType]
+             FabCheck("arg4," list),   # List[Any]
          )
          def my_function(arg1: int, arg2: bool, arg3: Any, arg4: List[str]) -> None:
              '''Doc string here.'''
-            value_error: str = ModFabCheck.check((arg1, arg2, arg3, arg4), MY_FUNCTION_CHECKS)
+            value_error: str = FabCheck.check((arg1, arg2, arg3, arg4), MY_FUNCTION_CHECKS)
             if value_error:
                 raise ValueError(value_error)
             # Rest of code goes here.
@@ -528,13 +528,13 @@ class ModFabCheck(object):
     Example 2:
 
         EXAMPLE2_CHECKS = (
-            ModFabCheck("arg1", ("+", str)),  # Arg1 must be a non-empty string
-            ModFabCheck("arg2", ("?", str)),  # Arg2 can be a string or None
-            ModFabCheck("arg3", ("+?", str)),  # Arg3 can be a non-empty string or None
-            ModFabCheck("arg4", ("L", str)),  # Arg4 can be a list of strings
-            ModFabCheck("arg5", ("T", str)),  # Arg4 can be a tuple of strings
-            ModFabCheck("arg6", ("S", str)),  # Arg6 can be a list or tuple of strings
-            ModFabCheck("arg7", ("L", (float, int)),  # Arg7 can be a list of mixed float and int
+            FabCheck("arg1", ("+", str)),  # Arg1 must be a non-empty string
+            FabCheck("arg2", ("?", str)),  # Arg2 can be a string or None
+            FabCheck("arg3", ("+?", str)),  # Arg3 can be a non-empty string or None
+            FabCheck("arg4", ("L", str)),  # Arg4 can be a list of strings
+            FabCheck("arg5", ("T", str)),  # Arg4 can be a tuple of strings
+            FabCheck("arg6", ("S", str)),  # Arg6 can be a list or tuple of strings
+            FabCheck("arg7", ("L", (float, int)),  # Arg7 can be a list of mixed float and int
 
     """
 
@@ -551,13 +551,13 @@ class ModFabCheck(object):
             name = t.__class__.__name__
         return name
 
-    # ModFabCheck.check():
+    # FabCheck.check():
     @classmethod
     def check(cls, values: Sequence[Any],
-              checks: Sequence["ModFabCheck"], tracing: str = "") -> str:
+              checks: Sequence["FabCheck"], tracing: str = "") -> str:
         """Return type mismatch error message."""
         if tracing:
-            print(f"{tracing}=>ModFabCheck({values}, {checks}")
+            print(f"{tracing}=>FabCheck({values}, {checks}")
         assert len(values) == len(checks), (
             f"{len(values)} values do not match {len(checks)} checks")
         error: str = ""
@@ -577,9 +577,9 @@ class ModFabCheck(object):
                 print(f"{tracing}{is_list=} {is_tuple=} {is_sequence=} {length=}")
 
             # Get associated *check* and unpack it:
-            check: "ModFabCheck" = checks[index]
+            check: "FabCheck" = checks[index]
             # if not isinstance(check, cls):
-            #     raise ValueError(f"[{index}]:{check} is not ModFabCheck:  {checks}")
+            #     raise ValueError(f"[{index}]:{check} is not FabCheck:  {checks}")
             name: str = check.name
             options: Tuple[Any, ...] = check.options
             # if not options:
@@ -629,7 +629,7 @@ class ModFabCheck(object):
                             if isinstance(element, option):
                                 break
                         else:
-                            type_names = [ModFabCheck._type_name(option)
+                            type_names = [FabCheck._type_name(option)
                                           for option in options]
                             error = (f"[{index}]: {element} ({cls._type_name(element)}) "
                                      f"is not of type {type_names}")
@@ -640,24 +640,24 @@ class ModFabCheck(object):
                         if isinstance(value, option):
                             break  # Type matched
                     else:
-                        type_names = [ModFabCheck._type_name(option)
+                        type_names = [FabCheck._type_name(option)
                                       for option in options]
                         error = (f"Argument '{name}' is {cls._type_name(value)} "
                                  f"which is not one of {type_names}")
                         break
         if tracing:
-            print(f"{tracing}<=ModFabCheck({values}, {checks}=>'{error}'")
+            print(f"{tracing}<=FabCheck({values}, {checks}=>'{error}'")
         return error
 
-    # ModFabCheck.init_show():
+    # FabCheck.init_show():
     @staticmethod
-    def init_show(name: str, arguments: Sequence[Any], checks: Sequence["ModFabCheck"]) -> str:
+    def init_show(name: str, arguments: Sequence[Any], checks: Sequence["FabCheck"]) -> str:
         """Return string representation based in initializer arguments.
 
         Arguments:
         * *name* (str): Full fuction/method name.
         * *arguments* (Sequence[Any]): All argument values.
-        * *checks*: (Sequence[ModFabCheck]): Associated ModFabCheck's.
+        * *checks*: (Sequence[FabCheck]): Associated FabCheck's.
 
         Returns:
         * (str) containing function/method name with associated initialize arguments:
@@ -679,9 +679,9 @@ class ModFabCheck(object):
         argument_value: Any
         results: List[str] = []
         for index, argument_value in enumerate(arguments):
-            check: ModFabCheck = checks[index]
-            if not isinstance(check, ModFabCheck):
-                raise ValueError(f"{check} is not an ModFabCheck")
+            check: FabCheck = checks[index]
+            if not isinstance(check, FabCheck):
+                raise ValueError(f"{check} is not an FabCheck")
             argument_name: str = check.name
             argument_options: Tuple[Any, ...] = check.options
             none_allowed: bool = type(None) in argument_options
@@ -701,30 +701,30 @@ class ModFabCheck(object):
 
     @classmethod
     def _unit_tests(cls):
-        """Run ModFabCheck unit tests."""
-        # Test *ModFabCheck._type_name():
-        assert ModFabCheck._type_name(None) == "NoneType"
-        assert ModFabCheck._type_name(int) == "int"
-        assert ModFabCheck._type_name(float) == "float"
-        assert ModFabCheck._type_name(str) == "str"
-        assert ModFabCheck._type_name({}) == "dict"
-        assert ModFabCheck._type_name([]) == "list"
-        assert ModFabCheck._type_name(()) == "tuple"
-        assert ModFabCheck._type_name(ModFabCheck) == "ModFabCheck"
+        """Run FabCheck unit tests."""
+        # Test *FabCheck._type_name():
+        assert FabCheck._type_name(None) == "NoneType"
+        assert FabCheck._type_name(int) == "int"
+        assert FabCheck._type_name(float) == "float"
+        assert FabCheck._type_name(str) == "str"
+        assert FabCheck._type_name({}) == "dict"
+        assert FabCheck._type_name([]) == "list"
+        assert FabCheck._type_name(()) == "tuple"
+        assert FabCheck._type_name(FabCheck) == "FabCheck"
 
-        # Construct some ModFabCheck's to use in tests below:
-        int_check: ModFabCheck = ModFabCheck("int", (int,))
-        float_check: ModFabCheck = ModFabCheck("float", (float,))
-        number_check: ModFabCheck = ModFabCheck("number", (int, float))
-        str_check: ModFabCheck = ModFabCheck("str", (str,))
-        optional_int: ModFabCheck = ModFabCheck("optional_int", (type(None), int))
-        optional_float: ModFabCheck = ModFabCheck("optional_float", (type(None), float))
-        optional_number: ModFabCheck = ModFabCheck(
+        # Construct some FabCheck's to use in tests below:
+        int_check: FabCheck = FabCheck("int", (int,))
+        float_check: FabCheck = FabCheck("float", (float,))
+        number_check: FabCheck = FabCheck("number", (int, float))
+        str_check: FabCheck = FabCheck("str", (str,))
+        optional_int: FabCheck = FabCheck("optional_int", (type(None), int))
+        optional_float: FabCheck = FabCheck("optional_float", (type(None), float))
+        optional_number: FabCheck = FabCheck(
             "optional_int_float", (type(None), int, float))
-        optional_str: ModFabCheck = ModFabCheck("optional_str", (type(None), str))
+        optional_str: FabCheck = FabCheck("optional_str", (type(None), str))
 
         # All of the *good_pairs* should not generate an error:
-        good_pairs: Sequence[Tuple[Any, ModFabCheck]] = (
+        good_pairs: Sequence[Tuple[Any, FabCheck]] = (
             # Simple matches:
             (1, int_check),
             (1.0, float_check),
@@ -743,14 +743,14 @@ class ModFabCheck(object):
             (None, optional_str),
             ("", optional_str),
         )
-        pair: Tuple[Any, ModFabCheck]
+        pair: Tuple[Any, FabCheck]
         values: Sequence[Any] = tuple([pair[0] for pair in good_pairs])
-        checks: Sequence[ModFabCheck] = tuple([pair[1] for pair in good_pairs])
-        error: str = ModFabCheck.check(values, checks)
+        checks: Sequence[FabCheck] = tuple([pair[1] for pair in good_pairs])
+        error: str = FabCheck.check(values, checks)
         assert not error, f"Unexpected error='{error}'"
 
         # Each of the *bad_pairs* should generate an error:
-        bad_pairs: Sequence[Tuple[Any, ModFabCheck]] = (
+        bad_pairs: Sequence[Tuple[Any, FabCheck]] = (
             (None, int_check),
             (1.0, int_check),
             (None, float_check),
@@ -758,21 +758,21 @@ class ModFabCheck(object):
             (None, number_check),
         )
         value: Any
-        check: ModFabCheck
+        check: FabCheck
         for value, check in bad_pairs:
-            assert ModFabCheck.check((value,), (check,)), (
+            assert FabCheck.check((value,), (check,)), (
                 f"{value=} {check=} did not fail")
 
         # Do some flags based checks:
-        float_list_check: ModFabCheck = ModFabCheck("float_list_check", ("L", float))
-        float_sequence_check: ModFabCheck = ModFabCheck("float_sequence_check", ("S", float))
-        float_tuple_check: ModFabCheck = ModFabCheck("float_tuple_check", ("T", float))
-        int_list_check: ModFabCheck = ModFabCheck("int_list_check", ("L", int))
-        int_sequence_check: ModFabCheck = ModFabCheck("int_sequence_check", ("S", int))
-        int_tuple_check: ModFabCheck = ModFabCheck("int_tuple_check", ("T", int))
-        number_list_check: ModFabCheck = ModFabCheck("float_list_check", ("L", float, int))
-        number_sequence_check: ModFabCheck = ModFabCheck("float_sequence_check", ("S", float, int))
-        number_tuple_check: ModFabCheck = ModFabCheck("float_tuple_check", ("T", float, int))
+        float_list_check: FabCheck = FabCheck("float_list_check", ("L", float))
+        float_sequence_check: FabCheck = FabCheck("float_sequence_check", ("S", float))
+        float_tuple_check: FabCheck = FabCheck("float_tuple_check", ("T", float))
+        int_list_check: FabCheck = FabCheck("int_list_check", ("L", int))
+        int_sequence_check: FabCheck = FabCheck("int_sequence_check", ("S", int))
+        int_tuple_check: FabCheck = FabCheck("int_tuple_check", ("T", int))
+        number_list_check: FabCheck = FabCheck("float_list_check", ("L", float, int))
+        number_sequence_check: FabCheck = FabCheck("float_sequence_check", ("S", float, int))
+        number_tuple_check: FabCheck = FabCheck("float_tuple_check", ("T", float, int))
 
         empty_list: List[Union[int, float]] = []
         empty_tuple: Tuple[Union[int, float], ...] = ()
@@ -783,7 +783,7 @@ class ModFabCheck(object):
         number_list: List[Union[int, float], ...] = [1, 2.0, 3]
         number_tuple: Tuple[Union[int, float], ...] = (1, 2.0, 3)
 
-        good_pairs: Sequence[Tuple[Any, ModFabCheck]] = (
+        good_pairs: Sequence[Tuple[Any, FabCheck]] = (
             # Empty Checks:
             (empty_list, int_list_check),
             (empty_list, float_list_check),
@@ -827,7 +827,7 @@ class ModFabCheck(object):
             (number_tuple, number_sequence_check),
         )
 
-        bad_pairs: Sequence[Tuple[Any, ModFabCheck]] = (
+        bad_pairs: Sequence[Tuple[Any, FabCheck]] = (
             (int_tuple, int_list_check),
             (float_tuple, int_list_check),
             (number_tuple, int_list_check),
@@ -839,69 +839,69 @@ class ModFabCheck(object):
 
         index: int
         value: Any
-        check: ModFabCheck
+        check: FabCheck
         good_pair: Tuple
 
-        good_pair: Tuple[Any, ModFabCheck]
+        good_pair: Tuple[Any, FabCheck]
         for index, good_pair in enumerate(good_pairs):
             value, check = good_pair
             assert isinstance(check, cls), check
-            error = ModFabCheck.check((value,), (check,))
+            error = FabCheck.check((value,), (check,))
             assert not error, f"[{index}]: {value=} {check=} {error=}"
 
         value: Any
-        check: ModFabCheck
+        check: FabCheck
         for value, check in bad_pairs:
             assert isinstance(check, cls)
-            error = ModFabCheck.check((value,), (check,))
+            error = FabCheck.check((value,), (check,))
             assert error, "No error generated"
 
         # Test non sequence checks:
-        non_empty_string_check: ModFabCheck = ModFabCheck("Name", ("+", str))
-        value_error: str = ModFabCheck.check(("non-empty",), (non_empty_string_check,))
+        non_empty_string_check: FabCheck = FabCheck("Name", ("+", str))
+        value_error: str = FabCheck.check(("non-empty",), (non_empty_string_check,))
         assert value_error == "", f"{value_error=}"
-        value_error = ModFabCheck.check(("",), (non_empty_string_check,))
+        value_error = FabCheck.check(("",), (non_empty_string_check,))
         assert value_error == "[0]: Argument 'Name' has no length", value_error
 
-        # Test ModFabCheck.init_show():
-        checks: Tuple[ModFabCheck, ...] = (
+        # Test FabCheck.init_show():
+        checks: Tuple[FabCheck, ...] = (
             int_check,
             str_check,
             optional_int,
             optional_str,
             optional_float
         )
-        result: str = ModFabCheck.init_show("Foo", (1, "a", 1, "b", 1.0), checks)
+        result: str = FabCheck.init_show("Foo", (1, "a", 1, "b", 1.0), checks)
         assert result == "Foo(1, 'a', 1, 'b', 1.0)", result
-        result: str = ModFabCheck.init_show("Foo", (1, "a", 1, "b", None), checks)
+        result: str = FabCheck.init_show("Foo", (1, "a", 1, "b", None), checks)
         assert result == "Foo(1, 'a', 1, 'b')", result
-        result: str = ModFabCheck.init_show("Foo", (1, "a", 1, None, None), checks)
+        result: str = FabCheck.init_show("Foo", (1, "a", 1, None, None), checks)
         assert result == "Foo(1, 'a', 1)", result
-        result: str = ModFabCheck.init_show("Foo", (1, "a", None, None, None), checks)
+        result: str = FabCheck.init_show("Foo", (1, "a", None, None, None), checks)
         assert result == "Foo(1, 'a')", result
-        result: str = ModFabCheck.init_show("Foo", (1, "a", None, None, 1.0), checks)
+        result: str = FabCheck.init_show("Foo", (1, "a", None, None, 1.0), checks)
         assert result == "Foo(1, 'a', optional_float=1.0)", result
-        result: str = ModFabCheck.init_show("Foo", (1, "a", None, "b", 1.0), checks)
+        result: str = FabCheck.init_show("Foo", (1, "a", None, "b", 1.0), checks)
         assert result == "Foo(1, 'a', optional_str='b', optional_float=1.0)", result
-        result: str = ModFabCheck.init_show("Foo", (1, "a", None, None, 1.0), checks)
+        result: str = FabCheck.init_show("Foo", (1, "a", None, None, 1.0), checks)
         assert result == "Foo(1, 'a', optional_float=1.0)", result
         try:
-            ModFabCheck.init_show("Foo", (), checks)  # Arguments/ModFabCheck's misamtch.
+            FabCheck.init_show("Foo", (), checks)  # Arguments/FabCheck's misamtch.
         except ValueError as value_error:
             assert str(value_error) == "Arguments size (0) != checks size (5)", str(value_error)
         try:
-            ModFabCheck.init_show("Foo", (0,), (cast(ModFabCheck, 0),))
+            FabCheck.init_show("Foo", (0,), (cast(FabCheck, 0),))
         except ValueError as value_error:
-            assert str(value_error) == "0 is not an ModFabCheck", str(value_error)
+            assert str(value_error) == "0 is not an FabCheck", str(value_error)
         try:
-            ModFabCheck.init_show(cast(str, 0), (0,), (int_check,))
+            FabCheck.init_show(cast(str, 0), (0,), (int_check,))
         except ValueError as value_error:
             assert str(value_error) == "0 is not a string", str(value_error)
 
 
-# ModFabColor:
-class ModFabColor(object):
-    """ModFabColor: Convert from SVG color names to FreeCAD HSL."""
+# FabColor:
+class FabColor(object):
+    """FabColor: Convert from SVG color names to FreeCAD HSL."""
 
     RGB_COLORS = {
         "alice_blue": 0xf0f8ff,
@@ -1064,7 +1064,7 @@ class ModFabColor(object):
         * (Tuple[float, float, float]) as HSV (Hue/Satruation/Value) tuple used by FreeCAD.
 
         """
-        rgb_colors: Dict[str, int] = ModFabColor.RGB_COLORS
+        rgb_colors: Dict[str, int] = FabColor.RGB_COLORS
         if svg_color_name not in rgb_colors:
             raise ValueError(f"'{svg_color_name}' is not a supported SVG color name.")
         rgb_color: int = rgb_colors[svg_color_name]
@@ -1075,11 +1075,11 @@ class ModFabColor(object):
 
     @staticmethod
     def _unit_tests() -> None:
-        """Run ModFabColor unit tests."""
-        _ = ModFabColor.svg_to_rgb("red")
+        """Run FabColor unit tests."""
+        _ = FabColor.svg_to_rgb("red")
 
         try:
-            ModFabColor.svg_to_rgb("fred")
+            FabColor.svg_to_rgb("fred")
         except ValueError as value_error:
             assert str(value_error) == "'fred' is not a supported SVG color name.", str(value_error)
 
@@ -1117,10 +1117,10 @@ def vector_fix(vector: Vector) -> Vector:
     return Vector(float_fix(vector.x), float_fix(vector.y), float_fix(vector.y))
 
 
-# ModFabMaterial:
+# FabMaterial:
 @dataclass
-class ModFabMaterial(object):
-    """ModFabMaterial: Represents a stock material.
+class FabMaterial(object):
+    """FabMaterial: Represents a stock material.
 
     Other properties to be added later (e.g. transparency, shine, machining properties, etc.)
 
@@ -1134,15 +1134,15 @@ class ModFabMaterial(object):
     Color: str  # SVG color name to use.
 
     INIT_CHECKS = (
-        ModFabCheck("Name", ("T+", str)),
-        ModFabCheck("Color", (str,)),
+        FabCheck("Name", ("T+", str)),
+        FabCheck("Color", (str,)),
     )
 
-    # ModFabMaterial.__init__():
+    # FabMaterial.__init__():
     def __post_init__(self) -> None:
         """Post process."""
         arguments = (self.Name, self.Color)
-        value_error: str = ModFabCheck.check(arguments, ModFabMaterial.INIT_CHECKS)
+        value_error: str = FabCheck.check(arguments, FabMaterial.INIT_CHECKS)
         if value_error:
             raise ValueError(value_error)
         assert isinstance(self.Name, tuple)
@@ -1156,27 +1156,27 @@ class ModFabMaterial(object):
             raise ValueError(f"Color name is empty")
 
     def __repr__(self) -> str:
-        """Return string representation of ModFabMaterial."""
+        """Return string representation of FabMaterial."""
         return self.__str__()
 
     def __str__(self) -> str:
-        """Return string representation of ModFabMaterial."""
-        return f"ModFabMaterial({self.Name}, '{self.Color}')"
+        """Return string representation of FabMaterial."""
+        return f"FabMaterial({self.Name}, '{self.Color}')"
 
     @staticmethod
     def _unit_tests() -> None:
-        """Run ModFabMaterial unit tests."""
+        """Run FabMaterial unit tests."""
         name: Tuple[str, ...] = ("brass",)
         color: str = "orange"
-        material: ModFabMaterial = ModFabMaterial(name, color)
-        assert material.__repr__() == "ModFabMaterial(('brass',), 'orange')"
-        assert f"{material}" == "ModFabMaterial(('brass',), 'orange')", f"{material}"
-        material_text: str = f"ModFabMaterial({name}, '{color}')"
+        material: FabMaterial = FabMaterial(name, color)
+        assert material.__repr__() == "FabMaterial(('brass',), 'orange')"
+        assert f"{material}" == "FabMaterial(('brass',), 'orange')", f"{material}"
+        material_text: str = f"FabMaterial({name}, '{color}')"
         assert f"{material}" == material_text, f"{material}"
 
         # Name is not a Tuple:
         try:
-            ModFabMaterial(cast(tuple, 0), color)
+            FabMaterial(cast(tuple, 0), color)
         except ValueError as value_error:
             want: str = "[0]: Argument 'Name' is not a tuple"
             got: str = str(value_error)
@@ -1184,19 +1184,19 @@ class ModFabMaterial(object):
 
         # Name is empty tuple:
         try:
-            ModFabMaterial((), color)
+            FabMaterial((), color)
         except ValueError as value_error:
             assert str(value_error) == "Material is an empty tuple.", str(value_error)
 
         # Name with an empty string:
         try:
-            ModFabMaterial(("",), color)
+            FabMaterial(("",), color)
         except ValueError as value_error:
             assert str(value_error) == "Name contains an empty string", str(value_error)
 
         # Name is does not have a string:
         try:
-            ModFabMaterial((cast(str, 1),), color)
+            FabMaterial((cast(str, 1),), color)
         except ValueError as value_error:
             want = "[0]: 1 (int) is not of type ['str']"
             got = str(value_error)
@@ -1204,7 +1204,7 @@ class ModFabMaterial(object):
 
         # Color is empty.
         try:
-            ModFabMaterial(("Brass",), "")
+            FabMaterial(("Brass",), "")
         except ValueError as value_error:
             assert str(value_error) == "Color name is empty", str(value_error)
 
@@ -1232,10 +1232,10 @@ def _misc_unit_tests() -> None:
 def _unit_tests() -> None:
     """Run the unit tests."""
     _misc_unit_tests()
-    ModFabCheck._unit_tests()
-    ModFabColor._unit_tests()
-    ModFabBox._unit_tests()
-    ModFabMaterial._unit_tests()
+    FabCheck._unit_tests()
+    FabColor._unit_tests()
+    FabBox._unit_tests()
+    FabMaterial._unit_tests()
 
 
 if __name__ == "__main__":

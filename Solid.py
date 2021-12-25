@@ -32,7 +32,7 @@ sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 from dataclasses import dataclass
 from typing import Any, cast, Dict, Optional, Set, Tuple
 from pathlib import Path
-from Utilities import ModFabColor
+from Utilities import FabColor
 
 import FreeCAD  # type: ignore
 import Part  # type: ignore
@@ -42,36 +42,36 @@ import FreeCADGui as Gui  # type: ignore
 from FreeCAD import Placement, Rotation, Vector
 # import Part  # type: ignore
 
-from Geometry import ModFabCircle, ModFabGeometry, ModFabPolygon
-from Tree import ModFabNode, ModFabInterior
+from Geometry import FabCircle, FabGeometry, FabPolygon
+from Tree import FabNode, FabInterior
 
-# ModFabFile:
+# FabFile:
 @dataclass
-class ModFabFile(ModFabInterior):
-    """ModFabFile: Represents a FreeCAD document file."""
+class FabFile(FabInterior):
+    """FabFile: Represents a FreeCAD document file."""
 
     # Name: str
-    # Parts: Tuple["ModFabSolid", ...]
+    # Parts: Tuple["FabSolid", ...]
     FilePath: Path = Path("bogus")
 
-    # ModFabFile.__post_init__():
+    # FabFile.__post_init__():
     def __post_init__(self) -> None:
         """Initialize the AppDocument."""
-        part: ModFabSolid
+        part: FabSolid
         part_names: Set[str] = set()
         if len(self.Parts) == 0:
-            raise ValueError("At least one ModFabSolid needs to be specified")
+            raise ValueError("At least one FabSolid needs to be specified")
         for part in self.Parts:
-            if not isinstance(part, ModFabSolid):
-                raise ValueError(f"{part} is not a ModFabSolid")
+            if not isinstance(part, FabSolid):
+                raise ValueError(f"{part} is not a FabSolid")
             if part.Name in part_names:
                 raise ValueError(f"There are two or more Part's with the same name '{part.Name}'")
             part_names.add(part.Name)
 
         self.GeometryGroup = cast(App.DocumentObjectGroup, None)
-        self.Part = cast(ModFabSolid, None)
+        self.Part = cast(FabSolid, None)
         self.Body = cast(Part.BodyBase, None)
-        self.Mount = cast("ModFabMount", None)
+        self.Mount = cast("FabMount", None)
         self.DatumPlane = cast("Part.Geometry", None)
 
         stem: str = self.FilePath.stem
@@ -83,80 +83,80 @@ class ModFabFile(ModFabInterior):
             assert isinstance(self.GuiDocument, Gui.Document)
 
     @property
-    def Parts(self) -> Tuple["ModFabSolid", ...]:
-        """Return the children ModFabSolid's."""
-        return cast(Tuple[ModFabSolid, ...], self.Children)
+    def Parts(self) -> Tuple["FabSolid", ...]:
+        """Return the children FabSolid's."""
+        return cast(Tuple[FabSolid, ...], self.Children)
 
-    # ModFabFile.__enter__():
-    def __enter__(self) -> "ModFabFile":
-        """Open the ModFabFile."""
+    # FabFile.__enter__():
+    def __enter__(self) -> "FabFile":
+        """Open the FabFile."""
         return self
 
-    # ModFabFile.__exit__():
+    # FabFile.__exit__():
     def __exit__(self, exec_type, exec_value, exec_table) -> None:
-        """Close the ModFabFile."""
+        """Close the FabFile."""
         if self.AppDocument:
             print(f"saving {self.FilePath}")
             self.AppDocument.recompute()
             self.AppDocument.saveAs(str(self.FilePath))
 
-    # ModFabFile.produce():
+    # FabFile.produce():
     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
-        """Produce all of the ModFabSolid's."""
+        """Produce all of the FabSolid's."""
         if tracing:
-            print("=>{tracing}=>ModFabFile.produce('{self.Name}', *)")
-        part: "ModFabSolid"
+            print("=>{tracing}=>FabFile.produce('{self.Name}', *)")
+        part: "FabSolid"
         for part in self.Parts:
             self.Part = part
             part.produce(context.copy())
-            self.Part = cast(ModFabSolid, None)
+            self.Part = cast(FabSolid, None)
         if tracing:
-            print("<={tracing}=>ModFabFile.produce('{self.Name}', *)")
+            print("<={tracing}=>FabFile.produce('{self.Name}', *)")
         return ()
 
-    # ModFabFile._unit_tests():
+    # FabFile._unit_tests():
     @staticmethod
     def _unit_tests() -> None:
-        """Run ModFabFile unit tests."""
+        """Run FabFile unit tests."""
         # No solids specified:
         fcstd_path: Path = Path("/tmp/part_file_test.fcstd")
         try:
-            ModFabFile("EmptyFile", (), fcstd_path)
+            FabFile("EmptyFile", (), fcstd_path)
             assert False
         except ValueError as value_error:
-            assert str(value_error) == "At least one ModFabSolid needs to be specified"
+            assert str(value_error) == "At least one FabSolid needs to be specified"
 
         # Bogus solid error:
         try:
-            ModFabFile("BogusSolid", (cast(ModFabSolid, None),), fcstd_path)
+            FabFile("BogusSolid", (cast(FabSolid, None),), fcstd_path)
             assert False
         except ValueError as value_error:
-            assert str(value_error) == "None is not a ModFabSolid"
+            assert str(value_error) == "None is not a FabSolid"
 
         # Duplicate part name error:
         contact: Vector = Vector()
         z_axis: Vector = Vector(0, 0, 1)
         y_axis: Vector = Vector(0, 1, 0)
         origin: Vector = Vector()
-        circle1: ModFabCircle = ModFabCircle(origin, 10.0)
+        circle1: FabCircle = FabCircle(origin, 10.0)
         depth1: float = 10.0
-        pad1: ModFabPad = ModFabPad("Cylinder1", circle1, depth1)
-        operations1: Tuple[ModFabOperation, ...] = (pad1,)
-        mount1: ModFabMount = ModFabMount("Mount1", operations1, contact, z_axis, y_axis)
-        solid1: ModFabSolid = ModFabSolid("Part1", (mount1,), "hdpe", "orange")
+        pad1: FabPad = FabPad("Cylinder1", circle1, depth1)
+        operations1: Tuple[FabOperation, ...] = (pad1,)
+        mount1: FabMount = FabMount("Mount1", operations1, contact, z_axis, y_axis)
+        solid1: FabSolid = FabSolid("Part1", (mount1,), "hdpe", "orange")
 
         # Duplicate Part Names:
         try:
-            ModFabFile("Duplicate Solid", (solid1, solid1), fcstd_path)
+            FabFile("Duplicate Solid", (solid1, solid1), fcstd_path)
             assert False
         except ValueError as value_error:
             assert str(value_error) == "There are two or more Part's with the same name 'Part1'"
 
         # Test Open/Produce/Close
         _ = fcstd_path.unlink if fcstd_path.exists() else None
-        model_file: ModFabFile
-        with ModFabFile("Open_Produce_Close", (solid1,), fcstd_path) as model_file:
-            assert isinstance(model_file, ModFabFile)
+        model_file: FabFile
+        with FabFile("Open_Produce_Close", (solid1,), fcstd_path) as model_file:
+            assert isinstance(model_file, FabFile)
             context: Dict[str, Any] = {}
             context["app_document"] = model_file.AppDocument
             if App.GuiUp:
@@ -167,28 +167,28 @@ class ModFabFile(ModFabInterior):
         assert not fcstd_path.exists()
 
 
-# ModFabOperation:
+# FabOperation:
 @dataclass
-class ModFabOperation(ModFabNode):
-    """ModFabOperation: An base class for operations -- ModFabPad, ModFabPocket, ModFabHole, etc.
+class FabOperation(FabNode):
+    """FabOperation: An base class for operations -- FabPad, FabPocket, FabHole, etc.
 
     All model operations are immutable (i.e. frozen.)
     """
 
     # Name: str
 
-    # ModFabOperation.get_name():
+    # FabOperation.get_name():
     def get_name(self) -> str:
-        """Return ModFabOperation name."""
+        """Return FabOperation name."""
         raise NotImplementedError(f"{type(self)}.get_name() is not implemented")
 
-    # ModFabOperation.produce():
+    # FabOperation.produce():
     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
         """Return the operation sort key."""
         raise NotImplementedError(f"{type(self)}.produce() is not implemented")
         return ()
 
-    # ModFabOperation.produce_shape_binder():
+    # FabOperation.produce_shape_binder():
     def produce_shape_binder(self, context: Dict[str, Any],
                              part_geometries: Tuple[Part.Part2DObject, ...],
                              prefix: str) -> Part.Feature:
@@ -202,7 +202,7 @@ class ModFabOperation(ModFabNode):
         shape_binder.Visibility = False
         return shape_binder
 
-    # ModFabOperation._viewer_upate():
+    # FabOperation._viewer_upate():
     def _viewer_update(self, body: Part.BodyBase, part_feature: Part.Feature) -> None:
         """Update the view Body view provider."""
         if App.GuiUp:  # pragma: no unit cover
@@ -221,39 +221,39 @@ class ModFabOperation(ModFabNode):
             #    view_object, "DisplayMode", part_feature.ViewObject.DisplayMode)
 
 
-# ModFabPad:
+# FabPad:
 @dataclass
-class ModFabPad(ModFabOperation):
-    """ModFabPad: A FreeCAD PartDesign Pad operation.
+class FabPad(FabOperation):
+    """FabPad: A FreeCAD PartDesign Pad operation.
 
     Attributes:
     * *Name* (str): The operation name.
-    * *Geometry* (ModFabGeometry): The ModlePolygon or ModFabCircle to pad with.
+    * *Geometry* (FabGeometry): The ModlePolygon or FabCircle to pad with.
     * *Depth* (float): The depth to pad to in millimeters.
 
     """
 
-    Geometry: ModFabGeometry
+    Geometry: FabGeometry
     Depth: float
 
-    # ModFabPad.__post_init__():
+    # FabPad.__post_init__():
     def __post_init__(self) -> None:
-        """Verify ModFabPad values."""
-        if not isinstance(self.Geometry, ModFabGeometry):
-            raise ValueError(f"{self.Geometry} is not a ModFabGeometry")
+        """Verify FabPad values."""
+        if not isinstance(self.Geometry, FabGeometry):
+            raise ValueError(f"{self.Geometry} is not a FabGeometry")
         if self.Depth <= 0.0:
             raise ValueError(f"Depth ({self.Depth}) is not positive.")
 
-    # ModFabPad.get_name():
+    # FabPad.get_name():
     def get_name(self) -> str:
-        """Return ModFabPad name."""
+        """Return FabPad name."""
         return self.Name
 
-    # ModFabPad.produce():
+    # FabPad.produce():
     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
         """Produce the Pad."""
         if tracing:
-            print("{tracing}=>ModFab.produce('{self.Name}')")
+            print("{tracing}=>Fab.produce('{self.Name}')")
         # Extract the *part_geometries* and create the assocated *shape_binder*:
         prefix = cast(str, context["prefix"])
         next_prefix: str = f"{prefix}_{self.Name}"
@@ -286,42 +286,42 @@ class ModFabPad(ModFabOperation):
         self._viewer_update(body, pad)
 
         if tracing:
-            print("{tracing}<=ModFab.produce('{self.Name}')")
+            print("{tracing}<=Fab.produce('{self.Name}')")
         return ()
 
-# ModFabPocket:
+# FabPocket:
 @dataclass
-class ModFabPocket(ModFabOperation):
-    """ModFabPocket: A FreeCAD PartDesign Pocket operation.
+class FabPocket(FabOperation):
+    """FabPocket: A FreeCAD PartDesign Pocket operation.
 
     Attributes:
     * *Name* (str): The operation name.
-    * *Geometry* (ModFabGeometry): The Polygon or Circle to pocket.
+    * *Geometry* (FabGeometry): The Polygon or Circle to pocket.
     * *Depth* (float): The pocket depth in millimeters.
 
     """
 
-    Geometry: ModFabGeometry
+    Geometry: FabGeometry
     Depth: float
 
-    # ModFabPocket__post_init__():
+    # FabPocket__post_init__():
     def __post_init__(self) -> None:
-        """Verify ModFabPad values."""
-        if not isinstance(self.Geometry, ModFabGeometry):
-            raise ValueError(f"{self.Geometry} is not a ModFabGeometry")
+        """Verify FabPad values."""
+        if not isinstance(self.Geometry, FabGeometry):
+            raise ValueError(f"{self.Geometry} is not a FabGeometry")
         if self.Depth <= 0.0:
             raise ValueError(f"Depth ({self.Depth}) is not positive.")
 
-    # ModFabPocket.get_name():
+    # FabPocket.get_name():
     def get_name(self) -> str:
-        """Return ModFabPocket name."""
+        """Return FabPocket name."""
         return self.Name
 
-    # ModFabPocket.produce():
+    # FabPocket.produce():
     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
         """Produce the Pad."""
         if tracing:
-            print("{tracing}=>ModFabPocket.produce('{self.Name}')")
+            print("{tracing}=>FabPocket.produce('{self.Name}')")
         # Extract the *part_geometries*:
         prefix = cast(str, context["prefix"])
         next_prefix: str = f"{prefix}_{self.Name}"
@@ -350,43 +350,43 @@ class ModFabPocket(ModFabOperation):
         self._viewer_update(body, pocket)
 
         if tracing:
-            print("{tracing}<=ModFabPocket.produce('{self.Name}')")
+            print("{tracing}<=FabPocket.produce('{self.Name}')")
         return ()
 
-# ModFabHole:
+# FabHole:
 @dataclass
-class ModFabHole(ModFabOperation):
-    """ModFabHole: A FreeCAD PartDesign Pocket operation.
+class FabHole(FabOperation):
+    """FabHole: A FreeCAD PartDesign Pocket operation.
 
     Attributes:
     * *Name* (str): The operation name.
-    * *Circle* (ModFabCircle): The Circle to drill.
+    * *Circle* (FabCircle): The Circle to drill.
     * *Depth* (float): The depth
 
     """
 
-    Circle: ModFabCircle
+    Circle: FabCircle
     Depth: float
 
-    # ModFabHole.__post_init__():
+    # FabHole.__post_init__():
     def __post_init__(self) -> None:
-        """Verify ModFabPad values."""
-        if not isinstance(self.Circle, ModFabCircle):
-            raise ValueError(f"{self.Geometry} is not a ModFabCircle")
+        """Verify FabPad values."""
+        if not isinstance(self.Circle, FabCircle):
+            raise ValueError(f"{self.Geometry} is not a FabCircle")
         if self.Depth <= 0.0:
             raise ValueError(f"Depth ({self.Depth}) is not positive.")
 
-    # ModFabHole.get_name():
+    # FabHole.get_name():
     def get_name(self) -> str:
-        """Return ModFabHole name."""
+        """Return FabHole name."""
         return self.Name
 
-    # ModFabHole.produce():
+    # FabHole.produce():
     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
         """Produce the Hole."""
         # Extract the *part_geometries*:
         if tracing:
-            print("{tracing}=>ModFabHole.produce('{self.Name}')")
+            print("{tracing}=>FabHole.produce('{self.Name}')")
         prefix = cast(str, context["prefix"])
         next_prefix: str = f"{prefix}_{self.Name}"
         part_geometries: Tuple[Part.Part2DObject, ...] = (
@@ -412,38 +412,38 @@ class ModFabHole(ModFabOperation):
         self._viewer_update(body, hole)
 
         if tracing:
-            print("{tracing}<=ModFabHole.produce('{self.Name}')")
+            print("{tracing}<=FabHole.produce('{self.Name}')")
         return ()
 
-# ModFabMount:
+# FabMount:
 @dataclass
-class ModFabMount(ModFabInterior):
-    """ModFabMount: An operations plane that can be oriented for subsequent machine operations.
+class FabMount(FabInterior):
+    """FabMount: An operations plane that can be oriented for subsequent machine operations.
 
     This class basically corresponds to a FreeCad Datum Plane.  It is basically the surface
-    to which the 2D ModFabGeometry's are mapped onto prior to performing each operation.
+    to which the 2D FabGeometry's are mapped onto prior to performing each operation.
     This class is immutable (i.e. frozen.)
 
     Attributes:
-    * *Name*: (str): The name of the ModFabPlane.
+    * *Name*: (str): The name of the FabPlane.
     * *Contact* (Vector): A point on the plane.
     * *Normal* (Vector): A normal to the plane
     * *Orient* (Vector):
       A vector in the plane that specifies the north direction when mounted in a machining vice.
-    * *Operations* (Tuple[ModFabOperation, ...]): The operations to perform.
+    * *Operations* (Tuple[FabOperation, ...]): The operations to perform.
 
     """
 
     # Name: str
-    # Operations: Tuple[ModFabOperation, ...]
+    # Operations: Tuple[FabOperation, ...]
 
     Contact: Vector = Vector()
     Normal: Vector = Vector(0, 0, 1)
     Orient: Vector = Vector(0, 1, 0)
 
-    # ModFabMount.__post_init__():
+    # FabMount.__post_init__():
     def __post_init__(self) -> None:
-        """Verify that ModFabMount arguments are valid."""
+        """Verify that FabMount arguments are valid."""
         # (Why __setattr__?)[https://stackoverflow.com/questions/53756788]
         copy: Vector = Vector()  # Make private copy of Vector's.
         object.__setattr__(self, "Contact", self.Contact + copy)
@@ -452,7 +452,7 @@ class ModFabMount(ModFabInterior):
 
         # Disallow duplicate operation names:
         operation_names: Set[str] = set()
-        operation: ModFabOperation
+        operation: FabOperation
         for operation in self.Operations:
             operation_name: str = operation.get_name()
             if operation_name in operation_names:
@@ -460,12 +460,12 @@ class ModFabMount(ModFabInterior):
             operation_names.add(operation_name)
 
     @property
-    # ModFabMount.Operations:
-    def Operations(self) -> Tuple[ModFabOperation, ...]:
-        """Return mount ModFabOperation's."""
-        return cast(Tuple[ModFabOperation, ...], self.Children)
+    # FabMount.Operations:
+    def Operations(self) -> Tuple[FabOperation, ...]:
+        """Return mount FabOperation's."""
+        return cast(Tuple[FabOperation, ...], self.Children)
 
-    # ModFabMount.produce():
+    # FabMount.produce():
     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
         """Create the FreeCAD DatumPlane used for the drawing support.
 
@@ -515,7 +515,7 @@ class ModFabMount(ModFabInterior):
         # Compute *rotation* from <Zb> to <Nd>:
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>ModFabMount.produce('{self.Name}')")
+            print(f"{tracing}=>FabMount.produce('{self.Name}')")
         contact: Vector = self.Contact  # Pd
         normal: Vector = self.Normal  # <Nd>
         distance: float = normal.dot(contact)  # d = - (<Nd> . Pd)
@@ -560,65 +560,65 @@ class ModFabMount(ModFabInterior):
         context["mount_normal"] = self.Normal
         context["mount_contact"] = self.Contact
 
-        # Install the ModFabMount (i.e. *self*) and *datum_plane* into *model_file* prior
+        # Install the FabMount (i.e. *self*) and *datum_plane* into *model_file* prior
         # to recursively performing the *operations*:
         # prefix = cast(str, context["prefix"])
-        operation: ModFabOperation
+        operation: FabOperation
         for operation in self.Operations:
             operation.produce(context.copy(), tracing=next_tracing)
         if tracing:
-            print(f"{tracing}<=ModFabMount.produce('{self.Name}')")
+            print(f"{tracing}<=FabMount.produce('{self.Name}')")
         return ()
 
 
-# ModFabSolid:
+# FabSolid:
 @dataclass
-class ModFabSolid(ModFabInterior):
-    """ModFab: Represents a single part constructed using FreeCAD Part Design paradigm.
+class FabSolid(FabInterior):
+    """Fab: Represents a single part constructed using FreeCAD Part Design paradigm.
 
     Attributes:
     * *Name* (str): The model name.
-    * *Mounts* (Tuple[ModFabMount, ...]): The various model mounts to use to construct the part.
+    * *Mounts* (Tuple[FabMount, ...]): The various model mounts to use to construct the part.
     * *Material* (str): The material to use.
     * *Color* (str): The color to use.
 
     """
 
     # Name: str
-    # Mounts: Tuple[ModFabMount, ...]
+    # Mounts: Tuple[FabMount, ...]
     Material: str = ""
     Color: str = "red"
 
-    # ModFabSolid.__post_init__():
+    # FabSolid.__post_init__():
     def __post_init__(self) -> None:
-        """Verify ModFabSolid arguments."""
+        """Verify FabSolid arguments."""
         # Verify that there is only one pad operation and it is the very first one.
         # Also detect duplicate mount names:
-        mounts: Tuple[ModFabMount, ...] = self.Mounts
+        mounts: Tuple[FabMount, ...] = self.Mounts
         if not mounts:
-            raise ValueError("ModFabSolid.produce(): No mounts specified for Part 'self.Name'.")
+            raise ValueError("FabSolid.produce(): No mounts specified for Part 'self.Name'.")
 
         mount_names: Set[str] = set()
         pad_found: bool = False
         mount_index: int
-        mount: ModFabMount
+        mount: FabMount
         for mount_index, mount in enumerate(mounts):
-            if not isinstance(mount, ModFabMount):
+            if not isinstance(mount, FabMount):
                 raise ValueError(f"'{self.Name}': Mount[{mount_index}]: "
-                                 f"{type(mount)} is not a ModFabMount")
+                                 f"{type(mount)} is not a FabMount")
             if mount.Name in mount_names:
                 raise ValueError(f"Part '{self.Name}' has two mounts named '{mount.Name}')")
             mount_names.add(mount.Name)
 
             # Search for Pad operations:
-            operations: Tuple[ModFabOperation, ...] = mount.Operations
+            operations: Tuple[FabOperation, ...] = mount.Operations
             operation_index: int
-            operation: ModFabOperation
+            operation: FabOperation
             for operation_index, operation in enumerate(operations):
-                if not isinstance(operation, ModFabOperation):
+                if not isinstance(operation, FabOperation):
                     raise ValueError(f"'{self.Name}.{mount.Name}']: Operation[{operation_index}]:"
-                                     "{type(operaton)} is not a ModFabOperation")
-                if isinstance(operation, ModFabPad):
+                                     "{type(operaton)} is not a FabOperation")
+                if isinstance(operation, FabPad):
                     if mount_index != 0 or operation_index != 0:
                         raise ValueError(f"'{self.Name}.{mount.Name}.{operation.Name}':"
                                          "Pad is not at the very beginning.")
@@ -627,16 +627,16 @@ class ModFabSolid(ModFabInterior):
             raise ValueError(f"No Pad operation found for '{self.Name}'")
 
     @property
-    def Mounts(self) -> Tuple[ModFabMount, ...]:
+    def Mounts(self) -> Tuple[FabMount, ...]:
         """Return children solids."""
-        return cast(Tuple[ModFabMount], self.Children)
+        return cast(Tuple[FabMount], self.Children)
 
-    # ModFabSolid.produce():
+    # FabSolid.produce():
     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
-        """Produce the ModFabSolid."""
+        """Produce the FabSolid."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>ModFabSolid.produce('{self.Name}')")
+            print(f"{tracing}=>FabSolid.produce('{self.Name}')")
         app_document = cast(App.Document, context["app_document"])
 
         # Create the *geometry_group* that contains all of the 2D geometry (line, arc, circle.):
@@ -663,7 +663,7 @@ class ModFabSolid(ModFabInterior):
             if hasattr(gui_body, "DisplayMode"):
                 setattr(gui_body, "DisplayMode", "Shaded")
             if hasattr(gui_body, "ShapeColor"):
-                rgb = ModFabColor.svg_to_rgb(self.Color)
+                rgb = FabColor.svg_to_rgb(self.Color)
                 setattr(gui_body, "ShapeColor", rgb)
 
             # view_object: "ViewProviderDocumentObject"  = body.getLinkedObject(True).ViewObject
@@ -671,20 +671,20 @@ class ModFabSolid(ModFabInterior):
             # model_file.ViewObject = view_object
 
         # Process each *mount*:
-        mount: ModFabMount
+        mount: FabMount
         for mount in self.Mounts:
             context["prefix"] = mount.Name
             mount.produce(context.copy(), tracing=next_tracing)
 
         if tracing:
-            print(f"{tracing}<=ModFabSolid.produce('{self.Name}')")
+            print(f"{tracing}<=FabSolid.produce('{self.Name}')")
         return ()
 
 
 # Box:
 @dataclass
 class Box(object):
-    """ModFab a box.
+    """Fab a box.
 
     Builds a box given a length, width, height, material, thickness and center point"
 
@@ -712,7 +712,7 @@ class Box(object):
         """Compute a box."""
         pass
 
-    def produce(self) -> Tuple[ModFabSolid, ...]:
+    def produce(self) -> Tuple[FabSolid, ...]:
         """Produce a box."""
         dx: float = self.Length
         dy: float = self.Width
@@ -740,13 +740,13 @@ class Box(object):
             (center + Vector(-dx2, -dy2, dz2), corner_radius),  # TSW
             (center + Vector(dx2, -dy2, dz2), corner_radius),  # TSE
         )
-        top_polygon: ModFabPolygon = ModFabPolygon("Top", top_corners)
-        top_operations: Tuple[ModFabOperation, ...] = (
-            ModFabPad("Pad", top_polygon, dw),
+        top_polygon: FabPolygon = FabPolygon("Top", top_corners)
+        top_operations: Tuple[FabOperation, ...] = (
+            FabPad("Pad", top_polygon, dw),
         )
-        top_mount: ModFabMount = ModFabMount(
+        top_mount: FabMount = FabMount(
             "TopNorth", top_operations, center + Vector(0, 0, dz2), top_axis, north_axis)
-        top_part: ModFabSolid = ModFabSolid("Top", (top_mount,), "hdpe", "red")
+        top_part: FabSolid = FabSolid("Top", (top_mount,), "hdpe", "red")
 
         north_corners: Corners = (
             (center + Vector(dx2, dy2, dz2 - dw), corner_radius),  # TNE
@@ -754,13 +754,13 @@ class Box(object):
             (center + Vector(-dx2, dy2, -dz2), corner_radius),  # BNW
             (center + Vector(dx2, dy2, -dz2), corner_radius),  # BNE
         )
-        north_polygon: ModFabPolygon = ModFabPolygon("North", north_corners)
-        north_operations: Tuple[ModFabOperation, ...] = (
-            ModFabPad("Pad", north_polygon, dw),
+        north_polygon: FabPolygon = FabPolygon("North", north_corners)
+        north_operations: Tuple[FabOperation, ...] = (
+            FabPad("Pad", north_polygon, dw),
         )
-        north_mount: ModFabMount = ModFabMount(
+        north_mount: FabMount = FabMount(
             "NorthBottom", north_operations, center + Vector(0, dy2, 0), north_axis, bottom_axis)
-        north_part: ModFabSolid = ModFabSolid("North", (north_mount,), "hdpe", "green")
+        north_part: FabSolid = FabSolid("North", (north_mount,), "hdpe", "green")
 
         west_corners: Corners = (
             (center + Vector(-dx2, dy2 - dw, dz2 - dw), corner_radius),  # TNW
@@ -768,13 +768,13 @@ class Box(object):
             (center + Vector(-dx2, -dy2 + dw, -dz2 + dw), corner_radius),  # BSW
             (center + Vector(-dx2, dy2 - dw, -dz2 + dw), corner_radius),  # BNW
         )
-        west_polygon: ModFabPolygon = ModFabPolygon("West", west_corners)
-        west_operations: Tuple[ModFabOperation, ...] = (
-            ModFabPad("Pad", west_polygon, dw),
+        west_polygon: FabPolygon = FabPolygon("West", west_corners)
+        west_operations: Tuple[FabOperation, ...] = (
+            FabPad("Pad", west_polygon, dw),
         )
-        west_mount: ModFabMount = ModFabMount(
+        west_mount: FabMount = FabMount(
             "WestNorth", west_operations, center + Vector(-dx2, 0, 0), west_axis, north_axis)
-        west_part: ModFabSolid = ModFabSolid("West", (west_mount,), "hdpe", "blue")
+        west_part: FabSolid = FabSolid("West", (west_mount,), "hdpe", "blue")
 
         bottom_corners: Corners = (
             (center + Vector(dx2, dy2 - dw, -dz2), corner_radius),  # BNE
@@ -782,13 +782,13 @@ class Box(object):
             (center + Vector(-dx2, -dy2 + dw, -dz2), corner_radius),  # BSW
             (center + Vector(dx2, -dy2 + dw, -dz2), corner_radius),  # BSE
         )
-        bottom_polygon: ModFabPolygon = ModFabPolygon("Bottom", bottom_corners)
-        bottom_operations: Tuple[ModFabOperation, ...] = (
-            ModFabPad("Pad", bottom_polygon, dw),
+        bottom_polygon: FabPolygon = FabPolygon("Bottom", bottom_corners)
+        bottom_operations: Tuple[FabOperation, ...] = (
+            FabPad("Pad", bottom_polygon, dw),
         )
-        bottom_mount: ModFabMount = ModFabMount(
+        bottom_mount: FabMount = FabMount(
             "BottomNorth", bottom_operations, center + Vector(0, 0, -dz2), bottom_axis, north_axis)
-        bottom_part: ModFabSolid = ModFabSolid("Bottom", (bottom_mount,), "hdpe", "red")
+        bottom_part: FabSolid = FabSolid("Bottom", (bottom_mount,), "hdpe", "red")
 
         east_corners: Corners = (
             (center + Vector(dx2, dy2 - dw, dz2 - dw), corner_radius),  # TNE
@@ -796,13 +796,13 @@ class Box(object):
             (center + Vector(dx2, -dy2 + dw, -dz2 + dw), corner_radius),  # BSE
             (center + Vector(dx2, dy2 - dw, -dz2 + dw), corner_radius),  # BNE
         )
-        east_polygon: ModFabPolygon = ModFabPolygon("East", east_corners)
-        east_operations: Tuple[ModFabOperation, ...] = (
-            ModFabPad("Pad", east_polygon, dw),
+        east_polygon: FabPolygon = FabPolygon("East", east_corners)
+        east_operations: Tuple[FabOperation, ...] = (
+            FabPad("Pad", east_polygon, dw),
         )
-        east_mount: ModFabMount = ModFabMount(
+        east_mount: FabMount = FabMount(
             "EastNorth", east_operations, center + Vector(dx2, 0, 0), east_axis, north_axis)
-        east_part: ModFabSolid = ModFabSolid("East", (east_mount,), "hdpe", "blue")
+        east_part: FabSolid = FabSolid("East", (east_mount,), "hdpe", "blue")
 
         south_corners: Corners = (
             (center + Vector(dx2, -dy2, dz2 - dw), corner_radius),  # TSE
@@ -810,13 +810,13 @@ class Box(object):
             (center + Vector(-dx2, -dy2, -dz2), corner_radius),  # BSW
             (center + Vector(dx2, -dy2, -dz2), corner_radius),  # BSE
         )
-        south_polygon: ModFabPolygon = ModFabPolygon("South", south_corners)
-        south_operations: Tuple[ModFabOperation, ...] = (
-            ModFabPad("Pad", south_polygon, dw),
+        south_polygon: FabPolygon = FabPolygon("South", south_corners)
+        south_operations: Tuple[FabOperation, ...] = (
+            FabPad("Pad", south_polygon, dw),
         )
-        south_mount: ModFabMount = ModFabMount(
+        south_mount: FabMount = FabMount(
             "SouthBottom", south_operations, center + Vector(0, -dy2, 0), south_axis, bottom_axis)
-        south_part: ModFabSolid = ModFabSolid("South", (south_mount,), "hdpe", "green")
+        south_part: FabSolid = FabSolid("South", (south_mount,), "hdpe", "green")
 
         return (top_part, north_part, west_part, bottom_part, east_part, south_part)
 
@@ -826,46 +826,46 @@ def main() -> None:
     # Create *top_part*:
     z_offset: float = 40.0
     pad_fillet_radius: float = 10.0
-    pad_polygon: ModFabPolygon = ModFabPolygon("Pad", (
+    pad_polygon: FabPolygon = FabPolygon("Pad", (
         (Vector(-40, -60, z_offset), pad_fillet_radius),  # SW
         (Vector(40, -60, z_offset), pad_fillet_radius),  # SE
         (Vector(40, 20, z_offset), pad_fillet_radius),  # NE
         (Vector(-40, 20, z_offset), pad_fillet_radius),  # NW
     ))
     pocket_fillet_radius: float = 2.5
-    left_pocket: ModFabPolygon = ModFabPolygon("LeftPocket", (
+    left_pocket: FabPolygon = FabPolygon("LeftPocket", (
         (Vector(-30, -10, z_offset), pocket_fillet_radius),
         (Vector(-10, -10, z_offset), pocket_fillet_radius),
         (Vector(-10, 10, z_offset), pocket_fillet_radius),
         (Vector(-30, 10, z_offset), pocket_fillet_radius),
     ))
-    right_pocket: ModFabPolygon = ModFabPolygon("RightPocket", (
+    right_pocket: FabPolygon = FabPolygon("RightPocket", (
         (Vector(10, -10, z_offset), pocket_fillet_radius),
         (Vector(30, -10, z_offset), pocket_fillet_radius),
         (Vector(30, 10, z_offset), pocket_fillet_radius),
         (Vector(10, 10, z_offset), pocket_fillet_radius),
     ))
     _ = right_pocket
-    right_circle: ModFabCircle = ModFabCircle(Vector(20, 0, z_offset), 10)
-    center_circle: ModFabCircle = ModFabCircle(Vector(0, 0, z_offset), 10)
+    right_circle: FabCircle = FabCircle(Vector(20, 0, z_offset), 10)
+    center_circle: FabCircle = FabCircle(Vector(0, 0, z_offset), 10)
 
     contact: Vector = Vector(0, 0, z_offset)
     normal: Vector = Vector(0, 0, 1)
     north: Vector = Vector(0, 1, 0)
-    top_operations: Tuple[ModFabOperation, ...] = (
-        ModFabPad("Pad", pad_polygon, 50.0),
-        ModFabPocket("LeftPocket", left_pocket, 10.0),
-        ModFabPocket("RightPocket", right_circle, 8.0),
-        ModFabHole("CenterHole", center_circle, 5.0),
+    top_operations: Tuple[FabOperation, ...] = (
+        FabPad("Pad", pad_polygon, 50.0),
+        FabPocket("LeftPocket", left_pocket, 10.0),
+        FabPocket("RightPocket", right_circle, 8.0),
+        FabHole("CenterHole", center_circle, 5.0),
     )
-    top_north_mount: ModFabMount = ModFabMount("TopNorth", top_operations, contact, normal, north)
-    top_solid: ModFabSolid = ModFabSolid("TopPart", (top_north_mount,), "hdpe", "purple")
-    top_solids: Tuple[ModFabSolid, ...] = (top_solid,)
+    top_north_mount: FabMount = FabMount("TopNorth", top_operations, contact, normal, north)
+    top_solid: FabSolid = FabSolid("TopPart", (top_north_mount,), "hdpe", "purple")
+    top_solids: Tuple[FabSolid, ...] = (top_solid,)
 
     # Create *side_part*
     side_radius: float = 3.0
     y_offset: float = -50.0
-    side_pad: ModFabPolygon = ModFabPolygon("SidePad", (
+    side_pad: FabPolygon = FabPolygon("SidePad", (
         (Vector(-50, y_offset, -20), side_radius),
         (Vector(-50, y_offset, 20), side_radius),
         (Vector(50, y_offset, 20), side_radius),
@@ -873,23 +873,23 @@ def main() -> None:
     ))
     contact = Vector(0, y_offset)
     normal = Vector(0, -1, 0)
-    side_operations: Tuple[ModFabOperation, ...] = (ModFabPad("Pad", side_pad, 10),)
-    side_north_mount: ModFabMount = ModFabMount(
+    side_operations: Tuple[FabOperation, ...] = (FabPad("Pad", side_pad, 10),)
+    side_north_mount: FabMount = FabMount(
         "SideNorth", side_operations, contact, normal, north)
-    side_part: ModFabSolid = ModFabSolid("SidePart", (side_north_mount,), "hdpe", "green")
+    side_part: FabSolid = FabSolid("SidePart", (side_north_mount,), "hdpe", "green")
     _ = side_part
 
     center: Vector = Vector(0.0, -250, 0.0)
     box: Box = Box("MyBox", 200, 100, 100, 10, "HDPE", center)
     box.compute()
-    box_solids: Tuple[ModFabSolid, ...] = box.produce()
+    box_solids: Tuple[FabSolid, ...] = box.produce()
 
-    all_solids: Tuple[ModFabSolid, ...] = top_solids + box_solids
+    all_solids: Tuple[FabSolid, ...] = top_solids + box_solids
 
     # Create the models:
-    model_file: ModFabFile
-    # with ModFabFile((top_part, side_part,), Path("/tmp/test.fcstd")) as model_file:
-    with ModFabFile("Test", all_solids, Path("/tmp/test.fcstd")) as model_file:
+    model_file: FabFile
+    # with FabFile((top_part, side_part,), Path("/tmp/test.fcstd")) as model_file:
+    with FabFile("Test", all_solids, Path("/tmp/test.fcstd")) as model_file:
         assert isinstance(model_file.AppDocument, App.Document), (
             type(model_file), type(model_file.AppDocument))
         context: Dict[str, Any] = {}
@@ -899,7 +899,7 @@ def main() -> None:
         model_file.produce(context.copy())
 
 
-# TODO: Move this to ModFabNode class and switch to using a *context*.
+# TODO: Move this to FabNode class and switch to using a *context*.
 def visibility_set(element: Any, new_value: bool = True, tracing: str = "") -> None:
     """Set the visibility of an element.
 
@@ -959,8 +959,8 @@ def visibility_set(element: Any, new_value: bool = True, tracing: str = "") -> N
 
 
 if __name__ == "__main__":
-    # ModFabPolygon.unit_test()
-    ModFabCircle._unit_tests()
-    # ModFabFile._unit_tests()  # needs work
-    ModFabPolygon._unit_tests()
+    # FabPolygon.unit_test()
+    FabCircle._unit_tests()
+    # FabFile._unit_tests()  # needs work
+    FabPolygon._unit_tests()
     main()
