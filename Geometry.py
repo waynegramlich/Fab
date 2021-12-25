@@ -29,10 +29,9 @@ sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 
 from dataclasses import dataclass, field
 import math
-from typing import Any, cast, List, Optional, Tuple, Union
+from typing import Any, cast, Dict, List, Optional, Tuple, Union
 
 
-from Tree import ModFabContext
 import FreeCAD  # type: ignore
 import Draft  # type: ignore
 import Part  # type: ignore
@@ -50,7 +49,7 @@ class _Geometry(object):
     """
 
     # _Geometry.produce():
-    def produce(self, context: ModFabContext, prefix: str, index: int) -> Part.Part2DObject:
+    def produce(self, context: Dict[str, Any], prefix: str, index: int) -> Part.Part2DObject:
         raise NotImplementedError(f"{type(self)}.produce() is not implemented yet")
 
 
@@ -185,7 +184,7 @@ class _Arc(_Geometry):
         return obj
 
     # _Arc.produce():
-    def produce(self, context: ModFabContext, prefix: str, index: int) -> Part.Part2DObject:
+    def produce(self, context: Dict[str, Any], prefix: str, index: int) -> Part.Part2DObject:
         """Return line segment after moving it into Geometry group."""
         mount_contact = cast(Vector, context["mount_contact"])
         mount_normal = cast(Vector, context["mount_normal"])
@@ -234,7 +233,7 @@ class _Circle(_Geometry):
     Diameter: float
 
     # _Circle.produce():
-    def produce(self, context: ModFabContext, prefix: str, index: int) -> Part.Part2DObject:
+    def produce(self, context: Dict[str, Any], prefix: str, index: int) -> Part.Part2DObject:
         """Return line segment after moving it into Geometry group."""
         # Extract mount plane *contact* and *normal* from *context* for 2D projection:
         mount_contact = cast(Vector, context["mount_contact"])
@@ -278,7 +277,7 @@ class _Line(_Geometry):
     Finish: Vector
 
     # _Line.produce():
-    def produce(self, context: ModFabContext, prefix: str, index: int) -> Part.Part2DObject:
+    def produce(self, context: Dict[str, Any], prefix: str, index: int) -> Part.Part2DObject:
         """Return line segment after moving it into Geometry group."""
         label: str = f"{prefix}_Line_{index:03d}"
         placement: Placement = Placement()
@@ -524,7 +523,7 @@ class ModFabCircle(ModFabGeometry):
         object.__setattr__(self, "Center", self.Center + copy)  # Makes a copy.
 
     # ModFabCircle.produce():
-    def produce(self, context: ModFabContext, prefix: str) -> Tuple[Part.Part2DObject, ...]:
+    def produce(self, context: Dict[str, Any], prefix: str) -> Tuple[Part.Part2DObject, ...]:
         """Produce the FreeCAD objects needed for ModFabPolygon."""
         geometries: Tuple[_Geometry, ...] = self.get_geometries()
         geometry: _Geometry
@@ -718,7 +717,7 @@ class ModFabPolygon(ModFabGeometry):
             fillet.plane_2d_project(contact, normal)
 
     # ModFabPolygon.produce():
-    def produce(self, context: ModFabContext, prefix: str) -> Tuple[Part.Part2DObject, ...]:
+    def produce(self, context: Dict[str, Any], prefix: str) -> Tuple[Part.Part2DObject, ...]:
         """Produce the FreeCAD objects needed for ModFabPolygon."""
         # Extract mount plane *contact* and *normal* from *context*:
         mount_contact = cast(Vector, context["mount_contact"])

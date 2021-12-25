@@ -34,11 +34,10 @@ assert sys.version_info.major == 3  # Python 3.x
 assert sys.version_info.minor == 8  # Python 3.8
 sys.path.extend([os.path.join(os.getcwd(), "squashfs-root/usr/lib"), "."])
 
-from dataclasses import dataclass, field
-from typing import Any, cast, Optional, Set, Tuple
+from dataclasses import dataclass
+from typing import Any, cast, Dict, Optional, Set, Tuple
 from pathlib import Path
 from Utilities import ModFabColor
-from Tree import ModFabContext
 
 import FreeCAD  # type: ignore
 import Part  # type: ignore
@@ -57,14 +56,14 @@ class ModFabFile(object):
 
     FilePath: Path
     Parts: Tuple["ModFabSolid", ...]
-    AppDocument: App.Document = field(init=False, repr=False)
-    GuiDocument: Optional["Gui.Document"] = field(init=False, default=None, repr=False)
-    Part: "ModFabSolid" = field(init=False, repr=False)
-    ViewObject: Optional[Any] = field(init=False, default=None, repr=False)
-    GeometryGroup: App.DocumentObjectGroup = field(init=False, repr=False)
-    Body: "Part.BodyBase" = field(init=False, repr=False)
-    Mount: "ModFabMount" = field(init=False, repr=False)
-    DatumPlane: "Part.Geometry" = field(init=False, repr=False)
+    # AppDocument: App.Document = field(init=False, repr=False)
+    # GuiDocument: Optional["Gui.Document"] = field(init=False, default=None, repr=False)
+    # Part: "ModFabSolid" = field(init=False, repr=False)
+    # ViewObject: Optional[Any] = field(init=False, default=None, repr=False)
+    # GeometryGroup: App.DocumentObjectGroup = field(init=False, repr=False)
+    # Body: "Part.BodyBase" = field(init=False, repr=False)
+    # Mount: "ModFabMount" = field(init=False, repr=False)
+    # DatumPlane: "Part.Geometry" = field(init=False, repr=False)
 
     # ModFabFile.__post_init__():
     def __post_init__(self) -> None:
@@ -108,14 +107,12 @@ class ModFabFile(object):
             self.AppDocument.saveAs(str(self.FilePath))
 
     # ModFabFile.produce():
-    def produce(self, context: ModFabContext) -> None:
+    def produce(self, context: Dict[str, Any]) -> None:
         """Produce all of the ModFabSolid's."""
         part: "ModFabSolid"
         for part in self.Parts:
             self.Part = part
-            child_context: ModFabContext
-            with context.child() as child_context:
-                part.produce(child_context)
+            part.produce(context.copy())
             self.Part = cast(ModFabSolid, None)
 
     # ModFabFile._unit_tests():
@@ -161,12 +158,11 @@ class ModFabFile(object):
         model_file: ModFabFile
         with ModFabFile(fcstd_path, (part1,)) as model_file:
             assert isinstance(model_file, ModFabFile)
-            context: ModFabContext = ModFabContext({})
+            context: Dict[str, Any] = {}
             context["app_document"] = model_file.AppDocument
-            context["gui_document"] = model_file.GuiDocument
-            child_context: ModFabContext
-            with context.child() as child_context:
-                model_file.produce(child_context)
+            if App.GuiUp:
+                context["gui_document"] = model_file.GuiDocument
+            model_file.produce(context.copy())
         assert fcstd_path.exists(), f"{fcstd_path} file not generated."
         fcstd_path.unlink()
         assert not fcstd_path.exists()
@@ -186,12 +182,12 @@ class ModFabOperation(object):
         raise NotImplementedError(f"{type(self)}.get_name() is not implemented")
 
     # ModFabOperation.produce():
-    def produce(self, context: ModFabContext, prefix: str) -> None:
+    def produce(self, context: Dict[str, Any], prefix: str) -> None:
         """Return the operation sort key."""
         raise NotImplementedError(f"{type(self)}.produce() is not implemented")
 
     # ModFabOperation.produce_shape_binder():
-    def produce_shape_binder(self, context: ModFabContext,
+    def produce_shape_binder(self, context: Dict[str, Any],
                              part_geometries: Tuple[Part.Part2DObject, ...],
                              prefix: str) -> Part.Feature:
         """Produce the shape binder needed for the pad, pocket, hole, ... operations."""
@@ -253,16 +249,14 @@ class ModFabPad(ModFabOperation):
         return self.Name
 
     # ModFabPad.produce():
-    def produce(self, context: ModFabContext, prefix: str) -> None:
+    def produce(self, context: Dict[str, Any], prefix: str) -> None:
         """Produce the Pad."""
         # Extract the *part_geometries* and create the assocated *shape_binder*:
         next_prefix: str = f"{prefix}_{self.Name}"
-        child_context: ModFabContext
         part_geometries: Tuple[Part.Part2DObject, ...]
-        with context.child() as child_context:
-            part_geometries = self.Geometry.produce(child_context, next_prefix)
+        part_geometries = self.Geometry.produce(context.copy(), next_prefix)
         shape_binder: Part.Feature = self.produce_shape_binder(
-            context, part_geometries, next_prefix)
+            context.copy(), part_geometries, next_prefix)
         assert isinstance(shape_binder, Part.Feature)
         shape_binder.Visibility = False
 
@@ -318,14 +312,12 @@ class ModFabPocket(ModFabOperation):
         return self.Name
 
     # ModFabPocket.produce():
-    def produce(self, context: ModFabContext, prefix: str) -> None:
+    def produce(self, context: Dict[str, Any], prefix: str) -> None:
         """Produce the Pad."""
         # Extract the *part_geometries*:
         next_prefix: str = f"{prefix}_{self.Name}"
-        child_context: ModFabContext
         part_geometries: Tuple[Part.Part2DObject, ...]
-        with context.child() as child_context:
-            part_geometries = self.Geometry.produce(child_context, next_prefix)
+        part_geometries = self.Geometry.produce(context.copy(), next_prefix)
 
         # Create the *shape_binder*:
         shape_binder: Part.Feature = self.produce_shape_binder(
@@ -379,17 +371,16 @@ class ModFabHole(ModFabOperation):
         return self.Name
 
     # ModFabHole.produce():
-    def produce(self, context: ModFabContext, prefix: str) -> None:
+    def produce(self, context: Dict[str, Any], prefix: str) -> None:
         """Produce the Hole."""
         # Extract the *part_geometries*:
         next_prefix: str = f"{prefix}_{self.Name}"
-        child_context: ModFabContext
-        with context.child() as child_context:
-            part_geometries: Tuple[Part.Part2DObject, ...] = self.Circle.produce(child_context,
-                                                                                 next_prefix)
+        part_geometries: Tuple[Part.Part2DObject, ...] = (
+            self.Circle.produce(context.copy(), next_prefix))
+
         # Create the *shape_binder*:
         shape_binder: Part.Feature = self.produce_shape_binder(
-            context, part_geometries, next_prefix)
+            context.copy(), part_geometries, next_prefix)
         assert isinstance(shape_binder, Part.Feature)
         body = cast(Part.BodyBase, context["body"])
 
@@ -451,7 +442,7 @@ class ModFabMount(object):
             operation_names.add(operation_name)
 
     # ModFabMount.produce():
-    def produce(self, context: ModFabContext, prefix: str) -> None:
+    def produce(self, context: Dict[str, Any], prefix: str) -> None:
         """Create the FreeCAD DatumPlane used for the drawing support.
 
         Arguments:
@@ -547,9 +538,7 @@ class ModFabMount(object):
         # to recursively performing the *operations*:
         operation: ModFabOperation
         for operation in self.Operations:
-            child_context: ModFabContext
-            with context.child() as child_context:
-                operation.produce(child_context, prefix)
+            operation.produce(context.copy(), prefix)
 
 
 # ModFabSolid:
@@ -608,7 +597,7 @@ class ModFabSolid(object):
             raise ValueError(f"No Pad operation found for '{self.Name}'")
 
     # ModFabSolid.produce():
-    def produce(self, context: ModFabContext) -> None:
+    def produce(self, context: Dict[str, Any]) -> None:
         """Produce the ModFabSolid."""
         app_document = cast(App.Document, context["app_document"])
 
@@ -647,9 +636,7 @@ class ModFabSolid(object):
         mount: ModFabMount
         for mount in self.Mounts:
             prefix: str = mount.Name
-            child_context: ModFabContext
-            with context.child() as child_context:
-                mount.produce(child_context, prefix)
+            mount.produce(context.copy(), prefix)
 
 
 # Box:
@@ -866,12 +853,11 @@ def main() -> None:
     with ModFabFile(Path("/tmp/test.fcstd"), all_parts) as model_file:
         assert isinstance(model_file.AppDocument, App.Document), (
             type(model_file), type(model_file.AppDocument))
-        context: ModFabContext = ModFabContext({})
+        context: Dict[str, Any] = {}
         context["app_document"] = model_file.AppDocument
-        context["gui_document"] = model_file.GuiDocument
-        child_context: ModFabContext
-        with context.child() as child_context:
-            model_file.produce(child_context)
+        if App.GuiUp:
+            context["gui_document"] = model_file.GuiDocument
+        model_file.produce(context.copy())
 
 
 def visibility_set(element: Any, new_value: bool = True, tracing: str = "") -> None:
