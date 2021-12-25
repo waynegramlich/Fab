@@ -17,11 +17,6 @@
 # [Draft SelectPlane](https://wiki.freecadweb.org/Draft_SelectPlane)
 # [Draft Workbench Scripting](https://wiki.freecadweb.org/Draft_Workbench#Scripting)
 
-# [Sketcher Constraint Angle](https://wiki.freecadweb.org/Sketcher_ConstrainAngle)
-# [Sketcher Scripting](https://wiki.freecadweb.org/Sketcher_ConstrainAngle)
-# [Sketcher Switch Between Multiple Solutions](https://www.youtube.com/watch?v=Q43K23k1noo&t=20s)
-# [Sketcher Toggle Constructions](https://wiki.freecadweb.org/Sketcher_ToggleConstruction)
-
 # [Combine Draft and Sketch to simplify Modeling.](https://www.youtube.com/watch?v=lfzGEk727eo)
 
 # Note this code uses nested dataclasses that are frozen.  Computed attributes are tricky.
@@ -54,16 +49,9 @@ from Geometry import ModFabCircle, ModFabGeometry, ModFabPolygon
 class ModFabFile(object):
     """ModFabFile: Represents a FreeCAD document file."""
 
-    FilePath: Path
+    Name: str
     Parts: Tuple["ModFabSolid", ...]
-    # AppDocument: App.Document = field(init=False, repr=False)
-    # GuiDocument: Optional["Gui.Document"] = field(init=False, default=None, repr=False)
-    # Part: "ModFabSolid" = field(init=False, repr=False)
-    # ViewObject: Optional[Any] = field(init=False, default=None, repr=False)
-    # GeometryGroup: App.DocumentObjectGroup = field(init=False, repr=False)
-    # Body: "Part.BodyBase" = field(init=False, repr=False)
-    # Mount: "ModFabMount" = field(init=False, repr=False)
-    # DatumPlane: "Part.Geometry" = field(init=False, repr=False)
+    FilePath: Path
 
     # ModFabFile.__post_init__():
     def __post_init__(self) -> None:
@@ -119,17 +107,17 @@ class ModFabFile(object):
     @staticmethod
     def _unit_tests() -> None:
         """Run ModFabFile unit tests."""
-        # Empty parts error:
+        # No solids specified:
         fcstd_path: Path = Path("/tmp/part_file_test.fcstd")
         try:
-            ModFabFile(fcstd_path, ())
+            ModFabFile("EmptyFile", (), fcstd_path)
             assert False
         except ValueError as value_error:
             assert str(value_error) == "At least one ModFabSolid needs to be specified"
 
-        # Bogus parts error:
+        # Bogus solid error:
         try:
-            ModFabFile(fcstd_path, (cast(ModFabSolid, None),))
+            ModFabFile("BogusSolid", (cast(ModFabSolid, None),), fcstd_path)
             assert False
         except ValueError as value_error:
             assert str(value_error) == "None is not a ModFabSolid"
@@ -143,12 +131,12 @@ class ModFabFile(object):
         depth1: float = 10.0
         pad1: ModFabPad = ModFabPad("Cylinder1", circle1, depth1)
         operations1: Tuple[ModFabOperation, ...] = (pad1,)
-        mount1: ModFabMount = ModFabMount("Mount1", contact, z_axis, y_axis, operations1)
-        part1: ModFabSolid = ModFabSolid("Part1", "hdpe", "orange", (mount1,))
+        mount1: ModFabMount = ModFabMount("Mount1", operations1, contact, z_axis, y_axis)
+        solid1: ModFabSolid = ModFabSolid("Part1", (mount1,), "hdpe", "orange")
 
         # Duplicate Part Names:
         try:
-            ModFabFile(fcstd_path, (part1, part1))
+            ModFabFile("Duplicate Solid", (solid1, solid1), fcstd_path)
             assert False
         except ValueError as value_error:
             assert str(value_error) == "There are two or more Part's with the same name 'Part1'"
@@ -156,7 +144,7 @@ class ModFabFile(object):
         # Test Open/Produce/Close
         _ = fcstd_path.unlink if fcstd_path.exists() else None
         model_file: ModFabFile
-        with ModFabFile(fcstd_path, (part1,)) as model_file:
+        with ModFabFile("Open_Produce_Close", (solid1,), fcstd_path) as model_file:
             assert isinstance(model_file, ModFabFile)
             context: Dict[str, Any] = {}
             context["app_document"] = model_file.AppDocument
@@ -175,6 +163,8 @@ class ModFabOperation(object):
 
     All model operations are immutable (i.e. frozen.)
     """
+
+    Name: str
 
     # ModFabOperation.get_name():
     def get_name(self) -> str:
@@ -231,7 +221,6 @@ class ModFabPad(ModFabOperation):
 
     """
 
-    Name: str
     Geometry: ModFabGeometry
     Depth: float
 
@@ -294,7 +283,6 @@ class ModFabPocket(ModFabOperation):
 
     """
 
-    Name: str
     Geometry: ModFabGeometry
     Depth: float
 
@@ -353,7 +341,6 @@ class ModFabHole(ModFabOperation):
 
     """
 
-    Name: str
     Circle: ModFabCircle
     Depth: float
 
@@ -411,26 +398,26 @@ class ModFabMount(object):
     * *Name*: (str): The name of the ModFabPlane.
     * *Contact* (Vector): A point on the plane.
     * *Normal* (Vector): A normal to the plane
-    * *North* (Vector):
-      A vector in the plane that specifies the north direction when mounted  in a machining vice.
+    * *Orient* (Vector):
+      A vector in the plane that specifies the north direction when mounted in a machining vice.
     * *Operations* (Tuple[ModFabOperation, ...]): The operations to perform.
 
     """
 
     Name: str
+    Operations: Tuple[ModFabOperation, ...]
     Contact: Vector
     Normal: Vector
-    North: Vector
-    Operations: Tuple[ModFabOperation, ...]
+    Orient: Vector  # TODO change to Orient
 
     # ModFabMount.__post_init__():
     def __post_init__(self) -> None:
         """Verify that ModFabMount arguments are valid."""
         # (Why __setattr__?)[https://stackoverflow.com/questions/53756788]
         copy: Vector = Vector()  # Make private copy of Vector's.
-        object.__setattr__(self, "Contect", self.Contact + copy)
+        object.__setattr__(self, "Contact", self.Contact + copy)
         object.__setattr__(self, "Normal", self.Normal + copy)
-        object.__setattr__(self, "North", self.North + copy)
+        object.__setattr__(self, "Orient", self.Orient + copy)
 
         # Disallow duplicate operation names:
         operation_names: Set[str] = set()
@@ -555,9 +542,9 @@ class ModFabSolid(object):
     """
 
     Name: str
+    Mounts: Tuple[ModFabMount, ...]
     Material: str
     Color: str
-    Mounts: Tuple[ModFabMount, ...]
 
     # ModFabSolid.__post_init__():
     def __post_init__(self) -> None:
@@ -703,8 +690,8 @@ class Box(object):
             ModFabPad("Pad", top_polygon, dw),
         )
         top_mount: ModFabMount = ModFabMount(
-            "TopNorth", center + Vector(0, 0, dz2), top_axis, north_axis, top_operations)
-        top_part: ModFabSolid = ModFabSolid("Top", "hdpe", "red", (top_mount,))
+            "TopNorth", top_operations, center + Vector(0, 0, dz2), top_axis, north_axis)
+        top_part: ModFabSolid = ModFabSolid("Top", (top_mount,), "hdpe", "red")
 
         north_corners: Corners = (
             (center + Vector(dx2, dy2, dz2 - dw), corner_radius),  # TNE
@@ -717,8 +704,8 @@ class Box(object):
             ModFabPad("Pad", north_polygon, dw),
         )
         north_mount: ModFabMount = ModFabMount(
-            "NorthBottom", center + Vector(0, dy2, 0), north_axis, bottom_axis, north_operations)
-        north_part: ModFabSolid = ModFabSolid("North", "hdpe", "green", (north_mount,))
+            "NorthBottom", north_operations, center + Vector(0, dy2, 0), north_axis, bottom_axis)
+        north_part: ModFabSolid = ModFabSolid("North", (north_mount,), "hdpe", "green")
 
         west_corners: Corners = (
             (center + Vector(-dx2, dy2 - dw, dz2 - dw), corner_radius),  # TNW
@@ -731,8 +718,8 @@ class Box(object):
             ModFabPad("Pad", west_polygon, dw),
         )
         west_mount: ModFabMount = ModFabMount(
-            "WestNorth", center + Vector(-dx2, 0, 0), west_axis, north_axis, west_operations)
-        west_part: ModFabSolid = ModFabSolid("West", "hdpe", "blue", (west_mount,))
+            "WestNorth", west_operations, center + Vector(-dx2, 0, 0), west_axis, north_axis)
+        west_part: ModFabSolid = ModFabSolid("West", (west_mount,), "hdpe", "blue")
 
         bottom_corners: Corners = (
             (center + Vector(dx2, dy2 - dw, -dz2), corner_radius),  # BNE
@@ -745,8 +732,8 @@ class Box(object):
             ModFabPad("Pad", bottom_polygon, dw),
         )
         bottom_mount: ModFabMount = ModFabMount(
-            "BottomNorth", center + Vector(0, 0, -dz2), bottom_axis, north_axis, bottom_operations)
-        bottom_part: ModFabSolid = ModFabSolid("Bottom", "hdpe", "red", (bottom_mount,))
+            "BottomNorth", bottom_operations, center + Vector(0, 0, -dz2), bottom_axis, north_axis)
+        bottom_part: ModFabSolid = ModFabSolid("Bottom", (bottom_mount,), "hdpe", "red")
 
         east_corners: Corners = (
             (center + Vector(dx2, dy2 - dw, dz2 - dw), corner_radius),  # TNE
@@ -759,8 +746,8 @@ class Box(object):
             ModFabPad("Pad", east_polygon, dw),
         )
         east_mount: ModFabMount = ModFabMount(
-            "EastNorth", center + Vector(dx2, 0, 0), east_axis, north_axis, east_operations)
-        east_part: ModFabSolid = ModFabSolid("East", "hdpe", "blue", (east_mount,))
+            "EastNorth", east_operations, center + Vector(dx2, 0, 0), east_axis, north_axis)
+        east_part: ModFabSolid = ModFabSolid("East", (east_mount,), "hdpe", "blue")
 
         south_corners: Corners = (
             (center + Vector(dx2, -dy2, dz2 - dw), corner_radius),  # TSE
@@ -773,8 +760,8 @@ class Box(object):
             ModFabPad("Pad", south_polygon, dw),
         )
         south_mount: ModFabMount = ModFabMount(
-            "SouthBottom", center + Vector(0, -dy2, 0), south_axis, bottom_axis, south_operations)
-        south_part: ModFabSolid = ModFabSolid("South", "hdpe", "green", (south_mount,))
+            "SouthBottom", south_operations, center + Vector(0, -dy2, 0), south_axis, bottom_axis)
+        south_part: ModFabSolid = ModFabSolid("South", (south_mount,), "hdpe", "green")
 
         return (top_part, north_part, west_part, bottom_part, east_part, south_part)
 
@@ -810,16 +797,15 @@ def main() -> None:
     contact: Vector = Vector(0, 0, z_offset)
     normal: Vector = Vector(0, 0, 1)
     north: Vector = Vector(0, 1, 0)
-    top_north_mount: ModFabMount = ModFabMount("TopNorth", contact, normal, north, (
+    top_operations: Tuple[ModFabOperation, ...] = (
         ModFabPad("Pad", pad_polygon, 50.0),
         ModFabPocket("LeftPocket", left_pocket, 10.0),
         ModFabPocket("RightPocket", right_circle, 8.0),
         ModFabHole("CenterHole", center_circle, 5.0),
-    ))
-    top_part: ModFabSolid = ModFabSolid("TopPart", "hdpe", "purple", (
-        top_north_mount,
-    ))
-    top_parts: Tuple[ModFabSolid, ...] = (top_part,)
+    )
+    top_north_mount: ModFabMount = ModFabMount("TopNorth", top_operations, contact, normal, north)
+    top_solid: ModFabSolid = ModFabSolid("TopPart", (top_north_mount,), "hdpe", "purple")
+    top_solids: Tuple[ModFabSolid, ...] = (top_solid,)
 
     # Create *side_part*
     side_radius: float = 3.0
@@ -832,25 +818,23 @@ def main() -> None:
     ))
     contact = Vector(0, y_offset)
     normal = Vector(0, -1, 0)
-    side_north_mount: ModFabMount = ModFabMount("SideNorth", contact, normal, north, (
-        ModFabPad("Pad", side_pad, 10),
-    ))
-    side_part: ModFabSolid = ModFabSolid("SidePart", "hdpe", "green", (
-        side_north_mount,
-    ))
+    side_operations: Tuple[ModFabOperation, ...] = (ModFabPad("Pad", side_pad, 10),)
+    side_north_mount: ModFabMount = ModFabMount(
+        "SideNorth", side_operations, contact, normal, north)
+    side_part: ModFabSolid = ModFabSolid("SidePart", (side_north_mount,), "hdpe", "green")
     _ = side_part
 
     center: Vector = Vector(0.0, -250, 0.0)
     box: Box = Box("MyBox", 200, 100, 100, 10, "HDPE", center)
     box.compute()
-    box_parts: Tuple[ModFabSolid, ...] = box.produce()
+    box_solids: Tuple[ModFabSolid, ...] = box.produce()
 
-    all_parts: Tuple[ModFabSolid, ...] = top_parts + box_parts
+    all_solids: Tuple[ModFabSolid, ...] = top_solids + box_solids
 
     # Create the models:
     model_file: ModFabFile
     # with ModFabFile((top_part, side_part,), Path("/tmp/test.fcstd")) as model_file:
-    with ModFabFile(Path("/tmp/test.fcstd"), all_parts) as model_file:
+    with ModFabFile("Test", all_solids, Path("/tmp/test.fcstd")) as model_file:
         assert isinstance(model_file.AppDocument, App.Document), (
             type(model_file), type(model_file.AppDocument))
         context: Dict[str, Any] = {}
@@ -860,6 +844,7 @@ def main() -> None:
         model_file.produce(context.copy())
 
 
+# TODO: Move this to ModFabNode class and switch to using a *context*.
 def visibility_set(element: Any, new_value: bool = True, tracing: str = "") -> None:
     """Set the visibility of an element.
 
