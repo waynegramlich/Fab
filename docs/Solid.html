@@ -70,7 +70,7 @@ Builds a box given a length, width, height, material, thickness and center point
 <h2><a name="solid--modfabfile"></a>2 Class ModFabFile:</h2>
 <p>Represents a FreeCAD document file.</p>
 <h3><a name="solid----produce"></a>2.1 <code>ModFabFile.</code>produce():</h3>
-<p>ModFabFile.produce(self, context: typing.Dict[str, typing.Any]) -&gt; None:</p>
+<p>ModFabFile.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
 <p>Produce all of the ModFabSolid's.</p>
 <h2><a name="solid--modfabhole"></a>3 Class ModFabHole:</h2>
 <p>A FreeCAD PartDesign Pocket operation.
@@ -84,7 +84,7 @@ Attributes:</p>
 <p>ModFabHole.get_name(self) -&gt; str:</p>
 <p>Return ModFabHole name.</p>
 <h3><a name="solid----produce"></a>3.2 <code>ModFabHole.</code>produce():</h3>
-<p>ModFabHole.produce(self, context: typing.Dict[str, typing.Any], prefix: str) -&gt; None:</p>
+<p>ModFabHole.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
 <p>Produce the Hole.</p>
 <h2><a name="solid--modfabmount"></a>4 Class ModFabMount:</h2>
 <p>An operations plane that can be oriented for subsequent machine operations.
@@ -101,7 +101,7 @@ A vector in the plane that specifies the north direction when mounted in a machi
 <li><em>Operations</em> (Tuple[ModFabOperation, ...]): The operations to perform.</li>
 </ul>
 <h3><a name="solid----produce"></a>4.1 <code>ModFabMount.</code>produce():</h3>
-<p>ModFabMount.produce(self, context: typing.Dict[str, typing.Any], prefix: str) -&gt; None:</p>
+<p>ModFabMount.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
 <p>Create the FreeCAD DatumPlane used for the drawing support.
 Arguments:</p>
 <ul>
@@ -121,7 +121,7 @@ All model operations are immutable (i.e. frozen.)</p>
 <p>ModFabOperation.get_name(self) -&gt; str:</p>
 <p>Return ModFabOperation name.</p>
 <h3><a name="solid----produce"></a>5.2 <code>ModFabOperation.</code>produce():</h3>
-<p>ModFabOperation.produce(self, context: typing.Dict[str, typing.Any], prefix: str) -&gt; None:</p>
+<p>ModFabOperation.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
 <p>Return the operation sort key.</p>
 <h3><a name="solid----produce-shape-binder"></a>5.3 <code>ModFabOperation.</code>produce_shape_binder():</h3>
 <p>ModFabOperation.produce_shape_binder(self, context: typing.Dict[str, typing.Any], part_geometries: typing.Tuple[Part.Part2DObject, ...], prefix: str) -&gt; Part.Feature:</p>
@@ -138,7 +138,7 @@ Attributes:</p>
 <p>ModFabPad.get_name(self) -&gt; str:</p>
 <p>Return ModFabPad name.</p>
 <h3><a name="solid----produce"></a>6.2 <code>ModFabPad.</code>produce():</h3>
-<p>ModFabPad.produce(self, context: typing.Dict[str, typing.Any], prefix: str) -&gt; None:</p>
+<p>ModFabPad.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
 <p>Produce the Pad.</p>
 <h2><a name="solid--modfabpocket"></a>7 Class ModFabPocket:</h2>
 <p>A FreeCAD PartDesign Pocket operation.
@@ -152,17 +152,17 @@ Attributes:</p>
 <p>ModFabPocket.get_name(self) -&gt; str:</p>
 <p>Return ModFabPocket name.</p>
 <h3><a name="solid----produce"></a>7.2 <code>ModFabPocket.</code>produce():</h3>
-<p>ModFabPocket.produce(self, context: typing.Dict[str, typing.Any], prefix: str) -&gt; None:</p>
+<p>ModFabPocket.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
 <p>Produce the Pad.</p>
 <h2><a name="solid--modfabsolid"></a>8 Class ModFabSolid:</h2>
 <p>ModFab: Represents a single part constructed using FreeCAD Part Design paradigm.
 Attributes:</p>
 <ul>
 <li><em>Name</em> (str): The model name.</li>
+<li><em>Mounts</em> (Tuple[ModFabMount, ...]): The various model mounts to use to construct the part.</li>
 <li><em>Material</em> (str): The material to use.</li>
 <li><em>Color</em> (str): The color to use.</li>
-<li><em>Mounts</em> (Tuple[ModFabMount, ...]): The various model mounts to use to construct the part.</li>
 </ul>
 <h3><a name="solid----produce"></a>8.1 <code>ModFabSolid.</code>produce():</h3>
-<p>ModFabSolid.produce(self, context: typing.Dict[str, typing.Any]) -&gt; None:</p>
+<p>ModFabSolid.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
 <p>Produce the ModFabSolid.</p>

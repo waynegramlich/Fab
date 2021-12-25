@@ -43,15 +43,16 @@ from FreeCAD import Placement, Rotation, Vector
 # import Part  # type: ignore
 
 from Geometry import ModFabCircle, ModFabGeometry, ModFabPolygon
+from Tree import ModFabNode, ModFabInterior
 
 # ModFabFile:
 @dataclass
-class ModFabFile(object):
+class ModFabFile(ModFabInterior):
     """ModFabFile: Represents a FreeCAD document file."""
 
-    Name: str
-    Parts: Tuple["ModFabSolid", ...]
-    FilePath: Path
+    # Name: str
+    # Parts: Tuple["ModFabSolid", ...]
+    FilePath: Path = Path("bogus")
 
     # ModFabFile.__post_init__():
     def __post_init__(self) -> None:
@@ -81,6 +82,11 @@ class ModFabFile(object):
             self.GuiDocument = Gui.getDocument(stem)  # pragma: no unit cover
             assert isinstance(self.GuiDocument, Gui.Document)
 
+    @property
+    def Parts(self) -> Tuple["ModFabSolid", ...]:
+        """Return the children ModFabSolid's."""
+        return cast(Tuple[ModFabSolid, ...], self.Children)
+
     # ModFabFile.__enter__():
     def __enter__(self) -> "ModFabFile":
         """Open the ModFabFile."""
@@ -95,13 +101,18 @@ class ModFabFile(object):
             self.AppDocument.saveAs(str(self.FilePath))
 
     # ModFabFile.produce():
-    def produce(self, context: Dict[str, Any]) -> None:
+    def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
         """Produce all of the ModFabSolid's."""
+        if tracing:
+            print("=>{tracing}=>ModFabFile.produce('{self.Name}', *)")
         part: "ModFabSolid"
         for part in self.Parts:
             self.Part = part
             part.produce(context.copy())
             self.Part = cast(ModFabSolid, None)
+        if tracing:
+            print("<={tracing}=>ModFabFile.produce('{self.Name}', *)")
+        return ()
 
     # ModFabFile._unit_tests():
     @staticmethod
@@ -157,14 +168,14 @@ class ModFabFile(object):
 
 
 # ModFabOperation:
-@dataclass(frozen=True)
-class ModFabOperation(object):
+@dataclass
+class ModFabOperation(ModFabNode):
     """ModFabOperation: An base class for operations -- ModFabPad, ModFabPocket, ModFabHole, etc.
 
     All model operations are immutable (i.e. frozen.)
     """
 
-    Name: str
+    # Name: str
 
     # ModFabOperation.get_name():
     def get_name(self) -> str:
@@ -172,9 +183,10 @@ class ModFabOperation(object):
         raise NotImplementedError(f"{type(self)}.get_name() is not implemented")
 
     # ModFabOperation.produce():
-    def produce(self, context: Dict[str, Any], prefix: str) -> None:
+    def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
         """Return the operation sort key."""
         raise NotImplementedError(f"{type(self)}.produce() is not implemented")
+        return ()
 
     # ModFabOperation.produce_shape_binder():
     def produce_shape_binder(self, context: Dict[str, Any],
@@ -210,7 +222,7 @@ class ModFabOperation(object):
 
 
 # ModFabPad:
-@dataclass(frozen=True)
+@dataclass
 class ModFabPad(ModFabOperation):
     """ModFabPad: A FreeCAD PartDesign Pad operation.
 
@@ -238,9 +250,12 @@ class ModFabPad(ModFabOperation):
         return self.Name
 
     # ModFabPad.produce():
-    def produce(self, context: Dict[str, Any], prefix: str) -> None:
+    def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
         """Produce the Pad."""
+        if tracing:
+            print("{tracing}=>ModFab.produce('{self.Name}')")
         # Extract the *part_geometries* and create the assocated *shape_binder*:
+        prefix = cast(str, context["prefix"])
         next_prefix: str = f"{prefix}_{self.Name}"
         part_geometries: Tuple[Part.Part2DObject, ...]
         part_geometries = self.Geometry.produce(context.copy(), next_prefix)
@@ -270,9 +285,12 @@ class ModFabPad(ModFabOperation):
         # For the GUI, update the view provider:
         self._viewer_update(body, pad)
 
+        if tracing:
+            print("{tracing}<=ModFab.produce('{self.Name}')")
+        return ()
 
 # ModFabPocket:
-@dataclass(frozen=True)
+@dataclass
 class ModFabPocket(ModFabOperation):
     """ModFabPocket: A FreeCAD PartDesign Pocket operation.
 
@@ -300,9 +318,12 @@ class ModFabPocket(ModFabOperation):
         return self.Name
 
     # ModFabPocket.produce():
-    def produce(self, context: Dict[str, Any], prefix: str) -> None:
+    def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
         """Produce the Pad."""
+        if tracing:
+            print("{tracing}=>ModFabPocket.produce('{self.Name}')")
         # Extract the *part_geometries*:
+        prefix = cast(str, context["prefix"])
         next_prefix: str = f"{prefix}_{self.Name}"
         part_geometries: Tuple[Part.Part2DObject, ...]
         part_geometries = self.Geometry.produce(context.copy(), next_prefix)
@@ -328,9 +349,12 @@ class ModFabPocket(ModFabOperation):
         # For the GUI, update the view provider:
         self._viewer_update(body, pocket)
 
+        if tracing:
+            print("{tracing}<=ModFabPocket.produce('{self.Name}')")
+        return ()
 
 # ModFabHole:
-@dataclass(frozen=True)
+@dataclass
 class ModFabHole(ModFabOperation):
     """ModFabHole: A FreeCAD PartDesign Pocket operation.
 
@@ -358,9 +382,12 @@ class ModFabHole(ModFabOperation):
         return self.Name
 
     # ModFabHole.produce():
-    def produce(self, context: Dict[str, Any], prefix: str) -> None:
+    def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
         """Produce the Hole."""
         # Extract the *part_geometries*:
+        if tracing:
+            print("{tracing}=>ModFabHole.produce('{self.Name}')")
+        prefix = cast(str, context["prefix"])
         next_prefix: str = f"{prefix}_{self.Name}"
         part_geometries: Tuple[Part.Part2DObject, ...] = (
             self.Circle.produce(context.copy(), next_prefix))
@@ -384,10 +411,13 @@ class ModFabHole(ModFabOperation):
         # For the GUI, update the view provider:
         self._viewer_update(body, hole)
 
+        if tracing:
+            print("{tracing}<=ModFabHole.produce('{self.Name}')")
+        return ()
 
 # ModFabMount:
-@dataclass(frozen=True)
-class ModFabMount(object):
+@dataclass
+class ModFabMount(ModFabInterior):
     """ModFabMount: An operations plane that can be oriented for subsequent machine operations.
 
     This class basically corresponds to a FreeCad Datum Plane.  It is basically the surface
@@ -404,11 +434,12 @@ class ModFabMount(object):
 
     """
 
-    Name: str
-    Operations: Tuple[ModFabOperation, ...]
-    Contact: Vector
-    Normal: Vector
-    Orient: Vector  # TODO change to Orient
+    # Name: str
+    # Operations: Tuple[ModFabOperation, ...]
+
+    Contact: Vector = Vector()
+    Normal: Vector = Vector(0, 0, 1)
+    Orient: Vector = Vector(0, 1, 0)
 
     # ModFabMount.__post_init__():
     def __post_init__(self) -> None:
@@ -428,8 +459,14 @@ class ModFabMount(object):
                 raise ValueError("Mount '{self.Name}' has two operations named '{operation_name}'")
             operation_names.add(operation_name)
 
+    @property
+    # ModFabMount.Operations:
+    def Operations(self) -> Tuple[ModFabOperation, ...]:
+        """Return mount ModFabOperation's."""
+        return cast(Tuple[ModFabOperation, ...], self.Children)
+
     # ModFabMount.produce():
-    def produce(self, context: Dict[str, Any], prefix: str) -> None:
+    def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
         """Create the FreeCAD DatumPlane used for the drawing support.
 
         Arguments:
@@ -476,6 +513,9 @@ class ModFabMount(object):
         #     d = - (<Nd> . Pd)
 
         # Compute *rotation* from <Zb> to <Nd>:
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>ModFabMount.produce('{self.Name}')")
         contact: Vector = self.Contact  # Pd
         normal: Vector = self.Normal  # <Nd>
         distance: float = normal.dot(contact)  # d = - (<Nd> . Pd)
@@ -483,7 +523,6 @@ class ModFabMount(object):
         z_axis: Vector = Vector(0, 0, 1)  # <Zb>
         rotation: Rotation = Rotation(z_axis, normal)  # Rotation from <Zb> to <Nd>.
 
-        tracing: str = ""
         if tracing:
             print(f"{tracing}{contact=}")
             print(f"{tracing}{normal=}")
@@ -523,28 +562,32 @@ class ModFabMount(object):
 
         # Install the ModFabMount (i.e. *self*) and *datum_plane* into *model_file* prior
         # to recursively performing the *operations*:
+        # prefix = cast(str, context["prefix"])
         operation: ModFabOperation
         for operation in self.Operations:
-            operation.produce(context.copy(), prefix)
+            operation.produce(context.copy(), tracing=next_tracing)
+        if tracing:
+            print(f"{tracing}<=ModFabMount.produce('{self.Name}')")
+        return ()
 
 
 # ModFabSolid:
-@dataclass(frozen=True)
-class ModFabSolid(object):
+@dataclass
+class ModFabSolid(ModFabInterior):
     """ModFab: Represents a single part constructed using FreeCAD Part Design paradigm.
 
     Attributes:
     * *Name* (str): The model name.
+    * *Mounts* (Tuple[ModFabMount, ...]): The various model mounts to use to construct the part.
     * *Material* (str): The material to use.
     * *Color* (str): The color to use.
-    * *Mounts* (Tuple[ModFabMount, ...]): The various model mounts to use to construct the part.
 
     """
 
-    Name: str
-    Mounts: Tuple[ModFabMount, ...]
-    Material: str
-    Color: str
+    # Name: str
+    # Mounts: Tuple[ModFabMount, ...]
+    Material: str = ""
+    Color: str = "red"
 
     # ModFabSolid.__post_init__():
     def __post_init__(self) -> None:
@@ -583,9 +626,17 @@ class ModFabSolid(object):
         if not pad_found:
             raise ValueError(f"No Pad operation found for '{self.Name}'")
 
+    @property
+    def Mounts(self) -> Tuple[ModFabMount, ...]:
+        """Return children solids."""
+        return cast(Tuple[ModFabMount], self.Children)
+
     # ModFabSolid.produce():
-    def produce(self, context: Dict[str, Any]) -> None:
+    def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
         """Produce the ModFabSolid."""
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>ModFabSolid.produce('{self.Name}')")
         app_document = cast(App.Document, context["app_document"])
 
         # Create the *geometry_group* that contains all of the 2D geometry (line, arc, circle.):
@@ -622,8 +673,12 @@ class ModFabSolid(object):
         # Process each *mount*:
         mount: ModFabMount
         for mount in self.Mounts:
-            prefix: str = mount.Name
-            mount.produce(context.copy(), prefix)
+            context["prefix"] = mount.Name
+            mount.produce(context.copy(), tracing=next_tracing)
+
+        if tracing:
+            print(f"{tracing}<=ModFabSolid.produce('{self.Name}')")
+        return ()
 
 
 # Box:
