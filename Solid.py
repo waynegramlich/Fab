@@ -27,8 +27,8 @@ sys.path.append(".")
 import Embed
 Embed.setup()
 
-from dataclasses import dataclass
-from typing import Any, cast, Dict, Optional, Set, Tuple
+from dataclasses import dataclass, field
+from typing import Any, cast, Dict, List, Optional, Set, Tuple, Union
 from pathlib import Path
 
 
@@ -41,6 +41,7 @@ from FreeCAD import Placement, Rotation, Vector
 # import Part  # type: ignore
 
 from Geometry import FabCircle, FabGeometry, FabPolygon
+from Join import FabFasten, FabJoin
 from Tree import FabInterior, FabNode, FabRoot
 from Utilities import FabColor
 
@@ -345,6 +346,266 @@ class FabPocket(FabOperation):
             print("{tracing}<=FabPocket.produce('{self.Name}')")
         return ()
 
+
+_HoleKey = Tuple[str, str, str, float, bool]
+
+
+# _Hole:
+@dataclass(order=True)
+class _Hole(object):
+    """_Hole: FabDrill helper class that represents a hole."""
+
+    Size: str  # Essentially the diameter
+    Profile: str  # Essentially the fastener thread pitch
+    Kind: str  # "thread", "close", or "loose"
+    Depth: float  # The depth of the drill hole
+    IsTop: bool  # Is the top of the fastener
+    Center: Vector = field(compare=False)  # The Center (start point) of the drill
+    Join: FabJoin = field(compare=False)  # The associated FabJoin
+
+    # _Hole.Key():
+    @property
+    def Key(self) -> _HoleKey:
+        """Return a Hole key."""
+        return (self.Size, self.Profile, self.Kind, self.Depth, self.IsTop)
+
+
+# FabDrill:
+@dataclass
+class FabDrill(FabOperation):
+    """FabDrill: A FreeCAD PartDesign Pocket operation.
+
+    Attributes:
+    * *Name* (str): The operation name.
+    * *Joins* (FabCircle): The Circle to drill.
+    * *Depth* (float): Exlplicit depth to use. (Default: -1 to have system try to figure it out.)
+
+    """
+
+    Joins: Union[FabJoin, Tuple[FabJoin, ...]]
+    Depth: float = -1.0
+    _joins: Tuple[FabJoin, ...] = field(init=False, repr=False, default=())
+
+    # FabDrill.__post_init__():
+    def __post_init__(self) -> None:
+        """Verify FabPad values."""
+        joins: List[FabJoin] = []
+        join: Any
+        if isinstance(self.Joins, tuple):
+            index: int
+            for index, join in enumerate(self.Joins):
+                if not isinstance(join, FabJoin):
+                    raise ValueError(f"Joins[{index}]: Has type {type(join)}, not FabJoin")
+                joins.append(join)
+        elif isinstance(self.Joins, FabJoin):
+            joins.append(self.Joins)
+        else:
+            raise ValueError(f"Joins: Has type {type(join)}, not FabJoin or Tuple[FabJoin, ...]")
+        self._joins = tuple(joins)
+        if (join.Start - join.End).Length < 1.0e-8:
+            raise ValueError(f"FabJoin has same start {join.Start} and {join.Stop}.")
+
+    # FabDrill.get_name():
+    def get_name(self) -> str:
+        """Return FabDrill name."""
+        return self.Name
+
+    # FabDrill.get_kind():
+    def get_kind(self) -> str:
+        """Return the sub-class drill kind."""
+        raise NotImplementedError(f"{type(self)}.get_kind() not implmeneted")
+
+    # FabDrill.produce():
+    def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
+        """Produce the Hole."""
+
+        EPSILON: float = 1.0e-8
+
+        # close():
+        def close(vector1: Vector, vector2: Vector) -> bool:
+            """Return whether 2 normals are aligned."""
+            return (vector1 - vector2).Length < EPSILON
+
+        # normal_distance():
+        def normal_distance(normal: Vector, start: Vector, end: Vector) -> float:
+            """Return distance from start to end along normal."""
+            distance: float = (end - start).Length
+            if close(start - distance * normal, end):
+                distance = -distance
+            elif not close(start + distance * normal, end):
+                assert False, f"{start=} and  {end=} are not aligned {normal=}."
+            return distance
+
+        # Extract the *part_geometries*:
+        if tracing:
+            print("{tracing}=>FabDrill.produce('{self.Name}')")
+
+        # Grab mount information from *context*:
+        prefix = cast(str, context["prefix"])
+        # mount_name = cast(str, context["mount_name"])
+        mount_contact = cast(Vector, context["mount_contact"])
+        mount_normal = cast(Vector, context["mount_normal"])
+        bottom_depth = cast(float, context["mount_depth"])
+        assert abs(mount_normal.Length - 1.0) < EPSILON, (
+            "{self.FullPath}: Mount normal is not of length 1")
+
+        # Some commonly used variables:
+        depth: float
+        hole: _Hole
+        is_top: bool
+        join: FabJoin
+        fasten: FabFasten
+
+        # For each *join*, generate a *hole* request.  Any errors are collected in *errors*:
+        holes: List[_Hole] = []
+        errors: List[str] = []
+        for join in self._joins:
+            # Unpack *join* and associated *fasten*:
+            start: Vector = join.Start
+            end: Vector = join.End
+            fasten = join.Fasten
+
+            # *start* and *end* specify a line segment in 3D space that corresponds to the
+            # fastener shaft length (excluding extra shaft at the end for nuts and washers.)  The
+            # *start*/*end* line segment can be extended to an infinitely long line in 3D space.
+            # The mount specifies top and bottom mount plane that are supposed to totally enclose
+            # include the solid.  If the infinitely long line not perpendicular to the top/bottom
+            # mount planes, it is an error.  The locations where the infinitely long line
+            # intersects the top/bottom mount planes are *top* and *bottom* respectively.
+            # The *top* and *bottom* points specify a line segment that can potentially drilled
+            # out by this operation.  It is important to understand that the direction vector
+            # from *start* to *end* may be in the same or opposite direction as the from *top*
+            # to *bottom*.  If either *start* or *end* occur inside of the *top*/*bottom*
+            # line segment, the drill out section gets shortened appropriately.  Finally, if
+            # *start* matches either *top* or *bottom* (within epsilon), any requested
+            # countersink or counter bore operations are enabled for the drill hole; otherwise,
+            # it is just a simple drill operation.
+
+            # Find *top* and *bottom* points where infinite line pierces top/bottom mount planes:
+            top: Vector = start.projectToPlane(mount_contact, mount_normal)
+            # bottom_contact: Vector = mount_contact - bottom_depth * mount_normal
+
+            # Ensure *start*/*end* line segment is perpendicular to mount planes.
+            start_end_normal: Vector = (end - start).normalize()
+            start_end_aligned: bool
+            if not (close(mount_normal, start_end_normal) or
+                    close(mount_normal, -start_end_normal)):
+                errors.append(
+                    f"{self.FullPath}: Fasten {join.Name} is not perpendicular to mount plane")
+                continue
+
+            # Compute distances along line from *top* along the *down_normal* direction:
+            down_normal: Vector = -mount_normal
+            start_distance: float = normal_distance(down_normal, top, start)
+            end_distance: float = normal_distance(down_normal, top, end)
+            close_distance: float = min(start_distance, end_distance)
+            far_distance: float = max(start_distance, end_distance)
+            assert close_distance <= far_distance
+            if far_distance <= 0.0 or close_distance >= bottom_depth:
+                errors.append(f"{self.FullPath}: Fasten {fasten.Name} "
+                              "does not overlap with solid")
+                continue
+            if close_distance > 0.0:
+                errors.append(f"{self.FullPath}: Fasten {fasten.Name} starts below mount plane")
+                continue
+            depth = min(bottom_depth, far_distance)
+            is_top = close(start, top)
+            kind: str = self.get_kind()
+            hole = _Hole(fasten.Size, fasten.Profile, kind, depth, is_top, top, join)
+            holes.append(hole)
+
+        # Group all *holes* with the same *key* together:
+        key: _HoleKey
+        hole_groups: Dict[_HoleKey, List[_Hole]] = {}
+        for hole in holes:
+            key = hole.Key
+            if key not in hole_groups:
+                hole_groups[key] = []
+            hole_groups[key].append(hole)
+
+        # For each *hole_group* create a PartDesign Hole:
+        index: int
+        for index, key in enumerate(sorted(hole_groups.keys())):
+            # Unpack *key*:
+            size: str
+            profile: str
+            size, profile, kind, depth, is_top = key
+            diameter: float = fasten.get_diameter(kind)
+
+            # Construct the "drawing"
+            part_geometries: List[Part.Part2DObject] = []
+            hole_group: List[_Hole] = hole_groups[key]
+            for hole in hole_group:
+                # Construct the drawing"
+                # Sanity check that each *fasten* object matches the *key*.
+                join = hole.Join
+                fasten = join.Fasten
+                assert fasten.Size == size and fasten.Profile == profile and (
+                    self.get_kind() == kind and hole.Depth == depth and hole.IsTop == is_top)
+                center: Vector = hole.Center
+                circle: FabCircle = FabCircle(center, diameter)
+                part_geometries.append(circle)
+
+            # Create the *shape_binder*:
+            next_prefix = f"{prefix}.DrillCircle{index:03d}"
+            shape_binder: Part.Feature = self.produce_shape_binder(
+                context.copy(), tuple(part_geometries), next_prefix)
+            assert isinstance(shape_binder, Part.Feature)
+            body = cast(Part.BodyBase, context["body"])
+
+            # TODO: fill in actual values for Hole.
+            # Create the *pocket* and upstate the view provider for GUI mode:
+            part_hole: Part.Feature = body.newObject("PartDesign::Hole", f"{next_prefix}_Hole")
+            assert isinstance(part_hole, Part.Feature)
+            part_hole.Profile = shape_binder
+            part_hole.Diameter = diameter
+            part_hole.Depth = depth
+            part_hole.UpToFace = None
+            part_hole.Reversed = 0
+            part_hole.Midplane = 0
+
+            # Fill in other fields for the top mount.
+            if is_top:
+                assert False, "Fill in other fields."
+
+            # For the GUI, update the view provider:
+            self._viewer_update(body, part_hole)
+
+        if tracing:
+            print("{tracing}<=FabDrill.produce('{self.Name}')")
+        return tuple(errors)
+
+
+# FabThread:
+@dataclass
+class FabThread(FabDrill):
+    """Drill and thread FabJoin's."""
+
+    def get_diameter_kind(self) -> str:
+        """Return a thread diameter kind."""
+        return "thread"
+
+
+# FabClose:
+@dataclass
+class FabClose(FabDrill):
+    """Drill a close a FabJoin's."""
+
+    def get_diameter_kind(self) -> str:
+        """Return a thread diameter kind."""
+        return "close"
+
+
+# FabLoose:
+@dataclass
+class FabLoose(FabDrill):
+    """Drill Loose FabJoin's."""
+
+    def get_diameter_kind(self) -> str:
+        """Return a thread diameter kind."""
+        return "close"
+
+
 # FabHole:
 @dataclass
 class FabHole(FabOperation):
@@ -418,11 +679,14 @@ class FabMount(FabInterior):
 
     Attributes:
     * *Name*: (str): The name of the FabPlane.
+    * *Operations* (Tuple[FabOperation, ...]): The operations to perform.
     * *Contact* (Vector): A point on the plane.
     * *Normal* (Vector): A normal to the plane
     * *Orient* (Vector):
       A vector in the plane that specifies the north direction when mounted in a machining vice.
-    * *Operations* (Tuple[FabOperation, ...]): The operations to perform.
+    * *Depth* (Optional[float]):
+      The maximum depth limit.  If not specified, an estimated  maximum depth limit is
+      "deduced" the using the information from the initial extrude operation. (Default: None)
 
     """
 
@@ -432,24 +696,18 @@ class FabMount(FabInterior):
     Contact: Vector = Vector()
     Normal: Vector = Vector(0, 0, 1)
     Orient: Vector = Vector(0, 1, 0)
+    Depth: Optional[float] = None
 
     # FabMount.__post_init__():
     def __post_init__(self) -> None:
         """Verify that FabMount arguments are valid."""
+
         # (Why __setattr__?)[https://stackoverflow.com/questions/53756788]
         copy: Vector = Vector()  # Make private copy of Vector's.
         object.__setattr__(self, "Contact", self.Contact + copy)
         object.__setattr__(self, "Normal", self.Normal + copy)
         object.__setattr__(self, "Orient", self.Orient + copy)
-
-        # Disallow duplicate operation names:
-        operation_names: Set[str] = set()
-        operation: FabOperation
-        for operation in self.Operations:
-            operation_name: str = operation.get_name()
-            if operation_name in operation_names:
-                raise ValueError("Mount '{self.Name}' has two operations named '{operation_name}'")
-            operation_names.add(operation_name)
+        object.__setattr__(self, "Depth", self.Depth)
 
     @property
     # FabMount.Operations:
@@ -576,47 +834,35 @@ class FabSolid(FabInterior):
 
     """
 
-    # Name: str
-    # Mounts: Tuple[FabMount, ...]
     Material: str = ""
     Color: str = "red"
+    _pads: Tuple[Optional[FabPad], ...] = field(init=False, repr=False, default=())
 
     # FabSolid.__post_init__():
     def __post_init__(self) -> None:
         """Verify FabSolid arguments."""
-        # Verify that there is only one pad operation and it is the very first one.
-        # Also detect duplicate mount names:
+        super().__post_init__()
+
+        # Do consistency checking and extract the *pads* for guessing maximum depth later on.
         mounts: Tuple[FabMount, ...] = self.Mounts
         if not mounts:
-            raise ValueError("FabSolid.produce(): No mounts specified for Part 'self.Name'.")
-
-        mount_names: Set[str] = set()
-        pad_found: bool = False
-        mount_index: int
+            raise ValueError("{self.FullPath}: No FabMount's specified for Part 'self.Name'.")
+        pads: List[Optional[FabPad]] = []
+        index: int
         mount: FabMount
-        for mount_index, mount in enumerate(mounts):
+        for index, mount in enumerate(mounts):
+            first_operation: FabOperation = mount.Operations[0]
             if not isinstance(mount, FabMount):
-                raise ValueError(f"'{self.Name}': Mount[{mount_index}]: "
-                                 f"{type(mount)} is not a FabMount")
-            if mount.Name in mount_names:
-                raise ValueError(f"Part '{self.Name}' has two mounts named '{mount.Name}')")
-            mount_names.add(mount.Name)
+                raise ValueError(
+                    f"{self.FullPath}: {mount.FullPath} is {type(mount)}, not a FabMount.")
+            pads.append(first_operation if isinstance(first_operation, FabPad) else None)
+            if index == 0 and not isinstance(first_operation, FabPad):
+                raise ValueError(
+                    f"{self.FullPath}: First operation in {mount.FullPath} is "
+                    f"{type(first_operation)}, not ModPad")
 
-            # Search for Pad operations:
-            operations: Tuple[FabOperation, ...] = mount.Operations
-            operation_index: int
-            operation: FabOperation
-            for operation_index, operation in enumerate(operations):
-                if not isinstance(operation, FabOperation):
-                    raise ValueError(f"'{self.Name}.{mount.Name}']: Operation[{operation_index}]:"
-                                     "{type(operaton)} is not a FabOperation")
-                if isinstance(operation, FabPad):
-                    if mount_index != 0 or operation_index != 0:
-                        raise ValueError(f"'{self.Name}.{mount.Name}.{operation.Name}':"
-                                         "Pad is not at the very beginning.")
-                    pad_found = True
-        if not pad_found:
-            raise ValueError(f"No Pad operation found for '{self.Name}'")
+        # (Why __setattr__?)[https://stackoverflow.com/questions/53756788]
+        object.__setattr__(self, "_pads", pads)
 
     @property
     def Mounts(self) -> Tuple[FabMount, ...]:
@@ -663,9 +909,16 @@ class FabSolid(FabInterior):
             # model_file.ViewObject = view_object
 
         # Process each *mount*:
+        pads: Tuple[Optional[FabPad], ...] = self._pads
+        current_pads: List[FabPad] = []
+        index: int
         mount: FabMount
-        for mount in self.Mounts:
+        for index, mount in enumerate(self.Mounts):
+            pad: Optional[FabPad] = pads[index]
+            if isinstance(pad, FabPad):
+                current_pads.append(pad)
             context["prefix"] = mount.Name
+            context["current_pads"] = tuple(current_pads)  # Used for estimating depth.
             mount.produce(context.copy(), tracing=next_tracing)
 
         if tracing:
@@ -687,7 +940,8 @@ class Box(object):
     * *Height* (float): height in Z direction in millimeters.
     * *Thickness* (float): Material thickness in millimeters.
     * *Material* (str): Material to use.
-    * *Center* Vector: Center of Box.
+    * *Center* (Vector): Center of Box.
+    * *Screws* (Tuple[FabJoin, ...]): The screw to hold the Box together.
 
     """
 
@@ -698,6 +952,7 @@ class Box(object):
     Thickness: float
     Material: str
     Center: Vector
+    Screws: Tuple[FabJoin, ...] = field(init=False, repr=False, default=())
 
     # Box.compute():
     def compute(self) -> None:
@@ -711,9 +966,11 @@ class Box(object):
         dz: float = self.Height
         dw: float = self.Thickness
 
-        dx2: float = dx / 2
-        dy2: float = dy / 2
-        dz2: float = dz / 2
+        dx2: float = dx / 2.0
+        dy2: float = dy / 2.0
+        dz2: float = dz / 2.0
+        dw2: float = dw / 2.0
+        sd: float = 2.0 * dw  # Screw Depth
 
         corner_radius: float = 3.0
 
@@ -724,8 +981,19 @@ class Box(object):
         south_axis: Vector = -north_axis
         bottom_axis: Vector = -top_axis
 
-        Corners = Tuple[Tuple[Vector, float], ...]
         center: Vector = self.Center
+        fasten: FabFasten = FabFasten("M3x0.5", FabFasten.ISO_COARSE, FabFasten.M3, ())
+        top_north_joins: Tuple[FabJoin, ...] = (
+            FabJoin("TN-W", fasten,
+                    center + Vector(dx2 - dw2, dy2, dz2),
+                    center + Vector(dx2 - dw2, dy2, dz2 - sd)),
+            FabJoin("TN-E", fasten,
+                    center + Vector(-dx2 + dw2, dy2, dz2),
+                    center + Vector(-dx2 + dw2, dy2, dz2 - sd)),
+        )
+        _ = top_north_joins
+
+        Corners = Tuple[Tuple[Vector, float], ...]
         top_corners: Corners = (
             (center + Vector(dx2, dy2, dz2), corner_radius),  # TNE
             (center + Vector(-dx2, dy2, dz2), corner_radius),  # TNW
@@ -735,10 +1003,11 @@ class Box(object):
         top_polygon: FabPolygon = FabPolygon("Top", top_corners)
         top_operations: Tuple[FabOperation, ...] = (
             FabPad("Pad", top_polygon, dw),
+            # FabDrill("TopNorthHoles", top_north_joins, 10.0)
         )
         top_mount: FabMount = FabMount(
             "TopNorth", top_operations, center + Vector(0, 0, dz2), top_axis, north_axis)
-        top_part: FabSolid = FabSolid("Top", (top_mount,), "hdpe", "red")
+        top_solid: FabSolid = FabSolid("Top", (top_mount,), "hdpe", "red")
 
         north_corners: Corners = (
             (center + Vector(dx2, dy2, dz2 - dw), corner_radius),  # TNE
@@ -752,7 +1021,7 @@ class Box(object):
         )
         north_mount: FabMount = FabMount(
             "NorthBottom", north_operations, center + Vector(0, dy2, 0), north_axis, bottom_axis)
-        north_part: FabSolid = FabSolid("North", (north_mount,), "hdpe", "green")
+        north_solid: FabSolid = FabSolid("North", (north_mount,), "hdpe", "green")
 
         west_corners: Corners = (
             (center + Vector(-dx2, dy2 - dw, dz2 - dw), corner_radius),  # TNW
@@ -766,7 +1035,7 @@ class Box(object):
         )
         west_mount: FabMount = FabMount(
             "WestNorth", west_operations, center + Vector(-dx2, 0, 0), west_axis, north_axis)
-        west_part: FabSolid = FabSolid("West", (west_mount,), "hdpe", "blue")
+        west_solid: FabSolid = FabSolid("West", (west_mount,), "hdpe", "blue")
 
         bottom_corners: Corners = (
             (center + Vector(dx2, dy2 - dw, -dz2), corner_radius),  # BNE
@@ -780,7 +1049,7 @@ class Box(object):
         )
         bottom_mount: FabMount = FabMount(
             "BottomNorth", bottom_operations, center + Vector(0, 0, -dz2), bottom_axis, north_axis)
-        bottom_part: FabSolid = FabSolid("Bottom", (bottom_mount,), "hdpe", "red")
+        bottom_solid: FabSolid = FabSolid("Bottom", (bottom_mount,), "hdpe", "red")
 
         east_corners: Corners = (
             (center + Vector(dx2, dy2 - dw, dz2 - dw), corner_radius),  # TNE
@@ -794,7 +1063,7 @@ class Box(object):
         )
         east_mount: FabMount = FabMount(
             "EastNorth", east_operations, center + Vector(dx2, 0, 0), east_axis, north_axis)
-        east_part: FabSolid = FabSolid("East", (east_mount,), "hdpe", "blue")
+        east_solid: FabSolid = FabSolid("East", (east_mount,), "hdpe", "blue")
 
         south_corners: Corners = (
             (center + Vector(dx2, -dy2, dz2 - dw), corner_radius),  # TSE
@@ -808,9 +1077,13 @@ class Box(object):
         )
         south_mount: FabMount = FabMount(
             "SouthBottom", south_operations, center + Vector(0, -dy2, 0), south_axis, bottom_axis)
-        south_part: FabSolid = FabSolid("South", (south_mount,), "hdpe", "green")
+        south_solid: FabSolid = FabSolid("South", (south_mount,), "hdpe", "green")
 
-        return (top_part, north_part, west_part, bottom_part, east_part, south_part)
+        # hdw: float = dw / 2.0  # Half DW
+        # sd: float = 2.0 * dw  # Screw depth
+        fasten_profile: FabFasten = FabFasten("M3x.5", FabFasten.ISO_COARSE, FabFasten.M3, ())
+        _ = fasten_profile
+        return (top_solid, north_solid, west_solid, bottom_solid, east_solid, south_solid)
 
 
 def main() -> None:

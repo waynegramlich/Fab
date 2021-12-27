@@ -55,7 +55,11 @@ the correct depth.</p>
 hardware.</p>
 <h2>Table of Contents (alphabetical order):</h2>
 <ul>
-<li>1 Class: <a href="#join--fabfasten">FabFasten</a>:</li>
+<li>1 Class: <a href="#join--fabfasten">FabFasten</a>:
+<ul>
+<li>1.1 <a href="#join----get-diameter">get_diameter()</a>: Return actual diameter based on request hole kind.</li>
+</ul>
+</li>
 <li>2 Class: <a href="#join--fabhead">FabHead</a>:</li>
 <li>3 Class: <a href="#join--fabjoin">FabJoin</a>:</li>
 <li>4 Class: <a href="#join--fabnut">FabNut</a>:</li>
@@ -75,6 +79,9 @@ Attributes:</p>
 <code>UTS_F3_4</code>, <code>UTS_F3_4</code>, <code>M1_6</code>, <code>M2</code>, <code>M2_5</code>, <code>M3</code>, <code>M3_5</code>, <code>M4</code>, <code>M5</code>, <code>M6</code>, <code>M8</code>, <code>M10</code>,
 <code>M12</code>, <code>M14</code>, <code>M16</code>, <code>M18,  </code>M20<code>, </code>M22<code>, </code>M24<code>, </code>M27<code>, </code>M30<code>, </code>M36<code>, </code>M42<code>, </code>M48<code>, </code>M56<code>, </code>M68.</li>
 </ul>
+<h3><a name="join----get-diameter"></a>1.1 <code>FabFasten.</code>get_diameter():</h3>
+<p>FabFasten.get_diameter(self, kind: str) -&gt; float:</p>
+<p>Return actual diameter based on request hole kind.</p>
 <h2><a name="join--fabhead"></a>2 Class FabHead:</h2>
 <p>Represents the Head of the FabFastener.
 Attributes:</p>
@@ -89,10 +96,10 @@ Attributes:</p>
 <p>Specifies a single fastener instance.
 Attributes:</p>
 <ul>
+<li>Name (str): A name used for error reporting.</li>
 <li>Fasten (FabFasten): FabFasten object to use for basic dimensions.</li>
 <li>Start (Vector): Start point for FabJoin.</li>
 <li>End (Vector): End point for FabJoin.</li>
-<li>Options (Tuple[FabOption]): The various options associated with the FabJoin.</li>
 </ul>
 <h2><a name="join--fabnut"></a>4 Class FabNut:</h2>
 <p>A class the represents a fastener nut.

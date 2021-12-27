@@ -504,7 +504,7 @@ class FabCircle(FabGeometry):
 
     Attributes:
     * *Center* (Vector): The circle center.
-    * *Diameter* (float): The diameter in radians.
+    * *Diameter* (float): The diameter in millimeters.
 
     """
 

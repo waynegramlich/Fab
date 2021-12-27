@@ -100,14 +100,6 @@ class FabOption(object):
         if value_error:
             raise ValueError(value_error)
 
-    def __repr__(self) -> str:
-        """Return String representation of FabOption."""
-        return self.__str__()
-
-    def __str__(self) -> str:
-        """Return String representation of FabOption."""
-        return f"FabOption('{self.Name}', '{self.Detail}')"
-
     @staticmethod
     def _unit_tests() -> None:
         """Run FabOption unit tests."""
@@ -116,7 +108,7 @@ class FabOption(object):
         option: FabOption = FabOption(name, detail)
         assert option.Name == name
         assert option.Detail == detail
-        assert f"{option}" == "FabOption('name', 'detail')", f"{option}"
+        assert f"{option}" == "FabOption(Name='name', Detail='detail')", f"{option}"
 
         # Error tests:
         # Non string for Name.
@@ -741,6 +733,11 @@ class FabFasten:
             if not isinstance(option, FabOption):
                 raise ValueError(f"{option} is not an FabOption")
 
+    def get_diameter(self, kind: str) -> float:
+        """Return actual diameter based on request hole kind."""
+        assert False, "Not implemented."
+        return -1.0
+
     @staticmethod
     def _unit_tests() -> None:
         """Run FabFasten unit tests."""
@@ -768,28 +765,27 @@ class FabJoin(object):
     """FabJoin: Specifies a single fastener instance.
 
     Attributes:
+    * Name (str): A name used for error reporting.
     * Fasten (FabFasten): FabFasten object to use for basic dimensions.
     * Start (Vector): Start point for FabJoin.
     * End (Vector): End point for FabJoin.
-    * Options (Tuple[FabOption]): The various options associated with the FabJoin.
 
     """
 
+    Name: str
     Fasten: FabFasten  # Parent FabFasten
     Start: Vector  # Start point (near screw/bolt head)
     End: Vector  # End point (ene screw/bolt tip)
-    Stack: str  # Stack of items that make up the entire FabJoin stack.
 
     POST_INIT_CHECKS = (
         FabCheck("Fasten", (FabFasten,)),
         FabCheck("Start", (Vector,)),
         FabCheck("End", (Vector,)),
-        FabCheck("Stack", (str,)),
     )
 
     def __post_init__(self) -> None:
         """Initialize a single FabJoin."""
-        arguments = (self.Fasten, self.Start, self.End, self.Stack)
+        arguments = (self.Fasten, self.Start, self.End)
         value_error: str = FabCheck.check(arguments, FabJoin.POST_INIT_CHECKS)
         if value_error:
             raise ValueError
@@ -805,7 +801,7 @@ class FabJoin(object):
             "#4-40", FabFasten.UTS_FINE, FabFasten.UTS_N4, options)
         start: Vector = Vector(0, 0, 0)
         stop: Vector = Vector(1, 1, 1)
-        apex_join: FabJoin = FabJoin(apex_fasten, start, stop, "")
+        apex_join: FabJoin = FabJoin("Test", apex_fasten, start, stop)
         _ = apex_join
 
 
