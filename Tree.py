@@ -247,13 +247,13 @@ class FabInterior(FabNode):
     """FabInterior: Represents A
 
     Attributes:
-    * Inherited Attributes: *Name* (str), *FullPath* (str), *Parent* (FabNod).
-    * *Children* (Tuple[FabNode, ...): The children FabNode's.
+    * Inherited Attributes: *Name* (str), *FullPath* (str), *Parent* (FabNode).
+    * *Children* (List[FabNode]): The children FabNode's.
     * *ChildrenNames* (Tuple[str, ...]): The name's of the children FabNode's.
 
     """
 
-    Children: Tuple["FabNode", ...] = field(repr=False, default=())
+    Children: Tuple[FabNode, ...] = field(repr=False, default=())
     ChildrenNames: Tuple[str, ...] = field(init=False)
 
     # FabInterior.__post_init__():
