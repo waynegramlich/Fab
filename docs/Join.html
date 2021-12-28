@@ -55,34 +55,55 @@ the correct depth.</p>
 hardware.</p>
 <h2>Table of Contents (alphabetical order):</h2>
 <ul>
-<li>1 Class: <a href="#join--fabfasten">FabFasten</a>:
+<li>1 Class: <a href="#join--fabdrillchoice">FabDrillChoice</a>:</li>
+<li>2 Class: <a href="#join--fabdrilltap">FabDrillTap</a>:</li>
+<li>3 Class: <a href="#join--fabfasten">FabFasten</a>:
 <ul>
-<li>1.1 <a href="#join----get-diameter">get_diameter()</a>: Return actual diameter based on request hole kind.</li>
+<li>3.1 <a href="#join----get-diameter">get_diameter()</a>: Return actual diameter based on request hole kind.</li>
 </ul>
 </li>
-<li>2 Class: <a href="#join--fabhead">FabHead</a>:</li>
-<li>3 Class: <a href="#join--fabjoin">FabJoin</a>:</li>
-<li>4 Class: <a href="#join--fabnut">FabNut</a>:</li>
-<li>5 Class: <a href="#join--faboption">FabOption</a>:</li>
-<li>6 Class: <a href="#join--fabwasher">FabWasher</a>:</li>
+<li>4 Class: <a href="#join--fabfastentables">FabFastenTables</a>:</li>
+<li>5 Class: <a href="#join--fabhead">FabHead</a>:</li>
+<li>6 Class: <a href="#join--fabjoin">FabJoin</a>:</li>
+<li>7 Class: <a href="#join--fabnut">FabNut</a>:</li>
+<li>8 Class: <a href="#join--faboption">FabOption</a>:</li>
+<li>9 Class: <a href="#join--fabwasher">FabWasher</a>:</li>
 </ul>
-<h2><a name="join--fabfasten"></a>1 Class FabFasten:</h2>
+<h2><a name="join--fabdrillchoice"></a>1 Class FabDrillChoice:</h2>
+<p>Preferred Metric and Imperial drill sizes.
+The final choice of hole sizes typically depends upon the available hardware.
+In North America, these the pre-metric size drills (fractional, letter, number) are
+readily available.  Pretty much everywhere else, these are the metric drill sizes
+are more readily available.</p>
+<p>Attributes:</p>
+<ul>
+<li><em>MetricName</em> (str):
+A metric drill is specified as number in millimeters (e.g. &quot;3&quot;, &quot;3.5&quot;).
+The empty string is specified if there is no specified metric drill.</li>
+<li><em>MetricDiameter</em> (float): This is the name converted to a float.
+This is 0.0 if no metric drill is specified.</li>
+<li><em>ImperialName</em> (str):
+The imperial drill is name is either a fractional drill name (e.g. &quot;1-1/8&quot;, &quot;7/16&quot;),
+a letter drill name (e.g &quot;A&quot;, &quot;J&quot;),  or a number drill name (e.g. &quot;N8&quot;, &quot;N27&quot;.)
+The empty string is specified if there is no specified metric drill.</li>
+<li>*ImperialDiameter (float): This is the drill diameter in millimeters.
+This is 0.0 if no metric drill is specified.</li>
+</ul>
+<h2><a name="join--fabdrilltap"></a>2 Class FabDrillTap:</h2>
+<p>Drill/Tap diameters and drill selections.</p>
+<h2><a name="join--fabfasten"></a>3 Class FabFasten:</h2>
 <p>FabFastner: The class of Fastener to use.
 Attributes:</p>
 <ul>
 <li>Name (str): FabFasten Name.</li>
-<li>Profile (str): FabFasten Profile.  Must be one of the FabFasten constants --
-<code>ISO_COARSE</code>, <code>ISO_FINE</code>,  <code>UTS_COARSE</code>, <code>UTS_FINE</code>, and `UTS_EXTRA_FINE.</li>
-<li>Size (str): Standard fastener size.  Must be one of the FabFasten constants --
-<code>UTS_N1</code>, <code>UTS_N2</code>, <code>UTS_N3</code>, <code>UTS_N4</code>, <code>UTS_N5</code>, <code>UTS_N6</code>, <code>UTS_N8</code>, <code>UTS_N10</code>, <code>UTS_N12</code>,
-<code>UTS_F1_4</code>, <code>UTS_F5_16</code>, <code>UTS_F3_8</code>, <code>UTS_F7_16</code>, <code>UTS_F1_2</code>, <code>UTS_F9_16</code>, <code>UTS_F5_8</code>,
-<code>UTS_F3_4</code>, <code>UTS_F3_4</code>, <code>M1_6</code>, <code>M2</code>, <code>M2_5</code>, <code>M3</code>, <code>M3_5</code>, <code>M4</code>, <code>M5</code>, <code>M6</code>, <code>M8</code>, <code>M10</code>,
-<code>M12</code>, <code>M14</code>, <code>M16</code>, <code>M18,  </code>M20<code>, </code>M22<code>, </code>M24<code>, </code>M27<code>, </code>M30<code>, </code>M36<code>, </code>M42<code>, </code>M48<code>, </code>M56<code>, </code>M68.</li>
+<li>ThreadName (str): A thread selection (e.g. &quot;M3x.5&quot;, &quot;#4-40&quot;, &quot;1/4-20&quot;).</li>
 </ul>
-<h3><a name="join----get-diameter"></a>1.1 <code>FabFasten.</code>get_diameter():</h3>
+<h3><a name="join----get-diameter"></a>3.1 <code>FabFasten.</code>get_diameter():</h3>
 <p>FabFasten.get_diameter(self, kind: str) -&gt; float:</p>
 <p>Return actual diameter based on request hole kind.</p>
-<h2><a name="join--fabhead"></a>2 Class FabHead:</h2>
+<h2><a name="join--fabfastentables"></a>4 Class FabFastenTables:</h2>
+<p>Tables of metric/imperial screws and bolts.</p>
+<h2><a name="join--fabhead"></a>5 Class FabHead:</h2>
 <p>Represents the Head of the FabFastener.
 Attributes:</p>
 <ul>
@@ -92,7 +113,7 @@ Attributes:</p>
 <li><em>Shape</em> (str): The FabHead shape.</li>
 <li><em>Drive</em> (str): The FabH drive .</li>
 </ul>
-<h2><a name="join--fabjoin"></a>3 Class FabJoin:</h2>
+<h2><a name="join--fabjoin"></a>6 Class FabJoin:</h2>
 <p>Specifies a single fastener instance.
 Attributes:</p>
 <ul>
@@ -101,7 +122,7 @@ Attributes:</p>
 <li>Start (Vector): Start point for FabJoin.</li>
 <li>End (Vector): End point for FabJoin.</li>
 </ul>
-<h2><a name="join--fabnut"></a>4 Class FabNut:</h2>
+<h2><a name="join--fabnut"></a>7 Class FabNut:</h2>
 <p>A class the represents a fastener nut.
 Attributes:</p>
 <ul>
@@ -112,14 +133,14 @@ Attributes:</p>
 <li>Thickness (float): The nut thickness in millimeters.</li>
 <li>Material (FabMaterial): The nut material</li>
 </ul>
-<h2><a name="join--faboption"></a>5 Class FabOption:</h2>
+<h2><a name="join--faboption"></a>8 Class FabOption:</h2>
 <p>Base class for FabFasten options (e.g. washers, nuts, etc...).
 Attributes:</p>
 <ul>
 <li><em>Name</em> (str): The option name.</li>
 <li><em>Detail</em> (str): More detailed information about the option.</li>
 </ul>
-<h2><a name="join--fabwasher"></a>6 Class FabWasher:</h2>
+<h2><a name="join--fabwasher"></a>9 Class FabWasher:</h2>
 <p>FabWahser: Represents a washer.
 Constants:</p>
 <ul>

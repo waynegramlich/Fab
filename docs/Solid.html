@@ -9,7 +9,7 @@
 </li>
 <li>2 Class: <a href="#solid--fabclose">FabClose</a>:
 <ul>
-<li>2.1 <a href="#solid----get-diameter-kind">get_diameter_kind()</a>: Return a thread diameter kind.</li>
+<li>2.1 <a href="#solid----get-kind">get_kind()</a>: Return a thread diameter kind.</li>
 </ul>
 </li>
 <li>3 Class: <a href="#solid--fabdrill">FabDrill</a>:
@@ -32,7 +32,7 @@
 </li>
 <li>6 Class: <a href="#solid--fabloose">FabLoose</a>:
 <ul>
-<li>6.1 <a href="#solid----get-diameter-kind">get_diameter_kind()</a>: Return a thread diameter kind.</li>
+<li>6.1 <a href="#solid----get-kind">get_kind()</a>: Return a thread diameter kind.</li>
 </ul>
 </li>
 <li>7 Class: <a href="#solid--fabmount">FabMount</a>:
@@ -66,7 +66,7 @@
 </li>
 <li>12 Class: <a href="#solid--fabthread">FabThread</a>:
 <ul>
-<li>12.1 <a href="#solid----get-diameter-kind">get_diameter_kind()</a>: Return a thread diameter kind.</li>
+<li>12.1 <a href="#solid----get-kind">get_kind()</a>: Return a thread diameter kind.</li>
 </ul>
 </li>
 </ul>
@@ -92,8 +92,8 @@ Builds a box given a length, width, height, material, thickness and center point
 <p>Produce a box.</p>
 <h2><a name="solid--fabclose"></a>2 Class FabClose:</h2>
 <p>Drill a close a FabJoin's.</p>
-<h3><a name="solid----get-diameter-kind"></a>2.1 <code>FabClose.</code>get_diameter_kind():</h3>
-<p>FabClose.get_diameter_kind(self) -&gt; str:</p>
+<h3><a name="solid----get-kind"></a>2.1 <code>FabClose.</code>get_kind():</h3>
+<p>FabClose.get_kind(self) -&gt; str:</p>
 <p>Return a thread diameter kind.</p>
 <h2><a name="solid--fabdrill"></a>3 Class FabDrill:</h2>
 <p>A FreeCAD PartDesign Pocket operation.
@@ -133,8 +133,8 @@ Attributes:</p>
 <p>Produce the Hole.</p>
 <h2><a name="solid--fabloose"></a>6 Class FabLoose:</h2>
 <p>Drill Loose FabJoin's.</p>
-<h3><a name="solid----get-diameter-kind"></a>6.1 <code>FabLoose.</code>get_diameter_kind():</h3>
-<p>FabLoose.get_diameter_kind(self) -&gt; str:</p>
+<h3><a name="solid----get-kind"></a>6.1 <code>FabLoose.</code>get_kind():</h3>
+<p>FabLoose.get_kind(self) -&gt; str:</p>
 <p>Return a thread diameter kind.</p>
 <h2><a name="solid--fabmount"></a>7 Class FabMount:</h2>
 <p>An operations plane that can be oriented for subsequent machine operations.
@@ -221,6 +221,6 @@ Attributes:</p>
 <p>Produce the FabSolid.</p>
 <h2><a name="solid--fabthread"></a>12 Class FabThread:</h2>
 <p>Drill and thread FabJoin's.</p>
-<h3><a name="solid----get-diameter-kind"></a>12.1 <code>FabThread.</code>get_diameter_kind():</h3>
-<p>FabThread.get_diameter_kind(self) -&gt; str:</p>
+<h3><a name="solid----get-kind"></a>12.1 <code>FabThread.</code>get_kind():</h3>
+<p>FabThread.get_kind(self) -&gt; str:</p>
 <p>Return a thread diameter kind.</p>

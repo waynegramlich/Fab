@@ -347,7 +347,7 @@ class FabPocket(FabOperation):
         return ()
 
 
-_HoleKey = Tuple[str, str, str, float, bool]
+_HoleKey = Tuple[str, str, float, bool]
 
 
 # _Hole:
@@ -355,9 +355,10 @@ _HoleKey = Tuple[str, str, str, float, bool]
 class _Hole(object):
     """_Hole: FabDrill helper class that represents a hole."""
 
-    Size: str  # Essentially the diameter
-    Profile: str  # Essentially the fastener thread pitch
-    Kind: str  # "thread", "close", or "loose"
+    # Size: str  # Essentially the diameter
+    # Profile: str  # Essentially the fastener thread pitch
+    ThreadName: str  # Thread name
+    Kind: str  # "thread", "close", or "standard"
     Depth: float  # The depth of the drill hole
     IsTop: bool  # Is the top of the fastener
     Center: Vector = field(compare=False)  # The Center (start point) of the drill
@@ -367,7 +368,7 @@ class _Hole(object):
     @property
     def Key(self) -> _HoleKey:
         """Return a Hole key."""
-        return (self.Size, self.Profile, self.Kind, self.Depth, self.IsTop)
+        return (self.ThreadName, self.Kind, self.Depth, self.IsTop)
 
 
 # FabDrill:
@@ -511,7 +512,7 @@ class FabDrill(FabOperation):
             depth = min(bottom_depth, far_distance)
             is_top = close(start, top)
             kind: str = self.get_kind()
-            hole = _Hole(fasten.Size, fasten.Profile, kind, depth, is_top, top, join)
+            hole = _Hole(fasten.ThreadName, kind, depth, is_top, top, join)
             holes.append(hole)
 
         # Group all *holes* with the same *key* together:
@@ -527,9 +528,8 @@ class FabDrill(FabOperation):
         index: int
         for index, key in enumerate(sorted(hole_groups.keys())):
             # Unpack *key*:
-            size: str
-            profile: str
-            size, profile, kind, depth, is_top = key
+            thread_name: str
+            thread_name, kind, depth, is_top = key
             diameter: float = fasten.get_diameter(kind)
 
             # Construct the "drawing"
@@ -540,8 +540,8 @@ class FabDrill(FabOperation):
                 # Sanity check that each *fasten* object matches the *key*.
                 join = hole.Join
                 fasten = join.Fasten
-                assert fasten.Size == size and fasten.Profile == profile and (
-                    self.get_kind() == kind and hole.Depth == depth and hole.IsTop == is_top)
+                assert fasten.ThreadName == thread_name and self.get_kind() == kind and (
+                    hole.Depth == depth and hole.IsTop == is_top)
                 center: Vector = hole.Center
                 circle: FabCircle = FabCircle(center, diameter)
                 part_geometries.append(circle)
@@ -581,7 +581,7 @@ class FabDrill(FabOperation):
 class FabThread(FabDrill):
     """Drill and thread FabJoin's."""
 
-    def get_diameter_kind(self) -> str:
+    def get_kind(self) -> str:
         """Return a thread diameter kind."""
         return "thread"
 
@@ -591,7 +591,7 @@ class FabThread(FabDrill):
 class FabClose(FabDrill):
     """Drill a close a FabJoin's."""
 
-    def get_diameter_kind(self) -> str:
+    def get_kind(self) -> str:
         """Return a thread diameter kind."""
         return "close"
 
@@ -601,9 +601,9 @@ class FabClose(FabDrill):
 class FabLoose(FabDrill):
     """Drill Loose FabJoin's."""
 
-    def get_diameter_kind(self) -> str:
+    def get_kind(self) -> str:
         """Return a thread diameter kind."""
-        return "close"
+        return "loose"
 
 
 # FabHole:
@@ -810,6 +810,14 @@ class FabMount(FabInterior):
         context["mount_normal"] = self.Normal
         context["mount_contact"] = self.Contact
 
+        # FIXME: This is a kludge for now:
+        operations: Tuple[FabOperation, ...] = self.Operations
+        assert operations
+        operation0: FabOperation = operations[0]
+        assert isinstance(operation0, FabPad)
+        mount_depth: float = operation0.Depth
+        context["mount_depth"] = mount_depth
+
         # Install the FabMount (i.e. *self*) and *datum_plane* into *model_file* prior
         # to recursively performing the *operations*:
         # prefix = cast(str, context["prefix"])
@@ -982,7 +990,8 @@ class Box(object):
         bottom_axis: Vector = -top_axis
 
         center: Vector = self.Center
-        fasten: FabFasten = FabFasten("M3x0.5", FabFasten.ISO_COARSE, FabFasten.M3, ())
+        # fasten: FabFasten = FabFasten("M3x0.5", FabFasten.ISO_COARSE, FabFasten.M3, ())
+        fasten: FabFasten = FabFasten("FH-M3", "M3x0.5", ())
         top_north_joins: Tuple[FabJoin, ...] = (
             FabJoin("TN-W", fasten,
                     center + Vector(dx2 - dw2, dy2, dz2),
@@ -1003,7 +1012,7 @@ class Box(object):
         top_polygon: FabPolygon = FabPolygon("Top", top_corners)
         top_operations: Tuple[FabOperation, ...] = (
             FabPad("Pad", top_polygon, dw),
-            # FabDrill("TopNorthHoles", top_north_joins, 10.0)
+            # FabClose("TopNorthHoles", top_north_joins, 10.0),
         )
         top_mount: FabMount = FabMount(
             "TopNorth", top_operations, center + Vector(0, 0, dz2), top_axis, north_axis)
@@ -1081,8 +1090,6 @@ class Box(object):
 
         # hdw: float = dw / 2.0  # Half DW
         # sd: float = 2.0 * dw  # Screw depth
-        fasten_profile: FabFasten = FabFasten("M3x.5", FabFasten.ISO_COARSE, FabFasten.M3, ())
-        _ = fasten_profile
         return (top_solid, north_solid, west_solid, bottom_solid, east_solid, south_solid)
 
 
