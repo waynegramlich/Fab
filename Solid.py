@@ -443,6 +443,7 @@ class FabDrill(FabOperation):
 
         # Grab mount information from *context*:
         prefix = cast(str, context["prefix"])
+        next_prefix: str = f"{prefix}_{self.Name}"
         # mount_name = cast(str, context["mount_name"])
         mount_contact = cast(Vector, context["mount_contact"])
         mount_normal = cast(Vector, context["mount_normal"])
@@ -544,7 +545,7 @@ class FabDrill(FabOperation):
                     hole.Depth == depth and hole.IsTop == is_top)
                 center: Vector = hole.Center
                 circle: FabCircle = FabCircle(center, diameter)
-                part_geometries.append(circle)
+                part_geometries.extend(circle.produce(context.copy(), next_prefix))
 
             # Create the *shape_binder*:
             next_prefix = f"{prefix}.DrillCircle{index:03d}"
@@ -565,8 +566,8 @@ class FabDrill(FabOperation):
             part_hole.Midplane = 0
 
             # Fill in other fields for the top mount.
-            if is_top:
-                assert False, "Fill in other fields."
+            # if is_top:
+            #     assert False, "Fill in other fields."
 
             # For the GUI, update the view provider:
             self._viewer_update(body, part_hole)
@@ -994,11 +995,11 @@ class Box(object):
         fasten: FabFasten = FabFasten("FH-M3", "M3x0.5", ())
         top_north_joins: Tuple[FabJoin, ...] = (
             FabJoin("TN-W", fasten,
-                    center + Vector(dx2 - dw2, dy2, dz2),
-                    center + Vector(dx2 - dw2, dy2, dz2 - sd)),
+                    center + Vector(dx2 - dw2, dy2 - dw2, dz2),
+                    center + Vector(dx2 - dw2, dy2 - dw2, dz2 - sd)),
             FabJoin("TN-E", fasten,
-                    center + Vector(-dx2 + dw2, dy2, dz2),
-                    center + Vector(-dx2 + dw2, dy2, dz2 - sd)),
+                    center + Vector(-dx2 + dw2, dy2 - dw2, dz2),
+                    center + Vector(-dx2 + dw2, dy2 - dw2, dz2 - sd)),
         )
         _ = top_north_joins
 
@@ -1012,7 +1013,7 @@ class Box(object):
         top_polygon: FabPolygon = FabPolygon("Top", top_corners)
         top_operations: Tuple[FabOperation, ...] = (
             FabPad("Pad", top_polygon, dw),
-            # FabClose("TopNorthHoles", top_north_joins, 10.0),
+            FabClose("TopNorthHoles", top_north_joins, 10.0),
         )
         top_mount: FabMount = FabMount(
             "TopNorth", top_operations, center + Vector(0, 0, dz2), top_axis, north_axis)
@@ -1030,7 +1031,8 @@ class Box(object):
         )
         north_mount: FabMount = FabMount(
             "NorthBottom", north_operations, center + Vector(0, dy2, 0), north_axis, bottom_axis)
-        north_solid: FabSolid = FabSolid("North", (north_mount,), "hdpe", "green")
+        north_solid: FabSolid = FabSolid(
+            "North", (north_mount,), "hdpe", "green")
 
         west_corners: Corners = (
             (center + Vector(-dx2, dy2 - dw, dz2 - dw), corner_radius),  # TNW
