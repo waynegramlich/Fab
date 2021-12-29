@@ -28,7 +28,7 @@ import Embed
 Embed.setup()
 
 from dataclasses import dataclass, field
-from typing import Any, cast, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, cast, Dict, List, Optional, Tuple, Union
 from pathlib import Path
 
 
@@ -51,23 +51,21 @@ from Utilities import FabColor
 class FabGroup(FabInterior):
     """FabGroup: A named group of FabNode's.
 
-    Attributes:
-    * Inherited Attributes:
-       * *Name* (str)
-       * *FullPath* (str)
-       * *Parent* (FabNode)
-       * *Children* (Tuple[FabNode, ...)
-       * *ChildrenNames* (Tuple[str, ...])
+    Inherited Attributes:
+    * *Name* (str)
+    * *Parent* (FabNode)
+    * *Children* (Tuple[FabNode, ...)
+    * *ChildrenNames* (Tuple[str, ...])
 
     """
 
-    Group: Any = field(init=False)
+    Group: App.DocumentObjectGroup = field(
+        init=False, repr=False, default=cast(App.DocumentObjectGroup, None))
 
     # FabGroup.__post_init__():
     def __post_init__(self):
         """Initialize FabGroup."""
         super().__post_init__()
-        self.Group = None
 
     # FabGroup._setup():
     def _setup(self, parent: FabNode, all_nodes: List[FabNode], tracing: str = "") -> None:
@@ -86,13 +84,19 @@ class FabGroup(FabInterior):
         if tracing:
             print("{tracing}=>FabGroup.produce('{self.FullPath')")
         errors: List[str] = []
-        group: Any = None  # Fix this.
+
+        # Create the *group* that contains all of the FabNode's:
+        parent_object: Any = context["parent_object"]
+        group: App.DocumentObjectGroup = parent_object.addObject(
+            "App::DocumentObjectGroup", f"{self.Name}")
+        group.Visibility = False
         self.Group = group
+
         child: FabNode
+        context["parent_object"] = self.Group
         for child in self.Children:
             if isinstance(child, FabFile):
                 errors.append(f"{self.FullPath}: {child.FullPath} is a FabFile under a group")
-            context["parent_object"] = group
             errors.extend(child.produce(context.copy(), next_tracing))
         if tracing:
             print("{tracing}<=FabGroup.produce('{self.FullPath')")
@@ -115,65 +119,75 @@ class FabAssembly(FabGroup):
 # FabFile:
 @dataclass
 class FabFile(FabInterior):
-    """FabFile: Represents a FreeCAD document file."""
+    """FabFile: Represents a FreeCAD document file.
 
-    # Name: str
-    # Parts: Tuple["FabSolid", ...]
-    FilePath: Path = Path("bogus")
-    # TODO define the actual attributes here:
+    Inherited Attributes:
+    * *Name* (str): Node name
+    * *Children* (Tuple[Union[FabAssembly, FablGroup, FabSolid], ...]):
+      The children nodes which are constrained to "group-like" or a FabSolid.
+    * *ChlidrenNames* (Tuple[str, ...]): The Children names.
+
+    Attributes:
+    * *FilePath* (Path):
+      The Python pathlib.Path file name which must have a suffix of `.fcstd` or `.FCStd`.
+
+    """
+
+    FilePath: Path = Path("bogus_file")
 
     # FabFile.__post_init__():
     def __post_init__(self) -> None:
         """Initialize the AppDocument."""
-        part: FabSolid
-        part_names: Set[str] = set()
-        if len(self.Parts) == 0:
-            raise ValueError("At least one FabSolid needs to be specified")
-        for part in self.Parts:
-            if not isinstance(part, (FabSolid, FabGroup, FabAssembly)):
-                raise ValueError(f"{part} is not a FabSolid")
-            if part.Name in part_names:
-                raise ValueError(f"There are two or more Part's with the same name '{part.Name}'")
-            part_names.add(part.Name)
 
-        self.GeometryGroup = cast(App.DocumentObjectGroup, None)
-        self.Part = cast(FabSolid, None)
-        self.Body = cast(Part.BodyBase, None)
-        self.Mount = cast("FabMount", None)
-        self.DatumPlane = cast("Part.Geometry", None)
+        suffix: str = self.FilePath.suffix
+        valid_suffixes: Tuple[str, ...] = (".fcstd", ".FCStd")
+        if suffix not in valid_suffixes:
+            raise RuntimeError(f"{self.FullPath}: '{self.FilePath}' suffix '{suffix}' "
+                               f"is not one of {valid_suffixes}.")
+        self._check_children()
 
-        stem: str = self.FilePath.stem
-        self.AppDocument = App.newDocument(stem)
-        assert isinstance(self.AppDocument, App.Document)
-        self.GuiDocument = None
-        if App.GuiUp:
-            self.GuiDocument = Gui.getDocument(stem)  # pragma: no unit cover
-            assert isinstance(self.GuiDocument, Gui.Document)
-
-    @property
-    def Parts(self) -> Tuple["FabSolid", ...]:
-        """Return the children FabSolid's."""
-        return cast(Tuple[FabSolid, ...], self.Children)
+    # FabFile._check_children():
+    def _check_children(self) -> None:
+        """Verify that children are valid types."""
+        child: FabNode
+        for child in self.Children:
+            if not isinstance(child, (FabAssembly, FabGroup, FabSolid)):
+                raise RuntimeError(
+                    f"{self.FullPath}: {child.FullPath} is not a {type(child)}, "
+                    "not FabAssembly/FabGroup/FabSolid")
 
     # FabFile.produce():
     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
         """Produce all of the FabSolid's."""
         if tracing:
-            print("=>{tracing}=>FabFile.produce('{self.Name}', *)")
-        part: "FabSolid"
-        app_document: App.Document = self.AppDocument
+            print(f"=>{tracing}=>FabFile.produce('{self.Name}', *)")
+
+        # Create the new *app_document*:
+        app_document = cast(App.Document, App.newDocument(self.Name))
+        assert isinstance(app_document, App.Document)  # Just to be sure.
         context["app_document"] = app_document
-        if App.GuiUp:
-            context["gui_document"] = self.GuiDocument
-        for part in self.Parts:
-            self.Part = part
-            part.produce(context.copy())
-            self.Part = cast(FabSolid, None)
+        context["parent_object"] = app_document
+
+        # Get the associated *gui_document* (if Gui is up):
+        if App.GuiUp:  # pragma: no unit cover
+            gui_document = cast(Gui.Document, Gui.getDocument(self.Name))
+            assert isinstance(gui_document, Gui.Document)  # Just to be sure.
+            context["gui_document"] = gui_document
+
+        # Produce all the requested Solids and Assemblies.
+        self._check_children()
+        errors: List[str] = []
+        child: FabNode
+        for child in self.Children:
+            assert isinstance(child, (FabAssembly, FabGroup, FabSolid))
+            errors.extend(child.produce(context.copy()))
+
+        # Recompute, save, ...:
         app_document.recompute()
         app_document.saveAs(str(self.FilePath))
         if tracing:
-            print("<={tracing}=>FabFile.produce('{self.Name}', *)")
-        return ()
+            print(f"<={tracing}=>FabFile.produce('{self.Name}', *)")
+        return tuple(errors)
 
     # FabFile._unit_tests():
     @staticmethod
@@ -218,10 +232,12 @@ class FabFile(FabInterior):
         fab_file: FabFile = FabFile("Open_Produce_Close", (solid1,), fcstd_path)
         assert isinstance(fab_file, FabFile)
         context: Dict[str, Any] = {}
-        context["app_document"] = fab_file.AppDocument
+        assert isinstance(context["app_document"], App.Document)
+        assert isinstance(context["parent_object"], App.Document)
         if App.GuiUp:
-            context["gui_document"] = fab_file.GuiDocument
-        fab_file.produce(context.copy())
+            assert(isinstance(context["gui_document"], Gui.Document))
+        errors: Tuple[str, ...] = fab_file.produce(context.copy())
+        assert not errors, errors
         assert fcstd_path.exists(), f"{fcstd_path} file not generated."
         fcstd_path.unlink()
         assert not fcstd_path.exists()
@@ -253,7 +269,7 @@ class FabOperation(FabNode):
                              part_geometries: Tuple[Part.Part2DObject, ...],
                              prefix: str) -> Part.Feature:
         """Produce the shape binder needed for the pad, pocket, hole, ... operations."""
-        body = cast(Part.BodyBase, context["body"])
+        body = cast(Part.BodyBase, context["solid_body"])
 
         shape_binder: Part.Feature = body.newObject(
             "PartDesign::SubShapeBinder", f"{prefix}_Binder")
@@ -325,7 +341,7 @@ class FabPad(FabOperation):
         shape_binder.Visibility = False
 
         # Extract *body* and *normal* from *context*:
-        body = cast(Part.BodyBase, context["body"])
+        body = cast(Part.BodyBase, context["solid_body"])
         mount_normal = cast(Vector, context["mount_normal"])
 
         # Perform The Pad operation:
@@ -394,7 +410,7 @@ class FabPocket(FabOperation):
         assert isinstance(shape_binder, Part.Feature)
 
         # Create the *pocket* into *body*:
-        body = cast(Part.BodyBase, context["body"])
+        body = cast(Part.BodyBase, context["solid_body"])
         pocket: Part.Feature = body.newObject("PartDesign::Pocket", f"{next_prefix}_Pocket")
         assert isinstance(pocket, Part.Feature)
         pocket.Profile = shape_binder
@@ -619,7 +635,7 @@ class FabDrill(FabOperation):
             shape_binder: Part.Feature = self.produce_shape_binder(
                 context.copy(), tuple(part_geometries), next_prefix)
             assert isinstance(shape_binder, Part.Feature)
-            body = cast(Part.BodyBase, context["body"])
+            body = cast(Part.BodyBase, context["solid_body"])
 
             # TODO: fill in actual values for Hole.
             # Create the *pocket* and upstate the view provider for GUI mode:
@@ -717,7 +733,7 @@ class FabHole(FabOperation):
         shape_binder: Part.Feature = self.produce_shape_binder(
             context.copy(), part_geometries, next_prefix)
         assert isinstance(shape_binder, Part.Feature)
-        body = cast(Part.BodyBase, context["body"])
+        body = cast(Part.BodyBase, context["solid_body"])
 
         # Create the *pocket* and upstate the view provider for GUI mode:
         hole: Part.Feature = body.newObject("PartDesign::Hole", f"{next_prefix}_Hole")
@@ -848,7 +864,7 @@ class FabMount(FabInterior):
             print(f"{tracing}{rotation=}")
 
         # Create, save and return the *datum_plane*:
-        body = cast(Part.BodyBase, context["body"])
+        body = cast(Part.BodyBase, context["solid_body"])
         datum_plane: Part.Geometry = body.newObject("PartDesign::Plane", f"{self.Name}_Datum_Plane")
         # visibility_set(datum_plane, False)
         datum_plane.Visibility = False
@@ -905,6 +921,8 @@ class FabSolid(FabInterior):
     Inherited Attributes:
     * *Name* (str): The model name.
     * *Children* (Tuple[FabMount, ...]): The various model mounts to use to construct the part.
+    * *ChildrenNames* (Tuple[str, ...]): The various children names.
+    * *Parent* (FabNode): The Parent FabNode.
 
     Attributes:
     * *Material* (str): The material to use.
@@ -921,35 +939,28 @@ class FabSolid(FabInterior):
         """Verify FabSolid arguments."""
         super().__post_init__()
 
-        # Do consistency checking and extract the *pads* for guessing maximum depth later on.
-        mounts: Tuple[FabNode, ...] = self.Children
-        if not mounts:
-            raise ValueError("{self.FullPath}: No FabMount's!")
-        index: int
-        pads: List[FabPad] = []
-        mount: FabNode
-        for index, mount in enumerate(mounts):
-            if not isinstance(mount, FabMount):
-                raise ValueError(
-                    f"{self.Name}: {mount.Name} is {type(mount)}, not a FabMount.")
-            operations: Tuple[FabNode, ...] = mount.Children
-            if not operations:
-                raise ValueError(
-                    f"{self.Name}: Mount {mount.Name} has no FabOperation'.")
-            first_operation: FabNode = operations[0]
-            if isinstance(first_operation, FabPad):
-                pads.append(first_operation)
-            elif index == 0:
-                raise ValueError(f"{self.Name}: First operation in mount {mount.Name} is "
-                                 f"{type(first_operation)}, not FabPad")
+    # FabSolid._mounts_check():
+    def _mounts_check(self) -> None:
+        """Verify that all children are FabMounts."""
+        child: FabNode
+        for child in self.Children:
+            if not isinstance(child, FabNode):
+                raise RuntimeError(
+                    f"{self.FullName}: {child.FullName} is {type(child)}, not FabMount.")
 
-        # (Why __setattr__?)[https://stackoverflow.com/questions/53756788]
-        object.__setattr__(self, "_pads", tuple(pads))
-
+    # FabSolid.Mounts():
     @property
     def Mounts(self) -> Tuple[FabMount, ...]:
         """Return children solids."""
+        self._mounts_check()
         return cast(Tuple[FabMount], self.Children)
+
+    # FabSolid.Mounts.setter():
+    @Mounts.setter
+    def Mounts(self, mounts: Tuple[FabMount]) -> None:
+        """Set the FabSolid mounts."""
+        self.Children = mounts
+        self._mounts_check()
 
     # FabSolid.produce():
     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
@@ -957,17 +968,47 @@ class FabSolid(FabInterior):
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabSolid.produce('{self.Name}')")
-        app_document = cast(App.Document, context["app_document"])
+        self._mounts_check()
+
+        # Do consistency checking and extract the *pads* for guessing maximum depth later on.
+        mounts: Tuple[FabMount, ...] = self.Mounts
+        if not mounts:
+            raise RuntimeError("{self.FullPath}: No FabMount's!")
+        index: int
+        mount: FabMount
+        for index, mount in enumerate(mounts):
+            operations: Tuple[FabOperation, ...] = mount.Operations
+            if not operations:
+                raise ValueError(
+                    f"{self.Name}: Mount {mount.Name} has no FabOperation's.")
+            first_operation: FabOperation = operations[0]
+            if index == 0 and not isinstance(first_operation, FabPad):
+                raise RuntimeError(
+                    f"{self.FullPath}: Mount {mount.FullPath} Operation {first_operation.FullPath} "
+                    f"is {type(first_operation)}, not FabPad")
 
         # Create the *geometry_group* that contains all of the 2D geometry (line, arc, circle.):
-        geometry_group: App.DocumentObjectGroup = app_document.addObject(
-            "App::DocumentObjectGroup", f"{self.Name}_Geometry")
+        parent_object: Any = context["parent_object"]
+        geometry_group: App.DocumentObjectGroup
+        geometry_group_name: str = f"{self.Name}_Geometry"
+        if isinstance(parent_object, App.Document):
+            geometry_group = parent_object.addObject(
+                "App::DocumentObjectGroup", geometry_group_name)
+        else:
+            geometry_group = parent_object.newObject("App::DocumentObjectGroup")
+            geometry_group.Label = geometry_group_name
+
         geometry_group.Visibility = False
         context["geometry_group"] = geometry_group
 
         # Create the *body*
-        body: Part.BodyBase = app_document.addObject("PartDesign::Body", self.Name)
-        context["body"] = body
+        body: Part.BodyBase
+        if isinstance(parent_object, App.Document):
+            body = parent_object.addObject("PartDesign::Body", self.Name)
+        else:
+            body = parent_object.newObject("PartDesign::Body")
+            body.Label = self.Name
+        context["solid_body"] = body
 
         # Copy "view" fields from *body* to *gui_body* (if we are in graphical mode):
         if App.GuiUp:  # pragma: no cover
@@ -991,16 +1032,8 @@ class FabSolid(FabInterior):
             # model_file.ViewObject = view_object
 
         # Process each *mount*:
-        pads: Tuple[Optional[FabPad], ...] = self._pads
-        current_pads: List[FabPad] = []
-        index: int
-        mount: FabMount
         for index, mount in enumerate(self.Mounts):
-            pad: Optional[FabPad] = pads[index]
-            if isinstance(pad, FabPad):
-                current_pads.append(pad)
             context["prefix"] = mount.Name
-            context["current_pads"] = tuple(current_pads)  # Used for estimating depth.
             mount.produce(context.copy(), tracing=next_tracing)
 
         if tracing:

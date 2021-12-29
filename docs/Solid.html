@@ -122,23 +122,30 @@ Attributes:</p>
 <p>FabDrill.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
 <p>Produce the Hole.</p>
 <h2><a name="solid--fabfile"></a>5 Class FabFile:</h2>
-<p>Represents a FreeCAD document file.</p>
+<p>Represents a FreeCAD document file.
+Inherited Attributes:</p>
+<ul>
+<li><em>Name</em> (str): Node name</li>
+<li><em>Children</em> (Tuple[Union[FabAssembly, FablGroup, FabSolid], ...]):
+The children nodes which are constrained to &quot;group-like&quot; or a FabSolid.</li>
+<li><em>ChlidrenNames</em> (Tuple[str, ...]): The Children names.</li>
+</ul>
+<p>Attributes:</p>
+<ul>
+<li><em>FilePath</em> (Path):
+The Python pathlib.Path file name which must have a suffix of <code>.fcstd</code> or <code>.FCStd</code>.</li>
+</ul>
 <h3><a name="solid----produce"></a>5.1 <code>FabFile.</code>produce():</h3>
 <p>FabFile.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
 <p>Produce all of the FabSolid's.</p>
 <h2><a name="solid--fabgroup"></a>6 Class FabGroup:</h2>
 <p>A named group of FabNode's.
-Attributes:</p>
-<ul>
-<li>Inherited Attributes:
+Inherited Attributes:</p>
 <ul>
 <li><em>Name</em> (str)</li>
-<li><em>FullPath</em> (str)</li>
 <li><em>Parent</em> (FabNode)</li>
 <li><em>Children</em> (Tuple[FabNode, ...)</li>
 <li><em>ChildrenNames</em> (Tuple[str, ...])</li>
-</ul>
-</li>
 </ul>
 <h3><a name="solid----produce"></a>6.1 <code>FabGroup.</code>produce():</h3>
 <p>FabGroup.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
@@ -239,6 +246,8 @@ Inherited Attributes:</p>
 <ul>
 <li><em>Name</em> (str): The model name.</li>
 <li><em>Children</em> (Tuple[FabMount, ...]): The various model mounts to use to construct the part.</li>
+<li><em>ChildrenNames</em> (Tuple[str, ...]): The various children names.</li>
+<li><em>Parent</em> (FabNode): The Parent FabNode.</li>
 </ul>
 <p>Attributes:</p>
 <ul>
