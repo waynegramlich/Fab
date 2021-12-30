@@ -66,16 +66,6 @@ class FabGroup(FabNode):
         """Initialize FabGroup."""
         super().__post_init__()
 
-    # FabGroup._setup():
-    def _setup(self, parent: FabNode, all_nodes: List[FabNode], tracing: str = "") -> None:
-        """Set up the FabGroup."""
-        next_tracing: str = tracing + " " if tracing else ""
-        if tracing:
-            print(f"{tracing}=>FabGroup._setup('{self.Name}', '{parent.Name}')")
-        super()._setup(self, all_nodes, next_tracing)
-        if tracing:
-            print(f"{tracing}<=FabGroup._setup('{self.Name}', '{parent.Name}')")
-
     # FabGroup.produce():
     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
         """Create the FreeCAD group object."""
@@ -1104,8 +1094,6 @@ class TestSolid(FabSolid):
 class FabRoot(FabNode):
     """FabRoot: The Root mode a FabNode tree."""
 
-    AllNodes: Tuple[FabNode, ...] = field(init=False, repr=False)
-
     # FabRoot.__post_init__():
     def __post_init__(self) -> None:
         """Process FabRoot."""
@@ -1113,13 +1101,10 @@ class FabRoot(FabNode):
         super().__post_init__()
         if self.Name != "Root":
             raise ValueError("The Root node must be named root rather than '{self.Name}'")
-        all_nodes: List[FabNode] = []
-        self._setup(self, all_nodes)
-        self.AllNodes = tuple(all_nodes)
         # print(f"<=Fab_Root.__post_init__():")
 
     # FabRoot: configure_contraints():
-    def configure_constraints(self, maximum_iterations: int = 20,
+    def configure_constraints(self, all_nodes: Tuple[FabNode, ...], maximum_iterations: int = 20,
                               verbosity: int = 4, tracing: str = "") -> None:
         """Configure the FabNode tree until is constraints are stable.
 
@@ -1142,7 +1127,7 @@ class FabRoot(FabNode):
                 print(f"{tracing}{count=}")
             node: FabNode
             configurations: List[str] = []
-            for node in self.AllNodes:
+            for node in all_nodes:
                 if tracing:
                     print(f"{tracing}Process '{node.Name}'")
                 node.configure(tracing=next_tracing)
@@ -1193,7 +1178,16 @@ class FabRoot(FabNode):
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabRoot.run()")
-        self.configure_constraints()
+
+        # Phase 1: Sweep through the FabNode tree:
+        dag_table: Dict[int, FabNode] = {}
+        self._setup(dag_table, self, self, tracing=next_tracing)
+
+        # Phase 2: Configure constraints:
+        all_nodes: Tuple[FabNode, ...] = tuple(dag_table.values())
+        self.configure_constraints(all_nodes)
+
+        # Phase 3: Perform the production steps:
         errors: Tuple[str, ...] = self.produce({}, tracing=next_tracing)
         if errors:
             print("\n".join(errors))

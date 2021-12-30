@@ -73,7 +73,7 @@ import Embed
 Embed.setup()
 
 from dataclasses import dataclass, field
-from typing import Any, cast, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, cast, Dict, List, Optional, Sequence, Set, Tuple, Union
 from FreeCAD import BoundBox, Placement, Vector  # type: ignore
 
 
@@ -624,41 +624,38 @@ class FabNode(FabBox):
         return no_underscores.isalnum() and no_underscores[0].isalpha()
 
     # FabNode._setup():
-    def _setup(self, parent: "FabNode",
-               all_nodes: List["FabNode"], tracing: str = "") -> None:
-        """Set up the FabNode."""
+    def _setup(self, dag_table: Dict[int, "FabNode"],
+               parent: "FabNode", root: "FabNode", tracing: str = "") -> None:
+        """Set up the FabNode and its children."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabNode._setup('{self.Name}', '{parent.Name}', *)")
 
-        # A FabRoot is treated a bit specially
-        if False:  # self.Parent is self:
-            self.Name = "Root"
+        # Setup *FullPath* and *Parent*:
+        if self is root:
+            # *root* is specical:
             self.FullPath = ""
+            self.Parent = root
+            self.Name = "Root"
         else:
+            self.FullPath = self.Name if parent is root else f"{parent.FullPath}.{self.Name}"
             self.Parent = parent
-            self.FullPath = f"{parent.FullPath}.{self.Name}" if parent.FullPath else self.Name
-        all_nodes.append(self)
-        if tracing:
-            print(f"{tracing}<=FabNode._setup('{self.Name}', '{parent.Name}')")
 
-        # Collect all of children FabNode's into *children_table*, checking for duplicates:
-        children_table: Dict[str, FabNode] = {}
-        name: str
+        # Make sure that the FabNode tree is a DAG (Directed Acyclic Graph) with no duplicates.
+        node_id: int = id(self)
+        if node_id in dag_table:
+            raise RuntimeError(f"{self.FullPath} is the same as {dag_table[node_id].FullPath}")
+        dag_table[node_id] = self
+
+        # Recursively setup each *child*:
+        child_names: Set[str] = set()
         child: FabNode
         for child in self.Children:
-            child._setup(self, all_nodes, tracing=next_tracing)
-            child_name = child.Name
-            if child_name in children_table:
-                if children_table[child_name] is child:
-                    raise ValueError(f"Node '{child_name}' is duplicated.'")
-                else:
-                    raise ValueError(f"Two different nodes named {child_name} encountered.")
-            else:
-                children_table[child_name] = child
-                if hasattr(self, child_name):
-                    raise ValueError(f"{child_name} is already an attribute.")
-                setattr(self, child_name, child)
+            name: str = child.Name
+            if name in child_names:
+                raise RuntimeError("'{name}' occurs more then once in '{self.FullPath}'")
+            child_names.add(name)
+            child._setup(dag_table, self, root, tracing=next_tracing)
 
         if tracing:
             print(f"{tracing}<=FabNode._setup('{self.Name}', '{parent.Name}', *)")
