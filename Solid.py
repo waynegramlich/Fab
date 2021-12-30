@@ -42,13 +42,13 @@ from FreeCAD import Placement, Rotation, Vector
 
 from Geometry import FabCircle, FabGeometry, FabPolygon
 from Join import FabFasten, FabJoin
-from Tree import FabInterior, FabNode
+from Tree import FabNode
 from Utilities import FabColor
 
 
 @dataclass
 # FabGroup:
-class FabGroup(FabInterior):
+class FabGroup(FabNode):
     """FabGroup: A named group of FabNode's.
 
     Inherited Attributes:
@@ -118,7 +118,7 @@ class FabAssembly(FabGroup):
 
 # FabFile:
 @dataclass
-class FabFile(FabInterior):
+class FabFile(FabNode):
     """FabFile: Represents a FreeCAD document file.
 
     Inherited Attributes:
@@ -197,17 +197,10 @@ class FabFile(FabInterior):
         # No solids specified:
         fcstd_path: Path = Path("/tmp/part_file_test.fcstd")
         try:
-            FabFile("EmptyFile", (), fcstd_path)
+            FabFile("EmptyFile", fcstd_path)
             assert False
         except ValueError as value_error:
             assert str(value_error) == "At least one FabSolid needs to be specified"
-
-        # Bogus solid error:
-        try:
-            FabFile("BogusSolid", (cast(FabSolid, None),), fcstd_path)
-            assert False
-        except ValueError as value_error:
-            assert str(value_error) == "None is not a FabSolid"
 
         # Duplicate part name error:
         contact: Vector = Vector()
@@ -218,19 +211,24 @@ class FabFile(FabInterior):
         depth1: float = 10.0
         pad1: FabPad = FabPad("Cylinder1", circle1, depth1)
         operations1: Tuple[FabOperation, ...] = (pad1,)
-        mount1: FabMount = FabMount("Mount1", operations1, contact, z_axis, y_axis)
-        solid1: FabSolid = FabSolid("Part1", (mount1,), "hdpe", "orange")
+        mount1: FabMount = FabMount("Mount1", contact, z_axis, y_axis)
+        mount1.Children = operations1
+        solid1: FabSolid = FabSolid("Part1", "hdpe", "orange")
+        solid1.Children = (mount1,)
 
         # Duplicate Part Names:
+        fab_file: FabFile
         try:
-            FabFile("Duplicate Solid", (solid1, solid1), fcstd_path)
+            fab_file = FabFile("Duplicate Solid", fcstd_path)
+            fab_file.Children = (solid1, solid1)
             assert False
         except ValueError as value_error:
             assert str(value_error) == "There are two or more Part's with the same name 'Part1'"
 
         # Test Open/Produce/Close
         _ = fcstd_path.unlink if fcstd_path.exists() else None
-        fab_file: FabFile = FabFile("Open_Produce_Close", (solid1,), fcstd_path)
+        fab_file = FabFile("Open_Produce_Close", fcstd_path)
+        fab_file.Children = (solid1,)
         assert isinstance(fab_file, FabFile)
         context: Dict[str, Any] = {}
         assert isinstance(context["app_document"], App.Document)
@@ -784,7 +782,7 @@ class FabHole(FabOperation):
 
 # FabMount:
 @dataclass
-class FabMount(FabInterior):
+class FabMount(FabNode):
     """FabMount: An operations plane that can be oriented for subsequent machine operations.
 
     This class basically corresponds to a FreeCad Datum Plane.  It is basically the surface
@@ -921,7 +919,7 @@ class FabMount(FabInterior):
 
 # FabSolid:
 @dataclass
-class FabSolid(FabInterior):
+class FabSolid(FabNode):
     """Fab: Represents a single part constructed using FreeCAD Part Design paradigm.
 
     Inherited Attributes:
@@ -1103,7 +1101,7 @@ class TestSolid(FabSolid):
 
 @dataclass
 # FabRoot:
-class FabRoot(FabInterior):
+class FabRoot(FabNode):
     """FabRoot: The Root mode a FabNode tree."""
 
     AllNodes: Tuple[FabNode, ...] = field(init=False, repr=False)
@@ -1312,9 +1310,10 @@ class Box(FabAssembly):
             FabClose("TScrews", tn_screws + ts_screws, dw),
         )
         top_mount: FabMount = FabMount(
-            "TopNorth", top_operations,
-            center + Vector(0, 0, dz2), top_axis, north_axis, dw)
-        top_solid: FabSolid = FabSolid("Top", (top_mount,), "hdpe", "red")
+            "TopNorth", center + Vector(0, 0, dz2), top_axis, north_axis, dw)
+        top_mount.Children = top_operations
+        top_solid: FabSolid = FabSolid("Top", "hdpe", "red")
+        top_solid.Children = (top_mount,)
 
         # Do the *bottom_solid*:
         bottom_corners: Tuple[Corner, ...] = (
@@ -1329,9 +1328,10 @@ class Box(FabAssembly):
             FabClose("BScrews", bn_screws + bs_screws, dw),
         )
         bottom_mount: FabMount = FabMount(
-            "BottomNorth", bottom_operations,
-            center + Vector(0, 0, -dz2), bottom_axis, north_axis, dw)
-        bottom_solid: FabSolid = FabSolid("Bottom", (bottom_mount,), "hdpe", "red")
+            "BottomNorth", center + Vector(0, 0, -dz2), bottom_axis, north_axis, dw)
+        bottom_mount.Children = bottom_operations
+        bottom_solid: FabSolid = FabSolid("Bottom", "hdpe", "red")
+        bottom_solid.Children = (bottom_mount,)
 
         # The North (and South) side has 4 additional screws -- two that attach to the
         # East side and two that attach to the West side.  In addition, each North and
@@ -1384,29 +1384,30 @@ class Box(FabAssembly):
             FabClose("NScrews", ne_screws + nw_screws, dw),
         )
         north_mount: FabMount = FabMount(
-            "NorthMount", north_operations, center + Vector(0, dy2, 0),
+            "NorthMount", center + Vector(0, dy2, 0),
             north_axis, bottom_axis, dw)
+        north_mount.Children = north_operations
 
         # Do the *north_top_mount* second:
         north_top_operations: Tuple[FabOperation, ...] = (
             FabThread("NScrews", tn_screws, dy),
         )
-        north_top_mount: FabMount = FabMount(
-            "NorthTopMount", north_top_operations, center + Vector(0, 0, dz2 - dw2),
-            top_axis, north_axis, dz - 2 * dw)
+        north_top_mount: FabMount = FabMount("NorthTopMount", center + Vector(0, 0, dz2 - dw2),
+                                             top_axis, north_axis, dz - 2 * dw)
+        north_top_mount.Children = north_top_operations
 
         # Do the *north_top_mount* second:
         north_bottom_operations: Tuple[FabOperation, ...] = (
             FabThread("NScrews", bn_screws, dy),
         )
         north_bottom_mount: FabMount = FabMount(
-            "NorthBottomMount", north_bottom_operations, center + Vector(0, 0, -dx2 + dw2),
+            "NorthBottomMount", center + Vector(0, 0, -dx2 + dw2),
             bottom_axis, north_axis, dz - 2 * dw)
+        north_bottom_mount.Children = north_bottom_operations
 
         # Do the *north_solid*:
-        north_solid: FabSolid = FabSolid(
-            "North",
-            (north_mount, north_top_mount, north_bottom_mount), "hdpe", "green")
+        north_solid: FabSolid = FabSolid("North", "hdpe", "green")
+        north_solid.Children = (north_mount, north_top_mount, north_bottom_mount)
 
         # Do the *south_solid*:
         south_corners: Tuple[Corner, ...] = (
@@ -1423,14 +1424,12 @@ class Box(FabAssembly):
             FabClose("SScrews", se_screws + sw_screws, dw),
         )
         south_mount: FabMount = FabMount(
-            "SouthBottom", south_operations, center + Vector(0, -dy2, 0),
+            "SouthBottom", center + Vector(0, -dy2, 0),
             south_axis, bottom_axis, dw)
+        south_mount.Children = south_operations
 
-        south_solid: FabSolid = FabSolid(
-            "South",
-            (south_mount,),
-            "hdpe", "green")
-
+        south_solid: FabSolid = FabSolid("South", "hdpe", "green")
+        south_solid.Children = (south_mount,)
         if False:
             # Do the *west_solid*:
             west_corners: Tuple[Corner, ...] = (
@@ -1444,8 +1443,10 @@ class Box(FabAssembly):
                 FabPad("Pad", west_polygon, dw),
             )
             west_mount: FabMount = FabMount(
-                "WestNorth", west_operations, center + Vector(-dx2, 0, 0), west_axis, north_axis)
-            west_solid: FabSolid = FabSolid("West", (west_mount,), "hdpe", "blue")
+                "WestNorth", center + Vector(-dx2, 0, 0), west_axis, north_axis)
+            west_mount.Children = west_operations
+            west_solid: FabSolid = FabSolid("West", "hdpe", "blue")
+            west_solid.Children = (west_mount,)
             _ = west_solid
 
             # Do the *east_solid*:
@@ -1460,8 +1461,10 @@ class Box(FabAssembly):
                 FabPad("Pad", east_polygon, dw),
             )
             east_mount: FabMount = FabMount(
-                "EastNorth", east_operations, center + Vector(dx2, 0, 0), east_axis, north_axis)
-            east_solid: FabSolid = FabSolid("East", (east_mount,), "hdpe", "blue")
+                "EastNorth", center + Vector(dx2, 0, 0), east_axis, north_axis)
+            east_mount.Children = east_operations
+            east_solid: FabSolid = FabSolid("East", "hdpe", "blue")
+            east_solid.Children = (east_mount,)
             _ = east_solid
 
         # Load up the FabSolid's:
@@ -1485,8 +1488,10 @@ def main() -> None:
     # test_solid: TestSolid = TestSolid("TestSolid")
     box: Box = Box("Box", Center=Vector())  # 0, 100.0, 0.0))
     solids: Tuple[Union[FabSolid, FabAssembly], ...] = (box, )  # , test_solid)
-    model_file: FabFile = FabFile("Test", solids, Path("/tmp/test.fcstd"))
-    root: FabRoot = FabRoot("Root", (model_file,))
+    model_file: FabFile = FabFile("Test", Path("/tmp/test.fcstd"))
+    model_file.Children = solids
+    root: FabRoot = FabRoot("Root")
+    root.Children = (model_file,)
     root.run(tracing="")
 
 

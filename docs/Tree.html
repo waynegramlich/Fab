@@ -5,22 +5,7 @@ as shown in the FreeCAD model view.</p>
 <p>The base class is FabNode organized as follows:</p>
 <ul>
 <li>FabNode: Tree node base class (can be either a &quot;leaf&quot; or &quot;interior node.)
-<ul>
-<li>FabInterior: An interior TreeNode with children.
-<ul>
-<li>FabRoot: The Root of the FabNode tree.</li>
-<li>FabGroup: A Group of FabNode's in a tree.
-<ul>
-<li>FabFile: A Node that corresponds to a <code>.fcstd</code> file.</li>
-<li>FabAssembly: A group of FabAssembly's and/or FabPart's.  (Defined in ??)</li>
-</ul>
-</li>
-<li>FabSolid: A physical part that is modeled.  (Defined in Solid)</li>
-<li>FabLink: ???</li>
-</ul>
-</li>
-</ul>
-</li>
+(This needs to be expanded.)</li>
 </ul>
 <p>The Tree enforces the following constraints:</p>
 <ul>
@@ -83,13 +68,12 @@ the FreeCAD solids/assemblies and the associated output files.</li>
 <li>1.2 <a href="#tree----reorient">reorient()</a>: Reorient FabBox given a Placement.</li>
 </ul>
 </li>
-<li>2 Class: <a href="#tree--fabinterior">FabInterior</a>:</li>
-<li>3 Class: <a href="#tree--fabnode">FabNode</a>:
+<li>2 Class: <a href="#tree--fabnode">FabNode</a>:
 <ul>
-<li>3.1 <a href="#tree----check">check()</a>: Check FabNode for errors.</li>
-<li>3.2 <a href="#tree----configure">configure()</a>: Configure FabNode.</li>
-<li>3.3 <a href="#tree----configurations-append">configurations_append()</a>: Append specified attributes to configurations list.</li>
-<li>3.4 <a href="#tree----produce">produce()</a>: Produce FabNode.</li>
+<li>2.1 <a href="#tree----check">check()</a>: Check FabNode for errors.</li>
+<li>2.2 <a href="#tree----configure">configure()</a>: Configure FabNode.</li>
+<li>2.3 <a href="#tree----configurations-append">configurations_append()</a>: Append specified attributes to configurations list.</li>
+<li>2.4 <a href="#tree----produce">produce()</a>: Produce FabNode.</li>
 </ul>
 </li>
 </ul>
@@ -194,14 +178,7 @@ X/Y/Z axes.  In particular, box volume is <em>not</em> conserved.</p>
 <ul>
 <li><em>placement</em> (Placement): The placement of the box corners.</li>
 </ul>
-<h2><a name="tree--fabinterior"></a>2 Class FabInterior:</h2>
-<p>Represents A
-Attributes:</p>
-<ul>
-<li>Inherited Attributes: <em>Name</em> (str), <em>FullPath</em> (str), <em>Parent</em> (FabNode).</li>
-<li><em>Children</em> (List[FabNode]): The children FabNode's.</li>
-</ul>
-<h2><a name="tree--fabnode"></a>3 Class FabNode:</h2>
+<h2><a name="tree--fabnode"></a>2 Class FabNode:</h2>
 <p>Represents one node in the tree.
 Attributes:</p>
 <ul>
@@ -212,15 +189,15 @@ Attributes:</p>
 Attribute names to track during configuration.  (Default: () ).
 This field is set in the user's <em>configure</em>() method.</li>
 </ul>
-<h3><a name="tree----check"></a>3.1 <code>FabNode.</code>check():</h3>
+<h3><a name="tree----check"></a>2.1 <code>FabNode.</code>check():</h3>
 <p>FabNode.check(self) -&gt; typing.Tuple[str, ...]:</p>
 <p>Check FabNode for errors.</p>
-<h3><a name="tree----configure"></a>3.2 <code>FabNode.</code>configure():</h3>
+<h3><a name="tree----configure"></a>2.2 <code>FabNode.</code>configure():</h3>
 <p>FabNode.configure(self, tracing: str = '') -&gt; None:</p>
 <p>Configure FabNode.</p>
-<h3><a name="tree----configurations-append"></a>3.3 <code>FabNode.</code>configurations_append():</h3>
+<h3><a name="tree----configurations-append"></a>2.3 <code>FabNode.</code>configurations_append():</h3>
 <p>FabNode.configurations_append(self, configurations: typing.List[str], tracing: str = '') -&gt; None:</p>
 <p>Append specified attributes to configurations list.</p>
-<h3><a name="tree----produce"></a>3.4 <code>FabNode.</code>produce():</h3>
+<h3><a name="tree----produce"></a>2.4 <code>FabNode.</code>produce():</h3>
 <p>FabNode.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
 <p>Produce FabNode.</p>

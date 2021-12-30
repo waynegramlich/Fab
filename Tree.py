@@ -6,15 +6,8 @@ The Tree package provides a tree of nodes that mostly corresponds to a FreeCAD t
 as shown in the FreeCAD model view.
 
 The base class is FabNode organized as follows:
-
 * FabNode: Tree node base class (can be either a "leaf" or "interior node.)
-  * FabInterior: An interior TreeNode with children.
-    * FabRoot: The Root of the FabNode tree.
-    * FabGroup: A Group of FabNode's in a tree.
-      * FabFile: A Node that corresponds to a `.fcstd` file.
-      * FabAssembly: A group of FabAssembly's and/or FabPart's.  (Defined in ??)
-    * FabSolid: A physical part that is modeled.  (Defined in Solid)
-    * FabLink: ???
+(This needs to be expanded.)
 
 The Tree enforces the following constraints:
 * Each FabNode name must be compatible with a Python variable name
@@ -570,6 +563,7 @@ class FabNode(FabBox):
     Parent: "FabNode" = field(init=False, repr=False)
     FullPath: str = field(init=False)
     AttributeNames: Tuple[str, ...] = field(init=False, repr=False, default=())
+    Children: Tuple["FabNode", ...] = field(init=False, repr=False, default=())
 
     # FabNode.__post_init__():
     def __post_init__(self) -> None:
@@ -633,9 +627,10 @@ class FabNode(FabBox):
     def _setup(self, parent: "FabNode",
                all_nodes: List["FabNode"], tracing: str = "") -> None:
         """Set up the FabNode."""
-        # next_tracing: str = tracing + " " if tracing else ""
+        next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>FabNode._setup('{self.Name}', '{parent.Name}')")
+            print(f"{tracing}=>FabNode._setup('{self.Name}', '{parent.Name}', *)")
+
         # A FabRoot is treated a bit specially
         if False:  # self.Parent is self:
             self.Name = "Root"
@@ -646,6 +641,27 @@ class FabNode(FabBox):
         all_nodes.append(self)
         if tracing:
             print(f"{tracing}<=FabNode._setup('{self.Name}', '{parent.Name}')")
+
+        # Collect all of children FabNode's into *children_table*, checking for duplicates:
+        children_table: Dict[str, FabNode] = {}
+        name: str
+        child: FabNode
+        for child in self.Children:
+            child._setup(self, all_nodes, tracing=next_tracing)
+            child_name = child.Name
+            if child_name in children_table:
+                if children_table[child_name] is child:
+                    raise ValueError(f"Node '{child_name}' is duplicated.'")
+                else:
+                    raise ValueError(f"Two different nodes named {child_name} encountered.")
+            else:
+                children_table[child_name] = child
+                if hasattr(self, child_name):
+                    raise ValueError(f"{child_name} is already an attribute.")
+                setattr(self, child_name, child)
+
+        if tracing:
+            print(f"{tracing}<=FabNode._setup('{self.Name}', '{parent.Name}', *)")
 
     # FabNode:
     def __getitem__(self, key: Union[str, Tuple[str, type]]) -> Any:
@@ -709,66 +725,6 @@ class FabNode(FabBox):
         return focus
 
 
-@dataclass
-# FabInterior:
-class FabInterior(FabNode):
-    """FabInterior: Represents A
-
-    Attributes:
-    * Inherited Attributes: *Name* (str), *FullPath* (str), *Parent* (FabNode).
-    * *Children* (List[FabNode]): The children FabNode's.
-
-    """
-
-    Children: Tuple[FabNode, ...] = field(repr=False, default=())
-
-    # FabInterior.__post_init__():
-    def __post_init__(self) -> None:
-        """Finish initializing FabNode."""
-        # print(f"=>FabInterior.__post_init__(): {self.Name=}")
-
-        # Initialize the remaining fields to bogus values that get updated by the _setup() method.
-        super().__post_init__()
-        child: Any
-        index: int
-        for index, child in enumerate(self.Children):
-            if not isinstance(child, FabNode):
-                raise ValueError(f"'{self.Name}[{index}] is {type(child)}, not FabNode")
-        # print(f"<=FabInterior.__post_init__()")
-
-    # FabNode._setup():
-    def _setup(self, parent: "FabNode",
-               all_nodes: List["FabNode"], tracing: str = "") -> None:
-        """Set up the FabNode."""
-        next_tracing: str = tracing + " " if tracing else ""
-        if tracing:
-            print(f"{tracing}=>FabIterator._setup('{self.Name}', '{parent.Name}', *)")
-
-        # Initialize the Parent class.:
-        super()._setup(parent, all_nodes, tracing=next_tracing)
-
-        # Collect all of children FabNode's into *children_table*, checking for duplicates:
-        children_table: Dict[str, FabNode] = {}
-        name: str
-        child: FabNode
-        for child in self.Children:
-            child._setup(self, all_nodes, tracing=next_tracing)
-            child_name = child.Name
-            if child_name in children_table:
-                if children_table[child_name] is child:
-                    raise ValueError(f"Node '{child_name}' is duplicated.'")
-                else:
-                    raise ValueError(f"Two different nodes named {child_name} encountered.")
-            else:
-                children_table[child_name] = child
-                if hasattr(self, child_name):
-                    raise ValueError(f"{child_name} is already an attribute.")
-                setattr(self, child_name, child)
-
-        if tracing:
-            print(f"{tracing}=>FabIterator._setup('{self.Name}', '{parent.Name}', *)")
-
-
 # @dataclass
 # class MyNode1(FabNode):
 #     """MyNode1: First FabNode."""
@@ -791,7 +747,7 @@ class FabInterior(FabNode):
 #
 #
 # @dataclass
-# class MyNode2(FabInterior):
+# class MyNode2(FabNode):
 #     """MyNode1: First FabNode."""
 #
 #     B: int = 0
