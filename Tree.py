@@ -365,7 +365,7 @@ class FabRoot(FabInterior):
 
             # Deal with *verbosity*:
             if verbosity >= 1:
-                print(f"Configure[{count}]: {len(difference_values)} differences:")
+                print(f"{tracing}Configure[{count}]: {len(difference_values)} differences:")
             if verbosity >= 2:
                 sorted_difference_values: List[str] = sorted(tuple(difference_values))
                 index: int
@@ -383,17 +383,29 @@ class FabRoot(FabInterior):
     # FabRoot.produce():
     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
         """Produce FabNode."""
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabRoot.produce()")
         errors: List[str] = []
         child: "FabNode"
         for child_node in self.Children:
-            errors.extend(child_node.produce(context.copy()))
+            errors.extend(child_node.produce(context.copy(), tracing=next_tracing))
+        if tracing:
+            print(f"{tracing}<=FabRoot.produce()")
         return tuple(errors)
 
     # FabRoot.run():
-    def run(self) -> None:
+    def run(self, tracing: str = "") -> None:
         """Configure and Produce everything."""
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabRoot.run()")
         self.configure_constraints()
-        self.produce({})
+        errors: Tuple[str, ...] = self.produce({}, tracing=next_tracing)
+        if errors:
+            print("\n".join(errors))
+        if tracing:
+            print(f"{tracing}<=FabRoot.run()")
 
 
 @dataclass
@@ -515,4 +527,4 @@ def _unit_tests(tracing: str = "") -> None:
 
 
 if __name__ == "__main__":
-    _unit_tests(" ")
+    _unit_tests("")

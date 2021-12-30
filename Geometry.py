@@ -35,7 +35,7 @@ import Draft  # type: ignore
 import Part  # type: ignore
 import FreeCAD as App  # type: ignore
 
-from FreeCAD import Placement, Vector
+from FreeCAD import Placement, Rotation, Vector
 
 
 # _Geometry:
@@ -47,7 +47,8 @@ class _Geometry(object):
     """
 
     # _Geometry.produce():
-    def produce(self, context: Dict[str, Any], prefix: str, index: int) -> Part.Part2DObject:
+    def produce(self, context: Dict[str, Any], prefix: str,
+                index: int, tracing: str = "") -> Part.Part2DObject:
         raise NotImplementedError(f"{type(self)}.produce() is not implemented yet")
 
 
@@ -182,7 +183,8 @@ class _Arc(_Geometry):
         return obj
 
     # _Arc.produce():
-    def produce(self, context: Dict[str, Any], prefix: str, index: int) -> Part.Part2DObject:
+    def produce(self, context: Dict[str, Any], prefix: str,
+                index: int, tracing: str = "") -> Part.Part2DObject:
         """Return line segment after moving it into Geometry group."""
         mount_contact = cast(Vector, context["mount_contact"])
         mount_normal = cast(Vector, context["mount_normal"])
@@ -231,18 +233,26 @@ class _Circle(_Geometry):
     Diameter: float
 
     # _Circle.produce():
-    def produce(self, context: Dict[str, Any], prefix: str, index: int) -> Part.Part2DObject:
+    def produce(self, context: Dict[str, Any], prefix: str, index: int,
+                tracing: str = "") -> Part.Part2DObject:
         """Return line segment after moving it into Geometry group."""
+        if tracing:
+            print(f"{tracing}=>_Circle.produce()")
         # Extract mount plane *contact* and *normal* from *context* for 2D projection:
         mount_contact = cast(Vector, context["mount_contact"])
         mount_normal = cast(Vector, context["mount_normal"])
         center_on_plane: Vector = self.Center.projectToPlane(mount_contact, mount_normal)
 
         label: str = f"{prefix}_Circle_{index:03d}"
-        # placement: Placement = Placement()
-        # placement.Rotation.Q = (0.0, 0.0, 0.0, 1.0)
-        # placement.Base = center2d
-        placement: Placement = Placement(center_on_plane, mount_normal, 0.0)  # Base, Axis, Angle
+        z_axis: Vector = Vector(0.0, 0.0, 1.0)
+        rotation: Rotation = Rotation(z_axis, mount_normal)
+        placement: Placement = Placement()
+        placement.Rotation = rotation
+        placement.Base = center_on_plane
+        if tracing:
+            print(f"{tracing}{center_on_plane=} {mount_normal=}")
+            print(f"{tracing}{placement=}")
+            print(f"{tracing}{rotation * z_axis=}")
 
         # Create and label *part_arc*:
         part_circle: Part.Part2DObject = Draft.makeCircle(
@@ -257,6 +267,8 @@ class _Circle(_Geometry):
         part_circle.adjustRelativeLinks(geometry_group)
         geometry_group.addObject(part_circle)
 
+        if tracing:
+            print(f"{tracing}<=_Circle.produce()")
         return part_circle
 
 
@@ -275,7 +287,8 @@ class _Line(_Geometry):
     Finish: Vector
 
     # _Line.produce():
-    def produce(self, context: Dict[str, Any], prefix: str, index: int) -> Part.Part2DObject:
+    def produce(self, context: Dict[str, Any], prefix: str,
+                index: int, tracing: str = "") -> Part.Part2DObject:
         """Return line segment after moving it into Geometry group."""
         label: str = f"{prefix}_Line_{index:03d}"
         placement: Placement = Placement()
@@ -521,16 +534,23 @@ class FabCircle(FabGeometry):
         object.__setattr__(self, "Center", self.Center + copy)  # Makes a copy.
 
     # FabCircle.produce():
-    def produce(self, context: Dict[str, Any], prefix: str) -> Tuple[Part.Part2DObject, ...]:
+    def produce(self, context: Dict[str, Any], prefix: str,
+                tracing: str = "") -> Tuple[Part.Part2DObject, ...]:
         """Produce the FreeCAD objects needed for FabPolygon."""
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabCircle.produce()")
         geometries: Tuple[_Geometry, ...] = self.get_geometries()
         geometry: _Geometry
         index: int
         part_geometries: List[Part.Part2DObject] = []
         for index, geometry in enumerate(geometries):
-            part_geometry: Part.Part2DObject = geometry.produce(context, prefix, index)
+            part_geometry: Part.Part2DObject = geometry.produce(
+                context, prefix, index, tracing=next_tracing)
             assert isinstance(part_geometry, Part.Part2DObject)
             part_geometries.append(part_geometry)
+        if tracing:
+            print(f"{tracing}<=FabCircle.produce()")
         return tuple(part_geometries)
 
     # FabCircle.get_geometries():

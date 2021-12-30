@@ -82,7 +82,7 @@ class FabGroup(FabInterior):
         """Create the FreeCAD group object."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print("{tracing}=>FabGroup.produce('{self.FullPath')")
+            print(f"{tracing}=>FabGroup.produce('{self.FullPath}')")
         errors: List[str] = []
 
         # Create the *group* that contains all of the FabNode's:
@@ -91,6 +91,7 @@ class FabGroup(FabInterior):
             "App::DocumentObjectGroup", f"{self.Name}")
         group.Visibility = False
         self.Group = group
+        visibility_set(group)
 
         child: FabNode
         context["parent_object"] = self.Group
@@ -99,7 +100,7 @@ class FabGroup(FabInterior):
                 errors.append(f"{self.FullPath}: {child.FullPath} is a FabFile under a group")
             errors.extend(child.produce(context.copy(), next_tracing))
         if tracing:
-            print("{tracing}<=FabGroup.produce('{self.FullPath')")
+            print(f"{tracing}<=FabGroup.produce('{self.FullPath}')")
         return tuple(errors)
 
 
@@ -159,8 +160,9 @@ class FabFile(FabInterior):
     # FabFile.produce():
     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
         """Produce all of the FabSolid's."""
+        next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"=>{tracing}=>FabFile.produce('{self.Name}', *)")
+            print(f"{tracing}=>FabFile.produce('{self.Name}', *)")
 
         # Create the new *app_document*:
         app_document = cast(App.Document, App.newDocument(self.Name))
@@ -180,13 +182,13 @@ class FabFile(FabInterior):
         child: FabNode
         for child in self.Children:
             assert isinstance(child, (FabAssembly, FabGroup, FabSolid))
-            errors.extend(child.produce(context.copy()))
+            errors.extend(child.produce(context.copy(), tracing=next_tracing))
 
         # Recompute, save, ...:
         app_document.recompute()
         app_document.saveAs(str(self.FilePath))
         if tracing:
-            print(f"<={tracing}=>FabFile.produce('{self.Name}', *)")
+            print(f"{tracing}<=FabFile.produce('{self.Name}', *)")
         return tuple(errors)
 
     # FabFile._unit_tests():
@@ -267,15 +269,26 @@ class FabOperation(FabNode):
     # FabOperation.produce_shape_binder():
     def produce_shape_binder(self, context: Dict[str, Any],
                              part_geometries: Tuple[Part.Part2DObject, ...],
-                             prefix: str) -> Part.Feature:
+                             prefix: str, tracing: str = "") -> Part.Feature:
         """Produce the shape binder needed for the pad, pocket, hole, ... operations."""
+        if tracing:
+            print(f"{tracing}=>FabOperation.produce_shape_binder()")
         body = cast(Part.BodyBase, context["solid_body"])
 
+        binder_placement: Placement = Placement()  # Do not move/reorient anything.
+        if tracing:
+            print(f"{tracing}{binder_placement.Rotation.Axis=}")
+
+        # datum_plane: Any = context["mount_plane"]
         shape_binder: Part.Feature = body.newObject(
             "PartDesign::SubShapeBinder", f"{prefix}_Binder")
         assert isinstance(shape_binder, Part.Feature)
+        shape_binder.Placement = binder_placement
         shape_binder.Support = (part_geometries)
+        # shape_binder.Support = (datum_plane, [""])
         shape_binder.Visibility = False
+        if tracing:
+            print(f"{tracing}<=FabOperation.produce_shape_binder()=>*")
         return shape_binder
 
     # FabOperation._viewer_upate():
@@ -328,15 +341,16 @@ class FabPad(FabOperation):
     # FabPad.produce():
     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
         """Produce the Pad."""
+        next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print("{tracing}=>Fab.produce('{self.Name}')")
+            print(f"{tracing}=>FabPad.produce('{self.Name}')")
         # Extract the *part_geometries* and create the assocated *shape_binder*:
         prefix = cast(str, context["prefix"])
         next_prefix: str = f"{prefix}_{self.Name}"
         part_geometries: Tuple[Part.Part2DObject, ...]
         part_geometries = self.Geometry.produce(context.copy(), next_prefix)
         shape_binder: Part.Feature = self.produce_shape_binder(
-            context.copy(), part_geometries, next_prefix)
+            context.copy(), part_geometries, next_prefix, tracing=next_tracing)
         assert isinstance(shape_binder, Part.Feature)
         shape_binder.Visibility = False
 
@@ -362,7 +376,7 @@ class FabPad(FabOperation):
         self._viewer_update(body, pad)
 
         if tracing:
-            print("{tracing}<=Fab.produce('{self.Name}')")
+            print(f"{tracing}<=FabPad.produce('{self.Name}')")
         return ()
 
 # FabPocket:
@@ -430,7 +444,7 @@ class FabPocket(FabOperation):
         return ()
 
 
-_HoleKey = Tuple[str, str, float, bool]
+_HoleKey = Tuple[str, str, float, bool, int]
 
 
 # _Hole:
@@ -444,6 +458,7 @@ class _Hole(object):
     Kind: str  # "thread", "close", or "standard"
     Depth: float  # The depth of the drill hole
     IsTop: bool  # Is the top of the fastener
+    Unique: int  # Non-zero to force otherwise common holes into separate operations.
     Center: Vector = field(compare=False)  # The Center (start point) of the drill
     Join: FabJoin = field(compare=False)  # The associated FabJoin
 
@@ -451,7 +466,7 @@ class _Hole(object):
     @property
     def Key(self) -> _HoleKey:
         """Return a Hole key."""
-        return (self.ThreadName, self.Kind, self.Depth, self.IsTop)
+        return (self.ThreadName, self.Kind, self.Depth, self.IsTop, self.Unique)
 
 
 # FabDrill:
@@ -521,8 +536,9 @@ class FabDrill(FabOperation):
             return distance
 
         # Extract the *part_geometries*:
+        next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print("{tracing}=>FabDrill.produce('{self.Name}')")
+            print(f"{tracing}=>FabDrill.produce('{self.Name}')")
 
         # Grab mount information from *context*:
         prefix = cast(str, context["prefix"])
@@ -531,8 +547,17 @@ class FabDrill(FabOperation):
         mount_contact = cast(Vector, context["mount_contact"])
         mount_normal = cast(Vector, context["mount_normal"])
         bottom_depth = cast(float, context["mount_depth"])
+        # mount_plane = context["mount_plane"]
+        # assert isinstance(mount_plane, Part.Geometry)
         assert abs(mount_normal.Length - 1.0) < EPSILON, (
             "{self.FullPath}: Mount normal is not of length 1")
+        if tracing:
+            print(f"{tracing}{mount_contact=} {mount_normal=} {bottom_depth=}")
+
+        # Make copy of *mount_normal* and normailize it:
+        copy: Vector = Vector()
+        mount_normal = (mount_normal + copy).normalize()
+        mount_z_aligned: bool = close(mount_normal, Vector(0.0, 0.0, 1.0))
 
         # Some commonly used variables:
         depth: float
@@ -540,6 +565,7 @@ class FabDrill(FabOperation):
         is_top: bool
         join: FabJoin
         fasten: FabFasten
+        uinique: int
 
         # For each *join*, generate a *hole* request.  Any errors are collected in *errors*:
         holes: List[_Hole] = []
@@ -596,7 +622,11 @@ class FabDrill(FabOperation):
             depth = min(bottom_depth, far_distance)
             is_top = close(start, top)
             kind: str = self.get_kind()
-            hole = _Hole(fasten.ThreadName, kind, depth, is_top, top, join)
+            # This is quite ugly for now.  If the *mount_normal* equals the +Z axis, multiple
+            # holes of the same characteristics can be done together.  Otherwise, it is
+            # one drill operation per hole.  Sigh:
+            unique: int = 0 if mount_z_aligned else id(join)
+            hole = _Hole(fasten.ThreadName, kind, depth, is_top, unique, top, join)
             holes.append(hole)
 
         # Group all *holes* with the same *key* together:
@@ -613,7 +643,7 @@ class FabDrill(FabOperation):
         for index, key in enumerate(sorted(hole_groups.keys())):
             # Unpack *key*:
             thread_name: str
-            thread_name, kind, depth, is_top = key
+            thread_name, kind, depth, is_top, unique = key
             diameter: float = fasten.get_diameter(kind)
 
             # Construct the "drawing"
@@ -628,12 +658,13 @@ class FabDrill(FabOperation):
                     hole.Depth == depth and hole.IsTop == is_top)
                 center: Vector = hole.Center
                 circle: FabCircle = FabCircle(center, diameter)
-                part_geometries.extend(circle.produce(context.copy(), next_prefix))
+                part_geometries.extend(circle.produce(context.copy(),
+                                                      next_prefix, tracing=next_tracing))
 
             # Create the *shape_binder*:
             next_prefix = f"{prefix}.DrillCircle{index:03d}"
             shape_binder: Part.Feature = self.produce_shape_binder(
-                context.copy(), tuple(part_geometries), next_prefix)
+                context.copy(), tuple(part_geometries), next_prefix, tracing=next_tracing)
             assert isinstance(shape_binder, Part.Feature)
             body = cast(Part.BodyBase, context["solid_body"])
 
@@ -645,7 +676,7 @@ class FabDrill(FabOperation):
             part_hole.Diameter = diameter
             part_hole.Depth = depth
             part_hole.UpToFace = None
-            part_hole.Reversed = 0
+            part_hole.Reversed = False
             part_hole.Midplane = 0
 
             # Fill in other fields for the top mount.
@@ -656,7 +687,7 @@ class FabDrill(FabOperation):
             self._viewer_update(body, part_hole)
 
         if tracing:
-            print("{tracing}<=FabDrill.produce('{self.Name}')")
+            print(f"{tracing}<=FabDrill.produce('{self.Name}')")
         return tuple(errors)
 
 
@@ -787,6 +818,7 @@ class FabMount(FabInterior):
         """Verify that FabMount arguments are valid."""
 
         # (Why __setattr__?)[https://stackoverflow.com/questions/53756788]
+        super().__post_init__()
         copy: Vector = Vector()  # Make private copy of Vector's.
         object.__setattr__(self, "Contact", self.Contact + copy)
         object.__setattr__(self, "Normal", self.Normal + copy)
@@ -811,68 +843,41 @@ class FabMount(FabInterior):
           * (Part.Geometry) that is the datum_plane.
 
         """
-        # This is where the math for FreeCAD DatumPlane's is discussed.
-        #
-        # Here is the notation used in this comment:
-        #
-        # Scalars: a, b, c, ...  (i.e. a lower case letter)
-        # Vectors: P, N, Pa, ... (i.e. an upper case letter with optional suffix letter)
-        # Magnitude: |N|, |P|, ... (i.e. a vector with vertical bars on each side.)
-        # Unit Normal: <N>, <P>, ... (i.e. a vector enclosed in angle brakcets < ...>).)
-        # Dot Product: N . P (i.e. two vectors separated by a period.)
-        # Vector scaling: s * V (i.e. a scalar times a vector.)
-        # Note that:  |N| * <N> = N
-        #
-        # The section on Hessian normal plane representation from:
-        # * [MathWorld Planes](https://mathworld.wolfram.com/Plane.html)
-        # is worth reading.
-        #
-        # The base coordinate system ('b' suffix) has an origin (Ob=(0,0,0)), X axis (<Xb>=(1,0,0)),
-        # Y axis (<Yb>=(0,1,0), and Z axis (<Zb>=(0,0,1).
-        #
-        # A datum plane specifies a new coordinate system ('d' suffix) that has an Origin (Od),
-        # X axis (<Xd>), Y axis (<Yd>), and Z axis (<Zd>).
-        #
-        # The math for computing these values is discussed immediately below:
-        #
-        # A plane is specified by a contact point Pd on the plane and a normal Nd to the plane.
-        # The normal can be at any point on the plane.
-        #
-        # The datum plane origin is computed as:
-        #
-        #     Od = Os + d * <Nd>
-        #
-        # where d is a signed distance computed as:
-        #
-        #     d = - (<Nd> . Pd)
-
         # Compute *rotation* from <Zb> to <Nd>:
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabMount.produce('{self.Name}')")
+
         contact: Vector = self.Contact  # Pd
         normal: Vector = self.Normal  # <Nd>
-        distance: float = normal.dot(contact)  # d = - (<Nd> . Pd)
-        origin: Vector = normal * distance  # Od = Os + d * <Nd>
-        z_axis: Vector = Vector(0, 0, 1)  # <Zb>
-        rotation: Rotation = Rotation(z_axis, normal)  # Rotation from <Zb> to <Nd>.
+        z_axis: Vector = Vector(0.0, 0.0, 1.0)
+        origin: Vector = Vector()
+        projected_origin: Vector = origin.projectToPlane(contact, normal)
+        rotation: Rotation = Rotation(z_axis, normal)
+        placement: Placement = Placement()
+        placement.Base = projected_origin
+        placement.Rotation = rotation
 
         if tracing:
             print(f"{tracing}{contact=}")
             print(f"{tracing}{normal=}")
             print(f"{tracing}{origin=}")
+            print(f"{tracing}{projected_origin=}")
             print(f"{tracing}{rotation=}")
+            print(f"{tracing}{placement=}")
+            print(f"{tracing}{rotation*z_axis=}")
+            print(f"{tracing}{normal=}")
 
         # Create, save and return the *datum_plane*:
         body = cast(Part.BodyBase, context["solid_body"])
         datum_plane: Part.Geometry = body.newObject("PartDesign::Plane", f"{self.Name}_Datum_Plane")
+        context["mount_plane"] = datum_plane
         # visibility_set(datum_plane, False)
         datum_plane.Visibility = False
         # xy_plane: App.GeoGeometry = body.getObject("XY_Plane")
-        placement: Placement = Placement(origin, rotation)
         if tracing:
             print(f"{tracing}{placement=}")
-        datum_plane.AttachmentOffset = Placement()  # Null placement:  Use Placement instead
+        datum_plane.AttachmentOffset = placement
         datum_plane.Placement = placement
         datum_plane.MapMode = "Translate"
         datum_plane.MapPathParameter = 0.0
@@ -890,17 +895,19 @@ class FabMount(FabInterior):
                 setattr(gui_datum_plane, "Visibility", False)
 
         # Provide datum_plane to lower levels of produce:
-        context["mount_datum_plane"] = datum_plane
+        context["mount_plane"] = datum_plane
         context["mount_normal"] = self.Normal
         context["mount_contact"] = self.Contact
 
         # FIXME: This is a kludge for now:
         operations: Tuple[FabOperation, ...] = self.Operations
         assert operations
-        operation0: FabOperation = operations[0]
-        assert isinstance(operation0, FabPad)
-        mount_depth: float = operation0.Depth
-        context["mount_depth"] = mount_depth
+        # operation0: FabOperation = operations[0]
+        # assert isinstance(operation0, FabPad)
+        # mount_depth: float = operation0.Depth
+        if not isinstance(self.Depth, float):
+            assert False, f"{self.FullPath}: Does not have a depth."
+        context["mount_depth"] = self.Depth
 
         # Install the FabMount (i.e. *self*) and *datum_plane* into *model_file* prior
         # to recursively performing the *operations*:
@@ -1124,31 +1131,27 @@ class Box(FabAssembly):
     Thickness: float = 5.0
     Material: str = "HDPE"
     Center: Vector = Vector()
-    Screws: Tuple[FabJoin, ...] = field(init=False, repr=False, default=())
-    Top: FabSolid = field(init=False, repr=False)
-    Bottom: FabSolid = field(init=False, repr=False)
-    North: FabSolid = field(init=False, repr=False)
-    South: FabSolid = field(init=False, repr=False)
-    East: FabSolid = field(init=False, repr=False)
-    West: FabSolid = field(init=False, repr=False)
 
     # Box.__post_init__():
     def __post_init__(self) -> None:
         """Consturct the the Box."""
 
+        super().__post_init__()
+
+        # Extract basic dimensions and associated constants:
+        center: Vector = self.Center
         dx: float = self.Length
         dy: float = self.Width
         dz: float = self.Height
         dw: float = self.Thickness
-
         dx2: float = dx / 2.0
         dy2: float = dy / 2.0
         dz2: float = dz / 2.0
         dw2: float = dw / 2.0
-        sd: float = 2.0 * dw  # Screw Depth
-
+        sd: float = 3.0 * dw  # Screw Depth
         corner_radius: float = 3.0
 
+        # Create some *direction* Vector's:
         east_axis: Vector = Vector(1, 0, 0)
         north_axis: Vector = Vector(0, 1, 0)
         top_axis: Vector = Vector(0, 0, 1)
@@ -1156,21 +1159,48 @@ class Box(FabAssembly):
         south_axis: Vector = -north_axis
         bottom_axis: Vector = -top_axis
 
-        center: Vector = self.Center
-        # fasten: FabFasten = FabFasten("M3x0.5", FabFasten.ISO_COARSE, FabFasten.M3, ())
-        fasten: FabFasten = FabFasten("FH-M3", "M3x0.5", ())
-        top_north_joins: Tuple[FabJoin, ...] = (
-            FabJoin("TN-W", fasten,
-                    center + Vector(dx2 - dw2, dy2 - dw2, dz2),
-                    center + Vector(dx2 - dw2, dy2 - dw2, dz2 - sd)),
-            FabJoin("TN-E", fasten,
-                    center + Vector(-dx2 + dw2, dy2 - dw2, dz2),
-                    center + Vector(-dx2 + dw2, dy2 - dw2, dz2 - sd)),
-        )
-        _ = top_north_joins
+        fasten: FabFasten = FabFasten("M3x0.5-FH", "M3x0.5", ())
 
-        Corners = Tuple[Tuple[Vector, float], ...]
-        top_corners: Corners = (
+        # There are 6 box Solid's -- top/bottom, north/south, and east/west.
+        # The Solid's are screwed together on along some, but all of the edges:
+        # Define the screws first:
+
+        # Top/North edge screws:
+        tbo: float = 3.0 * dw  # Top/Bottom Offset from side.
+        tnw_head: Vector = center + Vector(dx2 - tbo, dy2 - dw2, dz2)
+        tne_head: Vector = center + Vector(-dx2 + tbo, dy2 - dw2, dz2)
+        tn_screws: Tuple[FabJoin, ...] = (
+            FabJoin("TN-W", fasten, tnw_head, tnw_head - sd * top_axis),
+            FabJoin("TN-E", fasten, tne_head, tne_head - sd * top_axis),
+        )
+
+        # Top/South edge screws:
+        tsw_head: Vector = center + Vector(dx2 - tbo, -dy2 + dw2, dz2)
+        tse_head: Vector = center + Vector(-dx2 + tbo, -dy2 + dw2, dz2)
+        ts_screws: Tuple[FabJoin, ...] = (
+            FabJoin("TN-W", fasten, tsw_head, tsw_head - sd * top_axis),
+            FabJoin("TN-E", fasten, tse_head, tse_head - sd * top_axis),
+        )
+
+        # Bottom/North edge screws:
+        bnw_head: Vector = center + Vector(dx2 - tbo, -dy2 + dw2, -dz2)
+        bne_head: Vector = center + Vector(-dx2 + tbo, -dy2 + dw2, -dz2)
+        bn_screws: Tuple[FabJoin, ...] = (
+            FabJoin("TN-W", fasten, bnw_head, bnw_head - sd * bottom_axis),
+            FabJoin("TN-E", fasten, bne_head, bne_head - sd * bottom_axis),
+        )
+
+        # Bottom/South edge screws:
+        bsw_head: Vector = center + Vector(dx2 - tbo, dy2 - dw2, -dz2)
+        bse_head: Vector = center + Vector(-dx2 + tbo, dy2 - dw2, -dz2)
+        bs_screws: Tuple[FabJoin, ...] = (
+            FabJoin("TN-W", fasten, bsw_head, bsw_head - sd * bottom_axis),
+            FabJoin("TN-E", fasten, bse_head, bse_head - sd * bottom_axis),
+        )
+
+        # Do the *top_solid*:
+        Corner = Tuple[Vector, float]
+        top_corners: Tuple[Corner, ...] = (
             (center + Vector(dx2, dy2, dz2), corner_radius),  # TNE
             (center + Vector(-dx2, dy2, dz2), corner_radius),  # TNW
             (center + Vector(-dx2, -dy2, dz2), corner_radius),  # TSW
@@ -1179,85 +1209,167 @@ class Box(FabAssembly):
         top_polygon: FabPolygon = FabPolygon("Top", top_corners)
         top_operations: Tuple[FabOperation, ...] = (
             FabPad("Pad", top_polygon, dw),
-            FabClose("TopNorthHoles", top_north_joins, 10.0),
+            FabClose("TScrews", tn_screws + ts_screws, dw),
         )
         top_mount: FabMount = FabMount(
-            "TopNorth", top_operations, center + Vector(0, 0, dz2), top_axis, north_axis)
+            "TopNorth", top_operations,
+            center + Vector(0, 0, dz2), top_axis, north_axis, dw)
         top_solid: FabSolid = FabSolid("Top", (top_mount,), "hdpe", "red")
 
-        north_corners: Corners = (
-            (center + Vector(dx2, dy2, dz2 - dw), corner_radius),  # TNE
-            (center + Vector(-dx2, dy2, dz2 - dw), corner_radius),  # TNW
-            (center + Vector(-dx2, dy2, -dz2), corner_radius),  # BNW
+        # Do the *bottom_solid*:
+        bottom_corners: Tuple[Corner, ...] = (
             (center + Vector(dx2, dy2, -dz2), corner_radius),  # BNE
-        )
-        north_polygon: FabPolygon = FabPolygon("North", north_corners)
-        north_operations: Tuple[FabOperation, ...] = (
-            FabPad("Pad", north_polygon, dw),
-        )
-        north_mount: FabMount = FabMount(
-            "NorthBottom", north_operations, center + Vector(0, dy2, 0), north_axis, bottom_axis)
-        north_solid: FabSolid = FabSolid(
-            "North", (north_mount,), "hdpe", "green")
-
-        west_corners: Corners = (
-            (center + Vector(-dx2, dy2 - dw, dz2 - dw), corner_radius),  # TNW
-            (center + Vector(-dx2, -dy2 + dw, dz2 - dw), corner_radius),  # TSW
-            (center + Vector(-dx2, -dy2 + dw, -dz2 + dw), corner_radius),  # BSW
-            (center + Vector(-dx2, dy2 - dw, -dz2 + dw), corner_radius),  # BNW
-        )
-        west_polygon: FabPolygon = FabPolygon("West", west_corners)
-        west_operations: Tuple[FabOperation, ...] = (
-            FabPad("Pad", west_polygon, dw),
-        )
-        west_mount: FabMount = FabMount(
-            "WestNorth", west_operations, center + Vector(-dx2, 0, 0), west_axis, north_axis)
-        west_solid: FabSolid = FabSolid("West", (west_mount,), "hdpe", "blue")
-
-        bottom_corners: Corners = (
-            (center + Vector(dx2, dy2 - dw, -dz2), corner_radius),  # BNE
-            (center + Vector(-dx2, dy2 - dw, -dz2), corner_radius),  # BNW
-            (center + Vector(-dx2, -dy2 + dw, -dz2), corner_radius),  # BSW
-            (center + Vector(dx2, -dy2 + dw, -dz2), corner_radius),  # BSE
+            (center + Vector(-dx2, dy2, -dz2), corner_radius),  # BNW
+            (center + Vector(-dx2, -dy2, -dz2), corner_radius),  # BSW
+            (center + Vector(dx2, -dy2, -dz2), corner_radius),  # BSE
         )
         bottom_polygon: FabPolygon = FabPolygon("Bottom", bottom_corners)
         bottom_operations: Tuple[FabOperation, ...] = (
             FabPad("Pad", bottom_polygon, dw),
+            FabClose("BScrews", bn_screws + bs_screws, dw),
         )
         bottom_mount: FabMount = FabMount(
-            "BottomNorth", bottom_operations, center + Vector(0, 0, -dz2), bottom_axis, north_axis)
+            "BottomNorth", bottom_operations,
+            center + Vector(0, 0, -dz2), bottom_axis, north_axis, dw)
         bottom_solid: FabSolid = FabSolid("Bottom", (bottom_mount,), "hdpe", "red")
 
-        east_corners: Corners = (
-            (center + Vector(dx2, dy2 - dw, dz2 - dw), corner_radius),  # TNE
-            (center + Vector(dx2, -dy2 + dw, dz2 - dw), corner_radius),  # TSE
-            (center + Vector(dx2, -dy2 + dw, -dz2 + dw), corner_radius),  # BSE
-            (center + Vector(dx2, dy2 - dw, -dz2 + dw), corner_radius),  # BNE
-        )
-        east_polygon: FabPolygon = FabPolygon("East", east_corners)
-        east_operations: Tuple[FabOperation, ...] = (
-            FabPad("Pad", east_polygon, dw),
-        )
-        east_mount: FabMount = FabMount(
-            "EastNorth", east_operations, center + Vector(dx2, 0, 0), east_axis, north_axis)
-        east_solid: FabSolid = FabSolid("East", (east_mount,), "hdpe", "blue")
+        # The North (and South) side has 4 additional screws -- two that attach to the
+        # East side and two that attach to the West side.  In addition, each North and
+        # South side requires two addtional mounts to drill the holes that attach to the
+        # top and bottom.  Define the screws first, then define the sides and mounts.
 
-        south_corners: Corners = (
+        # North East edge screws:
+        nso: float = 3.0 * dw  # North/South Offset from Top/Bottom.
+        net_head: Vector = center + Vector(dx2 - dw2, dy2, dz2 - nso)
+        neb_head: Vector = center + Vector(dx2 - dw2, dy2, -dz2 + nso)
+        ne_screws: Tuple[FabJoin, ...] = (
+            FabJoin("NE-T", fasten, net_head, net_head - sd * north_axis),
+            FabJoin("NE-B", fasten, neb_head, neb_head - sd * north_axis),
+        )
+
+        # North West edge screws:
+        nwt_head: Vector = center + Vector(-dx2 + dw2, dy2, dz2 - nso)
+        nwb_head: Vector = center + Vector(-dx2 + dw2, dy2, -dz2 + nso)
+        nw_screws: Tuple[FabJoin, ...] = (
+            FabJoin("NW-T", fasten, nwt_head, nwt_head - sd * north_axis),
+            FabJoin("NW-B", fasten, nwb_head, nwb_head - sd * north_axis),
+        )
+
+        # South East edge screws:
+        set_head: Vector = center + Vector(dx2 - dw2, -dy2, dz2 - nso)
+        seb_head: Vector = center + Vector(dx2 - dw2, -dy2, -dz2 + nso)
+        se_screws: Tuple[FabJoin, ...] = (
+            FabJoin("SE-T", fasten, set_head, set_head - sd * south_axis),
+            FabJoin("TT-B", fasten, seb_head, seb_head - sd * south_axis),
+        )
+
+        # South West edge screws:
+        swt_head: Vector = center + Vector(-dx2 + dw2, -dy2, dz2 - nso)
+        swb_head: Vector = center + Vector(-dx2 + dw2, -dy2, -dz2 + nso)
+        sw_screws: Tuple[FabJoin, ...] = (
+            FabJoin("SW-W", fasten, swt_head, swt_head - sd * south_axis),
+            FabJoin("SW-E", fasten, swb_head, swb_head - sd * south_axis),
+        )
+
+        # Do the *north_mount* first:
+        north_corners: Tuple[Corner, ...] = (
+            (center + Vector(dx2, dy2, dz2 - dw), corner_radius),  # TNE
+            (center + Vector(-dx2, dy2, dz2 - dw), corner_radius),  # TNW
+            (center + Vector(-dx2, dy2, -dz2 + dw), corner_radius),  # BNW
+            (center + Vector(dx2, dy2, -dz2 + dw), corner_radius),  # BNE
+        )
+        north_polygon: FabPolygon = FabPolygon("North", north_corners)
+        north_operations: Tuple[FabOperation, ...] = (
+            FabPad("Pad", north_polygon, dw),
+            FabClose("NScrews", ne_screws + nw_screws, dw),
+        )
+        north_mount: FabMount = FabMount(
+            "NorthMount", north_operations, center + Vector(0, dy2, 0),
+            north_axis, bottom_axis, dw)
+
+        # Do the *north_top_mount* second:
+        north_top_operations: Tuple[FabOperation, ...] = (
+            FabThread("NScrews", tn_screws, dy),
+        )
+        north_top_mount: FabMount = FabMount(
+            "NorthTopMount", north_top_operations, center + Vector(0, 0, dz2 - dw2),
+            top_axis, north_axis, dz - 2 * dw)
+
+        # Do the *north_top_mount* second:
+        north_bottom_operations: Tuple[FabOperation, ...] = (
+            FabThread("NScrews", bn_screws, dy),
+        )
+        north_bottom_mount: FabMount = FabMount(
+            "NorthBottomMount", north_bottom_operations, center + Vector(0, 0, -dx2 + dw2),
+            bottom_axis, north_axis, dz - 2 * dw)
+
+        # Do the *north_solid*:
+        north_solid: FabSolid = FabSolid(
+            "North",
+            (north_mount, north_top_mount, north_bottom_mount), "hdpe", "green")
+
+        # Do the *south_solid*:
+        south_corners: Tuple[Corner, ...] = (
             (center + Vector(dx2, -dy2, dz2 - dw), corner_radius),  # TSE
             (center + Vector(-dx2, -dy2, dz2 - dw), corner_radius),  # TSW
-            (center + Vector(-dx2, -dy2, -dz2), corner_radius),  # BSW
-            (center + Vector(dx2, -dy2, -dz2), corner_radius),  # BSE
+            (center + Vector(-dx2, -dy2, -dz2 + dw), corner_radius),  # BSW
+            (center + Vector(dx2, -dy2, -dz2 + dw), corner_radius),  # BSE
         )
+
+        # Do the *south_mount*:
         south_polygon: FabPolygon = FabPolygon("South", south_corners)
         south_operations: Tuple[FabOperation, ...] = (
             FabPad("Pad", south_polygon, dw),
+            FabClose("SScrews", se_screws + sw_screws, dw),
         )
         south_mount: FabMount = FabMount(
-            "SouthBottom", south_operations, center + Vector(0, -dy2, 0), south_axis, bottom_axis)
-        south_solid: FabSolid = FabSolid("South", (south_mount,), "hdpe", "green")
+            "SouthBottom", south_operations, center + Vector(0, -dy2, 0),
+            south_axis, bottom_axis, dw)
 
-        self.Children = (top_solid, bottom_solid, north_solid, south_solid, east_solid, west_solid)
-        super().__post_init__()
+        south_solid: FabSolid = FabSolid(
+            "South",
+            (south_mount,),
+            "hdpe", "green")
+
+        if False:
+            # Do the *west_solid*:
+            west_corners: Tuple[Corner, ...] = (
+                (center + Vector(-dx2, dy2 - dw, dz2 - dw), corner_radius),  # TNW
+                (center + Vector(-dx2, -dy2 + dw, dz2 - dw), corner_radius),  # TSW
+                (center + Vector(-dx2, -dy2 + dw, -dz2 + dw), corner_radius),  # BSW
+                (center + Vector(-dx2, dy2 - dw, -dz2 + dw), corner_radius),  # BNW
+            )
+            west_polygon: FabPolygon = FabPolygon("West", west_corners)
+            west_operations: Tuple[FabOperation, ...] = (
+                FabPad("Pad", west_polygon, dw),
+            )
+            west_mount: FabMount = FabMount(
+                "WestNorth", west_operations, center + Vector(-dx2, 0, 0), west_axis, north_axis)
+            west_solid: FabSolid = FabSolid("West", (west_mount,), "hdpe", "blue")
+            _ = west_solid
+
+            # Do the *east_solid*:
+            east_corners: Tuple[Corner, ...] = (
+                (center + Vector(dx2, dy2 - dw, dz2 - dw), corner_radius),  # TNE
+                (center + Vector(dx2, -dy2 + dw, dz2 - dw), corner_radius),  # TSE
+                (center + Vector(dx2, -dy2 + dw, -dz2 + dw), corner_radius),  # BSE
+                (center + Vector(dx2, dy2 - dw, -dz2 + dw), corner_radius),  # BNE
+            )
+            east_polygon: FabPolygon = FabPolygon("East", east_corners)
+            east_operations: Tuple[FabOperation, ...] = (
+                FabPad("Pad", east_polygon, dw),
+            )
+            east_mount: FabMount = FabMount(
+                "EastNorth", east_operations, center + Vector(dx2, 0, 0), east_axis, north_axis)
+            east_solid: FabSolid = FabSolid("East", (east_mount,), "hdpe", "blue")
+            _ = east_solid
+
+        # Load up the FabSolid's:
+        self.Children = (
+            top_solid, bottom_solid,
+            north_solid, south_solid,
+            # east_solid, west_solid
+        )
 
     # Box.configure():
     def configure(self, tracing: str = "") -> None:
@@ -1270,11 +1382,12 @@ class Box(FabAssembly):
 def main() -> None:
     """Run main program."""
     # Create the models:
-    test_solid: TestSolid = TestSolid("TestSolid")
-    box: Box = Box("Box", Center=Vector(0, 100.0, 0.0))
-    model_file: FabFile = FabFile("Test", (test_solid, box,), Path("/tmp/test.fcstd"))
+    # test_solid: TestSolid = TestSolid("TestSolid")
+    box: Box = Box("Box", Center=Vector())  # 0, 100.0, 0.0))
+    solids: Tuple[Union[FabSolid, FabAssembly], ...] = (box, )  # , test_solid)
+    model_file: FabFile = FabFile("Test", solids, Path("/tmp/test.fcstd"))
     root: FabRoot = FabRoot("Root", (model_file,))
-    root.run()
+    root.run(tracing="")
 
 
 # TODO: Move this to FabNode class and switch to using a *context*.

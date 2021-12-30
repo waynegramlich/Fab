@@ -1158,7 +1158,8 @@ class FabFasten:
 
     Attributes:
     * Name (str): FabFasten Name.
-    * ThreadName (str): A thread selection (e.g. "M3x.5", "#4-40", "1/4-20").
+    * ThreadName (str): A thread selection (e.g. "M3x.5", "#4-40", "1/4-20")
+    * Options (Tuple[FabOption, ...]): Various Head/Tail options for fastener stack
 
     """
 

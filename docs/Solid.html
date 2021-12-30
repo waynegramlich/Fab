@@ -210,7 +210,7 @@ All model operations are immutable (i.e. frozen.)</p>
 <p>FabOperation.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
 <p>Return the operation sort key.</p>
 <h3><a name="solid----produce-shape-binder"></a>10.3 <code>FabOperation.</code>produce_shape_binder():</h3>
-<p>FabOperation.produce_shape_binder(self, context: typing.Dict[str, typing.Any], part_geometries: typing.Tuple[Part.Part2DObject, ...], prefix: str) -&gt; Part.Feature:</p>
+<p>FabOperation.produce_shape_binder(self, context: typing.Dict[str, typing.Any], part_geometries: typing.Tuple[Part.Part2DObject, ...], prefix: str, tracing: str = '') -&gt; Part.Feature:</p>
 <p>Produce the shape binder needed for the pad, pocket, hole, ... operations.</p>
 <h2><a name="solid--fabpad"></a>11 Class FabPad:</h2>
 <p>A FreeCAD PartDesign Pad operation.
