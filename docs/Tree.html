@@ -86,38 +86,6 @@ the FreeCAD solids/assemblies and the associated output files.</li>
 <li>2.4 <a href="#tree----produce">produce()</a>: Produce FabNode.</li>
 </ul>
 </li>
-<li>3 Class: <a href="#tree--fabroot">FabRoot</a>:
-<ul>
-<li>3.1 <a href="#tree----configure-constraints">configure_constraints()</a>: Configure the FabNode tree until is constraints are stable.</li>
-<li>3.2 <a href="#tree----produce">produce()</a>: Produce FabNode.</li>
-<li>3.3 <a href="#tree----run">run()</a>: Configure and Produce everything.</li>
-</ul>
-</li>
-<li>4 Class: <a href="#tree--mynode1">MyNode1</a>:
-<ul>
-<li>4.1 <a href="#tree----configure">configure()</a>: Configure MyNode1.</li>
-</ul>
-</li>
-<li>5 Class: <a href="#tree--mynode2">MyNode2</a>:
-<ul>
-<li>5.1 <a href="#tree----configure">configure()</a>: Configure MyNode2.</li>
-</ul>
-</li>
-<li>6 Class: <a href="#tree--mynode2a">MyNode2A</a>:
-<ul>
-<li>6.1 <a href="#tree----configure">configure()</a>: Configure MyNode2A.</li>
-</ul>
-</li>
-<li>7 Class: <a href="#tree--mynode2b">MyNode2B</a>:
-<ul>
-<li>7.1 <a href="#tree----configure">configure()</a>: Configure MyNode2B.</li>
-</ul>
-</li>
-<li>8 Class: <a href="#tree--mynode3">MyNode3</a>:
-<ul>
-<li>8.1 <a href="#tree----configure">configure()</a>: Configure MyNode3.</li>
-</ul>
-</li>
 </ul>
 <h2><a name="tree--fabinterior"></a>1 Class FabInterior:</h2>
 <p>Represents A
@@ -149,47 +117,3 @@ This field is set in the user's <em>configure</em>() method.</li>
 <h3><a name="tree----produce"></a>2.4 <code>FabNode.</code>produce():</h3>
 <p>FabNode.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
 <p>Produce FabNode.</p>
-<h2><a name="tree--fabroot"></a>3 Class FabRoot:</h2>
-<p>The Root mode a FabNode tree.</p>
-<h3><a name="tree----configure-constraints"></a>3.1 <code>FabRoot.</code>configure_constraints():</h3>
-<p>FabRoot.configure_constraints(self, maximum_iterations: int = 20, verbosity: int = 4, tracing: str = '') -&gt; None:</p>
-<p>Configure the FabNode tree until is constraints are stable.
-Arguments:</p>
-<ul>
-<li><em>maximum_iterations</em> (int): The maximum number of iterations (default: 20).</li>
-<li><em>verbosity</em> (int): Verbosity level:
-0: No messages.
-1: Iteration messages only.
-N: Iteration messages with N-1 of the differences:</li>
-</ul>
-<h3><a name="tree----produce"></a>3.2 <code>FabRoot.</code>produce():</h3>
-<p>FabRoot.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
-<p>Produce FabNode.</p>
-<h3><a name="tree----run"></a>3.3 <code>FabRoot.</code>run():</h3>
-<p>FabRoot.run(self, tracing: str = '') -&gt; None:</p>
-<p>Configure and Produce everything.</p>
-<h2><a name="tree--mynode1"></a>4 Class MyNode1:</h2>
-<p>First FabNode.</p>
-<h3><a name="tree----configure"></a>4.1 <code>MyNode1.</code>configure():</h3>
-<p>MyNode1.configure(self, tracing: str = '') -&gt; None:</p>
-<p>Configure MyNode1.</p>
-<h2><a name="tree--mynode2"></a>5 Class MyNode2:</h2>
-<p>MyNode1: First FabNode.</p>
-<h3><a name="tree----configure"></a>5.1 <code>MyNode2.</code>configure():</h3>
-<p>MyNode2.configure(self, tracing: str = '') -&gt; None:</p>
-<p>Configure MyNode2.</p>
-<h2><a name="tree--mynode2a"></a>6 Class MyNode2A:</h2>
-<p>First sub-node of MyNode2.</p>
-<h3><a name="tree----configure"></a>6.1 <code>MyNode2A.</code>configure():</h3>
-<p>MyNode2A.configure(self, tracing: str = '') -&gt; None:</p>
-<p>Configure MyNode2A.</p>
-<h2><a name="tree--mynode2b"></a>7 Class MyNode2B:</h2>
-<p>Second sub-node of MyNode2.</p>
-<h3><a name="tree----configure"></a>7.1 <code>MyNode2B.</code>configure():</h3>
-<p>MyNode2B.configure(self, tracing: str = '') -&gt; None:</p>
-<p>Configure MyNode2B.</p>
-<h2><a name="tree--mynode3"></a>8 Class MyNode3:</h2>
-<p>MyNode1: First FabNode.</p>
-<h3><a name="tree----configure"></a>8.1 <code>MyNode3.</code>configure():</h3>
-<p>MyNode3.configure(self, tracing: str = '') -&gt; None:</p>
-<p>Configure MyNode3.</p>

@@ -28,7 +28,7 @@ import Embed
 Embed.setup()
 
 from dataclasses import dataclass, field
-from typing import Any, cast, Dict, List, Optional, Tuple, Union
+from typing import Any, cast, Dict, List, Optional, Set, Tuple, Union
 from pathlib import Path
 
 
@@ -42,7 +42,7 @@ from FreeCAD import Placement, Rotation, Vector
 
 from Geometry import FabCircle, FabGeometry, FabPolygon
 from Join import FabFasten, FabJoin
-from Tree import FabInterior, FabNode, FabRoot
+from Tree import FabInterior, FabNode
 from Utilities import FabColor
 
 
@@ -1099,6 +1099,108 @@ class TestSolid(FabSolid):
         self.Color = "purple"
         self.Children = (top_north_mount,)
         super().__post_init__()
+
+
+@dataclass
+# FabRoot:
+class FabRoot(FabInterior):
+    """FabRoot: The Root mode a FabNode tree."""
+
+    AllNodes: Tuple[FabNode, ...] = field(init=False, repr=False)
+
+    # FabRoot.__post_init__():
+    def __post_init__(self) -> None:
+        """Process FabRoot."""
+        # print(f"=>Fab_Root.__post_init__():")
+        super().__post_init__()
+        if self.Name != "Root":
+            raise ValueError("The Root node must be named root rather than '{self.Name}'")
+        all_nodes: List[FabNode] = []
+        self._setup(self, all_nodes)
+        self.AllNodes = tuple(all_nodes)
+        # print(f"<=Fab_Root.__post_init__():")
+
+    # FabRoot: configure_contraints():
+    def configure_constraints(self, maximum_iterations: int = 20,
+                              verbosity: int = 4, tracing: str = "") -> None:
+        """Configure the FabNode tree until is constraints are stable.
+
+        Arguments:
+        * *maximum_iterations* (int): The maximum number of iterations (default: 20).
+        * *verbosity* (int): Verbosity level:
+          0: No messages.
+          1: Iteration messages only.
+          N: Iteration messages with N-1 of the differences:
+
+        """
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabRoot.configure_constraints()")
+
+        previous_values: Set[str] = set()
+        count: int
+        for count in range(maximum_iterations):
+            if tracing:
+                print(f"{tracing}{count=}")
+            node: FabNode
+            configurations: List[str] = []
+            for node in self.AllNodes:
+                if tracing:
+                    print(f"{tracing}Process '{node.Name}'")
+                node.configure(tracing=next_tracing)
+                node.configurations_append(configurations)  # , tracing=next_tracing)
+            current_values: Set[str] = set(configurations)
+
+            difference_values: Set[str] = previous_values ^ current_values
+            if tracing:
+                print(f"{tracing}Iteration[{count}]: {sorted(previous_values)=}")
+                print(f"{tracing}Iteration[{count}]:  {sorted(current_values)=}")
+                print(f"{tracing}Iteration[{count}]: {len(difference_values)} Differences.")
+                print("")
+
+            # Deal with *verbosity*:
+            if verbosity >= 1:
+                print(f"{tracing}Configure[{count}]: {len(difference_values)} differences:")
+            if verbosity >= 2:
+                sorted_difference_values: List[str] = sorted(tuple(difference_values))
+                index: int
+                difference: str
+                for index, difference in enumerate(sorted_difference_values[:verbosity]):
+                    print(f"  Difference[{index}]: {difference}")
+
+            if not difference_values:
+                break
+            previous_values = current_values
+
+        if tracing:
+            print(f"{tracing}<=FabRoot.configure_constraints()")
+
+    # FabRoot.produce():
+    def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
+        """Produce FabNode."""
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabRoot.produce()")
+        errors: List[str] = []
+        child: "FabNode"
+        for child_node in self.Children:
+            errors.extend(child_node.produce(context.copy(), tracing=next_tracing))
+        if tracing:
+            print(f"{tracing}<=FabRoot.produce()")
+        return tuple(errors)
+
+    # FabRoot.run():
+    def run(self, tracing: str = "") -> None:
+        """Configure and Produce everything."""
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabRoot.run()")
+        self.configure_constraints()
+        errors: Tuple[str, ...] = self.produce({}, tracing=next_tracing)
+        if errors:
+            print("\n".join(errors))
+        if tracing:
+            print(f"{tracing}<=FabRoot.run()")
 
 
 # Box:

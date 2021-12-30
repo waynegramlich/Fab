@@ -80,7 +80,7 @@ import Embed
 Embed.setup()
 
 from dataclasses import dataclass, field
-from typing import cast, Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 
 @dataclass
@@ -168,9 +168,8 @@ class FabNode(object):
         if tracing:
             print(f"{tracing}=>FabNode._setup('{self.Name}', '{parent.Name}')")
         # A FabRoot is treated a bit specially
-        if isinstance(self, FabRoot):
+        if False:  # self.Parent is self:
             self.Name = "Root"
-            self.Parent = self
             self.FullPath = ""
         else:
             self.Parent = parent
@@ -301,225 +300,124 @@ class FabInterior(FabNode):
             print(f"{tracing}=>FabIterator._setup('{self.Name}', '{parent.Name}', *)")
 
 
-@dataclass
-# FabRoot:
-class FabRoot(FabInterior):
-    """FabRoot: The Root mode a FabNode tree."""
-
-    AllNodes: Tuple[FabNode, ...] = field(init=False, repr=False)
-
-    # FabRoot.__post_init__():
-    def __post_init__(self) -> None:
-        """Process FabRoot."""
-        # print(f"=>Fab_Root.__post_init__():")
-        super().__post_init__()
-        if self.Name != "Root":
-            raise ValueError("The Root node must be named root rather than '{self.Name}'")
-        all_nodes: List[FabNode] = []
-        self._setup(self, all_nodes)
-        self.AllNodes = tuple(all_nodes)
-        # print(f"<=Fab_Root.__post_init__():")
-
-    # FabRoot: configure_contraints():
-    def configure_constraints(self, maximum_iterations: int = 20,
-                              verbosity: int = 4, tracing: str = "") -> None:
-        """Configure the FabNode tree until is constraints are stable.
-
-        Arguments:
-        * *maximum_iterations* (int): The maximum number of iterations (default: 20).
-        * *verbosity* (int): Verbosity level:
-          0: No messages.
-          1: Iteration messages only.
-          N: Iteration messages with N-1 of the differences:
-
-        """
-        next_tracing: str = tracing + " " if tracing else ""
-        if tracing:
-            print(f"{tracing}=>FabRoot.configure_constraints()")
-
-        previous_values: Set[str] = set()
-        count: int
-        for count in range(maximum_iterations):
-            if tracing:
-                print(f"{tracing}{count=}")
-            node: FabNode
-            configurations: List[str] = []
-            for node in self.AllNodes:
-                if tracing:
-                    print(f"{tracing}Process '{node.Name}'")
-                node.configure(tracing=next_tracing)
-                node.configurations_append(configurations)  # , tracing=next_tracing)
-            current_values: Set[str] = set(configurations)
-
-            difference_values: Set[str] = previous_values ^ current_values
-            if tracing:
-                print(f"{tracing}Iteration[{count}]: {sorted(previous_values)=}")
-                print(f"{tracing}Iteration[{count}]:  {sorted(current_values)=}")
-                print(f"{tracing}Iteration[{count}]: {len(difference_values)} Differences.")
-                print("")
-
-            # Deal with *verbosity*:
-            if verbosity >= 1:
-                print(f"{tracing}Configure[{count}]: {len(difference_values)} differences:")
-            if verbosity >= 2:
-                sorted_difference_values: List[str] = sorted(tuple(difference_values))
-                index: int
-                difference: str
-                for index, difference in enumerate(sorted_difference_values[:verbosity]):
-                    print(f"  Difference[{index}]: {difference}")
-
-            if not difference_values:
-                break
-            previous_values = current_values
-
-        if tracing:
-            print(f"{tracing}<=FabRoot.configure_constraints()")
-
-    # FabRoot.produce():
-    def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
-        """Produce FabNode."""
-        next_tracing: str = tracing + " " if tracing else ""
-        if tracing:
-            print(f"{tracing}=>FabRoot.produce()")
-        errors: List[str] = []
-        child: "FabNode"
-        for child_node in self.Children:
-            errors.extend(child_node.produce(context.copy(), tracing=next_tracing))
-        if tracing:
-            print(f"{tracing}<=FabRoot.produce()")
-        return tuple(errors)
-
-    # FabRoot.run():
-    def run(self, tracing: str = "") -> None:
-        """Configure and Produce everything."""
-        next_tracing: str = tracing + " " if tracing else ""
-        if tracing:
-            print(f"{tracing}=>FabRoot.run()")
-        self.configure_constraints()
-        errors: Tuple[str, ...] = self.produce({}, tracing=next_tracing)
-        if errors:
-            print("\n".join(errors))
-        if tracing:
-            print(f"{tracing}<=FabRoot.run()")
-
-
-@dataclass
-class MyNode1(FabNode):
-    """MyNode1: First FabNode."""
-
-    A: int = 0
-
-    def configure(self, tracing: str = "") -> None:
-        """Configure MyNode1."""
-        if tracing:
-            print(f"{tracing}=>MyNode1.configure('{self.Name}'")
-        assert isinstance(self.Parent, FabRoot)
-        b: int = cast(int, self[("^MyNode2.B", int)])
-        c: int = cast(int, self[("^MyNode3.C", int)])
-        d: int = cast(int, self[("^MyNode2.MyNode2A.D", int)])
-        e: int = cast(int, self[("^MyNode2.MyNode2B.E", int)])
-        self.AttributeNames = ("A",)
-        self.A = b + c + d + e
-        if tracing:
-            print(f"{tracing}<=MyNode1.configure('{self.Name}')")
-
-
-@dataclass
-class MyNode2(FabInterior):
-    """MyNode1: First FabNode."""
-
-    B: int = 0
-
-    def configure(self, tracing: str = "") -> None:
-        """Configure MyNode2."""
-        # next_tracing: str = tracing + " " if tracing else ""
-        if tracing:
-            print(f"{tracing}=>MyNode2.configure('{self.Name}')")
-        c = cast(int, self[("^MyNode3.C", int)])
-        d = cast(int, self[("^MyNode2.MyNode2A.D")])
-        self.AttributeNames = ("B",)
-        self.B = c + d
-        if tracing:
-            print(f"{tracing}<=MyNode2.configure('{self.Name}')")
-
-
-@dataclass
-class MyNode2A(FabNode):
-    """MyNode2A: First sub-node of MyNode2."""
-
-    D: int = 0
-
-    def configure(self, tracing: str = "") -> None:
-        """Configure MyNode2A."""
-        if tracing:
-            print(f"{tracing}=>MyNode2A.configure('{self.Name}')")
-        e = cast(int, self["^MyNode2B.E"])
-        self.AttributeNames = ("D",)
-        self.D = e + 1
-        if tracing:
-            print(f"{tracing}<=MyNode2A.configure('{self.Name}')")
-
-
-@dataclass
-class MyNode2B(FabNode):
-    """MyNode2B: Second sub-node of MyNode2."""
-
-    E: int = 0
-
-    def configure(self, tracing: str = "") -> None:
-        """Configure MyNode2B."""
-        if tracing:
-            print(f"{tracing}=>MyNode2B.configure('{self.Name}')")
-        _ = cast(int, self["^^MyNode3.C"])
-        self.AttributeNames = ("E",)
-        self.E = 1
-        if tracing:
-            print(f"{tracing}<=MyNode2B.configure('{self.Name}')")
-
-
-@dataclass
-class MyNode3(FabNode):
-    """MyNode1: First FabNode."""
-
-    C: int = 1
-
-    def configure(self, tracing: str = "") -> None:
-        """Configure MyNode3."""
-        if tracing:
-            print(f"{tracing}=>MYNode1.configure('{self.Name}')")
-        self.AttributeNames = ("C",)
-        self.C = 1
-        if tracing:
-            print(f"{tracing}<=MYNode2.configure('{self.Name}')")
-
-
-def _unit_tests(tracing: str = "") -> None:
-    """Run Unit tests on FabNode."""
-    if tracing:
-        print(f"{tracing}=>_unit_tests()")
-
-    my_node1: MyNode1 = MyNode1("MyNode1")
-    my_node2a: MyNode2A = MyNode2A("MyNode2A")
-    my_node2b: MyNode2B = MyNode2B("MyNode2B")
-    my_node2: MyNode2 = MyNode2("MyNode2", (my_node2a, my_node2b))
-    my_node3: MyNode3 = MyNode3("MyNode3")
-    root: FabRoot = FabRoot("Root", (my_node1, my_node2, my_node3))
-    assert isinstance(root, FabRoot)
-    assert my_node1.A == 0
-    assert my_node2.B == 0
-    assert my_node2a.D == 0
-    assert my_node2b.E == 0
-    assert my_node3.C == 1
-    assert my_node1.FullPath == "MyNode1", my_node1.FullPath
-    assert my_node2.FullPath == "MyNode2"
-    assert my_node2a.FullPath == "MyNode2.MyNode2A", my_node2a.FullPath
-    assert my_node2b.FullPath == "MyNode2.MyNode2B"
-    assert my_node3.FullPath == "MyNode3"
-    root.configure_constraints(verbosity=1, tracing="")  # tracing=next_tracing)
-
-    if tracing:
-        print(f"{tracing}<=_unit_tests()")
+# @dataclass
+# class MyNode1(FabNode):
+#     """MyNode1: First FabNode."""
+#
+#     A: int = 0
+#
+#     def configure(self, tracing: str = "") -> None:
+#         """Configure MyNode1."""
+#         if tracing:
+#             print(f"{tracing}=>MyNode1.configure('{self.Name}'")
+#         assert isinstance(self.Parent, FabRoot)
+#         b: int = cast(int, self[("^MyNode2.B", int)])
+#         c: int = cast(int, self[("^MyNode3.C", int)])
+#         d: int = cast(int, self[("^MyNode2.MyNode2A.D", int)])
+#         e: int = cast(int, self[("^MyNode2.MyNode2B.E", int)])
+#         self.AttributeNames = ("A",)
+#         self.A = b + c + d + e
+#         if tracing:
+#             print(f"{tracing}<=MyNode1.configure('{self.Name}')")
+#
+#
+# @dataclass
+# class MyNode2(FabInterior):
+#     """MyNode1: First FabNode."""
+#
+#     B: int = 0
+#
+#     def configure(self, tracing: str = "") -> None:
+#         """Configure MyNode2."""
+#         # next_tracing: str = tracing + " " if tracing else ""
+#         if tracing:
+#             print(f"{tracing}=>MyNode2.configure('{self.Name}')")
+#         c = cast(int, self[("^MyNode3.C", int)])
+#         d = cast(int, self[("^MyNode2.MyNode2A.D")])
+#         self.AttributeNames = ("B",)
+#         self.B = c + d
+#         if tracing:
+#             print(f"{tracing}<=MyNode2.configure('{self.Name}')")
+#
+#
+# @dataclass
+# class MyNode2A(FabNode):
+#     """MyNode2A: First sub-node of MyNode2."""
+#
+#     D: int = 0
+#
+#     def configure(self, tracing: str = "") -> None:
+#         """Configure MyNode2A."""
+#         if tracing:
+#             print(f"{tracing}=>MyNode2A.configure('{self.Name}')")
+#         e = cast(int, self["^MyNode2B.E"])
+#         self.AttributeNames = ("D",)
+#         self.D = e + 1
+#         if tracing:
+#             print(f"{tracing}<=MyNode2A.configure('{self.Name}')")
+#
+#
+# @dataclass
+# class MyNode2B(FabNode):
+#     """MyNode2B: Second sub-node of MyNode2."""
+#
+#     E: int = 0
+#
+#     def configure(self, tracing: str = "") -> None:
+#         """Configure MyNode2B."""
+#         if tracing:
+#             print(f"{tracing}=>MyNode2B.configure('{self.Name}')")
+#         _ = cast(int, self["^^MyNode3.C"])
+#         self.AttributeNames = ("E",)
+#         self.E = 1
+#         if tracing:
+#             print(f"{tracing}<=MyNode2B.configure('{self.Name}')")
+#
+#
+# @dataclass
+# class MyNode3(FabNode):
+#     """MyNode1: First FabNode."""
+#
+#     C: int = 1
+#
+#     def configure(self, tracing: str = "") -> None:
+#         """Configure MyNode3."""
+#         if tracing:
+#             print(f"{tracing}=>MYNode1.configure('{self.Name}')")
+#         self.AttributeNames = ("C",)
+#         self.C = 1
+#         if tracing:
+#             print(f"{tracing}<=MYNode2.configure('{self.Name}')")
+#
+#
+# def _unit_tests(tracing: str = "") -> None:
+#     """Run Unit tests on FabNode."""
+#     if tracing:
+#         print(f"{tracing}=>_unit_tests()")
+#
+#     my_node1: MyNode1 = MyNode1("MyNode1")
+#     my_node2a: MyNode2A = MyNode2A("MyNode2A")
+#     my_node2b: MyNode2B = MyNode2B("MyNode2B")
+#     my_node2: MyNode2 = MyNode2("MyNode2", (my_node2a, my_node2b))
+#     my_node3: MyNode3 = MyNode3("MyNode3")
+#     root: FabRoot = FabRoot("Root", (my_node1, my_node2, my_node3))
+#     assert isinstance(root, FabRoot)
+#     assert my_node1.A == 0
+#     assert my_node2.B == 0
+#     assert my_node2a.D == 0
+#     assert my_node2b.E == 0
+#     assert my_node3.C == 1
+#     assert my_node1.FullPath == "MyNode1", my_node1.FullPath
+#     assert my_node2.FullPath == "MyNode2"
+#     assert my_node2a.FullPath == "MyNode2.MyNode2A", my_node2a.FullPath
+#     assert my_node2b.FullPath == "MyNode2.MyNode2B"
+#     assert my_node3.FullPath == "MyNode3"
+#     root.configure_constraints(verbosity=1, tracing="")  # tracing=next_tracing)
+#
+#     if tracing:
+#         print(f"{tracing}<=_unit_tests()")
 
 
 if __name__ == "__main__":
-    _unit_tests("")
+    # _unit_tests("")
+    pass
