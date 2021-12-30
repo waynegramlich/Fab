@@ -85,7 +85,6 @@ from FreeCAD import BoundBox, Placement, Vector  # type: ignore
 
 
 # FabBox:
-@dataclass(frozen=True, init=False)
 class FabBox(object):
     """FabBox: X/Y/Z Axis Aligned Cubiod.
 
@@ -154,6 +153,7 @@ class FabBox(object):
 
     """
 
+    # These are in the same order as FreeCAD BoundBox:
     XMin: float = field(init=False)
     YMin: float = field(init=False)
     ZMin: float = field(init=False)
@@ -162,40 +162,46 @@ class FabBox(object):
     ZMax: float = field(init=False)
 
     # FabBox.__init__():
-    def __init__(self,
-                 corners: Sequence[Union[Vector, BoundBox, "FabBox"]],
-                 name: str = "") -> None:
+    def __post_init__(self) -> None:
+        self.XMin = -1.0
+        self.XMax = 1.0
+        self.YMin = -1.0
+        self.YMax = 1.0
+        self.ZMin = -1.0
+        self.ZMax = 1.0
+
+    # FabBox.enclose():
+    def enclose(self, bounds: Sequence[Union[Vector, BoundBox, "FabBox"]]) -> None:
         """Initialize a FabBox.
 
         Arguments:
-          * *corners* (Sequence[Union[Vector, BoundBox, FabBox]]):
+          * *bounds* (Sequence[Union[Vector, BoundBox, FabBox]]):
             A sequence of points or boxes to enclose.
 
         Raises:
           * ValueError: For bad or empty corners.
 
         """
-        if not isinstance(corners, (list, tuple)):
-            raise ValueError(f"{corners} is neither a List nor a Tuple")
+        if not isinstance(bounds, (list, tuple)):
+            raise RuntimeError(f"{bounds} is {str(type(bounds))}, not List/Tuple")
+        if not bounds:
+            raise RuntimeError("Bounds sequence is empty")
 
         # Convert *corners* into *vectors*:
-        corner: Union[Vector, BoundBox, FabBox]
+        bound: Union[Vector, BoundBox, FabBox]
         vectors: List[Vector] = []
-        index: int
-        for index, corner in enumerate(corners):
-            if isinstance(corner, Vector):
-                vectors.append(corner)
-            elif isinstance(corner, BoundBox):
-                vectors.append(Vector(corner.XMin, corner.YMin, corner.ZMin))
-                vectors.append(Vector(corner.XMax, corner.YMax, corner.ZMax))
-            elif isinstance(corner, FabBox):
-                vectors.append(corner.TNE)
-                vectors.append(corner.BSW)
+        for bound in bounds:
+            if isinstance(bound, Vector):
+                vectors.append(bound)
+            elif isinstance(bound, BoundBox):
+                vectors.append(Vector(bound.XMin, bound.YMin, bound.ZMin))
+                vectors.append(Vector(bound.XMax, bound.YMax, bound.ZMax))
+            elif isinstance(bound, FabBox):
+                vectors.append(bound.TNE)
+                vectors.append(bound.BSW)
             else:
-                raise ValueError(
-                    f"{corner} is not of type Vector/BoundBox/FabBox")
-        if not vectors:
-            raise ValueError("Corners sequence is empty")
+                raise RuntimeError(
+                    f"{bound} is {str(type(bound))}, not Vector/BoundBox/FabBox")
 
         # Initialize with from the first vector:
         vector0: Vector = vectors[0]
@@ -219,15 +225,14 @@ class FabBox(object):
             z_max = max(z_max, z)
             z_min = min(z_min, z)
 
-        # (Why __setattr__?)[https://stackoverflow.com/questions/53756788]
-        object.__setattr__(self, "XMin", x_min)
-        object.__setattr__(self, "XMax", x_max)
-        object.__setattr__(self, "YMin", y_min)
-        object.__setattr__(self, "YMax", y_max)
-        object.__setattr__(self, "ZMin", z_min)
-        object.__setattr__(self, "ZMax", z_max)
+        self.XMin = x_min
+        self.YMin = y_min
+        self.ZMin = z_min
+        self.XMax = x_max
+        self.YMax = y_max
+        self.ZMax = z_max
 
-    # Standard BoundBox attributes:
+    # Standard FabBox attributes:
 
     @property
     def B(self) -> Vector:
@@ -433,34 +438,31 @@ class FabBox(object):
 
         Arguments:
         * *placement* (Placement): The placement of the box corners.
-        * *suffix* (Optional[str]): The suffix to append at all names.  If None, all
-          names are set to "" instead appending the suffix.  (Default: "")
         """
         reoriented_bsw: Vector = placement * self.BSW
         reoriented_tne: Vector = placement * self.TNE
-        return FabBox((reoriented_bsw, reoriented_tne))
+        box = FabBox()
+        box.enclose((reoriented_bsw, reoriented_tne))
+        return box
 
     @staticmethod
     def _unit_tests() -> None:
         """Perform FabBox unit tests."""
         # Initial tests:
-        bound_box: BoundBox = BoundBox(-1.0, -2.0, -3.0, 1.0, 2.0, 3.0)
-        assert bound_box == bound_box
-        box: FabBox = FabBox((bound_box,))
+        box: FabBox = FabBox()
         assert isinstance(box, FabBox)
+        bound_box: BoundBox = BoundBox(-1.0, -2.0, -3.0, 1.0, 2.0, 3.0)
+        assert isinstance(bound_box, BoundBox)
 
         # FreeCAD.BoundBox.__eq__() appears to only compare ids for equality.
         # Thus, it is necessary to test that each value is equal by hand.
+        box.enclose((bound_box,))
         assert box.BB.XMin == bound_box.XMin
         assert box.BB.YMin == bound_box.YMin
         assert box.BB.ZMin == bound_box.ZMin
         assert box.BB.XMax == bound_box.XMax
         assert box.BB.YMax == bound_box.YMax
         assert box.BB.ZMax == bound_box.ZMax
-
-        # Verify __str__() works:
-        want: str = f"FabBox(XMin=-1.0, YMin=-2.0, ZMin=-3.0, XMax=1.0, YMax=2.0, ZMax=3.0)"
-        assert f"{box}" == want, f"'{box}' != '{want}'"
 
         def check(vector: Vector, x: float, y: float, z: float) -> bool:
             assert vector.x == x, f"{vector.x} != {x}"
@@ -516,33 +518,42 @@ class FabBox(object):
         assert check(box.DW, -1, 0, 0), "DW"
 
         # Test FabBox() contructors:
-        vector1: Vector = Vector(-1, -2, -3)
-        vector2: Vector = Vector(1, 2, 3)
-        new_box: FabBox = FabBox((vector1, vector2))
+        tne: Vector = Vector(1, 2, 3)
+        bsw: Vector = Vector(-1, -2, -3)
+        new_box: FabBox = FabBox()
+        new_box.enclose((tne, bsw))
         assert f"{new_box.BB}" == f"{box.BB}"
-        next_box: FabBox = FabBox((bound_box, new_box))
-        want = "FabBox(XMin=-1.0, YMin=-2.0, ZMin=-3.0, XMax=1.0, YMax=2.0, ZMax=3.0)"
-        assert f"{next_box}" == want, f"'{next_box}' != '{want}'"
-        assert next_box.__repr__() == want
-        assert next_box.__str__() == want
+        next_box: FabBox = FabBox()
+        next_box.enclose((bound_box, new_box))
+        assert next_box.TNE == tne and next_box.BSW == bsw
+
         # Do some error checking:
         try:
-            FabBox(())
-        except ValueError as value_error:
-            assert str(value_error) == "Corners sequence is empty", str(value_error)
+            box1 = FabBox()
+            box1.enclose(())
+            assert False
+        except RuntimeError as runtime_error:
+            want1 = "Bounds sequence is empty"
+            assert str(runtime_error) == want1, str(runtime_error)
         try:
-            FabBox(cast(List, 123))  # Force invalid argument type.
-        except ValueError as value_error:
-            assert str(value_error) == "123 is neither a List nor a Tuple", str(value_error)
+            box2 = FabBox()
+            box2.enclose(cast(List, 123))  # Force invalid argument type.
+            assert False
+        except RuntimeError as runtime_error:
+            want2 = "123 is <class 'int'>, not List/Tuple"
+            assert str(runtime_error) == want2, str(runtime_error)
         try:
-            FabBox(cast(List, [123]))  # Force invalid corner type
-        except ValueError as value_error:
-            assert str(value_error) == "123 is not of type Vector/BoundBox/FabBox"
+            box3 = FabBox()
+            box3.enclose([cast(Vector, 123)],)  # Force invalid corner type
+            assert False
+        except RuntimeError as runtime_error:
+            want3 = "123 is <class 'int'>, not Vector/BoundBox/FabBox"
+            assert str(runtime_error) == want3, str(runtime_error)
 
 
 @dataclass
 # FabNode:
-class FabNode(object):
+class FabNode(FabBox):
     """FabNode: Represents one node in the tree.
 
     Attributes:
@@ -564,6 +575,7 @@ class FabNode(object):
     def __post_init__(self) -> None:
         """Finish initializing FabNode."""
         # print(f"=>FabNode.__post_init__(): {self.Name=}")
+        super().__post_init__()
         if not FabNode._is_valid_name(self.Name):
             raise ValueError(
                 f"FabNode name '{self.Name}' is not alphanumeric/underscore "
