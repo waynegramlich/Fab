@@ -77,24 +77,120 @@ the FreeCAD solids/assemblies and the associated output files.</li>
 </ul>
 <h2>Table of Contents (alphabetical order):</h2>
 <ul>
-<li>1 Class: <a href="#tree--fabinterior">FabInterior</a>:</li>
-<li>2 Class: <a href="#tree--fabnode">FabNode</a>:
+<li>1 Class: <a href="#tree--fabbox">FabBox</a>:
 <ul>
-<li>2.1 <a href="#tree----check">check()</a>: Check FabNode for errors.</li>
-<li>2.2 <a href="#tree----configure">configure()</a>: Configure FabNode.</li>
-<li>2.3 <a href="#tree----configurations-append">configurations_append()</a>: Append specified attributes to configurations list.</li>
-<li>2.4 <a href="#tree----produce">produce()</a>: Produce FabNode.</li>
+<li>1.1 <a href="#tree----reorient">reorient()</a>: Reorient FabBox given a Placement.</li>
+</ul>
+</li>
+<li>2 Class: <a href="#tree--fabinterior">FabInterior</a>:</li>
+<li>3 Class: <a href="#tree--fabnode">FabNode</a>:
+<ul>
+<li>3.1 <a href="#tree----check">check()</a>: Check FabNode for errors.</li>
+<li>3.2 <a href="#tree----configure">configure()</a>: Configure FabNode.</li>
+<li>3.3 <a href="#tree----configurations-append">configurations_append()</a>: Append specified attributes to configurations list.</li>
+<li>3.4 <a href="#tree----produce">produce()</a>: Produce FabNode.</li>
 </ul>
 </li>
 </ul>
-<h2><a name="tree--fabinterior"></a>1 Class FabInterior:</h2>
+<h2><a name="tree--fabbox"></a>1 Class FabBox:</h2>
+<p>X/Y/Z Axis Aligned Cubiod.
+An FabBox is represents a cuboid (i.e. a rectangular parallelpiped, or right prism) where
+the edges are aligned with the X, Y, and Z axes.  This is basically equivalent to the FreeCAD
+BoundBox object, but with way more attributes to access various points on the cuboid surface.</p>
+<p>The basic attribute nominclature is based on the compass points North (+Y), South (-Y),
+East (+X) and West (-X).  Two additional &quot;compass&quot; points call Top (+Z) and Bottom (-Z)
+are introduced as well.</p>
+<p>Thus:</p>
+<ul>
+<li>TNE represents the Top North East corner of the box.</li>
+<li>NE represents the center of the North East box edge.</li>
+<li>T represents the center of the top face of the box.</li>
+</ul>
+<p>Attributes:</p>
+<ul>
+<li>Minimums/Maximums:
+<ul>
+<li>XMax (float): The maximum X (East).</li>
+<li>XMin (float): The minumum X (West).</li>
+<li>YMax (float): The maximum Y (North).</li>
+<li>YMin (float): The minimum Y (South).</li>
+<li>ZMax (float): The maximum Z (Top).</li>
+<li>ZMin (float): The minimum Z (Bottom).</li>
+</ul>
+</li>
+<li>The 6 face attributes:
+<ul>
+<li>B (Vector): Center of bottom face.</li>
+<li>E (Vector): Center of east face.</li>
+<li>N (Vector): Center of north face.</li>
+<li>S (Vector): Center of south face.</li>
+<li>T (Vector): Center of top face.</li>
+<li>W (Vector): Center of west face.</li>
+</ul>
+</li>
+<li>The 8 corner attributes:
+<ul>
+<li>BNE (Vector): Bottom North East corner.</li>
+<li>BNW (Vector): Bottom North West corner.</li>
+<li>BSE (Vector): Bottom South East corner.</li>
+<li>BSW (Vector): Bottom South West corner.</li>
+<li>TNE (Vector): Top North East corner.</li>
+<li>TNW (Vector): Top North West corner.</li>
+<li>TSE (Vector): Top South East corner.</li>
+<li>TSW (Vector): Bottom South West corner.</li>
+</ul>
+</li>
+<li>The 12 edge attributes:
+<ul>
+<li>BE (Vector): Center of Bottom East edge.</li>
+<li>BN (Vector): Center of Bottom North edge.</li>
+<li>BS (Vector): Center of Bottom South edge.</li>
+<li>BW (Vector): Center of Bottom West edge.</li>
+<li>NE (Vector): Center of North East edge</li>
+<li>NW (Vector): Center of North West edge</li>
+<li>SE (Vector): Center of South East edge</li>
+<li>SW (Vector): Center of South West edge</li>
+<li>TE (Vector): Center of Top East edge.</li>
+<li>TN (Vector): Center of Top North edge.</li>
+<li>TS (Vector): Center of Top South edge.</li>
+<li>TW (Vector): Center of Top West edge.</li>
+</ul>
+</li>
+<li>The other attributes:
+<ul>
+<li>BB (BoundBox): The FreeCAD BoundBox object.</li>
+<li>C (Vector): Center point.</li>
+<li>DB (Vector): Bottom direction (i.e. B - C)</li>
+<li>DE (Vector): East direction (i.e. E - C)</li>
+<li>DN (Vector): North direction (i.e. N - C)</li>
+<li>DS (Vector): South direction (i.e. S - C)</li>
+<li>DT (Vector): Top direction (i.e. T - C)</li>
+<li>DW (Vector): West direction (i.e. W - C)</li>
+<li>DX (float): X box length (i.e. (E - W).Length)</li>
+<li>DY (float): Y box length (i.e. (N - S).Length)</li>
+<li>DZ (float): Z box length (i.e. (T - B).Length)</li>
+</ul>
+</li>
+</ul>
+<h3><a name="tree----reorient"></a>1.1 <code>FabBox.</code>reorient():</h3>
+<p>FabBox.reorient(self, placement: Base.Placement) -&gt; 'FabBox':</p>
+<p>Reorient FabBox given a Placement.
+Note after the <em>placement</em> is applied, the resulting box is still rectilinear with the
+X/Y/Z axes.  In particular, box volume is <em>not</em> conserved.</p>
+<p>Arguments:</p>
+<ul>
+<li><em>placement</em> (Placement): The placement of the box corners.</li>
+<li><em>suffix</em> (Optional[str]): The suffix to append at all names.  If None, all
+names are set to &quot;&quot; instead appending the suffix.  (Default: &quot;&quot;)</li>
+</ul>
+<h2><a name="tree--fabinterior"></a>2 Class FabInterior:</h2>
 <p>Represents A
 Attributes:</p>
 <ul>
 <li>Inherited Attributes: <em>Name</em> (str), <em>FullPath</em> (str), <em>Parent</em> (FabNode).</li>
 <li><em>Children</em> (List[FabNode]): The children FabNode's.</li>
 </ul>
-<h2><a name="tree--fabnode"></a>2 Class FabNode:</h2>
+<h2><a name="tree--fabnode"></a>3 Class FabNode:</h2>
 <p>Represents one node in the tree.
 Attributes:</p>
 <ul>
@@ -105,15 +201,15 @@ Attributes:</p>
 Attribute names to track during configuration.  (Default: () ).
 This field is set in the user's <em>configure</em>() method.</li>
 </ul>
-<h3><a name="tree----check"></a>2.1 <code>FabNode.</code>check():</h3>
+<h3><a name="tree----check"></a>3.1 <code>FabNode.</code>check():</h3>
 <p>FabNode.check(self) -&gt; typing.Tuple[str, ...]:</p>
 <p>Check FabNode for errors.</p>
-<h3><a name="tree----configure"></a>2.2 <code>FabNode.</code>configure():</h3>
+<h3><a name="tree----configure"></a>3.2 <code>FabNode.</code>configure():</h3>
 <p>FabNode.configure(self, tracing: str = '') -&gt; None:</p>
 <p>Configure FabNode.</p>
-<h3><a name="tree----configurations-append"></a>2.3 <code>FabNode.</code>configurations_append():</h3>
+<h3><a name="tree----configurations-append"></a>3.3 <code>FabNode.</code>configurations_append():</h3>
 <p>FabNode.configurations_append(self, configurations: typing.List[str], tracing: str = '') -&gt; None:</p>
 <p>Append specified attributes to configurations list.</p>
-<h3><a name="tree----produce"></a>2.4 <code>FabNode.</code>produce():</h3>
+<h3><a name="tree----produce"></a>3.4 <code>FabNode.</code>produce():</h3>
 <p>FabNode.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
 <p>Produce FabNode.</p>

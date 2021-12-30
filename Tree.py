@@ -80,7 +80,464 @@ import Embed
 Embed.setup()
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, cast, Dict, List, Optional, Sequence, Tuple, Union
+from FreeCAD import BoundBox, Placement, Vector  # type: ignore
+
+
+# FabBox:
+@dataclass(frozen=True, init=False)
+class FabBox(object):
+    """FabBox: X/Y/Z Axis Aligned Cubiod.
+
+    An FabBox is represents a cuboid (i.e. a rectangular parallelpiped, or right prism) where
+    the edges are aligned with the X, Y, and Z axes.  This is basically equivalent to the FreeCAD
+    BoundBox object, but with way more attributes to access various points on the cuboid surface.
+
+    The basic attribute nominclature is based on the compass points North (+Y), South (-Y),
+    East (+X) and West (-X).  Two additional "compass" points call Top (+Z) and Bottom (-Z)
+    are introduced as well.
+
+    Thus:
+    * TNE represents the Top North East corner of the box.
+    * NE represents the center of the North East box edge.
+    * T represents the center of the top face of the box.
+
+    Attributes:
+    * Minimums/Maximums:
+      * XMax (float): The maximum X (East).
+      * XMin (float): The minumum X (West).
+      * YMax (float): The maximum Y (North).
+      * YMin (float): The minimum Y (South).
+      * ZMax (float): The maximum Z (Top).
+      * ZMin (float): The minimum Z (Bottom).
+    * The 6 face attributes:
+      * B (Vector): Center of bottom face.
+      * E (Vector): Center of east face.
+      * N (Vector): Center of north face.
+      * S (Vector): Center of south face.
+      * T (Vector): Center of top face.
+      * W (Vector): Center of west face.
+    * The 8 corner attributes:
+      * BNE (Vector): Bottom North East corner.
+      * BNW (Vector): Bottom North West corner.
+      * BSE (Vector): Bottom South East corner.
+      * BSW (Vector): Bottom South West corner.
+      * TNE (Vector): Top North East corner.
+      * TNW (Vector): Top North West corner.
+      * TSE (Vector): Top South East corner.
+      * TSW (Vector): Bottom South West corner.
+    * The 12 edge attributes:
+      * BE (Vector): Center of Bottom East edge.
+      * BN (Vector): Center of Bottom North edge.
+      * BS (Vector): Center of Bottom South edge.
+      * BW (Vector): Center of Bottom West edge.
+      * NE (Vector): Center of North East edge
+      * NW (Vector): Center of North West edge
+      * SE (Vector): Center of South East edge
+      * SW (Vector): Center of South West edge
+      * TE (Vector): Center of Top East edge.
+      * TN (Vector): Center of Top North edge.
+      * TS (Vector): Center of Top South edge.
+      * TW (Vector): Center of Top West edge.
+    * The other attributes:
+      * BB (BoundBox): The FreeCAD BoundBox object.
+      * C (Vector): Center point.
+      * DB (Vector): Bottom direction (i.e. B - C)
+      * DE (Vector): East direction (i.e. E - C)
+      * DN (Vector): North direction (i.e. N - C)
+      * DS (Vector): South direction (i.e. S - C)
+      * DT (Vector): Top direction (i.e. T - C)
+      * DW (Vector): West direction (i.e. W - C)
+      * DX (float): X box length (i.e. (E - W).Length)
+      * DY (float): Y box length (i.e. (N - S).Length)
+      * DZ (float): Z box length (i.e. (T - B).Length)
+
+    """
+
+    XMin: float = field(init=False)
+    YMin: float = field(init=False)
+    ZMin: float = field(init=False)
+    XMax: float = field(init=False)
+    YMax: float = field(init=False)
+    ZMax: float = field(init=False)
+
+    # FabBox.__init__():
+    def __init__(self,
+                 corners: Sequence[Union[Vector, BoundBox, "FabBox"]],
+                 name: str = "") -> None:
+        """Initialize a FabBox.
+
+        Arguments:
+          * *corners* (Sequence[Union[Vector, BoundBox, FabBox]]):
+            A sequence of points or boxes to enclose.
+
+        Raises:
+          * ValueError: For bad or empty corners.
+
+        """
+        if not isinstance(corners, (list, tuple)):
+            raise ValueError(f"{corners} is neither a List nor a Tuple")
+
+        # Convert *corners* into *vectors*:
+        corner: Union[Vector, BoundBox, FabBox]
+        vectors: List[Vector] = []
+        index: int
+        for index, corner in enumerate(corners):
+            if isinstance(corner, Vector):
+                vectors.append(corner)
+            elif isinstance(corner, BoundBox):
+                vectors.append(Vector(corner.XMin, corner.YMin, corner.ZMin))
+                vectors.append(Vector(corner.XMax, corner.YMax, corner.ZMax))
+            elif isinstance(corner, FabBox):
+                vectors.append(corner.TNE)
+                vectors.append(corner.BSW)
+            else:
+                raise ValueError(
+                    f"{corner} is not of type Vector/BoundBox/FabBox")
+        if not vectors:
+            raise ValueError("Corners sequence is empty")
+
+        # Initialize with from the first vector:
+        vector0: Vector = vectors[0]
+        x_min: float = vector0.x
+        y_min: float = vector0.y
+        z_min: float = vector0.z
+        x_max: float = x_min
+        y_max: float = y_min
+        z_max: float = z_min
+
+        # Sweep through *vectors* expanding the box limits:
+        vector: Vector
+        for vector in vectors[1:]:
+            x: float = vector.x
+            y: float = vector.y
+            z: float = vector.z
+            x_max = max(x_max, x)
+            x_min = min(x_min, x)
+            y_max = max(y_max, y)
+            y_min = min(y_min, y)
+            z_max = max(z_max, z)
+            z_min = min(z_min, z)
+
+        # (Why __setattr__?)[https://stackoverflow.com/questions/53756788]
+        object.__setattr__(self, "XMin", x_min)
+        object.__setattr__(self, "XMax", x_max)
+        object.__setattr__(self, "YMin", y_min)
+        object.__setattr__(self, "YMax", y_max)
+        object.__setattr__(self, "ZMin", z_min)
+        object.__setattr__(self, "ZMax", z_max)
+
+    # Standard BoundBox attributes:
+
+    @property
+    def B(self) -> Vector:
+        """Bottom face center."""
+        return Vector((self.XMin + self.XMax) / 2.0, (self.YMin + self.YMax) / 2.0, self.ZMin)
+
+    @property
+    def E(self) -> Vector:
+        """East face center."""
+        return Vector(self.XMax, (self.YMin + self.YMax) / 2.0, (self.ZMin + self.ZMax) / 2.0)
+
+    @property
+    def N(self) -> Vector:
+        """North face center."""
+        return Vector((self.XMin + self.XMax) / 2.0, self.YMax, (self.ZMin + self.ZMax) / 2.0)
+
+    @property
+    def S(self) -> Vector:
+        """South face center."""
+        return Vector((self.XMin + self.XMax) / 2.0, self.YMin, (self.ZMin + self.ZMax) / 2.0)
+
+    @property
+    def T(self) -> Vector:
+        """Top face center."""
+        return Vector((self.XMin + self.XMax) / 2.0, (self.YMin + self.YMax) / 2.0, self.ZMax)
+
+    @property
+    def W(self) -> Vector:
+        """Center of bottom face."""
+        return Vector(self.XMin, (self.YMin + self.YMax) / 2.0, (self.ZMin + self.ZMax) / 2.0)
+
+    # 8 Corner, BNE, BNW, BSE, BSW, TNE, TNW, TSE, TSW:
+
+    @property
+    def BNE(self) -> Vector:
+        """Bottom North East corner."""
+        return Vector(self.XMax, self.YMax, self.ZMin)
+
+    @property
+    def BNW(self) -> Vector:
+        """Bottom North West corner."""
+        return Vector(self.XMin, self.YMax, self.ZMin)
+
+    @property
+    def BSE(self) -> Vector:
+        """Bottom South East corner."""
+        return Vector(self.XMax, self.YMin, self.ZMin)
+
+    @property
+    def BSW(self) -> Vector:
+        """Bottom South West corner."""
+        return Vector(self.XMin, self.YMin, self.ZMin)
+
+    @property
+    def TNE(self) -> Vector:
+        """Top North East corner."""
+        return Vector(self.XMax, self.YMax, self.ZMax)
+
+    @property
+    def TNW(self) -> Vector:
+        """Top North West corner."""
+        return Vector(self.XMin, self.YMax, self.ZMax)
+
+    @property
+    def TSE(self) -> Vector:
+        """Top South East corner."""
+        return Vector(self.XMax, self.YMin, self.ZMax)
+
+    @property
+    def TSW(self) -> Vector:
+        """Top South West corner."""
+        return Vector(self.XMin, self.YMin, self.ZMax)
+
+    # 12 Edges BE, BW, BN, BS, NE, NW, SE, SW, TE, TW, TN, TS:
+
+    @property
+    def BE(self) -> Vector:
+        """Bottom East edge center."""
+        return Vector(self.XMax, (self.YMin + self.YMax) / 2.0, self.ZMin)
+
+    @property
+    def BW(self) -> Vector:
+        """Bottom West edge center."""
+        return Vector(self.XMin, (self.YMin + self.YMax) / 2.0, self.ZMin)
+
+    @property
+    def BN(self) -> Vector:
+        """Bottom North edge center."""
+        return Vector((self.XMin + self.XMax) / 2.0, self.YMax, self.ZMin)
+
+    @property
+    def BS(self) -> Vector:
+        """Bottom South edge center."""
+        return Vector((self.XMin + self.XMax) / 2.0, self.YMin, self.ZMin)
+
+    @property
+    def NE(self) -> Vector:
+        """North East edge center."""
+        return Vector(self.XMax, self.YMax, (self.ZMin + self.ZMax) / 2.0)
+
+    @property
+    def NW(self) -> Vector:
+        """North West edge center."""
+        return Vector(self.XMin, self.YMax, (self.ZMin + self.ZMax) / 2.0)
+
+    @property
+    def SE(self) -> Vector:
+        """North East edge center."""
+        return Vector(self.XMax, self.YMin, (self.ZMin + self.ZMax) / 2.0)
+
+    @property
+    def SW(self) -> Vector:
+        """South East edge center."""
+        return Vector(self.XMin, self.YMin, (self.ZMin + self.ZMax) / 2.0)
+
+    @property
+    def TE(self) -> Vector:
+        """Bottom East edge center."""
+        return Vector(self.XMax, (self.YMin + self.YMax) / 2.0, self.ZMax)
+
+    @property
+    def TW(self) -> Vector:
+        """Bottom West edge center."""
+        return Vector(self.XMin, (self.YMin + self.YMax) / 2.0, self.ZMax)
+
+    @property
+    def TN(self) -> Vector:
+        """Bottom North edge center."""
+        return Vector((self.XMin + self.XMax) / 2.0, self.YMax, self.ZMax)
+
+    @property
+    def TS(self) -> Vector:
+        """Bottom South edge center."""
+        return Vector((self.XMin + self.XMax) / 2.0, self.YMin, self.ZMax)
+
+    # Miscellaneous attributes:
+
+    @property
+    def BB(self) -> BoundBox:
+        """Return a corresponding FreeCAD BoundBox."""
+        return BoundBox(self.XMin, self.YMin, self.ZMin, self.XMax, self.YMax, self.ZMax)
+
+    @property
+    def C(self) -> Vector:
+        """Center point."""
+        return Vector(
+            (self.XMax + self.XMin) / 2.0,
+            (self.YMax + self.YMin) / 2.0,
+            (self.ZMax + self.ZMin) / 2.0
+        )
+
+    @property
+    def DB(self) -> float:
+        """Direction Bottom."""
+        return self.B - self.C
+
+    @property
+    def DE(self) -> float:
+        """Direction East."""
+        return self.E - self.C
+
+    @property
+    def DN(self) -> float:
+        """Direction North."""
+        return self.N - self.C
+
+    @property
+    def DS(self) -> float:
+        """Direction South."""
+        return self.S - self.C
+
+    @property
+    def DT(self) -> float:
+        """Direction Top."""
+        return self.T - self.C
+
+    @property
+    def DW(self) -> float:
+        """Direction West."""
+        return self.W - self.C
+
+    @property
+    def DX(self) -> float:
+        """Delta X."""
+        return self.XMax - self.XMin
+
+    @property
+    def DY(self) -> float:
+        """Delta Y."""
+        return self.YMax - self.YMin
+
+    @property
+    def DZ(self) -> float:
+        """Delta Z."""
+        return self.ZMax - self.ZMin
+
+    # FabBox.reorient():
+    def reorient(self, placement: Placement) -> "FabBox":
+        """Reorient FabBox given a Placement.
+
+        Note after the *placement* is applied, the resulting box is still rectilinear with the
+        X/Y/Z axes.  In particular, box volume is *not* conserved.
+
+        Arguments:
+        * *placement* (Placement): The placement of the box corners.
+        * *suffix* (Optional[str]): The suffix to append at all names.  If None, all
+          names are set to "" instead appending the suffix.  (Default: "")
+        """
+        reoriented_bsw: Vector = placement * self.BSW
+        reoriented_tne: Vector = placement * self.TNE
+        return FabBox((reoriented_bsw, reoriented_tne))
+
+    @staticmethod
+    def _unit_tests() -> None:
+        """Perform FabBox unit tests."""
+        # Initial tests:
+        bound_box: BoundBox = BoundBox(-1.0, -2.0, -3.0, 1.0, 2.0, 3.0)
+        assert bound_box == bound_box
+        box: FabBox = FabBox((bound_box,))
+        assert isinstance(box, FabBox)
+
+        # FreeCAD.BoundBox.__eq__() appears to only compare ids for equality.
+        # Thus, it is necessary to test that each value is equal by hand.
+        assert box.BB.XMin == bound_box.XMin
+        assert box.BB.YMin == bound_box.YMin
+        assert box.BB.ZMin == bound_box.ZMin
+        assert box.BB.XMax == bound_box.XMax
+        assert box.BB.YMax == bound_box.YMax
+        assert box.BB.ZMax == bound_box.ZMax
+
+        # Verify __str__() works:
+        want: str = f"FabBox(XMin=-1.0, YMin=-2.0, ZMin=-3.0, XMax=1.0, YMax=2.0, ZMax=3.0)"
+        assert f"{box}" == want, f"'{box}' != '{want}'"
+
+        def check(vector: Vector, x: float, y: float, z: float) -> bool:
+            assert vector.x == x, f"{vector.x} != {x}"
+            assert vector.y == y, f"{vector.y} != {y}"
+            assert vector.z == z, f"{vector.z} != {z}"
+            return vector.x == x and vector.y == y and vector.z == z
+
+        # Do 6 faces:
+        assert check(box.E, 1, 0, 0), "E"
+        assert check(box.W, -1, 0, 0), "W"
+        assert check(box.N, 0, 2, 0), "N"
+        assert check(box.S, 0, -2, 0), "S"
+        assert check(box.T, 0, 0, 3), "T"
+        assert check(box.B, 0, 0, -3), "B"
+
+        # Do the 12 edges:
+        assert check(box.BE, 1, 0, -3), "BE"
+        assert check(box.BN, 0, 2, -3), "BN"
+        assert check(box.BS, 0, -2, -3), "BS"
+        assert check(box.BW, -1, 0, -3), "BW"
+        assert check(box.NE, 1, 2, 0), "NE"
+        assert check(box.NW, -1, 2, 0), "NW"
+        assert check(box.SE, 1, -2, 0), "SE"
+        assert check(box.SW, -1, -2, 0), "SW"
+        assert check(box.TE, 1, 0, 3), "TE"
+        assert check(box.TN, 0, 2, 3), "TN"
+        assert check(box.TS, 0, -2, 3), "TS"
+        assert check(box.TW, -1, 0, 3), "TW"
+
+        # Do the 8 corners:
+        assert check(box.BNE, 1, 2, -3), "BNE"
+        assert check(box.BNW, -1, 2, -3), "BNW"
+        assert check(box.BSE, 1, -2, -3), "BSE"
+        assert check(box.BSW, -1, -2, -3), "BSW"
+        assert check(box.TNE, 1, 2, 3), "TNE"
+        assert check(box.TNW, -1, 2, 3), "TNW"
+        assert check(box.TSE, 1, -2, 3), "TSE"
+        assert check(box.TSW, -1, -2, 3), "TSW"
+
+        # Do the miscellaneous attributes:
+        assert check(box.C, 0, 0, 0), "C"
+        assert isinstance(box.BB, BoundBox), "BB error"
+        assert check(box.BB.Center, 0, 0, 0), "BB"
+        assert box.C == box.BB.Center, "C != Center"
+        assert box.DX == 2.0, "DX"
+        assert box.DY == 4.0, "DY"
+        assert box.DZ == 6.0, "DZ"
+        assert check(box.DB, 0, 0, -3), "DB"
+        assert check(box.DE, 1, 0, 0), "DE"
+        assert check(box.DN, 0, 2, 0), "DN"
+        assert check(box.DS, 0, -2, 0), "DS"
+        assert check(box.DT, 0, 0, 3), "DT"
+        assert check(box.DW, -1, 0, 0), "DW"
+
+        # Test FabBox() contructors:
+        vector1: Vector = Vector(-1, -2, -3)
+        vector2: Vector = Vector(1, 2, 3)
+        new_box: FabBox = FabBox((vector1, vector2))
+        assert f"{new_box.BB}" == f"{box.BB}"
+        next_box: FabBox = FabBox((bound_box, new_box))
+        want = "FabBox(XMin=-1.0, YMin=-2.0, ZMin=-3.0, XMax=1.0, YMax=2.0, ZMax=3.0)"
+        assert f"{next_box}" == want, f"'{next_box}' != '{want}'"
+        assert next_box.__repr__() == want
+        assert next_box.__str__() == want
+        # Do some error checking:
+        try:
+            FabBox(())
+        except ValueError as value_error:
+            assert str(value_error) == "Corners sequence is empty", str(value_error)
+        try:
+            FabBox(cast(List, 123))  # Force invalid argument type.
+        except ValueError as value_error:
+            assert str(value_error) == "123 is neither a List nor a Tuple", str(value_error)
+        try:
+            FabBox(cast(List, [123]))  # Force invalid corner type
+        except ValueError as value_error:
+            assert str(value_error) == "123 is not of type Vector/BoundBox/FabBox"
 
 
 @dataclass
@@ -420,4 +877,5 @@ class FabInterior(FabNode):
 
 if __name__ == "__main__":
     # _unit_tests("")
+    FabBox._unit_tests()
     pass
