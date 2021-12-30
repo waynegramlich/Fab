@@ -144,8 +144,8 @@ Inherited Attributes:</p>
 <ul>
 <li><em>Name</em> (str)</li>
 <li><em>Parent</em> (FabNode)</li>
+<li><em>FullPath</em>: (str)</li>
 <li><em>Children</em> (Tuple[FabNode, ...)</li>
-<li><em>ChildrenNames</em> (Tuple[str, ...])</li>
 </ul>
 <h3><a name="solid----produce"></a>6.1 <code>FabGroup.</code>produce():</h3>
 <p>FabGroup.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
@@ -246,7 +246,6 @@ Inherited Attributes:</p>
 <ul>
 <li><em>Name</em> (str): The model name.</li>
 <li><em>Children</em> (Tuple[FabMount, ...]): The various model mounts to use to construct the part.</li>
-<li><em>ChildrenNames</em> (Tuple[str, ...]): The various children names.</li>
 <li><em>Parent</em> (FabNode): The Parent FabNode.</li>
 </ul>
 <p>Attributes:</p>

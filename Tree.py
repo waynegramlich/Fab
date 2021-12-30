@@ -249,12 +249,10 @@ class FabInterior(FabNode):
     Attributes:
     * Inherited Attributes: *Name* (str), *FullPath* (str), *Parent* (FabNode).
     * *Children* (List[FabNode]): The children FabNode's.
-    * *ChildrenNames* (Tuple[str, ...]): The name's of the children FabNode's.
 
     """
 
     Children: Tuple[FabNode, ...] = field(repr=False, default=())
-    ChildrenNames: Tuple[str, ...] = field(init=False)
 
     # FabInterior.__post_init__():
     def __post_init__(self) -> None:
@@ -263,14 +261,11 @@ class FabInterior(FabNode):
 
         # Initialize the remaining fields to bogus values that get updated by the _setup() method.
         super().__post_init__()
-        children_names: List[str] = []
         child: Any
         index: int
         for index, child in enumerate(self.Children):
             if not isinstance(child, FabNode):
                 raise ValueError(f"'{self.Name}[{index}] is {type(child)}, not FabNode")
-            children_names.append(child.Name)
-        self.ChildrenNames = tuple(children_names)
         # print(f"<=FabInterior.__post_init__()")
 
     # FabNode._setup():

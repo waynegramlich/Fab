@@ -55,7 +55,6 @@ class FabGroup(FabInterior):
     * *Name* (str)
     * *Parent* (FabNode)
     * *Children* (Tuple[FabNode, ...)
-    * *ChildrenNames* (Tuple[str, ...])
 
     """
 
@@ -928,7 +927,6 @@ class FabSolid(FabInterior):
     Inherited Attributes:
     * *Name* (str): The model name.
     * *Children* (Tuple[FabMount, ...]): The various model mounts to use to construct the part.
-    * *ChildrenNames* (Tuple[str, ...]): The various children names.
     * *Parent* (FabNode): The Parent FabNode.
 
     Attributes:
