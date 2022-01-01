@@ -147,21 +147,21 @@ class FabBox(object):
     """
 
     # These are in the same order as FreeCAD BoundBox:
-    XMin: float = field(init=False)
-    YMin: float = field(init=False)
-    ZMin: float = field(init=False)
-    XMax: float = field(init=False)
-    YMax: float = field(init=False)
-    ZMax: float = field(init=False)
+    _XMin: float = field(init=False, repr=False)
+    _YMin: float = field(init=False, repr=False)
+    _ZMin: float = field(init=False, repr=False)
+    _XMax: float = field(init=False, repr=False)
+    _YMax: float = field(init=False, repr=False)
+    _ZMax: float = field(init=False, repr=False)
 
     # FabBox.__init__():
     def __post_init__(self) -> None:
-        self.XMin = -1.0
-        self.XMax = 1.0
-        self.YMin = -1.0
-        self.YMax = 1.0
-        self.ZMin = -1.0
-        self.ZMax = 1.0
+        self._XMin = -1.0
+        self._XMax = 1.0
+        self._YMin = -1.0
+        self._YMax = 1.0
+        self._ZMin = -1.0
+        self._ZMax = 1.0
 
     # FabBox.enclose():
     def enclose(self, bounds: Sequence[Union[Vector, BoundBox, "FabBox"]]) -> None:
@@ -218,163 +218,195 @@ class FabBox(object):
             z_max = max(z_max, z)
             z_min = min(z_min, z)
 
-        self.XMin = x_min
-        self.YMin = y_min
-        self.ZMin = z_min
-        self.XMax = x_max
-        self.YMax = y_max
-        self.ZMax = z_max
+        self._XMin = x_min
+        self._YMin = y_min
+        self._ZMin = z_min
+        self._XMax = x_max
+        self._YMax = y_max
+        self._ZMax = z_max
 
-    # Standard FabBox attributes:
+    # 6 Standard X/Y/Z min/max attributes:
+
+    # FabBox.XMin():
+    @property
+    def XMin(self) -> float:
+        return self._XMin
+
+    # FabBox.YMin():
+    @property
+    def YMin(self) -> float:
+        return self._YMin
+
+    # FabBox.ZMin():
+    @property
+    def ZMin(self) -> float:
+        return self._ZMin
+
+    # FabBox.XMax()
+    @property
+    def XMax(self) -> float:
+        return self._XMax
+
+    # FabBox.YMax()
+    @property
+    def YMax(self) -> float:
+        return self._YMax
+
+    # FabBox.ZMax()
+    @property
+    def ZMax(self) -> float:
+        return self._ZMax
+
+    # 6 Face attributes:
 
     @property
     def B(self) -> Vector:
         """Bottom face center."""
-        return Vector((self.XMin + self.XMax) / 2.0, (self.YMin + self.YMax) / 2.0, self.ZMin)
+        return Vector((self._XMin + self._XMax) / 2.0, (self._YMin + self._YMax) / 2.0, self._ZMin)
 
     @property
     def E(self) -> Vector:
         """East face center."""
-        return Vector(self.XMax, (self.YMin + self.YMax) / 2.0, (self.ZMin + self.ZMax) / 2.0)
+        return Vector(self._XMax, (self._YMin + self._YMax) / 2.0, (self._ZMin + self._ZMax) / 2.0)
 
     @property
     def N(self) -> Vector:
         """North face center."""
-        return Vector((self.XMin + self.XMax) / 2.0, self.YMax, (self.ZMin + self.ZMax) / 2.0)
+        return Vector((self._XMin + self._XMax) / 2.0, self._YMax, (self._ZMin + self._ZMax) / 2.0)
 
     @property
     def S(self) -> Vector:
         """South face center."""
-        return Vector((self.XMin + self.XMax) / 2.0, self.YMin, (self.ZMin + self.ZMax) / 2.0)
+        return Vector((self._XMin + self._XMax) / 2.0, self._YMin, (self._ZMin + self._ZMax) / 2.0)
 
     @property
     def T(self) -> Vector:
         """Top face center."""
-        return Vector((self.XMin + self.XMax) / 2.0, (self.YMin + self.YMax) / 2.0, self.ZMax)
+        return Vector((self._XMin + self._XMax) / 2.0, (self._YMin + self._YMax) / 2.0, self._ZMax)
 
     @property
     def W(self) -> Vector:
         """Center of bottom face."""
-        return Vector(self.XMin, (self.YMin + self.YMax) / 2.0, (self.ZMin + self.ZMax) / 2.0)
+        return Vector(self._XMin, (self._YMin + self._YMax) / 2.0, (self._ZMin + self._ZMax) / 2.0)
 
-    # 8 Corner, BNE, BNW, BSE, BSW, TNE, TNW, TSE, TSW:
+    # 8 Corner attributes:
 
     @property
     def BNE(self) -> Vector:
         """Bottom North East corner."""
-        return Vector(self.XMax, self.YMax, self.ZMin)
+        return Vector(self._XMax, self._YMax, self._ZMin)
 
     @property
     def BNW(self) -> Vector:
         """Bottom North West corner."""
-        return Vector(self.XMin, self.YMax, self.ZMin)
+        return Vector(self._XMin, self._YMax, self._ZMin)
 
     @property
     def BSE(self) -> Vector:
         """Bottom South East corner."""
-        return Vector(self.XMax, self.YMin, self.ZMin)
+        return Vector(self._XMax, self._YMin, self._ZMin)
 
     @property
     def BSW(self) -> Vector:
         """Bottom South West corner."""
-        return Vector(self.XMin, self.YMin, self.ZMin)
+        return Vector(self._XMin, self._YMin, self._ZMin)
 
     @property
     def TNE(self) -> Vector:
         """Top North East corner."""
-        return Vector(self.XMax, self.YMax, self.ZMax)
+        return Vector(self._XMax, self._YMax, self._ZMax)
 
     @property
     def TNW(self) -> Vector:
         """Top North West corner."""
-        return Vector(self.XMin, self.YMax, self.ZMax)
+        return Vector(self._XMin, self._YMax, self._ZMax)
 
     @property
     def TSE(self) -> Vector:
         """Top South East corner."""
-        return Vector(self.XMax, self.YMin, self.ZMax)
+        return Vector(self._XMax, self._YMin, self._ZMax)
 
     @property
     def TSW(self) -> Vector:
         """Top South West corner."""
-        return Vector(self.XMin, self.YMin, self.ZMax)
+        return Vector(self._XMin, self._YMin, self._ZMax)
 
-    # 12 Edges BE, BW, BN, BS, NE, NW, SE, SW, TE, TW, TN, TS:
+    # 12 edge attributes:
 
     @property
     def BE(self) -> Vector:
         """Bottom East edge center."""
-        return Vector(self.XMax, (self.YMin + self.YMax) / 2.0, self.ZMin)
+        return Vector(self._XMax, (self._YMin + self._YMax) / 2.0, self._ZMin)
 
     @property
     def BW(self) -> Vector:
         """Bottom West edge center."""
-        return Vector(self.XMin, (self.YMin + self.YMax) / 2.0, self.ZMin)
+        return Vector(self._XMin, (self._YMin + self._YMax) / 2.0, self._ZMin)
 
     @property
     def BN(self) -> Vector:
         """Bottom North edge center."""
-        return Vector((self.XMin + self.XMax) / 2.0, self.YMax, self.ZMin)
+        return Vector((self._XMin + self._XMax) / 2.0, self._YMax, self._ZMin)
 
     @property
     def BS(self) -> Vector:
         """Bottom South edge center."""
-        return Vector((self.XMin + self.XMax) / 2.0, self.YMin, self.ZMin)
+        return Vector((self._XMin + self._XMax) / 2.0, self._YMin, self._ZMin)
 
     @property
     def NE(self) -> Vector:
         """North East edge center."""
-        return Vector(self.XMax, self.YMax, (self.ZMin + self.ZMax) / 2.0)
+        return Vector(self._XMax, self._YMax, (self._ZMin + self._ZMax) / 2.0)
 
     @property
     def NW(self) -> Vector:
         """North West edge center."""
-        return Vector(self.XMin, self.YMax, (self.ZMin + self.ZMax) / 2.0)
+        return Vector(self._XMin, self._YMax, (self._ZMin + self._ZMax) / 2.0)
 
     @property
     def SE(self) -> Vector:
         """North East edge center."""
-        return Vector(self.XMax, self.YMin, (self.ZMin + self.ZMax) / 2.0)
+        return Vector(self._XMax, self._YMin, (self._ZMin + self._ZMax) / 2.0)
 
     @property
     def SW(self) -> Vector:
         """South East edge center."""
-        return Vector(self.XMin, self.YMin, (self.ZMin + self.ZMax) / 2.0)
+        return Vector(self._XMin, self._YMin, (self._ZMin + self._ZMax) / 2.0)
 
     @property
     def TE(self) -> Vector:
         """Bottom East edge center."""
-        return Vector(self.XMax, (self.YMin + self.YMax) / 2.0, self.ZMax)
+        return Vector(self._XMax, (self._YMin + self._YMax) / 2.0, self._ZMax)
 
     @property
     def TW(self) -> Vector:
         """Bottom West edge center."""
-        return Vector(self.XMin, (self.YMin + self.YMax) / 2.0, self.ZMax)
+        return Vector(self._XMin, (self._YMin + self._YMax) / 2.0, self._ZMax)
 
     @property
     def TN(self) -> Vector:
         """Bottom North edge center."""
-        return Vector((self.XMin + self.XMax) / 2.0, self.YMax, self.ZMax)
+        return Vector((self._XMin + self._XMax) / 2.0, self._YMax, self._ZMax)
 
     @property
     def TS(self) -> Vector:
         """Bottom South edge center."""
-        return Vector((self.XMin + self.XMax) / 2.0, self.YMin, self.ZMax)
+        return Vector((self._XMin + self._XMax) / 2.0, self._YMin, self._ZMax)
 
     # Miscellaneous attributes:
 
     @property
     def BB(self) -> BoundBox:
         """Return a corresponding FreeCAD BoundBox."""
-        return BoundBox(self.XMin, self.YMin, self.ZMin, self.XMax, self.YMax, self.ZMax)
+        return BoundBox(self._XMin, self._YMin, self._ZMin, self._XMax, self._YMax, self._ZMax)
 
     @property
     def C(self) -> Vector:
         """Center point."""
         return Vector(
-            (self.XMax + self.XMin) / 2.0,
-            (self.YMax + self.YMin) / 2.0,
-            (self.ZMax + self.ZMin) / 2.0
+            (self._XMax + self._XMin) / 2.0,
+            (self._YMax + self._YMin) / 2.0,
+            (self._ZMax + self._ZMin) / 2.0
         )
 
     @property
@@ -410,17 +442,17 @@ class FabBox(object):
     @property
     def DX(self) -> float:
         """Delta X."""
-        return self.XMax - self.XMin
+        return self._XMax - self._XMin
 
     @property
     def DY(self) -> float:
         """Delta Y."""
-        return self.YMax - self.YMin
+        return self._YMax - self._YMin
 
     @property
     def DZ(self) -> float:
         """Delta Z."""
-        return self.ZMax - self.ZMin
+        return self._ZMax - self._ZMin
 
     # FabBox.reorient():
     def reorient(self, placement: Placement) -> "FabBox":
