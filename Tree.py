@@ -647,11 +647,43 @@ class FabNode(FabBox):
             raise RuntimeError(f"{self.FullPath} is the same as {dag_table[node_id].FullPath}")
         dag_table[node_id] = self
 
+        # children_nodes: List[FabNode] = []
+        # trackable_names: List[str] = []
+        # for name in self.__dict__.keys():
+        #     if tracing:
+        #         print(f"{tracing}{self.FullPath}:{name}")
+        #     if not name[0].isupper():
+        #         continue
+        #     if name == "Parent":
+        #         continue
+        #     if hasattr(self, name):
+        #         attribute: Any = getattr(self, name)
+        #         if isinstance(attribute, FabNode):
+        #             if tracing:
+        #                 print(f"{tracing}Is fabNode")
+        #             children_nodes.append(attribute)
+        #         elif isinstance(attribute, (list, tuple)):
+        #             if tracing:
+        #                 print(f"{tracing}is sequence {type(attribute)=} {len(attribute)=}")
+        #             element: Any
+        #             index: int
+        #             for index, element in enumerate(attribute):
+        #                 if tracing:
+        #                     print(f"{tracing}Element[{index}]: {element=}")
+        #                 if isinstance(attribute, FabNode):
+        #                     if tracing:
+        #                         print(f"{tracing}Match: {attribute.Name}")
+        #                     children_nodes.append(attribute)
+        #         elif isinstance(attribute, (str, int, float, bool, Vector)):
+        #             trackable_names.append(name)
+        # if tracing and children_nodes:
+        #     print(f"{tracing}{children_nodes=}")
+
         # Recursively setup each *child*:
         child_names: Set[str] = set()
         child: FabNode
         for child in self.Children:
-            name: str = child.Name
+            name = child.Name
             if name in child_names:
                 raise RuntimeError("'{name}' occurs more then once in '{self.FullPath}'")
             child_names.add(name)

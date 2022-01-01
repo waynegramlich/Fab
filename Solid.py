@@ -129,6 +129,7 @@ class FabFile(FabNode):
     def __post_init__(self) -> None:
         """Initialize the AppDocument."""
 
+        super().__post_init__()
         suffix: str = self.FilePath.suffix
         valid_suffixes: Tuple[str, ...] = (".fcstd", ".FCStd")
         if suffix not in valid_suffixes:
@@ -315,6 +316,7 @@ class FabPad(FabOperation):
     # FabPad.__post_init__():
     def __post_init__(self) -> None:
         """Verify FabPad values."""
+        super().__post_init__()
         if not isinstance(self.Geometry, FabGeometry):
             raise ValueError(f"{self.Geometry} is not a FabGeometry")
         if self.Depth <= 0.0:
@@ -384,6 +386,7 @@ class FabPocket(FabOperation):
     # FabPocket__post_init__():
     def __post_init__(self) -> None:
         """Verify FabPad values."""
+        super().__post_init__()
         if not isinstance(self.Geometry, FabGeometry):
             raise ValueError(f"{self.Geometry} is not a FabGeometry")
         if self.Depth <= 0.0:
@@ -475,6 +478,7 @@ class FabDrill(FabOperation):
     # FabDrill.__post_init__():
     def __post_init__(self) -> None:
         """Verify FabPad values."""
+        super().__post_init__()
         joins: List[FabJoin] = []
         join: Any
         if isinstance(self.Joins, tuple):
@@ -683,6 +687,12 @@ class FabDrill(FabOperation):
 class FabThread(FabDrill):
     """Drill and thread FabJoin's."""
 
+    # FabThread.__post_init__()
+    def __post_init__(self) -> None:
+        """Initialize FabThread."""
+        super().__post_init__()
+
+    # FabThread.get_kind():
     def get_kind(self) -> str:
         """Return a thread diameter kind."""
         return "thread"
@@ -693,6 +703,12 @@ class FabThread(FabDrill):
 class FabClose(FabDrill):
     """Drill a close a FabJoin's."""
 
+    # FabClose.__post_init__()
+    def __post_init__(self) -> None:
+        """Initialize FabCLose."""
+        super().__post_init__()
+
+    # FabClose.get_kind():
     def get_kind(self) -> str:
         """Return a thread diameter kind."""
         return "close"
@@ -726,6 +742,7 @@ class FabHole(FabOperation):
     # FabHole.__post_init__():
     def __post_init__(self) -> None:
         """Verify FabPad values."""
+        super().__post_init__()
         if not isinstance(self.Circle, FabCircle):
             raise ValueError(f"{self.Geometry} is not a FabCircle")
         if self.Depth <= 0.0:
@@ -1097,11 +1114,9 @@ class FabRoot(FabNode):
     # FabRoot.__post_init__():
     def __post_init__(self) -> None:
         """Process FabRoot."""
-        # print(f"=>Fab_Root.__post_init__():")
         super().__post_init__()
         if self.Name != "Root":
             raise ValueError("The Root node must be named root rather than '{self.Name}'")
-        # print(f"<=Fab_Root.__post_init__():")
 
     # FabRoot: configure_contraints():
     def configure_constraints(self, all_nodes: Tuple[FabNode, ...], maximum_iterations: int = 20,
@@ -1181,7 +1196,7 @@ class FabRoot(FabNode):
 
         # Phase 1: Sweep through the FabNode tree:
         dag_table: Dict[int, FabNode] = {}
-        self._setup(dag_table, self, self, tracing=next_tracing)
+        self._setup(dag_table, self, self, " ")  # tracing=next_tracing)
 
         # Phase 2: Configure constraints:
         all_nodes: Tuple[FabNode, ...] = tuple(dag_table.values())
