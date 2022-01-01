@@ -591,11 +591,14 @@ class FabNode(FabBox):
 
     """
 
-    Name: str
-    Parent: "FabNode" = field(init=False, repr=False)
-    FullPath: str = field(init=False)
-    # AttributeNames: Tuple[str, ...] = field(init=False, repr=False, default=())
-    Children: Tuple["FabNode", ...] = field(init=False, repr=False, default=())
+    _Name: str
+    _Parent: "FabNode" = field(init=False, repr=False)
+    _Children: Tuple["FabNode", ...] = field(init=False, repr=False)
+    _ChildrenNames: Set[str] = field(init=False, repr=False)
+    _Root: "FabNode" = field(init=False, repr=False)
+    _FullPath: str = field(init=False, repr=False)
+    _Context: Dict[str, Any] = field(init=False, repr=False)
+    _Tracing: str = field(init=False, repr=False)
 
     # FabNode.__post_init__():
     def __post_init__(self) -> None:
@@ -608,9 +611,26 @@ class FabNode(FabBox):
                 "that starts with a letter")
 
         # Initialize the remaining fields to bogus values that get updated by the _setup() method.
-        self.FullPath = "??"
+        self._Children = ()
+        self._FullPath = "??"
         self.Parent = self
         # print(f"<=FabNode.__post_init__()")
+
+    @property
+    def Name(self) -> str:
+        return self._Name
+
+    @property
+    def FullPath(self) -> str:
+        return self._FullPath
+
+    @property
+    def Up(self) -> "FabNode":
+        return self._Parent
+
+    @property
+    def Tracing(self) -> str:
+        return self._Tracing
 
     # FabNode.check():
     def check(self) -> Tuple[str, ...]:
@@ -666,12 +686,12 @@ class FabNode(FabBox):
         # Setup *FullPath* and *Parent*:
         if self is root:
             # *root* is specical:
-            self.FullPath = ""
-            self.Parent = root
-            self.Name = "Root"
+            self._FullPath = ""
+            self._Parent = root
+            self._Name = "Root"
         else:
-            self.FullPath = self.Name if parent is root else f"{parent.FullPath}.{self.Name}"
-            self.Parent = parent
+            self._FullPath = self.Name if parent is root else f"{parent.FullPath}.{self.Name}"
+            self._Parent = parent
 
         # Make sure that the FabNode tree is a DAG (Directed Acyclic Graph) with no duplicates.
         node_id: int = id(self)
@@ -714,7 +734,7 @@ class FabNode(FabBox):
         # Recursively setup each *child*:
         child_names: Set[str] = set()
         child: FabNode
-        for child in self.Children:
+        for child in self._Children:
             name = child.Name
             if name in child_names:
                 raise RuntimeError("'{name}' occurs more then once in '{self.FullPath}'")

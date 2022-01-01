@@ -84,7 +84,7 @@ class FabGroup(FabNode):
 
         child: FabNode
         context["parent_object"] = self.Group
-        for child in self.Children:
+        for child in self._Children:
             if isinstance(child, FabFile):
                 errors.append(f"{self.FullPath}: {child.FullPath} is a FabFile under a group")
             errors.extend(child.produce(context.copy(), next_tracing))
@@ -141,7 +141,7 @@ class FabFile(FabNode):
     def _check_children(self) -> None:
         """Verify that children are valid types."""
         child: FabNode
-        for child in self.Children:
+        for child in self._Children:
             if not isinstance(child, (FabAssembly, FabGroup, FabSolid)):
                 raise RuntimeError(
                     f"{self.FullPath}: {child.FullPath} is not a {type(child)}, "
@@ -170,7 +170,7 @@ class FabFile(FabNode):
         self._check_children()
         errors: List[str] = []
         child: FabNode
-        for child in self.Children:
+        for child in self._Children:
             assert isinstance(child, (FabAssembly, FabGroup, FabSolid))
             errors.extend(child.produce(context.copy(), tracing=next_tracing))
 
@@ -203,15 +203,15 @@ class FabFile(FabNode):
         pad1: FabPad = FabPad("Cylinder1", circle1, depth1)
         operations1: Tuple[FabOperation, ...] = (pad1,)
         mount1: FabMount = FabMount("Mount1", contact, z_axis, y_axis)
-        mount1.Children = operations1
+        mount1._Children = operations1
         solid1: FabSolid = FabSolid("Part1", "hdpe", "orange")
-        solid1.Children = (mount1,)
+        solid1._Children = (mount1,)
 
         # Duplicate Part Names:
         fab_file: FabFile
         try:
             fab_file = FabFile("Duplicate Solid", fcstd_path)
-            fab_file.Children = (solid1, solid1)
+            fab_file._Children = (solid1, solid1)
             assert False
         except ValueError as value_error:
             assert str(value_error) == "There are two or more Part's with the same name 'Part1'"
@@ -219,7 +219,7 @@ class FabFile(FabNode):
         # Test Open/Produce/Close
         _ = fcstd_path.unlink if fcstd_path.exists() else None
         fab_file = FabFile("Open_Produce_Close", fcstd_path)
-        fab_file.Children = (solid1,)
+        fab_file._Children = (solid1,)
         assert isinstance(fab_file, FabFile)
         context: Dict[str, Any] = {}
         assert isinstance(context["app_document"], App.Document)
@@ -833,7 +833,7 @@ class FabMount(FabNode):
     # FabMount.Operations:
     def Operations(self) -> Tuple[FabOperation, ...]:
         """Return mount FabOperation's."""
-        return cast(Tuple[FabOperation, ...], self.Children)
+        return cast(Tuple[FabOperation, ...], self._Children)
 
     # FabMount.produce():
     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
@@ -953,7 +953,7 @@ class FabSolid(FabNode):
     def _mounts_check(self) -> None:
         """Verify that all children are FabMounts."""
         child: FabNode
-        for child in self.Children:
+        for child in self._Children:
             if not isinstance(child, FabNode):
                 raise RuntimeError(
                     f"{self.FullName}: {child.FullName} is {type(child)}, not FabMount.")
@@ -963,13 +963,13 @@ class FabSolid(FabNode):
     def Mounts(self) -> Tuple[FabMount, ...]:
         """Return children solids."""
         self._mounts_check()
-        return cast(Tuple[FabMount], self.Children)
+        return cast(Tuple[FabMount], self._Children)
 
     # FabSolid.Mounts.setter():
     @Mounts.setter
     def Mounts(self, mounts: Tuple[FabMount]) -> None:
         """Set the FabSolid mounts."""
-        self.Children = mounts
+        self._Children = mounts
         self._mounts_check()
 
     # FabSolid.produce():
@@ -1102,7 +1102,7 @@ class TestSolid(FabSolid):
         self.Material = "HDPE"
 
         self.Color = "purple"
-        self.Children = (top_north_mount,)
+        self._Children = (top_north_mount,)
         super().__post_init__()
 
 
@@ -1181,7 +1181,7 @@ class FabRoot(FabNode):
             print(f"{tracing}=>FabRoot.produce()")
         errors: List[str] = []
         child: "FabNode"
-        for child_node in self.Children:
+        for child_node in self._Children:
             errors.extend(child_node.produce(context.copy(), tracing=next_tracing))
         if tracing:
             print(f"{tracing}<=FabRoot.produce()")
@@ -1320,9 +1320,9 @@ class Box(FabAssembly):
         )
         top_mount: FabMount = FabMount(
             "TopNorth", center + Vector(0, 0, dz2), top_axis, north_axis, dw)
-        top_mount.Children = top_operations
+        top_mount._Children = top_operations
         top_solid: FabSolid = FabSolid("Top", "hdpe", "red")
-        top_solid.Children = (top_mount,)
+        top_solid._Children = (top_mount,)
 
         # Do the *bottom_solid*:
         bottom_corners: Tuple[Corner, ...] = (
@@ -1338,9 +1338,9 @@ class Box(FabAssembly):
         )
         bottom_mount: FabMount = FabMount(
             "BottomNorth", center + Vector(0, 0, -dz2), bottom_axis, north_axis, dw)
-        bottom_mount.Children = bottom_operations
+        bottom_mount._Children = bottom_operations
         bottom_solid: FabSolid = FabSolid("Bottom", "hdpe", "red")
-        bottom_solid.Children = (bottom_mount,)
+        bottom_solid._Children = (bottom_mount,)
 
         # The North (and South) side has 4 additional screws -- two that attach to the
         # East side and two that attach to the West side.  In addition, each North and
@@ -1395,7 +1395,7 @@ class Box(FabAssembly):
         north_mount: FabMount = FabMount(
             "NorthMount", center + Vector(0, dy2, 0),
             north_axis, bottom_axis, dw)
-        north_mount.Children = north_operations
+        north_mount._Children = north_operations
 
         # Do the *north_top_mount* second:
         north_top_operations: Tuple[FabOperation, ...] = (
@@ -1403,7 +1403,7 @@ class Box(FabAssembly):
         )
         north_top_mount: FabMount = FabMount("NorthTopMount", center + Vector(0, 0, dz2 - dw2),
                                              top_axis, north_axis, dz - 2 * dw)
-        north_top_mount.Children = north_top_operations
+        north_top_mount._Children = north_top_operations
 
         # Do the *north_top_mount* second:
         north_bottom_operations: Tuple[FabOperation, ...] = (
@@ -1412,11 +1412,11 @@ class Box(FabAssembly):
         north_bottom_mount: FabMount = FabMount(
             "NorthBottomMount", center + Vector(0, 0, -dx2 + dw2),
             bottom_axis, north_axis, dz - 2 * dw)
-        north_bottom_mount.Children = north_bottom_operations
+        north_bottom_mount._Children = north_bottom_operations
 
         # Do the *north_solid*:
         north_solid: FabSolid = FabSolid("North", "hdpe", "green")
-        north_solid.Children = (north_mount, north_top_mount, north_bottom_mount)
+        north_solid._Children = (north_mount, north_top_mount, north_bottom_mount)
 
         # Do the *south_solid*:
         south_corners: Tuple[Corner, ...] = (
@@ -1435,10 +1435,10 @@ class Box(FabAssembly):
         south_mount: FabMount = FabMount(
             "SouthBottom", center + Vector(0, -dy2, 0),
             south_axis, bottom_axis, dw)
-        south_mount.Children = south_operations
+        south_mount._Children = south_operations
 
         south_solid: FabSolid = FabSolid("South", "hdpe", "green")
-        south_solid.Children = (south_mount,)
+        south_solid._Children = (south_mount,)
         if False:
             # Do the *west_solid*:
             west_corners: Tuple[Corner, ...] = (
@@ -1453,9 +1453,9 @@ class Box(FabAssembly):
             )
             west_mount: FabMount = FabMount(
                 "WestNorth", center + Vector(-dx2, 0, 0), west_axis, north_axis)
-            west_mount.Children = west_operations
+            west_mount._Children = west_operations
             west_solid: FabSolid = FabSolid("West", "hdpe", "blue")
-            west_solid.Children = (west_mount,)
+            west_solid._Children = (west_mount,)
             _ = west_solid
 
             # Do the *east_solid*:
@@ -1471,13 +1471,13 @@ class Box(FabAssembly):
             )
             east_mount: FabMount = FabMount(
                 "EastNorth", center + Vector(dx2, 0, 0), east_axis, north_axis)
-            east_mount.Children = east_operations
+            east_mount._Children = east_operations
             east_solid: FabSolid = FabSolid("East", "hdpe", "blue")
-            east_solid.Children = (east_mount,)
+            east_solid._Children = (east_mount,)
             _ = east_solid
 
         # Load up the FabSolid's:
-        self.Children = (
+        self._Children = (
             top_solid, bottom_solid,
             north_solid, south_solid,
             # east_solid, west_solid
@@ -1498,9 +1498,9 @@ def main() -> None:
     box: Box = Box("Box", Center=Vector())  # 0, 100.0, 0.0))
     solids: Tuple[Union[FabSolid, FabAssembly], ...] = (box, )  # , test_solid)
     model_file: FabFile = FabFile("Test", Path("/tmp/test.fcstd"))
-    model_file.Children = solids
+    model_file._Children = solids
     root: FabRoot = FabRoot("Root")
-    root.Children = (model_file,)
+    root._Children = (model_file,)
     root.run(tracing="")
 
 
