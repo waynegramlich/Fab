@@ -1,4 +1,4 @@
-# ModFab: Python Model/Fabrication.
+# Fab: Python Model/Fabrication w/FreeCAD.
 
-Please see [ModFab Documentation](docs/ModFab.html)
+Please see [Fab Documentation](docs/Fab.html)
 

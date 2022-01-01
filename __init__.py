@@ -1,4 +1,4 @@
-"""Fab: Python Modeling/Fabrication Tools with FreeCAD
+"""Fab: Python Model/Fabrication w/FreeCAD.
 
 ## Table of Contents:
 
