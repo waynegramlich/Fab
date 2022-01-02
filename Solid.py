@@ -67,11 +67,12 @@ class FabGroup(FabNode):
         super().__post_init__()
 
     # FabGroup.produce():
-    def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
+    def produce(self) -> Tuple[str, ...]:
         """Create the FreeCAD group object."""
-        next_tracing: str = tracing + " " if tracing else ""
+        tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>FabGroup.produce('{self.FullPath}')")
+            print(f"{tracing}=>FabGroup({self.Name}).produce()")
+        context: Dict[str, Any] = self.Context
         errors: List[str] = []
 
         # Create the *group* that contains all of the FabNode's:
@@ -85,11 +86,10 @@ class FabGroup(FabNode):
         child: FabNode
         context["parent_object"] = self.Group
         for child in self._Children:
-            if isinstance(child, FabFile):
-                errors.append(f"{self.FullPath}: {child.FullPath} is a FabFile under a group")
-            errors.extend(child.produce(context.copy(), next_tracing))
+            child._Context = context.copy()
+            errors.extend(child.produce())
         if tracing:
-            print(f"{tracing}<=FabGroup.produce('{self.FullPath}')")
+            print(f"{tracing}<=FabGroup({self.Name}).produce()")
         return tuple(errors)
 
 
@@ -104,6 +104,9 @@ class FabAssembly(FabGroup):
     def __post_init__(self) -> None:
         """Initialize FabAssembly."""
         super().__post_init__()
+        tracing: str = self.Tracing
+        if tracing:
+            print(f"{tracing}<=>FabAssembly({self.Name}).__post_init__()")
 
 
 # FabFile:
@@ -124,12 +127,14 @@ class FabFile(FabNode):
     """
 
     FilePath: Path = Path("bogus_file")
+    _AppDocument: Optional[App.Document] = field(init=False, repr=False)
 
     # FabFile.__post_init__():
     def __post_init__(self) -> None:
         """Initialize the AppDocument."""
 
         super().__post_init__()
+        self._AppDocument = None
         suffix: str = self.FilePath.suffix
         valid_suffixes: Tuple[str, ...] = (".fcstd", ".FCStd")
         if suffix not in valid_suffixes:
@@ -148,105 +153,80 @@ class FabFile(FabNode):
                     "not FabAssembly/FabGroup/FabSolid")
 
     # FabFile.produce():
-    def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
-        """Produce all of the FabSolid's."""
-        next_tracing: str = tracing + " " if tracing else ""
+    def produce(self) -> Tuple[str, ...]:
+        """Create FabFile document."""
+        tracing: str = self.Tracing
         if tracing:
             print(f"{tracing}=>FabFile.produce('{self.Name}', *)")
 
         # Create the new *app_document*:
-        app_document = cast(App.Document, App.newDocument(self.Name))
-        assert isinstance(app_document, App.Document)  # Just to be sure.
-        context["app_document"] = app_document
-        context["parent_object"] = app_document
-
-        # Get the associated *gui_document* (if Gui is up):
-        if App.GuiUp:  # pragma: no unit cover
-            gui_document = cast(Gui.Document, Gui.getDocument(self.Name))
-            assert isinstance(gui_document, Gui.Document)  # Just to be sure.
-            context["gui_document"] = gui_document
-
-        # Produce all the requested Solids and Assemblies.
-        self._check_children()
         errors: List[str] = []
-        child: FabNode
-        for child in self._Children:
-            assert isinstance(child, (FabAssembly, FabGroup, FabSolid))
-            errors.extend(child.produce(context.copy(), tracing=next_tracing))
+        if self.Construct:
+            context: Dict[str, Any] = self.Context
+            context_keys: Tuple[str, ...]
+            if tracing:
+                context_keys = tuple(sorted(context.keys()))
+                print(f"{tracing}Before Context: {context_keys}")
 
-        # Recompute, save, ...:
-        app_document.recompute()
-        app_document.saveAs(str(self.FilePath))
+            # Create *app_document* and save it away in both *self* and *context*:
+            app_document = cast(App.Document, App.newDocument(self.Name))  # Why the cast?
+            assert isinstance(app_document, App.Document)  # Just to be sure.
+            self._AppDocument = app_document
+            context["app_document"] = app_document
+            context["parent_object"] = app_document
+
+            # If the GUI is up, get the associated *gui_document* and save it into *context*:
+            if App.GuiUp:  # pragma: no unit cover
+                gui_document = cast(Gui.Document, Gui.getDocument(self.Name))
+                assert isinstance(gui_document, Gui.Document)  # Just to be sure.
+                context["gui_document"] = gui_document
+
+            if tracing:
+                context_keys = tuple(sorted(context.keys()))
+                print(f"{tracing}After Context: {context_keys}")
+
         if tracing:
             print(f"{tracing}<=FabFile.produce('{self.Name}', *)")
         return tuple(errors)
 
-    # FabFile._unit_tests():
-    @staticmethod
-    def _unit_tests() -> None:
-        """Run FabFile unit tests."""
-        # No solids specified:
-        fcstd_path: Path = Path("/tmp/part_file_test.fcstd")
-        try:
-            FabFile("EmptyFile", fcstd_path)
-            assert False
-        except ValueError as value_error:
-            assert str(value_error) == "At least one FabSolid needs to be specified"
+    # FabFile.post_produce():
+    def post_produce(self) -> Tuple[str, ...]:
+        """Close the FabFile."""
+        tracing: str = self.Tracing
+        if tracing:
+            print(f"{tracing}=>FabFile({self.Name}).post_produce()")
 
-        # Duplicate part name error:
-        contact: Vector = Vector()
-        z_axis: Vector = Vector(0, 0, 1)
-        y_axis: Vector = Vector(0, 1, 0)
-        origin: Vector = Vector()
-        circle1: FabCircle = FabCircle(origin, 10.0)
-        depth1: float = 10.0
-        pad1: FabPad = FabPad("Cylinder1", circle1, depth1)
-        operations1: Tuple[FabOperation, ...] = (pad1,)
-        mount1: FabMount = FabMount("Mount1", contact, z_axis, y_axis)
-        mount1._Children = operations1
-        solid1: FabSolid = FabSolid("Part1", "hdpe", "orange")
-        solid1._Children = (mount1,)
+        if self.Construct:
+            # Recompute and save:
+            app_document: App.Document = self._AppDocument
+            app_document.recompute()
+            app_document.saveAs(str(self.FilePath))
 
-        # Duplicate Part Names:
-        fab_file: FabFile
-        try:
-            fab_file = FabFile("Duplicate Solid", fcstd_path)
-            fab_file._Children = (solid1, solid1)
-            assert False
-        except ValueError as value_error:
-            assert str(value_error) == "There are two or more Part's with the same name 'Part1'"
-
-        # Test Open/Produce/Close
-        _ = fcstd_path.unlink if fcstd_path.exists() else None
-        fab_file = FabFile("Open_Produce_Close", fcstd_path)
-        fab_file._Children = (solid1,)
-        assert isinstance(fab_file, FabFile)
-        context: Dict[str, Any] = {}
-        assert isinstance(context["app_document"], App.Document)
-        assert isinstance(context["parent_object"], App.Document)
-        if App.GuiUp:
-            assert(isinstance(context["gui_document"], Gui.Document))
-        errors: Tuple[str, ...] = fab_file.produce(context.copy())
-        assert not errors, errors
-        assert fcstd_path.exists(), f"{fcstd_path} file not generated."
-        fcstd_path.unlink()
-        assert not fcstd_path.exists()
+        if tracing:
+            print(f"{tracing}Saved {self.FilePath}")
+            print(f"{tracing}<=FabFile({self.Name}).post_produce()")
+        return ()
 
 
 # FabOperation:
 @dataclass
-class FabOperation(FabNode):
+class FabOperation(object):
     """FabOperation: An base class for operations -- FabPad, FabPocket, FabHole, etc.
 
     All model operations are immutable (i.e. frozen.)
     """
+    Name: str
 
-    # Name: str
+    # FabOperation.__post_init__():
+    def __post_init__(self) -> None:
+        """Initialize FabOperation."""
+        if not FabNode._is_valid_name(self.Name):
+            raise RuntimeError(f"FabOperation.__post_init__(): Name '{self.Name}' is not valid.")
 
     # FabOperation.get_name():
     def get_name(self) -> str:
         """Return FabOperation name."""
-        raise NotImplementedError(f"{type(self)}.get_name() is not implemented")
+        return self.Name
 
     # FabOperation.produce():
     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
@@ -318,14 +298,10 @@ class FabPad(FabOperation):
         """Verify FabPad values."""
         super().__post_init__()
         if not isinstance(self.Geometry, FabGeometry):
-            raise ValueError(f"{self.Geometry} is not a FabGeometry")
+            raise RuntimeError(
+                f"FabPad.__post_init__({self.Name}):{self.Geometry} is not a FabGeometry")
         if self.Depth <= 0.0:
-            raise ValueError(f"Depth ({self.Depth}) is not positive.")
-
-    # FabPad.get_name():
-    def get_name(self) -> str:
-        """Return FabPad name."""
-        return self.Name
+            raise RuntimeError(f"Depth ({self.Depth}) is not positive.")
 
     # FabPad.produce():
     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
@@ -333,6 +309,7 @@ class FabPad(FabOperation):
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabPad.produce('{self.Name}')")
+
         # Extract the *part_geometries* and create the assocated *shape_binder*:
         prefix = cast(str, context["prefix"])
         next_prefix: str = f"{prefix}_{self.Name}"
@@ -402,6 +379,7 @@ class FabPocket(FabOperation):
         """Produce the Pad."""
         if tracing:
             print("{tracing}=>FabPocket.produce('{self.Name}')")
+
         # Extract the *part_geometries*:
         prefix = cast(str, context["prefix"])
         next_prefix: str = f"{prefix}_{self.Name}"
@@ -526,12 +504,11 @@ class FabDrill(FabOperation):
                 assert False, f"{start=} and  {end=} are not aligned {normal=}."
             return distance
 
-        # Extract the *part_geometries*:
-        next_tracing: str = tracing + " " if tracing else ""
-        if tracing:
-            print(f"{tracing}=>FabDrill.produce('{self.Name}')")
-
         # Grab mount information from *context*:
+        next_tracing = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabDill.produce({self.Name})")
+
         prefix = cast(str, context["prefix"])
         next_prefix: str = f"{prefix}_{self.Name}"
         # mount_name = cast(str, context["mount_name"])
@@ -570,7 +547,7 @@ class FabDrill(FabOperation):
             # *start* and *end* specify a line segment in 3D space that corresponds to the
             # fastener shaft length (excluding extra shaft at the end for nuts and washers.)  The
             # *start*/*end* line segment can be extended to an infinitely long line in 3D space.
-            # The mount specifies top and bottom mount plane that are supposed to totally enclose
+            # The mount specifies a top and bottom mount plane that are supposed to totally enclose
             # include the solid.  If the infinitely long line not perpendicular to the top/bottom
             # mount planes, it is an error.  The locations where the infinitely long line
             # intersects the top/bottom mount planes are *top* and *bottom* respectively.
@@ -593,7 +570,8 @@ class FabDrill(FabOperation):
             if not (close(mount_normal, start_end_normal) or
                     close(mount_normal, -start_end_normal)):
                 errors.append(
-                    f"{self.FullPath}: Fasten {join.Name} is not perpendicular to mount plane")
+                    f"FabDrill({self.Name}): Fasten {join.Name} "
+                    "is not perpendicular to mount plane")
                 continue
 
             # Compute distances along line from *top* along the *down_normal* direction:
@@ -604,11 +582,12 @@ class FabDrill(FabOperation):
             far_distance: float = max(start_distance, end_distance)
             assert close_distance <= far_distance
             if far_distance <= 0.0 or close_distance >= bottom_depth:
-                errors.append(f"{self.FullPath}: Fasten {fasten.Name} "
-                              "does not overlap with solid")
+                errors.append(f"FabDrill({self.Name}): "
+                              f"Fasten {fasten.Name} does not overlap with solid")
                 continue
             if close_distance > 0.0:
-                errors.append(f"{self.FullPath}: Fasten {fasten.Name} starts below mount plane")
+                errors.append(f"FabDrill({self.Name}): "
+                              f"Fasten {fasten.Name} starts below mount plane")
                 continue
             depth = min(bottom_depth, far_distance)
             is_top = close(start, top)
@@ -678,7 +657,7 @@ class FabDrill(FabOperation):
             self._viewer_update(body, part_hole)
 
         if tracing:
-            print(f"{tracing}<=FabDrill.produce('{self.Name}')")
+            print(f"{tracing}<=FabDrill(self.Name).produce()")
         return tuple(errors)
 
 
@@ -758,7 +737,8 @@ class FabHole(FabOperation):
         """Produce the Hole."""
         # Extract the *part_geometries*:
         if tracing:
-            print("{tracing}=>FabHole.produce('{self.Name}')")
+            print("{tracing}=>FabHole(self.Name).produce()")
+
         prefix = cast(str, context["prefix"])
         next_prefix: str = f"{prefix}_{self.Name}"
         part_geometries: Tuple[Part.Part2DObject, ...] = (
@@ -784,12 +764,13 @@ class FabHole(FabOperation):
         self._viewer_update(body, hole)
 
         if tracing:
-            print("{tracing}<=FabHole.produce('{self.Name}')")
+            print("{tracing}<=FabHole({self.Name}).produce()")
         return ()
+
 
 # FabMount:
 @dataclass
-class FabMount(FabNode):
+class FabMount(object):
     """FabMount: An operations plane that can be oriented for subsequent machine operations.
 
     This class basically corresponds to a FreeCad Datum Plane.  It is basically the surface
@@ -798,130 +779,202 @@ class FabMount(FabNode):
 
     Attributes:
     * *Name*: (str): The name of the FabPlane.
-    * *Operations* (Tuple[FabOperation, ...]): The operations to perform.
+    * *Solid*: (FabSolid): The FabSolid to work on.
     * *Contact* (Vector): A point on the plane.
     * *Normal* (Vector): A normal to the plane
     * *Orient* (Vector):
-      A vector in the plane that specifies the north direction when mounted in a machining vice.
-    * *Depth* (Optional[float]):
-      The maximum depth limit.  If not specified, an estimated  maximum depth limit is
-      "deduced" the using the information from the initial extrude operation. (Default: None)
+      A vector that is projected onto the plane to specify orientation when mounted.
+    * *Depth* (float): The maximum depth limit for all operations.
 
     """
 
-    # Name: str
-    # Operations: Tuple[FabOperation, ...]
-
-    Contact: Vector = Vector()
-    Normal: Vector = Vector(0, 0, 1)
-    Orient: Vector = Vector(0, 1, 0)
-    Depth: Optional[float] = None
+    _Name: str
+    _Solid: "FabSolid"
+    _Contact: Vector
+    _Normal: Vector
+    _Orient: Vector
+    _Depth: float
+    _Context: Dict[str, Any] = field(init=False, repr=False)
+    _Copy: Vector = field(init=False, repr=False)  # Used for making private copies of Vector's
+    _Tracing: str = field(init=False, repr=False)
 
     # FabMount.__post_init__():
     def __post_init__(self) -> None:
         """Verify that FabMount arguments are valid."""
 
-        # (Why __setattr__?)[https://stackoverflow.com/questions/53756788]
-        super().__post_init__()
-        copy: Vector = Vector()  # Make private copy of Vector's.
-        object.__setattr__(self, "Contact", self.Contact + copy)
-        object.__setattr__(self, "Normal", self.Normal + copy)
-        object.__setattr__(self, "Orient", self.Orient + copy)
-        object.__setattr__(self, "Depth", self.Depth)
+        # No super().__post_init__() because the base class is object.
+        solid: "FabSolid" = self._Solid
+        tracing: str = solid.Tracing
+        if tracing:
+            print(f"{tracing}=>FabMount(self.Name).__post_init__()")
 
+        # Do type checking here.
+        assert isinstance(self._Name, str)
+        assert FabNode._is_valid_name(self.Name)
+        assert isinstance(self._Solid, FabSolid)
+        assert isinstance(self._Contact, Vector)
+        assert isinstance(self._Normal, Vector)
+        assert isinstance(self._Orient, Vector)
+        assert isinstance(self._Depth, float)
+
+        copy: Vector = Vector()  # Make private copy of Vector's.
+        self._Copyt = copy
+        self._Contact = self._Contact + copy
+        self._Normal = self._Normal + copy
+        self._Orient = self._Orient.projectToPlane(self._Contact, self._Normal)
+        self._Context = {"mount_contact": "bogus"}
+        self._Context = {}
+
+        if tracing:
+            print(f"{tracing}<=FabMount(self.Name).__post_init__()")
+
+    # FabMount.Name():
     @property
-    # FabMount.Operations:
-    def Operations(self) -> Tuple[FabOperation, ...]:
-        """Return mount FabOperation's."""
-        return cast(Tuple[FabOperation, ...], self._Children)
+    def Name(self) -> str:
+        """Return the FabMoun name."""
+        return self._Name
+
+    # FabMount.Solid:
+    def Solid(self) -> "FabSolid":
+        """Return the FabSolid."""
+        return self._Solid
+
+    # FabMount.Contact:
+    def Contact(self) -> Vector:
+        """Return the FabMount contact point."""
+        return self._Contact + self._Copy
+
+    # FabMount.Normal:
+    def Normal(self) -> Vector:
+        """Return the FabMount normal."""
+        return self._Normal + self._Copy
+
+    # FabMount.Orient:
+    def Orient(self) -> Vector:
+        """Return the FabMount Orientation."""
+        return self._Orient + self._Copy
+
+    # FabMount.Depth:
+    def Depth(self) -> float:
+        """Return the depth."""
+        return self._Depth
+
+    # FabMount.Construct:
+    def Construct(self) -> bool:
+        """Return whether construction is turned on."""
+        return self._Solid.Construct
 
     # FabMount.produce():
     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
-        """Create the FreeCAD DatumPlane used for the drawing support.
-
-        Arguments:
-        * *body* (PartDesign.Body): The FreeCAD Part design Body to attach the datum plane to.
-        * *name* (Optional[str]): The datum plane name.
-          (Default: "...DatumPlaneN", where N is incremented.)
-        * Returns:
-          * (Part.Geometry) that is the datum_plane.
-
-        """
-        # Compute *rotation* from <Zb> to <Nd>:
-        next_tracing: str = tracing + " " if tracing else ""
+        """Create the FreeCAD DatumPlane used for the drawing support."""
         if tracing:
             print(f"{tracing}=>FabMount.produce('{self.Name}')")
 
-        contact: Vector = self.Contact  # Pd
-        normal: Vector = self.Normal  # <Nd>
-        z_axis: Vector = Vector(0.0, 0.0, 1.0)
-        origin: Vector = Vector()
-        projected_origin: Vector = origin.projectToPlane(contact, normal)
-        rotation: Rotation = Rotation(z_axis, normal)
-        placement: Placement = Placement()
-        placement.Base = projected_origin
-        placement.Rotation = rotation
+        if self.Construct:
+            if tracing:
+                print(f"{tracing}{sorted(context.keys())=}")
+            contact: Vector = self._Contact
+            normal: Vector = self._Normal
+            z_axis: Vector = Vector(0.0, 0.0, 1.0)
+            origin: Vector = Vector()
+            projected_origin: Vector = origin.projectToPlane(contact, normal)
+            rotation: Rotation = Rotation(z_axis, normal)
+            placement: Placement = Placement()
+            placement.Base = projected_origin
+            placement.Rotation = rotation
 
-        if tracing:
-            print(f"{tracing}{contact=}")
-            print(f"{tracing}{normal=}")
-            print(f"{tracing}{origin=}")
-            print(f"{tracing}{projected_origin=}")
-            print(f"{tracing}{rotation=}")
-            print(f"{tracing}{placement=}")
-            print(f"{tracing}{rotation*z_axis=}")
-            print(f"{tracing}{normal=}")
+            if tracing:
+                print(f"{tracing}{contact=}")
+                print(f"{tracing}{normal=}")
+                print(f"{tracing}{origin=}")
+                print(f"{tracing}{projected_origin=}")
+                print(f"{tracing}{rotation=}")
+                print(f"{tracing}{placement=}")
+                print(f"{tracing}{rotation*z_axis=}")
+                print(f"{tracing}{normal=}")
 
-        # Create, save and return the *datum_plane*:
-        body = cast(Part.BodyBase, context["solid_body"])
-        datum_plane: Part.Geometry = body.newObject("PartDesign::Plane", f"{self.Name}_Datum_Plane")
-        context["mount_plane"] = datum_plane
-        # visibility_set(datum_plane, False)
-        datum_plane.Visibility = False
-        # xy_plane: App.GeoGeometry = body.getObject("XY_Plane")
-        if tracing:
-            print(f"{tracing}{placement=}")
-        datum_plane.AttachmentOffset = placement
-        datum_plane.Placement = placement
-        datum_plane.MapMode = "Translate"
-        datum_plane.MapPathParameter = 0.0
-        datum_plane.MapReversed = False
-        datum_plane.Support = None
-        datum_plane.recompute()
+            # Create, save and return the *datum_plane*:
+            body = cast(Part.BodyBase, context["solid_body"])
+            datum_plane: Part.Geometry = body.newObject(
+                "PartDesign::Plane", f"{self.Name}_Datum_Plane")
+            context["mount_plane"] = datum_plane
+            # visibility_set(datum_plane, False)
+            datum_plane.Visibility = False
+            # xy_plane: App.GeoGeometry = body.getObject("XY_Plane")
+            if tracing:
+                print(f"{tracing}{placement=}")
+            datum_plane.AttachmentOffset = placement
+            datum_plane.Placement = placement
+            datum_plane.MapMode = "Translate"
+            datum_plane.MapPathParameter = 0.0
+            datum_plane.MapReversed = False
+            datum_plane.Support = None
+            datum_plane.recompute()
 
-        if App.GuiUp:  # pragma: no unit cover
-            gui_document = cast(Gui.Document, context["gui_document"])  # Optional[Gui.Document]
-            assert gui_document, "No GUI document"
+            if App.GuiUp:  # pragma: no unit cover
+                gui_document = cast(Gui.Document, context["gui_document"])  # Optional[Gui.Document]
+                assert gui_document, "No GUI document"
 
-            object_name: str = datum_plane.Name
-            gui_datum_plane: Any = gui_document.getObject(object_name)
-            if gui_datum_plane is not None and hasattr(gui_datum_plane, "Visibility"):
-                setattr(gui_datum_plane, "Visibility", False)
+                object_name: str = datum_plane.Name
+                gui_datum_plane: Any = gui_document.getObject(object_name)
+                if gui_datum_plane is not None and hasattr(gui_datum_plane, "Visibility"):
+                    setattr(gui_datum_plane, "Visibility", False)
 
-        # Provide datum_plane to lower levels of produce:
-        context["mount_plane"] = datum_plane
-        context["mount_normal"] = self.Normal
-        context["mount_contact"] = self.Contact
+            # Provide datum_plane to lower levels of produce:
+            context["mount_plane"] = datum_plane
+            context["mount_normal"] = self._Normal
+            context["mount_contact"] = self._Contact
+            context["mount_depth"] = self._Depth
+            self._Context = context.copy()
 
-        # FIXME: This is a kludge for now:
-        operations: Tuple[FabOperation, ...] = self.Operations
-        assert operations
-        # operation0: FabOperation = operations[0]
-        # assert isinstance(operation0, FabPad)
-        # mount_depth: float = operation0.Depth
-        if not isinstance(self.Depth, float):
-            assert False, f"{self.FullPath}: Does not have a depth."
-        context["mount_depth"] = self.Depth
-
-        # Install the FabMount (i.e. *self*) and *datum_plane* into *model_file* prior
-        # to recursively performing the *operations*:
-        # prefix = cast(str, context["prefix"])
-        operation: FabOperation
-        for operation in self.Operations:
-            operation.produce(context.copy(), tracing=next_tracing)
-        if tracing:
+            # Install the FabMount (i.e. *self*) and *datum_plane* into *model_file* prior
+            # to recursively performing the *operations*:
+            # prefix = cast(str, context["prefix"])
             print(f"{tracing}<=FabMount.produce('{self.Name}')")
         return ()
+
+    # FabMount.pad():
+    def pad(self, name: str, shapes: Union[FabGeometry, Tuple[FabGeometry, ...]],
+            depth: float, tracing: str = "") -> None:
+        """Perform a pad operation."""
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabMount({self.Name}).pad('{name}', *)")
+
+        errors: List[str] = []
+        if self.Construct:
+            context: Dict[str, Any] = self._Context.copy()
+            context_keys: Tuple[str, ...]
+            if tracing:
+                context_keys = tuple(sorted(context.keys()))
+                print(f"{tracing}Before Pad Context: {context_keys}")
+            assert isinstance(shapes, FabGeometry)
+            assert depth > 0.0
+            context["prefix"] = name
+            full_name: str = f"{self.Name}_{name}"
+            fab_pad: FabPad = FabPad(full_name, shapes, depth)
+            errors.extend(fab_pad.produce(context.copy(), next_tracing))
+            if tracing:
+                context_keys = tuple(sorted(context.keys()))
+                print(f"{tracing}After Pad Context: {context_keys}")
+
+        if tracing:
+            print(f"{tracing}<=FabMount({self.Name}).pad('{name}', *)=>|len(errors)|")
+
+    # FabMount.pocket():
+    def pocket(self, name: str, shapes: Union[FabGeometry, Tuple[FabGeometry, ...]],
+               depth: float, tracing: str = "") -> None:
+        """Perform a pocket operation(s)."""
+        if self.Construct:
+            # assert False
+            pass
+
+    # FabMount.drill():
+    def drill(self, name: str, joins: Union[FabJoin, Tuple[FabJoin, ...]],
+              tracing: str = "") -> None:
+        """Perform drill opertation(s)"""
+        if self.Construct:
+            assert False
 
 
 # FabSolid:
@@ -931,7 +984,6 @@ class FabSolid(FabNode):
 
     Inherited Attributes:
     * *Name* (str): The model name.
-    * *Children* (Tuple[FabMount, ...]): The various model mounts to use to construct the part.
     * *Parent* (FabNode): The Parent FabNode.
 
     Attributes:
@@ -940,294 +992,315 @@ class FabSolid(FabNode):
 
     """
 
-    Material: str = ""
-    Color: str = "red"
-    _pads: Tuple[Optional[FabPad], ...] = field(init=False, repr=False, default=())
+    Material: str
+    Color: str
 
     # FabSolid.__post_init__():
     def __post_init__(self) -> None:
         """Verify FabSolid arguments."""
         super().__post_init__()
+        tracing: str = self.Tracing
+        if tracing:
+            print(f"{tracing}FabSolid({self.Name}).__post_init__()")
+        # TODO: Do additional type checking here:
 
-    # FabSolid._mounts_check():
-    def _mounts_check(self) -> None:
-        """Verify that all children are FabMounts."""
-        child: FabNode
-        for child in self._Children:
-            if not isinstance(child, FabNode):
-                raise RuntimeError(
-                    f"{self.FullName}: {child.FullName} is {type(child)}, not FabMount.")
-
-    # FabSolid.Mounts():
     @property
-    def Mounts(self) -> Tuple[FabMount, ...]:
-        """Return children solids."""
-        self._mounts_check()
-        return cast(Tuple[FabMount], self._Children)
+    def Construct(self) -> bool:
+        """Return the construct mode flag."""
+        return self._Root.Construct
 
-    # FabSolid.Mounts.setter():
-    @Mounts.setter
-    def Mounts(self, mounts: Tuple[FabMount]) -> None:
-        """Set the FabSolid mounts."""
-        self._Children = mounts
-        self._mounts_check()
-
-    # FabSolid.produce():
-    def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
-        """Produce the FabSolid."""
+    # FabSolid.mount():
+    def mount(self, name: str, contact: Vector, normal: Vector, orient: Vector,
+              depth: float, tracing: str = "") -> FabMount:
+        """Return a new FabMount."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>FabSolid.produce('{self.Name}')")
-        self._mounts_check()
+            print(f"{tracing}=>FabSolid({self.Name}).mount('{name}', ...)")
 
-        # Do consistency checking and extract the *pads* for guessing maximum depth later on.
-        mounts: Tuple[FabMount, ...] = self.Mounts
-        if not mounts:
-            raise RuntimeError("{self.FullPath}: No FabMount's!")
-        index: int
-        mount: FabMount
-        for index, mount in enumerate(mounts):
-            operations: Tuple[FabOperation, ...] = mount.Operations
-            if not operations:
-                raise ValueError(
-                    f"{self.Name}: Mount {mount.Name} has no FabOperation's.")
-            first_operation: FabOperation = operations[0]
-            if index == 0 and not isinstance(first_operation, FabPad):
-                raise RuntimeError(
-                    f"{self.FullPath}: Mount {mount.FullPath} Operation {first_operation.FullPath} "
-                    f"is {type(first_operation)}, not FabPad")
+        if self.Construct:
+            context: Dict[str, Any] = self.Context
+            context_keys: Tuple[str, ...]
+            if tracing:
+                print(f"{tracing}>>>>>>>>>>>>>>>> FabMount()")
+                context_keys = tuple(sorted(context.keys()))
+                print(f"{tracing}Before mount() context: {context_keys}")
+            fab_mount: FabMount = FabMount(name, self, contact, normal, orient, depth)
 
-        # Create the *geometry_group* that contains all of the 2D geometry (line, arc, circle.):
-        parent_object: Any = context["parent_object"]
-        geometry_group: App.DocumentObjectGroup
-        geometry_group_name: str = f"{self.Name}_Geometry"
-        if isinstance(parent_object, App.Document):
-            geometry_group = parent_object.addObject(
-                "App::DocumentObjectGroup", geometry_group_name)
-        else:
-            geometry_group = parent_object.newObject("App::DocumentObjectGroup")
-            geometry_group.Label = geometry_group_name
+            if tracing:
+                print(f"{tracing}++++++++++++++++ produce()")
+            fab_mount.produce(context, tracing=next_tracing)
 
-        geometry_group.Visibility = False
-        context["geometry_group"] = geometry_group
-
-        # Create the *body*
-        body: Part.BodyBase
-        if isinstance(parent_object, App.Document):
-            body = parent_object.addObject("PartDesign::Body", self.Name)
-        else:
-            body = parent_object.newObject("PartDesign::Body")
-            body.Label = self.Name
-        context["solid_body"] = body
-
-        # Copy "view" fields from *body* to *gui_body* (if we are in graphical mode):
-        if App.GuiUp:  # pragma: no cover
-            gui_document = cast(Gui.Document, context["gui_document"])  # Optional[Gui.Document]
-            assert gui_document, "No GUI document"
-
-            gui_body: Any = gui_document.getObject(body.Name)
-            assert gui_body, "No GUI body"
-            assert hasattr(gui_body, "ShapeColor"), "Something is wrong"
-            if hasattr(gui_body, "Proxy"):
-                # This magical line seems to get a view provider object into the Proxy field:
-                setattr(gui_body, "Proxy", 0)  # Must not be `None`
-            if hasattr(gui_body, "DisplayMode"):
-                setattr(gui_body, "DisplayMode", "Shaded")
-            if hasattr(gui_body, "ShapeColor"):
-                rgb = FabColor.svg_to_rgb(self.Color)
-                setattr(gui_body, "ShapeColor", rgb)
-
-            # view_object: "ViewProviderDocumentObject"  = body.getLinkedObject(True).ViewObject
-            # assert isinstance(view_object, ViewProviderDocumentObject), type(view_object)
-            # model_file.ViewObject = view_object
-
-        # Process each *mount*:
-        for index, mount in enumerate(self.Mounts):
-            context["prefix"] = mount.Name
-            mount.produce(context.copy(), tracing=next_tracing)
+            if tracing:
+                context_keys = tuple(sorted(context.keys()))
+                print(f"{tracing}After mount() context: {context_keys}")
+                print(f"{tracing}<<<<<<<<<<<<<<<<")
 
         if tracing:
-            print(f"{tracing}<=FabSolid.produce('{self.Name}')")
+            print(f"{tracing}=>FabSolid({self.Name}).mount('{name}', ...)=>{fab_mount}")
+        return fab_mount
+
+    # FabSolid.produce():
+    def pre_produce(self) -> Tuple[str, ...]:
+        """Produce an Empty FabSolid prior to performing operations."""
+        tracing: str = self.Tracing
+        if tracing:
+            print(f"{tracing}=>FabSolid.pre_produce('{self.Name}')")
+
+        # Only do work in construct mode:
+        if self.Construct:
+            context: Dict[str, Any] = self.Context
+            context_keys: Tuple[str, ...]
+            if tracing:
+                context_keys = tuple(sorted(context.keys()))
+                print(f"{tracing}Before Context: {context_keys=}")
+
+            # Create the *geometry_group* that contains all of the 2D geometry (line, arc, circle.):
+            parent_object: Any = context["parent_object"]
+            geometry_group: App.DocumentObjectGroup
+            geometry_group_name: str = f"{self.Name}_Geometry"
+            if isinstance(parent_object, App.Document):
+                geometry_group = parent_object.addObject(
+                    "App::DocumentObjectGroup", geometry_group_name)
+            else:
+                geometry_group = parent_object.newObject("App::DocumentObjectGroup")
+                geometry_group.Label = geometry_group_name
+
+            geometry_group.Visibility = False
+            context["geometry_group"] = geometry_group
+
+            # Create the *body*
+            body: Part.BodyBase
+            if isinstance(parent_object, App.Document):
+                body = parent_object.addObject("PartDesign::Body", self.Name)
+            else:
+                body = parent_object.newObject("PartDesign::Body")
+                body.Label = self.Name
+            context["solid_body"] = body
+
+            # Copy "view" fields from *body* to *gui_body* (if we are in graphical mode):
+            if App.GuiUp:  # pragma: no cover
+                gui_document = cast(Gui.Document, context["gui_document"])  # Optional[Gui.Document]
+                assert gui_document, "No GUI document"
+
+                gui_body: Any = gui_document.getObject(body.Name)
+                assert gui_body, "No GUI body"
+                assert hasattr(gui_body, "ShapeColor"), "Something is wrong"
+                if hasattr(gui_body, "Proxy"):
+                    # This magical line seems to get a view provider object into the Proxy field:
+                    setattr(gui_body, "Proxy", 0)  # Must not be `None`
+                if hasattr(gui_body, "DisplayMode"):
+                    setattr(gui_body, "DisplayMode", "Shaded")
+                if hasattr(gui_body, "ShapeColor"):
+                    rgb = FabColor.svg_to_rgb(self.Color)
+                    setattr(gui_body, "ShapeColor", rgb)
+
+                # view_object: "ViewProviderDocumentObject"  = body.getLinkedObject(True).ViewObject
+                # assert isinstance(view_object, ViewProviderDocumentObject), type(view_object)
+                # model_file.ViewObject = view_object
+
+            if tracing:
+                context_keys = tuple(sorted(context.keys()))
+                print(f"{tracing}After Context: {context_keys=}")
+
+        if tracing:
+            print(f"{tracing}<=FabSolid.pre_produce('{self.Name}')")
         return ()
 
 
-# TestSolid:
 @dataclass
-class TestSolid(FabSolid):
-    """TestSolid: A test solid to exercise FabSolid code."""
+# FabProject:
+class FabProject(FabNode):
+    """FabProject: The Root mode a FabNode tree."""
 
-    _Zilch: int = 0  # Dataclasses without a field are a no-no:
+    _AllNodes: Tuple[FabNode, ...] = field(init=False, repr=False)
+    _Construct: bool = field(init=False, repr=False)
 
-    # TestSolid.__post_init__():
-    def __post_init__(self) -> None:
-        """Initialize TestSolid."""
-
-        # Create *top_part*:
-        z_offset: float = 0.0
-        pad_fillet_radius: float = 10.0
-        pad_polygon: FabPolygon = FabPolygon("Pad", (
-            (Vector(-40, -60, z_offset), pad_fillet_radius),  # SW
-            (Vector(40, -60, z_offset), pad_fillet_radius),  # SE
-            (Vector(40, 20, z_offset), pad_fillet_radius),  # NE
-            (Vector(-40, 20, z_offset), pad_fillet_radius),  # NW
-        ))
-        pocket_fillet_radius: float = 2.5
-        left_pocket: FabPolygon = FabPolygon("LeftPocket", (
-            (Vector(-30, -10, z_offset), pocket_fillet_radius),
-            (Vector(-10, -10, z_offset), pocket_fillet_radius),
-            (Vector(-10, 10, z_offset), pocket_fillet_radius),
-            (Vector(-30, 10, z_offset), pocket_fillet_radius),
-        ))
-        right_pocket: FabPolygon = FabPolygon("RightPocket", (
-            (Vector(10, -10, z_offset), pocket_fillet_radius),
-            (Vector(30, -10, z_offset), pocket_fillet_radius),
-            (Vector(30, 10, z_offset), pocket_fillet_radius),
-            (Vector(10, 10, z_offset), pocket_fillet_radius),
-        ))
-        _ = right_pocket
-        right_circle: FabCircle = FabCircle(Vector(20, 0, z_offset), 10)
-        center_circle: FabCircle = FabCircle(Vector(0, 0, z_offset), 10)
-
-        contact: Vector = Vector(0, 0, z_offset)
-        normal: Vector = Vector(0, 0, 1)
-        north: Vector = Vector(0, 1, 0)
-        top_operations: Tuple[FabOperation, ...] = (
-            FabPad("Pad", pad_polygon, 10.0),
-            FabPocket("LeftPocket", left_pocket, 10.0),
-            FabPocket("RightPocket", right_circle, 8.0),
-            FabHole("CenterHole", center_circle, 5.0),
-        )
-
-        top_north_mount: FabMount = FabMount("TopNorth", top_operations, contact, normal, north)
-        self.Material = "HDPE"
-
-        self.Color = "purple"
-        self._Children = (top_north_mount,)
-        super().__post_init__()
-
-
-@dataclass
-# FabRoot:
-class FabRoot(FabNode):
-    """FabRoot: The Root mode a FabNode tree."""
-
-    # FabRoot.__post_init__():
+    # FabProject.__post_init__():
     def __post_init__(self) -> None:
         """Process FabRoot."""
         super().__post_init__()
-        if self.Name != "Root":
-            raise ValueError("The Root node must be named root rather than '{self.Name}'")
+        self._AllNodes = ()
+        self._Construct = False
 
-    # FabRoot: configure_contraints():
-    def configure_constraints(self, all_nodes: Tuple[FabNode, ...], maximum_iterations: int = 20,
-                              verbosity: int = 4, tracing: str = "") -> None:
-        """Configure the FabNode tree until is constraints are stable.
+    # FabProject.get_construct():
+    def get_construct(self) -> bool:
+        """Return the Construct mode.
 
-        Arguments:
-        * *maximum_iterations* (int): The maximum number of iterations (default: 20).
-        * *verbosity* (int): Verbosity level:
-          0: No messages.
-          1: Iteration messages only.
-          N: Iteration messages with N-1 of the differences:
+        The default get_construct() method in FabNode always returns False.  This method
+        overrides that method and returns the value of the _Construct field.  This field
+        is set to False in phase 1 of the run() method.  It is set to True in phase 2 of
+        the run method.
 
+        Many other classes implement a Construct property as follows:
+
+             @property
+             def Construct(self) -> bool:
+                 return self.SOME_FABNODE._Root.Construct
+
+        which calls this method to get the construct status.  This is a pretty convoluted
+        way to get the information, but it works.
         """
-        next_tracing: str = tracing + " " if tracing else ""
-        if tracing:
-            print(f"{tracing}=>FabRoot.configure_constraints()")
+        return self._Construct
 
-        previous_values: Set[str] = set()
-        count: int
-        for count in range(maximum_iterations):
-            if tracing:
-                print(f"{tracing}{count=}")
-            node: FabNode
-            configurations: List[str] = []
-            for node in all_nodes:
-                if tracing:
-                    print(f"{tracing}Process '{node.Name}'")
-                node.configure(tracing=next_tracing)
-                node.configurations_append(configurations)  # , tracing=next_tracing)
-            current_values: Set[str] = set(configurations)
-
-            difference_values: Set[str] = previous_values ^ current_values
-            if tracing:
-                print(f"{tracing}Iteration[{count}]: {sorted(previous_values)=}")
-                print(f"{tracing}Iteration[{count}]:  {sorted(current_values)=}")
-                print(f"{tracing}Iteration[{count}]: {len(difference_values)} Differences.")
-                print("")
-
-            # Deal with *verbosity*:
-            if verbosity >= 1:
-                print(f"{tracing}Configure[{count}]: {len(difference_values)} differences:")
-            if verbosity >= 2:
-                sorted_difference_values: List[str] = sorted(tuple(difference_values))
-                index: int
-                difference: str
-                for index, difference in enumerate(sorted_difference_values[:verbosity]):
-                    print(f"  Difference[{index}]: {difference}")
-
-            if not difference_values:
-                break
-            previous_values = current_values
-
-        if tracing:
-            print(f"{tracing}<=FabRoot.configure_constraints()")
-
-    # FabRoot.produce():
-    def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
-        """Produce FabNode."""
-        next_tracing: str = tracing + " " if tracing else ""
-        if tracing:
-            print(f"{tracing}=>FabRoot.produce()")
-        errors: List[str] = []
-        child: "FabNode"
-        for child_node in self._Children:
-            errors.extend(child_node.produce(context.copy(), tracing=next_tracing))
-        if tracing:
-            print(f"{tracing}<=FabRoot.produce()")
-        return tuple(errors)
+    # FabProject.new():
+    @classmethod
+    def new(cls, name: str) -> "FabProject":
+        """Create a new root FabProject."""
+        # print(f"=>FabProject.new({name}).new()")
+        project = cls(name, cast(FabNode, None))  # Magic to create a root FabProject.
+        # print(f"<=Project.new({name})=>{project}")
+        return project
 
     # FabRoot.run():
-    def run(self, tracing: str = "") -> None:
-        """Configure and Produce everything."""
-        next_tracing: str = tracing + " " if tracing else ""
+    def run(self) -> None:
+        # Shared variables:
+        tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>FabRoot.run()")
+            print(f"{tracing}=>Project({self.Name}).run()")
+        error: str
+        errors: List[str]
+        index: int
+        name: str
+        node: FabNode
 
-        # Phase 1: Sweep through the FabNode tree:
-        dag_table: Dict[int, FabNode] = {}
-        self._setup(dag_table, self, self, " ")  # tracing=next_tracing)
+        # Phase 1: Iterate over tree in constraint mode:
+        if tracing:
+            print("")
+            print(f"{tracing}Project({self.Name}).run(): Phase 1: Constraints")
+        previous_constraints: Set[str] = set()
+        differences: List[int] = []
+        all_nodes: Tuple[FabNode, ...] = self._AllNodes
+        reversed_nodes: Tuple[FabNode, ...] = tuple(reversed(all_nodes))
+        iteration: int
+        for iteration in range(1000):
+            errors = []
+            current_constraints: Set[str] = set()
+            # Update all boxes in bottom-up order:
+            for node in reversed_nodes:
+                node.enclose(self._Children)
+            # Call *produce* in top-down order first.
+            for node in all_nodes:
+                errors.extend(node.produce())
+                attribute: Any
+                for name, attribute in node.__dict__.items():
+                    if name and name[0].isupper() and (
+                            isinstance(attribute, (int, float, str, bool, Vector))):
+                        constraint: str = f"{node.FullPath}:{name}:{attribute}"
+                        assert constraint not in current_constraints
+                        current_constraints.add(constraint)
+            difference_constraints: Tuple[str, ...] = (
+                tuple(sorted(current_constraints ^ previous_constraints)))
+            previous_constraints = current_constraints
 
-        # Phase 2: Configure constraints:
-        all_nodes: Tuple[FabNode, ...] = tuple(dag_table.values())
-        self.configure_constraints(all_nodes)
+            # Figure out if iteration can be stopped:
+            difference: int = len(difference_constraints)
+            print(f"{tracing}Iteration[{iteration}]: {difference} differences")
+            if difference == 0:
+                break
+            differences.append(difference)
+            if len(differences) >= 6 and max(differences[-6:-3]) == max(differences[-3:]):
+                print("Differences seem not to be changing:")
+                for index, error in enumerate(errors):
+                    print("  Error[{index}]: {error}")
+                for index, constraint in enumerate(difference_constraints):
+                    print("  Constraint[{index}]: {constraint")
+                break
 
-        # Phase 3: Perform the production steps:
-        errors: Tuple[str, ...] = self.produce({}, tracing=next_tracing)
+        # Phase 2: Run top-down in "construct" mode, where *post_produce*() also gets called:
+        self._Construct = True
+        if tracing:
+            print()
+            print(f"{tracing}Project({self.Name}).run(): Phase 2: Construct: {self._Construct=}")
+
+        errors = []
+        errors.extend(self._produce_walk())
         if errors:
-            print("\n".join(errors))
+            print("Construction Errors:")
+            # Mypy currently chokes on: `for index, error in enumerate(errors):`
+            # with `error: "int" not callable`.  Weird.
+            for index in range(len(errors)):
+                error = errors[index]
+                print(f"  Error[{index}]: {error}")
         if tracing:
-            print(f"{tracing}<=FabRoot.run()")
+            print(f"{tracing}<=Project({self.Name}).run()")
 
+# BoxSide:
+@dataclass
+class BoxSide(FabSolid):
+    """A Box side.
+
+    Inherited Constructor Attributes:
+    * *Name* (str): Box name.
+    * *Parent* (*FabNode*): The parent container.
+    * *Material* (str): The Material to use.
+    * *Color* (str): The color to use.
+
+    Additional Constructor Attributes:
+    * *Contact* (Vector): The center "top" of the side.
+    * *Normal* (Vector): The normal of the side (away from box center).
+    * *Orient* (Vector): The orientation vector.
+    * *HalfLength* (Vector): A vector of half the length in the length direction
+    * *HalfWidth* (Vector): A vector of half the width in the width direction.
+    * *Depth* float: Depth of side (opposite direction of *normal*.
+
+    """
+
+    Contact: Vector = Vector()
+    Normal: Vector = Vector(0, 0, 1)
+    Orient: Vector = Vector(0, 1, 0)
+    HalfLength: Vector = Vector(1, 0, 0)
+    HalfWidth: Vector = Vector(0, 1, 0)
+    Depth: float = 5.0
+
+    def __post_init__(self) -> None:
+        """Initialize Box Side."""
+        super().__post_init__()
+
+    def produce(self) -> Tuple[str, ...]:
+        """Produce BoxSide."""
+        if self.Construct:
+            name: str = self.Name
+            contact: Vector = self.Contact
+            half_length: Vector = self.HalfLength
+            half_width: Vector = self.HalfWidth
+            depth: float = self.Depth
+            mount: FabMount = self.mount(f"{name}Mount", contact, self.Normal, self.Orient, depth)
+            corners: Tuple[Vector, ...] = (
+                contact + half_length + half_width,
+                contact + half_length - half_width,
+                contact - half_length - half_width,
+                contact - half_length + half_width,
+            )
+            polygon: FabPolygon = FabPolygon(f"{name}Polygon", corners)
+            mount.pad(f"{name}Pad", polygon, depth)
+        return ()
 
 # Box:
 @dataclass
 class Box(FabAssembly):
-    """Fab a box.
+    """Fabricate  a box.
 
     Builds a box given a length, width, height, material, thickness and center point"
 
-    Inherieted Attributes:
+    Inherited Constructor Attributes:
     * *Name* (str): Box name.
-    * Children: (Tuple[FabSolid, ...])  # Filled in by Box.__post_init__()
+    * *Parent* (*FabNode*): The parent container.
 
-    Attributes
+    Additional Constructor Attributes:
     * *Length* (float): length in X direction in millimeters.x
     * *Width* (float): width in Y direction in millimeters.
     * *Height* (float): height in Z direction in millimeters.
     * *Thickness* (float): Material thickness in millimeters.
     * *Material* (str): Material to use.
     * *Center* (Vector): Center of Box.
+
+    Produced Attributes:
+    * *Top* (FabSolid): The box top solid.
+    * *Bottom* (FabSolid): The box bottom solid.
+    * *North* (FabSolid): The box north solid.
+    * *South* (FabSolid): The box south solid.
+    * *East* (FabSolid): The box east solid.
+    * *West* (FabSolid): The box west solid.
     * *Screws* (Tuple[FabJoin, ...]): The screw to hold the Box together.
 
     """
@@ -1239,249 +1312,90 @@ class Box(FabAssembly):
     Material: str = "HDPE"
     Center: Vector = Vector()
 
+    Top: BoxSide = field(init=False, repr=False)
+    Bottom: BoxSide = field(init=False, repr=False)
+    North: BoxSide = field(init=False, repr=False)
+    South: BoxSide = field(init=False, repr=False)
+    East: BoxSide = field(init=False, repr=False)
+    West: BoxSide = field(init=False, repr=False)
+
     # Box.__post_init__():
     def __post_init__(self) -> None:
-        """Consturct the the Box."""
+        """Construct the the Box."""
 
         super().__post_init__()
 
+        depth: float = self.Thickness
+        material: str = self.Material
+        x_axis: Vector = Vector(1, 0, 0)
+        y_axis: Vector = Vector(0, 1, 0)
+        z_axis: Vector = Vector(0, 0, 1)
+        self.Top = BoxSide("Top", self, Normal=z_axis, Orient=y_axis,
+                           Depth=depth, Material=material, Color="red")
+        self.Bottom = BoxSide("Bottom", self, Normal=-z_axis, Orient=y_axis,
+                              Depth=depth, Material=material, Color="green")
+        self.North = BoxSide("North", self, Normal=y_axis, Orient=-z_axis,
+                             Depth=depth, Material=material, Color="orange")
+        self.South = BoxSide("South", self, Normal=-y_axis, Orient=z_axis,
+                             Depth=depth, Material=material, Color="yellow")
+        self.East = BoxSide("East", self, Normal=x_axis, Orient=y_axis,
+                            Depth=depth, Material=material, Color="blue")
+        self.West = BoxSide("West", self, Normal=-x_axis, Orient=y_axis,
+                            Depth=depth, Material=material, Color="cyan")
+
+    # Box.produce():
+    def produce(self) -> Tuple[str, ...]:
+        """Produce the Box."""
+
         # Extract basic dimensions and associated constants:
+        # material: str = self.Material
         center: Vector = self.Center
         dx: float = self.Length
         dy: float = self.Width
         dz: float = self.Height
-        dw: float = self.Thickness
+        # dw: float = self.Thickness
         dx2: float = dx / 2.0
         dy2: float = dy / 2.0
         dz2: float = dz / 2.0
-        dw2: float = dw / 2.0
-        sd: float = 3.0 * dw  # Screw Depth
-        corner_radius: float = 3.0
+        # dw2: float = dw / 2.0
+        # sd: float = 3.0 * dw  # Screw Depth
+        # corner_radius: float = 3.0
 
-        # Create some *direction* Vector's:
-        east_axis: Vector = Vector(1, 0, 0)
-        north_axis: Vector = Vector(0, 1, 0)
-        top_axis: Vector = Vector(0, 0, 1)
-        west_axis: Vector = -east_axis
-        south_axis: Vector = -north_axis
-        bottom_axis: Vector = -top_axis
+        dxv: Vector = Vector(dx2, 0, 0)
+        dyv: Vector = Vector(0, dy2, 0)
+        dzv: Vector = Vector(0, 0, dz2)
 
-        fasten: FabFasten = FabFasten("M3x0.5-FH", "M3x0.5", ())
+        top: BoxSide = self.Top
+        top.Contact = center + dzv
+        top.HalfLength = dyv
+        top.HalfWidth = dxv
 
-        # There are 6 box Solid's -- top/bottom, north/south, and east/west.
-        # The Solid's are screwed together on along some, but all of the edges:
-        # Define the screws first:
+        bottom: BoxSide = self.Bottom
+        bottom.Contact = center - dzv
+        bottom.HalfLength = dyv
+        bottom.HalfWidth = dxv
 
-        # Top/North edge screws:
-        tbo: float = 3.0 * dw  # Top/Bottom Offset from side.
-        tnw_head: Vector = center + Vector(dx2 - tbo, dy2 - dw2, dz2)
-        tne_head: Vector = center + Vector(-dx2 + tbo, dy2 - dw2, dz2)
-        tn_screws: Tuple[FabJoin, ...] = (
-            FabJoin("TN-W", fasten, tnw_head, tnw_head - sd * top_axis),
-            FabJoin("TN-E", fasten, tne_head, tne_head - sd * top_axis),
-        )
+        north: BoxSide = self.North
+        north.Contact = center + dyv
+        north.HalfLength = dxv
+        north.HalfWidth = dxv
 
-        # Top/South edge screws:
-        tsw_head: Vector = center + Vector(dx2 - tbo, -dy2 + dw2, dz2)
-        tse_head: Vector = center + Vector(-dx2 + tbo, -dy2 + dw2, dz2)
-        ts_screws: Tuple[FabJoin, ...] = (
-            FabJoin("TN-W", fasten, tsw_head, tsw_head - sd * top_axis),
-            FabJoin("TN-E", fasten, tse_head, tse_head - sd * top_axis),
-        )
+        south: BoxSide = self.North
+        south.Contact = center - dyv
+        south.HalfLength = dxv
+        south.HalfWidth = dyv
 
-        # Bottom/North edge screws:
-        bnw_head: Vector = center + Vector(dx2 - tbo, -dy2 + dw2, -dz2)
-        bne_head: Vector = center + Vector(-dx2 + tbo, -dy2 + dw2, -dz2)
-        bn_screws: Tuple[FabJoin, ...] = (
-            FabJoin("TN-W", fasten, bnw_head, bnw_head - sd * bottom_axis),
-            FabJoin("TN-E", fasten, bne_head, bne_head - sd * bottom_axis),
-        )
+        east: BoxSide = self.North
+        east.Contact = center + dxv
+        east.HalfLength = dyv
+        east.HalfWidth = dzv
 
-        # Bottom/South edge screws:
-        bsw_head: Vector = center + Vector(dx2 - tbo, dy2 - dw2, -dz2)
-        bse_head: Vector = center + Vector(-dx2 + tbo, dy2 - dw2, -dz2)
-        bs_screws: Tuple[FabJoin, ...] = (
-            FabJoin("TN-W", fasten, bsw_head, bsw_head - sd * bottom_axis),
-            FabJoin("TN-E", fasten, bse_head, bse_head - sd * bottom_axis),
-        )
+        west: BoxSide = self.North
+        west.Contact = center - dxv
+        west.HalfLength = dyv
+        west.HalfWidth = dzv
 
-        # Do the *top_solid*:
-        Corner = Tuple[Vector, float]
-        top_corners: Tuple[Corner, ...] = (
-            (center + Vector(dx2, dy2, dz2), corner_radius),  # TNE
-            (center + Vector(-dx2, dy2, dz2), corner_radius),  # TNW
-            (center + Vector(-dx2, -dy2, dz2), corner_radius),  # TSW
-            (center + Vector(dx2, -dy2, dz2), corner_radius),  # TSE
-        )
-        top_polygon: FabPolygon = FabPolygon("Top", top_corners)
-        top_operations: Tuple[FabOperation, ...] = (
-            FabPad("Pad", top_polygon, dw),
-            FabClose("TScrews", tn_screws + ts_screws, dw),
-        )
-        top_mount: FabMount = FabMount(
-            "TopNorth", center + Vector(0, 0, dz2), top_axis, north_axis, dw)
-        top_mount._Children = top_operations
-        top_solid: FabSolid = FabSolid("Top", "hdpe", "red")
-        top_solid._Children = (top_mount,)
-
-        # Do the *bottom_solid*:
-        bottom_corners: Tuple[Corner, ...] = (
-            (center + Vector(dx2, dy2, -dz2), corner_radius),  # BNE
-            (center + Vector(-dx2, dy2, -dz2), corner_radius),  # BNW
-            (center + Vector(-dx2, -dy2, -dz2), corner_radius),  # BSW
-            (center + Vector(dx2, -dy2, -dz2), corner_radius),  # BSE
-        )
-        bottom_polygon: FabPolygon = FabPolygon("Bottom", bottom_corners)
-        bottom_operations: Tuple[FabOperation, ...] = (
-            FabPad("Pad", bottom_polygon, dw),
-            FabClose("BScrews", bn_screws + bs_screws, dw),
-        )
-        bottom_mount: FabMount = FabMount(
-            "BottomNorth", center + Vector(0, 0, -dz2), bottom_axis, north_axis, dw)
-        bottom_mount._Children = bottom_operations
-        bottom_solid: FabSolid = FabSolid("Bottom", "hdpe", "red")
-        bottom_solid._Children = (bottom_mount,)
-
-        # The North (and South) side has 4 additional screws -- two that attach to the
-        # East side and two that attach to the West side.  In addition, each North and
-        # South side requires two addtional mounts to drill the holes that attach to the
-        # top and bottom.  Define the screws first, then define the sides and mounts.
-
-        # North East edge screws:
-        nso: float = 3.0 * dw  # North/South Offset from Top/Bottom.
-        net_head: Vector = center + Vector(dx2 - dw2, dy2, dz2 - nso)
-        neb_head: Vector = center + Vector(dx2 - dw2, dy2, -dz2 + nso)
-        ne_screws: Tuple[FabJoin, ...] = (
-            FabJoin("NE-T", fasten, net_head, net_head - sd * north_axis),
-            FabJoin("NE-B", fasten, neb_head, neb_head - sd * north_axis),
-        )
-
-        # North West edge screws:
-        nwt_head: Vector = center + Vector(-dx2 + dw2, dy2, dz2 - nso)
-        nwb_head: Vector = center + Vector(-dx2 + dw2, dy2, -dz2 + nso)
-        nw_screws: Tuple[FabJoin, ...] = (
-            FabJoin("NW-T", fasten, nwt_head, nwt_head - sd * north_axis),
-            FabJoin("NW-B", fasten, nwb_head, nwb_head - sd * north_axis),
-        )
-
-        # South East edge screws:
-        set_head: Vector = center + Vector(dx2 - dw2, -dy2, dz2 - nso)
-        seb_head: Vector = center + Vector(dx2 - dw2, -dy2, -dz2 + nso)
-        se_screws: Tuple[FabJoin, ...] = (
-            FabJoin("SE-T", fasten, set_head, set_head - sd * south_axis),
-            FabJoin("TT-B", fasten, seb_head, seb_head - sd * south_axis),
-        )
-
-        # South West edge screws:
-        swt_head: Vector = center + Vector(-dx2 + dw2, -dy2, dz2 - nso)
-        swb_head: Vector = center + Vector(-dx2 + dw2, -dy2, -dz2 + nso)
-        sw_screws: Tuple[FabJoin, ...] = (
-            FabJoin("SW-W", fasten, swt_head, swt_head - sd * south_axis),
-            FabJoin("SW-E", fasten, swb_head, swb_head - sd * south_axis),
-        )
-
-        # Do the *north_mount* first:
-        north_corners: Tuple[Corner, ...] = (
-            (center + Vector(dx2, dy2, dz2 - dw), corner_radius),  # TNE
-            (center + Vector(-dx2, dy2, dz2 - dw), corner_radius),  # TNW
-            (center + Vector(-dx2, dy2, -dz2 + dw), corner_radius),  # BNW
-            (center + Vector(dx2, dy2, -dz2 + dw), corner_radius),  # BNE
-        )
-        north_polygon: FabPolygon = FabPolygon("North", north_corners)
-        north_operations: Tuple[FabOperation, ...] = (
-            FabPad("Pad", north_polygon, dw),
-            FabClose("NScrews", ne_screws + nw_screws, dw),
-        )
-        north_mount: FabMount = FabMount(
-            "NorthMount", center + Vector(0, dy2, 0),
-            north_axis, bottom_axis, dw)
-        north_mount._Children = north_operations
-
-        # Do the *north_top_mount* second:
-        north_top_operations: Tuple[FabOperation, ...] = (
-            FabThread("NScrews", tn_screws, dy),
-        )
-        north_top_mount: FabMount = FabMount("NorthTopMount", center + Vector(0, 0, dz2 - dw2),
-                                             top_axis, north_axis, dz - 2 * dw)
-        north_top_mount._Children = north_top_operations
-
-        # Do the *north_top_mount* second:
-        north_bottom_operations: Tuple[FabOperation, ...] = (
-            FabThread("NScrews", bn_screws, dy),
-        )
-        north_bottom_mount: FabMount = FabMount(
-            "NorthBottomMount", center + Vector(0, 0, -dx2 + dw2),
-            bottom_axis, north_axis, dz - 2 * dw)
-        north_bottom_mount._Children = north_bottom_operations
-
-        # Do the *north_solid*:
-        north_solid: FabSolid = FabSolid("North", "hdpe", "green")
-        north_solid._Children = (north_mount, north_top_mount, north_bottom_mount)
-
-        # Do the *south_solid*:
-        south_corners: Tuple[Corner, ...] = (
-            (center + Vector(dx2, -dy2, dz2 - dw), corner_radius),  # TSE
-            (center + Vector(-dx2, -dy2, dz2 - dw), corner_radius),  # TSW
-            (center + Vector(-dx2, -dy2, -dz2 + dw), corner_radius),  # BSW
-            (center + Vector(dx2, -dy2, -dz2 + dw), corner_radius),  # BSE
-        )
-
-        # Do the *south_mount*:
-        south_polygon: FabPolygon = FabPolygon("South", south_corners)
-        south_operations: Tuple[FabOperation, ...] = (
-            FabPad("Pad", south_polygon, dw),
-            FabClose("SScrews", se_screws + sw_screws, dw),
-        )
-        south_mount: FabMount = FabMount(
-            "SouthBottom", center + Vector(0, -dy2, 0),
-            south_axis, bottom_axis, dw)
-        south_mount._Children = south_operations
-
-        south_solid: FabSolid = FabSolid("South", "hdpe", "green")
-        south_solid._Children = (south_mount,)
-        if False:
-            # Do the *west_solid*:
-            west_corners: Tuple[Corner, ...] = (
-                (center + Vector(-dx2, dy2 - dw, dz2 - dw), corner_radius),  # TNW
-                (center + Vector(-dx2, -dy2 + dw, dz2 - dw), corner_radius),  # TSW
-                (center + Vector(-dx2, -dy2 + dw, -dz2 + dw), corner_radius),  # BSW
-                (center + Vector(-dx2, dy2 - dw, -dz2 + dw), corner_radius),  # BNW
-            )
-            west_polygon: FabPolygon = FabPolygon("West", west_corners)
-            west_operations: Tuple[FabOperation, ...] = (
-                FabPad("Pad", west_polygon, dw),
-            )
-            west_mount: FabMount = FabMount(
-                "WestNorth", center + Vector(-dx2, 0, 0), west_axis, north_axis)
-            west_mount._Children = west_operations
-            west_solid: FabSolid = FabSolid("West", "hdpe", "blue")
-            west_solid._Children = (west_mount,)
-            _ = west_solid
-
-            # Do the *east_solid*:
-            east_corners: Tuple[Corner, ...] = (
-                (center + Vector(dx2, dy2 - dw, dz2 - dw), corner_radius),  # TNE
-                (center + Vector(dx2, -dy2 + dw, dz2 - dw), corner_radius),  # TSE
-                (center + Vector(dx2, -dy2 + dw, -dz2 + dw), corner_radius),  # BSE
-                (center + Vector(dx2, dy2 - dw, -dz2 + dw), corner_radius),  # BNE
-            )
-            east_polygon: FabPolygon = FabPolygon("East", east_corners)
-            east_operations: Tuple[FabOperation, ...] = (
-                FabPad("Pad", east_polygon, dw),
-            )
-            east_mount: FabMount = FabMount(
-                "EastNorth", center + Vector(dx2, 0, 0), east_axis, north_axis)
-            east_mount._Children = east_operations
-            east_solid: FabSolid = FabSolid("East", "hdpe", "blue")
-            east_solid._Children = (east_mount,)
-            _ = east_solid
-
-        # Load up the FabSolid's:
-        self._Children = (
-            top_solid, bottom_solid,
-            north_solid, south_solid,
-            # east_solid, west_solid
-        )
+        return super().produce()
 
     # Box.configure():
     def configure(self, tracing: str = "") -> None:
@@ -1491,17 +1405,149 @@ class Box(FabAssembly):
         self.configurations_append(["Length", "Width", "Height", "Thickness", "Center"])
 
 
+# TestSolid:
+@dataclass
+class TestSolid(FabSolid):
+    """TestSolid: A test solid to exercise FabSolid code."""
+
+    # TestSolid.__post_init__():
+    def __post_init__(self) -> None:
+        """Initialize TestSolid."""
+        super().__post_init__()
+        tracing: str = self.Tracing
+        if tracing:
+            print(f"{tracing}<=>TestSolid({self.Name}).__post_init__()")
+
+    # TestSolid.produce()
+    def produce(self) -> Tuple[str, ...]:
+        tracing: str = self.Tracing
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>TestSolid({self.Name}).produce()")
+
+        errors: List[str] = []
+
+        # Create *top_mount*:
+        depth: float = 10.0
+        depth2: float = depth / 2.0
+        if self.Construct:
+            origin: Vector = Vector()
+            context: Dict[str, Any] = self._Context
+            assert isinstance(context, dict)
+            context_keys: Tuple[str, ...]
+            if tracing:
+                context_keys = tuple(sorted(context.keys()))
+                print(f"{tracing}Before mount context: {context_keys}")
+            top_mount: FabMount = self.mount(
+                "TN_Mount", origin, self.T, self.N, depth, tracing=tracing)
+            if tracing:
+                context_keys = tuple(sorted(context.keys()))
+                print(f"{tracing}After mount context: {context_keys}")
+
+            # Perform the first Pad:
+            z_offset: float = 0.0
+            pad_fillet_radius: float = 10.0
+            pad_polygon: FabPolygon = FabPolygon("Pad", (
+                (Vector(-40, -60, z_offset), pad_fillet_radius),  # SW
+                (Vector(40, -60, z_offset), pad_fillet_radius),  # SE
+                (Vector(40, 20, z_offset), pad_fillet_radius),  # NE
+                (Vector(-40, 20, z_offset), pad_fillet_radius),  # NW
+            ))
+            if tracing:
+                print(f"{tracing}]")
+                print(f"{tracing}>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+            top_mount.pad("TN_Pad", pad_polygon, depth, tracing=next_tracing)
+
+            # Perform a pocket:
+            pocket_fillet_radius: float = 2.5
+            left_polygon: FabPolygon = FabPolygon("LeftPocket", (
+                (Vector(-30, -10, z_offset), pocket_fillet_radius),  # SW
+                (Vector(-10, -10, z_offset), pocket_fillet_radius),  # SE
+                (Vector(-10, 10, z_offset), pocket_fillet_radius),  # NE
+                (Vector(-30, 10, z_offset), pocket_fillet_radius),  # NW
+            ))
+            top_mount.pocket("LeftPocket", left_polygon, depth)
+
+            right_pocket: FabPolygon = FabPolygon("RightPocket", (
+                (Vector(10, -10, z_offset), pocket_fillet_radius),  # SW
+                (Vector(30, -10, z_offset), pocket_fillet_radius),  # SE
+                (Vector(30, 10, z_offset), pocket_fillet_radius),  # NE
+                (Vector(10, 10, z_offset), pocket_fillet_radius),  # NW
+            ))
+            top_mount.pocket("RightPocket", right_pocket, depth2)
+
+            right_circle: FabCircle = FabCircle(Vector(20, 0, z_offset), 10)
+            top_mount.pocket("RightCircle", right_circle, depth)
+
+            center_circle: FabCircle = FabCircle(Vector(0, 0, z_offset), 10)
+            top_mount.pocket("CenterCircle", center_circle, depth2)
+
+        if tracing:
+            print(f"{tracing}<=TestSolid({self.Name}).produce()")
+        return tuple(errors)
+
+
+# TestFile:
+@dataclass
+class TestFile(FabFile):
+    """A Test file."""
+
+    Solid: FabSolid = field(init=False, repr=True)
+
+    # TestFile.__post_init__():
+    def __post_init__(self) -> None:
+        """Initialize TestFile."""
+        super().__post_init__()
+        tracing: str = self.Tracing
+        if tracing:
+            print(f"{tracing}=>TestFile({self.Name}.__post_init__()")
+        self.Solid = TestSolid("TestSolid", self, "HDPE", "red")
+        if tracing:
+            print(f"{tracing}<=TestFile({self.Name}.__post_init__()")
+
+
+# TestProject:
+@dataclass
+class TestProject(FabProject):
+    """A Test Project."""
+
+    File: FabFile = field(init=False, repr=True)
+
+    # TestProject.__post_init__():
+    def __post_init__(self) -> None:
+        """Initialize TestProject."""
+        super().__post_init__()
+        self.set_tracing(" ")
+        tracing: str = self.Tracing
+        if tracing:
+            print(f"{tracing}=>TestProject({self.Name}).__post_init__()")
+
+        self.File = TestFile("TestFile", self, Path("/tmp/TestFile.fcstd"))
+
+        if tracing:
+            print(f"{tracing}<=TestProject({self.Name}).__post_init__()")
+
+    # TestProject.new():
+    @classmethod
+    def new(cls, name: str) -> "TestProject":
+        test_project = cls(name, cast(FabNode, None))  # Magic to create a root FabProject.
+        return test_project
+
+
 def main() -> None:
     """Run main program."""
+    test_project: TestProject = TestProject.new("TestProject")
+    test_project.run()
+
     # Create the models:
     # test_solid: TestSolid = TestSolid("TestSolid")
-    box: Box = Box("Box", Center=Vector())  # 0, 100.0, 0.0))
-    solids: Tuple[Union[FabSolid, FabAssembly], ...] = (box, )  # , test_solid)
-    model_file: FabFile = FabFile("Test", Path("/tmp/test.fcstd"))
-    model_file._Children = solids
-    root: FabRoot = FabRoot("Root")
-    root._Children = (model_file,)
-    root.run(tracing="")
+    # box: Box = Box("Box", Center=Vector())  # 0, 100.0, 0.0))
+    # solids: Tuple[Union[FabSolid, FabAssembly], ...] = (box, )  # , test_solid)
+    # model_file: FabFile = FabFile("Test", Path("/tmp/test.fcstd"))
+    # model_file._Children = solids
+    # root: FabRoot = FabRoot("Root")
+    # root._Children = (model_file,)
+    # root.run(tracing="")
 
 
 # TODO: Move this to FabNode class and switch to using a *context*.

@@ -3,95 +3,116 @@
 <ul>
 <li>1 Class: <a href="#solid--box">Box</a>:
 <ul>
-<li>1.1 <a href="#solid----configure">configure()</a>: Compute a box.</li>
+<li>1.1 <a href="#solid----produce">produce()</a>: Produce the Box.</li>
+<li>1.2 <a href="#solid----configure">configure()</a>: Compute a box.</li>
 </ul>
 </li>
-<li>2 Class: <a href="#solid--fabassembly">FabAssembly</a>:</li>
-<li>3 Class: <a href="#solid--fabclose">FabClose</a>:
+<li>2 Class: <a href="#solid--boxside">BoxSide</a>:
 <ul>
-<li>3.1 <a href="#solid----get-kind">get_kind()</a>: Return a thread diameter kind.</li>
+<li>2.1 <a href="#solid----produce">produce()</a>: Produce BoxSide.</li>
 </ul>
 </li>
-<li>4 Class: <a href="#solid--fabdrill">FabDrill</a>:
+<li>3 Class: <a href="#solid--fabassembly">FabAssembly</a>:</li>
+<li>4 Class: <a href="#solid--fabclose">FabClose</a>:
 <ul>
-<li>4.1 <a href="#solid----get-name">get_name()</a>: Return FabDrill name.</li>
-<li>4.2 <a href="#solid----get-kind">get_kind()</a>: Return the sub-class drill kind.</li>
-<li>4.3 <a href="#solid----produce">produce()</a>: Produce the Hole.</li>
+<li>4.1 <a href="#solid----get-kind">get_kind()</a>: Return a thread diameter kind.</li>
 </ul>
 </li>
-<li>5 Class: <a href="#solid--fabfile">FabFile</a>:
+<li>5 Class: <a href="#solid--fabdrill">FabDrill</a>:
 <ul>
-<li>5.1 <a href="#solid----produce">produce()</a>: Produce all of the FabSolid's.</li>
+<li>5.1 <a href="#solid----get-name">get_name()</a>: Return FabDrill name.</li>
+<li>5.2 <a href="#solid----get-kind">get_kind()</a>: Return the sub-class drill kind.</li>
+<li>5.3 <a href="#solid----produce">produce()</a>: Produce the Hole.</li>
 </ul>
 </li>
-<li>6 Class: <a href="#solid--fabgroup">FabGroup</a>:
+<li>6 Class: <a href="#solid--fabfile">FabFile</a>:
 <ul>
-<li>6.1 <a href="#solid----produce">produce()</a>: Create the FreeCAD group object.</li>
+<li>6.1 <a href="#solid----produce">produce()</a>: Create FabFile document.</li>
+<li>6.2 <a href="#solid----post-produce">post_produce()</a>: Close the FabFile.</li>
 </ul>
 </li>
-<li>7 Class: <a href="#solid--fabhole">FabHole</a>:
+<li>7 Class: <a href="#solid--fabgroup">FabGroup</a>:
 <ul>
-<li>7.1 <a href="#solid----get-name">get_name()</a>: Return FabHole name.</li>
-<li>7.2 <a href="#solid----produce">produce()</a>: Produce the Hole.</li>
+<li>7.1 <a href="#solid----produce">produce()</a>: Create the FreeCAD group object.</li>
 </ul>
 </li>
-<li>8 Class: <a href="#solid--fabloose">FabLoose</a>:
+<li>8 Class: <a href="#solid--fabhole">FabHole</a>:
 <ul>
-<li>8.1 <a href="#solid----get-kind">get_kind()</a>: Return a thread diameter kind.</li>
+<li>8.1 <a href="#solid----get-name">get_name()</a>: Return FabHole name.</li>
+<li>8.2 <a href="#solid----produce">produce()</a>: Produce the Hole.</li>
 </ul>
 </li>
-<li>9 Class: <a href="#solid--fabmount">FabMount</a>:
+<li>9 Class: <a href="#solid--fabloose">FabLoose</a>:
 <ul>
-<li>9.1 <a href="#solid----produce">produce()</a>: Create the FreeCAD DatumPlane used for the drawing support.</li>
+<li>9.1 <a href="#solid----get-kind">get_kind()</a>: Return a thread diameter kind.</li>
 </ul>
 </li>
-<li>10 Class: <a href="#solid--faboperation">FabOperation</a>:
+<li>10 Class: <a href="#solid--fabmount">FabMount</a>:
 <ul>
-<li>10.1 <a href="#solid----get-name">get_name()</a>: Return FabOperation name.</li>
-<li>10.2 <a href="#solid----produce">produce()</a>: Return the operation sort key.</li>
-<li>10.3 <a href="#solid----produce-shape-binder">produce_shape_binder()</a>: Produce the shape binder needed for the pad, pocket, hole, ... operations.</li>
+<li>10.1 <a href="#solid----solid">Solid()</a>: Return the FabSolid.</li>
+<li>10.2 <a href="#solid----contact">Contact()</a>: Return the FabMount contact point.</li>
+<li>10.3 <a href="#solid----normal">Normal()</a>: Return the FabMount normal.</li>
+<li>10.4 <a href="#solid----orient">Orient()</a>: Return the FabMount Orientation.</li>
+<li>10.5 <a href="#solid----depth">Depth()</a>: Return the depth.</li>
+<li>10.6 <a href="#solid----construct">Construct()</a>: Return whether construction is turned on.</li>
+<li>10.7 <a href="#solid----produce">produce()</a>: Create the FreeCAD DatumPlane used for the drawing support.</li>
+<li>10.8 <a href="#solid----pad">pad()</a>: Perform a pad operation.</li>
+<li>10.9 <a href="#solid----pocket">pocket()</a>: Perform a pocket operation(s).</li>
+<li>10.10 <a href="#solid----drill">drill()</a>: Perform drill opertation(s)</li>
 </ul>
 </li>
-<li>11 Class: <a href="#solid--fabpad">FabPad</a>:
+<li>11 Class: <a href="#solid--faboperation">FabOperation</a>:
 <ul>
-<li>11.1 <a href="#solid----get-name">get_name()</a>: Return FabPad name.</li>
-<li>11.2 <a href="#solid----produce">produce()</a>: Produce the Pad.</li>
+<li>11.1 <a href="#solid----get-name">get_name()</a>: Return FabOperation name.</li>
+<li>11.2 <a href="#solid----produce">produce()</a>: Return the operation sort key.</li>
+<li>11.3 <a href="#solid----produce-shape-binder">produce_shape_binder()</a>: Produce the shape binder needed for the pad, pocket, hole, ... operations.</li>
 </ul>
 </li>
-<li>12 Class: <a href="#solid--fabpocket">FabPocket</a>:
+<li>12 Class: <a href="#solid--fabpad">FabPad</a>:
 <ul>
-<li>12.1 <a href="#solid----get-name">get_name()</a>: Return FabPocket name.</li>
-<li>12.2 <a href="#solid----produce">produce()</a>: Produce the Pad.</li>
+<li>12.1 <a href="#solid----produce">produce()</a>: Produce the Pad.</li>
 </ul>
 </li>
-<li>13 Class: <a href="#solid--fabroot">FabRoot</a>:
+<li>13 Class: <a href="#solid--fabpocket">FabPocket</a>:
 <ul>
-<li>13.1 <a href="#solid----configure-constraints">configure_constraints()</a>: Configure the FabNode tree until is constraints are stable.</li>
-<li>13.2 <a href="#solid----produce">produce()</a>: Produce FabNode.</li>
-<li>13.3 <a href="#solid----run">run()</a>: Configure and Produce everything.</li>
+<li>13.1 <a href="#solid----get-name">get_name()</a>: Return FabPocket name.</li>
+<li>13.2 <a href="#solid----produce">produce()</a>: Produce the Pad.</li>
 </ul>
 </li>
-<li>14 Class: <a href="#solid--fabsolid">FabSolid</a>:
+<li>14 Class: <a href="#solid--fabproject">FabProject</a>:
 <ul>
-<li>14.1 <a href="#solid----produce">produce()</a>: Produce the FabSolid.</li>
+<li>14.1 <a href="#solid----get-construct">get_construct()</a>: Return the Construct mode.</li>
+<li>14.2 <a href="#solid----run">run()</a>: NO DOC STRING!</li>
 </ul>
 </li>
-<li>15 Class: <a href="#solid--fabthread">FabThread</a>:
+<li>15 Class: <a href="#solid--fabsolid">FabSolid</a>:
 <ul>
-<li>15.1 <a href="#solid----get-kind">get_kind()</a>: Return a thread diameter kind.</li>
+<li>15.1 <a href="#solid----mount">mount()</a>: Return a new FabMount.</li>
+<li>15.2 <a href="#solid----pre-produce">pre_produce()</a>: Produce an Empty FabSolid prior to performing operations.</li>
 </ul>
 </li>
-<li>16 Class: <a href="#solid--testsolid">TestSolid</a>:</li>
+<li>16 Class: <a href="#solid--fabthread">FabThread</a>:
+<ul>
+<li>16.1 <a href="#solid----get-kind">get_kind()</a>: Return a thread diameter kind.</li>
+</ul>
+</li>
+<li>17 Class: <a href="#solid--testfile">TestFile</a>:</li>
+<li>18 Class: <a href="#solid--testproject">TestProject</a>:</li>
+<li>19 Class: <a href="#solid--testsolid">TestSolid</a>:
+<ul>
+<li>19.1 <a href="#solid----produce">produce()</a>: NO DOC STRING!</li>
+</ul>
+</li>
 </ul>
 <h2><a name="solid--box"></a>1 Class Box:</h2>
-<p>Fab a box.
+<p>Fabricate  a box.
 Builds a box given a length, width, height, material, thickness and center point&quot;</p>
-<p>Inherieted Attributes:</p>
+<p>Inherited Constructor Attributes:</p>
 <ul>
 <li><em>Name</em> (str): Box name.</li>
-<li>Children: (Tuple[FabSolid, ...])  # Filled in by Box.<strong>post_init</strong>()</li>
+<li><em>Parent</em> (<em>FabNode</em>): The parent container.</li>
 </ul>
-<p>Attributes</p>
+<p>Additional Constructor Attributes:</p>
 <ul>
 <li><em>Length</em> (float): length in X direction in millimeters.x</li>
 <li><em>Width</em> (float): width in Y direction in millimeters.</li>
@@ -99,19 +120,52 @@ Builds a box given a length, width, height, material, thickness and center point
 <li><em>Thickness</em> (float): Material thickness in millimeters.</li>
 <li><em>Material</em> (str): Material to use.</li>
 <li><em>Center</em> (Vector): Center of Box.</li>
+</ul>
+<p>Produced Attributes:</p>
+<ul>
+<li><em>Top</em> (FabSolid): The box top solid.</li>
+<li><em>Bottom</em> (FabSolid): The box bottom solid.</li>
+<li><em>North</em> (FabSolid): The box north solid.</li>
+<li><em>South</em> (FabSolid): The box south solid.</li>
+<li><em>East</em> (FabSolid): The box east solid.</li>
+<li><em>West</em> (FabSolid): The box west solid.</li>
 <li><em>Screws</em> (Tuple[FabJoin, ...]): The screw to hold the Box together.</li>
 </ul>
-<h3><a name="solid----configure"></a>1.1 <code>Box.</code>configure():</h3>
+<h3><a name="solid----produce"></a>1.1 <code>Box.</code>produce():</h3>
+<p>Box.produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<p>Produce the Box.</p>
+<h3><a name="solid----configure"></a>1.2 <code>Box.</code>configure():</h3>
 <p>Box.configure(self, tracing: str = '') -&gt; None:</p>
 <p>Compute a box.</p>
-<h2><a name="solid--fabassembly"></a>2 Class FabAssembly:</h2>
+<h2><a name="solid--boxside"></a>2 Class BoxSide:</h2>
+<p>A Box side.
+Inherited Constructor Attributes:</p>
+<ul>
+<li><em>Name</em> (str): Box name.</li>
+<li><em>Parent</em> (<em>FabNode</em>): The parent container.</li>
+<li><em>Material</em> (str): The Material to use.</li>
+<li><em>Color</em> (str): The color to use.</li>
+</ul>
+<p>Additional Constructor Attributes:</p>
+<ul>
+<li><em>Contact</em> (Vector): The center &quot;top&quot; of the side.</li>
+<li><em>Normal</em> (Vector): The normal of the side (away from box center).</li>
+<li><em>Orient</em> (Vector): The orientation vector.</li>
+<li><em>HalfLength</em> (Vector): A vector of half the length in the length direction</li>
+<li><em>HalfWidth</em> (Vector): A vector of half the width in the width direction.</li>
+<li><em>Depth</em> float: Depth of side (opposite direction of <em>normal</em>.</li>
+</ul>
+<h3><a name="solid----produce"></a>2.1 <code>BoxSide.</code>produce():</h3>
+<p>BoxSide.produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<p>Produce BoxSide.</p>
+<h2><a name="solid--fabassembly"></a>3 Class FabAssembly:</h2>
 <p>A group FabSolid's and sub-FabAssembly's.</p>
-<h2><a name="solid--fabclose"></a>3 Class FabClose:</h2>
+<h2><a name="solid--fabclose"></a>4 Class FabClose:</h2>
 <p>Drill a close a FabJoin's.</p>
-<h3><a name="solid----get-kind"></a>3.1 <code>FabClose.</code>get_kind():</h3>
+<h3><a name="solid----get-kind"></a>4.1 <code>FabClose.</code>get_kind():</h3>
 <p>FabClose.get_kind(self) -&gt; str:</p>
 <p>Return a thread diameter kind.</p>
-<h2><a name="solid--fabdrill"></a>4 Class FabDrill:</h2>
+<h2><a name="solid--fabdrill"></a>5 Class FabDrill:</h2>
 <p>A FreeCAD PartDesign Pocket operation.
 Attributes:</p>
 <ul>
@@ -119,16 +173,16 @@ Attributes:</p>
 <li><em>Joins</em> (FabCircle): The Circle to drill.</li>
 <li><em>Depth</em> (float): Exlplicit depth to use. (Default: -1 to have system try to figure it out.)</li>
 </ul>
-<h3><a name="solid----get-name"></a>4.1 <code>FabDrill.</code>get_name():</h3>
+<h3><a name="solid----get-name"></a>5.1 <code>FabDrill.</code>get_name():</h3>
 <p>FabDrill.get_name(self) -&gt; str:</p>
 <p>Return FabDrill name.</p>
-<h3><a name="solid----get-kind"></a>4.2 <code>FabDrill.</code>get_kind():</h3>
+<h3><a name="solid----get-kind"></a>5.2 <code>FabDrill.</code>get_kind():</h3>
 <p>FabDrill.get_kind(self) -&gt; str:</p>
 <p>Return the sub-class drill kind.</p>
-<h3><a name="solid----produce"></a>4.3 <code>FabDrill.</code>produce():</h3>
+<h3><a name="solid----produce"></a>5.3 <code>FabDrill.</code>produce():</h3>
 <p>FabDrill.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
 <p>Produce the Hole.</p>
-<h2><a name="solid--fabfile"></a>5 Class FabFile:</h2>
+<h2><a name="solid--fabfile"></a>6 Class FabFile:</h2>
 <p>Represents a FreeCAD document file.
 Inherited Attributes:</p>
 <ul>
@@ -142,10 +196,13 @@ The children nodes which are constrained to &quot;group-like&quot; or a FabSolid
 <li><em>FilePath</em> (Path):
 The Python pathlib.Path file name which must have a suffix of <code>.fcstd</code> or <code>.FCStd</code>.</li>
 </ul>
-<h3><a name="solid----produce"></a>5.1 <code>FabFile.</code>produce():</h3>
-<p>FabFile.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
-<p>Produce all of the FabSolid's.</p>
-<h2><a name="solid--fabgroup"></a>6 Class FabGroup:</h2>
+<h3><a name="solid----produce"></a>6.1 <code>FabFile.</code>produce():</h3>
+<p>FabFile.produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<p>Create FabFile document.</p>
+<h3><a name="solid----post-produce"></a>6.2 <code>FabFile.</code>post_produce():</h3>
+<p>FabFile.post_produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<p>Close the FabFile.</p>
+<h2><a name="solid--fabgroup"></a>7 Class FabGroup:</h2>
 <p>A named group of FabNode's.
 Inherited Attributes:</p>
 <ul>
@@ -153,10 +210,10 @@ Inherited Attributes:</p>
 <li><em>Parent</em> (FabNode)</li>
 <li><em>Children</em> (Tuple[FabNode, ...)</li>
 </ul>
-<h3><a name="solid----produce"></a>6.1 <code>FabGroup.</code>produce():</h3>
-<p>FabGroup.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
+<h3><a name="solid----produce"></a>7.1 <code>FabGroup.</code>produce():</h3>
+<p>FabGroup.produce(self) -&gt; typing.Tuple[str, ...]:</p>
 <p>Create the FreeCAD group object.</p>
-<h2><a name="solid--fabhole"></a>7 Class FabHole:</h2>
+<h2><a name="solid--fabhole"></a>8 Class FabHole:</h2>
 <p>A FreeCAD PartDesign Pocket operation.
 Attributes:</p>
 <ul>
@@ -164,18 +221,18 @@ Attributes:</p>
 <li><em>Circle</em> (FabCircle): The Circle to drill.</li>
 <li><em>Depth</em> (float): The depth</li>
 </ul>
-<h3><a name="solid----get-name"></a>7.1 <code>FabHole.</code>get_name():</h3>
+<h3><a name="solid----get-name"></a>8.1 <code>FabHole.</code>get_name():</h3>
 <p>FabHole.get_name(self) -&gt; str:</p>
 <p>Return FabHole name.</p>
-<h3><a name="solid----produce"></a>7.2 <code>FabHole.</code>produce():</h3>
+<h3><a name="solid----produce"></a>8.2 <code>FabHole.</code>produce():</h3>
 <p>FabHole.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
 <p>Produce the Hole.</p>
-<h2><a name="solid--fabloose"></a>8 Class FabLoose:</h2>
+<h2><a name="solid--fabloose"></a>9 Class FabLoose:</h2>
 <p>Drill Loose FabJoin's.</p>
-<h3><a name="solid----get-kind"></a>8.1 <code>FabLoose.</code>get_kind():</h3>
+<h3><a name="solid----get-kind"></a>9.1 <code>FabLoose.</code>get_kind():</h3>
 <p>FabLoose.get_kind(self) -&gt; str:</p>
 <p>Return a thread diameter kind.</p>
-<h2><a name="solid--fabmount"></a>9 Class FabMount:</h2>
+<h2><a name="solid--fabmount"></a>10 Class FabMount:</h2>
 <p>An operations plane that can be oriented for subsequent machine operations.
 This class basically corresponds to a FreeCad Datum Plane.  It is basically the surface
 to which the 2D FabGeometry's are mapped onto prior to performing each operation.
@@ -183,42 +240,56 @@ This class is immutable (i.e. frozen.)</p>
 <p>Attributes:</p>
 <ul>
 <li><em>Name</em>: (str): The name of the FabPlane.</li>
-<li><em>Operations</em> (Tuple[FabOperation, ...]): The operations to perform.</li>
+<li><em>Solid</em>: (FabSolid): The FabSolid to work on.</li>
 <li><em>Contact</em> (Vector): A point on the plane.</li>
 <li><em>Normal</em> (Vector): A normal to the plane</li>
 <li><em>Orient</em> (Vector):
-A vector in the plane that specifies the north direction when mounted in a machining vice.</li>
-<li><em>Depth</em> (Optional[float]):
-The maximum depth limit.  If not specified, an estimated  maximum depth limit is
-&quot;deduced&quot; the using the information from the initial extrude operation. (Default: None)</li>
+A vector that is projected onto the plane to specify orientation when mounted.</li>
+<li><em>Depth</em> (float): The maximum depth limit for all operations.</li>
 </ul>
-<h3><a name="solid----produce"></a>9.1 <code>FabMount.</code>produce():</h3>
+<h3><a name="solid----solid"></a>10.1 <code>FabMount.</code>Solid():</h3>
+<p>FabMount.Solid(self) -&gt; 'FabSolid':</p>
+<p>Return the FabSolid.</p>
+<h3><a name="solid----contact"></a>10.2 <code>FabMount.</code>Contact():</h3>
+<p>FabMount.Contact(self) -&gt; Base.Vector:</p>
+<p>Return the FabMount contact point.</p>
+<h3><a name="solid----normal"></a>10.3 <code>FabMount.</code>Normal():</h3>
+<p>FabMount.Normal(self) -&gt; Base.Vector:</p>
+<p>Return the FabMount normal.</p>
+<h3><a name="solid----orient"></a>10.4 <code>FabMount.</code>Orient():</h3>
+<p>FabMount.Orient(self) -&gt; Base.Vector:</p>
+<p>Return the FabMount Orientation.</p>
+<h3><a name="solid----depth"></a>10.5 <code>FabMount.</code>Depth():</h3>
+<p>FabMount.Depth(self) -&gt; float:</p>
+<p>Return the depth.</p>
+<h3><a name="solid----construct"></a>10.6 <code>FabMount.</code>Construct():</h3>
+<p>FabMount.Construct(self) -&gt; bool:</p>
+<p>Return whether construction is turned on.</p>
+<h3><a name="solid----produce"></a>10.7 <code>FabMount.</code>produce():</h3>
 <p>FabMount.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
-<p>Create the FreeCAD DatumPlane used for the drawing support.
-Arguments:</p>
-<ul>
-<li><em>body</em> (PartDesign.Body): The FreeCAD Part design Body to attach the datum plane to.</li>
-<li><em>name</em> (Optional[str]): The datum plane name.
-(Default: &quot;...DatumPlaneN&quot;, where N is incremented.)</li>
-<li>Returns:
-<ul>
-<li>(Part.Geometry) that is the datum_plane.</li>
-</ul>
-</li>
-</ul>
-<h2><a name="solid--faboperation"></a>10 Class FabOperation:</h2>
+<p>Create the FreeCAD DatumPlane used for the drawing support.</p>
+<h3><a name="solid----pad"></a>10.8 <code>FabMount.</code>pad():</h3>
+<p>FabMount.pad(self, name: str, shapes: typing.Union[Geometry.FabGeometry, typing.Tuple[Geometry.FabGeometry, ...]], depth: float, tracing: str = '') -&gt; None:</p>
+<p>Perform a pad operation.</p>
+<h3><a name="solid----pocket"></a>10.9 <code>FabMount.</code>pocket():</h3>
+<p>FabMount.pocket(self, name: str, shapes: typing.Union[Geometry.FabGeometry, typing.Tuple[Geometry.FabGeometry, ...]], depth: float, tracing: str = '') -&gt; None:</p>
+<p>Perform a pocket operation(s).</p>
+<h3><a name="solid----drill"></a>10.10 <code>FabMount.</code>drill():</h3>
+<p>FabMount.drill(self, name: str, joins: typing.Union[Join.FabJoin, typing.Tuple[Join.FabJoin, ...]], tracing: str = '') -&gt; None:</p>
+<p>Perform drill opertation(s)</p>
+<h2><a name="solid--faboperation"></a>11 Class FabOperation:</h2>
 <p>An base class for operations -- FabPad, FabPocket, FabHole, etc.
 All model operations are immutable (i.e. frozen.)</p>
-<h3><a name="solid----get-name"></a>10.1 <code>FabOperation.</code>get_name():</h3>
+<h3><a name="solid----get-name"></a>11.1 <code>FabOperation.</code>get_name():</h3>
 <p>FabOperation.get_name(self) -&gt; str:</p>
 <p>Return FabOperation name.</p>
-<h3><a name="solid----produce"></a>10.2 <code>FabOperation.</code>produce():</h3>
+<h3><a name="solid----produce"></a>11.2 <code>FabOperation.</code>produce():</h3>
 <p>FabOperation.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
 <p>Return the operation sort key.</p>
-<h3><a name="solid----produce-shape-binder"></a>10.3 <code>FabOperation.</code>produce_shape_binder():</h3>
+<h3><a name="solid----produce-shape-binder"></a>11.3 <code>FabOperation.</code>produce_shape_binder():</h3>
 <p>FabOperation.produce_shape_binder(self, context: typing.Dict[str, typing.Any], part_geometries: typing.Tuple[Part.Part2DObject, ...], prefix: str, tracing: str = '') -&gt; Part.Feature:</p>
 <p>Produce the shape binder needed for the pad, pocket, hole, ... operations.</p>
-<h2><a name="solid--fabpad"></a>11 Class FabPad:</h2>
+<h2><a name="solid--fabpad"></a>12 Class FabPad:</h2>
 <p>A FreeCAD PartDesign Pad operation.
 Attributes:</p>
 <ul>
@@ -226,13 +297,10 @@ Attributes:</p>
 <li><em>Geometry</em> (FabGeometry): The ModlePolygon or FabCircle to pad with.</li>
 <li><em>Depth</em> (float): The depth to pad to in millimeters.</li>
 </ul>
-<h3><a name="solid----get-name"></a>11.1 <code>FabPad.</code>get_name():</h3>
-<p>FabPad.get_name(self) -&gt; str:</p>
-<p>Return FabPad name.</p>
-<h3><a name="solid----produce"></a>11.2 <code>FabPad.</code>produce():</h3>
+<h3><a name="solid----produce"></a>12.1 <code>FabPad.</code>produce():</h3>
 <p>FabPad.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
 <p>Produce the Pad.</p>
-<h2><a name="solid--fabpocket"></a>12 Class FabPocket:</h2>
+<h2><a name="solid--fabpocket"></a>13 Class FabPocket:</h2>
 <p>A FreeCAD PartDesign Pocket operation.
 Attributes:</p>
 <ul>
@@ -240,37 +308,36 @@ Attributes:</p>
 <li><em>Geometry</em> (FabGeometry): The Polygon or Circle to pocket.</li>
 <li><em>Depth</em> (float): The pocket depth in millimeters.</li>
 </ul>
-<h3><a name="solid----get-name"></a>12.1 <code>FabPocket.</code>get_name():</h3>
+<h3><a name="solid----get-name"></a>13.1 <code>FabPocket.</code>get_name():</h3>
 <p>FabPocket.get_name(self) -&gt; str:</p>
 <p>Return FabPocket name.</p>
-<h3><a name="solid----produce"></a>12.2 <code>FabPocket.</code>produce():</h3>
+<h3><a name="solid----produce"></a>13.2 <code>FabPocket.</code>produce():</h3>
 <p>FabPocket.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
 <p>Produce the Pad.</p>
-<h2><a name="solid--fabroot"></a>13 Class FabRoot:</h2>
+<h2><a name="solid--fabproject"></a>14 Class FabProject:</h2>
 <p>The Root mode a FabNode tree.</p>
-<h3><a name="solid----configure-constraints"></a>13.1 <code>FabRoot.</code>configure_constraints():</h3>
-<p>FabRoot.configure_constraints(self, all_nodes: typing.Tuple[Tree.FabNode, ...], maximum_iterations: int = 20, verbosity: int = 4, tracing: str = '') -&gt; None:</p>
-<p>Configure the FabNode tree until is constraints are stable.
-Arguments:</p>
-<ul>
-<li><em>maximum_iterations</em> (int): The maximum number of iterations (default: 20).</li>
-<li><em>verbosity</em> (int): Verbosity level:
-0: No messages.
-1: Iteration messages only.
-N: Iteration messages with N-1 of the differences:</li>
-</ul>
-<h3><a name="solid----produce"></a>13.2 <code>FabRoot.</code>produce():</h3>
-<p>FabRoot.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
-<p>Produce FabNode.</p>
-<h3><a name="solid----run"></a>13.3 <code>FabRoot.</code>run():</h3>
-<p>FabRoot.run(self, tracing: str = '') -&gt; None:</p>
-<p>Configure and Produce everything.</p>
-<h2><a name="solid--fabsolid"></a>14 Class FabSolid:</h2>
+<h3><a name="solid----get-construct"></a>14.1 <code>FabProject.</code>get_construct():</h3>
+<p>FabProject.get_construct(self) -&gt; bool:</p>
+<p>Return the Construct mode.
+The default get_construct() method in FabNode always returns False.  This method
+overrides that method and returns the value of the _Construct field.  This field
+is set to False in phase 1 of the run() method.  It is set to True in phase 2 of
+the run method.</p>
+<p>Many other classes implement a Construct property as follows:</p>
+<pre><code> @property
+ def Construct(self) -&gt; bool:
+     return self.SOME_FABNODE._Root.Construct
+</code></pre>
+<p>which calls this method to get the construct status.  This is a pretty convoluted
+way to get the information, but it works.</p>
+<h3><a name="solid----run"></a>14.2 <code>FabProject.</code>run():</h3>
+<p>FabProject.run(self) -&gt; None:</p>
+<p>NO DOC STRING!</p>
+<h2><a name="solid--fabsolid"></a>15 Class FabSolid:</h2>
 <p>Fab: Represents a single part constructed using FreeCAD Part Design paradigm.
 Inherited Attributes:</p>
 <ul>
 <li><em>Name</em> (str): The model name.</li>
-<li><em>Children</em> (Tuple[FabMount, ...]): The various model mounts to use to construct the part.</li>
 <li><em>Parent</em> (FabNode): The Parent FabNode.</li>
 </ul>
 <p>Attributes:</p>
@@ -278,13 +345,23 @@ Inherited Attributes:</p>
 <li><em>Material</em> (str): The material to use.</li>
 <li><em>Color</em> (str): The color to use.</li>
 </ul>
-<h3><a name="solid----produce"></a>14.1 <code>FabSolid.</code>produce():</h3>
-<p>FabSolid.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
-<p>Produce the FabSolid.</p>
-<h2><a name="solid--fabthread"></a>15 Class FabThread:</h2>
+<h3><a name="solid----mount"></a>15.1 <code>FabSolid.</code>mount():</h3>
+<p>FabSolid.mount(self, name: str, contact: Base.Vector, normal: Base.Vector, orient: Base.Vector, depth: float, tracing: str = '') -&gt; Solid.FabMount:</p>
+<p>Return a new FabMount.</p>
+<h3><a name="solid----pre-produce"></a>15.2 <code>FabSolid.</code>pre_produce():</h3>
+<p>FabSolid.pre_produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<p>Produce an Empty FabSolid prior to performing operations.</p>
+<h2><a name="solid--fabthread"></a>16 Class FabThread:</h2>
 <p>Drill and thread FabJoin's.</p>
-<h3><a name="solid----get-kind"></a>15.1 <code>FabThread.</code>get_kind():</h3>
+<h3><a name="solid----get-kind"></a>16.1 <code>FabThread.</code>get_kind():</h3>
 <p>FabThread.get_kind(self) -&gt; str:</p>
 <p>Return a thread diameter kind.</p>
-<h2><a name="solid--testsolid"></a>16 Class TestSolid:</h2>
+<h2><a name="solid--testfile"></a>17 Class TestFile:</h2>
+<p>A Test file.</p>
+<h2><a name="solid--testproject"></a>18 Class TestProject:</h2>
+<p>A Test Project.</p>
+<h2><a name="solid--testsolid"></a>19 Class TestSolid:</h2>
 <p>A test solid to exercise FabSolid code.</p>
+<h3><a name="solid----produce"></a>19.1 <code>TestSolid.</code>produce():</h3>
+<p>TestSolid.produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<p>NO DOC STRING!</p>

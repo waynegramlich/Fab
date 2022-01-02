@@ -70,10 +70,13 @@ the FreeCAD solids/assemblies and the associated output files.</li>
 </li>
 <li>2 Class: <a href="#tree--fabnode">FabNode</a>:
 <ul>
-<li>2.1 <a href="#tree----check">check()</a>: Check FabNode for errors.</li>
-<li>2.2 <a href="#tree----configure">configure()</a>: Configure FabNode.</li>
-<li>2.3 <a href="#tree----configurations-append">configurations_append()</a>: Append specified attributes to configurations list.</li>
-<li>2.4 <a href="#tree----produce">produce()</a>: Produce FabNode.</li>
+<li>2.1 <a href="#tree----get-construct">get_construct()</a>: Return construct flag.</li>
+<li>2.2 <a href="#tree----pre-produce">pre_produce()</a>: Empty FabNode pre_produce method to be over-ridden as needed.</li>
+<li>2.3 <a href="#tree----produce">produce()</a>: Empty FabNode produce method to be over-ridden.</li>
+<li>2.4 <a href="#tree----post-produce">post_produce()</a>: Empty FabNode post_produce method to be over-ridden as needed.</li>
+<li>2.5 <a href="#tree----set-tracing">set_tracing()</a>: Set the FabNode indentation tracing level.</li>
+<li>2.6 <a href="#tree----configure">configure()</a>: Configure FabNode.</li>
+<li>2.7 <a href="#tree----configurations-append">configurations_append()</a>: Append specified attributes to configurations list.</li>
 </ul>
 </li>
 </ul>
@@ -183,21 +186,42 @@ X/Y/Z axes.  In particular, box volume is <em>not</em> conserved.</p>
 Attributes:</p>
 <ul>
 <li><em>Name</em> (str): The FabNode name.</li>
-<li><em>Parent</em> (FabNode): The FabNode parent.  (Filled in)</li>
-<li><em>FullPath</em> (str):  The FabNode full path.  (Filled in)</li>
-<li>*AttributeNames ([Tuple[str, ...]):
-Attribute names to track during configuration.  (Default: () ).
-This field is set in the user's <em>configure</em>() method.</li>
+<li><em>Up</em> (FabNode): The FabNode parent.</li>
+<li><em>FullPath</em> (str):  The FabNode full path from the root.  (Filled in)</li>
+<li><em>Context</em> (Dict[str, Any]): A context dictionary used during production.</li>
+<li><em>Tracing</em> (str):
+A non-empty indentation string when tracing is enabled.
+This field is recursively set when <em>set_tracing</em>() is explicitly set.</li>
 </ul>
-<h3><a name="tree----check"></a>2.1 <code>FabNode.</code>check():</h3>
-<p>FabNode.check(self) -&gt; typing.Tuple[str, ...]:</p>
-<p>Check FabNode for errors.</p>
-<h3><a name="tree----configure"></a>2.2 <code>FabNode.</code>configure():</h3>
+<h3><a name="tree----get-construct"></a>2.1 <code>FabNode.</code>get_construct():</h3>
+<p>FabNode.get_construct(self) -&gt; bool:</p>
+<p>Return construct flag.
+This method is overridden in FabProject only and should be call the only one called.
+If this method is actually called, something is seriously wrong.</p>
+<h3><a name="tree----pre-produce"></a>2.2 <code>FabNode.</code>pre_produce():</h3>
+<p>FabNode.pre_produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<p>Empty FabNode pre_produce method to be over-ridden as needed.</p>
+<h3><a name="tree----produce"></a>2.3 <code>FabNode.</code>produce():</h3>
+<p>FabNode.produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<p>Empty FabNode produce method to be over-ridden.</p>
+<h3><a name="tree----post-produce"></a>2.4 <code>FabNode.</code>post_produce():</h3>
+<p>FabNode.post_produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<p>Empty FabNode post_produce method to be over-ridden as needed.</p>
+<h3><a name="tree----set-tracing"></a>2.5 <code>FabNode.</code>set_tracing():</h3>
+<p>FabNode.set_tracing(self, tracing: str):</p>
+<p>Set the FabNode indentation tracing level.
+This typically done, by adding this call immediately after calling super().<strong>post_init</strong>().</p>
+<pre><code> @dataclass
+ class MySubClass(Node):   # Or some class descended from Node*.
+    '''MySubClass doc string.'''
+
+    super().__post_init__()
+    self.set_tracing(&quot; &quot;)  # Set the tracing here.
+    # All children nodes will that are added, will have tracing set as well.
+</code></pre>
+<h3><a name="tree----configure"></a>2.6 <code>FabNode.</code>configure():</h3>
 <p>FabNode.configure(self, tracing: str = '') -&gt; None:</p>
 <p>Configure FabNode.</p>
-<h3><a name="tree----configurations-append"></a>2.3 <code>FabNode.</code>configurations_append():</h3>
+<h3><a name="tree----configurations-append"></a>2.7 <code>FabNode.</code>configurations_append():</h3>
 <p>FabNode.configurations_append(self, configurations: typing.List[str], tracing: str = '') -&gt; None:</p>
 <p>Append specified attributes to configurations list.</p>
-<h3><a name="tree----produce"></a>2.4 <code>FabNode.</code>produce():</h3>
-<p>FabNode.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
-<p>Produce FabNode.</p>

@@ -583,22 +583,24 @@ class FabNode(FabBox):
 
     Attributes:
     * *Name* (str): The FabNode name.
-    * *Parent* (FabNode): The FabNode parent.  (Filled in)
-    * *FullPath* (str):  The FabNode full path.  (Filled in)
-    * *AttributeNames ([Tuple[str, ...]):
-       Attribute names to track during configuration.  (Default: () ).
-       This field is set in the user's *configure*() method.
+    * *Up* (FabNode): The FabNode parent.
+    * *FullPath* (str):  The FabNode full path from the root.  (Filled in)
+    * *Context* (Dict[str, Any]): A context dictionary used during production.
+    * *Tracing* (str):
+      A non-empty indentation string when tracing is enabled.
+      This field is recursively set when *set_tracing*() is explicitly set.
 
     """
 
     _Name: str
-    _Parent: "FabNode" = field(init=False, repr=False)
-    _Children: Tuple["FabNode", ...] = field(init=False, repr=False)
-    _ChildrenNames: Set[str] = field(init=False, repr=False)
-    _Root: "FabNode" = field(init=False, repr=False)
+    _Parent: "FabNode" = field(repr=False)  # Property is named Up, not Parent.
     _FullPath: str = field(init=False, repr=False)
     _Context: Dict[str, Any] = field(init=False, repr=False)
     _Tracing: str = field(init=False, repr=False)
+    # The next fields are private and are not user accessible via property accessors:
+    _Children: Tuple["FabNode", ...] = field(init=False, repr=False)
+    _ChildrenNames: Set[str] = field(init=False, repr=False)
+    _Root: "FabNode" = field(init=False, repr=False)
 
     # FabNode.__post_init__():
     def __post_init__(self) -> None:
@@ -606,41 +608,184 @@ class FabNode(FabBox):
         # print(f"=>FabNode.__post_init__(): {self.Name=}")
         super().__post_init__()
         if not FabNode._is_valid_name(self.Name):
-            raise ValueError(
-                f"FabNode name '{self.Name}' is not alphanumeric/underscore "
-                "that starts with a letter")
+            raise RuntimeError(
+                f"FabNode.__post_init__({self.Name}) is not "
+                "alphanumeric/underscore that starts with a letter")
 
         # Initialize the remaining fields to bogus values that get updated by the _setup() method.
         self._Children = ()
+        self._ChildrenNames = set()
         self._FullPath = "??"
-        self.Parent = self
-        # print(f"<=FabNode.__post_init__()")
+        self._Context = {}
 
+        parent: "FabNode" = self._Parent
+        name: str = self._Name
+        # assert child_name.is_valid()
+        self._Tracing = ""
+        if parent:
+            parent_full_path = parent._FullPath
+            # Since the root node has no name, we need avoid produce a name like (".XXX"):
+            self._FullPath = f"{parent_full_path}).{name}" if parent_full_path else name
+            self._Parent = parent
+            self._Root = self._Parent._Root
+            # assert isinstance(self._Root, Project)  # Enable this check later.
+
+            # Disallow duplicate children names:
+            children_names: Set[str] = parent._ChildrenNames
+            assert name not in children_names
+            children_names.add(name)
+            parent._Children += (self,)
+
+            # Keep a list if *all_node* in the same order that all FabNode's are created.
+            root: "FabNode" = self._Root
+            assert hasattr(root, "_AllNodes")  # Only a valid Root has this attribute:
+            all_nodes: Tuple["FabNode"] = getattr(root, "_AllNodes")
+            setattr(root, "_AllNodes", all_nodes + (self,))
+
+            # Add another level in tracing indentation if tracing is enabled:
+            if parent._Tracing:
+                self._Tracing = parent._Tracing + " "
+        else:
+            # This is the top level project node and it is very special.
+            # This is done by providing `cast(Node, None)` as the Parent in Project.new() method.
+            self._FullPath = ""
+            self._Parent = self
+            self._Root = self
+
+        tracing: str = self.Tracing
+        if tracing:
+            print(f"{tracing}<=>FabNode({self.Name}).__post_init__()")
+
+    # FabNode.Name():
     @property
     def Name(self) -> str:
+        """Return the FabNode name."""
         return self._Name
 
+    # FabNode.FullPath():
     @property
     def FullPath(self) -> str:
+        """Return the FabNode full path."""
         return self._FullPath
 
     @property
     def Up(self) -> "FabNode":
+        """Return the FabNode parent."""
         return self._Parent
 
+    # FabNode.Tracing():
     @property
     def Tracing(self) -> str:
+        """Return the FabNode tracing indentation string."""
         return self._Tracing
 
-    # FabNode.check():
-    def check(self) -> Tuple[str, ...]:
-        """Check FabNode for errors."""
+    # FabNode.Context():
+    @property
+    def Context(self) -> Dict[str, Any]:
+        """Return the Context dictionary."""
+        return self._Context
+
+    # FabNode.Construct():
+    @property
+    def Construct(self) -> bool:
+        """Return the FabNode construct mode."""
+        return self._Root.get_construct()
+
+    # FabNode.Construct():
+    def get_construct(self) -> bool:
+        """Return construct flag.
+
+        This method is overridden in FabProject only and should be call the only one called.
+        If this method is actually called, something is seriously wrong.
+        """
+        assert False
+        return False  # Make linters happy.
+
+    # FabNode.pre_produce():
+    def pre_produce(self) -> Tuple[str, ...]:
+        """Empty FabNode pre_produce method to be over-ridden as needed."""
+        tracing: str = self.Tracing
+        if tracing:
+            print(f"{tracing}=>FabNode({self.Name}).pre_produce()=>()")
         return ()
+
+    # FabNode.produce():
+    def produce(self) -> Tuple[str, ...]:
+        """Empty FabNode produce method to be over-ridden."""
+        tracing: str = self.Tracing
+        if tracing:
+            print(f"{tracing}<=>FabNode({self.Name}).produce()=>()")
+        return ()
+
+    # FabNode.post_produce():
+    def post_produce(self) -> Tuple[str, ...]:
+        """Empty FabNode post_produce method to be over-ridden as needed."""
+        tracing: str = self.Tracing
+        if tracing:
+            print(f"{tracing}=>FabNode({self.Name}).post_produce()=>()")
+        return ()
+
+    # FabNode.set_tracing():
+    def set_tracing(self, tracing: str):
+        """Set the FabNode indentation tracing level.
+
+        This typically done, by adding this call immediately after calling super().__post_init__().
+
+             @dataclass
+             class MySubClass(Node):   # Or some class descended from Node*.
+                '''MySubClass doc string.'''
+
+                super().__post_init__()
+                self.set_tracing(" ")  # Set the tracing here.
+                # All children nodes will that are added, will have tracing set as well.
+
+        """
+        self._Tracing = tracing
+        print(f"{tracing}<=>FabNode({self.Name}).set_tracing('{tracing}')")
+
+    # FabNode._produce_walk()
+    def _produce_walk(self) -> Tuple[str, ...]:
+        """Recursively walk FabNode Tree performing produce/post_produce operations."""
+        tracing: str = self.Tracing
+        if tracing:
+            print(f"{tracing}=>FabNode({self.Name})_produce_walk()")
+
+        # Accumulate all *errors* and make sure each lower level gets a Context copy:
+        if self._Parent is self:
+            self._Context = {}
+        context: Dict[str, Any] = self._Context
+        errors: List[str] = []
+
+        # Step 1: Call pre_produce() which is allowed to access and modify its *context*.
+        # In general, end-users are not expect to override pre_produce().
+        errors.extend(self.pre_produce())
+
+        # Step 3: Call produce() which is allowed to access and modify its *context* by accessing
+        # the `self.Context` property.  In general, end-user *ARE* expected to override produce*().
+        errors.extend(self.produce())
+
+        # Step 2: Visit each *child* giving them a copy of the *context* which may have
+        # been modified in step 1.
+        child: FabNode
+        for child in self._Children:
+            child._Context = context.copy()
+            errors.extend(child._produce_walk())
+
+        # Setp 3: Now that eahc *child* has been visited.  Call post_produce() to do any
+        # clean up steps (e.g. close files, recomptes, etc.)  Since each *child* got its
+        # own copy of the *context*, this *context* is the same as it was prior to step 2.
+        # In general, end-users are not expect to override post_produce().
+        self.post_produce()
+
+        if tracing:
+            print(f"{tracing}<=FabNode({self.Name})._produce_walk()=>|{len(errors)}|")
+        return tuple(errors)
 
     # FabNode.configure():
     def configure(self, tracing: str = "") -> None:
         """Configure FabNode."""
         pass
+        assert False
 
     # FabNode.configurations_append():
     def configurations_append(self, configurations: List[str], tracing: str = "") -> None:
@@ -662,11 +807,6 @@ class FabNode(FabBox):
         if tracing:
             print(f"{tracing}<=FabNode.configurations_append('{self.Name}', *)=>"
                   f"|{len(configurations)}|")
-
-    # FabNode.produce():
-    def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
-        """Produce FabNode."""
-        return ()
 
     @staticmethod
     # FabNode._is_valid_name():
@@ -778,7 +918,7 @@ class FabNode(FabBox):
                 print(f"FabNode.__get_item__(): {path[index:]=} {focus=}")
             if dispatch == "^":
                 # Move *focus* up:
-                focus = focus.Parent
+                focus = focus._Parent
                 index += 1
             elif dispatch == ".":
                 index += 1
