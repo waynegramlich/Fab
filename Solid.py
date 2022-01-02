@@ -964,10 +964,30 @@ class FabMount(object):
     # FabMount.pocket():
     def pocket(self, name: str, shapes: Union[FabGeometry, Tuple[FabGeometry, ...]],
                depth: float, tracing: str = "") -> None:
-        """Perform a pocket operation(s)."""
+        """Perform a pocket operation."""
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabMount({self.Name}).pocket('{name}', *)")
+
+        errors: List[str] = []
         if self.Construct:
-            # assert False
-            pass
+            context: Dict[str, Any] = self._Context.copy()
+            context_keys: Tuple[str, ...]
+            if tracing:
+                context_keys = tuple(sorted(context.keys()))
+                print(f"{tracing}Before Pad Context: {context_keys}")
+            assert isinstance(shapes, FabGeometry)
+            assert depth > 0.0
+            context["prefix"] = name
+            full_name: str = f"{self.Name}_{name}"
+            fab_pocket: FabPocket = FabPocket(full_name, shapes, depth)
+            errors.extend(fab_pocket.produce(context.copy(), next_tracing))
+            if tracing:
+                context_keys = tuple(sorted(context.keys()))
+                print(f"{tracing}After Pad Context: {context_keys}")
+
+        if tracing:
+            print(f"{tracing}<=FabMount({self.Name}).pocket('{name}', *)=>|len(errors)|")
 
     # FabMount.drill():
     def drill(self, name: str, joins: Union[FabJoin, Tuple[FabJoin, ...]],
