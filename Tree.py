@@ -743,6 +743,17 @@ class FabNode(FabBox):
         self._Tracing = tracing
         print(f"{tracing}<=>FabNode({self.Name}).set_tracing('{tracing}')")
 
+    # FabNode.probe()
+    def probe(self, label: str) -> None:
+        """Perform a probe operation.
+
+        This method can be overriden and called to perform debug probes.
+        """
+        root: FabNode = self._Root
+        if not hasattr(root, "probe"):
+            assert False, dir(root)
+        root.probe(label)
+
     # FabNode._produce_walk()
     def _produce_walk(self) -> Tuple[str, ...]:
         """Recursively walk FabNode Tree performing produce/post_produce operations."""

@@ -241,7 +241,10 @@ class _Circle(_Geometry):
         # Extract mount plane *contact* and *normal* from *context* for 2D projection:
         mount_contact = cast(Vector, context["mount_contact"])
         mount_normal = cast(Vector, context["mount_normal"])
-        center_on_plane: Vector = self.Center.projectToPlane(mount_contact, mount_normal)
+        # FreeCAD Vector metheds like to modify Vector contents; force copies beforehand:
+        copy: Vector = Vector()
+        center_on_plane: Vector = (self.Center + copy).projectToPlane(
+            mount_contact + copy, mount_normal + copy)
 
         label: str = f"{prefix}_Circle_{index:03d}"
         z_axis: Vector = Vector(0.0, 0.0, 1.0)
@@ -484,7 +487,9 @@ class _Fillet(object):
         * *normal* (Vector): A normal to the projection plane.
 
         """
-        self.Apex = self.Apex.projectToPlane(contact, normal)
+        # FreeCAD Vector metheds like to modify Vector contents; force copies beforehand:
+        copy: Vector = Vector()
+        self.Apex = (self.Apex + copy).projectToPlane(contact + copy, normal + copy)
 
     # _Fillet.get_geometries():
     def get_geometries(self) -> Tuple[_Geometry, ...]:

@@ -561,7 +561,8 @@ class FabDrill(FabOperation):
             # it is just a simple drill operation.
 
             # Find *top* and *bottom* points where infinite line pierces top/bottom mount planes:
-            top: Vector = start.projectToPlane(mount_contact, mount_normal)
+            # FreeCAD Vector metheds like to modify Vector contents; force copies beforehand:
+            top: Vector = (start + copy).projectToPlane(mount_contact + copy, mount_normal + copy)
             # bottom_contact: Vector = mount_contact - bottom_depth * mount_normal
 
             # Ensure *start*/*end* line segment is perpendicular to mount planes.
@@ -657,7 +658,7 @@ class FabDrill(FabOperation):
             self._viewer_update(body, part_hole)
 
         if tracing:
-            print(f"{tracing}<=FabDrill(self.Name).produce()")
+            print(f"{tracing}<=FabDrill({self.Name}).produce()")
         return tuple(errors)
 
 
@@ -737,7 +738,7 @@ class FabHole(FabOperation):
         """Produce the Hole."""
         # Extract the *part_geometries*:
         if tracing:
-            print("{tracing}=>FabHole(self.Name).produce()")
+            print("{tracing}=>FabHole({self.Name}).produce()")
 
         prefix = cast(str, context["prefix"])
         next_prefix: str = f"{prefix}_{self.Name}"
@@ -804,9 +805,10 @@ class FabMount(object):
 
         # No super().__post_init__() because the base class is object.
         solid: "FabSolid" = self._Solid
+
         tracing: str = solid.Tracing
         if tracing:
-            print(f"{tracing}=>FabMount(self.Name).__post_init__()")
+            print(f"{tracing}=>FabMount({self.Name}).__post_init__()")
 
         # Do type checking here.
         assert isinstance(self._Name, str)
@@ -818,15 +820,17 @@ class FabMount(object):
         assert isinstance(self._Depth, float)
 
         copy: Vector = Vector()  # Make private copy of Vector's.
-        self._Copyt = copy
+        self._Copy = copy
         self._Contact = self._Contact + copy
         self._Normal = self._Normal + copy
-        self._Orient = self._Orient.projectToPlane(self._Contact, self._Normal)
+        # FreeCAD Vector metheds like to modify Vector contents; force copies beforehand:
+        self._Orient = (self._Orient + copy).projectToPlane(
+            self._Contact + copy, self._Normal + copy)
         self._Context = {"mount_contact": "bogus"}
         self._Context = {}
 
         if tracing:
-            print(f"{tracing}<=FabMount(self.Name).__post_init__()")
+            print(f"{tracing}<=FabMount({self.Name}).__post_init__()")
 
     # FabMount.Name():
     @property
@@ -877,7 +881,9 @@ class FabMount(object):
             normal: Vector = self._Normal
             z_axis: Vector = Vector(0.0, 0.0, 1.0)
             origin: Vector = Vector()
-            projected_origin: Vector = origin.projectToPlane(contact, normal)
+            # FreeCAD Vector metheds like to modify Vector contents; force copies beforehand:
+            copy: Vector = Vector()
+            projected_origin: Vector = (origin + copy).projectToPlane(contact + copy, normal + copy)
             rotation: Rotation = Rotation(z_axis, normal)
             placement: Placement = Placement()
             placement.Base = projected_origin
@@ -930,7 +936,8 @@ class FabMount(object):
             # Install the FabMount (i.e. *self*) and *datum_plane* into *model_file* prior
             # to recursively performing the *operations*:
             # prefix = cast(str, context["prefix"])
-            print(f"{tracing}<=FabMount.produce('{self.Name}')")
+            if tracing:
+                print(f"{tracing}<=FabMount.produce('{self.Name}')")
         return ()
 
     # FabMount.pad():
@@ -1045,6 +1052,7 @@ class FabSolid(FabNode):
                 context_keys = tuple(sorted(context.keys()))
                 print(f"{tracing}Before mount() context: {context_keys}")
             fab_mount: FabMount = FabMount(name, self, contact, normal, orient, depth)
+
 
             if tracing:
                 print(f"{tracing}++++++++++++++++ produce()")
@@ -1272,18 +1280,31 @@ class BoxSide(FabSolid):
     HalfWidth: Vector = Vector(0, 1, 0)
     Depth: float = 5.0
 
+    # BoxSide.__post_init__():
     def __post_init__(self) -> None:
         """Initialize Box Side."""
         super().__post_init__()
+        tracing: str = self.Tracing
+        if tracing:
+            print(f"{tracing}=>BoxSide({self.Name}).__post_init__()")
+            print(f"{tracing}{self.Contact=}")
+            print(f"{tracing}{self.Normal=}")
+            print(f"{tracing}{self.Orient=}")
+            print(f"{tracing}=>BoxSide({self.Name}).__post_init__()")
 
+    # BoxSide.produce():
     def produce(self) -> Tuple[str, ...]:
         """Produce BoxSide."""
+        tracing: str = self.Tracing
+        if tracing:
+            print(f"{tracing}=>BoxSide({self.Name}).produce()")
         if self.Construct:
             name: str = self.Name
             contact: Vector = self.Contact
             half_length: Vector = self.HalfLength
             half_width: Vector = self.HalfWidth
             depth: float = self.Depth
+
             mount: FabMount = self.mount(f"{name}Mount", contact, self.Normal, self.Orient, depth)
             corners: Tuple[Vector, ...] = (
                 contact + half_length + half_width,
@@ -1293,6 +1314,8 @@ class BoxSide(FabSolid):
             )
             polygon: FabPolygon = FabPolygon(f"{name}Polygon", corners)
             mount.pad(f"{name}Pad", polygon, depth)
+        if tracing:
+            print(f"{tracing}<=BoxSide({self.Name}).produce()")
         return ()
 
 # Box:
@@ -1321,14 +1344,14 @@ class Box(FabAssembly):
     * *South* (FabSolid): The box south solid.
     * *East* (FabSolid): The box east solid.
     * *West* (FabSolid): The box west solid.
-    * *Screws* (Tuple[FabJoin, ...]): The screw to hold the Box together.
+    * *Screws* (Tuple[FabJoin, ...]): The screws to hold the Box together.
 
     """
 
-    Length: float = 150.0
-    Width: float = 100.0
-    Height: float = 50.0
-    Thickness: float = 5.0
+    Length: float
+    Width: float
+    Height: float
+    Thickness: float
     Material: str = "HDPE"
     Center: Vector = Vector()
 
@@ -1342,8 +1365,10 @@ class Box(FabAssembly):
     # Box.__post_init__():
     def __post_init__(self) -> None:
         """Construct the the Box."""
-
         super().__post_init__()
+        tracing: str = self.Tracing
+        if tracing:
+            print(f"{tracing}=>Box({self.Name}).__post_init__()")
 
         depth: float = self.Thickness
         material: str = self.Material
@@ -1363,9 +1388,15 @@ class Box(FabAssembly):
         self.West = BoxSide("West", self, Normal=-x_axis, Orient=y_axis,
                             Depth=depth, Material=material, Color="cyan")
 
+        if tracing:
+            print(f"{tracing}<=Box({self.Name}).__post_init__()")
+
     # Box.produce():
     def produce(self) -> Tuple[str, ...]:
         """Produce the Box."""
+        tracing: str = self.Tracing
+        if tracing:
+            print(f"{tracing}=>Box({self.Name}.produce())")
 
         # Extract basic dimensions and associated constants:
         # material: str = self.Material
@@ -1373,7 +1404,7 @@ class Box(FabAssembly):
         dx: float = self.Length
         dy: float = self.Width
         dz: float = self.Height
-        # dw: float = self.Thickness
+        dw: float = self.Thickness
         dx2: float = dx / 2.0
         dy2: float = dy / 2.0
         dz2: float = dz / 2.0
@@ -1384,6 +1415,10 @@ class Box(FabAssembly):
         dxv: Vector = Vector(dx2, 0, 0)
         dyv: Vector = Vector(0, dy2, 0)
         dzv: Vector = Vector(0, 0, dz2)
+        
+        dwxv: Vector = Vector(dw, 0, 0)
+        dwyv: Vector = Vector(0, dw, 0)
+        dwzv: Vector = Vector(0, 0, dw)
 
         top: BoxSide = self.Top
         top.Contact = center + dzv
@@ -1398,31 +1433,26 @@ class Box(FabAssembly):
         north: BoxSide = self.North
         north.Contact = center + dyv
         north.HalfLength = dxv
-        north.HalfWidth = dxv
+        north.HalfWidth = dzv - dwzv
 
-        south: BoxSide = self.North
+        south: BoxSide = self.South
         south.Contact = center - dyv
         south.HalfLength = dxv
-        south.HalfWidth = dyv
+        south.HalfWidth = dzv - dwzv
 
-        east: BoxSide = self.North
+        east: BoxSide = self.East
         east.Contact = center + dxv
-        east.HalfLength = dyv
-        east.HalfWidth = dzv
+        east.HalfLength = dyv - dwyv
+        east.HalfWidth = dzv - dwzv
 
-        west: BoxSide = self.North
+        west: BoxSide = self.West
         west.Contact = center - dxv
-        west.HalfLength = dyv
-        west.HalfWidth = dzv
+        west.HalfLength = dyv - dwyv
+        west.HalfWidth = dzv - dwzv
 
-        return super().produce()
-
-    # Box.configure():
-    def configure(self, tracing: str = "") -> None:
-        """Compute a box."""
         if tracing:
-            print(f"{tracing}<=>Box.configure()")
-        self.configurations_append(["Length", "Width", "Height", "Thickness", "Center"])
+            print(f"{tracing}<=Box({self.Name}.produce())")
+        return ()
 
 
 # TestSolid:
@@ -1512,7 +1542,8 @@ class TestSolid(FabSolid):
 class TestFile(FabFile):
     """A Test file."""
 
-    Solid: FabSolid = field(init=False, repr=True)
+    # _TestSolid: TestSolid = field(init=False, repr=False)
+    _Box: Box = field(init=False, repr=False)
 
     # TestFile.__post_init__():
     def __post_init__(self) -> None:
@@ -1521,7 +1552,8 @@ class TestFile(FabFile):
         tracing: str = self.Tracing
         if tracing:
             print(f"{tracing}=>TestFile({self.Name}.__post_init__()")
-        self.Solid = TestSolid("TestSolid", self, "HDPE", "red")
+        # self._TestSolid = TestSolid("TestSolid", self, "HDPE", "red")
+        self._Box = Box("TestBox", self, 200.0, 150.0, 75.0, 6.0, "HDPE", Vector(0, 0, 0))
         if tracing:
             print(f"{tracing}<=TestFile({self.Name}.__post_init__()")
 
@@ -1550,9 +1582,19 @@ class TestProject(FabProject):
     # TestProject.new():
     @classmethod
     def new(cls, name: str) -> "TestProject":
+        """Return a new TestProject properly initializedd"""
         test_project = cls(name, cast(FabNode, None))  # Magic to create a root FabProject.
         return test_project
 
+    # TestProject.Probe():
+    def probe(self, label: str) -> None:
+        """Print out some probe vales."""
+        print("================")
+        file: FabFile = self.File
+        assert isinstance(file, TestFile)
+        box: Box = file._Box
+        print(f"{label}: {box.North.Normal=}")
+        assert False, "Remove debugging probes"
 
 def main() -> None:
     """Run main program."""
