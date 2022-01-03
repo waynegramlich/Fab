@@ -96,7 +96,11 @@
 </ul>
 </li>
 <li>17 Class: <a href="#solid--testfile">TestFile</a>:</li>
-<li>18 Class: <a href="#solid--testproject">TestProject</a>:</li>
+<li>18 Class: <a href="#solid--testproject">TestProject</a>:
+<ul>
+<li>18.1 <a href="#solid----probe">probe()</a>: Print out some probe values.</li>
+</ul>
+</li>
 <li>19 Class: <a href="#solid--testsolid">TestSolid</a>:
 <ul>
 <li>19.1 <a href="#solid----produce">produce()</a>: NO DOC STRING!</li>
@@ -128,7 +132,7 @@ Builds a box given a length, width, height, material, thickness and center point
 <li><em>South</em> (FabSolid): The box south solid.</li>
 <li><em>East</em> (FabSolid): The box east solid.</li>
 <li><em>West</em> (FabSolid): The box west solid.</li>
-<li><em>Screws</em> (Tuple[FabJoin, ...]): The screw to hold the Box together.</li>
+<li><em>Screws</em> (Tuple[FabJoin, ...]): The screws to hold the Box together.</li>
 </ul>
 <h3><a name="solid----produce"></a>1.1 <code>Box.</code>produce():</h3>
 <p>Box.produce(self) -&gt; typing.Tuple[str, ...]:</p>
@@ -356,6 +360,9 @@ Inherited Attributes:</p>
 <p>A Test file.</p>
 <h2><a name="solid--testproject"></a>18 Class TestProject:</h2>
 <p>A Test Project.</p>
+<h3><a name="solid----probe"></a>18.1 <code>TestProject.</code>probe():</h3>
+<p>TestProject.probe(self, label: str) -&gt; None:</p>
+<p>Print out some probe values.</p>
 <h2><a name="solid--testsolid"></a>19 Class TestSolid:</h2>
 <p>A test solid to exercise FabSolid code.</p>
 <h3><a name="solid----produce"></a>19.1 <code>TestSolid.</code>produce():</h3>

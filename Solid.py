@@ -1053,7 +1053,6 @@ class FabSolid(FabNode):
                 print(f"{tracing}Before mount() context: {context_keys}")
             fab_mount: FabMount = FabMount(name, self, contact, normal, orient, depth)
 
-
             if tracing:
                 print(f"{tracing}++++++++++++++++ produce()")
             fab_mount.produce(context, tracing=next_tracing)
@@ -1415,8 +1414,8 @@ class Box(FabAssembly):
         dxv: Vector = Vector(dx2, 0, 0)
         dyv: Vector = Vector(0, dy2, 0)
         dzv: Vector = Vector(0, 0, dz2)
-        
-        dwxv: Vector = Vector(dw, 0, 0)
+
+        # dwxv: Vector = Vector(dw, 0, 0)
         dwyv: Vector = Vector(0, dw, 0)
         dwzv: Vector = Vector(0, 0, dw)
 
@@ -1588,13 +1587,14 @@ class TestProject(FabProject):
 
     # TestProject.Probe():
     def probe(self, label: str) -> None:
-        """Print out some probe vales."""
+        """Print out some probe values."""
         print("================")
         file: FabFile = self.File
         assert isinstance(file, TestFile)
         box: Box = file._Box
         print(f"{label}: {box.North.Normal=}")
         assert False, "Remove debugging probes"
+
 
 def main() -> None:
     """Run main program."""

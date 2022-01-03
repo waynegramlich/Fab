@@ -66,6 +66,7 @@ the FreeCAD solids/assemblies and the associated output files.</li>
 <ul>
 <li>1.1 <a href="#tree----enclose">enclose()</a>: Initialize a FabBox.</li>
 <li>1.2 <a href="#tree----reorient">reorient()</a>: Reorient FabBox given a Placement.</li>
+<li>1.3 <a href="#tree----intersect">intersect()</a>: Compute Line Segment intersection with a FabBox.</li>
 </ul>
 </li>
 <li>2 Class: <a href="#tree--fabnode">FabNode</a>:
@@ -75,8 +76,9 @@ the FreeCAD solids/assemblies and the associated output files.</li>
 <li>2.3 <a href="#tree----produce">produce()</a>: Empty FabNode produce method to be over-ridden.</li>
 <li>2.4 <a href="#tree----post-produce">post_produce()</a>: Empty FabNode post_produce method to be over-ridden as needed.</li>
 <li>2.5 <a href="#tree----set-tracing">set_tracing()</a>: Set the FabNode indentation tracing level.</li>
-<li>2.6 <a href="#tree----configure">configure()</a>: Configure FabNode.</li>
-<li>2.7 <a href="#tree----configurations-append">configurations_append()</a>: Append specified attributes to configurations list.</li>
+<li>2.6 <a href="#tree----probe">probe()</a>: Perform a probe operation.</li>
+<li>2.7 <a href="#tree----configure">configure()</a>: Configure FabNode.</li>
+<li>2.8 <a href="#tree----configurations-append">configurations_append()</a>: Append specified attributes to configurations list.</li>
 </ul>
 </li>
 </ul>
@@ -85,7 +87,7 @@ the FreeCAD solids/assemblies and the associated output files.</li>
 An FabBox is represents a cuboid (i.e. a rectangular parallelpiped, or right prism) where
 the edges are aligned with the X, Y, and Z axes.  This is basically equivalent to the FreeCAD
 BoundBox object, but with way more attributes to access various points on the cuboid surface.</p>
-<p>The basic attribute nominclature is based on the compass points North (+Y), South (-Y),
+<p>The basic attribute nomenclature is based on the compass points North (+Y), South (-Y),
 East (+X) and West (-X).  Two additional &quot;compass&quot; points call Top (+Z) and Bottom (-Z)
 are introduced as well.</p>
 <p>Thus:</p>
@@ -181,6 +183,20 @@ X/Y/Z axes.  In particular, box volume is <em>not</em> conserved.</p>
 <ul>
 <li><em>placement</em> (Placement): The placement of the box corners.</li>
 </ul>
+<h3><a name="tree----intersect"></a>1.3 <code>FabBox.</code>intersect():</h3>
+<p>FabBox.intersect(self, segment_start: Base.Vector, segment_end: Base.Vector, tracing: str = '') -&gt; typing.Tuple[bool, float, float]:</p>
+<p>Compute Line Segment intersection with a FabBox.
+Arguments:</p>
+<ul>
+<li><em>segment_start</em> (Vector): Start point of the line segment.</li>
+<li><em>segment_end</em> (Vector): End point of the line segment.</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li>(bool): True is some portion of the line segment is inside of the FabBox.</li>
+<li>(Vector): When True, the possibly truncated line segment point near <em>segment_start</em>.</li>
+<li>(Vector): When True, the possibly truncated line segment point near <em>segment_end</em>.</li>
+</ul>
 <h2><a name="tree--fabnode"></a>2 Class FabNode:</h2>
 <p>Represents one node in the tree.
 Attributes:</p>
@@ -219,9 +235,13 @@ This typically done, by adding this call immediately after calling super().<stro
     self.set_tracing(&quot; &quot;)  # Set the tracing here.
     # All children nodes will that are added, will have tracing set as well.
 </code></pre>
-<h3><a name="tree----configure"></a>2.6 <code>FabNode.</code>configure():</h3>
+<h3><a name="tree----probe"></a>2.6 <code>FabNode.</code>probe():</h3>
+<p>FabNode.probe(self, label: str) -&gt; None:</p>
+<p>Perform a probe operation.
+This method can be overriden and called to perform debug probes.</p>
+<h3><a name="tree----configure"></a>2.7 <code>FabNode.</code>configure():</h3>
 <p>FabNode.configure(self, tracing: str = '') -&gt; None:</p>
 <p>Configure FabNode.</p>
-<h3><a name="tree----configurations-append"></a>2.7 <code>FabNode.</code>configurations_append():</h3>
+<h3><a name="tree----configurations-append"></a>2.8 <code>FabNode.</code>configurations_append():</h3>
 <p>FabNode.configurations_append(self, configurations: typing.List[str], tracing: str = '') -&gt; None:</p>
 <p>Append specified attributes to configurations list.</p>

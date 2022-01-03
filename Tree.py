@@ -78,6 +78,7 @@ from FreeCAD import BoundBox, Placement, Vector  # type: ignore
 
 
 # FabBox:
+@dataclass
 class FabBox(object):
     """FabBox: X/Y/Z Axis Aligned Cubiod.
 
@@ -85,7 +86,7 @@ class FabBox(object):
     the edges are aligned with the X, Y, and Z axes.  This is basically equivalent to the FreeCAD
     BoundBox object, but with way more attributes to access various points on the cuboid surface.
 
-    The basic attribute nominclature is based on the compass points North (+Y), South (-Y),
+    The basic attribute nomenclature is based on the compass points North (+Y), South (-Y),
     East (+X) and West (-X).  Two additional "compass" points call Top (+Z) and Bottom (-Z)
     are introduced as well.
 
@@ -470,6 +471,224 @@ class FabBox(object):
         box.enclose((reoriented_bsw, reoriented_tne))
         return box
 
+    # FabBox.intersect():
+    def intersect(self, segment_start: Vector, segment_end: Vector,
+                  tracing: str = "") -> Tuple[bool, float, float]:
+        """Compute Line Segment intersection with a FabBox.
+
+        Arguments:
+        * *segment_start* (Vector): Start point of the line segment.
+        * *segment_end* (Vector): End point of the line segment.
+
+        Returns:
+        * (bool): True is some portion of the line segment is inside of the FabBox.
+        * (Vector): When True, the possibly truncated line segment point near *segment_start*.
+        * (Vector): When True, the possibly truncated line segment point near *segment_end*.
+
+        """
+        # The basic algorithm is pretty easy.  Using S for *segment_start* and E for *segment_end*,
+        # the standard representation of a parametric line that goes through S and E is:
+        #
+        #      P = S + r * (E - S)
+        #
+        # Where r is a ratio such that r=0 returns S and r=1 returns E.
+        #
+        # The B for *begin* and F for *finish*, the goal is find B and F such that they
+        # lay in the line segment (SE) but are further constrained to reside in the FabBox.
+        # The ultimate goal is to compute rB and rF which is the 0 <= rB <= 1 and 0 <= RF <= 1.
+        # If the line segment lies entirely outside of the bounding box, there are no valid
+        # values for rB and rF.
+        #
+        # The algorithm below does this by iterating over the X, Y, and Z axes.  Using N for
+        # *miNimum* and X for *maXimum*.  N, X, S, and E are each projected onto the axis
+        # and the ratios rB and rF are adjusted to ensure the projection of the remains
+        # inside of the projected FabBox boundaries on the axis.
+
+        if tracing:
+            print(f"{tracing}=>FabBox.intersect({segment_start}, {segment_end})")
+
+        # Initialize the X/Y/Z *axes* data:
+        axes: Tuple[Tuple[str, float, float, float, float], ...] = (
+            ("X", segment_start.x, segment_end.x, self._XMin, self._XMax),
+            ("Y", segment_start.y, segment_end.y, self._YMin, self._YMax),
+            ("Z", segment_start.z, segment_end.z, self._ZMin, self._ZMax),
+        )
+
+        EPSILON: float = 1.0e-8
+        intersect: bool = True
+        begin_ratio: float = 0.0  # Starts at 0 and can be moved towards 1.
+        finish_ratio: float = 1.0  # Starts at 1 and can be moved toward 0.
+        # 0 <= *begin_ratio* <= *finish_ratio* <= 1 for a truncated segment that lies inside FabBox.
+
+        # Visit the each of the X, Y, and Z *axes*:
+        axis_name: str
+        start: float
+        end: float
+        minimum: float
+        maximum: float
+        for axis_name, start, end, minimum, maximum in axes:
+            # Check for bounding box issues:
+            assert minimum < maximum, f"{axis_name}: FabBox has bad inverted bounds"
+            bounding_box_is_empty: bool = abs(maximum - minimum) < EPSILON
+            segment_is_above_maximum: bool = start > maximum and end > maximum
+            segment_is_below_minimum: bool = start < minimum and end < minimum
+            if bounding_box_is_empty or segment_is_above_maximum or segment_is_below_minimum:
+                intersect = False
+                if tracing:
+                    print(f"{tracing}{axis_name}: Bounding Box issue: {bounding_box_is_empty=} "
+                          f"{segment_is_above_maximum=} {segment_is_below_minimum=} {intersect=}")
+                break
+
+            # If segment projects down to a point, skip axis check:
+            distance: float = end - start  # Can be negative
+            if abs(distance) < EPSILON:
+                continue
+
+            # Compute the *minimum_ratio* and *maximum_ratio*.
+            # They can be negative if *start* > *end*.
+            minimum_ratio: float = (minimum - start) / distance  # Can be negative
+            maximum_ratio: float = (maximum - start) / distance  # Can be negative
+            if tracing:
+                print(f"{tracing}{axis_name}: {minimum=} {start=} {end=} {maximum=}")
+                print(f"{tracing}{axis_name}: {distance=} {minimum_ratio=} {maximum_ratio=}")
+
+            # See if *begin_ratio* needs to be "pulled in":
+            new_begin_ratio: float = begin_ratio
+            if maximum_ratio > minimum_ratio and minimum_ratio > begin_ratio:
+                new_begin_ratio = minimum_ratio
+            elif maximum_ratio < minimum_ratio and maximum_ratio > begin_ratio:
+                new_begin_ratio = maximum_ratio
+            if tracing and new_begin_ratio != begin_ratio:
+                print(f"{tracing}{axis_name}: Updating {begin_ratio=} to {new_begin_ratio=}")
+            begin_ratio = new_begin_ratio
+
+            # See if *finish_ratio* needs to be "pulled in":
+            new_finish_ratio: float = finish_ratio
+            if maximum_ratio > minimum_ratio and maximum_ratio < finish_ratio:
+                new_finish_ratio = maximum_ratio
+            elif maximum_ratio < minimum_ratio and minimum_ratio < finish_ratio:
+                new_finish_ratio = minimum_ratio
+            if tracing and new_finish_ratio != finish_ratio:
+                print(f"{tracing}{axis_name}: Updating {finish_ratio=} to {new_finish_ratio=}")
+            finish_ratio = new_finish_ratio
+
+            # Somehow we over shorted the segment, so there must not be an *intersect*:
+            if begin_ratio > finish_ratio:
+                intersect = False
+                if tracing:
+                    print(f"{tracing}{begin_ratio=} > {finish_ratio}: => {intersect=})")
+
+        # Make sure we did not screw up the rule of only shortening the line segment:
+        assert 0 <= begin_ratio <= finish_ratio <= 1.0, "Segment truncation failed"
+
+        # Compute *begin_point* and *finish_point*:
+        delta: Vector = segment_end - segment_start
+        begin_point = segment_start + begin_ratio * delta
+        finish_point = segment_start + finish_ratio * delta
+
+        # Disallow zero length segments.
+        if abs((begin_point - finish_point).Length) < EPSILON:
+            intersect = False
+        if tracing:
+            print(f"{tracing}{delta=} {begin_ratio=} {finish_ratio=}")
+            print(f"{tracing}<=FabBox.intersect({segment_start}, {segment_end})=>"
+                  f"({intersect}, {begin_point}, {finish_point})")
+            print("")
+        return intersect, begin_point, finish_point
+
+    # FabBox._intersect_unit_tests():
+    @staticmethod
+    def _intersect_unit_tests() -> None:
+        """Perform intesection tests."""
+
+        IntersectTest = Tuple[Vector, Vector, bool, Vector, Vector, str, str]
+
+        def check(test: IntersectTest) -> str:
+            """Return error message on check failure."""
+            EPSILON: float = 1.0e-8
+
+            unswapped_test: IntersectTest = test
+            # Flip start/end and begin/finish:
+            swapped_test: IntersectTest = (
+                test[1], test[0], test[2], test[4], test[3], test[5], f"Swapped:{test[6]}")
+
+            for test in (unswapped_test, swapped_test):
+                want_start: Vector
+                want_end: Vector
+                want_intersect: bool
+                want_begin: Vector
+                want_finish: Vector
+                tracing: str
+                name: str
+                want_start, want_end, want_intersect, want_begin, want_finish, tracing, name = test
+
+                got_intersect: bool
+                got_begin: Vector
+                got_end: Vector
+                got_intersect, got_begin, got_finish = box.intersect(want_start, want_end, tracing)
+                header: str = ""
+                if got_intersect != want_intersect:
+                    header = f"Intersect mismatch"
+                elif want_intersect and abs(got_begin - want_begin).Length > EPSILON:
+                    header = f" Begin mismatch"
+                elif want_intersect and abs(got_finish - want_finish).Length > EPSILON:
+                    header = "Finish mismatch:"
+
+                if header:
+                    return (
+                        f"{header}: {name}\n"
+                        f"     Input: {test[:2]}\n"
+                        f"     Want:  {test[2:5]}\n"
+                        f"     Got:   ({got_intersect}, {got_begin}, {got_finish})"
+                    )
+            return ""
+
+        box: FabBox = FabBox()
+
+        # Z axis spans
+        a: Vector = Vector(0, 0, -2)
+        b: Vector = Vector(0, 0, -1.5)
+        c: Vector = Vector(0, 0, -1)
+        d: Vector = Vector(0, 0, -0.5)
+        e: Vector = Vector(0, 0, 0)
+        f: Vector = Vector(0, 0, 0.5)
+        g: Vector = Vector(0, 0, 1)
+        h: Vector = Vector(0, 0, 1.5)
+        i: Vector = Vector(0, 0, 2)
+        x: Vector = Vector(-12, 34, -56)  # Should be ignored by test
+
+        tests: Tuple[IntersectTest, ...] = (
+            # Enclosed segment tests:
+            (d, e, True, d, e, "", "Entirely enclosed segment 1"),
+            (d, f, True, d, f, "", "Entirely enclosed segment 2"),
+            (c, f, True, c, f, "", "Enclosed segment at begins at minimum"),
+            (e, g, True, e, g, "", "Enclosed segment at finishes at maximum"),
+            (c, g, True, c, g, "", "Enclosed segment that spans FabBox"),
+            # Trimmed segment tests:
+            (a, e, True, c, e, "", "Trimmed segment that starts below minimum and ends in FabBox"),
+            (a, g, True, c, g, "", "Trimmed segment that starts below minimum and ends at maximum"),
+            (a, i, True, c, g, "", "Trimmed segment that spans both minimum and maximum"),
+            (e, h, True, e, g, "", "Trimmed segment from inside towards maximum"),
+            # Segment non intersection tests:
+            (a, b, False, x, x, "", "Segment is below minimum"),
+            (a, c, False, x, x, "", "Segment is starts below minimum and ends at minimum"),
+            (g, i, False, x, x, "", "Segment is starts at maximum and goes outward"),
+            (h, i, False, x, x, "", "Segment is above minimum"),
+            # Zero length segment tests:
+            (a, a, False, x, x, "", "Zero Length segment below minimum"),
+            (c, c, False, x, x, "", "Zero Length segment at minimum"),
+            (e, e, False, x, x, "", "Zero Length segment inside FabBox"),
+            (g, g, False, x, x, "", "Zero Length segment at maximum"),
+            (i, i, False, x, x, "", "Zero Length segment above maximum"),
+        )
+        errors: int = 0
+        index: int
+        for index, test in enumerate(tests):
+            error: str = check(test)
+            if error:
+                print(f"Test[{index}]: {error}")
+        assert not errors, f"{errors} intersect occurred"
+
     @staticmethod
     def _unit_tests() -> None:
         """Perform FabBox unit tests."""
@@ -478,6 +697,8 @@ class FabBox(object):
         assert isinstance(box, FabBox)
         bound_box: BoundBox = BoundBox(-1.0, -2.0, -3.0, 1.0, 2.0, 3.0)
         assert isinstance(bound_box, BoundBox)
+
+        # FabNode._intersect_unit_tests()
 
         # FreeCAD.BoundBox.__eq__() appears to only compare ids for equality.
         # Thus, it is necessary to test that each value is equal by hand.
@@ -574,6 +795,9 @@ class FabBox(object):
         except RuntimeError as runtime_error:
             want3 = "123 is <class 'int'>, not Vector/BoundBox/FabBox"
             assert str(runtime_error) == want3, str(runtime_error)
+
+        # Do the intersect unit tests:
+        FabBox._intersect_unit_tests()
 
 
 @dataclass
