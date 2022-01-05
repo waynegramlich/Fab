@@ -1443,7 +1443,7 @@ class FabFasten:
 
 
 # FabJoin:
-@dataclass(frozen=True)
+@dataclass
 class FabJoin(object):
     """FabJoin: Specifies a single fastener instance.
 
@@ -1455,10 +1455,10 @@ class FabJoin(object):
 
     """
 
-    Name: str
-    Fasten: FabFasten  # Parent FabFasten
-    Start: Vector  # Start point (near screw/bolt head)
-    End: Vector  # End point (ene screw/bolt tip)
+    _Name: str
+    _Fasten: FabFasten  # Parent FabFasten
+    _Start: Vector  # Start point (near screw/bolt head)
+    _End: Vector  # End point (ene screw/bolt tip)
 
     POST_INIT_CHECKS = (
         FabCheck("Fasten", (FabFasten,)),
@@ -1468,10 +1468,45 @@ class FabJoin(object):
 
     def __post_init__(self) -> None:
         """Initialize a single FabJoin."""
-        arguments = (self.Fasten, self.Start, self.End)
-        value_error: str = FabCheck.check(arguments, FabJoin.POST_INIT_CHECKS)
-        if value_error:
-            raise ValueError
+        # Make private copies of everything.
+        copy: Vector = Vector()
+        self._Start += copy
+        self._End += copy
+
+    # FabJoin.Name():
+    @property
+    def Name(self) -> str:
+        """Return FabJoin Name."""
+        return self._Name
+
+    # FabJoin.Fasten():
+    @property
+    def Fasten(self) -> FabFasten:
+        """Return FabJoin FabFasten."""
+        return self._Fasten
+
+    # FabJoin.Start():
+    @property
+    def Start(self) -> str:
+        """Return FabJoin start point."""
+        return self._Start
+
+    # FabJoin.End():
+    @property
+    def End(self) -> str:
+        """Return FabJoin end point."""
+        return self._End
+
+    # FabJoin.normal_aligned():
+    def normal_aligned(self, test_normal: Vector) -> bool:
+        """Return whether the normal is aligned with the FabJoin."""
+        EPSILON = 1.0e-8
+        join_normal: Vector = (self._Start - self.End).normalize()
+        copy: Vector = Vector()
+        test_normal = (test_normal + copy).normalize()
+        same_direction: bool = (join_normal - test_normal).Length < EPSILON
+        opposite_direction: bool = (join_normal + test_normal).Length < EPSILON
+        return same_direction or opposite_direction
 
     @staticmethod
     def _unit_tests() -> None:

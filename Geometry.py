@@ -36,6 +36,7 @@ import Part  # type: ignore
 import FreeCAD as App  # type: ignore
 
 from FreeCAD import Placement, Rotation, Vector
+from Tree import FabBox
 
 
 # _Geometry:
@@ -506,10 +507,21 @@ class _Fillet(object):
 class FabGeometry(object):
     """FabGeometry: The base class for FabPolygon and FabCircle."""
 
+    # FabGeometry.Box():
+    @property
+    def Box(self) -> FabBox:
+        """Return a FabBox that encloses the FabGeometry."""
+        raise NotImplementedError(f"{type(self)}.Box() is not implemented")
+
     # FabGeometry.produce():
     def produce(self, model_context: Any, prefix: str) -> Tuple[Part.Part2DObject, ...]:
         """Produce the necessary FreeCAD objects for the FabGeometry."""
         raise NotImplementedError(f"{type(self)}.produce() is not implemented")
+
+    # FabGeometry.project_to_plane():
+    def project_to_plane(self, contact: Vector, normal: Vector) -> "FabGeometry":
+        """Return a new FabGeometry projected onto a plane."""
+        raise NotImplementedError(f"{type(self)}.project_to_plane is not implemented")
 
 
 # FabCircle:
@@ -522,11 +534,13 @@ class FabCircle(FabGeometry):
 
     Attributes:
     * *Center* (Vector): The circle center.
+    * *Normal* (Vector): The normal to circle plane.
     * *Diameter* (float): The diameter in millimeters.
 
     """
 
     Center: Vector
+    Normal: Vector
     Diameter: float
 
     # FabCircle.__post_init__():
@@ -537,6 +551,58 @@ class FabCircle(FabGeometry):
         # (Why __setattr__?)[https://stackoverflow.com/questions/53756788]
         copy: Vector = Vector()
         object.__setattr__(self, "Center", self.Center + copy)  # Makes a copy.
+        object.__setattr__(self, "Normal", self.Normal + copy)  # Makes a copy.
+
+    # FabGeometry.Box():
+    @property
+    def Box(self) -> FabBox:
+        """Return a FabBox that encloses the FabGeometry."""
+        # A perpendicular to the normal is needed:
+        # https://math.stackexchange.com/questions/137362/
+        # how-to-find-perpendicular-vector-to-another-vector
+        # The response from Joe Strout is used.  There is probably an alternate solution based
+        # on quaternions that is better, but the code below should be more than adequate.
+        EPSILON = 1.0e-8
+        copy: Vector = Vector
+        normal: Vector = (self.Normal + copy).normalize()
+        nx: float = normal.x
+        ny: float = normal.y
+        nz: float = normal.z
+        xy_close: bool = abs(nx - ny) < EPSILON
+        perpendicular1: Vector = (
+            Vector(-nz, 0, nx) if xy_close else Vector(-ny, nx, 0)).normalize()
+        perpendicular2: Vector = (normal + copy).cross(perpendicular1 + copy)
+
+        center: Vector = self.Center
+        radius: float = self.Diameter / 2.0
+        corner1: Vector = center + radius * perpendicular1
+        corner2: Vector = center + radius * perpendicular2
+        corner3: Vector = center - radius * perpendicular1
+        corner4: Vector = center - radius * perpendicular1
+        box: FabBox = FabBox()
+        box.enclose((corner1, corner2, corner3, corner4))
+        return box
+
+    # FabCircle.project_to_plane():
+    def project_to_plane(self, contact: Vector, normal: Vector, tracing: str = "") -> "FabCircle":
+        """Return a new FabCircle projected onto a plane.
+
+        Arguments:
+        * *contact* (Vector): One point on the plane.
+        * *normal* (Vector): A normal to the plane.
+
+        Returns:
+        * (FabCircle): The newly projected FabCicle.
+
+        """
+        if tracing:
+            print(f"{tracing}=>FabCircle.projet_to_plane({contact}, {normal})")
+        copy: Vector = Vector()
+        new_center: Vector = (self.Center + copy).ProjectToPlane(contact + copy, normal + copy)
+        new_circle: "FabCircle" = FabCircle(new_center, normal, self.Diameter)
+        if tracing:
+            print(f"{tracing}<=FabCircle.projet_to_plane({contact}, {normal}) => *")
+        return new_circle
 
     # FabCircle.produce():
     def produce(self, context: Dict[str, Any], prefix: str,
@@ -602,13 +668,11 @@ class FabPolygon(FabGeometry):
          ), "Name")
 
     Attributes:
-    * *Name* (str): The name of the polygon.  (Default: "")
     * *Corners* (Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]):
       See description below for more on corners.
 
     """
 
-    Name: str
     Corners: Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]
     _Fillets: Tuple[_Fillet, ...] = field(init=False, repr=False)
 
@@ -655,6 +719,42 @@ class FabPolygon(FabGeometry):
 
         # self._compute_arcs()
         # self._compute_lines()
+
+    # FabPolygon.project_to_plane():
+    def project_to_plane(self, contact: Vector, normal: Vector, tracing: str = "") -> "FabPolygon":
+        """Return nre FabPolygon prejected onto a plane.
+
+        Arguments:
+        * *contact* (Vector): One point on the plane.
+        * *normal* (Vector): A normal to the plane.
+
+        Returns:
+        * (FabPolyGon): The newly projected FabPolygon.
+
+        """
+        if tracing:
+            print(f"{tracing}=>FabPolygon.project_to_plane({contact}, {normal})")
+        copy: Vector = Vector()
+        corner: Union[Vector, Tuple[Vector, Union[int, float]]]
+        projected_corners: List[Union[Vector, Tuple[Vector, Union[int, float]]]] = []
+        for corner in self.Corners:
+            if isinstance(corner, Vector):
+                projected_corners.append(
+                    (corner + copy).projectToPlane(contact + copy, normal + copy)
+                )
+            elif isinstance(corner, tuple):
+                assert len(corner) == 2
+                point: Any = corner[0]
+                radius: Any = corner[1]
+                assert isinstance(point, Vector)
+                assert isinstance(radius, (int, float))
+                projected_corners.append(
+                    ((point + copy).ProjecttoPlane(contact + copy, normal + copy), radius)
+                )
+        projected_polygon: "FabPolygon" = FabPolygon(tuple(projected_corners))
+        if tracing:
+            print(f"{tracing}<=FabPolygon.project_to_plane({contact}, {normal})=>*")
+        return projected_polygon
 
     # FabPolygon._double_link():
     def _double_link(self) -> None:
@@ -780,7 +880,7 @@ class FabPolygon(FabGeometry):
         v2: Vector = Vector(40, -20, 0)
         v3: Vector = Vector(40, 20, 0)
         v4: Vector = Vector(-40, 20, 0)
-        polygon: FabPolygon = FabPolygon("TestPolygon", (v1, v2, (v3, 10), v4))
+        polygon: FabPolygon = FabPolygon((v1, v2, (v3, 10), v4))
         _ = polygon
 
         # geometries: Tuple[_Geometry, ...] = polygon.get_geometries()

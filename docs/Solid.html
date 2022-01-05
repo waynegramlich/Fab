@@ -4,6 +4,7 @@
 <li>1 Class: <a href="#solid--box">Box</a>:
 <ul>
 <li>1.1 <a href="#solid----produce">produce()</a>: Produce the Box.</li>
+<li>1.2 <a href="#solid----get-all-screws">get_all_screws()</a>: Return all Box screws.</li>
 </ul>
 </li>
 <li>2 Class: <a href="#solid--boxside">BoxSide</a>:
@@ -48,7 +49,7 @@
 </li>
 <li>10 Class: <a href="#solid--fabmount">FabMount</a>:
 <ul>
-<li>10.1 <a href="#solid----solid">Solid()</a>: Return the FabSolid.</li>
+<li>10.1 <a href="#solid----xsolid">XSolid()</a>: Return the FabSolid.</li>
 <li>10.2 <a href="#solid----contact">Contact()</a>: Return the FabMount contact point.</li>
 <li>10.3 <a href="#solid----normal">Normal()</a>: Return the FabMount normal.</li>
 <li>10.4 <a href="#solid----orient">Orient()</a>: Return the FabMount Orientation.</li>
@@ -132,11 +133,14 @@ Builds a box given a length, width, height, material, thickness and center point
 <li><em>South</em> (FabSolid): The box south solid.</li>
 <li><em>East</em> (FabSolid): The box east solid.</li>
 <li><em>West</em> (FabSolid): The box west solid.</li>
-<li><em>Screws</em> (Tuple[FabJoin, ...]): The screws to hold the Box together.</li>
+<li><em>Fasten</em> (FabFasten): The screw template to use.</li>
 </ul>
 <h3><a name="solid----produce"></a>1.1 <code>Box.</code>produce():</h3>
 <p>Box.produce(self) -&gt; typing.Tuple[str, ...]:</p>
 <p>Produce the Box.</p>
+<h3><a name="solid----get-all-screws"></a>1.2 <code>Box.</code>get_all_screws():</h3>
+<p>Box.get_all_screws(self) -&gt; typing.Tuple[Join.FabJoin, ...]:</p>
+<p>Return all Box screws.</p>
 <h2><a name="solid--boxside"></a>2 Class BoxSide:</h2>
 <p>A Box side.
 Inherited Constructor Attributes:</p>
@@ -247,8 +251,8 @@ This class is immutable (i.e. frozen.)</p>
 A vector that is projected onto the plane to specify orientation when mounted.</li>
 <li><em>Depth</em> (float): The maximum depth limit for all operations.</li>
 </ul>
-<h3><a name="solid----solid"></a>10.1 <code>FabMount.</code>Solid():</h3>
-<p>FabMount.Solid(self) -&gt; 'FabSolid':</p>
+<h3><a name="solid----xsolid"></a>10.1 <code>FabMount.</code>XSolid():</h3>
+<p>FabMount.XSolid(self) -&gt; 'FabSolid':</p>
 <p>Return the FabSolid.</p>
 <h3><a name="solid----contact"></a>10.2 <code>FabMount.</code>Contact():</h3>
 <p>FabMount.Contact(self) -&gt; Base.Vector:</p>

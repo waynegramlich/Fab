@@ -628,7 +628,7 @@ class FabDrill(FabOperation):
                 assert fasten.ThreadName == thread_name and self.get_kind() == kind and (
                     hole.Depth == depth and hole.IsTop == is_top)
                 center: Vector = hole.Center
-                circle: FabCircle = FabCircle(center, diameter)
+                circle: FabCircle = FabCircle(center, mount_normal, diameter)
                 part_geometries.extend(circle.produce(context.copy(),
                                                       next_prefix, tracing=next_tracing))
 
@@ -839,7 +839,7 @@ class FabMount(object):
         return self._Name
 
     # FabMount.Solid:
-    def Solid(self) -> "FabSolid":
+    def XSolid(self) -> "FabSolid":
         """Return the FabSolid."""
         return self._Solid
 
@@ -1000,8 +1000,40 @@ class FabMount(object):
     def drill(self, name: str, joins: Union[FabJoin, Tuple[FabJoin, ...]],
               tracing: str = "") -> None:
         """Perform drill opertation(s)"""
+        if tracing:
+            print(f"{tracing}=>FabMount({self.Name}).drill({name}, |len(joins)|")
         if self.Construct:
-            assert False
+            if isinstance(joins, FabJoin):
+                joins = (joins,)
+            assert isinstance(joins, tuple)
+
+            context: Dict[str, Any] = self._Context.copy()
+            context_keys: Tuple[str, ...]
+            if tracing:
+                context_keys = tuple(sorted(context.keys()))
+                print(f"{tracing}Before drill Context: {context_keys}")
+            copy: Vector = Vector()
+            # mount_contact: Vector = cast(Vector, context["mount_contact"])
+            mount_normal: Vector = (cast(Vector, context["mount_normal"]) + copy).normalize()
+            solid: "FabSolid" = self._Solid
+            print(f"{solid.BB=}")
+
+            join: FabJoin
+            for join in joins:
+                assert isinstance(join, FabJoin)
+                if join.normal_aligned(mount_normal):
+                    print(f">>>>>>>>>>>>>>>>{join.Name} is aligned")
+                    join_start: Vector = join.Start
+                    join_end: Vector = join.End
+                    intersect: bool
+                    trimmed_start: Vector
+                    trimmed_end: Vector
+                    intersect, trimmed_start, trimmed_end = solid.intersect(join_start, join_end)
+                    if intersect:
+                        print(f"<<<<<<<<<<<<<<<<{join.Name} intesects {solid.Name}")
+
+        if tracing:
+            print(f"{tracing}<=FabMount({self.Name}).drill({name}, |len(joins)|")
 
 
 # FabSolid:
@@ -1278,6 +1310,7 @@ class BoxSide(FabSolid):
     HalfLength: Vector = Vector(1, 0, 0)
     HalfWidth: Vector = Vector(0, 1, 0)
     Depth: float = 5.0
+    Screws: List[FabJoin] = field(init=False, repr=False)
 
     # BoxSide.__post_init__():
     def __post_init__(self) -> None:
@@ -1290,19 +1323,45 @@ class BoxSide(FabSolid):
             print(f"{tracing}{self.Normal=}")
             print(f"{tracing}{self.Orient=}")
             print(f"{tracing}=>BoxSide({self.Name}).__post_init__()")
+        self.Screws = []
 
     # BoxSide.produce():
     def produce(self) -> Tuple[str, ...]:
         """Produce BoxSide."""
         tracing: str = self.Tracing
+        next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>BoxSide({self.Name}).produce()")
+        box = cast(Box, self.Up)
+        assert isinstance(box, Box)  # Redundant
+        fasten: FabFasten = box.Fasten
+        screws: List[FabJoin] = self.Screws
+
+        name: str = self.Name
+        contact: Vector = self.Contact
+        copy: Vector = Vector()
+        depth: float = self.Depth
+        normal_direction: Vector = (self.Normal + copy).normalize()
+        length_direction: Vector = (self.HalfLength + copy).normalize()
+        length: float = self.HalfLength.Length
+        width_direction: Vector = (self.HalfWidth + copy).normalize()
+        width: float = self.HalfWidth.Length
+
+        del screws[:]
+        dlength: float
+        dwidth: float
+        if name in ("Top", "Bottom", "North", "South"):
+            for dlength in (length - 3.0 * depth, length - 3.0 * depth):
+                for dwidth in (width - depth / 2.0, width - depth / 2.0):
+                    start: Vector = contact + dlength * length_direction + dwidth * width_direction
+                    end: Vector = start - (3 * depth) * (-normal_direction)
+                    screw: FabJoin = FabJoin(f"{name}Join{len(screws)}", fasten, start, end)
+                    screws.append(screw)
+
         if self.Construct:
-            name: str = self.Name
-            contact: Vector = self.Contact
             half_length: Vector = self.HalfLength
             half_width: Vector = self.HalfWidth
-            depth: float = self.Depth
+            all_screws: Tuple[FabJoin, ...] = box.get_all_screws()
 
             mount: FabMount = self.mount(f"{name}Mount", contact, self.Normal, self.Orient, depth)
             corners: Tuple[Vector, ...] = (
@@ -1311,8 +1370,9 @@ class BoxSide(FabSolid):
                 contact - half_length - half_width,
                 contact - half_length + half_width,
             )
-            polygon: FabPolygon = FabPolygon(f"{name}Polygon", corners)
+            polygon: FabPolygon = FabPolygon(corners)
             mount.pad(f"{name}Pad", polygon, depth)
+            mount.drill("{name}Drill", all_screws, tracing=next_tracing)
         if tracing:
             print(f"{tracing}<=BoxSide({self.Name}).produce()")
         return ()
@@ -1343,7 +1403,7 @@ class Box(FabAssembly):
     * *South* (FabSolid): The box south solid.
     * *East* (FabSolid): The box east solid.
     * *West* (FabSolid): The box west solid.
-    * *Screws* (Tuple[FabJoin, ...]): The screws to hold the Box together.
+    * *Fasten* (FabFasten): The screw template to use.
 
     """
 
@@ -1360,6 +1420,7 @@ class Box(FabAssembly):
     South: BoxSide = field(init=False, repr=False)
     East: BoxSide = field(init=False, repr=False)
     West: BoxSide = field(init=False, repr=False)
+    Fasten: FabFasten = field(init=False, repr=False)
 
     # Box.__post_init__():
     def __post_init__(self) -> None:
@@ -1386,6 +1447,7 @@ class Box(FabAssembly):
                             Depth=depth, Material=material, Color="blue")
         self.West = BoxSide("West", self, Normal=-x_axis, Orient=y_axis,
                             Depth=depth, Material=material, Color="cyan")
+        self.Fasten = FabFasten("BoxFasten", "M3x.5", ())  # No options yet.
 
         if tracing:
             print(f"{tracing}<=Box({self.Name}).__post_init__()")
@@ -1453,6 +1515,16 @@ class Box(FabAssembly):
             print(f"{tracing}<=Box({self.Name}.produce())")
         return ()
 
+    # Box.get_all_screws():
+    def get_all_screws(self) -> Tuple[FabJoin, ...]:
+        """Return all Box screws."""
+        return (
+            tuple(self.Top.Screws) +
+            tuple(self.Bottom.Screws) +
+            tuple(self.North.Screws) +
+            tuple(self.South.Screws)
+        )
+
 
 # TestSolid:
 @dataclass
@@ -1481,6 +1553,7 @@ class TestSolid(FabSolid):
         depth2: float = depth / 2.0
         if self.Construct:
             origin: Vector = Vector()
+            normal: Vector = Vector(0, 0, 1)
             context: Dict[str, Any] = self._Context
             assert isinstance(context, dict)
             context_keys: Tuple[str, ...]
@@ -1496,7 +1569,7 @@ class TestSolid(FabSolid):
             # Perform the first Pad:
             z_offset: float = 0.0
             pad_fillet_radius: float = 10.0
-            pad_polygon: FabPolygon = FabPolygon("Pad", (
+            pad_polygon: FabPolygon = FabPolygon((
                 (Vector(-40, -60, z_offset), pad_fillet_radius),  # SW
                 (Vector(40, -60, z_offset), pad_fillet_radius),  # SE
                 (Vector(40, 20, z_offset), pad_fillet_radius),  # NE
@@ -1509,7 +1582,7 @@ class TestSolid(FabSolid):
 
             # Perform a pocket:
             pocket_fillet_radius: float = 2.5
-            left_polygon: FabPolygon = FabPolygon("LeftPocket", (
+            left_polygon: FabPolygon = FabPolygon((
                 (Vector(-30, -10, z_offset), pocket_fillet_radius),  # SW
                 (Vector(-10, -10, z_offset), pocket_fillet_radius),  # SE
                 (Vector(-10, 10, z_offset), pocket_fillet_radius),  # NE
@@ -1517,7 +1590,7 @@ class TestSolid(FabSolid):
             ))
             top_mount.pocket("LeftPocket", left_polygon, depth)
 
-            right_pocket: FabPolygon = FabPolygon("RightPocket", (
+            right_pocket: FabPolygon = FabPolygon((
                 (Vector(10, -10, z_offset), pocket_fillet_radius),  # SW
                 (Vector(30, -10, z_offset), pocket_fillet_radius),  # SE
                 (Vector(30, 10, z_offset), pocket_fillet_radius),  # NE
@@ -1525,10 +1598,10 @@ class TestSolid(FabSolid):
             ))
             top_mount.pocket("RightPocket", right_pocket, depth2)
 
-            right_circle: FabCircle = FabCircle(Vector(20, 0, z_offset), 10)
+            right_circle: FabCircle = FabCircle(Vector(20, 0, z_offset), normal, 10)
             top_mount.pocket("RightCircle", right_circle, depth)
 
-            center_circle: FabCircle = FabCircle(Vector(0, 0, z_offset), 10)
+            center_circle: FabCircle = FabCircle(Vector(0, 0, z_offset), normal, 10)
             top_mount.pocket("CenterCircle", center_circle, depth2)
 
         if tracing:

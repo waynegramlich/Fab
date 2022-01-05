@@ -3,8 +3,9 @@
 <ul>
 <li>1 Class: <a href="#geometry--fabcircle">FabCircle</a>:
 <ul>
-<li>1.1 <a href="#geometry----produce">produce()</a>: Produce the FreeCAD objects needed for FabPolygon.</li>
-<li>1.2 <a href="#geometry----get-geometries">get_geometries()</a>: Return the FabPolygon lines and arcs.</li>
+<li>1.1 <a href="#geometry----project-to-plane">project_to_plane()</a>: Return a new FabCircle projected onto a plane.</li>
+<li>1.2 <a href="#geometry----produce">produce()</a>: Produce the FreeCAD objects needed for FabPolygon.</li>
+<li>1.3 <a href="#geometry----get-geometries">get_geometries()</a>: Return the FabPolygon lines and arcs.</li>
 </ul>
 </li>
 <li>2 Class: <a href="#geometry--fabgeometry">FabGeometry</a>:
@@ -14,8 +15,9 @@
 </li>
 <li>3 Class: <a href="#geometry--fabpolygon">FabPolygon</a>:
 <ul>
-<li>3.1 <a href="#geometry----get-geometries">get_geometries()</a>: Return the FabPolygon lines and arcs.</li>
-<li>3.2 <a href="#geometry----produce">produce()</a>: Produce the FreeCAD objects needed for FabPolygon.</li>
+<li>3.1 <a href="#geometry----project-to-plane">project_to_plane()</a>: Return nre FabPolygon prejected onto a plane.</li>
+<li>3.2 <a href="#geometry----get-geometries">get_geometries()</a>: Return the FabPolygon lines and arcs.</li>
+<li>3.3 <a href="#geometry----produce">produce()</a>: Produce the FreeCAD objects needed for FabPolygon.</li>
 </ul>
 </li>
 </ul>
@@ -28,10 +30,22 @@ circle later on.</p>
 <li><em>Center</em> (Vector): The circle center.</li>
 <li><em>Diameter</em> (float): The diameter in millimeters.</li>
 </ul>
-<h3><a name="geometry----produce"></a>1.1 <code>FabCircle.</code>produce():</h3>
+<h3><a name="geometry----project-to-plane"></a>1.1 <code>FabCircle.</code>project_to_plane():</h3>
+<p>FabCircle.project_to_plane(self, contact: Base.Vector, normal: Base.Vector, tracing: str = '') -&gt; 'FabCircle':</p>
+<p>Return a new FabCircle projected onto a plane.
+Arguments:</p>
+<ul>
+<li><em>contact</em> (Vector): One point on the plane.</li>
+<li><em>normal</em> (Vector): A normal to the plane.</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li>(FabCircle): The newly projected FabCicle.</li>
+</ul>
+<h3><a name="geometry----produce"></a>1.2 <code>FabCircle.</code>produce():</h3>
 <p>FabCircle.produce(self, context: typing.Dict[str, typing.Any], prefix: str, tracing: str = '') -&gt; typing.Tuple[Part.Part2DObject, ...]:</p>
 <p>Produce the FreeCAD objects needed for FabPolygon.</p>
-<h3><a name="geometry----get-geometries"></a>1.2 <code>FabCircle.</code>get_geometries():</h3>
+<h3><a name="geometry----get-geometries"></a>1.3 <code>FabCircle.</code>get_geometries():</h3>
 <p>FabCircle.get_geometries(self) -&gt; typing.Tuple[Geometry._Geometry, ...]:</p>
 <p>Return the FabPolygon lines and arcs.</p>
 <h2><a name="geometry--fabgeometry"></a>2 Class FabGeometry:</h2>
@@ -61,9 +75,22 @@ Vector(10, -10, 0),  # Lower right (no radius)
 <li><em>Corners</em> (Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]):
 See description below for more on corners.</li>
 </ul>
-<h3><a name="geometry----get-geometries"></a>3.1 <code>FabPolygon.</code>get_geometries():</h3>
+<h3><a name="geometry----project-to-plane"></a>3.1 <code>FabPolygon.</code>project_to_plane():</h3>
+<p>FabPolygon.project_to_plane(self, new_name: str, contact: Base.Vector, normal: Base.Vector, tracing: str = '') -&gt; 'FabPolygon':</p>
+<p>Return nre FabPolygon prejected onto a plane.
+Arguments:</p>
+<ul>
+<li><em>new_name</em> (str): The new FabPolygon name.</li>
+<li><em>contact</em> (Vector): One point on the plane.</li>
+<li><em>normal</em> (Vector): A normal to the plane.</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li>(FabPolyGon): The newly projected FabPolygon.</li>
+</ul>
+<h3><a name="geometry----get-geometries"></a>3.2 <code>FabPolygon.</code>get_geometries():</h3>
 <p>FabPolygon.get_geometries(self, contact: Base.Vector, Normal: Base.Vector) -&gt; typing.Tuple[Geometry._Geometry, ...]:</p>
 <p>Return the FabPolygon lines and arcs.</p>
-<h3><a name="geometry----produce"></a>3.2 <code>FabPolygon.</code>produce():</h3>
+<h3><a name="geometry----produce"></a>3.3 <code>FabPolygon.</code>produce():</h3>
 <p>FabPolygon.produce(self, context: typing.Dict[str, typing.Any], prefix: str) -&gt; typing.Tuple[Part.Part2DObject, ...]:</p>
 <p>Produce the FreeCAD objects needed for FabPolygon.</p>
