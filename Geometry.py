@@ -678,6 +678,23 @@ class FabPolygon(FabGeometry):
 
     EPSILON = 1.0e-8
 
+    # FabPolygon.Box:
+    @property
+    def Box(self) -> FabBox:
+        """Return FabBox that encloses FabPolygon."""
+        points: List[Vector] = []
+        corner: Union[Vector, Tuple[Vector, Union[int, float]]]
+        for corner in self.Corners:
+            if isinstance(corner, Vector):
+                points.append(corner)
+            else:
+                point: Vector = corner[0]
+                assert isinstance(point, Vector)
+                points.append(corner)
+        box: FabBox = FabBox()
+        box.enclose(points)
+        return box
+
     # FabPolygon.__post_init__():
     def __post_init__(self) -> None:
         """Verify that the corners passed in are correct."""

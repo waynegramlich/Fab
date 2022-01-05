@@ -11,6 +11,7 @@
 <li>2 Class: <a href="#geometry--fabgeometry">FabGeometry</a>:
 <ul>
 <li>2.1 <a href="#geometry----produce">produce()</a>: Produce the necessary FreeCAD objects for the FabGeometry.</li>
+<li>2.2 <a href="#geometry----project-to-plane">project_to_plane()</a>: Return a new FabGeometry projected onto a plane.</li>
 </ul>
 </li>
 <li>3 Class: <a href="#geometry--fabpolygon">FabPolygon</a>:
@@ -28,6 +29,7 @@ circle later on.</p>
 <p>Attributes:</p>
 <ul>
 <li><em>Center</em> (Vector): The circle center.</li>
+<li><em>Normal</em> (Vector): The normal to circle plane.</li>
 <li><em>Diameter</em> (float): The diameter in millimeters.</li>
 </ul>
 <h3><a name="geometry----project-to-plane"></a>1.1 <code>FabCircle.</code>project_to_plane():</h3>
@@ -53,6 +55,9 @@ Arguments:</p>
 <h3><a name="geometry----produce"></a>2.1 <code>FabGeometry.</code>produce():</h3>
 <p>FabGeometry.produce(self, model_context: typing.Any, prefix: str) -&gt; typing.Tuple[Part.Part2DObject, ...]:</p>
 <p>Produce the necessary FreeCAD objects for the FabGeometry.</p>
+<h3><a name="geometry----project-to-plane"></a>2.2 <code>FabGeometry.</code>project_to_plane():</h3>
+<p>FabGeometry.project_to_plane(self, contact: Base.Vector, normal: Base.Vector) -&gt; 'FabGeometry':</p>
+<p>Return a new FabGeometry projected onto a plane.</p>
 <h2><a name="geometry--fabpolygon"></a>3 Class FabPolygon:</h2>
 <p>An immutable polygon with rounded corners.
 A FabPolygon is represented as a sequence of corners (i.e. a Vector) where each corner can
@@ -71,16 +76,14 @@ Vector(10, -10, 0),  # Lower right (no radius)
 ), &quot;Name&quot;)</p>
 <p>Attributes:</p>
 <ul>
-<li><em>Name</em> (str): The name of the polygon.  (Default: &quot;&quot;)</li>
 <li><em>Corners</em> (Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]):
 See description below for more on corners.</li>
 </ul>
 <h3><a name="geometry----project-to-plane"></a>3.1 <code>FabPolygon.</code>project_to_plane():</h3>
-<p>FabPolygon.project_to_plane(self, new_name: str, contact: Base.Vector, normal: Base.Vector, tracing: str = '') -&gt; 'FabPolygon':</p>
+<p>FabPolygon.project_to_plane(self, contact: Base.Vector, normal: Base.Vector, tracing: str = '') -&gt; 'FabPolygon':</p>
 <p>Return nre FabPolygon prejected onto a plane.
 Arguments:</p>
 <ul>
-<li><em>new_name</em> (str): The new FabPolygon name.</li>
 <li><em>contact</em> (Vector): One point on the plane.</li>
 <li><em>normal</em> (Vector): A normal to the plane.</li>
 </ul>

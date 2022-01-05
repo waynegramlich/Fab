@@ -42,7 +42,7 @@ from FreeCAD import Placement, Rotation, Vector
 
 from Geometry import FabCircle, FabGeometry, FabPolygon
 from Join import FabFasten, FabJoin
-from Tree import FabNode
+from Tree import FabBox, FabNode
 from Utilities import FabColor
 
 
@@ -161,7 +161,7 @@ class FabFile(FabNode):
 
         # Create the new *app_document*:
         errors: List[str] = []
-        if self.Construct:
+        if self.Construct:  # Construct OK
             context: Dict[str, Any] = self.Context
             context_keys: Tuple[str, ...]
             if tracing:
@@ -196,7 +196,7 @@ class FabFile(FabNode):
         if tracing:
             print(f"{tracing}=>FabFile({self.Name}).post_produce()")
 
-        if self.Construct:
+        if self.Construct:  # Construct OK
             # Recompute and save:
             app_document: App.Document = self._AppDocument
             app_document.recompute()
@@ -874,7 +874,7 @@ class FabMount(object):
         if tracing:
             print(f"{tracing}=>FabMount.produce('{self.Name}')")
 
-        if self.Construct:
+        if self.Construct:  # Construct OK
             if tracing:
                 print(f"{tracing}{sorted(context.keys())=}")
             contact: Vector = self._Contact
@@ -948,6 +948,25 @@ class FabMount(object):
         if tracing:
             print(f"{tracing}=>FabMount({self.Name}).pad('{name}', *)")
 
+        # Figure out the contact
+        top_contact: Vector = self._Contact
+        copy: Vector = Vector()
+        normal: Vector = (self._Normal + copy).normalize()
+        bottom_contact: Vector = top_contact - depth * normal
+
+        boxes: List[FabBox] = []
+        geometries: Tuple[FabGeometry, ...]
+        if isinstance(shapes, FabGeometry):
+            geometries = (shapes,)
+        else:
+            geometries = shapes
+
+        geometry: FabGeometry
+        for geometry in geometries:
+            boxes.append(geometry.project_to_plane(top_contact, normal).Box)
+            boxes.append(geometry.project_to_plane(bottom_contact, normal).Box)
+        self._Solid.enclose(boxes)
+
         errors: List[str] = []
         if self.Construct:
             context: Dict[str, Any] = self._Context.copy()
@@ -977,7 +996,7 @@ class FabMount(object):
             print(f"{tracing}=>FabMount({self.Name}).pocket('{name}', *)")
 
         errors: List[str] = []
-        if self.Construct:
+        if self.Construct:   # Construct OK
             context: Dict[str, Any] = self._Context.copy()
             context_keys: Tuple[str, ...]
             if tracing:
@@ -1022,9 +1041,9 @@ class FabMount(object):
             for join in joins:
                 assert isinstance(join, FabJoin)
                 if join.normal_aligned(mount_normal):
-                    print(f">>>>>>>>>>>>>>>>{join.Name} is aligned")
                     join_start: Vector = join.Start
                     join_end: Vector = join.End
+                    print(f">>>>>>>>>>>>>>>>{join.Name} is aligned: {join_start} -> {join_end}")
                     intersect: bool
                     trimmed_start: Vector
                     trimmed_end: Vector
@@ -1354,11 +1373,11 @@ class BoxSide(FabSolid):
             for dlength in (length - 3.0 * depth, length - 3.0 * depth):
                 for dwidth in (width - depth / 2.0, width - depth / 2.0):
                     start: Vector = contact + dlength * length_direction + dwidth * width_direction
-                    end: Vector = start - (3 * depth) * (-normal_direction)
+                    end: Vector = start - (3 * depth) * normal_direction
                     screw: FabJoin = FabJoin(f"{name}Join{len(screws)}", fasten, start, end)
                     screws.append(screw)
 
-        if self.Construct:
+        if True and self.Construct:
             half_length: Vector = self.HalfLength
             half_width: Vector = self.HalfWidth
             all_screws: Tuple[FabJoin, ...] = box.get_all_screws()
