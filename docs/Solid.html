@@ -49,16 +49,10 @@
 </li>
 <li>10 Class: <a href="#solid--fabmount">FabMount</a>:
 <ul>
-<li>10.1 <a href="#solid----xsolid">XSolid()</a>: Return the FabSolid.</li>
-<li>10.2 <a href="#solid----contact">Contact()</a>: Return the FabMount contact point.</li>
-<li>10.3 <a href="#solid----normal">Normal()</a>: Return the FabMount normal.</li>
-<li>10.4 <a href="#solid----orient">Orient()</a>: Return the FabMount Orientation.</li>
-<li>10.5 <a href="#solid----depth">Depth()</a>: Return the depth.</li>
-<li>10.6 <a href="#solid----construct">Construct()</a>: Return whether construction is turned on.</li>
-<li>10.7 <a href="#solid----produce">produce()</a>: Create the FreeCAD DatumPlane used for the drawing support.</li>
-<li>10.8 <a href="#solid----pad">pad()</a>: Perform a pad operation.</li>
-<li>10.9 <a href="#solid----pocket">pocket()</a>: Perform a pocket operation.</li>
-<li>10.10 <a href="#solid----drill">drill()</a>: Perform drill opertation(s)</li>
+<li>10.1 <a href="#solid----produce">produce()</a>: Create the FreeCAD DatumPlane used for the drawing support.</li>
+<li>10.2 <a href="#solid----pad">pad()</a>: Perform a pad operation.</li>
+<li>10.3 <a href="#solid----pocket">pocket()</a>: Perform a pocket operation.</li>
+<li>10.4 <a href="#solid----drill-joins">drill_joins()</a>: Drill some FabJoin's into a FabMount.</li>
 </ul>
 </li>
 <li>11 Class: <a href="#solid--faboperation">FabOperation</a>:
@@ -88,7 +82,8 @@
 <li>15 Class: <a href="#solid--fabsolid">FabSolid</a>:
 <ul>
 <li>15.1 <a href="#solid----mount">mount()</a>: Return a new FabMount.</li>
-<li>15.2 <a href="#solid----pre-produce">pre_produce()</a>: Produce an Empty FabSolid prior to performing operations.</li>
+<li>15.2 <a href="#solid----drill-joins">drill_joins()</a>: Apply drill FabJoin holes for a FabSolid.</li>
+<li>15.3 <a href="#solid----pre-produce">pre_produce()</a>: Produce an Empty FabSolid prior to performing operations.</li>
 </ul>
 </li>
 <li>16 Class: <a href="#solid--fabthread">FabThread</a>:
@@ -251,36 +246,18 @@ This class is immutable (i.e. frozen.)</p>
 A vector that is projected onto the plane to specify orientation when mounted.</li>
 <li><em>Depth</em> (float): The maximum depth limit for all operations.</li>
 </ul>
-<h3><a name="solid----xsolid"></a>10.1 <code>FabMount.</code>XSolid():</h3>
-<p>FabMount.XSolid(self) -&gt; 'FabSolid':</p>
-<p>Return the FabSolid.</p>
-<h3><a name="solid----contact"></a>10.2 <code>FabMount.</code>Contact():</h3>
-<p>FabMount.Contact(self) -&gt; Base.Vector:</p>
-<p>Return the FabMount contact point.</p>
-<h3><a name="solid----normal"></a>10.3 <code>FabMount.</code>Normal():</h3>
-<p>FabMount.Normal(self) -&gt; Base.Vector:</p>
-<p>Return the FabMount normal.</p>
-<h3><a name="solid----orient"></a>10.4 <code>FabMount.</code>Orient():</h3>
-<p>FabMount.Orient(self) -&gt; Base.Vector:</p>
-<p>Return the FabMount Orientation.</p>
-<h3><a name="solid----depth"></a>10.5 <code>FabMount.</code>Depth():</h3>
-<p>FabMount.Depth(self) -&gt; float:</p>
-<p>Return the depth.</p>
-<h3><a name="solid----construct"></a>10.6 <code>FabMount.</code>Construct():</h3>
-<p>FabMount.Construct(self) -&gt; bool:</p>
-<p>Return whether construction is turned on.</p>
-<h3><a name="solid----produce"></a>10.7 <code>FabMount.</code>produce():</h3>
+<h3><a name="solid----produce"></a>10.1 <code>FabMount.</code>produce():</h3>
 <p>FabMount.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
 <p>Create the FreeCAD DatumPlane used for the drawing support.</p>
-<h3><a name="solid----pad"></a>10.8 <code>FabMount.</code>pad():</h3>
+<h3><a name="solid----pad"></a>10.2 <code>FabMount.</code>pad():</h3>
 <p>FabMount.pad(self, name: str, shapes: typing.Union[Geometry.FabGeometry, typing.Tuple[Geometry.FabGeometry, ...]], depth: float, tracing: str = '') -&gt; None:</p>
 <p>Perform a pad operation.</p>
-<h3><a name="solid----pocket"></a>10.9 <code>FabMount.</code>pocket():</h3>
+<h3><a name="solid----pocket"></a>10.3 <code>FabMount.</code>pocket():</h3>
 <p>FabMount.pocket(self, name: str, shapes: typing.Union[Geometry.FabGeometry, typing.Tuple[Geometry.FabGeometry, ...]], depth: float, tracing: str = '') -&gt; None:</p>
 <p>Perform a pocket operation.</p>
-<h3><a name="solid----drill"></a>10.10 <code>FabMount.</code>drill():</h3>
-<p>FabMount.drill(self, name: str, joins: typing.Union[Join.FabJoin, typing.Tuple[Join.FabJoin, ...]], tracing: str = '') -&gt; None:</p>
-<p>Perform drill opertation(s)</p>
+<h3><a name="solid----drill-joins"></a>10.4 <code>FabMount.</code>drill_joins():</h3>
+<p>FabMount.drill_joins(self, joins: typing.Union[Join.FabJoin, typing.Sequence[Join.FabJoin]], tracing: str = '') -&gt; None:</p>
+<p>Drill some FabJoin's into a FabMount.</p>
 <h2><a name="solid--faboperation"></a>11 Class FabOperation:</h2>
 <p>An base class for operations -- FabPad, FabPocket, FabHole, etc.
 All model operations are immutable (i.e. frozen.)</p>
@@ -352,7 +329,24 @@ Inherited Attributes:</p>
 <h3><a name="solid----mount"></a>15.1 <code>FabSolid.</code>mount():</h3>
 <p>FabSolid.mount(self, name: str, contact: Base.Vector, normal: Base.Vector, orient: Base.Vector, depth: float, tracing: str = '') -&gt; Solid.FabMount:</p>
 <p>Return a new FabMount.</p>
-<h3><a name="solid----pre-produce"></a>15.2 <code>FabSolid.</code>pre_produce():</h3>
+<h3><a name="solid----drill-joins"></a>15.2 <code>FabSolid.</code>drill_joins():</h3>
+<p>FabSolid.drill_joins(self, joins: typing.Sequence[Join.FabJoin], mounts: typing.Union[typing.Sequence[Solid.FabMount], NoneType] = None) -&gt; None:</p>
+<p>Apply drill FabJoin holes for a FabSolid.
+Iterate pairwise through a sequence of FabJoin's and FabMount's and for each pair
+attempt to drill a bunch the FabJoin holes for the associated FabSolid.  The drill
+operation only occurs if the FabJoin is in alignment with the FabMount normal (in
+either direction) <em>and</em> if the FabJoin intersects with the underlying FabSolid;
+otherwise nothing is for that particular FabMount and FabJoin pair.</p>
+<p>Arguments:</p>
+<ul>
+<li><em>joins</em> (Optional[Sequence[FabJoin]]):
+The tuple/list of FabJoin's to apply.</li>
+<li><em>mounts</em> (Optional[Sequence[FabMount]]):
+The mounts to to apply the <em>joins</em> to.  If <em>mounts</em> is <em>None</em>, all of the
+mounts for the current FabSolid are used.  (Default: None)</li>
+</ul>
+<p>For now, please call this method after all FabMount's are created.</p>
+<h3><a name="solid----pre-produce"></a>15.3 <code>FabSolid.</code>pre_produce():</h3>
 <p>FabSolid.pre_produce(self) -&gt; typing.Tuple[str, ...]:</p>
 <p>Produce an Empty FabSolid prior to performing operations.</p>
 <h2><a name="solid--fabthread"></a>16 Class FabThread:</h2>

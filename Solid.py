@@ -28,7 +28,7 @@ import Embed
 Embed.setup()
 
 from dataclasses import dataclass, field
-from typing import Any, cast, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, cast, Dict, List, Optional, Sequence, Set, Tuple, Union
 from pathlib import Path
 
 
@@ -839,31 +839,37 @@ class FabMount(object):
         return self._Name
 
     # FabMount.Solid:
-    def XSolid(self) -> "FabSolid":
+    @property
+    def Solid(self) -> "FabSolid":
         """Return the FabSolid."""
         return self._Solid
 
     # FabMount.Contact:
+    @property
     def Contact(self) -> Vector:
         """Return the FabMount contact point."""
         return self._Contact + self._Copy
 
     # FabMount.Normal:
+    @property
     def Normal(self) -> Vector:
         """Return the FabMount normal."""
         return self._Normal + self._Copy
 
     # FabMount.Orient:
+    @property
     def Orient(self) -> Vector:
         """Return the FabMount Orientation."""
         return self._Orient + self._Copy
 
     # FabMount.Depth:
+    @property
     def Depth(self) -> float:
         """Return the depth."""
         return self._Depth
 
     # FabMount.Construct:
+    @property
     def Construct(self) -> bool:
         """Return whether construction is turned on."""
         return self._Solid.Construct
@@ -944,6 +950,7 @@ class FabMount(object):
     def pad(self, name: str, shapes: Union[FabGeometry, Tuple[FabGeometry, ...]],
             depth: float, tracing: str = "") -> None:
         """Perform a pad operation."""
+        tracing = self._Solid.Tracing
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabMount({self.Name}).pad('{name}', *)")
@@ -970,6 +977,8 @@ class FabMount(object):
         errors: List[str] = []
         if self.Construct:
             context: Dict[str, Any] = self._Context.copy()
+            context["mount_contact"] = self._Contact
+            context["mount_normal"] = self._Normal
             context_keys: Tuple[str, ...]
             if tracing:
                 context_keys = tuple(sorted(context.keys()))
@@ -1015,44 +1024,42 @@ class FabMount(object):
         if tracing:
             print(f"{tracing}<=FabMount({self.Name}).pocket('{name}', *)=>|len(errors)|")
 
-    # FabMount.drill():
-    def drill(self, name: str, joins: Union[FabJoin, Tuple[FabJoin, ...]],
-              tracing: str = "") -> None:
-        """Perform drill opertation(s)"""
+    # FabMount.drill_joins():
+    def drill_joins(self,
+                    joins: Union[FabJoin, Sequence[FabJoin]], tracing: str = "") -> None:
+        """Drill some FabJoin's into a FabMount."""
+        # Quickly convert a single FabJoin into a tuple:
+        if isinstance(joins, FabJoin):
+            joins = (joins,)
+        # next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>FabMount({self.Name}).drill({name}, |len(joins)|")
-        if self.Construct:
-            if isinstance(joins, FabJoin):
-                joins = (joins,)
-            assert isinstance(joins, tuple)
+            print(f"{tracing}=>FabMount({self.Name}).drill_joins(|len(joins)|")
 
+        if self.Construct:
             context: Dict[str, Any] = self._Context.copy()
             context_keys: Tuple[str, ...]
-            if tracing:
-                context_keys = tuple(sorted(context.keys()))
-                print(f"{tracing}Before drill Context: {context_keys}")
             copy: Vector = Vector()
             # mount_contact: Vector = cast(Vector, context["mount_contact"])
             mount_normal: Vector = (cast(Vector, context["mount_normal"]) + copy).normalize()
             solid: "FabSolid" = self._Solid
-            print(f"{solid.BB=}")
 
-            join: FabJoin
+            # intersect_joins: List[FabJoin] = []
             for join in joins:
-                assert isinstance(join, FabJoin)
+                assert isinstance(join, FabJoin), f"{type(join)} is not a FabJoin"
+
                 if join.normal_aligned(mount_normal):
                     join_start: Vector = join.Start
                     join_end: Vector = join.End
-                    print(f">>>>>>>>>>>>>>>>{join.Name} is aligned: {join_start} -> {join_end}")
                     intersect: bool
                     trimmed_start: Vector
                     trimmed_end: Vector
                     intersect, trimmed_start, trimmed_end = solid.intersect(join_start, join_end)
                     if intersect:
-                        print(f"<<<<<<<<<<<<<<<<{join.Name} intesects {solid.Name}")
+                        if tracing:
+                            print(f"{tracing}>>>>>>>>>>>>>>>>{join.Name} intesects {solid.Name}")
 
         if tracing:
-            print(f"{tracing}<=FabMount({self.Name}).drill({name}, |len(joins)|")
+            print(f"{tracing}<=FabMount({self.Name}).drill_joins(|len(joins)|")
 
 
 # FabSolid:
@@ -1072,6 +1079,7 @@ class FabSolid(FabNode):
 
     Material: str
     Color: str
+    _Mounts: Dict[str, FabMount] = field(init=False, repr=False)
 
     # FabSolid.__post_init__():
     def __post_init__(self) -> None:
@@ -1079,8 +1087,11 @@ class FabSolid(FabNode):
         super().__post_init__()
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}FabSolid({self.Name}).__post_init__()")
+            print(f"{tracing}=>FabSolid({self.Name}).__post_init__()")
         # TODO: Do additional type checking here:
+        self._Mounts = {}
+        if tracing:
+            print(f"{tracing}<=FabSolid({self.Name}).__post_init__()")
 
     @property
     def Construct(self) -> bool:
@@ -1095,27 +1106,54 @@ class FabSolid(FabNode):
         if tracing:
             print(f"{tracing}=>FabSolid({self.Name}).mount('{name}', ...)")
 
+        fab_mount: FabMount = FabMount(name, self, contact, normal, orient, depth)
+        self._Mounts[name] = fab_mount
         if self.Construct:
             context: Dict[str, Any] = self.Context
-            context_keys: Tuple[str, ...]
-            if tracing:
-                print(f"{tracing}>>>>>>>>>>>>>>>> FabMount()")
-                context_keys = tuple(sorted(context.keys()))
-                print(f"{tracing}Before mount() context: {context_keys}")
-            fab_mount: FabMount = FabMount(name, self, contact, normal, orient, depth)
-
-            if tracing:
-                print(f"{tracing}++++++++++++++++ produce()")
             fab_mount.produce(context, tracing=next_tracing)
-
-            if tracing:
-                context_keys = tuple(sorted(context.keys()))
-                print(f"{tracing}After mount() context: {context_keys}")
-                print(f"{tracing}<<<<<<<<<<<<<<<<")
 
         if tracing:
             print(f"{tracing}=>FabSolid({self.Name}).mount('{name}', ...)=>{fab_mount}")
         return fab_mount
+
+    # FabSolid.drill_joins():
+    def drill_joins(self, joins: Sequence[FabJoin],
+                    mounts: Optional[Sequence[FabMount]] = None) -> None:
+        """Apply drill FabJoin holes for a FabSolid.
+
+        Iterate pairwise through a sequence of FabJoin's and FabMount's and for each pair
+        attempt to drill a bunch the FabJoin holes for the associated FabSolid.  The drill
+        operation only occurs if the FabJoin is in alignment with the FabMount normal (in
+        either direction) *and* if the FabJoin intersects with the underlying FabSolid;
+        otherwise nothing is for that particular FabMount and FabJoin pair.
+
+        Arguments:
+        * *joins* (Optional[Sequence[FabJoin]]):
+          The tuple/list of FabJoin's to apply.
+        * *mounts* (Optional[Sequence[FabMount]]):
+          The mounts to to apply the *joins* to.  If *mounts* is *None*, all of the
+          mounts for the current FabSolid are used.  (Default: None)
+
+        For now, please call this method after all FabMount's are created.
+        """
+        tracing: str = self.Tracing
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabSolid({self.Name}).drill_joins(|{len(joins)}|, *)")
+
+        if self.Construct:
+            if not mounts:
+                mounts = tuple(self._Mounts.values())
+            assert isinstance(mounts, (tuple, list)), mounts
+            mount: FabMount
+            for mount in mounts:
+                assert mount._Solid is self, (
+                    f"FabMount({mount.Name}) of FabSolid({mount.Name} can not be "
+                    f"used with FabSolid({self.Name})")
+                mount.drill_joins(joins, tracing=next_tracing)
+
+        if tracing:
+            print(f"{tracing}<=FabSolid({self.Name}).drill_joins(|{len(joins)}|, *)")
 
     # FabSolid.produce():
     def pre_produce(self) -> Tuple[str, ...]:
@@ -1348,7 +1386,6 @@ class BoxSide(FabSolid):
     def produce(self) -> Tuple[str, ...]:
         """Produce BoxSide."""
         tracing: str = self.Tracing
-        next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>BoxSide({self.Name}).produce()")
         box = cast(Box, self.Up)
@@ -1366,6 +1403,7 @@ class BoxSide(FabSolid):
         width_direction: Vector = (self.HalfWidth + copy).normalize()
         width: float = self.HalfWidth.Length
 
+        # Create all of the *screws*:
         del screws[:]
         dlength: float
         dwidth: float
@@ -1377,21 +1415,21 @@ class BoxSide(FabSolid):
                     screw: FabJoin = FabJoin(f"{name}Join{len(screws)}", fasten, start, end)
                     screws.append(screw)
 
-        if True and self.Construct:
-            half_length: Vector = self.HalfLength
-            half_width: Vector = self.HalfWidth
-            all_screws: Tuple[FabJoin, ...] = box.get_all_screws()
+        # Extrude the side:
+        half_length: Vector = self.HalfLength
+        half_width: Vector = self.HalfWidth
+        all_screws: Tuple[FabJoin, ...] = box.get_all_screws()
+        mount: FabMount = self.mount(f"{name}Mount", contact, self.Normal, self.Orient, depth)
+        corners: Tuple[Vector, ...] = (
+            contact + half_length + half_width,
+            contact + half_length - half_width,
+            contact - half_length - half_width,
+            contact - half_length + half_width,
+        )
+        polygon: FabPolygon = FabPolygon(corners)
+        mount.pad(f"{name}Pad", polygon, depth)
+        self.drill_joins(all_screws)
 
-            mount: FabMount = self.mount(f"{name}Mount", contact, self.Normal, self.Orient, depth)
-            corners: Tuple[Vector, ...] = (
-                contact + half_length + half_width,
-                contact + half_length - half_width,
-                contact - half_length - half_width,
-                contact - half_length + half_width,
-            )
-            polygon: FabPolygon = FabPolygon(corners)
-            mount.pad(f"{name}Pad", polygon, depth)
-            mount.drill("{name}Drill", all_screws, tracing=next_tracing)
         if tracing:
             print(f"{tracing}<=BoxSide({self.Name}).produce()")
         return ()
