@@ -994,7 +994,7 @@ class FabMount(object):
                 print(f"{tracing}After Pad Context: {context_keys}")
 
         if tracing:
-            print(f"{tracing}<=FabMount({self.Name}).pad('{name}', *)=>|len(errors)|")
+            print(f"{tracing}<=FabMount({self.Name}).pad('{name}', *)=>|{len(errors)}|")
 
     # FabMount.pocket():
     def pocket(self, name: str, shapes: Union[FabGeometry, Tuple[FabGeometry, ...]],
@@ -1022,44 +1022,169 @@ class FabMount(object):
                 print(f"{tracing}After Pad Context: {context_keys}")
 
         if tracing:
-            print(f"{tracing}<=FabMount({self.Name}).pocket('{name}', *)=>|len(errors)|")
+            print(f"{tracing}<=FabMount({self.Name}).pocket('{name}', *)=>|{len(errors)}|")
 
     # FabMount.drill_joins():
     def drill_joins(self,
                     joins: Union[FabJoin, Sequence[FabJoin]], tracing: str = "") -> None:
         """Drill some FabJoin's into a FabMount."""
         # Quickly convert a single FabJoin into a tuple:
+
+        EPSILON: float = 1.0e-8
+
+        # close():
+        def close(vector1: Vector, vector2: Vector) -> bool:
+            """Return whether 2 normals are very close to one another."""
+            return (vector1 - vector2).Length < EPSILON
+
         if isinstance(joins, FabJoin):
             joins = (joins,)
-        # next_tracing: str = tracing + " " if tracing else ""
+        next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>FabMount({self.Name}).drill_joins(|len(joins)|")
+            print(f"{tracing}=>FabMount({self.Name}).drill_joins(|{len(joins)}|")
 
         if self.Construct:
             context: Dict[str, Any] = self._Context.copy()
             context_keys: Tuple[str, ...]
             copy: Vector = Vector()
             # mount_contact: Vector = cast(Vector, context["mount_contact"])
+            # prefix = cast(str, context["prefix"])
+            prefix: str = "FIX_PREFIX"
+            next_prefix: str = f"{prefix}_{self.Name}"
+            mount_contact = cast(Vector, context["mount_contact"])
             mount_normal: Vector = (cast(Vector, context["mount_normal"]) + copy).normalize()
+            mount_depth: float = cast(float, context["mount_depth"])
+            body = cast(Part.BodyBase, context["solid_body"])
             solid: "FabSolid" = self._Solid
+            z_axis: Vector = Vector(0, 0, 1)
+            mount_z_aligned: bool = close(mount_normal, z_axis)
 
             # intersect_joins: List[FabJoin] = []
-            for join in joins:
+            holes: List[_Hole] = []
+            join_index: int  # Used for forcing individual drill operations (see below):
+            for join_index, join in enumerate(joins):
                 assert isinstance(join, FabJoin), f"{type(join)} is not a FabJoin"
+                fasten: FabFasten = join.Fasten
 
                 if join.normal_aligned(mount_normal):
                     join_start: Vector = join.Start
                     join_end: Vector = join.End
+                    # if tracing:
+                    #     print(f"{tracing}>>>>>>>>{join.Name} "
+                    #            f"aligns {solid.Name}: {join_start}=>{join_end}")
                     intersect: bool
                     trimmed_start: Vector
                     trimmed_end: Vector
                     intersect, trimmed_start, trimmed_end = solid.intersect(join_start, join_end)
                     if intersect:
+                        mount_start: Vector = (join_start + copy).projectToPlane(
+                            mount_contact + copy, mount_normal + copy)
+                        trimmed_length: float = (trimmed_start - trimmed_end).Length
+                        trimmed_depth: float = min(trimmed_length, mount_depth)
                         if tracing:
                             print(f"{tracing}>>>>>>>>>>>>>>>>{join.Name} intesects {solid.Name}")
+                            print(f"{tracing}{solid.Name} Box: {solid.TNE} : {solid.BSW}")
+                            print(f"{tracing}{prefix} Normal: {mount_normal=}")
+                            print(f"{tracing}Join:    {join_start} => {join_end}")
+                            print(f"{tracing}Trimmed: {trimmed_start} => {trimmed_end}")
+                            print(f"{tracing}Mount - Depth: {mount_start} {trimmed_depth}")
+                        is_top: bool = close(join_start, trimmed_start)
+                        # TODO: figure out *kind*:
+                        kind: str = "close"  # or "thread", or "loose"
+                        # This is extremley ugly for now.  If the *mount_normal* equals the
+                        # +Z axis, multiple holes with the same characterisics can be drilled
+                        # with one hole operation.  Otherwise, one drill operation per hole
+                        # is requrired.  This is done by setting *unique* to *join_index*.
+                        if tracing:
+                            print(f"{tracing}{mount_depth=} {trimmed_depth=}")
+                        assert trimmed_depth > 0.0, trimmed_depth
+                        unique: int = -1 if mount_z_aligned else join_index
+                        hole: _Hole = _Hole(fasten.ThreadName, kind,
+                                            trimmed_depth, is_top, unique, mount_start, join)
+                        holes.append(hole)
+
+            # Group all *holes* with the same *key* together:
+            if tracing:
+                print(f"{tracing}{len(holes)=}")
+            key: _HoleKey
+            hole_groups: Dict[_HoleKey, List[_Hole]] = {}
+            for hole in holes:
+                key = hole.Key
+                if key not in hole_groups:
+                    hole_groups[key] = []
+                hole_groups[key].append(hole)
+
+            # For each *hole_group* create a PartDesign Hole:
+            index: int
+            for index, key in enumerate(sorted(hole_groups.keys())):
+                # Unpack *key*:
+                thread_name: str
+                thread_name, kind, depth, is_top, unique = key
+                diameter: float = fasten.get_diameter(kind)
+
+                # Construct the *part_geometries* for each *hole*:
+                part_geometries: List[Part.Part2DObject] = []
+                hole_group: List[_Hole] = hole_groups[key]
+                for hole in hole_group:
+                    center: Vector = hole.Center
+                    circle: FabCircle = FabCircle(center, mount_normal, diameter)
+                    part_geometries.extend(
+                        circle.produce(context.copy(),
+                                       next_prefix, tracing=next_tracing))
+
+                # Now do the FreeCAD stuff:
+                # Create the *shape_binder*:
+                next_prefix = f"{prefix}.DrillCircle{index:03d}"
+
+                binder_placement: Placement = Placement()  # Do not move/reorient anything.
+                if tracing:
+                    print(f"{tracing}{binder_placement.Rotation.Axis=}")
+
+                # datum_plane: Any = context["mount_plane"]
+                shape_binder: Part.Feature = body.newObject(
+                    "PartDesign::SubShapeBinder", f"{prefix}_Binder")
+                assert isinstance(shape_binder, Part.Feature)
+                shape_binder.Placement = binder_placement
+                shape_binder.Support = (part_geometries)
+                # shape_binder.Support = (datum_plane, [""])
+                shape_binder.Visibility = False
+
+                # TODO: fill in actual values for Hole.
+                # Create the *hole* and upstate the view provider for GUI mode:
+                part_hole: Part.Feature = body.newObject("PartDesign::Hole",
+                                                         f"{next_prefix}_Hole")
+                assert isinstance(part_hole, Part.Feature)
+                part_hole.Profile = shape_binder
+                part_hole.Diameter = diameter
+                part_hole.Depth = depth
+                part_hole.UpToFace = None
+                part_hole.Reversed = False
+                part_hole.Midplane = 0
+
+                # Fill in other fields for the top mount.
+                # if is_top:
+                #     assert False, "Fill in other fields."
+
+                # For the GUI, update the view provider:
+                # self._viewer_update(body, part_hole)
+
+                if App.GuiUp:  # pragma: no unit cover
+                    visibility_set(part_hole, True)
+                    view_object: Any = body.getLinkedObject(True).ViewObject
+                    part_hole.ViewObject.LineColor = getattr(
+                        view_object, "LineColor", part_hole.ViewObject.LineColor)
+                    part_hole.ViewObject.ShapeColor = getattr(
+                        view_object, "ShapeColor", part_hole.ViewObject.ShapeColor)
+                    part_hole.ViewObject.PointColor = getattr(
+                        view_object, "PointColor", part_hole.ViewObject.PointColor)
+                    part_hole.ViewObject.Transparency = getattr(
+                        view_object, "Transparency", part_hole.ViewObject.Transparency)
+                    # The following code appears to disable edge highlighting:
+                    # part_hole.ViewObject.DisplayMode = getattr(
+                    #    view_object, "DisplayMode", part_hole.ViewObject.DisplayMode)
 
         if tracing:
-            print(f"{tracing}<=FabMount({self.Name}).drill_joins(|len(joins)|")
+            print(f"{tracing}<=FabMount({self.Name}).drill_joins(|{len(joins)}|")
 
 
 # FabSolid:
@@ -1186,6 +1311,7 @@ class FabSolid(FabNode):
 
             # Create the *body*
             body: Part.BodyBase
+
             if isinstance(parent_object, App.Document):
                 body = parent_object.addObject("PartDesign::Body", self.Name)
             else:
@@ -1408,8 +1534,10 @@ class BoxSide(FabSolid):
         dlength: float
         dwidth: float
         if name in ("Top", "Bottom", "North", "South"):
-            for dlength in (length - 3.0 * depth, length - 3.0 * depth):
-                for dwidth in (width - depth / 2.0, width - depth / 2.0):
+            length_adjust = 0.5 * depth if name in ("Top", "Bottom") else 0.5 * depth
+            width_adjust = 0.5 * depth if name in ("Top", "Bottom") else 3.0 * depth
+            for dlength in (length - length_adjust, -length + length_adjust):
+                for dwidth in (width - width_adjust, -width + width_adjust):
                     start: Vector = contact + dlength * length_direction + dwidth * width_direction
                     end: Vector = start - (3 * depth) * normal_direction
                     screw: FabJoin = FabJoin(f"{name}Join{len(screws)}", fasten, start, end)
@@ -1419,13 +1547,26 @@ class BoxSide(FabSolid):
         half_length: Vector = self.HalfLength
         half_width: Vector = self.HalfWidth
         all_screws: Tuple[FabJoin, ...] = box.get_all_screws()
-        mount: FabMount = self.mount(f"{name}Mount", contact, self.Normal, self.Orient, depth)
+        mount: FabMount = self.mount(f"{name}FaceMount", contact, self.Normal, self.Orient, depth)
         corners: Tuple[Vector, ...] = (
             contact + half_length + half_width,
             contact + half_length - half_width,
             contact - half_length - half_width,
             contact - half_length + half_width,
         )
+        # Create *edge_mounts*:
+        edge_mounts: List[FabMount] = []
+        edge_index: int = 0
+        direction: Vector
+        for direction in (self.HalfLength, -self.HalfLength, self.HalfWidth, -self.HalfWidth):
+            edge_normal: Vector = (direction + copy).normalize()
+            random_orient: Vector = (self.Normal + copy).cross(direction + copy)
+            edge_mount: FabMount = self.mount(
+                f"{name}Edge{edge_index}Mount", contact + direction,
+                edge_normal, random_orient, depth)
+            edge_mounts.append(edge_mount)
+            edge_index += 1
+
         polygon: FabPolygon = FabPolygon(corners)
         mount.pad(f"{name}Pad", polygon, depth)
         self.drill_joins(all_screws)
@@ -1501,7 +1642,7 @@ class Box(FabAssembly):
         self.South = BoxSide("South", self, Normal=-y_axis, Orient=z_axis,
                              Depth=depth, Material=material, Color="yellow")
         self.East = BoxSide("East", self, Normal=x_axis, Orient=y_axis,
-                            Depth=depth, Material=material, Color="blue")
+                            Depth=depth, Material=material, Color="pink")
         self.West = BoxSide("West", self, Normal=-x_axis, Orient=y_axis,
                             Depth=depth, Material=material, Color="cyan")
         self.Fasten = FabFasten("BoxFasten", "M3x.5", ())  # No options yet.
@@ -1698,7 +1839,7 @@ class TestProject(FabProject):
     def __post_init__(self) -> None:
         """Initialize TestProject."""
         super().__post_init__()
-        self.set_tracing(" ")
+        # self.set_tracing(" ")
         tracing: str = self.Tracing
         if tracing:
             print(f"{tracing}=>TestProject({self.Name}).__post_init__()")

@@ -633,14 +633,15 @@ class FabCircle(FabGeometry):
     # FabCircle._unit_tests():
     def _unit_tests():
         """Run FabCircle unit tests."""
+        normal: Vector = Vector(0, 0, 1)
         center: Vector = Vector(1, 2, 3)
         try:
-            FabCircle(center, 0.0)
+            FabCircle(center, normal, 0.0)
             assert False
         except ValueError as value_error:
             assert str(value_error) == "Diameter (0.0) must be positive.", value_error
         try:
-            FabCircle(center, -1.0)
+            FabCircle(center, normal, -1.0)
             assert False
         except ValueError as value_error:
             assert str(value_error) == "Diameter (-1.0) must be positive.", value_error

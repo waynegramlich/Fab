@@ -644,7 +644,7 @@ class FabFastenTables(object):
         name: str
         mtap: _MDrillTap
         for mtap in cls.METRIC_DRILL_TAPS:
-            name = f"{mtap.MName}x{mtap.MPitch}"
+            name = f"{mtap.MName}x{mtap.MPitch}".replace("x0", "x")  # "M??x0.PP" => "M??x.PP"
             drill_tap = FabDrillTap(
                 name,
                 FabDrillChoice(str(mtap.M75), mtap.M75, mtap.I75, cls.to_mm(mtap.I75)),
@@ -673,7 +673,8 @@ class FabFastenTables(object):
         if not cls.FastenerTable:
             cls.table_initialize()
         if name not in cls.FastenerTable:
-            raise RuntimeError(f"Threaded fastener '{name}' is not found.")
+            raise RuntimeError(f"Threaded fastener '{name}' is not found. "
+                               f"{tuple(cls.FastenerTable.keys())}")
         return cls.FastenerTable[name]
 
 
