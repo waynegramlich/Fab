@@ -290,22 +290,52 @@ class _Pocket(_Operation):
 
     Attributes:
     * *Name* (str): The operation name.
-    * *Geometry* (FabGeometry): The Polygon or Circle to pocket.
+    * *Geometry* (Union[FabGeometry, Tuple[FabGeometry, ...]]):
+       The Polygon or Circle to pocket.  If a tuple is given, the smaller FabGeometry's
+       specify "islands" to not pocket.
     * *Depth* (float): The pocket depth in millimeters.
 
     """
 
-    Geometry: FabGeometry
-    Depth: float
+    _Geometry: Union[FabGeometry, Tuple[FabGeometry, ...]]
+    _Depth: float
+    _Geometries: Tuple[FabGeometry, ...] = field(init=False, repr=False)
 
     # _Pocket__post_init__():
     def __post_init__(self) -> None:
         """Verify _Pocket values."""
         super().__post_init__()
-        if not isinstance(self.Geometry, FabGeometry):
-            raise ValueError(f"{self.Geometry} is not a FabGeometry")
-        if self.Depth <= 0.0:
-            raise ValueError(f"Depth ({self.Depth}) is not positive.")
+
+        # Type check self._Geometry and convert into self._Geometries:
+        geometries: List[FabGeometry] = []
+        self_geometry: Union[FabGeometry, Tuple[FabGeometry, ...]] = self._Geometry
+        if isinstance(self_geometry, FabGeometry):
+            geometries = [self_geometry]
+        elif isinstance(self_geometry, tuple):
+            geometry: FabGeometry
+            for geometry in self_geometry:
+                if not isinstance(geometry, FabGeometry):
+                    raise RuntimeError(f"_Extrude.__post_init__({self.Name}):"
+                                       f"{type(geometry)} is not a FabGeometry")
+                geometries.append(geometry)
+        else:
+            raise RuntimeError(f"_Extrude.__post_init__({self.Name}):{type(self.Geometry)} "
+                               f"is neither a FabGeometry nor a Tuple[FabGeometry, ...]")
+        self._Geometries = tuple(geometries)
+
+        if self._Depth <= 0.0:
+            raise RuntimeError(f"_Extrude.__post_init__({self.Name}):"
+                               f"Depth ({self.Depth}) is not positive.")
+
+    # _Pocket.Geometry():
+    def Geometry(self) -> Union[FabGeometry, Tuple[FabGeometry, ...]]:
+        """Return the original Geometry."""
+        return self._Geometry
+
+    # _Pocket.Depth():
+    def Depth(self) -> float:
+        """Return the original Depth."""
+        return self._Depth
 
     # _Pocket.get_name():
     def get_name(self) -> str:
@@ -321,12 +351,14 @@ class _Pocket(_Operation):
         # Extract the *part_geometries*:
         prefix = cast(str, context["prefix"])
         next_prefix: str = f"{prefix}_{self.Name}"
-        part_geometries: Tuple[Part.Part2DObject, ...]
-        part_geometries = self.Geometry.produce(context.copy(), next_prefix)
+        part_geometries: List[Part.Part2DObject] = []
+        geometry: FabGeometry
+        for geometry in self._Geometries:
+            part_geometries.extend(geometry.produce(context.copy(), next_prefix))
 
         # Create the *shape_binder*:
         shape_binder: Part.Feature = self.produce_shape_binder(
-            context, part_geometries, next_prefix)
+            context, tuple(part_geometries), next_prefix)
         assert isinstance(shape_binder, Part.Feature)
 
         # Create the *pocket* into *body*:
@@ -334,8 +366,8 @@ class _Pocket(_Operation):
         pocket: Part.Feature = body.newObject("PartDesign::Pocket", f"{next_prefix}_Pocket")
         assert isinstance(pocket, Part.Feature)
         pocket.Profile = shape_binder
-        pocket.Length = self.Depth
-        pocket.Length2 = 10.0 * self.Depth
+        pocket.Length = self._Depth
+        pocket.Length2 = 10.0 * self._Depth
         pocket.Type = 0
         pocket.UpToFace = None
         pocket.Reversed = 0
@@ -620,6 +652,11 @@ class FabMount(_Internal):
         if tracing:
             print(f"{tracing}=>FabMount({self.Name}).pocket('{name}', *)")
 
+        # Create the *pocket* and record it into the FabMount:
+        full_name: str = f"{self.Name}_{name}"
+        pocket: _Pocket = _Pocket(full_name, self, shapes, depth)
+        self.record_operation(pocket)
+
         errors: List[str] = []
         if self.Construct:   # Construct OK
             context: Dict[str, Any] = self._Context.copy()
@@ -630,9 +667,7 @@ class FabMount(_Internal):
             assert isinstance(shapes, FabGeometry)
             assert depth > 0.0
             context["prefix"] = name
-            full_name: str = f"{self.Name}_{name}"
-            fab_pocket: _Pocket = _Pocket(full_name, self, shapes, depth)
-            errors.extend(fab_pocket.produce(context.copy(), next_tracing))
+            errors.extend(pocket.produce(context.copy(), next_tracing))
             if tracing:
                 context_keys = tuple(sorted(context.keys()))
                 print(f"{tracing}After Pocket Context: {context_keys}")
