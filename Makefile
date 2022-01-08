@@ -14,6 +14,7 @@ PY_FILES := \
     Embed.py \
     Geometry.py \
     Join.py \
+    Project.py \
     Solid.py \
     TarSync.py \
     Node.py \

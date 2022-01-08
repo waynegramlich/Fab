@@ -1,0 +1,162 @@
+<h1>Project: Solid: A module for constructing 3D solids.</h1>
+<h2>Table of Contents (alphabetical order):</h2>
+<ul>
+<li>1 Class: <a href="#project--box">Box</a>:
+<ul>
+<li>1.1 <a href="#project----produce">produce()</a>: Produce the Box.</li>
+<li>1.2 <a href="#project----get-all-screws">get_all_screws()</a>: Return all Box screws.</li>
+</ul>
+</li>
+<li>2 Class: <a href="#project--boxside">BoxSide</a>:
+<ul>
+<li>2.1 <a href="#project----produce">produce()</a>: Produce BoxSide.</li>
+</ul>
+</li>
+<li>3 Class: <a href="#project--fabassembly">FabAssembly</a>:</li>
+<li>4 Class: <a href="#project--fabfile">FabFile</a>:
+<ul>
+<li>4.1 <a href="#project----produce">produce()</a>: Create FabFile document.</li>
+<li>4.2 <a href="#project----post-produce">post_produce()</a>: Close the FabFile.</li>
+</ul>
+</li>
+<li>5 Class: <a href="#project--fabgroup">FabGroup</a>:
+<ul>
+<li>5.1 <a href="#project----produce">produce()</a>: Create the FreeCAD group object.</li>
+</ul>
+</li>
+<li>6 Class: <a href="#project--fabproject">FabProject</a>:
+<ul>
+<li>6.1 <a href="#project----get-construct">get_construct()</a>: Return the Construct mode.</li>
+<li>6.2 <a href="#project----run">run()</a>: NO DOC STRING!</li>
+</ul>
+</li>
+<li>7 Class: <a href="#project--testfile">TestFile</a>:</li>
+<li>8 Class: <a href="#project--testproject">TestProject</a>:
+<ul>
+<li>8.1 <a href="#project----probe">probe()</a>: Print out some probe values.</li>
+</ul>
+</li>
+<li>9 Class: <a href="#project--testsolid">TestSolid</a>:
+<ul>
+<li>9.1 <a href="#project----produce">produce()</a>: NO DOC STRING!</li>
+</ul>
+</li>
+</ul>
+<h2><a name="project--box"></a>1 Class Box:</h2>
+<p>Fabricate  a box.
+Builds a box given a length, width, height, material, thickness and center point&quot;</p>
+<p>Inherited Constructor Attributes:</p>
+<ul>
+<li><em>Name</em> (str): Box name.</li>
+<li><em>Parent</em> (<em>FabNode</em>): The parent container.</li>
+</ul>
+<p>Additional Constructor Attributes:</p>
+<ul>
+<li><em>Length</em> (float): length in X direction in millimeters.x</li>
+<li><em>Width</em> (float): width in Y direction in millimeters.</li>
+<li><em>Height</em> (float): height in Z direction in millimeters.</li>
+<li><em>Thickness</em> (float): Material thickness in millimeters.</li>
+<li><em>Material</em> (str): Material to use.</li>
+<li><em>Center</em> (Vector): Center of Box.</li>
+</ul>
+<p>Produced Attributes:</p>
+<ul>
+<li><em>Top</em> (FabSolid): The box top solid.</li>
+<li><em>Bottom</em> (FabSolid): The box bottom solid.</li>
+<li><em>North</em> (FabSolid): The box north solid.</li>
+<li><em>South</em> (FabSolid): The box south solid.</li>
+<li><em>East</em> (FabSolid): The box east solid.</li>
+<li><em>West</em> (FabSolid): The box west solid.</li>
+<li><em>Fasten</em> (FabFasten): The screw template to use.</li>
+</ul>
+<h3><a name="project----produce"></a>1.1 <code>Box.</code>produce():</h3>
+<p>Box.produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<p>Produce the Box.</p>
+<h3><a name="project----get-all-screws"></a>1.2 <code>Box.</code>get_all_screws():</h3>
+<p>Box.get_all_screws(self) -&gt; typing.Tuple[Join.FabJoin, ...]:</p>
+<p>Return all Box screws.</p>
+<h2><a name="project--boxside"></a>2 Class BoxSide:</h2>
+<p>A Box side.
+Inherited Constructor Attributes:</p>
+<ul>
+<li><em>Name</em> (str): Box name.</li>
+<li><em>Parent</em> (<em>FabNode</em>): The parent container.</li>
+<li><em>Material</em> (str): The Material to use.</li>
+<li><em>Color</em> (str): The color to use.</li>
+</ul>
+<p>Additional Constructor Attributes:</p>
+<ul>
+<li><em>Contact</em> (Vector): The center &quot;top&quot; of the side.</li>
+<li><em>Normal</em> (Vector): The normal of the side (away from box center).</li>
+<li><em>Orient</em> (Vector): The orientation vector.</li>
+<li><em>HalfLength</em> (Vector): A vector of half the length in the length direction</li>
+<li><em>HalfWidth</em> (Vector): A vector of half the width in the width direction.</li>
+<li><em>Depth</em> float: Depth of side (opposite direction of <em>normal</em>.</li>
+</ul>
+<h3><a name="project----produce"></a>2.1 <code>BoxSide.</code>produce():</h3>
+<p>BoxSide.produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<p>Produce BoxSide.</p>
+<h2><a name="project--fabassembly"></a>3 Class FabAssembly:</h2>
+<p>A group FabSolid's and sub-FabAssembly's.</p>
+<h2><a name="project--fabfile"></a>4 Class FabFile:</h2>
+<p>Represents a FreeCAD document file.
+Inherited Attributes:</p>
+<ul>
+<li><em>Name</em> (str): Node name</li>
+<li><em>Children</em> (Tuple[Union[FabAssembly, FablGroup, FabSolid], ...]):
+The children nodes which are constrained to &quot;group-like&quot; or a FabSolid.</li>
+<li><em>ChlidrenNames</em> (Tuple[str, ...]): The Children names.</li>
+</ul>
+<p>Attributes:</p>
+<ul>
+<li><em>FilePath</em> (Path):
+The Python pathlib.Path file name which must have a suffix of <code>.fcstd</code> or <code>.FCStd</code>.</li>
+</ul>
+<h3><a name="project----produce"></a>4.1 <code>FabFile.</code>produce():</h3>
+<p>FabFile.produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<p>Create FabFile document.</p>
+<h3><a name="project----post-produce"></a>4.2 <code>FabFile.</code>post_produce():</h3>
+<p>FabFile.post_produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<p>Close the FabFile.</p>
+<h2><a name="project--fabgroup"></a>5 Class FabGroup:</h2>
+<p>A named group of FabNode's.
+Inherited Attributes:</p>
+<ul>
+<li><em>Name</em> (str)</li>
+<li><em>Parent</em> (FabNode)</li>
+<li><em>Children</em> (Tuple[FabNode, ...)</li>
+</ul>
+<h3><a name="project----produce"></a>5.1 <code>FabGroup.</code>produce():</h3>
+<p>FabGroup.produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<p>Create the FreeCAD group object.</p>
+<h2><a name="project--fabproject"></a>6 Class FabProject:</h2>
+<p>The Root mode a FabNode tree.</p>
+<h3><a name="project----get-construct"></a>6.1 <code>FabProject.</code>get_construct():</h3>
+<p>FabProject.get_construct(self) -&gt; bool:</p>
+<p>Return the Construct mode.
+The default get_construct() method in FabNode always returns False.  This method
+overrides that method and returns the value of the _Construct field.  This field
+is set to False in phase 1 of the run() method.  It is set to True in phase 2 of
+the run method.</p>
+<p>Many other classes implement a Construct property as follows:</p>
+<pre><code> @property
+ def Construct(self) -&gt; bool:
+     return self.SOME_FABNODE._Root.Construct
+</code></pre>
+<p>which calls this method to get the construct status.  This is a pretty convoluted
+way to get the information, but it works.</p>
+<h3><a name="project----run"></a>6.2 <code>FabProject.</code>run():</h3>
+<p>FabProject.run(self) -&gt; None:</p>
+<p>NO DOC STRING!</p>
+<h2><a name="project--testfile"></a>7 Class TestFile:</h2>
+<p>A Test file.</p>
+<h2><a name="project--testproject"></a>8 Class TestProject:</h2>
+<p>A Test Project.</p>
+<h3><a name="project----probe"></a>8.1 <code>TestProject.</code>probe():</h3>
+<p>TestProject.probe(self, label: str) -&gt; None:</p>
+<p>Print out some probe values.</p>
+<h2><a name="project--testsolid"></a>9 Class TestSolid:</h2>
+<p>A test solid to exercise FabSolid code.</p>
+<h3><a name="project----produce"></a>9.1 <code>TestSolid.</code>produce():</h3>
+<p>TestSolid.produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<p>NO DOC STRING!</p>
