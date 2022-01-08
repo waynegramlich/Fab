@@ -1,26 +1,39 @@
 #!/usr/bin/env python3
 """
-Tree: Fab tree management.
+Node: Fab tree management.
 
-The Tree package provides a tree of nodes that mostly corresponds to a FreeCAD tree
+The Node package provides a tree of FabNode's that roughly corresponds to a FreeCAD tree
 as shown in the FreeCAD model view.
 
-The base class is FabNode organized as follows:
-* FabNode: Tree node base class (can be either a "leaf" or "interior node.)
-(This needs to be expanded.)
+There are two classes defined:
+* FabBox:
+  This is a generic bounding box class similar to the FreeCAD BoundBox class
+  is used to enclose the FabNode contents and its children FabNode's.
+  This class has way more more properties and is immutable (unlike the FreeCAD BoundBox class.)
+* FabNode:
+  This is a sub-class of FabBox that has a name, a parent FabNode and other data structures
+  required to maintain the tree.
 
-The Tree enforces the following constraints:
+Other Fab packages (e.g. Project and Solid) further sub-class FabNode to provide finer
+grained distinctions between FabNode's.
+
+The FabNode class enforces the following constraints:
 * Each FabNode name must be compatible with a Python variable name
-  (i.e. upper/lower letters, digits, and underscores with the character being a letter.)
-* All of the children of a FabNode must have distinct names.
-* A node may occur only once in the Tree (i.e. DAG = Direct Acyclic Graph.)
-* The FabRoot must be named 'Root'.
+  (i.e. upper/lower letters, digits, and underscores with a non-digit first letter.)
+* All of the children FabNode's must have distinct names.
+* A FabNode may occur only once in the Tree (i.e. DAG = Direct Acyclic Graph.)
 
-Each FabNode has a *FullPath* property which is string that contains the FabNode Names
-from the FabRoot downwards separated by a '.'.  The "Root." is skipped because it is redundant.
-Each FabNode has an Parent attribute that specifies the parent FabNode
+Two notable attributes of the FabNode are:
+* *Up* (FabNode):
+   The FabNode's parent.
+   Up is frequently used in code to access other FabNode's higher in the FabNode tree.
+* *Project* (FabNode):
+   The FabNode tree root and is always of type FabProject which is defined in Project package.
+   Due to the Python lanaguage disallowal of circular `import` statements, this is returned
+   as type FabNode rather than type FabProject.
+See the FabNode documentation for further attributes.
 
-FabNode implement
+(The rest of this documentation belongs elsewhere.)
 
 The FabNode base class implements three recursive methods:
 
@@ -811,7 +824,10 @@ class FabBox(object):
 @dataclass
 # FabNode:
 class FabNode(FabBox):
-    """FabNode: Represents one node in the tree.
+    """FabNode: Represents one node in the FabNode tree.
+
+    Inherited Attributes:
+    * All of the FabBox attributes.
 
     Attributes:
     * *Name* (str): The FabNode name.
@@ -832,7 +848,7 @@ class FabNode(FabBox):
     # The next fields are private and are not user accessible via property accessors:
     _Children: Tuple["FabNode", ...] = field(init=False, repr=False)
     _ChildrenNames: Set[str] = field(init=False, repr=False)
-    _Root: "FabNode" = field(init=False, repr=False)
+    _Project: "FabNode" = field(init=False, repr=False)
 
     # FabNode.__post_init__():
     def __post_init__(self) -> None:
@@ -859,8 +875,8 @@ class FabNode(FabBox):
             # Since the root node has no name, we need avoid produce a name like (".XXX"):
             self._FullPath = f"{parent_full_path}).{name}" if parent_full_path else name
             self._Parent = parent
-            self._Root = self._Parent._Root
-            # assert isinstance(self._Root, Project)  # Enable this check later.
+            self._Project = self._Parent._Project
+            # assert isinstance(self._Project, Project)  # Enable this check later.
 
             # Disallow duplicate children names:
             children_names: Set[str] = parent._ChildrenNames
@@ -869,7 +885,7 @@ class FabNode(FabBox):
             parent._Children += (self,)
 
             # Keep a list if *all_node* in the same order that all FabNode's are created.
-            root: "FabNode" = self._Root
+            root: "FabNode" = self._Project
             assert hasattr(root, "_AllNodes")  # Only a valid Root has this attribute:
             all_nodes: Tuple["FabNode"] = getattr(root, "_AllNodes")
             setattr(root, "_AllNodes", all_nodes + (self,))
@@ -882,7 +898,7 @@ class FabNode(FabBox):
             # This is done by providing `cast(Node, None)` as the Parent in Project.new() method.
             self._FullPath = ""
             self._Parent = self
-            self._Root = self
+            self._Project = self
 
         tracing: str = self.Tracing
         if tracing:
@@ -905,6 +921,11 @@ class FabNode(FabBox):
         """Return the FabNode parent."""
         return self._Parent
 
+    @property
+    def Project(self) -> "FabNode":
+        """Return FabNode tree project root."""
+        return self._Project
+
     # FabNode.Tracing():
     @property
     def Tracing(self) -> str:
@@ -921,7 +942,7 @@ class FabNode(FabBox):
     @property
     def Construct(self) -> bool:
         """Return the FabNode construct mode."""
-        return self._Root.get_construct()
+        return self._Project.get_construct()
 
     # FabNode.Construct():
     def get_construct(self) -> bool:
@@ -981,7 +1002,7 @@ class FabNode(FabBox):
 
         This method can be overriden and called to perform debug probes.
         """
-        root: FabNode = self._Root
+        root: FabNode = self._Project
         if not hasattr(root, "probe"):
             assert False, dir(root)
         root.probe(label)

@@ -60,9 +60,9 @@ then assembled into the final assembly.</li>
 <p>The basic Python bottom up Python module list is:</p>
 <ul>
 <li><a href="Utilities.html">Utilities</a>:
-Utilities module of miscellaneous classes -- Bounding Box, Colors, Materials, etc.</li>
-<li><a href="Tree.html">Tree</a>:
-This defines the basic FabNode classes.</li>
+Utilities module of miscellaneous classes -- Colors, Materials, etc.</li>
+<li><a href="Node.html">Node</a>:
+This defines the FabBox bounding box and FabNode tree node classes.</li>
 <li><a href="Geometry.html">Geometry</a>:
 The defines the 2D geometry FabNode classes for using the FreeCAD Draft workbench.</li>
 <li><a href="Solid.html">Solid</a>:
@@ -108,7 +108,7 @@ This section attempts to delve into the data class issues that are important for
 
      def __post_init__(self) -&gt; None:
          '''Python method documentation string goes here.'''
-         super().__post_init__()  # For sub-class only.  Not needed for a base class.
+         super().__post_init__()  # Required for sub-class.  Not needed for a base dataclass.
 
          # Additional initialization code goes here.
 </code></pre>
@@ -122,7 +122,7 @@ What the class decorator does is generate both an <code>__init__()</code> method
 </code></pre>
 <p>All required and optional fields show up in the generated <code>__init__()</code> method.
 None of the private fields show up in the <code>__init__()</code> method.</p>
-<p>Understanding the <code>__init__</code> method construction is <em>very</em> important.
+<p>Understanding the <code>__init__()</code> method construction is <em>very</em> important.
 The order that fields show up in the <code>__init__()</code> method depends on sub-classing.
 Look at the following contrived example:</p>
 <pre><code> @dataclass
@@ -153,21 +153,50 @@ Look at the following contrived example:</p>
      # ...
 </code></pre>
 <p>Notice that all of the required arguments are sorted first, followed by the optional arguments.
-None of the private fields show up in the <strong>init</strong>() method.</p>
-<p>Next, the <strong>repr</strong>() method needs discussion.  In general, every field will show up
-in the <strong>repr</strong>() method unless it is explicitly disabled.  The way to disable the
-the field in <strong>repr</strong>() is as follows:</p>
+None of the private fields show up in the <code>__init__()</code> method.</p>
+<p>This is really important.  All dataclass's should implement the <code>__post_init__()</code> method.
+This method is called by at the end of the generated <code>__init__()</code> method.  There are a
+few situations where it can be skipped, but they are not worth figuring out.  In addition,
+each sub_class needs to call the <code>__post_init__()</code> method of its super class.</p>
+<pre><code> @dataclass
+ class BassClass(object):
+     '''Documentation string.'''
+
+     Field1: Type1
+     ...
+     FieldN: TypeN
+
+     def __post_init__(self) -&gt; None:
+         '''Documentation String.'''
+         # Either `pass` or some other initialization code goes here.
+
+ @dataclass
+ class SubClass(BaseClass):
+     '''Documentation string.'''
+
+     SField1: SType1
+     ...
+     SFieldN: STypeN
+
+     def __post_init__(self) -&gt; None:
+         '''Documentation string.'''
+         super().__post_init__()
+         # More initialization code goes here.
+</code></pre>
+<p>Next, the <code>__repr__()</code>  method needs discussion.  In general, every field will show up
+in the <code>__repr__()</code> method unless it is explicitly disabled.  The way to disable the
+field in <code>__repr__()</code> is as follows:</p>
 <pre><code>RequiredField: RequiredType = field(init=False)
 OptionalField: OptionalType = field(init=False, default=OptionalValue)
 PrivateField: PrivateType = field(init=False, repr=False)
 </code></pre>
-<p>By common convention, classes, methods, and fields that start with an underscore ('_')
+<p>By common convention, classes, methods, and fields that start with an underscore (<code>'_'</code>)
 are considered to be private and only the &quot;owner&quot; should access these fields.
 While other languages enforce private fields, Python does not.
 The preceding underscore convention is widely adhered to through out large bodies of Python code.</p>
 <p>Sometime it is desirable to provide read only access to field.
 The preferred way to solve this problem is to use a python property.
-(See <a href="https://pythonguide.readthedocs.io/en/latest/python/property.html">Methods and @propert)</a>
+(See <a href="https://pythonguide.readthedocs.io/en/latest/python/property.html">Methods and @property)</a>
 for more detail.</p>
 <p>In short a private field can provide a public read-only access as follows:</p>
 <pre><code> @dataclass
@@ -195,7 +224,7 @@ For the FreeCAD Vector class, the easiest way to make a copy is as follows:</p>
      return self._Normal + copy  # Returns a copy of self._Normal.
 </code></pre>
 <p>Likewise when mutable object is passed into dataclass, it is frequently desirable to
-make a private copy.  This can be done in <strong>post_init</strong>():</p>
+make a private copy.  This can be done in <code>__post_init__()</code>:</p>
 <pre><code>     @dataclass
      class LineSegment(object):
          '''LineSegment document string goes here.'''
@@ -224,16 +253,22 @@ make a private copy.  This can be done in <strong>post_init</strong>():</p>
 <pre><code> point1: Vector = Vector(1, 2, 3)
  point2: Vector = Vector(4, 5, 6)
  line_segment: LineSegment = LineSegment(point1, point2)
- # Copies *point1* and *point2* are stored in *line_segment*.
- assert point1 == Vector(1, 2, 3)
- normal: Vector = point1.normalize()  # This method modifies point
- assert point1 != Vector(1, 2, 3)  # *point1* got changed!
- assert line_segment.Point1 == Vector(1, 2, 3)  # Original copy is returned.
- # Modifies the returned copy, but the private copy is safe.
- assert line_segment.Point1.normalize() != Vector(1, 2, 3)
- assert line_segment.Point1 == Vector(1, 2, 3)
+ # Copies of *point1* and *point2* are stored in *line_segment*.
+
+ assert line_segment.point1 == Vector(1, 2, 3)
+
+ point1.x = -1  # Modify point1
+ assert point1 == Vector(-1, 2, 3)
+
+ segment_point1: Vector = line_segment.Point1
+ assert segment.point1 == Vector(1, 2, 3)  # The copies were used.
+
+ segment_point1.y = -2
+ assert segment_point == Vector(1, -2, 3)
+
+ assert line_segment.Point1 == Vector(1, 2, 3)  # The accessor always returns a copy.
 </code></pre>
-<p>It would be nice if the FreeCAD Vector class were not mutable, but since it is nota,
+<p>It would be nice if the FreeCAD Vector class were not mutable, but since it is not,
 extra care is the prudent way to avoid accidental mutations of internal values.</p>
 <h2>Additional documentation <a name="additional-documentation"></a></h2>
 <p>There are some additional miscellaneous Python modules:</p>

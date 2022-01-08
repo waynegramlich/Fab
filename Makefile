@@ -16,7 +16,7 @@ PY_FILES := \
     Join.py \
     Solid.py \
     TarSync.py \
-    Tree.py \
+    Node.py \
     Utilities.py
 DOC_PY_FILES := __init__.py ${PY_FILES}
 OTHER_MD_FILES := \

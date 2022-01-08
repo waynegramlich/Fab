@@ -63,9 +63,9 @@ Once the FabRoot is present there are 4 phases performed:
 
 The basic Python bottom up Python module list is:
 * [Utilities](Utilities.html):
-  Utilities module of miscellaneous classes -- Bounding Box, Colors, Materials, etc.
-* [Tree](Tree.html):
-  This defines the basic FabNode classes.
+  Utilities module of miscellaneous classes -- Colors, Materials, etc.
+* [Node](Node.html):
+  This defines the FabBox bounding box and FabNode tree node classes.
 * [Geometry](Geometry.html):
   The defines the 2D geometry FabNode classes for using the FreeCAD Draft workbench.
 * [Solid](Solid.html):
@@ -115,7 +115,7 @@ A basic usage of data classes is:
 
          def __post_init__(self) -> None:
              '''Python method documentation string goes here.'''
-             super().__post_init__()  # For sub-class only.  Not needed for a base class.
+             super().__post_init__()  # Required for sub-class.  Not needed for a base dataclass.
 
              # Additional initialization code goes here.
 
@@ -132,7 +132,7 @@ The field names are defined in one of three ways:
 All required and optional fields show up in the generated `__init__()` method.
 None of the private fields show up in the `__init__()` method.
 
-Understanding the `__init__` method construction is *very* important.
+Understanding the `__init__()` method construction is *very* important.
 The order that fields show up in the `__init__()` method depends on sub-classing.
 Look at the following contrived example:
 
@@ -166,24 +166,54 @@ The generated `__init__()` method for SubClass is:
          # ...
 
 Notice that all of the required arguments are sorted first, followed by the optional arguments.
-None of the private fields show up in the __init__() method.
+None of the private fields show up in the `__init__()` method.
 
-Next, the __repr__() method needs discussion.  In general, every field will show up
-in the __repr__() method unless it is explicitly disabled.  The way to disable the
-the field in __repr__() is as follows:
+This is really important.  All dataclass's should implement the `__post_init__()` method.
+This method is called by at the end of the generated `__init__()` method.  There are a
+few situations where it can be skipped, but they are not worth figuring out.  In addition,
+each sub_class needs to call the `__post_init__()` method of its super class.
+
+     @dataclass
+     class BassClass(object):
+         '''Documentation string.'''
+
+         Field1: Type1
+         ...
+         FieldN: TypeN
+
+         def __post_init__(self) -> None:
+             '''Documentation String.'''
+             # Either `pass` or some other initialization code goes here.
+
+     @dataclass
+     class SubClass(BaseClass):
+         '''Documentation string.'''
+
+         SField1: SType1
+         ...
+         SFieldN: STypeN
+
+         def __post_init__(self) -> None:
+             '''Documentation string.'''
+             super().__post_init__()
+             # More initialization code goes here.
+
+Next, the `__repr__()`  method needs discussion.  In general, every field will show up
+in the `__repr__()` method unless it is explicitly disabled.  The way to disable the
+field in `__repr__()` is as follows:
 
     RequiredField: RequiredType = field(init=False)
     OptionalField: OptionalType = field(init=False, default=OptionalValue)
     PrivateField: PrivateType = field(init=False, repr=False)
 
-By common convention, classes, methods, and fields that start with an underscore ('_')
+By common convention, classes, methods, and fields that start with an underscore (`'_'`)
 are considered to be private and only the "owner" should access these fields.
 While other languages enforce private fields, Python does not.
 The preceding underscore convention is widely adhered to through out large bodies of Python code.
 
 Sometime it is desirable to provide read only access to field.
 The preferred way to solve this problem is to use a python property.
-(See [Methods and @propert)](https://pythonguide.readthedocs.io/en/latest/python/property.html)
+(See [Methods and @property)](https://pythonguide.readthedocs.io/en/latest/python/property.html)
 for more detail.
 
 In short a private field can provide a public read-only access as follows:
@@ -214,7 +244,7 @@ For the FreeCAD Vector class, the easiest way to make a copy is as follows:
          return self._Normal + copy  # Returns a copy of self._Normal.
 
 Likewise when mutable object is passed into dataclass, it is frequently desirable to
-make a private copy.  This can be done in __post_init__():
+make a private copy.  This can be done in `__post_init__()`:
 
          @dataclass
          class LineSegment(object):
@@ -246,16 +276,22 @@ Usage of the class above would be like:
      point1: Vector = Vector(1, 2, 3)
      point2: Vector = Vector(4, 5, 6)
      line_segment: LineSegment = LineSegment(point1, point2)
-     # Copies *point1* and *point2* are stored in *line_segment*.
-     assert point1 == Vector(1, 2, 3)
-     normal: Vector = point1.normalize()  # This method modifies point
-     assert point1 != Vector(1, 2, 3)  # *point1* got changed!
-     assert line_segment.Point1 == Vector(1, 2, 3)  # Original copy is returned.
-     # Modifies the returned copy, but the private copy is safe.
-     assert line_segment.Point1.normalize() != Vector(1, 2, 3)
-     assert line_segment.Point1 == Vector(1, 2, 3)
+     # Copies of *point1* and *point2* are stored in *line_segment*.
 
-It would be nice if the FreeCAD Vector class were not mutable, but since it is nota,
+     assert line_segment.point1 == Vector(1, 2, 3)
+
+     point1.x = -1  # Modify point1
+     assert point1 == Vector(-1, 2, 3)
+
+     segment_point1: Vector = line_segment.Point1
+     assert segment.point1 == Vector(1, 2, 3)  # The copies were used.
+
+     segment_point1.y = -2
+     assert segment_point == Vector(1, -2, 3)
+
+     assert line_segment.Point1 == Vector(1, 2, 3)  # The accessor always returns a copy.
+
+It would be nice if the FreeCAD Vector class were not mutable, but since it is not,
 extra care is the prudent way to avoid accidental mutations of internal values.
 
 ## Additional documentation <a name="additional-documentation"></a>

@@ -36,7 +36,7 @@ import Part  # type: ignore
 import FreeCAD as App  # type: ignore
 
 from FreeCAD import Placement, Rotation, Vector
-from Tree import FabBox
+from Node import FabBox
 
 
 # _Geometry:

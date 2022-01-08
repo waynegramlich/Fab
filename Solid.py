@@ -42,7 +42,7 @@ from FreeCAD import Placement, Rotation, Vector
 
 from Geometry import FabCircle, FabGeometry, FabPolygon
 from Join import FabFasten, FabJoin
-from Tree import FabBox, FabNode
+from Node import FabBox, FabNode
 from Utilities import FabColor
 
 
@@ -1221,7 +1221,7 @@ class FabSolid(FabNode):
     @property
     def Construct(self) -> bool:
         """Return the construct mode flag."""
-        return self._Root.Construct
+        return self.Project.Construct
 
     # FabSolid.mount():
     def mount(self, name: str, contact: Vector, normal: Vector, orient: Vector,

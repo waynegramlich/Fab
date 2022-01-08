@@ -1,24 +1,38 @@
-<h1>Tree:</h1>
-<p>Tree: Fab tree management.</p>
-<p>The Tree package provides a tree of nodes that mostly corresponds to a FreeCAD tree
+<h1>Node:</h1>
+<p>Node: Fab tree management.</p>
+<p>The Node package provides a tree of FabNode's that roughly corresponds to a FreeCAD tree
 as shown in the FreeCAD model view.</p>
-<p>The base class is FabNode organized as follows:</p>
+<p>There are two classes defined:</p>
 <ul>
-<li>FabNode: Tree node base class (can be either a &quot;leaf&quot; or &quot;interior node.)
-(This needs to be expanded.)</li>
+<li>FabBox:
+This is a generic bounding box class similar to the FreeCAD BoundBox class
+is used to enclose the FabNode contents and its children FabNode's.
+This class has way more more properties and is immutable (unlike the FreeCAD BoundBox class.)</li>
+<li>FabNode:
+This is a sub-class of FabBox that has a name, a parent FabNode and other data structures
+required to maintain the tree.</li>
 </ul>
-<p>The Tree enforces the following constraints:</p>
+<p>Other Fab packages (e.g. Project and Solid) further sub-class FabNode to provide finer
+grained distinctions between FabNode's.</p>
+<p>The FabNode class enforces the following constraints:</p>
 <ul>
 <li>Each FabNode name must be compatible with a Python variable name
-(i.e. upper/lower letters, digits, and underscores with the character being a letter.)</li>
-<li>All of the children of a FabNode must have distinct names.</li>
-<li>A node may occur only once in the Tree (i.e. DAG = Direct Acyclic Graph.)</li>
-<li>The FabRoot must be named 'Root'.</li>
+(i.e. upper/lower letters, digits, and underscores with a non-digit first letter.)</li>
+<li>All of the children FabNode's must have distinct names.</li>
+<li>A FabNode may occur only once in the Tree (i.e. DAG = Direct Acyclic Graph.)</li>
 </ul>
-<p>Each FabNode has a <em>FullPath</em> property which is string that contains the FabNode Names
-from the FabRoot downwards separated by a '.'.  The &quot;Root.&quot; is skipped because it is redundant.
-Each FabNode has an Parent attribute that specifies the parent FabNode</p>
-<p>FabNode implement</p>
+<p>Two notable attributes of the FabNode are:</p>
+<ul>
+<li><em>Up</em> (FabNode):
+The FabNode's parent.
+Up is frequently used in code to access other FabNode's higher in the FabNode tree.</li>
+<li><em>Project</em> (FabNode):
+The FabNode tree root and is always of type FabProject which is defined in Project package.
+Due to the Python lanaguage disallowal of circular <code>import</code> statements, this is returned
+as type FabNode rather than type FabProject.
+See the FabNode documentation for further attributes.</li>
+</ul>
+<p>(The rest of this documentation belongs elsewhere.)</p>
 <p>The FabNode base class implements three recursive methods:</p>
 <ul>
 <li>configure() -&gt; Tuple[str, ...]:
@@ -62,27 +76,27 @@ the FreeCAD solids/assemblies and the associated output files.</li>
 </ul>
 <h2>Table of Contents (alphabetical order):</h2>
 <ul>
-<li>1 Class: <a href="#tree--fabbox">FabBox</a>:
+<li>1 Class: <a href="#node--fabbox">FabBox</a>:
 <ul>
-<li>1.1 <a href="#tree----enclose">enclose()</a>: Initialize a FabBox.</li>
-<li>1.2 <a href="#tree----reorient">reorient()</a>: Reorient FabBox given a Placement.</li>
-<li>1.3 <a href="#tree----intersect">intersect()</a>: Compute Line Segment intersection with a FabBox.</li>
+<li>1.1 <a href="#node----enclose">enclose()</a>: Initialize a FabBox.</li>
+<li>1.2 <a href="#node----reorient">reorient()</a>: Reorient FabBox given a Placement.</li>
+<li>1.3 <a href="#node----intersect">intersect()</a>: Compute Line Segment intersection with a FabBox.</li>
 </ul>
 </li>
-<li>2 Class: <a href="#tree--fabnode">FabNode</a>:
+<li>2 Class: <a href="#node--fabnode">FabNode</a>:
 <ul>
-<li>2.1 <a href="#tree----get-construct">get_construct()</a>: Return construct flag.</li>
-<li>2.2 <a href="#tree----pre-produce">pre_produce()</a>: Empty FabNode pre_produce method to be over-ridden as needed.</li>
-<li>2.3 <a href="#tree----produce">produce()</a>: Empty FabNode produce method to be over-ridden.</li>
-<li>2.4 <a href="#tree----post-produce">post_produce()</a>: Empty FabNode post_produce method to be over-ridden as needed.</li>
-<li>2.5 <a href="#tree----set-tracing">set_tracing()</a>: Set the FabNode indentation tracing level.</li>
-<li>2.6 <a href="#tree----probe">probe()</a>: Perform a probe operation.</li>
-<li>2.7 <a href="#tree----configure">configure()</a>: Configure FabNode.</li>
-<li>2.8 <a href="#tree----configurations-append">configurations_append()</a>: Append specified attributes to configurations list.</li>
+<li>2.1 <a href="#node----get-construct">get_construct()</a>: Return construct flag.</li>
+<li>2.2 <a href="#node----pre-produce">pre_produce()</a>: Empty FabNode pre_produce method to be over-ridden as needed.</li>
+<li>2.3 <a href="#node----produce">produce()</a>: Empty FabNode produce method to be over-ridden.</li>
+<li>2.4 <a href="#node----post-produce">post_produce()</a>: Empty FabNode post_produce method to be over-ridden as needed.</li>
+<li>2.5 <a href="#node----set-tracing">set_tracing()</a>: Set the FabNode indentation tracing level.</li>
+<li>2.6 <a href="#node----probe">probe()</a>: Perform a probe operation.</li>
+<li>2.7 <a href="#node----configure">configure()</a>: Configure FabNode.</li>
+<li>2.8 <a href="#node----configurations-append">configurations_append()</a>: Append specified attributes to configurations list.</li>
 </ul>
 </li>
 </ul>
-<h2><a name="tree--fabbox"></a>1 Class FabBox:</h2>
+<h2><a name="node--fabbox"></a>1 Class FabBox:</h2>
 <p>X/Y/Z Axis Aligned Cubiod.
 An FabBox is represents a cuboid (i.e. a rectangular parallelpiped, or right prism) where
 the edges are aligned with the X, Y, and Z axes.  This is basically equivalent to the FreeCAD
@@ -162,7 +176,7 @@ are introduced as well.</p>
 </ul>
 </li>
 </ul>
-<h3><a name="tree----enclose"></a>1.1 <code>FabBox.</code>enclose():</h3>
+<h3><a name="node----enclose"></a>1.1 <code>FabBox.</code>enclose():</h3>
 <p>FabBox.enclose(self, bounds: typing.Sequence[typing.Union[Base.Vector, Base.BoundBox, ForwardRef('FabBox')]]) -&gt; None:</p>
 <p>Initialize a FabBox.
 Arguments:</p>
@@ -174,7 +188,7 @@ A sequence of points or boxes to enclose.</li>
 <ul>
 <li>ValueError: For bad or empty corners.</li>
 </ul>
-<h3><a name="tree----reorient"></a>1.2 <code>FabBox.</code>reorient():</h3>
+<h3><a name="node----reorient"></a>1.2 <code>FabBox.</code>reorient():</h3>
 <p>FabBox.reorient(self, placement: Base.Placement) -&gt; 'FabBox':</p>
 <p>Reorient FabBox given a Placement.
 Note after the <em>placement</em> is applied, the resulting box is still rectilinear with the
@@ -183,7 +197,7 @@ X/Y/Z axes.  In particular, box volume is <em>not</em> conserved.</p>
 <ul>
 <li><em>placement</em> (Placement): The placement of the box corners.</li>
 </ul>
-<h3><a name="tree----intersect"></a>1.3 <code>FabBox.</code>intersect():</h3>
+<h3><a name="node----intersect"></a>1.3 <code>FabBox.</code>intersect():</h3>
 <p>FabBox.intersect(self, segment_start: Base.Vector, segment_end: Base.Vector, tracing: str = '') -&gt; typing.Tuple[bool, float, float]:</p>
 <p>Compute Line Segment intersection with a FabBox.
 Arguments:</p>
@@ -197,9 +211,13 @@ Arguments:</p>
 <li>(Vector): When True, the possibly truncated line segment point near <em>segment_start</em>.</li>
 <li>(Vector): When True, the possibly truncated line segment point near <em>segment_end</em>.</li>
 </ul>
-<h2><a name="tree--fabnode"></a>2 Class FabNode:</h2>
-<p>Represents one node in the tree.
-Attributes:</p>
+<h2><a name="node--fabnode"></a>2 Class FabNode:</h2>
+<p>Represents one node in the FabNode tree.
+Inherited Attributes:</p>
+<ul>
+<li>All of the FabBox attributes.</li>
+</ul>
+<p>Attributes:</p>
 <ul>
 <li><em>Name</em> (str): The FabNode name.</li>
 <li><em>Up</em> (FabNode): The FabNode parent.</li>
@@ -209,21 +227,21 @@ Attributes:</p>
 A non-empty indentation string when tracing is enabled.
 This field is recursively set when <em>set_tracing</em>() is explicitly set.</li>
 </ul>
-<h3><a name="tree----get-construct"></a>2.1 <code>FabNode.</code>get_construct():</h3>
+<h3><a name="node----get-construct"></a>2.1 <code>FabNode.</code>get_construct():</h3>
 <p>FabNode.get_construct(self) -&gt; bool:</p>
 <p>Return construct flag.
 This method is overridden in FabProject only and should be call the only one called.
 If this method is actually called, something is seriously wrong.</p>
-<h3><a name="tree----pre-produce"></a>2.2 <code>FabNode.</code>pre_produce():</h3>
+<h3><a name="node----pre-produce"></a>2.2 <code>FabNode.</code>pre_produce():</h3>
 <p>FabNode.pre_produce(self) -&gt; typing.Tuple[str, ...]:</p>
 <p>Empty FabNode pre_produce method to be over-ridden as needed.</p>
-<h3><a name="tree----produce"></a>2.3 <code>FabNode.</code>produce():</h3>
+<h3><a name="node----produce"></a>2.3 <code>FabNode.</code>produce():</h3>
 <p>FabNode.produce(self) -&gt; typing.Tuple[str, ...]:</p>
 <p>Empty FabNode produce method to be over-ridden.</p>
-<h3><a name="tree----post-produce"></a>2.4 <code>FabNode.</code>post_produce():</h3>
+<h3><a name="node----post-produce"></a>2.4 <code>FabNode.</code>post_produce():</h3>
 <p>FabNode.post_produce(self) -&gt; typing.Tuple[str, ...]:</p>
 <p>Empty FabNode post_produce method to be over-ridden as needed.</p>
-<h3><a name="tree----set-tracing"></a>2.5 <code>FabNode.</code>set_tracing():</h3>
+<h3><a name="node----set-tracing"></a>2.5 <code>FabNode.</code>set_tracing():</h3>
 <p>FabNode.set_tracing(self, tracing: str):</p>
 <p>Set the FabNode indentation tracing level.
 This typically done, by adding this call immediately after calling super().<strong>post_init</strong>().</p>
@@ -235,13 +253,13 @@ This typically done, by adding this call immediately after calling super().<stro
     self.set_tracing(&quot; &quot;)  # Set the tracing here.
     # All children nodes will that are added, will have tracing set as well.
 </code></pre>
-<h3><a name="tree----probe"></a>2.6 <code>FabNode.</code>probe():</h3>
+<h3><a name="node----probe"></a>2.6 <code>FabNode.</code>probe():</h3>
 <p>FabNode.probe(self, label: str) -&gt; None:</p>
 <p>Perform a probe operation.
 This method can be overriden and called to perform debug probes.</p>
-<h3><a name="tree----configure"></a>2.7 <code>FabNode.</code>configure():</h3>
+<h3><a name="node----configure"></a>2.7 <code>FabNode.</code>configure():</h3>
 <p>FabNode.configure(self, tracing: str = '') -&gt; None:</p>
 <p>Configure FabNode.</p>
-<h3><a name="tree----configurations-append"></a>2.8 <code>FabNode.</code>configurations_append():</h3>
+<h3><a name="node----configurations-append"></a>2.8 <code>FabNode.</code>configurations_append():</h3>
 <p>FabNode.configurations_append(self, configurations: typing.List[str], tracing: str = '') -&gt; None:</p>
 <p>Append specified attributes to configurations list.</p>
