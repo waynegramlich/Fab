@@ -72,6 +72,82 @@ A library that defines machines and tooling available in a given shop.</li>
 <li><a href="CNC.html">CNC</a>:
 A library that interfaces with the FreeCAD Path workbench for producing CNC files.</li>
 </ul>
+<h2>Type Hints and Data Classes</h2>
+<p>If you are completely unfamiliar with Python Type hints, please see the following references:</p>
+<ul>
+<li><a href="http://mypy-lang.org/">mypy</a></li>
+<li><a href="https://docs.python.org/3/library/typing.html"><code>typing</code> -- Support for type hints</a></li>
+</ul>
+<p>While the underlying FreeCAD Python support currently does not support Python type hints,
+the Fab Python package is heavily annotated with Python Type Hints.
+What this means is that if you write your Python code that uses the Fab package using type hints,
+you can frequently uncover errors via before execution using static analysis with the
+<code>mypy</code> program.</p>
+<p>In addition, all Fab Package classes are done using Python data classes (see immediately below).
+Python data classes which <em><strong>require</strong></em> type hints.
+Since the way the Fab package requires that you that you sub-class from Fab package classes,
+its necessary to learn more about both topics.</p>
+<p>The reference documentation of <a href="https://docs.python.org/3/library/dataclasses.html">Data Classes</a>
+is actually quite dense and difficult to understand.
+The readily available free tutorials are good,
+but tend to be introductory without getting into important details.
+This section attempts to delve into the data class issues that are important for the Fab package.</p>
+<p>A basic usage of data classes is:</p>
+<pre><code> # Import the `dataclass` &quot;decorator&quot; from the `dataclasses` package.
+ from dataclasses import dataclass, field
+
+ # Define the dataclass:
+ @dataclass  # Decorator that specifies class is a data class
+ class ClassName(SubClass):  # The `class` definition with associated SubClass
+     '''Python class documentation string goes here.'''
+
+     FieldName1: Type1   # There ***MUST*** be at least one field defined.
+     FieldName2: Type2
+     # ...
+     FieldNameN: TypeN
+
+     def __post_init__(self) -&gt; None:
+         '''Python method documentation string goes here.'''
+         super().__post_init__()  # For sub-class only.  Not needed for a base class.
+
+         # Additional initialization code goes here.
+</code></pre>
+<p>The key thing is that it is a Python class definition with a preceding <code>@dataclass</code> decorator.
+There are one or more field names followed by a colon and a type hint.
+What the class decorator does is generate both an <code>__init__()</code> method and a <code>__repr__()</code>.</p>
+<p>The field names are defined in one of three ways:</p>
+<pre><code>    RequiredField: Type
+    OptionalField: Type = InitialValue
+    PrivateField: Type = field(init=False, ...)
+</code></pre>
+<p>All required and optional fields show up in the generated <code>__init__()</code> method.
+None of the private fields show up in the <code>__init__()</code> method.</p>
+<p>Understanding the <code>__init__</code> method construction is <em>very</em> important.
+The order that fields show up in the <code>__init__()</code> method depends on sub-classing.
+Look at the following contrived example:</p>
+<pre><code> @dataclass
+ class BaseClass(object):
+    BR1: BRT1  # Base Required 1
+    BR2: BRT2  # Base Required 2
+    BO1: BOT1 = BV1  # Base Optional 1
+    BO2: BOT2 = BV2  # Base Optional 2
+    BP1: BPT1 = field(init=False)  # Base Private 1
+    BP2: BPT2 = field(init=False)  # Base Private 2
+
+ @dataclass
+ class SubClass(object):
+    SR1: SRT1  # Base required type
+    SR2: SRT2  # Base required type
+    SO1: SOT1 = SV1 # Base optional type
+    SO2: SOT2 = SV2  # Base optional type
+    SP1: SPT1 = field(init=False)
+    SP2: SPT2 = field(init=False)
+</code></pre>
+<p>The generated <code>__init__()</code> method for BassClass is:</p>
+<pre><code> def __init__(BR1: BRT1, BR2: BRT2, BO1: BOT1 = BV1, BO2: BPT2 = BV2) -&gt; None:
+    ...
+</code></pre>
+<p>The generated <code>__init__()</code> method for SubClass is:</p>
 <h2>Additional documentation <a name="additional-documentation"></a></h2>
 <p>There are some additional miscellaneous Python modules:</p>
 <ul>

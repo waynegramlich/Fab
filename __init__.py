@@ -75,6 +75,94 @@ The basic Python bottom up Python module list is:
 * [CNC](CNC.html):
   A library that interfaces with the FreeCAD Path workbench for producing CNC files.
 
+## Type Hints and Data Classes
+
+If you are completely unfamiliar with Python Type hints, please see the following references:
+* [mypy](http://mypy-lang.org/)
+* [`typing` -- Support for type hints](https://docs.python.org/3/library/typing.html)
+
+While the underlying FreeCAD Python support currently does not support Python type hints,
+the Fab Python package is heavily annotated with Python Type Hints.
+What this means is that if you write your Python code that uses the Fab package using type hints,
+you can frequently uncover errors via before execution using static analysis with the
+`mypy` program.
+
+In addition, all Fab Package classes are done using Python data classes (see immediately below).
+Python data classes which ***require*** type hints.
+Since the way the Fab package requires that you that you sub-class from Fab package classes,
+its necessary to learn more about both topics.
+
+The reference documentation of [Data Classes](https://docs.python.org/3/library/dataclasses.html)
+is actually quite dense and difficult to understand.
+The readily available free tutorials are good,
+but tend to be introductory without getting into important details.
+This section attempts to delve into the data class issues that are important for the Fab package.
+
+A basic usage of data classes is:
+
+     # Import the `dataclass` "decorator" from the `dataclasses` package.
+     from dataclasses import dataclass, field
+
+     # Define the dataclass:
+     @dataclass  # Decorator that specifies class is a data class
+     class ClassName(SubClass):  # The `class` definition with associated SubClass
+         '''Python class documentation string goes here.'''
+
+         FieldName1: Type1   # There ***MUST*** be at least one field defined.
+         FieldName2: Type2
+         # ...
+         FieldNameN: TypeN     
+
+         def __post_init__(self) -> None:
+             '''Python method documentation string goes here.'''
+             super().__post_init__()  # For sub-class only.  Not needed for a base class.
+
+             # Additional initialization code goes here.
+
+The key thing is that it is a Python class definition with a preceding `@dataclass` decorator.
+There are one or more field names followed by a colon and a type hint.
+What the class decorator does is generate both an `__init__()` method and a `__repr__()`.
+
+The field names are defined in one of three ways:
+
+        RequiredField: Type
+        OptionalField: Type = InitialValue
+        PrivateField: Type = field(init=False, ...)
+
+All required and optional fields show up in the generated `__init__()` method.
+None of the private fields show up in the `__init__()` method.
+
+Understanding the `__init__` method construction is *very* important.
+The order that fields show up in the `__init__()` method depends on sub-classing.
+Look at the following contrived example:
+
+     @dataclass
+     class BaseClass(object):
+        BR1: BRT1  # Base Required 1
+        BR2: BRT2  # Base Required 2
+        BO1: BOT1 = BV1  # Base Optional 1
+        BO2: BOT2 = BV2  # Base Optional 2
+        BP1: BPT1 = field(init=False)  # Base Private 1
+        BP2: BPT2 = field(init=False)  # Base Private 2
+
+     @dataclass
+     class SubClass(object):
+        SR1: SRT1  # Base required type
+        SR2: SRT2  # Base required type
+        SO1: SOT1 = SV1 # Base optional type
+        SO2: SOT2 = SV2  # Base optional type
+        SP1: SPT1 = field(init=False)
+        SP2: SPT2 = field(init=False)
+
+The generated `__init__()` method for BassClass is:
+
+     def __init__(BR1: BRT1, BR2: BRT2, BO1: BOT1 = BV1, BO2: BPT2 = BV2) -> None:
+        ...
+
+The generated `__init__()` method for SubClass is:
+
+
+
 ## Additional documentation <a name="additional-documentation"></a>
 
 There are some additional miscellaneous Python modules:

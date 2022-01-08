@@ -73,7 +73,7 @@ import Embed
 Embed.setup()
 
 from dataclasses import dataclass, field
-from typing import Any, cast, Dict, List, Optional, Sequence, Set, Tuple, Union
+from typing import Any, cast, Dict, List, Sequence, Set, Tuple, Union
 from FreeCAD import BoundBox, Placement, Vector  # type: ignore
 
 
@@ -559,7 +559,8 @@ class FabBox(object):
             elif maximum_ratio < minimum_ratio and maximum_ratio > begin_ratio:
                 new_begin_ratio = maximum_ratio
             if tracing and new_begin_ratio != begin_ratio:
-                print(f"{tracing}{axis_name}: Updating {begin_ratio=} to {new_begin_ratio=}")
+                print(f"{tracing}{axis_name}: "  # pragma: no unit cover
+                      f"Updating {begin_ratio=} to {new_begin_ratio=}")
             begin_ratio = new_begin_ratio
 
             # See if *finish_ratio* needs to be "pulled in":
@@ -628,13 +629,13 @@ class FabBox(object):
                 got_intersect, got_begin, got_finish = box.intersect(want_start, want_end, tracing)
                 header: str = ""
                 if got_intersect != want_intersect:
-                    header = f"Intersect mismatch"
+                    header = f"Intersect mismatch"  # pragma: no unit cover
                 elif want_intersect and abs(got_begin - want_begin).Length > EPSILON:
-                    header = f" Begin mismatch"
+                    header = f" Begin mismatch"  # pragma: no unit cover
                 elif want_intersect and abs(got_finish - want_finish).Length > EPSILON:
-                    header = "Finish mismatch:"
+                    header = "Finish mismatch:"  # pragma: no unit cover
 
-                if header:
+                if header:  # pragma: no unit cover
                     return (
                         f"{header}: {name}\n"
                         f"     Input: {test[:2]}\n"
@@ -709,6 +710,13 @@ class FabBox(object):
         assert box.BB.XMax == bound_box.XMax
         assert box.BB.YMax == bound_box.YMax
         assert box.BB.ZMax == bound_box.ZMax
+
+        assert box.XMin == bound_box.XMin
+        assert box.YMin == bound_box.YMin
+        assert box.ZMin == bound_box.ZMin
+        assert box.XMax == bound_box.XMax
+        assert box.YMax == bound_box.YMax
+        assert box.ZMax == bound_box.ZMax
 
         def check(vector: Vector, x: float, y: float, z: float) -> bool:
             assert vector.x == x, f"{vector.x} != {x}"
@@ -834,7 +842,7 @@ class FabNode(FabBox):
         if not FabNode._is_valid_name(self.Name):
             raise RuntimeError(
                 f"FabNode.__post_init__({self.Name}) is not "
-                "alphanumeric/underscore that starts with a letter")
+                "alphanumeric/underscore that starts with a letter")    # pragma: no unit test
 
         # Initialize the remaining fields to bogus values that get updated by the _setup() method.
         self._Children = ()
@@ -868,7 +876,7 @@ class FabNode(FabBox):
 
             # Add another level in tracing indentation if tracing is enabled:
             if parent._Tracing:
-                self._Tracing = parent._Tracing + " "
+                self._Tracing = parent._Tracing + " "  # pragma: no unit test
         else:
             # This is the top level project node and it is very special.
             # This is done by providing `cast(Node, None)` as the Parent in Project.new() method.
@@ -1050,135 +1058,135 @@ class FabNode(FabBox):
         no_underscores: str = name.replace("_", "")
         return no_underscores.isalnum() and no_underscores[0].isalpha()
 
-    # FabNode._setup():
-    def _setup(self, dag_table: Dict[int, "FabNode"],
-               parent: "FabNode", root: "FabNode", tracing: str = "") -> None:
-        """Set up the FabNode and its children."""
-        next_tracing: str = tracing + " " if tracing else ""
-        if tracing:
-            print(f"{tracing}=>FabNode._setup('{self.Name}', '{parent.Name}', *)")
+    # # FabNode._setup():
+    # def _setup(self, dag_table: Dict[int, "FabNode"],
+    #            parent: "FabNode", root: "FabNode", tracing: str = "") -> None:
+    #     """Set up the FabNode and its children."""
+    #     next_tracing: str = tracing + " " if tracing else ""
+    #     if tracing:
+    #         print(f"{tracing}=>FabNode._setup('{self.Name}', '{parent.Name}', *)")
 
-        # Setup *FullPath* and *Parent*:
-        if self is root:
-            # *root* is specical:
-            self._FullPath = ""
-            self._Parent = root
-            self._Name = "Root"
-        else:
-            self._FullPath = self.Name if parent is root else f"{parent.FullPath}.{self.Name}"
-            self._Parent = parent
+    #     # Setup *FullPath* and *Parent*:
+    #     if self is root:
+    #         # *root* is specical:
+    #         self._FullPath = ""
+    #         self._Parent = root
+    #         self._Name = "Root"
+    #     else:
+    #         self._FullPath = self.Name if parent is root else f"{parent.FullPath}.{self.Name}"
+    #         self._Parent = parent
 
-        # Make sure that the FabNode tree is a DAG (Directed Acyclic Graph) with no duplicates.
-        node_id: int = id(self)
-        if node_id in dag_table:
-            raise RuntimeError(f"{self.FullPath} is the same as {dag_table[node_id].FullPath}")
-        dag_table[node_id] = self
+    #     # Make sure that the FabNode tree is a DAG (Directed Acyclic Graph) with no duplicates.
+    #     node_id: int = id(self)
+    #     if node_id in dag_table:
+    #         raise RuntimeError(f"{self.FullPath} is the same as {dag_table[node_id].FullPath}")
+    #     dag_table[node_id] = self
 
-        # children_nodes: List[FabNode] = []
-        # trackable_names: List[str] = []
-        # for name in self.__dict__.keys():
-        #     if tracing:
-        #         print(f"{tracing}{self.FullPath}:{name}")
-        #     if not name[0].isupper():
-        #         continue
-        #     if name == "Parent":
-        #         continue
-        #     if hasattr(self, name):
-        #         attribute: Any = getattr(self, name)
-        #         if isinstance(attribute, FabNode):
-        #             if tracing:
-        #                 print(f"{tracing}Is fabNode")
-        #             children_nodes.append(attribute)
-        #         elif isinstance(attribute, (list, tuple)):
-        #             if tracing:
-        #                 print(f"{tracing}is sequence {type(attribute)=} {len(attribute)=}")
-        #             element: Any
-        #             index: int
-        #             for index, element in enumerate(attribute):
-        #                 if tracing:
-        #                     print(f"{tracing}Element[{index}]: {element=}")
-        #                 if isinstance(attribute, FabNode):
-        #                     if tracing:
-        #                         print(f"{tracing}Match: {attribute.Name}")
-        #                     children_nodes.append(attribute)
-        #         elif isinstance(attribute, (str, int, float, bool, Vector)):
-        #             trackable_names.append(name)
-        # if tracing and children_nodes:
-        #     print(f"{tracing}{children_nodes=}")
+    #     # children_nodes: List[FabNode] = []
+    #     # trackable_names: List[str] = []
+    #     # for name in self.__dict__.keys():
+    #     #     if tracing:
+    #     #         print(f"{tracing}{self.FullPath}:{name}")
+    #     #     if not name[0].isupper():
+    #     #         continue
+    #     #     if name == "Parent":
+    #     #         continue
+    #     #     if hasattr(self, name):
+    #     #         attribute: Any = getattr(self, name)
+    #     #         if isinstance(attribute, FabNode):
+    #     #             if tracing:
+    #     #                 print(f"{tracing}Is fabNode")
+    #     #             children_nodes.append(attribute)
+    #     #         elif isinstance(attribute, (list, tuple)):
+    #     #             if tracing:
+    #     #                 print(f"{tracing}is sequence {type(attribute)=} {len(attribute)=}")
+    #     #             element: Any
+    #     #             index: int
+    #     #             for index, element in enumerate(attribute):
+    #     #                 if tracing:
+    #     #                     print(f"{tracing}Element[{index}]: {element=}")
+    #     #                 if isinstance(attribute, FabNode):
+    #     #                     if tracing:
+    #     #                         print(f"{tracing}Match: {attribute.Name}")
+    #     #                     children_nodes.append(attribute)
+    #     #         elif isinstance(attribute, (str, int, float, bool, Vector)):
+    #     #             trackable_names.append(name)
+    #     # if tracing and children_nodes:
+    #     #     print(f"{tracing}{children_nodes=}")
 
-        # Recursively setup each *child*:
-        child_names: Set[str] = set()
-        child: FabNode
-        for child in self._Children:
-            name = child.Name
-            if name in child_names:
-                raise RuntimeError("'{name}' occurs more then once in '{self.FullPath}'")
-            child_names.add(name)
-            child._setup(dag_table, self, root, tracing=next_tracing)
+    #     # Recursively setup each *child*:
+    #     child_names: Set[str] = set()
+    #     child: FabNode
+    #     for child in self._Children:
+    #         name = child.Name
+    #         if name in child_names:
+    #             raise RuntimeError("'{name}' occurs more then once in '{self.FullPath}'")
+    #         child_names.add(name)
+    #         child._setup(dag_table, self, root, tracing=next_tracing)
 
-        if tracing:
-            print(f"{tracing}<=FabNode._setup('{self.Name}', '{parent.Name}', *)")
+    #     if tracing:
+    #         print(f"{tracing}<=FabNode._setup('{self.Name}', '{parent.Name}', *)")
 
-    # FabNode:
-    def __getitem__(self, key: Union[str, Tuple[str, type]]) -> Any:
-        """Return value using a relative path with an optional type."""
-        tracing: str = ""  # Manually set to debug.
-        if tracing:
-            print(f"=>FabNode.__get_item__({key})")
+    # # FabNode:
+    # def __getitem__(self, key: Union[str, Tuple[str, type]]) -> Any:
+    #     """Return value using a relative path with an optional type."""
+    #     tracing: str = ""  # Manually set to debug.
+    #     if tracing:
+    #         print(f"=>FabNode.__get_item__({key})")
 
-        # Perform argument checking:
-        path: str
-        desired_type: Optional[type] = None
-        if isinstance(key, tuple):
-            if len(key) != 2:
-                raise ValueError(f"FabNode key {key} tuple must be of length 2")
-            path = key[0]
-            if not isinstance(path, str):
-                raise ValueError("FabNode key {path} path is not a string")
-            desired_type = key[1]
-            if not isinstance(desired_type, type):
-                raise ValueError("FabNode desired type {desired_type } is not a type")
-        elif isinstance(key, str):
-            path = key
-        else:
-            raise ValueError(f"ModeNode key {key} is neither a string nor a tuple")
+    #     # Perform argument checking:
+    #     path: str
+    #     desired_type: Optional[type] = None
+    #     if isinstance(key, tuple):
+    #         if len(key) != 2:
+    #             raise ValueError(f"FabNode key {key} tuple must be of length 2")
+    #         path = key[0]
+    #         if not isinstance(path, str):
+    #             raise ValueError("FabNode key {path} path is not a string")
+    #         desired_type = key[1]
+    #         if not isinstance(desired_type, type):
+    #             raise ValueError("FabNode desired type {desired_type } is not a type")
+    #     elif isinstance(key, str):
+    #         path = key
+    #     else:
+    #         raise ValueError(f"ModeNode key {key} is neither a string nor a tuple")
 
-        # Move *focus* from *self* by parsing *path*:
-        focus: FabNode = self
-        size: int = len(path)
-        index: int = 0
-        while index < size:
-            dispatch: str = path[index]
-            if tracing:
-                print(f"FabNode.__get_item__(): {path[index:]=} {focus=}")
-            if dispatch == "^":
-                # Move *focus* up:
-                focus = focus._Parent
-                index += 1
-            elif dispatch == ".":
-                index += 1
-            elif dispatch.isalpha():
-                # Extract the Node or Attribute Name:
-                dot_index: int = path.find(".", index + 1)
-                name: str
-                if dot_index > 0:
-                    name = path[index:dot_index]
-                    index = dot_index
-                else:
-                    name = path[index:]
-                    index = size
-                if hasattr(focus, name):
-                    focus = getattr(focus, name)
-                else:
-                    raise ValueError(f"Path '{path}' not able to find '{name}' {dir(focus)=}")
-            else:
-                raise ValueError(f"Path '{path}' is not properly formatted")
-        if desired_type:
-            if not isinstance(focus, desired_type):
-                raise ValueError(f"Path '{path}' is of type {type(focus)} not {desired_type}")
-        if tracing:
-            print(f"=>FabNode.__get_item__({key})=>{focus}")
-        return focus
+    #     # Move *focus* from *self* by parsing *path*:
+    #     focus: FabNode = self
+    #     size: int = len(path)
+    #     index: int = 0
+    #     while index < size:
+    #         dispatch: str = path[index]
+    #         if tracing:
+    #             print(f"FabNode.__get_item__(): {path[index:]=} {focus=}")
+    #         if dispatch == "^":
+    #             # Move *focus* up:
+    #             focus = focus._Parent
+    #             index += 1
+    #         elif dispatch == ".":
+    #             index += 1
+    #         elif dispatch.isalpha():
+    #             # Extract the Node or Attribute Name:
+    #             dot_index: int = path.find(".", index + 1)
+    #             name: str
+    #             if dot_index > 0:
+    #                 name = path[index:dot_index]
+    #                 index = dot_index
+    #             else:
+    #                 name = path[index:]
+    #                 index = size
+    #             if hasattr(focus, name):
+    #                 focus = getattr(focus, name)
+    #             else:
+    #                 raise ValueError(f"Path '{path}' not able to find '{name}' {dir(focus)=}")
+    #         else:
+    #             raise ValueError(f"Path '{path}' is not properly formatted")
+    #     if desired_type:
+    #         if not isinstance(focus, desired_type):
+    #             raise ValueError(f"Path '{path}' is of type {type(focus)} not {desired_type}")
+    #     if tracing:
+    #         print(f"=>FabNode.__get_item__({key})=>{focus}")
+    #    return focus
 
 
 # @dataclass
