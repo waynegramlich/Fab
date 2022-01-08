@@ -1077,7 +1077,7 @@ class FabNode(FabBox):
     def _is_valid_name(name: str) -> bool:
         """Return whether a name is valid or not."""
         no_underscores: str = name.replace("_", "")
-        return no_underscores.isalnum() and no_underscores[0].isalpha()
+        return len(no_underscores) >= 1 and no_underscores.isalnum() and no_underscores[0].isalpha()
 
     # # FabNode._setup():
     # def _setup(self, dag_table: Dict[int, "FabNode"],
