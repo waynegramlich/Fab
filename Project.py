@@ -106,10 +106,10 @@ class FabAssembly(FabGroup):
             print(f"{tracing}<=>FabAssembly({self.Name}).__post_init__()")
 
 
-# FabFile:
+# FabDocument:
 @dataclass
-class FabFile(FabNode):
-    """FabFile: Represents a FreeCAD document file.
+class FabDocument(FabNode):
+    """FabDocument: Represents a FreeCAD document Document.
 
     Inherited Attributes:
     * *Name* (str): Node name
@@ -664,17 +664,17 @@ class TestSolid(FabSolid):
         return tuple(errors)
 
 
-# TestFile:
+# TestDocument:
 @dataclass
-class TestFile(FabFile):
+class TestDocument(FabDocument):
     """A Test file."""
 
     _TestSolid: TestSolid = field(init=False, repr=False)
     _Box: Box = field(init=False, repr=False)
 
-    # TestFile.__post_init__():
+    # TestDocument.__post_init__():
     def __post_init__(self) -> None:
-        """Initialize TestFile."""
+        """Initialize TestDocument."""
         super().__post_init__()
         tracing: str = self.Tracing
         if tracing:
@@ -690,7 +690,7 @@ class TestFile(FabFile):
 class TestProject(FabProject):
     """A Test Project."""
 
-    File: FabFile = field(init=False, repr=True)
+    Document: FabDocument = field(init=False, repr=True)
 
     # TestProject.__post_init__():
     def __post_init__(self) -> None:
@@ -701,7 +701,7 @@ class TestProject(FabProject):
         if tracing:
             print(f"{tracing}=>TestProject({self.Name}).__post_init__()")
 
-        self.File = TestFile("TestFile", self, Path("/tmp/TestFile.fcstd"))
+        self.Document = TestDocument("TestFile", self, Path("/tmp/TestFile.fcstd"))
 
         if tracing:
             print(f"{tracing}<=TestProject({self.Name}).__post_init__()")
@@ -717,9 +717,9 @@ class TestProject(FabProject):
     def probe(self, label: str) -> None:
         """Print out some probe values."""
         print("================")
-        file: FabFile = self.File
-        assert isinstance(file, TestFile)
-        box: Box = file._Box
+        document: FabDocument = self.Document
+        assert isinstance(document, TestDocument)
+        box: Box = document._Box
         print(f"{label}: {box.North.Normal=}")
         assert False, "Remove debugging probes"
 

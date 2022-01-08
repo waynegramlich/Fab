@@ -13,7 +13,7 @@
 </ul>
 </li>
 <li>3 Class: <a href="#project--fabassembly">FabAssembly</a>:</li>
-<li>4 Class: <a href="#project--fabfile">FabFile</a>:
+<li>4 Class: <a href="#project--fabdocument">FabDocument</a>:
 <ul>
 <li>4.1 <a href="#project----produce">produce()</a>: Create FabFile document.</li>
 <li>4.2 <a href="#project----post-produce">post_produce()</a>: Close the FabFile.</li>
@@ -30,7 +30,7 @@
 <li>6.2 <a href="#project----run">run()</a>: NO DOC STRING!</li>
 </ul>
 </li>
-<li>7 Class: <a href="#project--testfile">TestFile</a>:</li>
+<li>7 Class: <a href="#project--testdocument">TestDocument</a>:</li>
 <li>8 Class: <a href="#project--testproject">TestProject</a>:
 <ul>
 <li>8.1 <a href="#project----probe">probe()</a>: Print out some probe values.</li>
@@ -98,8 +98,8 @@ Inherited Constructor Attributes:</p>
 <p>Produce BoxSide.</p>
 <h2><a name="project--fabassembly"></a>3 Class FabAssembly:</h2>
 <p>A group FabSolid's and sub-FabAssembly's.</p>
-<h2><a name="project--fabfile"></a>4 Class FabFile:</h2>
-<p>Represents a FreeCAD document file.
+<h2><a name="project--fabdocument"></a>4 Class FabDocument:</h2>
+<p>Represents a FreeCAD document Document.
 Inherited Attributes:</p>
 <ul>
 <li><em>Name</em> (str): Node name</li>
@@ -112,11 +112,11 @@ The children nodes which are constrained to &quot;group-like&quot; or a FabSolid
 <li><em>FilePath</em> (Path):
 The Python pathlib.Path file name which must have a suffix of <code>.fcstd</code> or <code>.FCStd</code>.</li>
 </ul>
-<h3><a name="project----produce"></a>4.1 <code>FabFile.</code>produce():</h3>
-<p>FabFile.produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<h3><a name="project----produce"></a>4.1 <code>FabDocument.</code>produce():</h3>
+<p>FabDocument.produce(self) -&gt; typing.Tuple[str, ...]:</p>
 <p>Create FabFile document.</p>
-<h3><a name="project----post-produce"></a>4.2 <code>FabFile.</code>post_produce():</h3>
-<p>FabFile.post_produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<h3><a name="project----post-produce"></a>4.2 <code>FabDocument.</code>post_produce():</h3>
+<p>FabDocument.post_produce(self) -&gt; typing.Tuple[str, ...]:</p>
 <p>Close the FabFile.</p>
 <h2><a name="project--fabgroup"></a>5 Class FabGroup:</h2>
 <p>A named group of FabNode's.
@@ -148,7 +148,7 @@ way to get the information, but it works.</p>
 <h3><a name="project----run"></a>6.2 <code>FabProject.</code>run():</h3>
 <p>FabProject.run(self) -&gt; None:</p>
 <p>NO DOC STRING!</p>
-<h2><a name="project--testfile"></a>7 Class TestFile:</h2>
+<h2><a name="project--testdocument"></a>7 Class TestDocument:</h2>
 <p>A Test file.</p>
 <h2><a name="project--testproject"></a>8 Class TestProject:</h2>
 <p>A Test Project.</p>
