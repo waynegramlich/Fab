@@ -425,7 +425,7 @@ class BoxSide(FabSolid):
             edge_index += 1
 
         polygon: FabPolygon = FabPolygon(corners)
-        mount.pad(f"{name}Pad", polygon, depth)
+        mount.extrude(f"{name}Extrude", polygon, depth)
         self.drill_joins(all_screws)
 
         if tracing:
@@ -621,19 +621,19 @@ class TestSolid(FabSolid):
                 context_keys = tuple(sorted(context.keys()))
                 print(f"{tracing}After mount context: {context_keys}")
 
-            # Perform the first Pad:
+            # Perform the first Extrude:
             z_offset: float = 0.0
-            pad_fillet_radius: float = 10.0
-            pad_polygon: FabPolygon = FabPolygon((
-                (Vector(-40, -60, z_offset), pad_fillet_radius),  # SW
-                (Vector(40, -60, z_offset), pad_fillet_radius),  # SE
-                (Vector(40, 20, z_offset), pad_fillet_radius),  # NE
-                (Vector(-40, 20, z_offset), pad_fillet_radius),  # NW
+            extrude_fillet_radius: float = 10.0
+            extrude_polygon: FabPolygon = FabPolygon((
+                (Vector(-40, -60, z_offset), extrude_fillet_radius),  # SW
+                (Vector(40, -60, z_offset), extrude_fillet_radius),  # SE
+                (Vector(40, 20, z_offset), extrude_fillet_radius),  # NE
+                (Vector(-40, 20, z_offset), extrude_fillet_radius),  # NW
             ))
             if tracing:
                 print(f"{tracing}]")
                 print(f"{tracing}>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-            top_mount.pad("TN_Pad", pad_polygon, depth, tracing=next_tracing)
+            top_mount.extrude("TN_Extrude", extrude_polygon, depth, tracing=next_tracing)
 
             # Perform a pocket:
             pocket_fillet_radius: float = 2.5

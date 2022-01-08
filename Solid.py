@@ -141,7 +141,7 @@ class _Operation(_Internal):
     def produce_shape_binder(self, context: Dict[str, Any],
                              part_geometries: Tuple[Part.Part2DObject, ...],
                              prefix: str, tracing: str = "") -> Part.Feature:
-        """Produce the shape binder needed for the pad, pocket, hole, ... operations."""
+        """Produce the shape binder needed for the extrude, pocket, hole, ... operations."""
         if tracing:
             print(f"{tracing}=>FabOperation.produce_shape_binder()")
         body = cast(Part.BodyBase, context["solid_body"])
@@ -184,7 +184,7 @@ class _Operation(_Internal):
 # _Extrude:
 @dataclass
 class _Extrude(_Operation):
-    """_Extrude: A FreeCAD PartDesign Pad operation.
+    """_Extrude: A FreeCAD PartDesign Extrude operation.
 
     Attributes:
     * *Name* (str): The operation name.
@@ -240,7 +240,7 @@ class _Extrude(_Operation):
 
     # _Extrude.produce():
     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
-        """Produce the Pad."""
+        """Produce the Extrude."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>_Extrude.produce('{self.Name}')")
@@ -261,22 +261,23 @@ class _Extrude(_Operation):
         body = cast(Part.BodyBase, context["solid_body"])
         mount_normal = cast(Vector, context["mount_normal"])
 
-        # Perform The Pad operation:
-        pad: Part.Feature = body.newObject("PartDesign::Pad", next_prefix)
-        assert isinstance(pad, Part.Feature)
-        pad.Type = "Length"  # Type in ("Length", "TwoLengths", "UpToLast", "UpToFirst", "UpToFace")
-        pad.Profile = shape_binder
-        pad.Length = self.Depth
-        pad.Length2 = 0  # Only for Type == "TwoLengths"
-        pad.UseCustomVector = True
-        pad.Direction = mount_normal  # This may be bogus
-        pad.UpToFace = None
-        pad.Reversed = True
-        pad.Midplane = False
-        pad.Offset = 0  # Only for Type in ("UpToLast", "UpToFirst", "UpToFace")
+        # Perform The Extrude operation:
+        extrude: Part.Feature = body.newObject("PartDesign::Pad", next_prefix)
+        assert isinstance(extrude, Part.Feature)
+        # Type must be one of ("Length", "TwoLengths", "UpToLast", "UpToFirst", "UpToFace")
+        extrude.Type = "Length"
+        extrude.Profile = shape_binder
+        extrude.Length = self.Depth
+        extrude.Length2 = 0  # Only for Type == "TwoLengths"
+        extrude.UseCustomVector = True
+        extrude.Direction = mount_normal  # This may be bogus
+        extrude.UpToFace = None
+        extrude.Reversed = True
+        extrude.Midplane = False
+        extrude.Offset = 0  # Only for Type in ("UpToLast", "UpToFirst", "UpToFace")
 
         # For the GUI, update the view provider:
-        self._viewer_update(body, pad)
+        self._viewer_update(body, extrude)
 
         if tracing:
             print(f"{tracing}<=_Extrude.produce('{self.Name}')")
@@ -313,7 +314,7 @@ class _Pocket(_Operation):
 
     # _Pocket.produce():
     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
-        """Produce the Pad."""
+        """Produce the Pocket."""
         if tracing:
             print("{tracing}=>_Pocket.produce('{self.Name}')")
 
@@ -500,7 +501,7 @@ class FabMount(_Internal):
             normal: Vector = self._Normal
             z_axis: Vector = Vector(0.0, 0.0, 1.0)
             origin: Vector = Vector()
-            # FreeCAD Vector metheds like to modify Vector contents; force copies beforehand:
+            # FreeCAD Vector methods like to modify Vector contents; force copies beforehand:
             copy: Vector = Vector()
             projected_origin: Vector = (origin + copy).projectToPlane(contact + copy, normal + copy)
             rotation: Rotation = Rotation(z_axis, normal)
@@ -559,14 +560,14 @@ class FabMount(_Internal):
                 print(f"{tracing}<=FabMount.produce('{self.Name}')")
         return ()
 
-    # FabMount.pad():
-    def pad(self, name: str, shapes: Union[FabGeometry, Tuple[FabGeometry, ...]],
-            depth: float, tracing: str = "") -> None:
-        """Perform a pad operation."""
+    # FabMount.extrude():
+    def extrude(self, name: str, shapes: Union[FabGeometry, Tuple[FabGeometry, ...]],
+                depth: float, tracing: str = "") -> None:
+        """Perform a extrude operation."""
         tracing = self._Solid.Tracing
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>FabMount({self.Name}).pad('{name}', *)")
+            print(f"{tracing}=>FabMount({self.Name}).extrude('{name}', *)")
 
         # Figure out the contact
         top_contact: Vector = self._Contact
@@ -598,7 +599,7 @@ class FabMount(_Internal):
             context_keys: Tuple[str, ...]
             if tracing:
                 context_keys = tuple(sorted(context.keys()))
-                print(f"{tracing}Before Pad Context: {context_keys}")
+                print(f"{tracing}Before Extrude Context: {context_keys}")
             assert isinstance(shapes, FabGeometry)
             assert depth > 0.0
             context["prefix"] = name
@@ -606,10 +607,10 @@ class FabMount(_Internal):
             errors.extend(extrude.produce(context.copy(), next_tracing))
             if tracing:
                 context_keys = tuple(sorted(context.keys()))
-                print(f"{tracing}After Pad Context: {context_keys}")
+                print(f"{tracing}After Extrude Context: {context_keys}")
 
         if tracing:
-            print(f"{tracing}<=FabMount({self.Name}).pad('{name}', *)=>|{len(errors)}|")
+            print(f"{tracing}<=FabMount({self.Name}).extrude('{name}', *)=>|{len(errors)}|")
 
     # FabMount.pocket():
     def pocket(self, name: str, shapes: Union[FabGeometry, Tuple[FabGeometry, ...]],
@@ -625,7 +626,7 @@ class FabMount(_Internal):
             context_keys: Tuple[str, ...]
             if tracing:
                 context_keys = tuple(sorted(context.keys()))
-                print(f"{tracing}Before Pad Context: {context_keys}")
+                print(f"{tracing}Before Pocket Context: {context_keys}")
             assert isinstance(shapes, FabGeometry)
             assert depth > 0.0
             context["prefix"] = name
@@ -634,7 +635,7 @@ class FabMount(_Internal):
             errors.extend(fab_pocket.produce(context.copy(), next_tracing))
             if tracing:
                 context_keys = tuple(sorted(context.keys()))
-                print(f"{tracing}After Pad Context: {context_keys}")
+                print(f"{tracing}After Pocket Context: {context_keys}")
 
         if tracing:
             print(f"{tracing}<=FabMount({self.Name}).pocket('{name}', *)=>|{len(errors)}|")
