@@ -29,6 +29,7 @@ Embed.setup()
 
 from dataclasses import dataclass, field
 from typing import Any, cast, Dict, List, Optional, Sequence, Tuple, Union
+from collections import OrderedDict
 
 
 import FreeCAD  # type: ignore
@@ -187,23 +188,55 @@ class _Extrude(_Operation):
 
     Attributes:
     * *Name* (str): The operation name.
-    * *Geometry* (FabGeometry): The ModlePolygon or FabCircle to pad with.
-    * *Depth* (float): The depth to pad to in millimeters.
+    * *Geometry* (Union[FabGeometry, Tuple[FabGeometry, ...]):
+      The FabGeometry (i.e. FabPolygon or FabCircle) or a tuple of FabGeometry's to extrude with.
+      When the tuple is used, the largest FabGeometry (which is traditionally the first one)
+      is the outside of the extrusion, and the rest are "pockets".  This is useful for tubes.
+    * *Depth* (float): The depth to extrude to in millimeters.
 
     """
 
-    Geometry: FabGeometry
-    Depth: float
+    _Geometry: Union[FabGeometry, Tuple[FabGeometry, ...]]
+    _Geometries: Tuple[FabGeometry, ...] = field(init=False, repr=False)
+    _Depth: float
 
     # _Extrude.__post_init__():
     def __post_init__(self) -> None:
         """Verify _Extrude values."""
         super().__post_init__()
-        if not isinstance(self.Geometry, FabGeometry):
-            raise RuntimeError(
-                f"_Extrude.__post_init__({self.Name}):{self.Geometry} is not a FabGeometry")
+
+        # Type check self._Geometry and convert into self._Geometries:
+        geometries: List[FabGeometry] = []
+        self_geometry: Union[FabGeometry, Tuple[FabGeometry, ...]] = self._Geometry
+        if isinstance(self_geometry, FabGeometry):
+            geometries = [self_geometry]
+        elif isinstance(self_geometry, tuple):
+            geometry: FabGeometry
+            for geometry in self_geometry:
+                if not isinstance(geometry, FabGeometry):
+                    raise RuntimeError(f"_Extrude.__post_init__({self.Name}):"
+                                       f"{type(geometry)} is not a FabGeometry")
+                geometries.append(geometry)
+        else:
+            raise RuntimeError(f"_Extrude.__post_init__({self.Name}):{type(self.Geometry)} "
+                               f"is neither a FabGeometry nor a Tuple[FabGeometry, ...]")
+        self._Geometries = tuple(geometries)
+
         if self.Depth <= 0.0:
-            raise RuntimeError(f"Depth ({self.Depth}) is not positive.")
+            raise RuntimeError(f"_Extrude.__post_init__({self.Name}):"
+                               f"Depth ({self.Depth}) is not positive.")
+
+    # _Extrude.Geometry():
+    @property
+    def Geometry(self) -> Union[FabGeometry, Tuple[FabGeometry, ...]]:
+        """Return the _Extrude FabGeometry."""
+        return self._Geometry
+
+    # _Extrude.Depth():
+    @property
+    def Depth(self) -> float:
+        """Return the Depth."""
+        return self._Depth
 
     # _Extrude.produce():
     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
@@ -212,13 +245,15 @@ class _Extrude(_Operation):
         if tracing:
             print(f"{tracing}=>_Extrude.produce('{self.Name}')")
 
-        # Extract the *part_geometries* and create the assocated *shape_binder*:
+        # Extract the *part_geometries* and create the associated *shape_binder*:
         prefix = cast(str, context["prefix"])
         next_prefix: str = f"{prefix}_{self.Name}"
-        part_geometries: Tuple[Part.Part2DObject, ...]
-        part_geometries = self.Geometry.produce(context.copy(), next_prefix)
+        part_geometries: List[Part.Part2DObject] = []
+        geometry: FabGeometry
+        for geometry in self._Geometries:
+            part_geometries.extend(geometry.produce(context.copy(), next_prefix))
         shape_binder: Part.Feature = self.produce_shape_binder(
-            context.copy(), part_geometries, next_prefix, tracing=next_tracing)
+            context.copy(), tuple(part_geometries), next_prefix, tracing=next_tracing)
         assert isinstance(shape_binder, Part.Feature)
         shape_binder.Visibility = False
 
@@ -264,7 +299,7 @@ class _Pocket(_Operation):
 
     # _Pocket__post_init__():
     def __post_init__(self) -> None:
-        """Verify _Extrude values."""
+        """Verify _Pocket values."""
         super().__post_init__()
         if not isinstance(self.Geometry, FabGeometry):
             raise ValueError(f"{self.Geometry} is not a FabGeometry")
@@ -346,15 +381,15 @@ class FabMount(_Internal):
 
     This class basically corresponds to a FreeCad Datum Plane.  It is basically the surface
     to which the 2D FabGeometry's are mapped onto prior to performing each operation.
-    This class is immutable (i.e. frozen.)
 
     Attributes:
     * *Name*: (str): The name of the FabPlane.
     * *Solid*: (FabSolid): The FabSolid to work on.
-    * *Contact* (Vector): A point on the plane.
-    * *Normal* (Vector): A normal to the plane
+    * *Contact* (Vector): A point on the mount plane.
+    * *Normal* (Vector): A normal to the mount plane
     * *Orient* (Vector):
-      A vector that is projected onto the plane to specify orientation when mounted.
+      A vector that is projected onto the mount plane to specify orientation
+      when mounted for CNC operations.
     * *Depth* (float): The maximum depth limit for all operations.
 
     """
@@ -364,6 +399,7 @@ class FabMount(_Internal):
     _Normal: Vector
     _Orient: Vector
     _Depth: float
+    _Operations: "OrderedDict[str, _Operation]" = field(init=False, repr=False)
     _Context: Dict[str, Any] = field(init=False, repr=False)
     _Copy: Vector = field(init=False, repr=False)  # Used for making private copies of Vector's
     _Tracing: str = field(init=False, repr=False)
@@ -391,6 +427,7 @@ class FabMount(_Internal):
         self._Copy = copy
         self._Contact = self._Contact + copy
         self._Normal = self._Normal + copy
+        self._Operations = OrderedDict()
         # FreeCAD Vector metheds like to modify Vector contents; force copies beforehand:
         self._Orient = (self._Orient + copy).projectToPlane(
             self._Contact + copy, self._Normal + copy)
@@ -441,6 +478,14 @@ class FabMount(_Internal):
     def Construct(self) -> bool:
         """Return whether construction is turned on."""
         return self._Solid.Construct
+
+    # FabMount.record_operation():
+    def record_operation(self, operation: _Operation) -> None:
+        """Record an operation to a FabMount."""
+        if not isinstance(operation, _Operation):
+            raise RuntimeError(
+                "FabMount.add_operation({self._Name}).{type(operation)} is not an _Operation")
+        self._Operations[operation.Name] = operation
 
     # FabMount.produce():
     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
@@ -535,12 +580,15 @@ class FabMount(_Internal):
             geometries = (shapes,)
         else:
             geometries = shapes
-
         geometry: FabGeometry
         for geometry in geometries:
             boxes.append(geometry.project_to_plane(top_contact, normal).Box)
             boxes.append(geometry.project_to_plane(bottom_contact, normal).Box)
         self._Solid.enclose(boxes)
+
+        full_name: str = f"{self.Name}_{name}"
+        extrude: _Extrude = _Extrude(full_name, self, shapes, depth)
+        self.record_operation(extrude)
 
         errors: List[str] = []
         if self.Construct:
@@ -554,9 +602,8 @@ class FabMount(_Internal):
             assert isinstance(shapes, FabGeometry)
             assert depth > 0.0
             context["prefix"] = name
-            full_name: str = f"{self.Name}_{name}"
-            fab_pad: _Extrude = _Extrude(full_name, self, shapes, depth)
-            errors.extend(fab_pad.produce(context.copy(), next_tracing))
+
+            errors.extend(extrude.produce(context.copy(), next_tracing))
             if tracing:
                 context_keys = tuple(sorted(context.keys()))
                 print(f"{tracing}After Pad Context: {context_keys}")

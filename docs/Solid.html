@@ -3,10 +3,11 @@
 <ul>
 <li>1 Class: <a href="#solid--fabmount">FabMount</a>:
 <ul>
-<li>1.1 <a href="#solid----produce">produce()</a>: Create the FreeCAD DatumPlane used for the drawing support.</li>
-<li>1.2 <a href="#solid----pad">pad()</a>: Perform a pad operation.</li>
-<li>1.3 <a href="#solid----pocket">pocket()</a>: Perform a pocket operation.</li>
-<li>1.4 <a href="#solid----drill-joins">drill_joins()</a>: Drill some FabJoin's into a FabMount.</li>
+<li>1.1 <a href="#solid----record-operation">record_operation()</a>: Record an operation to a FabMount.</li>
+<li>1.2 <a href="#solid----produce">produce()</a>: Create the FreeCAD DatumPlane used for the drawing support.</li>
+<li>1.3 <a href="#solid----pad">pad()</a>: Perform a pad operation.</li>
+<li>1.4 <a href="#solid----pocket">pocket()</a>: Perform a pocket operation.</li>
+<li>1.5 <a href="#solid----drill-joins">drill_joins()</a>: Drill some FabJoin's into a FabMount.</li>
 </ul>
 </li>
 <li>2 Class: <a href="#solid--fabsolid">FabSolid</a>:
@@ -20,28 +21,31 @@
 <h2><a name="solid--fabmount"></a>1 Class FabMount:</h2>
 <p>An operations plane that can be oriented for subsequent machine operations.
 This class basically corresponds to a FreeCad Datum Plane.  It is basically the surface
-to which the 2D FabGeometry's are mapped onto prior to performing each operation.
-This class is immutable (i.e. frozen.)</p>
+to which the 2D FabGeometry's are mapped onto prior to performing each operation.</p>
 <p>Attributes:</p>
 <ul>
 <li><em>Name</em>: (str): The name of the FabPlane.</li>
 <li><em>Solid</em>: (FabSolid): The FabSolid to work on.</li>
-<li><em>Contact</em> (Vector): A point on the plane.</li>
-<li><em>Normal</em> (Vector): A normal to the plane</li>
+<li><em>Contact</em> (Vector): A point on the mount plane.</li>
+<li><em>Normal</em> (Vector): A normal to the mount plane</li>
 <li><em>Orient</em> (Vector):
-A vector that is projected onto the plane to specify orientation when mounted.</li>
+A vector that is projected onto the mount plane to specify orientation
+when mounted for CNC operations.</li>
 <li><em>Depth</em> (float): The maximum depth limit for all operations.</li>
 </ul>
-<h3><a name="solid----produce"></a>1.1 <code>FabMount.</code>produce():</h3>
+<h3><a name="solid----record-operation"></a>1.1 <code>FabMount.</code>record_operation():</h3>
+<p>FabMount.record_operation(self, operation: Solid._Operation) -&gt; None:</p>
+<p>Record an operation to a FabMount.</p>
+<h3><a name="solid----produce"></a>1.2 <code>FabMount.</code>produce():</h3>
 <p>FabMount.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
 <p>Create the FreeCAD DatumPlane used for the drawing support.</p>
-<h3><a name="solid----pad"></a>1.2 <code>FabMount.</code>pad():</h3>
+<h3><a name="solid----pad"></a>1.3 <code>FabMount.</code>pad():</h3>
 <p>FabMount.pad(self, name: str, shapes: typing.Union[Geometry.FabGeometry, typing.Tuple[Geometry.FabGeometry, ...]], depth: float, tracing: str = '') -&gt; None:</p>
 <p>Perform a pad operation.</p>
-<h3><a name="solid----pocket"></a>1.3 <code>FabMount.</code>pocket():</h3>
+<h3><a name="solid----pocket"></a>1.4 <code>FabMount.</code>pocket():</h3>
 <p>FabMount.pocket(self, name: str, shapes: typing.Union[Geometry.FabGeometry, typing.Tuple[Geometry.FabGeometry, ...]], depth: float, tracing: str = '') -&gt; None:</p>
 <p>Perform a pocket operation.</p>
-<h3><a name="solid----drill-joins"></a>1.4 <code>FabMount.</code>drill_joins():</h3>
+<h3><a name="solid----drill-joins"></a>1.5 <code>FabMount.</code>drill_joins():</h3>
 <p>FabMount.drill_joins(self, joins: typing.Union[Join.FabJoin, typing.Sequence[Join.FabJoin]], tracing: str = '') -&gt; None:</p>
 <p>Drill some FabJoin's into a FabMount.</p>
 <h2><a name="solid--fabsolid"></a>2 Class FabSolid:</h2>
