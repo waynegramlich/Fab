@@ -99,10 +99,10 @@ class _Internal(object):
         return False   # Override in FabSolid class.
 
 
-# _FabOperation:
+# _Operation:
 @dataclass
-class _FabOperation(_Internal):
-    """_FabOperation: An base class for FabMount operations -- FabPad, FabPocket, FabHole, etc.
+class _Operation(_Internal):
+    """_Operation: An base class for FabMount operations -- _Extrude, _Pocket, FabHole, etc.
 
     Attributes:
     * *Name* (str): Unique operation name for given mount.
@@ -112,31 +112,31 @@ class _FabOperation(_Internal):
 
     _Mount: "FabMount"
 
-    # _FabOperation.__post_init__():
+    # _Operation.__post_init__():
     def __post_init__(self) -> None:
-        """Initialize _FabOperation."""
+        """Initialize _Operation."""
         super().__post_init__()
         # TODO: Enable check:
         # if not self._Mount.is_mount():
-        #   raise RuntimeError("_FabOperation.__post_init__(): {type(self._Mount)} is not FabMount")
+        #   raise RuntimeError("_Operation.__post_init__(): {type(self._Mount)} is not FabMount")
 
-    # _FabOperation.is_operation():
+    # _Operation.is_operation():
     def is_operation(self) -> bool:
         """Return True for FabOperation."""
         return True
 
-    # _FabOperation.get_name():
+    # _Operation.get_name():
     def get_name(self) -> str:
         """Return FabOperation name."""
         return self.Name
 
-    # _FabOperation.produce():
+    # _Operation.produce():
     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
         """Return the operation sort key."""
         raise NotImplementedError(f"{type(self)}.produce() is not implemented")
         return ()
 
-    # _FabOperation.produce_shape_binder():
+    # _Operation.produce_shape_binder():
     def produce_shape_binder(self, context: Dict[str, Any],
                              part_geometries: Tuple[Part.Part2DObject, ...],
                              prefix: str, tracing: str = "") -> Part.Feature:
@@ -161,7 +161,7 @@ class _FabOperation(_Internal):
             print(f"{tracing}<=FabOperation.produce_shape_binder()=>*")
         return shape_binder
 
-    # _FabOperation._viewer_update():
+    # _Operation._viewer_update():
     def _viewer_update(self, body: Part.BodyBase, part_feature: Part.Feature) -> None:
         """Update the view Body view provider."""
         if App.GuiUp:  # pragma: no unit cover
@@ -180,10 +180,10 @@ class _FabOperation(_Internal):
             #    view_object, "DisplayMode", part_feature.ViewObject.DisplayMode)
 
 
-# FabPad:
+# _Extrude:
 @dataclass
-class FabPad(_FabOperation):
-    """FabPad: A FreeCAD PartDesign Pad operation.
+class _Extrude(_Operation):
+    """_Extrude: A FreeCAD PartDesign Pad operation.
 
     Attributes:
     * *Name* (str): The operation name.
@@ -195,22 +195,22 @@ class FabPad(_FabOperation):
     Geometry: FabGeometry
     Depth: float
 
-    # FabPad.__post_init__():
+    # _Extrude.__post_init__():
     def __post_init__(self) -> None:
-        """Verify FabPad values."""
+        """Verify _Extrude values."""
         super().__post_init__()
         if not isinstance(self.Geometry, FabGeometry):
             raise RuntimeError(
-                f"FabPad.__post_init__({self.Name}):{self.Geometry} is not a FabGeometry")
+                f"_Extrude.__post_init__({self.Name}):{self.Geometry} is not a FabGeometry")
         if self.Depth <= 0.0:
             raise RuntimeError(f"Depth ({self.Depth}) is not positive.")
 
-    # FabPad.produce():
+    # _Extrude.produce():
     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
         """Produce the Pad."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>FabPad.produce('{self.Name}')")
+            print(f"{tracing}=>_Extrude.produce('{self.Name}')")
 
         # Extract the *part_geometries* and create the assocated *shape_binder*:
         prefix = cast(str, context["prefix"])
@@ -244,13 +244,13 @@ class FabPad(_FabOperation):
         self._viewer_update(body, pad)
 
         if tracing:
-            print(f"{tracing}<=FabPad.produce('{self.Name}')")
+            print(f"{tracing}<=_Extrude.produce('{self.Name}')")
         return ()
 
-# FabPocket:
+# _Pocket:
 @dataclass
-class FabPocket(_FabOperation):
-    """FabPocket: A FreeCAD PartDesign Pocket operation.
+class _Pocket(_Operation):
+    """_Pocket: A FreeCAD PartDesign Pocket operation.
 
     Attributes:
     * *Name* (str): The operation name.
@@ -262,25 +262,25 @@ class FabPocket(_FabOperation):
     Geometry: FabGeometry
     Depth: float
 
-    # FabPocket__post_init__():
+    # _Pocket__post_init__():
     def __post_init__(self) -> None:
-        """Verify FabPad values."""
+        """Verify _Extrude values."""
         super().__post_init__()
         if not isinstance(self.Geometry, FabGeometry):
             raise ValueError(f"{self.Geometry} is not a FabGeometry")
         if self.Depth <= 0.0:
             raise ValueError(f"Depth ({self.Depth}) is not positive.")
 
-    # FabPocket.get_name():
+    # _Pocket.get_name():
     def get_name(self) -> str:
-        """Return FabPocket name."""
+        """Return _Pocket name."""
         return self.Name
 
-    # FabPocket.produce():
+    # _Pocket.produce():
     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
         """Produce the Pad."""
         if tracing:
-            print("{tracing}=>FabPocket.produce('{self.Name}')")
+            print("{tracing}=>_Pocket.produce('{self.Name}')")
 
         # Extract the *part_geometries*:
         prefix = cast(str, context["prefix"])
@@ -310,7 +310,7 @@ class FabPocket(_FabOperation):
         self._viewer_update(body, pocket)
 
         if tracing:
-            print("{tracing}<=FabPocket.produce('{self.Name}')")
+            print("{tracing}<=_Pocket.produce('{self.Name}')")
         return ()
 
 
@@ -341,7 +341,7 @@ class _Hole(object):
 
 # FabMount:
 @dataclass
-class FabMount(object):
+class FabMount(_Internal):
     """FabMount: An operations plane that can be oriented for subsequent machine operations.
 
     This class basically corresponds to a FreeCad Datum Plane.  It is basically the surface
@@ -359,7 +359,6 @@ class FabMount(object):
 
     """
 
-    _Name: str
     _Solid: "FabSolid"
     _Contact: Vector
     _Normal: Vector
@@ -373,7 +372,7 @@ class FabMount(object):
     def __post_init__(self) -> None:
         """Verify that FabMount arguments are valid."""
 
-        # No super().__post_init__() because the base class is object.
+        super().__post_init__()
         solid: "FabSolid" = self._Solid
 
         tracing: str = solid.Tracing
@@ -381,8 +380,7 @@ class FabMount(object):
             print(f"{tracing}=>FabMount({self.Name}).__post_init__()")
 
         # Do type checking here.
-        assert isinstance(self._Name, str)
-        assert FabNode._is_valid_name(self.Name)
+        # assert isinstance(self._Name, str)
         assert isinstance(self._Solid, FabSolid)
         assert isinstance(self._Contact, Vector)
         assert isinstance(self._Normal, Vector)
@@ -557,7 +555,7 @@ class FabMount(object):
             assert depth > 0.0
             context["prefix"] = name
             full_name: str = f"{self.Name}_{name}"
-            fab_pad: FabPad = FabPad(full_name, self, shapes, depth)
+            fab_pad: _Extrude = _Extrude(full_name, self, shapes, depth)
             errors.extend(fab_pad.produce(context.copy(), next_tracing))
             if tracing:
                 context_keys = tuple(sorted(context.keys()))
@@ -585,7 +583,7 @@ class FabMount(object):
             assert depth > 0.0
             context["prefix"] = name
             full_name: str = f"{self.Name}_{name}"
-            fab_pocket: FabPocket = FabPocket(full_name, self, shapes, depth)
+            fab_pocket: _Pocket = _Pocket(full_name, self, shapes, depth)
             errors.extend(fab_pocket.produce(context.copy(), next_tracing))
             if tracing:
                 context_keys = tuple(sorted(context.keys()))
@@ -996,7 +994,7 @@ def visibility_set(element: Any, new_value: bool = True, tracing: str = "") -> N
 
 #     # FabDrill.__post_init__():
 #     def __post_init__(self) -> None:
-#         """Verify FabPad values."""
+#         """Verify _Extrude values."""
 #         super().__post_init__()
 #         joins: List[FabJoin] = []
 #         join: Any
@@ -1262,7 +1260,7 @@ def visibility_set(element: Any, new_value: bool = True, tracing: str = "") -> N
 
 #     # FabHole.__post_init__():
 #     def __post_init__(self) -> None:
-#         """Verify FabPad values."""
+#         """Verify _Extrudex values."""
 #         super().__post_init__()
 #         if not isinstance(self.Circle, FabCircle):
 #             raise ValueError(f"{self.Geometry} is not a FabCircle")

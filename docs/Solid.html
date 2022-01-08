@@ -9,22 +9,11 @@
 <li>1.4 <a href="#solid----drill-joins">drill_joins()</a>: Drill some FabJoin's into a FabMount.</li>
 </ul>
 </li>
-<li>2 Class: <a href="#solid--fabpad">FabPad</a>:
+<li>2 Class: <a href="#solid--fabsolid">FabSolid</a>:
 <ul>
-<li>2.1 <a href="#solid----produce">produce()</a>: Produce the Pad.</li>
-</ul>
-</li>
-<li>3 Class: <a href="#solid--fabpocket">FabPocket</a>:
-<ul>
-<li>3.1 <a href="#solid----get-name">get_name()</a>: Return FabPocket name.</li>
-<li>3.2 <a href="#solid----produce">produce()</a>: Produce the Pad.</li>
-</ul>
-</li>
-<li>4 Class: <a href="#solid--fabsolid">FabSolid</a>:
-<ul>
-<li>4.1 <a href="#solid----mount">mount()</a>: Return a new FabMount.</li>
-<li>4.2 <a href="#solid----drill-joins">drill_joins()</a>: Apply drill FabJoin holes for a FabSolid.</li>
-<li>4.3 <a href="#solid----pre-produce">pre_produce()</a>: Produce an Empty FabSolid prior to performing operations.</li>
+<li>2.1 <a href="#solid----mount">mount()</a>: Return a new FabMount.</li>
+<li>2.2 <a href="#solid----drill-joins">drill_joins()</a>: Apply drill FabJoin holes for a FabSolid.</li>
+<li>2.3 <a href="#solid----pre-produce">pre_produce()</a>: Produce an Empty FabSolid prior to performing operations.</li>
 </ul>
 </li>
 </ul>
@@ -55,32 +44,7 @@ A vector that is projected onto the plane to specify orientation when mounted.</
 <h3><a name="solid----drill-joins"></a>1.4 <code>FabMount.</code>drill_joins():</h3>
 <p>FabMount.drill_joins(self, joins: typing.Union[Join.FabJoin, typing.Sequence[Join.FabJoin]], tracing: str = '') -&gt; None:</p>
 <p>Drill some FabJoin's into a FabMount.</p>
-<h2><a name="solid--fabpad"></a>2 Class FabPad:</h2>
-<p>A FreeCAD PartDesign Pad operation.
-Attributes:</p>
-<ul>
-<li><em>Name</em> (str): The operation name.</li>
-<li><em>Geometry</em> (FabGeometry): The ModlePolygon or FabCircle to pad with.</li>
-<li><em>Depth</em> (float): The depth to pad to in millimeters.</li>
-</ul>
-<h3><a name="solid----produce"></a>2.1 <code>FabPad.</code>produce():</h3>
-<p>FabPad.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
-<p>Produce the Pad.</p>
-<h2><a name="solid--fabpocket"></a>3 Class FabPocket:</h2>
-<p>A FreeCAD PartDesign Pocket operation.
-Attributes:</p>
-<ul>
-<li><em>Name</em> (str): The operation name.</li>
-<li><em>Geometry</em> (FabGeometry): The Polygon or Circle to pocket.</li>
-<li><em>Depth</em> (float): The pocket depth in millimeters.</li>
-</ul>
-<h3><a name="solid----get-name"></a>3.1 <code>FabPocket.</code>get_name():</h3>
-<p>FabPocket.get_name(self) -&gt; str:</p>
-<p>Return FabPocket name.</p>
-<h3><a name="solid----produce"></a>3.2 <code>FabPocket.</code>produce():</h3>
-<p>FabPocket.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
-<p>Produce the Pad.</p>
-<h2><a name="solid--fabsolid"></a>4 Class FabSolid:</h2>
+<h2><a name="solid--fabsolid"></a>2 Class FabSolid:</h2>
 <p>Fab: Represents a single part constructed using FreeCAD Part Design paradigm.
 Inherited Attributes:</p>
 <ul>
@@ -92,10 +56,10 @@ Inherited Attributes:</p>
 <li><em>Material</em> (str): The material to use.</li>
 <li><em>Color</em> (str): The color to use.</li>
 </ul>
-<h3><a name="solid----mount"></a>4.1 <code>FabSolid.</code>mount():</h3>
+<h3><a name="solid----mount"></a>2.1 <code>FabSolid.</code>mount():</h3>
 <p>FabSolid.mount(self, name: str, contact: Base.Vector, normal: Base.Vector, orient: Base.Vector, depth: float, tracing: str = '') -&gt; Solid.FabMount:</p>
 <p>Return a new FabMount.</p>
-<h3><a name="solid----drill-joins"></a>4.2 <code>FabSolid.</code>drill_joins():</h3>
+<h3><a name="solid----drill-joins"></a>2.2 <code>FabSolid.</code>drill_joins():</h3>
 <p>FabSolid.drill_joins(self, joins: typing.Sequence[Join.FabJoin], mounts: typing.Union[typing.Sequence[Solid.FabMount], NoneType] = None) -&gt; None:</p>
 <p>Apply drill FabJoin holes for a FabSolid.
 Iterate pairwise through a sequence of FabJoin's and FabMount's and for each pair
@@ -112,6 +76,6 @@ The mounts to to apply the <em>joins</em> to.  If <em>mounts</em> is <em>None</e
 mounts for the current FabSolid are used.  (Default: None)</li>
 </ul>
 <p>For now, please call this method after all FabMount's are created.</p>
-<h3><a name="solid----pre-produce"></a>4.3 <code>FabSolid.</code>pre_produce():</h3>
+<h3><a name="solid----pre-produce"></a>2.3 <code>FabSolid.</code>pre_produce():</h3>
 <p>FabSolid.pre_produce(self) -&gt; typing.Tuple[str, ...]:</p>
 <p>Produce an Empty FabSolid prior to performing operations.</p>
