@@ -125,9 +125,9 @@ What the class decorator does is generate both an `__init__()` method and a `__r
 
 The field names are defined in one of three ways:
 
-        RequiredField: Type
-        OptionalField: Type = InitialValue
-        PrivateField: Type = field(init=False, ...)
+        Required: Type
+        Optional: Type = InitialValue
+        Private: Type = field(init=False, ...)
 
 All required and optional fields show up in the generated `__init__()` method.
 None of the private fields show up in the `__init__()` method.
@@ -161,7 +161,102 @@ The generated `__init__()` method for BassClass is:
 
 The generated `__init__()` method for SubClass is:
 
+     def __init__(BR1: BRT1, BR2: BRT2, BO1: BOT1 = BV1, BO2: BOT2 = BV2,
+                  SR1: SRT1, SR2: SRT2, SO1: SOT1 = SV1, SO2: SOT2 = BV2) -> None:
+         # ...
 
+Notice that all of the required arguments are sorted first, followed by the optional arguments.
+None of the private fields show up in the __init__() method.
+
+Next, the __repr__() method needs discussion.  In general, every field will show up
+in the __repr__() method unless it is explicitly disabled.  The way to disable the
+the field in __repr__() is as follows:
+
+    RequiredField: RequiredType = field(init=False)
+    OptionalField: OptionalType = field(init=False, default=OptionalValue)
+    PrivateField: PrivateType = field(init=False, repr=False)
+
+By common convention, classes, methods, and fields that start with an underscore ('_')
+are considered to be private and only the "owner" should access these fields.
+While other languages enforce private fields, Python does not.
+The preceding underscore convention is widely adhered to through out large bodies of Python code.
+
+Sometime it is desirable to provide read only access to field.
+The preferred way to solve this problem is to use a python property.
+(See [Methods and @propert)](https://pythonguide.readthedocs.io/en/latest/python/property.html)
+for more detail.
+
+In short a private field can provide a public read-only access as follows:
+
+     @dataclass
+     class MyClass(object):
+         '''MyClass documentation string.'''
+
+         _Field: FieldType   # Internal field declaration
+
+        # Accessor function for 
+        @property
+        def Field(self) -> FieldType:
+            '''Field documentation string.'''
+            return self._Field
+
+It should be noted that many of the most common FreeCAD base types
+(e.g. Vector, Rotation, Placement, etc.) are *mutable*, where mutable means that
+the contents can be changed.
+Usually, people like to treat these classes as if they are immutable.
+It is extremely copy to have accessor functions that return a copy of a private field.
+For the FreeCAD Vector class, the easiest way to make a copy is as follows:
+
+     @property
+     def Normal(self) -> Vector:
+         '''Return the Normal to the object.'''
+         copy: Vector = Vector()  # Returns Vector(0, 0, 0)
+         return self._Normal + copy  # Returns a copy of self._Normal.
+
+Likewise when mutable object is passed into dataclass, it is frequently desirable to
+make a private copy.  This can be done in __post_init__():
+
+         @dataclass
+         class LineSegment(object):
+             '''LineSegment document string goes here.'''
+
+             _Point1: Vector
+             _Point2: Vector
+             _copy: Vector = field(init=False, repr=False)
+    
+             def __post_init__(self) -> self:
+                 '''Document string goes here.'''
+                 self._copy: Vector = Vector()
+                 self._Point1 += copy  # Force copy into _Point1
+                 self._Point2 += copy  # Force copy into _Point2
+
+             @property
+             def Point1(self) -> Vector:
+                 '''Document string goes here.'''
+                 return self._Point1 + self._copy  # Return copy of _Point1
+             
+             @property
+             def Point2(self) -> Vector:
+                 '''Document string goes here.'''
+                 return self._Point2 + self._copy  # Return copy of _Point2
+            
+
+Usage of the class above would be like:
+
+     point1: Vector = Vector(1, 2, 3)
+     point2: Vector = Vector(4, 5, 6)
+     line_segment: LineSegment = LineSegment(point1, point2)
+     # Copies *point1* and *point2* are stored in *line_segment*.
+     assert point1 == Vector(1, 2, 3)
+     normal: Vector = point1.normalize()  # This method modifies point
+     assert point1 != Vector(1, 2, 3)  # *point1* got changed!
+     assert line_segment.Point1 == Vector(1, 2, 3)  # Original copy is returned.
+     # Modifies the returned copy, but the private copy is safe.
+     assert line_segment.Point1.normalize() != Vector(1, 2, 3)
+     assert line_segment.Point1 == Vector(1, 2, 3)
+
+It would be nice if the FreeCAD Vector class were not mutable, but since it is nota,
+extra care is the prudent way to avoid accidental mutations of internal values.
 
 ## Additional documentation <a name="additional-documentation"></a>
 

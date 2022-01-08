@@ -688,10 +688,12 @@ class FabPolygon(FabGeometry):
         for corner in self.Corners:
             if isinstance(corner, Vector):
                 points.append(corner)
-            else:
-                point: Vector = corner[0]
+            elif isinstance(corner, tuple) and len(corner) == 2:
+                point: Any = corner[0]
                 assert isinstance(point, Vector)
-                points.append(corner)
+                points.append(point)
+            else:
+                assert False, f"Bad corner: {corner}"
         box: FabBox = FabBox()
         box.enclose(points)
         return box
@@ -767,7 +769,7 @@ class FabPolygon(FabGeometry):
                 assert isinstance(point, Vector)
                 assert isinstance(radius, (int, float))
                 projected_corners.append(
-                    ((point + copy).ProjecttoPlane(contact + copy, normal + copy), radius)
+                    ((point + copy).projectToPlane(contact + copy, normal + copy), radius)
                 )
         projected_polygon: "FabPolygon" = FabPolygon(tuple(projected_corners))
         if tracing:
