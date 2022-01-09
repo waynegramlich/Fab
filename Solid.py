@@ -31,7 +31,6 @@ from dataclasses import dataclass, field
 from typing import Any, cast, Dict, List, Optional, Sequence, Tuple, Union
 from collections import OrderedDict
 
-
 import FreeCAD  # type: ignore
 import Part  # type: ignore
 import FreeCAD as App  # type: ignore
@@ -40,7 +39,7 @@ import FreeCADGui as Gui  # type: ignore
 from FreeCAD import Placement, Rotation, Vector
 # import Part  # type: ignore
 
-from Geometry import FabCircle, FabGeometry
+from Geometry import FabCircle, FabGeometry, FabGeometryContext
 from Join import FabFasten, FabJoin
 from Node import FabBox, FabNode
 from Utilities import FabColor
@@ -72,17 +71,17 @@ class _Internal(object):
         """Return _Internal Name."""
         return self._Name
 
-    # _Internal.Name():
-    @property
-    def Mount(self) -> "FabMount":
-        """Return Mount."""
-        raise RuntimeError(f"_Internal.Mount(): Not implemented for {type(self)}")
+    # _Internal.Mount():
+    # @property
+    # def Mount(self) -> "FabMount":
+    #     """Return Mount."""
+    #     raise RuntimeError(f"_Internal.Mount(): Not implemented for {type(self)}")
 
     # _Internal.Solid():
-    @property
-    def Solid(self) -> "FabSolid":
-        """Return Solid"""
-        raise RuntimeError(f"_Internal.Solid(): Not implemented for {type(self)}")
+    # @property
+    # def Solid(self) -> "FabSolid":
+    #     """Return Solid"""
+    #     raise RuntimeError(f"_Internal.Solid(): Not implemented for {type(self)}")
 
     # _Internal.is_mount():
     def is_mount(self) -> bool:
@@ -107,7 +106,7 @@ class _Operation(_Internal):
 
     Attributes:
     * *Name* (str): Unique operation name for given mount.
-    * *Mount* (FabMount): The FabMount to use for performing operations.
+xo    * *Mount* (FabMount): The FabMount to use for performing operations.
 
     """
 
@@ -120,6 +119,12 @@ class _Operation(_Internal):
         # TODO: Enable check:
         # if not self._Mount.is_mount():
         #   raise RuntimeError("_Operation.__post_init__(): {type(self._Mount)} is not FabMount")
+
+    # _Operation.Mount():
+    @property
+    def Mount(self) -> "FabMount":
+        """Return the Opartion FabMount."""
+        return self._Mount
 
     # _Operation.is_operation():
     def is_operation(self) -> bool:
@@ -150,7 +155,6 @@ class _Operation(_Internal):
         if tracing:
             print(f"{tracing}{binder_placement.Rotation.Axis=}")
 
-        # datum_plane: Any = context["mount_plane"]
         shape_binder: Part.Feature = body.newObject(
             "PartDesign::SubShapeBinder", f"{prefix}_Binder")
         assert isinstance(shape_binder, Part.Feature)
@@ -246,38 +250,44 @@ class _Extrude(_Operation):
             print(f"{tracing}=>_Extrude.produce('{self.Name}')")
 
         # Extract the *part_geometries* and create the associated *shape_binder*:
-        prefix = cast(str, context["prefix"])
-        next_prefix: str = f"{prefix}_{self.Name}"
-        part_geometries: List[Part.Part2DObject] = []
-        geometry: FabGeometry
-        for geometry in self._Geometries:
-            part_geometries.extend(geometry.produce(context.copy(), next_prefix))
-        shape_binder: Part.Feature = self.produce_shape_binder(
-            context.copy(), tuple(part_geometries), next_prefix, tracing=next_tracing)
-        assert isinstance(shape_binder, Part.Feature)
-        shape_binder.Visibility = False
+        construct: bool = self._Mount._Solid.Construct
+        if construct:
+            prefix = cast(str, context["prefix"])
+            next_prefix: str = f"{prefix}_{self.Name}"
+            part_geometries: List[Part.Part2DObject] = []
+            mount: FabMount = self.Mount
+            geometry_context: FabGeometryContext = mount._GeometryContext
+            geometry_group: App.DocumentObjectGroup = mount._Solid._GeometryGroup
+            assert isinstance(geometry_group, App.DocumentObjectGroup), geometry_group
+            geometry_context.set_geometry_group(geometry_group)
+            for geometry in self._Geometries:
+                part_geometries.extend(geometry.produce(geometry_context, next_prefix))
+            shape_binder: Part.Feature = self.produce_shape_binder(
+                context.copy(), tuple(part_geometries), next_prefix, tracing=next_tracing)
+            assert isinstance(shape_binder, Part.Feature)
+            shape_binder.Visibility = False
 
-        # Extract *body* and *normal* from *context*:
-        body = cast(Part.BodyBase, context["solid_body"])
-        mount_normal = cast(Vector, context["mount_normal"])
+            # Extract *body* and *normal* from *context*:
+            body = cast(Part.BodyBase, context["solid_body"])
+            mount_normal: Vector = self._Mount.Normal
 
-        # Perform The Extrude operation:
-        extrude: Part.Feature = body.newObject("PartDesign::Pad", next_prefix)
-        assert isinstance(extrude, Part.Feature)
-        # Type must be one of ("Length", "TwoLengths", "UpToLast", "UpToFirst", "UpToFace")
-        extrude.Type = "Length"
-        extrude.Profile = shape_binder
-        extrude.Length = self.Depth
-        extrude.Length2 = 0  # Only for Type == "TwoLengths"
-        extrude.UseCustomVector = True
-        extrude.Direction = mount_normal  # This may be bogus
-        extrude.UpToFace = None
-        extrude.Reversed = True
-        extrude.Midplane = False
-        extrude.Offset = 0  # Only for Type in ("UpToLast", "UpToFirst", "UpToFace")
+            # Perform The Extrude operation:
+            extrude: Part.Feature = body.newObject("PartDesign::Pad", next_prefix)
+            assert isinstance(extrude, Part.Feature)
+            # Type must be one of ("Length", "TwoLengths", "UpToLast", "UpToFirst", "UpToFace")
+            extrude.Type = "Length"
+            extrude.Profile = shape_binder
+            extrude.Length = self.Depth
+            extrude.Length2 = 0  # Only for Type == "TwoLengths"
+            extrude.UseCustomVector = True
+            extrude.Direction = mount_normal  # This may be bogus
+            extrude.UpToFace = None
+            extrude.Reversed = True
+            extrude.Midplane = False
+            extrude.Offset = 0  # Only for Type in ("UpToLast", "UpToFirst", "UpToFace")
 
-        # For the GUI, update the view provider:
-        self._viewer_update(body, extrude)
+            # For the GUI, update the view provider:
+            self._viewer_update(body, extrude)
 
         if tracing:
             print(f"{tracing}<=_Extrude.produce('{self.Name}')")
@@ -352,9 +362,10 @@ class _Pocket(_Operation):
         prefix = cast(str, context["prefix"])
         next_prefix: str = f"{prefix}_{self.Name}"
         part_geometries: List[Part.Part2DObject] = []
+        geometry_context: FabGeometryContext = self._Mount._GeometryContext
         geometry: FabGeometry
         for geometry in self._Geometries:
-            part_geometries.extend(geometry.produce(context.copy(), next_prefix))
+            part_geometries.extend(geometry.produce(geometry_context, next_prefix))
 
         # Create the *shape_binder*:
         shape_binder: Part.Feature = self.produce_shape_binder(
@@ -436,6 +447,7 @@ class FabMount(_Internal):
     _Context: Dict[str, Any] = field(init=False, repr=False)
     _Copy: Vector = field(init=False, repr=False)  # Used for making private copies of Vector's
     _Tracing: str = field(init=False, repr=False)
+    _GeometryContext: FabGeometryContext = field(init=False, repr=False)
 
     # FabMount.__post_init__():
     def __post_init__(self) -> None:
@@ -466,8 +478,11 @@ class FabMount(_Internal):
             self._Contact + copy, self._Normal + copy)
         self._Context = {"mount_contact": "bogus"}
         self._Context = {}
+        self._GeometryContext = FabGeometryContext(self._Contact, self._Normal)
 
         if tracing:
+            print(f"{tracing}{self._Contact=} {self._Normal=} "
+                  f"{self._Depth=} {self._GeometryContext=}")
             print(f"{tracing}<=FabMount({self.Name}).__post_init__()")
 
     # FabMount.Name():
@@ -520,6 +535,11 @@ class FabMount(_Internal):
                 "FabMount.add_operation({self._Name}).{type(operation)} is not an _Operation")
         self._Operations[operation.Name] = operation
 
+    # FabMount.set_geometry_group():
+    def set_geometry_group(self, geometry_group: App.DocumentObjectGroup) -> None:
+        """Set the FabMount GeometryGroup need for the FabGeometryContex."""
+        self._GeometryContext.set_geometry_group(geometry_group)
+
     # FabMount.produce():
     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
         """Create the FreeCAD DatumPlane used for the drawing support."""
@@ -555,7 +575,6 @@ class FabMount(_Internal):
             body = cast(Part.BodyBase, context["solid_body"])
             datum_plane: Part.Geometry = body.newObject(
                 "PartDesign::Plane", f"{self.Name}_Datum_Plane")
-            context["mount_plane"] = datum_plane
             # visibility_set(datum_plane, False)
             datum_plane.Visibility = False
             # xy_plane: App.GeoGeometry = body.getObject("XY_Plane")
@@ -579,10 +598,6 @@ class FabMount(_Internal):
                     setattr(gui_datum_plane, "Visibility", False)
 
             # Provide datum_plane to lower levels of produce:
-            context["mount_plane"] = datum_plane
-            context["mount_normal"] = self._Normal
-            context["mount_contact"] = self._Contact
-            context["mount_depth"] = self._Depth
             self._Context = context.copy()
 
             # Install the FabMount (i.e. *self*) and *datum_plane* into *model_file* prior
@@ -599,14 +614,17 @@ class FabMount(_Internal):
         tracing = self._Solid.Tracing
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>FabMount({self.Name}).extrude('{name}', *)")
+            print(f"{tracing}=>FabMount({self.Name}).extrude('{name}', *, {depth})")
 
         # Figure out the contact
         top_contact: Vector = self._Contact
         copy: Vector = Vector()
         normal: Vector = (self._Normal + copy).normalize()
         bottom_contact: Vector = top_contact - depth * normal
+        if tracing:
+            print(f"{tracing}{top_contact=} {normal=} {bottom_contact=}")
 
+        # Compute a bounding box that encloses all of the associated *geometries*:
         boxes: List[FabBox] = []
         geometries: Tuple[FabGeometry, ...]
         if isinstance(shapes, FabGeometry):
@@ -615,19 +633,24 @@ class FabMount(_Internal):
             geometries = shapes
         geometry: FabGeometry
         for geometry in geometries:
+            # if tracing:
+            #     print(f"{tracing}{geometry=}")
             boxes.append(geometry.project_to_plane(top_contact, normal).Box)
             boxes.append(geometry.project_to_plane(bottom_contact, normal).Box)
         self._Solid.enclose(boxes)
+        if tracing:
+            print(f"{tracing}{self._Solid.BB=}")
 
+        # Create and record the *extrude*:
         full_name: str = f"{self.Name}_{name}"
         extrude: _Extrude = _Extrude(full_name, self, shapes, depth)
         self.record_operation(extrude)
+        # if tracing:
+        #     print(f"{tracing}{extrude=}")
 
         errors: List[str] = []
         if self.Construct:
             context: Dict[str, Any] = self._Context.copy()
-            context["mount_contact"] = self._Contact
-            context["mount_normal"] = self._Normal
             context_keys: Tuple[str, ...]
             if tracing:
                 context_keys = tuple(sorted(context.keys()))
@@ -642,7 +665,8 @@ class FabMount(_Internal):
                 print(f"{tracing}After Extrude Context: {context_keys}")
 
         if tracing:
-            print(f"{tracing}<=FabMount({self.Name}).extrude('{name}', *)=>|{len(errors)}|")
+            print(f"{tracing}<=FabMount({self.Name}).extrude('{name}', *, "
+                  f"{depth})=>|{len(errors)}|")
 
     # FabMount.pocket():
     def pocket(self, name: str, shapes: Union[FabGeometry, Tuple[FabGeometry, ...]],
@@ -698,13 +722,12 @@ class FabMount(_Internal):
             context: Dict[str, Any] = self._Context.copy()
             context_keys: Tuple[str, ...]
             copy: Vector = Vector()
-            # mount_contact: Vector = cast(Vector, context["mount_contact"])
             # prefix = cast(str, context["prefix"])
             prefix: str = "FIX_PREFIX"
             next_prefix: str = f"{prefix}_{self.Name}"
-            mount_contact = cast(Vector, context["mount_contact"])
-            mount_normal: Vector = (cast(Vector, context["mount_normal"]) + copy).normalize()
-            mount_depth: float = cast(float, context["mount_depth"])
+            mount_contact: Vector = self._Contact
+            mount_normal: Vector = (self._Normal + copy).normalize()
+            mount_depth: float = self._Depth
             body = cast(Part.BodyBase, context["solid_body"])
             solid: "FabSolid" = self._Solid
             z_axis: Vector = Vector(0, 0, 1)
@@ -766,6 +789,11 @@ class FabMount(_Internal):
                 hole_groups[key].append(hole)
 
             # For each *hole_group* create a PartDesign Hole:
+            geometry_context: FabGeometryContext = self._GeometryContext
+            geometry_group: App.DocumentObjectGroup = self.Solid._GeometryGroup
+            assert isinstance(geometry_group, App.DocumentObjectGroup), geometry_group
+            geometry_context.set_geometry_group(geometry_group)
+
             index: int
             for index, key in enumerate(sorted(hole_groups.keys())):
                 # Unpack *key*:
@@ -780,7 +808,7 @@ class FabMount(_Internal):
                     center: Vector = hole.Center
                     circle: FabCircle = FabCircle(center, mount_normal, diameter)
                     part_geometries.extend(
-                        circle.produce(context.copy(),
+                        circle.produce(geometry_context,
                                        next_prefix, tracing=next_tracing))
 
                 # Now do the FreeCAD stuff:
@@ -791,7 +819,6 @@ class FabMount(_Internal):
                 if tracing:
                     print(f"{tracing}{binder_placement.Rotation.Axis=}")
 
-                # datum_plane: Any = context["mount_plane"]
                 shape_binder: Part.Feature = body.newObject(
                     "PartDesign::SubShapeBinder", f"{prefix}_Binder")
                 assert isinstance(shape_binder, Part.Feature)
@@ -856,6 +883,7 @@ class FabSolid(FabNode):
     Material: str
     Color: str
     _Mounts: Dict[str, FabMount] = field(init=False, repr=False)
+    _GeometryGroup: Optional[App.DocumentObjectGroup] = field(init=False, repr=False)
 
     # FabSolid.__post_init__():
     def __post_init__(self) -> None:
@@ -866,9 +894,12 @@ class FabSolid(FabNode):
             print(f"{tracing}=>FabSolid({self.Name}).__post_init__()")
         # TODO: Do additional type checking here:
         self._Mounts = {}
+        self._GeometryGroup = None
+
         if tracing:
             print(f"{tracing}<=FabSolid({self.Name}).__post_init__()")
 
+    # FabSolid.Construct():
     @property
     def Construct(self) -> bool:
         """Return the construct mode flag."""
@@ -884,6 +915,7 @@ class FabSolid(FabNode):
 
         fab_mount: FabMount = FabMount(name, self, contact, normal, orient, depth)
         self._Mounts[name] = fab_mount
+        assert len(self._Mounts) > 0, "FabSolid.mount()"
         if self.Construct:
             context: Dict[str, Any] = self.Context
             fab_mount.produce(context, tracing=next_tracing)
@@ -931,7 +963,7 @@ class FabSolid(FabNode):
         if tracing:
             print(f"{tracing}<=FabSolid({self.Name}).drill_joins(|{len(joins)}|, *)")
 
-    # FabSolid.produce():
+    # FabSolid.pre_produce():
     def pre_produce(self) -> Tuple[str, ...]:
         """Produce an Empty FabSolid prior to performing operations."""
         tracing: str = self.Tracing
@@ -956,9 +988,15 @@ class FabSolid(FabNode):
             else:
                 geometry_group = parent_object.newObject("App::DocumentObjectGroup")
                 geometry_group.Label = geometry_group_name
+            self._GeometryGroup = geometry_group
 
             geometry_group.Visibility = False
-            context["geometry_group"] = geometry_group
+
+            # Make *geometry_group* available to all FabMount's:
+            # mount: FabMount
+            # assert len(self._Mounts) > 0
+            # for mount in self._Mounts.values():
+            #     mount.set_geometry_group(geometry_group)
 
             # Create the *body*
             body: Part.BodyBase
@@ -1133,16 +1171,16 @@ def visibility_set(element: Any, new_value: bool = True, tracing: str = "") -> N
 
 #         prefix = cast(str, context["prefix"])
 #         next_prefix: str = f"{prefix}_{self.Name}"
-#         # mount_name = cast(str, context["mount_name"])
-#         mount_contact = cast(Vector, context["mount_contact"])
-#         mount_normal = cast(Vector, context["mount_normal"])
-#         bottom_depth = cast(float, context["mount_depth"])
-#         # mount_plane = context["mount_plane"]
+#         # mountx_name = cast(str, context["mountx_name"])
+#         mountx_contact = cast(Vector, context["mountx_contact"])
+#         mountx_normal = cast(Vector, context["mountx_normal"])
+#         bottomx_depth = cast(float, contxt["mountx_depth"])
+#         # mountx_plane = context["mountx_plane"]
 #         # assert isinstance(mount_plane, Part.Geometry)
 #         assert abs(mount_normal.Length - 1.0) < EPSILON, (
 #             "{self.FullPath}: Mount normal is not of length 1")
 #         if tracing:
-#             print(f"{tracing}{mount_contact=} {mount_normal=} {bottom_depth=}")
+#             print(f"{tracing}{mountx_contact=} {mountx_normal=} {bottom_depth=}")
 
 #         # Make copy of *mount_normal* and normailize it:
 #         copy: Vector = Vector()
@@ -1184,8 +1222,9 @@ def visibility_set(element: Any, new_value: bool = True, tracing: str = "") -> N
 
 #             # Find *top* and *bottom* points where infinite line pierces top/bottom mount planes:
 #             # FreeCAD Vector metheds like to modify Vector contents; force copies beforehand:
-#             top: Vector = (start + copy).projectToPlane(mount_contact + copy, mount_normal + copy)
-#             # bottom_contact: Vector = mount_contact - bottom_depth * mount_normal
+#             top: Vector = (start + copy).projectToPlane(
+#                            mountx_contact + copy, mountx_normal + copy)
+#             # bottom_contact: Vector = mountx_contact - bottom_depth * mount_normal
 
 #             # Ensure *start*/*end* line segment is perpendicular to mount planes.
 #             start_end_normal: Vector = (end - start).normalize()

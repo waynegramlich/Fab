@@ -4,10 +4,11 @@
 <li>1 Class: <a href="#solid--fabmount">FabMount</a>:
 <ul>
 <li>1.1 <a href="#solid----record-operation">record_operation()</a>: Record an operation to a FabMount.</li>
-<li>1.2 <a href="#solid----produce">produce()</a>: Create the FreeCAD DatumPlane used for the drawing support.</li>
-<li>1.3 <a href="#solid----extrude">extrude()</a>: Perform a extrude operation.</li>
-<li>1.4 <a href="#solid----pocket">pocket()</a>: Perform a pocket operation.</li>
-<li>1.5 <a href="#solid----drill-joins">drill_joins()</a>: Drill some FabJoin's into a FabMount.</li>
+<li>1.2 <a href="#solid----set-geometry-group">set_geometry_group()</a>: Set the FabMount GeometryGroup need for the FabGeometryContex.</li>
+<li>1.3 <a href="#solid----produce">produce()</a>: Create the FreeCAD DatumPlane used for the drawing support.</li>
+<li>1.4 <a href="#solid----extrude">extrude()</a>: Perform a extrude operation.</li>
+<li>1.5 <a href="#solid----pocket">pocket()</a>: Perform a pocket operation.</li>
+<li>1.6 <a href="#solid----drill-joins">drill_joins()</a>: Drill some FabJoin's into a FabMount.</li>
 </ul>
 </li>
 <li>2 Class: <a href="#solid--fabsolid">FabSolid</a>:
@@ -36,16 +37,19 @@ when mounted for CNC operations.</li>
 <h3><a name="solid----record-operation"></a>1.1 <code>FabMount.</code>record_operation():</h3>
 <p>FabMount.record_operation(self, operation: Solid._Operation) -&gt; None:</p>
 <p>Record an operation to a FabMount.</p>
-<h3><a name="solid----produce"></a>1.2 <code>FabMount.</code>produce():</h3>
+<h3><a name="solid----set-geometry-group"></a>1.2 <code>FabMount.</code>set_geometry_group():</h3>
+<p>FabMount.set_geometry_group(self, geometry_group: App.DocumentObjectGroup) -&gt; None:</p>
+<p>Set the FabMount GeometryGroup need for the FabGeometryContex.</p>
+<h3><a name="solid----produce"></a>1.3 <code>FabMount.</code>produce():</h3>
 <p>FabMount.produce(self, context: typing.Dict[str, typing.Any], tracing: str = '') -&gt; typing.Tuple[str, ...]:</p>
 <p>Create the FreeCAD DatumPlane used for the drawing support.</p>
-<h3><a name="solid----extrude"></a>1.3 <code>FabMount.</code>extrude():</h3>
+<h3><a name="solid----extrude"></a>1.4 <code>FabMount.</code>extrude():</h3>
 <p>FabMount.extrude(self, name: str, shapes: typing.Union[Geometry.FabGeometry, typing.Tuple[Geometry.FabGeometry, ...]], depth: float, tracing: str = '') -&gt; None:</p>
 <p>Perform a extrude operation.</p>
-<h3><a name="solid----pocket"></a>1.4 <code>FabMount.</code>pocket():</h3>
+<h3><a name="solid----pocket"></a>1.5 <code>FabMount.</code>pocket():</h3>
 <p>FabMount.pocket(self, name: str, shapes: typing.Union[Geometry.FabGeometry, typing.Tuple[Geometry.FabGeometry, ...]], depth: float, tracing: str = '') -&gt; None:</p>
 <p>Perform a pocket operation.</p>
-<h3><a name="solid----drill-joins"></a>1.5 <code>FabMount.</code>drill_joins():</h3>
+<h3><a name="solid----drill-joins"></a>1.6 <code>FabMount.</code>drill_joins():</h3>
 <p>FabMount.drill_joins(self, joins: typing.Union[Join.FabJoin, typing.Sequence[Join.FabJoin]], tracing: str = '') -&gt; None:</p>
 <p>Drill some FabJoin's into a FabMount.</p>
 <h2><a name="solid--fabsolid"></a>2 Class FabSolid:</h2>

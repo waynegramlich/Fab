@@ -178,10 +178,6 @@ class FabDocument(FabNode):
                 assert isinstance(gui_document, Gui.Document)  # Just to be sure.
                 context["gui_document"] = gui_document
 
-            if tracing:
-                context_keys = tuple(sorted(context.keys()))
-                print(f"{tracing}After Context: {context_keys}")
-
         if tracing:
             print(f"{tracing}<=FabFile.produce('{self.Name}', *)")
         return tuple(errors)
@@ -606,7 +602,7 @@ class TestSolid(FabSolid):
         # Create *top_mount*:
         depth: float = 10.0
         depth2: float = depth / 2.0
-        if self.Construct:
+        if True or self.Construct:
             origin: Vector = Vector()
             normal: Vector = Vector(0, 0, 1)
             context: Dict[str, Any] = self._Context
@@ -614,9 +610,9 @@ class TestSolid(FabSolid):
             context_keys: Tuple[str, ...]
             if tracing:
                 context_keys = tuple(sorted(context.keys()))
-                print(f"{tracing}Before mount context: {context_keys}")
+                print(f"{tracing}{origin=} {self.TNE=} {self.BSW=} {self.DT=}")
             top_mount: FabMount = self.mount(
-                "TN_Mount", origin, self.T, self.N, depth, tracing=tracing)
+                "TN_Mount", origin, self.DT, self.DN, depth, tracing=tracing)
             if tracing:
                 context_keys = tuple(sorted(context.keys()))
                 print(f"{tracing}After mount context: {context_keys}")
@@ -630,9 +626,6 @@ class TestSolid(FabSolid):
                 (Vector(40, 20, z_offset), extrude_fillet_radius),  # NE
                 (Vector(-40, 20, z_offset), extrude_fillet_radius),  # NW
             ))
-            if tracing:
-                print(f"{tracing}]")
-                print(f"{tracing}>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
             top_mount.extrude("TN_Extrude", extrude_polygon, depth, tracing=next_tracing)
 
             # Perform a pocket:
@@ -678,11 +671,11 @@ class TestDocument(FabDocument):
         super().__post_init__()
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>TestFile({self.Name}.__post_init__()")
+            print(f"{tracing}=>TestFile({self.Name}).__post_init__()")
         self._TestSolid = TestSolid("TestSolid", self, "HDPE", "red")
         self._Box = Box("TestBox", self, 200.0, 150.0, 75.0, 6.0, "HDPE", Vector(0, 0, 0))
         if tracing:
-            print(f"{tracing}<=TestFile({self.Name}.__post_init__()")
+            print(f"{tracing}<=TestFile({self.Name}).__post_init__()")
 
 
 # TestProject:
@@ -696,7 +689,7 @@ class TestProject(FabProject):
     def __post_init__(self) -> None:
         """Initialize TestProject."""
         super().__post_init__()
-        # self.set_tracing(" ")
+        self.set_tracing(" ")
         tracing: str = self.Tracing
         if tracing:
             print(f"{tracing}=>TestProject({self.Name}).__post_init__()")

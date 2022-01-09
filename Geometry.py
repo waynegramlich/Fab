@@ -27,8 +27,7 @@ Embed.setup()
 
 from dataclasses import dataclass, field
 import math
-from typing import Any, cast, Dict, List, Optional, Tuple, Union
-
+from typing import Any, List, Optional, Tuple, Union
 
 import FreeCAD  # type: ignore
 import Draft  # type: ignore
@@ -37,6 +36,71 @@ import FreeCAD as App  # type: ignore
 
 from FreeCAD import Placement, Rotation, Vector
 from Node import FabBox
+
+
+# FabGeometryContext:
+@dataclass
+class FabGeometryContext(object):
+    """GeometryProduce: Context needed to produce FreeCAD geometry objects.
+
+    Attributes:
+    * *PlaneContact* (Vector): One point on the 2D Geometry plane.
+    * *PlaneNormal* (Vector): Normal to the 2D Geometry plane.
+    * *GeometryGroup*: (App.DocumentObjectGroup):
+      The FreeCAD group to store FreeCAD Geometry objects into.
+      This field needs to be set prior to use with set_geometry_group() method.
+
+    """
+
+    _PlaneContact: Vector
+    _PlaneNormal: Vector
+    _Copy: Vector = field(init=False, repr=False)
+    _GeometryGroup: Optional[App.DocumentObjectGroup] = field(init=False, repr=False)
+
+    # FabGeometryContext.__post_init__():
+    def __post_init__(self) -> None:
+        """Initialize FabGeometryContex."""
+
+        if not isinstance(self._PlaneContact, Vector):
+            raise RuntimeError(
+                f"FabGeometryContext.__post_init__(): {type(self._PlaneContact)} is not a Vector")
+        if not isinstance(self._PlaneNormal, Vector):
+            raise RuntimeError(
+                f"FabGeometryContext.__post_init__(): {type(self._PlaneNormal)} is not a Vector")
+
+        copy: Vector = Vector()
+        self._Copy: Vector = copy
+        self._PlaneContact += copy
+        self._PlaneNormal += copy
+        self._GeometryGroup = None  # Set with set_geometry_group() method
+
+    # FabGeometryContext.PlaneContact():
+    @property
+    def PlaneContact(self) -> Vector:
+        """Return FabGeometryContext contact point on 2D plane."""
+        return self._PlaneContact + self._Copy
+
+    # FabGeometryContext.PlaneNormal():
+    @property
+    def PlaneNormal(self) -> Vector:
+        """Return FabGeometry normal to 2D plane."""
+        return self._PlaneNormal + self._Copy
+
+    # FabGeometryContext.GeometryGroup():
+    @property
+    def GeometryGroup(self) -> App.DocumentObjectGroup:
+        """Return FabGeometry normal tSo 2D plane."""
+        if not self._GeometryGroup:
+            raise RuntimeError(f"FabGeometryContext.GeometryGroup(): not set yet; must be set")
+        return self._GeometryGroup
+
+    # FabGeometryContext.set_geometry_Group():
+    def set_geometry_group(self, geometry_group: App.DocumentObjectGroup) -> None:
+        """Set the GeometryContext geometry group."""
+        if not isinstance(geometry_group, App.DocumentObjectGroup):
+            raise RuntimeError(f"FabGeometryContext.set_geometry_grouop(): "
+                               f"{type(geometry_group)} is not App.DocumentObjectGroup")
+        self._GeometryGroup = geometry_group
 
 
 # _Geometry:
@@ -48,10 +112,9 @@ class _Geometry(object):
     """
 
     # _Geometry.produce():
-    def produce(self, context: Dict[str, Any], prefix: str,
+    def produce(self, geometry_context: FabGeometryContext, prefix: str,
                 index: int, tracing: str = "") -> Part.Part2DObject:
         raise NotImplementedError(f"{type(self)}.produce() is not implemented yet")
-
 
 # _Arc:
 @dataclass(frozen=True)
@@ -184,14 +247,14 @@ class _Arc(_Geometry):
         return obj
 
     # _Arc.produce():
-    def produce(self, context: Dict[str, Any], prefix: str,
+    def produce(self, geometry_context: FabGeometryContext, prefix: str,
                 index: int, tracing: str = "") -> Part.Part2DObject:
         """Return line segment after moving it into Geometry group."""
-        mount_contact = cast(Vector, context["mount_contact"])
-        mount_normal = cast(Vector, context["mount_normal"])
+        plane_contact: Vector = geometry_context.PlaneContact
+        plane_normal: Vector = geometry_context.PlaneNormal
 
         # TODO: Simplify:
-        mount_placement: Any = Placement(mount_contact, mount_normal, 0.0)  # Base, Axis, Angle
+        mount_placement: Any = Placement(plane_contact, plane_normal, 0.0)  # Base, Axis, Angle
         assert isinstance(mount_placement, Placement), mount_placement
         placement: Placement = Placement()  # Should be Placement(mount_count, mount_normal, 0.0)
         placement.Rotation = mount_placement.Rotation  # Delete
@@ -213,7 +276,7 @@ class _Arc(_Geometry):
         part_arc.Visibility = False
 
         # Move *part_arc* into *geometry_group*:
-        geometry_group = cast(App.DocumentObjectGroup, context["geometry_group"])
+        geometry_group: App.DocumentObjectGroup = geometry_context.GeometryGroup
         part_arc.adjustRelativeLinks(geometry_group)
         geometry_group.addObject(part_arc)
 
@@ -234,27 +297,27 @@ class _Circle(_Geometry):
     Diameter: float
 
     # _Circle.produce():
-    def produce(self, context: Dict[str, Any], prefix: str, index: int,
+    def produce(self, geometry_context: FabGeometryContext, prefix: str, index: int,
                 tracing: str = "") -> Part.Part2DObject:
         """Return line segment after moving it into Geometry group."""
         if tracing:
             print(f"{tracing}=>_Circle.produce()")
         # Extract mount plane *contact* and *normal* from *context* for 2D projection:
-        mount_contact = cast(Vector, context["mount_contact"])
-        mount_normal = cast(Vector, context["mount_normal"])
+        plane_contact: Vector = geometry_context.PlaneContact
+        plane_normal: Vector = geometry_context.PlaneNormal
         # FreeCAD Vector metheds like to modify Vector contents; force copies beforehand:
         copy: Vector = Vector()
         center_on_plane: Vector = (self.Center + copy).projectToPlane(
-            mount_contact + copy, mount_normal + copy)
+            plane_contact + copy, plane_normal + copy)
 
         label: str = f"{prefix}_Circle_{index:03d}"
         z_axis: Vector = Vector(0.0, 0.0, 1.0)
-        rotation: Rotation = Rotation(z_axis, mount_normal)
+        rotation: Rotation = Rotation(z_axis, plane_normal)
         placement: Placement = Placement()
         placement.Rotation = rotation
         placement.Base = center_on_plane
         if tracing:
-            print(f"{tracing}{center_on_plane=} {mount_normal=}")
+            print(f"{tracing}{center_on_plane=} {plane_normal=}")
             print(f"{tracing}{placement=}")
             print(f"{tracing}{rotation * z_axis=}")
 
@@ -267,7 +330,7 @@ class _Circle(_Geometry):
         part_circle.Visibility = False
 
         # Move *part_arc* into *geometry_group*:
-        geometry_group = cast(App.DocumentObjectGroup, context["geometry_group"])
+        geometry_group: App.DocumentObjectGroup = geometry_context.GeometryGroup
         part_circle.adjustRelativeLinks(geometry_group)
         geometry_group.addObject(part_circle)
 
@@ -291,7 +354,7 @@ class _Line(_Geometry):
     Finish: Vector
 
     # _Line.produce():
-    def produce(self, context: Dict[str, Any], prefix: str,
+    def produce(self, geometry_context: FabGeometryContext, prefix: str,
                 index: int, tracing: str = "") -> Part.Part2DObject:
         """Return line segment after moving it into Geometry group."""
         label: str = f"{prefix}_Line_{index:03d}"
@@ -311,7 +374,7 @@ class _Line(_Geometry):
         # app_document.recompute()
 
         # Move *line_segment* into *geometry_group*:
-        geometry_group = cast(App.DocumentObjectGroup, context["geometry_group"])
+        geometry_group: App.DocumentObjectGroup = geometry_context.GeometryGroup
         line_segment.adjustRelativeLinks(geometry_group)
         line_segment.Visibility = False
         geometry_group.addObject(line_segment)
@@ -514,7 +577,8 @@ class FabGeometry(object):
         raise NotImplementedError(f"{type(self)}.Box() is not implemented")
 
     # FabGeometry.produce():
-    def produce(self, model_context: Any, prefix: str) -> Tuple[Part.Part2DObject, ...]:
+    def produce(self, geometry_context: FabGeometryContext,
+                prefix: str) -> Tuple[Part.Part2DObject, ...]:
         """Produce the necessary FreeCAD objects for the FabGeometry."""
         raise NotImplementedError(f"{type(self)}.produce() is not implemented")
 
@@ -605,7 +669,7 @@ class FabCircle(FabGeometry):
         return new_circle
 
     # FabCircle.produce():
-    def produce(self, context: Dict[str, Any], prefix: str,
+    def produce(self, geometry_context: FabGeometryContext, prefix: str,
                 tracing: str = "") -> Tuple[Part.Part2DObject, ...]:
         """Produce the FreeCAD objects needed for FabPolygon."""
         next_tracing: str = tracing + " " if tracing else ""
@@ -617,7 +681,7 @@ class FabCircle(FabGeometry):
         part_geometries: List[Part.Part2DObject] = []
         for index, geometry in enumerate(geometries):
             part_geometry: Part.Part2DObject = geometry.produce(
-                context, prefix, index, tracing=next_tracing)
+                geometry_context, prefix, index, tracing=next_tracing)
             assert isinstance(part_geometry, Part.Part2DObject)
             part_geometries.append(part_geometry)
         if tracing:
@@ -860,14 +924,16 @@ class FabPolygon(FabGeometry):
             fillet.plane_2d_project(contact, normal)
 
     # FabPolygon.produce():
-    def produce(self, context: Dict[str, Any], prefix: str) -> Tuple[Part.Part2DObject, ...]:
+    def produce(self,
+                geometry_context: FabGeometryContext, prefix: str) -> Tuple[Part.Part2DObject, ...]:
         """Produce the FreeCAD objects needed for FabPolygon."""
         # Extract mount plane *contact* and *normal* from *context*:
-        mount_contact = cast(Vector, context["mount_contact"])
-        mount_normal = cast(Vector, context["mount_normal"])
+        assert isinstance(geometry_context, FabGeometryContext), geometry_context
+        plane_contact: Vector = geometry_context.PlaneContact
+        plane_normal: Vector = geometry_context.PlaneNormal
 
         # Use *contact*/*normal* for 2D projection:
-        self._plane_2d_project(mount_contact, mount_normal)
+        self._plane_2d_project(plane_contact, plane_normal)
 
         # Double check for radii and colinear errors that result from 2D projection:
         radius_error: str = self._radii_check()
@@ -882,12 +948,12 @@ class FabPolygon(FabGeometry):
         self._compute_lines()
 
         # Extract the geometries using *contact* and *normal* to specify the projecton plane:
-        geometries: Tuple[_Geometry, ...] = self.get_geometries(mount_contact, mount_normal)
+        geometries: Tuple[_Geometry, ...] = self.get_geometries(plane_contact, plane_normal)
         geometry: _Geometry
         index: int
         part_geometries: List[Part.Part2DObject] = []
         for index, geometry in enumerate(geometries):
-            part_geometry: Part.Part2DObject = geometry.produce(context, prefix, index)
+            part_geometry: Part.Part2DObject = geometry.produce(geometry_context, prefix, index)
             assert isinstance(part_geometry, Part.Part2DObject)
             part_geometries.append(part_geometry)
         return tuple(part_geometries)
