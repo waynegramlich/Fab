@@ -612,7 +612,7 @@ class TestSolid(FabSolid):
                 context_keys = tuple(sorted(context.keys()))
                 print(f"{tracing}{origin=} {self.TNE=} {self.BSW=} {self.DT=}")
             top_mount: FabMount = self.mount(
-                "TN_Mount", origin, self.DT, self.DN, depth, tracing=tracing)
+                "Top", origin, self.DT, self.DN, depth, tracing=tracing)
             if tracing:
                 context_keys = tuple(sorted(context.keys()))
                 print(f"{tracing}After mount context: {context_keys}")
@@ -626,7 +626,7 @@ class TestSolid(FabSolid):
                 (Vector(40, 20, z_offset), extrude_fillet_radius),  # NE
                 (Vector(-40, 20, z_offset), extrude_fillet_radius),  # NW
             ))
-            top_mount.extrude("TN_Extrude", extrude_polygon, depth, tracing=next_tracing)
+            top_mount.extrude("Extrude", extrude_polygon, depth, tracing=next_tracing)
 
             # Perform a pocket:
             pocket_fillet_radius: float = 2.5
