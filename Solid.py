@@ -106,7 +106,7 @@ class _Operation(_Internal):
 
     Attributes:
     * *Name* (str): Unique operation name for given mount.
-xo    * *Mount* (FabMount): The FabMount to use for performing operations.
+    * *Mount* (FabMount): The FabMount to use for performing operations.
 
     """
 
@@ -149,7 +149,8 @@ xo    * *Mount* (FabMount): The FabMount to use for performing operations.
         """Produce the shape binder needed for the extrude, pocket, hole, ... operations."""
         if tracing:
             print(f"{tracing}=>FabOperation.produce_shape_binder()")
-        body = cast(Part.BodyBase, context["solid_body"])
+        mount: FabMount = self.Mount
+        body: Part.BodyBase = mount.Body
 
         binder_placement: Placement = Placement()  # Do not move/reorient anything.
         if tracing:
@@ -268,8 +269,8 @@ class _Extrude(_Operation):
             shape_binder.Visibility = False
 
             # Extract *body* and *normal* from *context*:
-            body = cast(Part.BodyBase, context["solid_body"])
-            mount_normal: Vector = self._Mount.Normal
+            body: Part.BodyBase = mount.Body
+            mount_normal: Vector = mount.Normal
 
             # Perform The Extrude operation:
             extrude: Part.Feature = body.newObject("PartDesign::Pad", next_prefix)
@@ -358,13 +359,15 @@ class _Pocket(_Operation):
         if tracing:
             print("{tracing}=>_Pocket.produce('{self.Name}')")
 
-        # Extract the *part_geometries*:
+        # Extract the *part_geometries* from *geometries*:
+        geometries: Tuple[FabGeometry, ...] = self._Geometries
         prefix = cast(str, context["prefix"])
         next_prefix: str = f"{prefix}_{self.Name}"
         part_geometries: List[Part.Part2DObject] = []
-        geometry_context: FabGeometryContext = self._Mount._GeometryContext
+        mount: FabMount = self.Mount
+        geometry_context: FabGeometryContext = mount._GeometryContext
         geometry: FabGeometry
-        for geometry in self._Geometries:
+        for geometry in geometries:
             part_geometries.extend(geometry.produce(geometry_context, next_prefix))
 
         # Create the *shape_binder*:
@@ -373,7 +376,7 @@ class _Pocket(_Operation):
         assert isinstance(shape_binder, Part.Feature)
 
         # Create the *pocket* into *body*:
-        body = cast(Part.BodyBase, context["solid_body"])
+        body: Part.BodyBase = mount.Body
         pocket: Part.Feature = body.newObject("PartDesign::Pocket", f"{next_prefix}_Pocket")
         assert isinstance(pocket, Part.Feature)
         pocket.Profile = shape_binder
@@ -497,6 +500,12 @@ class FabMount(_Internal):
         """Return the FabSolid."""
         return self._Solid
 
+    # FabMount.Body:
+    @property
+    def Body(self) -> Part.BodyBase:
+        """Return PartBodyBase fr FabMount."""
+        return self._Solid.Body
+
     # FabMount.Contact:
     @property
     def Contact(self) -> Vector:
@@ -572,7 +581,7 @@ class FabMount(_Internal):
                 print(f"{tracing}{normal=}")
 
             # Create, save and return the *datum_plane*:
-            body = cast(Part.BodyBase, context["solid_body"])
+            body: Part.BodyBase = self.Body
             datum_plane: Part.Geometry = body.newObject(
                 "PartDesign::Plane", f"{self.Name}_Datum_Plane")
             # visibility_set(datum_plane, False)
@@ -719,8 +728,6 @@ class FabMount(_Internal):
             print(f"{tracing}=>FabMount({self.Name}).drill_joins(|{len(joins)}|")
 
         if self.Construct:
-            context: Dict[str, Any] = self._Context.copy()
-            context_keys: Tuple[str, ...]
             copy: Vector = Vector()
             # prefix = cast(str, context["prefix"])
             prefix: str = "FIX_PREFIX"
@@ -728,7 +735,7 @@ class FabMount(_Internal):
             mount_contact: Vector = self._Contact
             mount_normal: Vector = (self._Normal + copy).normalize()
             mount_depth: float = self._Depth
-            body = cast(Part.BodyBase, context["solid_body"])
+            body: Part.BodyBase = self.Body
             solid: "FabSolid" = self._Solid
             z_axis: Vector = Vector(0, 0, 1)
             mount_z_aligned: bool = close(mount_normal, z_axis)
@@ -884,6 +891,7 @@ class FabSolid(FabNode):
     Color: str
     _Mounts: Dict[str, FabMount] = field(init=False, repr=False)
     _GeometryGroup: Optional[App.DocumentObjectGroup] = field(init=False, repr=False)
+    _Body: Optional[Part.BodyBase] = field(init=False, repr=False)
 
     # FabSolid.__post_init__():
     def __post_init__(self) -> None:
@@ -895,9 +903,23 @@ class FabSolid(FabNode):
         # TODO: Do additional type checking here:
         self._Mounts = {}
         self._GeometryGroup = None
+        self._Body = None
 
         if tracing:
             print(f"{tracing}<=FabSolid({self.Name}).__post_init__()")
+
+    # FabSolid.Body():
+    @property
+    def Body(self) -> Part.BodyBase:
+        """Return BodyBase for FabSolid."""
+        if not self._Body:
+            raise RuntimeError(f"FabSolid.Body({self.Name}).Body(): body not set yet")
+        return self._Body
+
+    # FabSolid.set_body():
+    def set_body(self, body: Part.BodyBase) -> None:
+        """Set the BodyBase of a FabSolid."""
+        self._Body = body
 
     # FabSolid.Construct():
     @property
@@ -1006,7 +1028,7 @@ class FabSolid(FabNode):
             else:
                 body = parent_object.newObject("PartDesign::Body")
                 body.Label = self.Name
-            context["solid_body"] = body
+            self.set_body(body)
 
             # Copy "view" fields from *body* to *gui_body* (if we are in graphical mode):
             if App.GuiUp:  # pragma: no cover
@@ -1144,7 +1166,7 @@ def visibility_set(element: Any, new_value: bool = True, tracing: str = "") -> N
 #         raise NotImplementedError(f"{type(self)}.get_kind() not implmeneted")
 
 #     # FabDrill.produce():
-#     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
+#     def produce(self, contexxt: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
 #         """Produce the Hole."""
 
 #         EPSILON: float = 1.0e-8
@@ -1164,18 +1186,18 @@ def visibility_set(element: Any, new_value: bool = True, tracing: str = "") -> N
 #                 assert False, f"{start=} and  {end=} are not aligned {normal=}."
 #             return distance
 
-#         # Grab mount information from *context*:
+#         # Grab mount information from *contexxt*:
 #         next_tracing = tracing + " " if tracing else ""
 #         if tracing:
 #             print(f"{tracing}=>FabDill.produce({self.Name})")
 
-#         prefix = cast(str, context["prefix"])
+#         prefix = cast(str, contexxt["prefix"])
 #         next_prefix: str = f"{prefix}_{self.Name}"
-#         # mountx_name = cast(str, context["mountx_name"])
-#         mountx_contact = cast(Vector, context["mountx_contact"])
-#         mountx_normal = cast(Vector, context["mountx_normal"])
+#         # mountx_name = cast(str, contexxt["mountx_name"])
+#         mountx_contact = cast(Vector, contexxt["mountx_contact"])
+#         mountx_normal = cast(Vector, contexxt["mountx_normal"])
 #         bottomx_depth = cast(float, contxt["mountx_depth"])
-#         # mountx_plane = context["mountx_plane"]
+#         # mountx_plane = contexxt["mountx_plane"]
 #         # assert isinstance(mount_plane, Part.Geometry)
 #         assert abs(mount_normal.Length - 1.0) < EPSILON, (
 #             "{self.FullPath}: Mount normal is not of length 1")
@@ -1290,15 +1312,15 @@ def visibility_set(element: Any, new_value: bool = True, tracing: str = "") -> N
 #                     hole.Depth == depth and hole.IsTop == is_top)
 #                 center: Vector = hole.Center
 #                 circle: FabCircle = FabCircle(center, mount_normal, diameter)
-#                 part_geometries.extend(circle.produce(context.copy(),
+#                 part_geometries.extend(circle.produce(contexxt.copy(),
 #                                                       next_prefix, tracing=next_tracing))
 
 #             # Create the *shape_binder*:
 #             next_prefix = f"{prefix}.DrillCircle{index:03d}"
 #             shape_binder: Part.Feature = self.produce_shape_binder(
-#                 context.copy(), tuple(part_geometries), next_prefix, tracing=next_tracing)
+#                 contexxt.copy(), tuple(part_geometries), next_prefix, tracing=next_tracing)
 #             assert isinstance(shape_binder, Part.Feature)
-#             body = cast(Part.BodyBase, context["solid_body"])
+#             body = cast(Part.BodyBase, contexxt["solid_body"])
 
 #             # TODO: fill in actual values for Hole.
 #             # Create the *pocket* and upstate the view provider for GUI mode:
@@ -1395,22 +1417,22 @@ def visibility_set(element: Any, new_value: bool = True, tracing: str = "") -> N
 #         return self.Name
 
 #     # FabHole.produce():
-#     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
+#     def produce(self, contexxt: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
 #         """Produce the Hole."""
 #         # Extract the *part_geometries*:
 #         if tracing:
 #             print("{tracing}=>FabHole({self.Name}).produce()")
 
-#         prefix = cast(str, context["prefix"])
+#         prefix = cast(str, contexxt["prefix"])
 #         next_prefix: str = f"{prefix}_{self.Name}"
 #         part_geometries: Tuple[Part.Part2DObject, ...] = (
-#             self.Circle.produce(context.copy(), next_prefix))
+#             self.Circle.produce(contexxt.copy(), next_prefix))
 
 #         # Create the *shape_binder*:
 #         shape_binder: Part.Feature = self.produce_shape_binder(
-#             context.copy(), part_geometries, next_prefix)
+#             contexxt.copy(), part_geometries, next_prefix)
 #         assert isinstance(shape_binder, Part.Feature)
-#         body = cast(Part.BodyBase, context["solid_body"])
+#         body = cast(Part.BodyBase, contexxt["solid_body"])
 
 #         # Create the *pocket* and upstate the view provider for GUI mode:
 #         hole: Part.Feature = body.newObject("PartDesign::Hole", f"{next_prefix}_Hole")
