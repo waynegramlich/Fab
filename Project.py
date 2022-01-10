@@ -73,9 +73,12 @@ class FabGroup(FabNode):
         errors: List[str] = []
 
         # Create the *group* that contains all of the FabNode's:
-        parent_object: Any = context["parent_object"]
+        parent_object: Any = self.Up.AppObject
         group: App.DocumentObjectGroup = parent_object.addObject(
             "App::DocumentObjectGroup", f"{self.Name}")
+        assert isinstance(group, App.DocumentObjectGroup), group
+        self.set_object(group)
+
         group.Visibility = False
         self.Group = group
         visibility_set(group)
@@ -184,14 +187,15 @@ class FabDocument(FabNode):
             app_document = cast(App.Document, App.newDocument(self.Name))  # Why the cast?
             assert isinstance(app_document, App.Document)  # Just to be sure.
             self._AppDocument = app_document
-            context["app_document"] = app_document
+            self._AppObject = app_document
             context["parent_object"] = app_document
 
             # If the GUI is up, get the associated *gui_document* and save it into *context*:
             if App.GuiUp:  # pragma: no unit cover
                 gui_document = cast(Gui.Document, Gui.getDocument(self.Name))
                 assert isinstance(gui_document, Gui.Document)  # Just to be sure.
-                context["gui_document"] = gui_document
+                self._GuiDocument = gui_document
+                self._GuiObject = gui_document
 
         if tracing:
             print(f"{tracing}<=FabFile.produce('{self.Name}', *)")

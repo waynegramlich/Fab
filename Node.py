@@ -88,6 +88,8 @@ Embed.setup()
 from dataclasses import dataclass, field
 from typing import Any, cast, Dict, List, Sequence, Tuple, Union
 from FreeCAD import BoundBox, Placement, Vector  # type: ignore
+import FreeCAD as App  # type: ignore
+import FreeCADGui as Gui  # type: ignore
 from collections import OrderedDict
 
 
@@ -908,6 +910,22 @@ class FabNode(FabBox):
         if tracing:
             print(f"{tracing}<=>FabNode({self.Name}).__post_init__()")
 
+    # FabNode.AppObject():
+    @property
+    def AppObject(self) -> Any:
+        """Return FreeCAD Application Object for FabNode."""
+        if self._AppObject is None:
+            raise RuntimeError(f"FabNode({self.Name}).AppObject(): No AppObject has been set.")
+        return self._AppObject
+
+    # FabNode.GuiObject():
+    @property
+    def GuiObject(self) -> Any:
+        """Return FreeCAD Gui Object for FabNode."""
+        if self._GuiObject is None:
+            raise RuntimeError(f"FabNode({self.Name}).GuiObject(): No GuiObject has been set.")
+        return self._GuiObject
+
     # FabNode.Name():
     @property
     def Name(self) -> str:
@@ -1007,6 +1025,42 @@ class FabNode(FabBox):
             print(f"{tracing}=>FabNode({self.Name}).post_produce()=>()")
         return ()
 
+    # FabNode.get_parent_document():
+    def get_parent_document(self, tracing: str = "") -> "FabNode":
+        if tracing:
+            print(f"{tracing}=>FabNode({self.Name}).get_gui_document()")
+
+        # Search up the document tree to find the FabDocument:
+        node: FabNode = self
+        while not node.is_document() and not node.is_project():
+            node = node._Parent
+            if tracing:
+                print(f"{tracing}{node=}")
+        assert node.is_document()
+        if tracing:
+            print(f"{tracing}=>FabNode({self.Name}).get_gui_document()=>{node}")
+        return node
+
+    # FabNode.set_object():
+    def set_object(self, app_object: Any) -> None:
+        """Set FabNode AppObject and GuiObject."""
+        if self._AppObject:
+            raise RuntimeError(f"FabNode.set_object({self.Name}): Object is already set.")
+        if app_object is None:
+            raise RuntimeError(f"FabNode.set_object({self.Name}): Object is None.")
+        self._AppObject = app_object
+
+        if App.GuiUp:
+            # Search up the document tree to find the FabDocument:
+            node: FabNode = self
+            while not node.is_document() and not node.is_project():
+                node = node._Parent
+            if node.is_document():
+                gui_document = cast(Gui.Document, Gui.getDocument(node.Name))
+                self._AppObject: Any = gui_document.getObject(app_object.Name)
+        else:
+            self._AppObject = None
+
     # FabNode.set_tracing():
     def set_tracing(self, tracing: str):
         """Set the FabNode indentation tracing level.
@@ -1035,28 +1089,6 @@ class FabNode(FabBox):
         if not hasattr(root, "probe"):
             assert False, dir(root)
         root.probe(label)
-
-    # # FabNode.GuiObject():
-    # def GuiObject(self) -> Any:
-    #     """Return the associated GUI object for node."""
-
-    #     if not App.GuiUp:
-    #         raise RuntimeError(f"FabNode({self.Name}).GuiObject(): GUI is not active.")
-
-    #     # Search up the FabNode tree for the document, keeping a *names_stack*:
-    #     names_stack: List[FabNode] = []
-    #     focus: FabNode = self
-    #     while not focus.is_root():
-    #         if focus._GuiObject:
-    #             break
-    #         elif focus._AppObject:
-    #             break
-    #         elif focus.is_document():
-    #             gui_docuemnt = cast(Gui.Document, Gui.GG
-    #             break
-    #         else:
-    #             stack.append(focus._Name)
-    #             focus = self._Parent
 
     # FabNode._produce_walk()
     def _produce_walk(self) -> Tuple[str, ...]:

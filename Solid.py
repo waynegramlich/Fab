@@ -28,7 +28,7 @@ import Embed
 Embed.setup()
 
 from dataclasses import dataclass, field
-from typing import Any, cast, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 from collections import OrderedDict
 
 import FreeCAD  # type: ignore
@@ -453,6 +453,8 @@ class FabMount(_Internal):
     _Copy: Vector = field(init=False, repr=False)  # Used for making private copies of Vector's
     _Tracing: str = field(init=False, repr=False)
     _GeometryContext: FabGeometryContext = field(init=False, repr=False)
+    _AppDatumPlane: Optional["Part.Geometry"] = field(init=False, repr=False)
+    _GuiDatumPlane: Any = field(init=False, repr=False)
 
     # FabMount.__post_init__():
     def __post_init__(self) -> None:
@@ -484,6 +486,8 @@ class FabMount(_Internal):
         self._Context = {"mount_contact": "bogus"}
         self._Context = {}
         self._GeometryContext = FabGeometryContext(self._Contact, self._Normal)
+        self._AppDatumPlane = None
+        self._GuiDatumPlane = None
 
         if tracing:
             print(f"{tracing}{self._Contact=} {self._Normal=} "
@@ -554,6 +558,7 @@ class FabMount(_Internal):
     # FabMount.produce():
     def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
         """Create the FreeCAD DatumPlane used for the drawing support."""
+        next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabMount.produce('{self.Name}')")
 
@@ -585,13 +590,17 @@ class FabMount(_Internal):
 
             # Create, save and return the *datum_plane*:
             body: Part.BodyBase = self.Body
-            datum_plane: Part.Geometry = body.newObject(
-                "PartDesign::Plane", f"{self.Name}_Datum_Plane")
+            datum_plane_name: str = f"{self.Name}_Datum_Plane"
+            datum_plane: "Part.Geometry" = body.newObject("PartDesign::Plane", datum_plane_name)
+            # assert isinstance(datum_plane, Part.Geometry), datum_plane
+            self._AppDatumPlane = datum_plane
+
             # visibility_set(datum_plane, False)
             datum_plane.Visibility = False
             # xy_plane: App.GeoGeometry = body.getObject("XY_Plane")
             if tracing:
                 print(f"{tracing}{placement=}")
+            datum_plane.Label = self._Name
             datum_plane.AttachmentOffset = placement
             datum_plane.Placement = placement
             datum_plane.MapMode = "Translate"
@@ -601,13 +610,20 @@ class FabMount(_Internal):
             datum_plane.recompute()
 
             if App.GuiUp:  # pragma: no unit cover
-                gui_document = cast(Gui.Document, context["gui_document"])  # Optional[Gui.Document]
-                assert gui_document, "No GUI document"
-
-                object_name: str = datum_plane.Name
-                gui_datum_plane: Any = gui_document.getObject(object_name)
-                if gui_datum_plane is not None and hasattr(gui_datum_plane, "Visibility"):
-                    setattr(gui_datum_plane, "Visibility", False)
+                if tracing:
+                    print(f"{tracing}get_gui_document()")
+                document_node: FabNode = self._Solid.get_parent_document(tracing=next_tracing)
+                gui_document: Any = document_node._GuiObject
+                if tracing:
+                    print(f"{tracing}{gui_document=}")
+                assert hasattr(gui_document, "getObject")
+                gui_datum_plane: Any = getattr(gui_document, datum_plane.Name)
+                if tracing:
+                    print(f"{tracing}{gui_datum_plane=}")
+                assert gui_datum_plane is not None
+                assert hasattr(gui_datum_plane, "Visibility"), gui_datum_plane
+                setattr(gui_datum_plane, "Visibility", False)
+                self._GuiDatum_plane = gui_datum_plane
 
             # Provide datum_plane to lower levels of produce:
             self._Context = context.copy()
@@ -1038,10 +1054,11 @@ class FabSolid(FabNode):
 
             # Copy "view" fields from *body* to *gui_body* (if we are in graphical mode):
             if App.GuiUp:  # pragma: no cover
-                gui_document = cast(Gui.Document, context["gui_document"])  # Optional[Gui.Document]
+                document: FabNode = self.get_parent_document()
+                gui_document: Any = document._GuiObject
                 assert gui_document, "No GUI document"
-
-                gui_body: Any = gui_document.getObject(body.Name)
+                assert hasattr(gui_document, "getObject")
+                gui_body: Any = getattr(gui_document, body.Name)
                 assert gui_body, "No GUI body"
                 assert hasattr(gui_body, "ShapeColor"), "Something is wrong"
                 if hasattr(gui_body, "Proxy"):
