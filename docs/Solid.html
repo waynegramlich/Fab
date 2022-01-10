@@ -14,9 +14,10 @@
 <li>2 Class: <a href="#solid--fabsolid">FabSolid</a>:
 <ul>
 <li>2.1 <a href="#solid----set-body">set_body()</a>: Set the BodyBase of a FabSolid.</li>
-<li>2.2 <a href="#solid----mount">mount()</a>: Return a new FabMount.</li>
-<li>2.3 <a href="#solid----drill-joins">drill_joins()</a>: Apply drill FabJoin holes for a FabSolid.</li>
-<li>2.4 <a href="#solid----pre-produce">pre_produce()</a>: Produce an Empty FabSolid prior to performing operations.</li>
+<li>2.2 <a href="#solid----is-solid">is_solid()</a>:  Return True if FabNode is a FabAssembly.</li>
+<li>2.3 <a href="#solid----mount">mount()</a>: Return a new FabMount.</li>
+<li>2.4 <a href="#solid----drill-joins">drill_joins()</a>: Apply drill FabJoin holes for a FabSolid.</li>
+<li>2.5 <a href="#solid----pre-produce">pre_produce()</a>: Produce an Empty FabSolid prior to performing operations.</li>
 </ul>
 </li>
 </ul>
@@ -68,10 +69,13 @@ Inherited Attributes:</p>
 <h3><a name="solid----set-body"></a>2.1 <code>FabSolid.</code>set_body():</h3>
 <p>FabSolid.set_body(self, body: Part.BodyBase) -&gt; None:</p>
 <p>Set the BodyBase of a FabSolid.</p>
-<h3><a name="solid----mount"></a>2.2 <code>FabSolid.</code>mount():</h3>
+<h3><a name="solid----is-solid"></a>2.2 <code>FabSolid.</code>is_solid():</h3>
+<p>FabSolid.is_solid(self) -&gt; bool:</p>
+<p>Return True if FabNode is a FabAssembly.</p>
+<h3><a name="solid----mount"></a>2.3 <code>FabSolid.</code>mount():</h3>
 <p>FabSolid.mount(self, name: str, contact: Base.Vector, normal: Base.Vector, orient: Base.Vector, depth: float, tracing: str = '') -&gt; Solid.FabMount:</p>
 <p>Return a new FabMount.</p>
-<h3><a name="solid----drill-joins"></a>2.3 <code>FabSolid.</code>drill_joins():</h3>
+<h3><a name="solid----drill-joins"></a>2.4 <code>FabSolid.</code>drill_joins():</h3>
 <p>FabSolid.drill_joins(self, joins: typing.Sequence[Join.FabJoin], mounts: typing.Union[typing.Sequence[Solid.FabMount], NoneType] = None) -&gt; None:</p>
 <p>Apply drill FabJoin holes for a FabSolid.
 Iterate pairwise through a sequence of FabJoin's and FabMount's and for each pair
@@ -88,6 +92,6 @@ The mounts to to apply the <em>joins</em> to.  If <em>mounts</em> is <em>None</e
 mounts for the current FabSolid are used.  (Default: None)</li>
 </ul>
 <p>For now, please call this method after all FabMount's are created.</p>
-<h3><a name="solid----pre-produce"></a>2.4 <code>FabSolid.</code>pre_produce():</h3>
+<h3><a name="solid----pre-produce"></a>2.5 <code>FabSolid.</code>pre_produce():</h3>
 <p>FabSolid.pre_produce(self) -&gt; typing.Tuple[str, ...]:</p>
 <p>Produce an Empty FabSolid prior to performing operations.</p>

@@ -86,8 +86,9 @@ import Embed
 Embed.setup()
 
 from dataclasses import dataclass, field
-from typing import Any, cast, Dict, List, Sequence, Set, Tuple, Union
+from typing import Any, cast, Dict, List, Sequence, Tuple, Union
 from FreeCAD import BoundBox, Placement, Vector  # type: ignore
+from collections import OrderedDict
 
 
 # FabBox:
@@ -846,9 +847,10 @@ class FabNode(FabBox):
     _Context: Dict[str, Any] = field(init=False, repr=False)
     _Tracing: str = field(init=False, repr=False)
     # The next fields are private and are not user accessible via property accessors:
-    _Children: Tuple["FabNode", ...] = field(init=False, repr=False)
-    _ChildrenNames: Set[str] = field(init=False, repr=False)
+    _Children: "OrderedDict[str, FabNode]" = field(init=False, repr=False)
     _Project: "FabNode" = field(init=False, repr=False)
+    _AppObject: Any = field(init=False, repr=False)
+    _GuiObject: Any = field(init=False, repr=False)
 
     # FabNode.__post_init__():
     def __post_init__(self) -> None:
@@ -861,10 +863,11 @@ class FabNode(FabBox):
                 "alphanumeric/underscore that starts with a letter")    # pragma: no unit test
 
         # Initialize the remaining fields to bogus values that get updated by the _setup() method.
-        self._Children = ()
-        self._ChildrenNames = set()
+        self._Children = OrderedDict()
         self._FullPath = "??"
         self._Context = {}
+        self._AppObject = None
+        self._GuiObject = None
 
         parent: "FabNode" = self._Parent
         name: str = self._Name
@@ -878,11 +881,12 @@ class FabNode(FabBox):
             self._Project = self._Parent._Project
             # assert isinstance(self._Project, Project)  # Enable this check later.
 
-            # Disallow duplicate children names:
-            children_names: Set[str] = parent._ChildrenNames
-            assert name not in children_names
-            children_names.add(name)
-            parent._Children += (self,)
+            # Disallow duplicate children names in *parent*:
+            parent_children: "OrderedDict[str, FabNode]" = parent._Children
+            if name in parent_children:
+                raise RuntimeError(
+                    f"FabNode.__post_init__({self._Name}) is already a child of {parent._Name}")
+            parent_children[name] = self
 
             # Keep a list if *all_node* in the same order that all FabNode's are created.
             root: "FabNode" = self._Project
@@ -943,6 +947,31 @@ class FabNode(FabBox):
     def Construct(self) -> bool:
         """Return the FabNode construct mode."""
         return self._Project.get_construct()
+
+    # FabNode.is_project():
+    def is_project(self) -> bool:
+        """ Return True if FabNode is a FabProject."""
+        return False  # FabProject class returns True.
+
+    # FabNode.is_document():
+    def is_document(self) -> bool:
+        """ Return True if FabNode is a FabProject."""
+        return False  # FabProject class returns True.
+
+    # FabNode.is_group():
+    def is_group(self) -> bool:
+        """ Return True if FabNode is a FabGroup."""
+        return False  # FabGroup class returns True.
+
+    # FabNode.is_assembly():
+    def is_assembly(self) -> bool:
+        """ Return True if FabNode is a FabAssembly."""
+        return False  # FabAssembly class returns True.
+
+    # FabNode.is_solid():
+    def is_solid(self) -> bool:
+        """ Return True if FabNode is a FabAssembly."""
+        return False  # FabSolid class returns True.
 
     # FabNode.Construct():
     def get_construct(self) -> bool:
@@ -1007,6 +1036,28 @@ class FabNode(FabBox):
             assert False, dir(root)
         root.probe(label)
 
+    # # FabNode.GuiObject():
+    # def GuiObject(self) -> Any:
+    #     """Return the associated GUI object for node."""
+
+    #     if not App.GuiUp:
+    #         raise RuntimeError(f"FabNode({self.Name}).GuiObject(): GUI is not active.")
+
+    #     # Search up the FabNode tree for the document, keeping a *names_stack*:
+    #     names_stack: List[FabNode] = []
+    #     focus: FabNode = self
+    #     while not focus.is_root():
+    #         if focus._GuiObject:
+    #             break
+    #         elif focus._AppObject:
+    #             break
+    #         elif focus.is_document():
+    #             gui_docuemnt = cast(Gui.Document, Gui.GG
+    #             break
+    #         else:
+    #             stack.append(focus._Name)
+    #             focus = self._Parent
+
     # FabNode._produce_walk()
     def _produce_walk(self) -> Tuple[str, ...]:
         """Recursively walk FabNode Tree performing produce/post_produce operations."""
@@ -1031,7 +1082,7 @@ class FabNode(FabBox):
         # Step 2: Visit each *child* giving them a copy of the *context* which may have
         # been modified in step 1.
         child: FabNode
-        for child in self._Children:
+        for child in self._Children.values():
             child._Context = context.copy()
             errors.extend(child._produce_walk())
 

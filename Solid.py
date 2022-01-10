@@ -922,6 +922,11 @@ class FabSolid(FabNode):
         """Set the BodyBase of a FabSolid."""
         self._Body = body
 
+    # FabSolid.is_solid():
+    def is_solid(self) -> bool:
+        """ Return True if FabNode is a FabAssembly."""
+        return True  # All other FabNode's return False.
+
     # FabSolid.Construct():
     @property
     def Construct(self) -> bool:

@@ -82,12 +82,17 @@ class FabGroup(FabNode):
 
         child: FabNode
         context["parent_object"] = self.Group
-        for child in self._Children:
+        for child in self._Children.values():
             child._Context = context.copy()
             errors.extend(child.produce())
         if tracing:
             print(f"{tracing}<=FabGroup({self.Name}).produce()")
         return tuple(errors)
+
+    # FabGroup.is_group():
+    def is_group(self) -> bool:
+        """ Return True if FabNode is a FabGroup."""
+        return True  # All other FabNode's return False.
 
 
 # FabAssembly:
@@ -104,6 +109,11 @@ class FabAssembly(FabGroup):
         tracing: str = self.Tracing
         if tracing:
             print(f"{tracing}<=>FabAssembly({self.Name}).__post_init__()")
+
+    # FabAssembly.is_assembly():
+    def is_assembly(self) -> bool:
+        """ Return True if FabNode is a FabGroup."""
+        return True  # All other FabNode's return False.
 
 
 # FabDocument:
@@ -143,11 +153,16 @@ class FabDocument(FabNode):
     def _check_children(self) -> None:
         """Verify that children are valid types."""
         child: FabNode
-        for child in self._Children:
+        for child in self._Children.values():
             if not isinstance(child, (FabAssembly, FabGroup, FabSolid)):
                 raise RuntimeError(
                     f"{self.FullPath}: {child.FullPath} is not a {type(child)}, "
                     "not FabAssembly/FabGroup/FabSolid")
+
+    # FabDocument.is_document():
+    def is_document(self) -> bool:
+        """ Return True if FabNode is a FabGroup."""
+        return True  # All other FabNode's return False.
 
     # FabFile.produce():
     def produce(self) -> Tuple[str, ...]:
@@ -236,6 +251,11 @@ class FabProject(FabNode):
         """
         return self._Construct
 
+    # FabProject.is_project():
+    def is_project(self) -> bool:
+        """ Return True if FabNode is a FabGroup."""
+        return True  # All other FabNode's return False.
+
     # FabProject.new():
     @classmethod
     def new(cls, name: str) -> "FabProject":
@@ -271,7 +291,7 @@ class FabProject(FabNode):
             current_constraints: Set[str] = set()
             # Update all boxes in bottom-up order:
             for node in reversed_nodes:
-                node.enclose(self._Children)
+                node.enclose(tuple(self._Children.values()))
             # Call *produce* in top-down order first.
             for node in all_nodes:
                 errors.extend(node.produce())
