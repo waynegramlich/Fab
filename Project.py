@@ -22,6 +22,8 @@
 # Note this code uses nested dataclasses that are frozen.  Computed attributes are tricky.
 # See (Set frozen data class files in __post_init__)[https://stackoverflow.com/questions/53756788]
 
+# <--------------------------------------- 100 characters ---------------------------------------> #
+
 import sys
 sys.path.append(".")
 import Embed
@@ -184,6 +186,36 @@ class FabDocument(FabNode):
                     f"{self.FullPath}: {child.FullPath} is not a {type(child)}, "
                     "not FabAssembly/FabGroup/FabSolid")
 
+    # FabDocument.pre_produce():
+    def pre_produce(self) -> Tuple[str, ...]:
+        """Produce FabDocument."""
+        tracing: str = self.Tracing
+        if tracing:
+            print(f"{tracing}=>FabDocument.pre_produce({self.Name}, *)")
+
+        # Create *app_document*:
+        assert self.Construct
+        app_document = cast(App.Document, App.newDocument(self.Name))  # Why the cast?
+        assert isinstance(app_document, App.Document)  # Just to be sure.
+        self._AppDocument = app_document
+        self._AppObject = app_document
+
+        # If the GUI is up, get the associated *gui_document* and save it into *context*:
+        if App.GuiUp:  # pragma: no unit cover
+            gui_document = cast(Gui.Document, Gui.getDocument(self.Name))
+            assert isinstance(gui_document, Gui.Document)  # Just to be sure.
+            self._GuiDocument = gui_document
+            self._GuiObject = gui_document
+
+        # TODO: Delete this:
+        context: Dict[str, Any] = self.Context
+        context["parent_object"] = app_document
+        context["parent_name"] = app_document.Name
+
+        if tracing:
+            print(f"{tracing}<=FabDocument.pre_produce({self.Name}, *)")
+        return ()
+
     # FabDocument.is_document():
     def is_document(self) -> bool:
         """ Return True if FabNode is a FabGroup."""
@@ -206,19 +238,20 @@ class FabDocument(FabNode):
                 print(f"{tracing}Before Context: {context_keys}")
 
             # Create *app_document* and save it away in both *self* and *context*:
-            app_document = cast(App.Document, App.newDocument(self.Name))  # Why the cast?
-            assert isinstance(app_document, App.Document)  # Just to be sure.
-            self._AppDocument = app_document
-            self._AppObject = app_document
+            # app_document = cast(App.Document, App.newDocument(self.Name))  # Why the cast?
+            # assert isinstance(app_document, App.Document)  # Just to be sure.
+            # self._AppDocument = app_document
+            # self._AppObject = app_document
+            app_document: App.Document = self._AppDocument
             context["parent_object"] = app_document
             context["parent_name"] = app_document.Name
 
             # If the GUI is up, get the associated *gui_document* and save it into *context*:
-            if App.GuiUp:  # pragma: no unit cover
-                gui_document = cast(Gui.Document, Gui.getDocument(self.Name))
-                assert isinstance(gui_document, Gui.Document)  # Just to be sure.
-                self._GuiDocument = gui_document
-                self._GuiObject = gui_document
+            # if App.GuiUp:  # pragma: no unit cover
+            #     gui_document = cast(Gui.Document, Gui.getDocument(self.Name))
+            #     assert isinstance(gui_document, Gui.Document)  # Just to be sure.
+            #     self._GuiDocument = gui_document
+            #     self._GuiObject = gui_document
 
         if tracing:
             print(f"{tracing}<=FabDocument.produce('{self.Name}', *)")
@@ -718,11 +751,11 @@ class TestDocument(FabDocument):
         super().__post_init__()
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>TestFile({self.Name}).__post_init__()")
+            print(f"{tracing}=>TestDocument({self.Name}).__post_init__()")
         self._TestSolid = TestSolid("TestSolid", self, "HDPE", "red")
         self._Box = Box("TestBox", self, 200.0, 150.0, 75.0, 6.0, "HDPE", Vector(0, 0, 0))
         if tracing:
-            print(f"{tracing}<=TestFile({self.Name}).__post_init__()")
+            print(f"{tracing}<=TestDocument({self.Name}).__post_init__()")
 
 
 # TestProject:
@@ -741,7 +774,7 @@ class TestProject(FabProject):
         if tracing:
             print(f"{tracing}=>TestProject({self.Name}).__post_init__()")
 
-        self.Document = TestDocument("TestFile", self, Path("/tmp/TestFile.fcstd"))
+        self.Document = TestDocument("TestDocument", self, Path("/tmp/TestDocument.fcstd"))
 
         if tracing:
             print(f"{tracing}<=TestProject({self.Name}).__post_init__()")
