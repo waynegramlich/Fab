@@ -1015,79 +1015,77 @@ class FabSolid(FabNode):
             print(f"{tracing}=>FabSolid.pre_produce('{self.Name}')")
 
         # Only do work in construct mode:
-        if self.Construct:
-            context: Dict[str, Any] = self.Context
-            context_keys: Tuple[str, ...]
-            if tracing:
-                context_keys = tuple(sorted(context.keys()))
-                print(f"{tracing}Before Context: {context_keys=}")
+        assert self.Construct
+        context: Dict[str, Any] = self.Context
+        context_keys: Tuple[str, ...]
+        if tracing:
+            context_keys = tuple(sorted(context.keys()))
+            print(f"{tracing}Before Context: {context_keys=}")
 
-            # Create the *geometry_group* that contains all of the 2D geometry (line, arc, circle.):
-            parent: FabNode = self.Up
-            parent_object: Any = context["parent_object"]
-            parent_name: str = context["parent_name"]
-            if parent_object is not parent._AppObject:
-                print(f"{parent_name=}")
-                print(f"{parent=}")
-                print(f"{parent._AppObject=}")
-                print(f"{parent_object=}")
-                # assert False
+        # Create the *geometry_group* that contains all of the 2D geometry (line, arc, circle.):
+        parent: FabNode = self.Up
+        parent_object: Any = context["parent_object"]
+        parent_name: str = context["parent_name"]
+        if parent_object is not parent._AppObject:
+            print(f"{parent_name=}")
+            print(f"{parent=}")
+            print(f"{parent._AppObject=}")
+            print(f"{parent_object=}")
+            # assert False
 
-            geometry_group: App.DocumentObjectGroup
-            geometry_group_name: str = f"{self.Name}_Geometry"
-            if isinstance(parent_object, App.Document):
-                geometry_group = parent_object.addObject(
-                    "App::DocumentObjectGroup", geometry_group_name)
-            else:
-                geometry_group = parent_object.newObject("App::DocumentObjectGroup")
-                geometry_group.Label = geometry_group_name
-            self._GeometryGroup = geometry_group
+        geometry_group: App.DocumentObjectGroup
+        geometry_group_name: str = f"{self.Name}_Geometry"
+        if isinstance(parent_object, App.Document):
+            geometry_group = parent_object.addObject(
+                "App::DocumentObjectGroup", geometry_group_name)
+        else:
+            geometry_group = parent_object.newObject("App::DocumentObjectGroup")
+            geometry_group.Label = geometry_group_name
+        self._GeometryGroup = geometry_group
 
-            geometry_group.Visibility = False
+        geometry_group.Visibility = False
 
-            # Make *geometry_group* available to all FabMount's:
-            # mount: FabMount
-            # assert len(self._Mounts) > 0
-            # for mount in self._Mounts.values():
-            #     mount.set_geometry_group(geometry_group)
+        # Make *geometry_group* available to all FabMount's:
+        # mount: FabMount
+        # assert len(self._Mounts) > 0
+        # for mount in self._Mounts.values():
+        #     mount.set_geometry_group(geometry_group)
 
-            # Create the *body*
-            body: Part.BodyBase
+        # Create the *body*
+        body: Part.BodyBase
 
-            if isinstance(parent_object, App.Document):
-                body = parent_object.addObject("PartDesign::Body", self.Name)
-            else:
-                body = parent_object.newObject("PartDesign::Body")
-                body.Label = self.Name
-            self.set_body(body)
+        if isinstance(parent_object, App.Document):
+            body = parent_object.addObject("PartDesign::Body", self.Name)
+        else:
+            body = parent_object.newObject("PartDesign::Body")
+            body.Label = self.Name
+        self.set_body(body)
 
-            # Copy "view" fields from *body* to *gui_body* (if we are in graphical mode):
-            if App.GuiUp:  # pragma: no cover
-                document: FabNode = self.get_parent_document()
-                gui_document: Any = document._GuiObject
-                assert gui_document, "No GUI document"
-                assert hasattr(gui_document, "getObject")
-                gui_body: Any = getattr(gui_document, body.Name)
-                assert gui_body, "No GUI body"
-                assert hasattr(gui_body, "ShapeColor"), "Something is wrong"
-                if hasattr(gui_body, "Proxy"):
-                    # This magical line seems to get a view provider object into the Proxy field:
-                    setattr(gui_body, "Proxy", 0)  # Must not be `None`
-                if hasattr(gui_body, "DisplayMode"):
-                    setattr(gui_body, "DisplayMode", "Shaded")
-                if hasattr(gui_body, "ShapeColor"):
-                    rgb = FabColor.svg_to_rgb(self.Color)
-                    setattr(gui_body, "ShapeColor", rgb)
+        # Copy "view" fields from *body* to *gui_body* (if we are in graphical mode):
+        if App.GuiUp:  # pragma: no cover
+            document: FabNode = self.get_parent_document()
+            gui_document: Any = document._GuiObject
+            assert gui_document, "No GUI document"
+            assert hasattr(gui_document, "getObject")
+            gui_body: Any = getattr(gui_document, body.Name)
+            assert gui_body, "No GUI body"
+            assert hasattr(gui_body, "ShapeColor"), "Something is wrong"
+            if hasattr(gui_body, "Proxy"):
+                # This magical line seems to get a view provider object into the Proxy field:
+                setattr(gui_body, "Proxy", 0)  # Must not be `None`
+            if hasattr(gui_body, "DisplayMode"):
+                setattr(gui_body, "DisplayMode", "Shaded")
+            if hasattr(gui_body, "ShapeColor"):
+                rgb = FabColor.svg_to_rgb(self.Color)
+                setattr(gui_body, "ShapeColor", rgb)
 
-                # view_object: "ViewProviderDocumentObject"  = body.getLinkedObject(True).ViewObject
-                # assert isinstance(view_object, ViewProviderDocumentObject), type(view_object)
-                # model_file.ViewObject = view_object
-
-            if tracing:
-                context_keys = tuple(sorted(context.keys()))
-                print(f"{tracing}After Context: {context_keys=}")
+            # view_object: "ViewProviderDocumentObject"  = body.getLinkedObject(True).ViewObject
+            # assert isinstance(view_object, ViewProviderDocumentObject), type(view_object)
+            # model_file.ViewObject = view_object
 
         if tracing:
+            context_keys = tuple(sorted(context.keys()))
+            print(f"{tracing}After Context: {context_keys=}")
             print(f"{tracing}<=FabSolid.pre_produce('{self.Name}')")
         return ()
 
