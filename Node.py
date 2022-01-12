@@ -1006,7 +1006,7 @@ class FabNode(FabBox):
         """Empty FabNode pre_produce method to be over-ridden as needed."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>FabNode({self.Name}).pre_produce()=>()")
+            print(f"{tracing}<=>FabNode({self.Name}).pre_produce()=>()")
         return ()
 
     # FabNode.produce():
@@ -1057,9 +1057,7 @@ class FabNode(FabBox):
                 node = node._Parent
             if node.is_document():
                 gui_document = cast(Gui.Document, Gui.getDocument(node.Name))
-                self._AppObject: Any = gui_document.getObject(app_object.Name)
-        else:
-            self._AppObject = None
+                self._GuiObject: Any = gui_document.getObject(app_object.Name)
 
     # FabNode.set_tracing():
     def set_tracing(self, tracing: str):

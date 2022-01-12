@@ -1023,7 +1023,16 @@ class FabSolid(FabNode):
                 print(f"{tracing}Before Context: {context_keys=}")
 
             # Create the *geometry_group* that contains all of the 2D geometry (line, arc, circle.):
+            parent: FabNode = self.Up
             parent_object: Any = context["parent_object"]
+            parent_name: str = context["parent_name"]
+            if parent_object is not parent._AppObject:
+                print(f"{parent_name=}")
+                print(f"{parent=}")
+                print(f"{parent._AppObject=}")
+                print(f"{parent_object=}")
+                # assert False
+
             geometry_group: App.DocumentObjectGroup
             geometry_group_name: str = f"{self.Name}_Geometry"
             if isinstance(parent_object, App.Document):

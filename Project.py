@@ -85,6 +85,7 @@ class FabGroup(FabNode):
 
         child: FabNode
         context["parent_object"] = self.Group
+        context["parent_name"] = self.Name
         for child in self._Children.values():
             child._Context = context.copy()
             errors.extend(child.produce())
@@ -118,6 +119,27 @@ class FabAssembly(FabGroup):
         """ Return True if FabNode is a FabGroup."""
         return True  # All other FabNode's return False.
 
+    # FabAssembly.pre_produce():
+    def pre_produce(self) -> Tuple[str, ...]:
+        """Preproduce a FabAssembly"""
+        tracing: str = self.Tracing
+        if tracing:
+            print(f"{tracing}=>FabAssembly.pre_produce({self.Name}).pre_produce()")
+        errors: Tuple[str, ...] = super().pre_produce()
+        if tracing:
+            print(f"{tracing}<=FabAssembly.pre_produce({self.Name}).pre_produce()")
+        return errors
+
+    # FabAssembly.produce():
+    def produce(self) -> Tuple[str, ...]:
+        """Preproduce a FabAssembly"""
+        return super().post_produce()
+
+    # FabAssembly.post_produce():
+    def post_produce(self) -> Tuple[str, ...]:
+        """Preproduce a FabAssembly"""
+        return super().post_produce()
+
 
 # FabDocument:
 @dataclass
@@ -139,9 +161,9 @@ class FabDocument(FabNode):
     FilePath: Path = Path("bogus_file")
     _AppDocument: Optional[App.Document] = field(init=False, repr=False)
 
-    # FabFile.__post_init__():
+    # FabDocument.__post_init__():
     def __post_init__(self) -> None:
-        """Initialize the AppDocument."""
+        """Initialize the FabDocument."""
 
         super().__post_init__()
         self._AppDocument = None
@@ -152,7 +174,7 @@ class FabDocument(FabNode):
                                f"is not one of {valid_suffixes}.")
         self._check_children()
 
-    # FabFile._check_children():
+    # FabDocument._check_children():
     def _check_children(self) -> None:
         """Verify that children are valid types."""
         child: FabNode
@@ -167,12 +189,12 @@ class FabDocument(FabNode):
         """ Return True if FabNode is a FabGroup."""
         return True  # All other FabNode's return False.
 
-    # FabFile.produce():
+    # FabDocument.produce():
     def produce(self) -> Tuple[str, ...]:
-        """Create FabFile document."""
+        """Produce FabDocument."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>FabFile.produce('{self.Name}', *)")
+            print(f"{tracing}=>FabDocument.produce('{self.Name}', *)")
 
         # Create the new *app_document*:
         errors: List[str] = []
@@ -189,6 +211,7 @@ class FabDocument(FabNode):
             self._AppDocument = app_document
             self._AppObject = app_document
             context["parent_object"] = app_document
+            context["parent_name"] = app_document.Name
 
             # If the GUI is up, get the associated *gui_document* and save it into *context*:
             if App.GuiUp:  # pragma: no unit cover
@@ -198,15 +221,15 @@ class FabDocument(FabNode):
                 self._GuiObject = gui_document
 
         if tracing:
-            print(f"{tracing}<=FabFile.produce('{self.Name}', *)")
+            print(f"{tracing}<=FabDocument.produce('{self.Name}', *)")
         return tuple(errors)
 
-    # FabFile.post_produce():
+    # FabDocument.post_produce():
     def post_produce(self) -> Tuple[str, ...]:
-        """Close the FabFile."""
+        """Close the FabDocument."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>FabFile({self.Name}).post_produce()")
+            print(f"{tracing}=>FabDocument({self.Name}).post_produce()")
 
         if self.Construct:  # Construct OK
             # Recompute and save:
@@ -216,7 +239,7 @@ class FabDocument(FabNode):
 
         if tracing:
             print(f"{tracing}Saved {self.FilePath}")
-            print(f"{tracing}<=FabFile({self.Name}).post_produce()")
+            print(f"{tracing}<=FabDocument({self.Name}).post_produce()")
         return ()
 
 
@@ -269,7 +292,7 @@ class FabProject(FabNode):
         # print(f"<=Project.new({name})=>{project}")
         return project
 
-    # FabRoot.run():
+    # FabProject.run():
     def run(self) -> None:
         # Shared variables:
         tracing: str = self.Tracing
@@ -733,12 +756,13 @@ class TestProject(FabProject):
     # TestProject.Probe():
     def probe(self, label: str) -> None:
         """Print out some probe values."""
-        print("================")
-        document: FabDocument = self.Document
-        assert isinstance(document, TestDocument)
-        box: Box = document._Box
-        print(f"{label}: {box.North.Normal=}")
-        assert False, "Remove debugging probes"
+        # print("================")
+        # document: FabDocument = self.Document
+        # assert isinstance(document, TestDocument)
+        # box: Box = document._Box
+        # print(f"{label}: {box.North.Normal=}")
+        # assert False, "Remove debugging probes"
+        pass
 
 
 def main() -> None:
@@ -750,9 +774,9 @@ def main() -> None:
     # test_solid: TestSolid = TestSolid("TestSolid")
     # box: Box = Box("Box", Center=Vector())  # 0, 100.0, 0.0))
     # solids: Tuple[Union[FabSolid, FabAssembly], ...] = (box, )  # , test_solid)
-    # model_file: FabFile = FabFile("Test", Path("/tmp/test.fcstd"))
+    # model_file: FabDocument = FabDocument("Test", Path("/tmp/test.fcstd"))
     # model_file._Children = solids
-    # root: FabRoot = FabRoot("Root")
+    # root: FabProject = FabProject("Root")
     # root._Children = (model_file,)
     # root.run(tracing="")
 
