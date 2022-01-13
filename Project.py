@@ -71,6 +71,22 @@ class FabGroup(FabNode):
         tracing: str = self.Tracing
         if tracing:
             print(f"{tracing}=>FabGroup.=({self.Name}).pre_produce()")
+
+        # Create the *group* that contains the children FabNode's:
+        parent_object: Any = self.Up.AppObject
+        group: App.DocumentObjectGroup = parent_object.addObject(
+            "App::DocumentObjectGroup", f"{self.Name}")
+        assert isinstance(group, App.DocumentObjectGroup), group
+        self.set_object(group)
+
+        group.Visibility = True
+        self.Group = group
+        visibility_set(group)
+
+        context: Dict[str, Any] = self.Context
+        context["parent_object"] = group
+        context["parent_name"] = self.Name
+
         if tracing:
             print(f"{tracing}<=FabGroup({self.Name}).pre_produce()")
         return ()
@@ -81,29 +97,15 @@ class FabGroup(FabNode):
         tracing: str = self.Tracing
         if tracing:
             print(f"{tracing}=>FabGroup({self.Name}).produce()")
-        context: Dict[str, Any] = self.Context
-        errors: List[str] = []
-
-        # Create the *group* that contains all of the FabNode's:
-        parent_object: Any = self.Up.AppObject
-        group: App.DocumentObjectGroup = parent_object.addObject(
-            "App::DocumentObjectGroup", f"{self.Name}")
-        assert isinstance(group, App.DocumentObjectGroup), group
-        self.set_object(group)
-
-        group.Visibility = False
-        self.Group = group
-        visibility_set(group)
 
         child: FabNode
+        context: Dict[str, Any] = self.Context
         context["parent_object"] = self.Group
         context["parent_name"] = self.Name
-        for child in self._Children.values():
-            child._Context = context.copy()
-            errors.extend(child.produce())
+
         if tracing:
             print(f"{tracing}<=FabGroup({self.Name}).produce()")
-        return tuple(errors)
+        return ()
 
     # FabGroup.is_group():
     def is_group(self) -> bool:
@@ -398,8 +400,16 @@ class FabProject(FabNode):
             print(f"{tracing}Project({self.Name}).run(): Phase 2: Construct: {self._Construct=}")
 
         errors = []
+        if tracing:
+            print(f"{tracing}Phase 3A: Pre Produce:")
         errors.extend(self._produce_walk(FabNode.WALK_PRE_PRODUCE))
+        if tracing:
+            print("")
+            print(f"{tracing}Phase 3B: Produce:")
         errors.extend(self._produce_walk(FabNode.WALK_PRODUCE))
+        if tracing:
+            print("")
+            print(f"{tracing}Phase 3C: Post Produce:")
         errors.extend(self._produce_walk(FabNode.WALK_POST_PRODUCE))
         if errors:
             print("Construction Errors:")
@@ -756,10 +766,11 @@ class TestAssembly(FabAssembly):
 
     Solid: TestSolid = field(init=False, repr=False)
 
-    # TestAssembly.__post_process__():
-    def __post_process__(self) -> None:
-        """Initalize TestAssembly"""
-        self.Solid = TestSolid("TestSolid", self, "HDPE", "olive")
+    # TestAssembly.__post_init__():
+    def __post_init__(self):
+        """Initialize Test Assembly."""
+        super().__post_init__()
+        self.Solid = TestSolid("TestSolid", self, "HDPE", "red")
 
 
 # TestDocument:
