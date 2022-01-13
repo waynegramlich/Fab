@@ -65,6 +65,16 @@ class FabGroup(FabNode):
         """Initialize FabGroup."""
         super().__post_init__()
 
+    # FabGroup.pre_produce():
+    def pre_produce(self) -> Tuple[str, ...]:
+        """Preproduce a FabGroup."""
+        tracing: str = self.Tracing
+        if tracing:
+            print(f"{tracing}=>FabGroup.=({self.Name}).pre_produce()")
+        if tracing:
+            print(f"{tracing}<=FabGroup({self.Name}).pre_produce()")
+        return ()
+
     # FabGroup.produce():
     def produce(self) -> Tuple[str, ...]:
         """Create the FreeCAD group object."""
@@ -191,7 +201,7 @@ class FabDocument(FabNode):
         """Produce FabDocument."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>FabDocument.pre_produce({self.Name}, *)")
+            print(f"{tracing}=>FabDocument({self.Name}).pre_produce()")
 
         # Create *app_document*:
         assert self.Construct
@@ -213,7 +223,7 @@ class FabDocument(FabNode):
         context["parent_name"] = app_document.Name
 
         if tracing:
-            print(f"{tracing}<=FabDocument.pre_produce({self.Name}, *)")
+            print(f"{tracing}<=FabDocument({self.Name}).pre_produce()")
         return ()
 
     # FabDocument.is_document():
@@ -388,7 +398,9 @@ class FabProject(FabNode):
             print(f"{tracing}Project({self.Name}).run(): Phase 2: Construct: {self._Construct=}")
 
         errors = []
-        errors.extend(self._produce_walk())
+        errors.extend(self._produce_walk(FabNode.WALK_PRE_PRODUCE))
+        errors.extend(self._produce_walk(FabNode.WALK_PRODUCE))
+        errors.extend(self._produce_walk(FabNode.WALK_POST_PRODUCE))
         if errors:
             print("Construction Errors:")
             # Mypy currently chokes on: `for index, error in enumerate(errors):`
@@ -737,11 +749,25 @@ class TestSolid(FabSolid):
         return tuple(errors)
 
 
+# TestAssembly:
+@dataclass
+class TestAssembly(FabAssembly):
+    """TestAssembly: A Class to test an assembly."""
+
+    Solid: TestSolid = field(init=False, repr=False)
+
+    # TestAssembly.__post_process__():
+    def __post_process__(self) -> None:
+        """Initalize TestAssembly"""
+        self.Solid = TestSolid("TestSolid", self, "HDPE", "olive")
+
+
 # TestDocument:
 @dataclass
 class TestDocument(FabDocument):
     """A Test file."""
 
+    _Assembly: TestAssembly = field(init=False, repr=False)
     _TestSolid: TestSolid = field(init=False, repr=False)
     _Box: Box = field(init=False, repr=False)
 
@@ -754,6 +780,7 @@ class TestDocument(FabDocument):
             print(f"{tracing}=>TestDocument({self.Name}).__post_init__()")
         self._TestSolid = TestSolid("TestSolid", self, "HDPE", "red")
         self._Box = Box("TestBox", self, 200.0, 150.0, 75.0, 6.0, "HDPE", Vector(0, 0, 0))
+        # self._TestAssembly = TestAssembly("TestAssembly", self)
         if tracing:
             print(f"{tracing}<=TestDocument({self.Name}).__post_init__()")
 

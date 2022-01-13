@@ -1022,7 +1022,7 @@ class FabNode(FabBox):
         """Empty FabNode post_produce method to be over-ridden as needed."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>FabNode({self.Name}).post_produce()=>()")
+            print(f"{tracing}<=>FabNode({self.Name}).post_produce()=>()")
         return ()
 
     # FabNode.get_parent_document():
@@ -1088,8 +1088,12 @@ class FabNode(FabBox):
             assert False, dir(root)
         root.probe(label)
 
+    WALK_PRE_PRODUCE = -1
+    WALK_PRODUCE = 0
+    WALK_POST_PRODUCE = 1
+
     # FabNode._produce_walk()
-    def _produce_walk(self) -> Tuple[str, ...]:
+    def _produce_walk(self, mode: int) -> Tuple[str, ...]:
         """Recursively walk FabNode Tree performing produce/post_produce operations."""
         tracing: str = self.Tracing
         if tracing:
@@ -1101,26 +1105,34 @@ class FabNode(FabBox):
         context: Dict[str, Any] = self._Context
         errors: List[str] = []
 
+        if mode == self.WALK_PRE_PRODUCE:
+            errors.extend(self.pre_produce())
+        elif mode == self.WALK_PRODUCE:
+            errors.extend(self.produce())
+        elif mode == self.WALK_POST_PRODUCE:
+            errors.extend(self.post_produce())
+
         # Step 1: Call pre_produce() which is allowed to access and modify its *context*.
         # In general, end-users are not expect to override pre_produce().
-        errors.extend(self.pre_produce())
+        # errors.extend(self.pre_produce())
 
         # Step 3: Call produce() which is allowed to access and modify its *context* by accessing
         # the `self.Context` property.  In general, end-user *ARE* expected to override produce*().
-        errors.extend(self.produce())
+        # errors.extend(self.produce())
 
         # Step 2: Visit each *child* giving them a copy of the *context* which may have
         # been modified in step 1.
+
         child: FabNode
         for child in self._Children.values():
             child._Context = context.copy()
-            errors.extend(child._produce_walk())
+            errors.extend(child._produce_walk(mode))
 
         # Setp 3: Now that eahc *child* has been visited.  Call post_produce() to do any
         # clean up steps (e.g. close files, recomptes, etc.)  Since each *child* got its
         # own copy of the *context*, this *context* is the same as it was prior to step 2.
         # In general, end-users are not expect to override post_produce().
-        self.post_produce()
+        # self.post_produce()
 
         if tracing:
             print(f"{tracing}<=FabNode({self.Name})._produce_walk()=>|{len(errors)}|")

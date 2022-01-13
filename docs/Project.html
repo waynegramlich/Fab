@@ -30,8 +30,9 @@
 </li>
 <li>5 Class: <a href="#project--fabgroup">FabGroup</a>:
 <ul>
-<li>5.1 <a href="#project----produce">produce()</a>: Create the FreeCAD group object.</li>
-<li>5.2 <a href="#project----is-group">is_group()</a>:  Return True if FabNode is a FabGroup.</li>
+<li>5.1 <a href="#project----pre-produce">pre_produce()</a>: Preproduce a FabGroup.</li>
+<li>5.2 <a href="#project----produce">produce()</a>: Create the FreeCAD group object.</li>
+<li>5.3 <a href="#project----is-group">is_group()</a>:  Return True if FabNode is a FabGroup.</li>
 </ul>
 </li>
 <li>6 Class: <a href="#project--fabproject">FabProject</a>:
@@ -41,15 +42,16 @@
 <li>6.3 <a href="#project----run">run()</a>: NO DOC STRING!</li>
 </ul>
 </li>
-<li>7 Class: <a href="#project--testdocument">TestDocument</a>:</li>
-<li>8 Class: <a href="#project--testproject">TestProject</a>:
+<li>7 Class: <a href="#project--testassembly">TestAssembly</a>:</li>
+<li>8 Class: <a href="#project--testdocument">TestDocument</a>:</li>
+<li>9 Class: <a href="#project--testproject">TestProject</a>:
 <ul>
-<li>8.1 <a href="#project----probe">probe()</a>: Print out some probe values.</li>
+<li>9.1 <a href="#project----probe">probe()</a>: Print out some probe values.</li>
 </ul>
 </li>
-<li>9 Class: <a href="#project--testsolid">TestSolid</a>:
+<li>10 Class: <a href="#project--testsolid">TestSolid</a>:
 <ul>
-<li>9.1 <a href="#project----produce">produce()</a>: NO DOC STRING!</li>
+<li>10.1 <a href="#project----produce">produce()</a>: NO DOC STRING!</li>
 </ul>
 </li>
 </ul>
@@ -155,10 +157,13 @@ Inherited Attributes:</p>
 <li><em>Parent</em> (FabNode)</li>
 <li><em>Children</em> (Tuple[FabNode, ...)</li>
 </ul>
-<h3><a name="project----produce"></a>5.1 <code>FabGroup.</code>produce():</h3>
+<h3><a name="project----pre-produce"></a>5.1 <code>FabGroup.</code>pre_produce():</h3>
+<p>FabGroup.pre_produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<p>Preproduce a FabGroup.</p>
+<h3><a name="project----produce"></a>5.2 <code>FabGroup.</code>produce():</h3>
 <p>FabGroup.produce(self) -&gt; typing.Tuple[str, ...]:</p>
 <p>Create the FreeCAD group object.</p>
-<h3><a name="project----is-group"></a>5.2 <code>FabGroup.</code>is_group():</h3>
+<h3><a name="project----is-group"></a>5.3 <code>FabGroup.</code>is_group():</h3>
 <p>FabGroup.is_group(self) -&gt; bool:</p>
 <p>Return True if FabNode is a FabGroup.</p>
 <h2><a name="project--fabproject"></a>6 Class FabProject:</h2>
@@ -183,15 +188,17 @@ way to get the information, but it works.</p>
 <h3><a name="project----run"></a>6.3 <code>FabProject.</code>run():</h3>
 <p>FabProject.run(self) -&gt; None:</p>
 <p>NO DOC STRING!</p>
-<h2><a name="project--testdocument"></a>7 Class TestDocument:</h2>
+<h2><a name="project--testassembly"></a>7 Class TestAssembly:</h2>
+<p>A Class to test an assembly.</p>
+<h2><a name="project--testdocument"></a>8 Class TestDocument:</h2>
 <p>A Test file.</p>
-<h2><a name="project--testproject"></a>8 Class TestProject:</h2>
+<h2><a name="project--testproject"></a>9 Class TestProject:</h2>
 <p>A Test Project.</p>
-<h3><a name="project----probe"></a>8.1 <code>TestProject.</code>probe():</h3>
+<h3><a name="project----probe"></a>9.1 <code>TestProject.</code>probe():</h3>
 <p>TestProject.probe(self, label: str) -&gt; None:</p>
 <p>Print out some probe values.</p>
-<h2><a name="project--testsolid"></a>9 Class TestSolid:</h2>
+<h2><a name="project--testsolid"></a>10 Class TestSolid:</h2>
 <p>A test solid to exercise FabSolid code.</p>
-<h3><a name="project----produce"></a>9.1 <code>TestSolid.</code>produce():</h3>
+<h3><a name="project----produce"></a>10.1 <code>TestSolid.</code>produce():</h3>
 <p>TestSolid.produce(self) -&gt; typing.Tuple[str, ...]:</p>
 <p>NO DOC STRING!</p>
