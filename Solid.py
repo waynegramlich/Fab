@@ -137,14 +137,13 @@ class _Operation(_Internal):
         return self.Name
 
     # _Operation.produce():
-    def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
+    def produce(self, tracing: str = "") -> Tuple[str, ...]:
         """Return the operation sort key."""
         raise NotImplementedError(f"{type(self)}.produce() is not implemented")
         return ()
 
     # _Operation.produce_shape_binder():
-    def produce_shape_binder(self, context: Dict[str, Any],
-                             part_geometries: Tuple[Part.Part2DObject, ...],
+    def produce_shape_binder(self, part_geometries: Tuple[Part.Part2DObject, ...],
                              prefix: str, tracing: str = "") -> Part.Feature:
         """Produce the shape binder needed for the extrude, pocket, hole, ... operations."""
         if tracing:
@@ -244,7 +243,7 @@ class _Extrude(_Operation):
         return self._Depth
 
     # _Extrude.produce():
-    def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
+    def produce(self, tracing: str = "") -> Tuple[str, ...]:
         """Produce the Extrude."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
@@ -266,15 +265,13 @@ class _Extrude(_Operation):
 
             binder_prefix: str = f"{mount.Name}_{self.Name}"
             shape_binder: Part.Feature = self.produce_shape_binder(
-                context.copy(), tuple(part_geometries), binder_prefix, tracing=next_tracing)
+                tuple(part_geometries), binder_prefix, tracing=next_tracing)
             assert isinstance(shape_binder, Part.Feature)
             shape_binder.Visibility = False
 
-            # Extract *body* and *normal* from *context*:
+            # Perform The Extrude operation:
             body: Part.BodyBase = mount.Body
             mount_normal: Vector = mount.Normal
-
-            # Perform The Extrude operation:
             pad_name: str = f"{mount.Name}_{self.Name}_Extrude"
             extrude: Part.Feature = body.newObject("PartDesign::Pad", pad_name)
             assert isinstance(extrude, Part.Feature)
@@ -357,7 +354,7 @@ class _Pocket(_Operation):
         return self.Name
 
     # _Pocket.produce():
-    def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
+    def produce(self, tracing: str = "") -> Tuple[str, ...]:
         """Produce the Pocket."""
         if tracing:
             print("{tracing}=>_Pocket.produce('{self.Name}')")
@@ -373,8 +370,7 @@ class _Pocket(_Operation):
             part_geometries.extend(geometry.produce(geometry_context, prefix))
 
         # Create the *shape_binder*:
-        shape_binder: Part.Feature = self.produce_shape_binder(
-            context, tuple(part_geometries), prefix)
+        shape_binder: Part.Feature = self.produce_shape_binder(tuple(part_geometries), prefix)
         assert isinstance(shape_binder, Part.Feature)
 
         # Create the *pocket* into *body*:
@@ -483,8 +479,6 @@ class FabMount(_Internal):
         # FreeCAD Vector metheds like to modify Vector contents; force copies beforehand:
         self._Orient = (self._Orient + copy).projectToPlane(
             self._Contact + copy, self._Normal + copy)
-        self._Context = {"mount_contact": "bogus"}
-        self._Context = {}
         self._GeometryContext = FabGeometryContext(self._Contact, self._Normal)
         self._AppDatumPlane = None
         self._GuiDatumPlane = None
@@ -556,16 +550,13 @@ class FabMount(_Internal):
         self._GeometryContext.set_geometry_group(geometry_group)
 
     # FabMount.produce():
-    def produce(self, context: Dict[str, Any], tracing: str = "") -> Tuple[str, ...]:
+    def produce(self, tracing: str = "") -> Tuple[str, ...]:
         """Create the FreeCAD DatumPlane used for the drawing support."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabMount.produce('{self.Name}')")
 
         if self.Construct:  # and len(self._Operations):
-            if tracing:
-                print(f"{tracing}>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-                print(f"{tracing}{sorted(context.keys())=} {len(self._Operations)=}")
             contact: Vector = self._Contact
             normal: Vector = self._Normal
             z_axis: Vector = Vector(0.0, 0.0, 1.0)
@@ -625,9 +616,6 @@ class FabMount(_Internal):
                 setattr(gui_datum_plane, "Visibility", False)
                 self._GuiDatum_plane = gui_datum_plane
 
-            # Provide datum_plane to lower levels of produce:
-            self._Context = context.copy()
-
             # Install the FabMount (i.e. *self*) and *datum_plane* into *model_file* prior
             # to recursively performing the *operations*:
             if tracing:
@@ -676,18 +664,9 @@ class FabMount(_Internal):
 
         errors: List[str] = []
         if self.Construct:
-            context: Dict[str, Any] = self._Context.copy()
-            context_keys: Tuple[str, ...]
-            if tracing:
-                context_keys = tuple(sorted(context.keys()))
-                print(f"{tracing}Before Extrude Context: {context_keys}")
             assert isinstance(shapes, FabGeometry)
             assert depth > 0.0
-
-            errors.extend(extrude.produce(context.copy(), next_tracing))
-            if tracing:
-                context_keys = tuple(sorted(context.keys()))
-                print(f"{tracing}After Extrude Context: {context_keys}")
+            errors.extend(extrude.produce(next_tracing))
 
         if tracing:
             print(f"{tracing}<=FabMount({self.Name}).extrude('{name}', *, "
@@ -707,17 +686,9 @@ class FabMount(_Internal):
 
         errors: List[str] = []
         if self.Construct:   # Construct OK
-            context: Dict[str, Any] = self._Context.copy()
-            context_keys: Tuple[str, ...]
-            if tracing:
-                context_keys = tuple(sorted(context.keys()))
-                print(f"{tracing}Before Pocket Context: {context_keys}")
             assert isinstance(shapes, FabGeometry)
             assert depth > 0.0
-            errors.extend(pocket.produce(context.copy(), next_tracing))
-            if tracing:
-                context_keys = tuple(sorted(context.keys()))
-                print(f"{tracing}After Pocket Context: {context_keys}")
+            errors.extend(pocket.produce(next_tracing))
 
         if tracing:
             print(f"{tracing}<=FabMount({self.Name}).pocket('{name}', *)=>|{len(errors)}|")
@@ -961,7 +932,7 @@ class FabSolid(FabNode):
         self._Mounts[name] = fab_mount
         assert len(self._Mounts) > 0, "FabSolid.mount()"
         if self.Construct:
-            fab_mount.produce({}, tracing=next_tracing)
+            fab_mount.produce(tracing=next_tracing)
 
         if tracing:
             print(f"{tracing}=>FabSolid({self.Name}).mount('{name}', ...)=>{fab_mount}")
@@ -1066,7 +1037,7 @@ class FabSolid(FabNode):
         return ()
 
 
-# TODO: Move this to FabNode class and switch to using a *context*.
+# TODO: Move this to FabNode class:
 def visibility_set(element: Any, new_value: bool = True, tracing: str = "") -> None:
     """Set the visibility of an element.
 

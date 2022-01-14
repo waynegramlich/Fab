@@ -33,37 +33,7 @@ Two notable attributes of the FabNode are:
    as type FabNode rather than type FabProject.
 See the FabNode documentation for further attributes.
 
-(The rest of this documentation belongs elsewhere.)
-
-The FabNode base class implements three recursive methods:
-
-* configure() -> Tuple[str, ...]:
-  Recursively propagate configuration values during the configuration phase.
-  All configured values are returns a tuple of strings of the form "FULL_NAME:PROPERTY_NAME:VALUE".
-* check(context) -> Tuple[str, ...]:
-  Recursively checks for errors during the check phase and returns a tuple of error strings.
-* build(context) -> Tuple[str, ...]:
-  Recursively used to build the model and generate any production files (CNC, STL, DWG, etc.)
-  Any errors and warnings are returned as a tuple of strings.
-
-There are currently 1 "invisible" and 3 user visible recursion phases:
-* Setup Phase:
-  This phase does consistency checking and fills in values such as FullPath.
-  There are no user hooks in this phase.
-* Configuration Phase:
-  The configuration phase is where constraints get propagated between FabNode's.  Each
-  FabNode recomputes its configuration value using a method called *configure*.  This method
-  can do this by read other values from other FabNode's elsewhere in FabRoot tree then
-  computing new values.  This is done repeatably until no more configuration values change or
-  until it is pretty clear that there is cyclic dependency will not converge.  When convergence
-  fails, the list of configuration values that did not stabilize are presented.  If there are no
-  convergence issues, the next phase occurs.
-* Check Phase:
-  The check phase recursively performs sanity checking for each FabNode in the tree.
-  The result is a list of error messages.  If the are no errors, the next phase occurs.
-* Build Phase:
-  The build phase recursively performs the build operations.  This includes generating
-  the FreeCAD solids/assemblies and the associated output files.
+(Briefly talk about produce() method here.)
 
 """
 

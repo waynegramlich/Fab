@@ -302,7 +302,7 @@ class _Circle(_Geometry):
         """Return line segment after moving it into Geometry group."""
         if tracing:
             print(f"{tracing}=>_Circle.produce()")
-        # Extract mount plane *contact* and *normal* from *context* for 2D projection:
+        # Extract mount plane *contact* and *normal* from *geometry_context* for 2D projection:
         plane_contact: Vector = geometry_context.PlaneContact
         plane_normal: Vector = geometry_context.PlaneNormal
         # FreeCAD Vector metheds like to modify Vector contents; force copies beforehand:
@@ -927,7 +927,7 @@ class FabPolygon(FabGeometry):
     def produce(self,
                 geometry_context: FabGeometryContext, prefix: str) -> Tuple[Part.Part2DObject, ...]:
         """Produce the FreeCAD objects needed for FabPolygon."""
-        # Extract mount plane *contact* and *normal* from *context*:
+        # Extract mount plane *contact* and *normal* from *geometry_context*:
         assert isinstance(geometry_context, FabGeometryContext), geometry_context
         plane_contact: Vector = geometry_context.PlaneContact
         plane_normal: Vector = geometry_context.PlaneNormal

@@ -200,7 +200,7 @@ class FabDocument(FabNode):
         self._AppDocument = app_document
         self._AppObject = app_document
 
-        # If the GUI is up, get the associated *gui_document* and save it into *context*:
+        # If the GUI is up, get the associated *gui_document* and hang onto it:
         if App.GuiUp:  # pragma: no unit cover
             gui_document = cast(Gui.Document, Gui.getDocument(self.Name))
             assert isinstance(gui_document, Gui.Document)  # Just to be sure.
