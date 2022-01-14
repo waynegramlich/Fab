@@ -70,12 +70,12 @@ class FabGroup(FabNode):
         """Preproduce a FabGroup."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>FabGroup.=({self.Name}).pre_produce()")
+            print(f"{tracing}=>FabGroup.=({self.Label}).pre_produce()")
 
         # Create the *group* that contains the children FabNode's:
         parent_object: Any = self.Up.AppObject
         group: App.DocumentObjectGroup = parent_object.addObject(
-            "App::DocumentObjectGroup", f"{self.Name}")
+            "App::DocumentObjectGroup", f"{self.Label}")
         assert isinstance(group, App.DocumentObjectGroup), group
         self.set_object(group)
 
@@ -84,7 +84,7 @@ class FabGroup(FabNode):
         visibility_set(group)
 
         if tracing:
-            print(f"{tracing}<=FabGroup({self.Name}).pre_produce()")
+            print(f"{tracing}<=FabGroup({self.Label}).pre_produce()")
         return ()
 
     # FabGroup.produce():
@@ -92,7 +92,7 @@ class FabGroup(FabNode):
         """Create the FreeCAD group object."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}<=>FabGroup({self.Name}).produce()")
+            print(f"{tracing}<=>FabGroup({self.Label}).produce()")
         return ()
 
     # FabGroup.is_group():
@@ -114,7 +114,7 @@ class FabAssembly(FabGroup):
         super().__post_init__()
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}<=>FabAssembly({self.Name}).__post_init__()")
+            print(f"{tracing}<=>FabAssembly({self.Label}).__post_init__()")
 
     # FabAssembly.is_assembly():
     def is_assembly(self) -> bool:
@@ -126,10 +126,10 @@ class FabAssembly(FabGroup):
         """Preproduce a FabAssembly"""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>FabAssembly.pre_produce({self.Name}).pre_produce()")
+            print(f"{tracing}=>FabAssembly.pre_produce({self.Label}).pre_produce()")
         errors: Tuple[str, ...] = super().pre_produce()
         if tracing:
-            print(f"{tracing}<=FabAssembly.pre_produce({self.Name}).pre_produce()")
+            print(f"{tracing}<=FabAssembly.pre_produce({self.Label}).pre_produce()")
         return errors
 
     # FabAssembly.produce():
@@ -191,24 +191,24 @@ class FabDocument(FabNode):
         """Produce FabDocument."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>FabDocument({self.Name}).pre_produce()")
+            print(f"{tracing}=>FabDocument({self.Label}).pre_produce()")
 
         # Create *app_document*:
         assert self.Construct
-        app_document = cast(App.Document, App.newDocument(self.Name))  # Why the cast?
+        app_document = cast(App.Document, App.newDocument(self.Label))  # Why the cast?
         assert isinstance(app_document, App.Document)  # Just to be sure.
+        self.set_object(app_document)
         self._AppDocument = app_document
-        self._AppObject = app_document
 
         # If the GUI is up, get the associated *gui_document* and hang onto it:
         if App.GuiUp:  # pragma: no unit cover
-            gui_document = cast(Gui.Document, Gui.getDocument(self.Name))
+            gui_document = cast(Gui.Document, Gui.getDocument(self.Label))
             assert isinstance(gui_document, Gui.Document)  # Just to be sure.
             self._GuiDocument = gui_document
             self._GuiObject = gui_document
 
         if tracing:
-            print(f"{tracing}<=FabDocument({self.Name}).pre_produce()")
+            print(f"{tracing}<=FabDocument({self.Label}).pre_produce()")
         return ()
 
     # FabDocument.is_document():
@@ -221,7 +221,7 @@ class FabDocument(FabNode):
         """Produce FabDocument."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}<=>FabDocument.produce('{self.Name}', *)")
+            print(f"{tracing}<=>FabDocument.produce('{self.Label}', *)")
         return ()
 
     # FabDocument.post_produce():
@@ -229,7 +229,7 @@ class FabDocument(FabNode):
         """Close the FabDocument."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>FabDocument({self.Name}).post_produce()")
+            print(f"{tracing}=>FabDocument({self.Label}).post_produce()")
 
         if self.Construct:  # Construct OK
             # Recompute and save:
@@ -239,7 +239,7 @@ class FabDocument(FabNode):
 
         if tracing:
             print(f"{tracing}Saved {self.FilePath}")
-            print(f"{tracing}<=FabDocument({self.Name}).post_produce()")
+            print(f"{tracing}<=FabDocument({self.Label}).post_produce()")
         return ()
 
 
@@ -297,7 +297,7 @@ class FabProject(FabNode):
         # Shared variables:
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>Project({self.Name}).run()")
+            print(f"{tracing}=>Project({self.Label}).run()")
         error: str
         errors: List[str]
         index: int
@@ -307,7 +307,7 @@ class FabProject(FabNode):
         # Phase 1: Iterate over tree in constraint mode:
         if tracing:
             print("")
-            print(f"{tracing}Project({self.Name}).run(): Phase 1: Constraints")
+            print(f"{tracing}Project({self.Label}).run(): Phase 1: Constraints")
         previous_constraints: Set[str] = set()
         differences: List[int] = []
         all_nodes: Tuple[FabNode, ...] = self._AllNodes
@@ -352,7 +352,7 @@ class FabProject(FabNode):
         self._Construct = True
         if tracing:
             print()
-            print(f"{tracing}Project({self.Name}).run(): Phase 2: Construct: {self._Construct=}")
+            print(f"{tracing}Project({self.Label}).run(): Phase 2: Construct: {self._Construct=}")
 
         errors = []
         if tracing:
@@ -374,7 +374,7 @@ class FabProject(FabNode):
                 error = errors[index]
                 print(f"  Error[{index}]: {error}")
         if tracing:
-            print(f"{tracing}<=Project({self.Name}).run()")
+            print(f"{tracing}<=Project({self.Label}).run()")
 
 # BoxSide:
 @dataclass
@@ -411,11 +411,11 @@ class BoxSide(FabSolid):
         super().__post_init__()
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>BoxSide({self.Name}).__post_init__()")
+            print(f"{tracing}=>BoxSide({self.Label}).__post_init__()")
             print(f"{tracing}{self.Contact=}")
             print(f"{tracing}{self.Normal=}")
             print(f"{tracing}{self.Orient=}")
-            print(f"{tracing}=>BoxSide({self.Name}).__post_init__()")
+            print(f"{tracing}=>BoxSide({self.Label}).__post_init__()")
         self.Screws = []
 
     # BoxSide.produce():
@@ -423,13 +423,13 @@ class BoxSide(FabSolid):
         """Produce BoxSide."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>BoxSide({self.Name}).produce()")
+            print(f"{tracing}=>BoxSide({self.Label}).produce()")
         box = cast(Box, self.Up)
         assert isinstance(box, Box)  # Redundant
         fasten: FabFasten = box.Fasten
         screws: List[FabJoin] = self.Screws
 
-        name: str = self.Name
+        name: str = self.Label
         contact: Vector = self.Contact
         copy: Vector = Vector()
         depth: float = self.Depth
@@ -482,7 +482,7 @@ class BoxSide(FabSolid):
         self.drill_joins(all_screws)
 
         if tracing:
-            print(f"{tracing}<=BoxSide({self.Name}).produce()")
+            print(f"{tracing}<=BoxSide({self.Label}).produce()")
         return ()
 
 # Box:
@@ -536,7 +536,7 @@ class Box(FabAssembly):
         super().__post_init__()
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>Box({self.Name}).__post_init__()")
+            print(f"{tracing}=>Box({self.Label}).__post_init__()")
 
         depth: float = self.Thickness
         material: str = self.Material
@@ -558,14 +558,14 @@ class Box(FabAssembly):
         self.Fasten = FabFasten("BoxFasten", "M3x.5", ())  # No options yet.
 
         if tracing:
-            print(f"{tracing}<=Box({self.Name}).__post_init__()")
+            print(f"{tracing}<=Box({self.Label}).__post_init__()")
 
     # Box.produce():
     def produce(self) -> Tuple[str, ...]:
         """Produce the Box."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>Box({self.Name}.produce())")
+            print(f"{tracing}=>Box({self.Label}.produce())")
 
         # Extract basic dimensions and associated constants:
         # material: str = self.Material
@@ -620,7 +620,7 @@ class Box(FabAssembly):
         west.HalfWidth = dzv - dwzv
 
         if tracing:
-            print(f"{tracing}<=Box({self.Name}.produce())")
+            print(f"{tracing}<=Box({self.Label}.produce())")
         return ()
 
     # Box.get_all_screws():
@@ -645,14 +645,14 @@ class TestSolid(FabSolid):
         super().__post_init__()
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}<=>TestSolid({self.Name}).__post_init__()")
+            print(f"{tracing}<=>TestSolid({self.Label}).__post_init__()")
 
     # TestSolid.produce()
     def produce(self) -> Tuple[str, ...]:
         tracing: str = self.Tracing
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>TestSolid({self.Name}).produce()")
+            print(f"{tracing}=>TestSolid({self.Label}).produce()")
 
         errors: List[str] = []
 
@@ -701,7 +701,7 @@ class TestSolid(FabSolid):
             top_mount.pocket("CenterCircle", center_circle, depth2)
 
         if tracing:
-            print(f"{tracing}<=TestSolid({self.Name}).produce()")
+            print(f"{tracing}<=TestSolid({self.Label}).produce()")
         return tuple(errors)
 
 
@@ -734,12 +734,12 @@ class TestDocument(FabDocument):
         super().__post_init__()
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>TestDocument({self.Name}).__post_init__()")
+            print(f"{tracing}=>TestDocument({self.Label}).__post_init__()")
         self._TestSolid = TestSolid("TestSolid", self, "HDPE", "red")
         self._Box = Box("TestBox", self, 200.0, 150.0, 75.0, 6.0, "HDPE", Vector(0, 0, 0))
         # self._TestAssembly = TestAssembly("TestAssembly", self)
         if tracing:
-            print(f"{tracing}<=TestDocument({self.Name}).__post_init__()")
+            print(f"{tracing}<=TestDocument({self.Label}).__post_init__()")
 
 
 # TestProject:
@@ -756,12 +756,12 @@ class TestProject(FabProject):
         self.set_tracing(" ")
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>TestProject({self.Name}).__post_init__()")
+            print(f"{tracing}=>TestProject({self.Label}).__post_init__()")
 
         self.Document = TestDocument("TestDocument", self, Path("/tmp/TestDocument.fcstd"))
 
         if tracing:
-            print(f"{tracing}<=TestProject({self.Name}).__post_init__()")
+            print(f"{tracing}<=TestProject({self.Label}).__post_init__()")
 
     # TestProject.new():
     @classmethod

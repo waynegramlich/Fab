@@ -792,7 +792,7 @@ class FabNode(FabBox):
     * All of the FabBox attributes.
 
     Attributes:
-    * *Name* (str): The FabNode name.
+    * *Label* (str): The FabNode name.
     * *Up* (FabNode): The FabNode parent.
     * *FullPath* (str):  The FabNode full path from the root.  (Filled in)
     * *Tracing* (str):
@@ -801,7 +801,7 @@ class FabNode(FabBox):
 
     """
 
-    _Name: str
+    _Label: str
     _Parent: "FabNode" = field(repr=False)  # Property is named Up, not Parent.
     _FullPath: str = field(init=False, repr=False)
     _Tracing: str = field(init=False, repr=False)
@@ -814,11 +814,11 @@ class FabNode(FabBox):
     # FabNode.__post_init__():
     def __post_init__(self) -> None:
         """Finish initializing FabNode."""
-        # print(f"=>FabNode.__post_init__(): {self.Name=}")
+        # print(f"=>FabNode.__post_init__(): {self.Label=}")
         super().__post_init__()
-        if not FabNode._is_valid_name(self.Name):
+        if not FabNode._is_valid_name(self.Label):
             raise RuntimeError(
-                f"FabNode.__post_init__({self.Name}) is not "
+                f"FabNode.__post_init__({self.Label}) is not "
                 "alphanumeric/underscore that starts with a letter")    # pragma: no unit test
 
         # Initialize the remaining fields to bogus values that get updated by the _setup() method.
@@ -828,7 +828,7 @@ class FabNode(FabBox):
         self._GuiObject = None
 
         parent: "FabNode" = self._Parent
-        name: str = self._Name
+        name: str = self._Label
         # assert child_name.is_valid()
         self._Tracing = ""
         if parent:
@@ -843,7 +843,7 @@ class FabNode(FabBox):
             parent_children: "OrderedDict[str, FabNode]" = parent._Children
             if name in parent_children:
                 raise RuntimeError(
-                    f"FabNode.__post_init__({self._Name}) is already a child of {parent._Name}")
+                    f"FabNode.__post_init__({self._Label}) is already a child of {parent._Label}")
             parent_children[name] = self
 
             # Keep a list if *all_node* in the same order that all FabNode's are created.
@@ -864,14 +864,14 @@ class FabNode(FabBox):
 
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}<=>FabNode({self.Name}).__post_init__()")
+            print(f"{tracing}<=>FabNode({self.Label}).__post_init__()")
 
     # FabNode.AppObject():
     @property
     def AppObject(self) -> Any:
         """Return FreeCAD Application Object for FabNode."""
         if self._AppObject is None:
-            raise RuntimeError(f"FabNode({self.Name}).AppObject(): No AppObject has been set.")
+            raise RuntimeError(f"FabNode({self.Label}).AppObject(): No AppObject has been set.")
         return self._AppObject
 
     # FabNode.GuiObject():
@@ -879,14 +879,14 @@ class FabNode(FabBox):
     def GuiObject(self) -> Any:
         """Return FreeCAD Gui Object for FabNode."""
         if self._GuiObject is None:
-            raise RuntimeError(f"FabNode({self.Name}).GuiObject(): No GuiObject has been set.")
+            raise RuntimeError(f"FabNode({self.Label}).GuiObject(): No GuiObject has been set.")
         return self._GuiObject
 
-    # FabNode.Name():
+    # FabNode.Label():
     @property
-    def Name(self) -> str:
+    def Label(self) -> str:
         """Return the FabNode name."""
-        return self._Name
+        return self._Label
 
     # FabNode.FullPath():
     @property
@@ -956,7 +956,7 @@ class FabNode(FabBox):
         """Empty FabNode pre_produce method to be over-ridden as needed."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}<=>FabNode({self.Name}).pre_produce()=>()")
+            print(f"{tracing}<=>FabNode({self.Label}).pre_produce()=>()")
         return ()
 
     # FabNode.produce():
@@ -964,7 +964,7 @@ class FabNode(FabBox):
         """Empty FabNode produce method to be over-ridden."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}<=>FabNode({self.Name}).produce()=>()")
+            print(f"{tracing}<=>FabNode({self.Label}).produce()=>()")
         return ()
 
     # FabNode.post_produce():
@@ -972,13 +972,13 @@ class FabNode(FabBox):
         """Empty FabNode post_produce method to be over-ridden as needed."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}<=>FabNode({self.Name}).post_produce()=>()")
+            print(f"{tracing}<=>FabNode({self.Label}).post_produce()=>()")
         return ()
 
     # FabNode.get_parent_document():
     def get_parent_document(self, tracing: str = "") -> "FabNode":
         if tracing:
-            print(f"{tracing}=>FabNode({self.Name}).get_gui_document()")
+            print(f"{tracing}=>FabNode({self.Label}).get_gui_document()")
 
         # Search up the document tree to find the FabDocument:
         node: FabNode = self
@@ -988,16 +988,16 @@ class FabNode(FabBox):
                 print(f"{tracing}{node=}")
         assert node.is_document()
         if tracing:
-            print(f"{tracing}=>FabNode({self.Name}).get_gui_document()=>{node}")
+            print(f"{tracing}=>FabNode({self.Label}).get_gui_document()=>{node}")
         return node
 
     # FabNode.set_object():
     def set_object(self, app_object: Any) -> None:
         """Set FabNode AppObject and GuiObject."""
         if self._AppObject:
-            raise RuntimeError(f"FabNode.set_object({self.Name}): Object is already set.")
+            raise RuntimeError(f"FabNode.set_object({self.Label}): Object is already set.")
         if app_object is None:
-            raise RuntimeError(f"FabNode.set_object({self.Name}): Object is None.")
+            raise RuntimeError(f"FabNode.set_object({self.Label}): Object is None.")
         self._AppObject = app_object
 
         if App.GuiUp:
@@ -1006,8 +1006,8 @@ class FabNode(FabBox):
             while not node.is_document() and not node.is_project():
                 node = node._Parent
             if node.is_document():
-                gui_document = cast(Gui.Document, Gui.getDocument(node.Name))
-                self._GuiObject: Any = gui_document.getObject(app_object.Name)
+                gui_document = cast(Gui.Document, Gui.getDocument(node.Label))
+                self._GuiObject: Any = gui_document.getObject(app_object.Label)
 
     # FabNode.set_tracing():
     def set_tracing(self, tracing: str):
@@ -1025,7 +1025,7 @@ class FabNode(FabBox):
 
         """
         self._Tracing = tracing
-        print(f"{tracing}<=>FabNode({self.Name}).set_tracing('{tracing}')")
+        print(f"{tracing}<=>FabNode({self.Label}).set_tracing('{tracing}')")
 
     # FabNode.probe()
     def probe(self, label: str) -> None:
@@ -1047,7 +1047,7 @@ class FabNode(FabBox):
         """Recursively walk FabNode Tree performing produce/post_produce operations."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>FabNode({self.Name})_produce_walk()")
+            print(f"{tracing}=>FabNode({self.Label})_produce_walk()")
 
         # Process the FabNode dispatching on *mode*:
         errors: List[str] = []
@@ -1064,7 +1064,7 @@ class FabNode(FabBox):
             errors.extend(child._produce_walk(mode))
 
         if tracing:
-            print(f"{tracing}<=FabNode({self.Name})._produce_walk()=>|{len(errors)}|")
+            print(f"{tracing}<=FabNode({self.Label})._produce_walk()=>|{len(errors)}|")
         return tuple(errors)
 
     # FabNode.configure():
@@ -1077,9 +1077,9 @@ class FabNode(FabBox):
     def configurations_append(self, configurations: List[str], tracing: str = "") -> None:
         """Append specified attributes to configurations list."""
         if tracing:
-            print(f"{tracing}=>FabNode.configurations_append('{self.Name}', *")
+            print(f"{tracing}=>FabNode.configurations_append('{self.Label}', *")
         # attribute_name: str
-        # for attribute_name in self.AttributeNames:
+        # for attribute_name in self.AttributeLabels:
         #     if tracing:
         #         print(f"{tracing}Process '{attribute_name}'")
         #     if not isinstance(attribute_name, str):
@@ -1091,7 +1091,7 @@ class FabNode(FabBox):
         #     value: Any = getattr(self, attribute_name)
         #     configurations.append(f"{self.FullPath}.{attribute_name}:{value}")
         if tracing:
-            print(f"{tracing}<=FabNode.configurations_append('{self.Name}', *)=>"
+            print(f"{tracing}<=FabNode.configurations_append('{self.Label}', *)=>"
                   f"|{len(configurations)}|")
 
     @staticmethod
@@ -1107,16 +1107,16 @@ class FabNode(FabBox):
     #     """Set up the FabNode and its children."""
     #     next_tracing: str = tracing + " " if tracing else ""
     #     if tracing:
-    #         print(f"{tracing}=>FabNode._setup('{self.Name}', '{parent.Name}', *)")
+    #         print(f"{tracing}=>FabNode._setup('{self.Label}', '{parent.Label}', *)")
 
     #     # Setup *FullPath* and *Parent*:
     #     if self is root:
     #         # *root* is specical:
     #         self._FullPath = ""
     #         self._Parent = root
-    #         self._Name = "Root"
+    #         self._Label = "Root"
     #     else:
-    #         self._FullPath = self.Name if parent is root else f"{parent.FullPath}.{self.Name}"
+    #         self._FullPath = self.Label if parent is root else f"{parent.FullPath}.{self.Label}"
     #         self._Parent = parent
 
     #     # Make sure that the FabNode tree is a DAG (Directed Acyclic Graph) with no duplicates.
@@ -1150,7 +1150,7 @@ class FabNode(FabBox):
     #     #                     print(f"{tracing}Element[{index}]: {element=}")
     #     #                 if isinstance(attribute, FabNode):
     #     #                     if tracing:
-    #     #                         print(f"{tracing}Match: {attribute.Name}")
+    #     #                         print(f"{tracing}Match: {attribute.Label}")
     #     #                     children_nodes.append(attribute)
     #     #         elif isinstance(attribute, (str, int, float, bool, Vector)):
     #     #             trackable_names.append(name)
@@ -1161,14 +1161,14 @@ class FabNode(FabBox):
     #     child_names: Set[str] = set()
     #     child: FabNode
     #     for child in self._Children:
-    #         name = child.Name
+    #         name = child.Label
     #         if name in child_names:
     #             raise RuntimeError("'{name}' occurs more then once in '{self.FullPath}'")
     #         child_names.add(name)
     #         child._setup(dag_table, self, root, tracing=next_tracing)
 
     #     if tracing:
-    #         print(f"{tracing}<=FabNode._setup('{self.Name}', '{parent.Name}', *)")
+    #         print(f"{tracing}<=FabNode._setup('{self.Label}', '{parent.Label}', *)")
 
     # # FabNode:
     # def __getitem__(self, key: Union[str, Tuple[str, type]]) -> Any:
@@ -1209,7 +1209,7 @@ class FabNode(FabBox):
     #         elif dispatch == ".":
     #             index += 1
     #         elif dispatch.isalpha():
-    #             # Extract the Node or Attribute Name:
+    #             # Extract the Node or Attribute Label:
     #             dot_index: int = path.find(".", index + 1)
     #             name: str
     #             if dot_index > 0:
@@ -1241,16 +1241,16 @@ class FabNode(FabBox):
 #     def configure(self, tracing: str = "") -> None:
 #         """Configure MyNode1."""
 #         if tracing:
-#             print(f"{tracing}=>MyNode1.configure('{self.Name}'")
+#             print(f"{tracing}=>MyNode1.configure('{self.Label}'")
 #         assert isinstance(self.Parent, FabRoot)
 #         b: int = cast(int, self[("^MyNode2.B", int)])
 #         c: int = cast(int, self[("^MyNode3.C", int)])
 #         d: int = cast(int, self[("^MyNode2.MyNode2A.D", int)])
 #         e: int = cast(int, self[("^MyNode2.MyNode2B.E", int)])
-#         self.AttributeNames = ("A",)
+#         self.AttributeLabels = ("A",)
 #         self.A = b + c + d + e
 #         if tracing:
-#             print(f"{tracing}<=MyNode1.configure('{self.Name}')")
+#             print(f"{tracing}<=MyNode1.configure('{self.Label}')")
 #
 #
 # @dataclass
@@ -1263,13 +1263,13 @@ class FabNode(FabBox):
 #         """Configure MyNode2."""
 #         # next_tracing: str = tracing + " " if tracing else ""
 #         if tracing:
-#             print(f"{tracing}=>MyNode2.configure('{self.Name}')")
+#             print(f"{tracing}=>MyNode2.configure('{self.Label}')")
 #         c = cast(int, self[("^MyNode3.C", int)])
 #         d = cast(int, self[("^MyNode2.MyNode2A.D")])
-#         self.AttributeNames = ("B",)
+#         self.AttributeLabels = ("B",)
 #         self.B = c + d
 #         if tracing:
-#             print(f"{tracing}<=MyNode2.configure('{self.Name}')")
+#             print(f"{tracing}<=MyNode2.configure('{self.Label}')")
 #
 #
 # @dataclass
@@ -1281,12 +1281,12 @@ class FabNode(FabBox):
 #     def configure(self, tracing: str = "") -> None:
 #         """Configure MyNode2A."""
 #         if tracing:
-#             print(f"{tracing}=>MyNode2A.configure('{self.Name}')")
+#             print(f"{tracing}=>MyNode2A.configure('{self.Label}')")
 #         e = cast(int, self["^MyNode2B.E"])
-#         self.AttributeNames = ("D",)
+#         self.AttributeLabels = ("D",)
 #         self.D = e + 1
 #         if tracing:
-#             print(f"{tracing}<=MyNode2A.configure('{self.Name}')")
+#             print(f"{tracing}<=MyNode2A.configure('{self.Label}')")
 #
 #
 # @dataclass
@@ -1298,12 +1298,12 @@ class FabNode(FabBox):
 #     def configure(self, tracing: str = "") -> None:
 #         """Configure MyNode2B."""
 #         if tracing:
-#             print(f"{tracing}=>MyNode2B.configure('{self.Name}')")
+#             print(f"{tracing}=>MyNode2B.configure('{self.Label}')")
 #         _ = cast(int, self["^^MyNode3.C"])
-#         self.AttributeNames = ("E",)
+#         self.AttributeLabels = ("E",)
 #         self.E = 1
 #         if tracing:
-#             print(f"{tracing}<=MyNode2B.configure('{self.Name}')")
+#             print(f"{tracing}<=MyNode2B.configure('{self.Label}')")
 #
 #
 # @dataclass
@@ -1315,11 +1315,11 @@ class FabNode(FabBox):
 #     def configure(self, tracing: str = "") -> None:
 #         """Configure MyNode3."""
 #         if tracing:
-#             print(f"{tracing}=>MYNode1.configure('{self.Name}')")
-#         self.AttributeNames = ("C",)
+#             print(f"{tracing}=>MYNode1.configure('{self.Label}')")
+#         self.AttributeLabels = ("C",)
 #         self.C = 1
 #         if tracing:
-#             print(f"{tracing}<=MYNode2.configure('{self.Name}')")
+#             print(f"{tracing}<=MYNode2.configure('{self.Label}')")
 #
 #
 # def _unit_tests(tracing: str = "") -> None:

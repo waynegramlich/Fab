@@ -886,21 +886,21 @@ class FabSolid(FabNode):
         super().__post_init__()
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>FabSolid({self.Name}).__post_init__()")
+            print(f"{tracing}=>FabSolid({self.Label}).__post_init__()")
         # TODO: Do additional type checking here:
         self._Mounts = {}
         self._GeometryGroup = None
         self._Body = None
 
         if tracing:
-            print(f"{tracing}<=FabSolid({self.Name}).__post_init__()")
+            print(f"{tracing}<=FabSolid({self.Label}).__post_init__()")
 
     # FabSolid.Body():
     @property
     def Body(self) -> Part.BodyBase:
         """Return BodyBase for FabSolid."""
         if not self._Body:
-            raise RuntimeError(f"FabSolid.Body({self.Name}).Body(): body not set yet")
+            raise RuntimeError(f"FabSolid.Body({self.Label}).Body(): body not set yet")
         return self._Body
 
     # FabSolid.set_body():
@@ -925,7 +925,7 @@ class FabSolid(FabNode):
         """Return a new FabMount."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>FabSolid({self.Name}).mount('{name}', ...)")
+            print(f"{tracing}=>FabSolid({self.Label}).mount('{name}', ...)")
 
         fab_mount: FabMount = FabMount(name, self, contact, normal, orient, depth)
         self._Mounts[name] = fab_mount
@@ -934,7 +934,7 @@ class FabSolid(FabNode):
             fab_mount.produce(tracing=next_tracing)
 
         if tracing:
-            print(f"{tracing}=>FabSolid({self.Name}).mount('{name}', ...)=>{fab_mount}")
+            print(f"{tracing}=>FabSolid({self.Label}).mount('{name}', ...)=>{fab_mount}")
         return fab_mount
 
     # FabSolid.drill_joins():
@@ -960,7 +960,7 @@ class FabSolid(FabNode):
         tracing: str = self.Tracing
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>FabSolid({self.Name}).drill_joins(|{len(joins)}|, *)")
+            print(f"{tracing}=>FabSolid({self.Label}).drill_joins(|{len(joins)}|, *)")
 
         if self.Construct:
             if not mounts:
@@ -969,19 +969,19 @@ class FabSolid(FabNode):
             mount: FabMount
             for mount in mounts:
                 assert mount._Solid is self, (
-                    f"FabMount({mount.Name}) of FabSolid({mount.Name} can not be "
-                    f"used with FabSolid({self.Name})")
+                    f"FabMount({mount.Name}) of FabSolid({self.Label} can not be "
+                    f"used with FabSolid({self.Label})")  # TODO: is this right?
                 mount.drill_joins("BoxJoins", joins, tracing=next_tracing)
 
         if tracing:
-            print(f"{tracing}<=FabSolid({self.Name}).drill_joins(|{len(joins)}|, *)")
+            print(f"{tracing}<=FabSolid({self.Label}).drill_joins(|{len(joins)}|, *)")
 
     # FabSolid.pre_produce():
     def pre_produce(self) -> Tuple[str, ...]:
         """Produce an Empty FabSolid prior to performing operations."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>FabSolid.pre_produce('{self.Name}')")
+            print(f"{tracing}=>FabSolid.pre_produce('{self.Label}')")
 
         # Only do work in construct mode:
         assert self.Construct
@@ -990,7 +990,7 @@ class FabSolid(FabNode):
         parent: FabNode = self.Up
         parent_object: Any = parent._AppObject
         geometry_group: App.DocumentObjectGroup
-        geometry_group_name: str = f"{self.Name}_Geometry"
+        geometry_group_name: str = f"{self.Label}_Geometry"
         if isinstance(parent_object, App.Document):
             geometry_group = parent_object.addObject(
                 "App::DocumentObjectGroup", geometry_group_name)
@@ -1003,11 +1003,11 @@ class FabSolid(FabNode):
         # Create the *body*
         body: Part.BodyBase
         if isinstance(parent_object, App.Document):
-            body = parent_object.addObject("PartDesign::Body", self.Name)
+            body = parent_object.addObject("PartDesign::Body", self.Label)  # TODO: add hash
         else:
             body = parent_object.newObject("PartDesign::Body")
-            body.Label = self.Name
         self.set_body(body)
+        body.Label = self.Label
 
         # Copy "view" fields from *body* to *gui_body* (if we are in graphical mode):
         if App.GuiUp:  # pragma: no cover
@@ -1032,7 +1032,7 @@ class FabSolid(FabNode):
             # model_file.ViewObject = view_object
 
         if tracing:
-            print(f"{tracing}<=FabSolid.pre_produce('{self.Name}')")
+            print(f"{tracing}<=FabSolid.pre_produce('{self.Label}')")
         return ()
 
 
