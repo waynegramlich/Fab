@@ -961,8 +961,7 @@ class FabSolid(FabNode):
         self._Mounts[name] = fab_mount
         assert len(self._Mounts) > 0, "FabSolid.mount()"
         if self.Construct:
-            context: Dict[str, Any] = self.Context
-            fab_mount.produce(context, tracing=next_tracing)
+            fab_mount.produce({}, tracing=next_tracing)
 
         if tracing:
             print(f"{tracing}=>FabSolid({self.Name}).mount('{name}', ...)=>{fab_mount}")
@@ -1016,23 +1015,10 @@ class FabSolid(FabNode):
 
         # Only do work in construct mode:
         assert self.Construct
-        context: Dict[str, Any] = self.Context
-        context_keys: Tuple[str, ...]
-        if tracing:
-            context_keys = tuple(sorted(context.keys()))
-            print(f"{tracing}Before Context: {context_keys=}")
 
         # Create the *geometry_group* that contains all of the 2D geometry (line, arc, circle.):
         parent: FabNode = self.Up
-        parent_object: Any = context["parent_object"]
-        parent_name: str = context["parent_name"]
-        if parent_object is not parent._AppObject:
-            print(f"{parent_name=}")
-            print(f"{parent=}")
-            print(f"{parent._AppObject=}")
-            print(f"{parent_object=}")
-            # assert False
-
+        parent_object: Any = parent._AppObject
         geometry_group: App.DocumentObjectGroup
         geometry_group_name: str = f"{self.Name}_Geometry"
         if isinstance(parent_object, App.Document):
@@ -1042,18 +1028,10 @@ class FabSolid(FabNode):
             geometry_group = parent_object.newObject("App::DocumentObjectGroup")
             geometry_group.Label = geometry_group_name
         self._GeometryGroup = geometry_group
-
         geometry_group.Visibility = False
-
-        # Make *geometry_group* available to all FabMount's:
-        # mount: FabMount
-        # assert len(self._Mounts) > 0
-        # for mount in self._Mounts.values():
-        #     mount.set_geometry_group(geometry_group)
 
         # Create the *body*
         body: Part.BodyBase
-
         if isinstance(parent_object, App.Document):
             body = parent_object.addObject("PartDesign::Body", self.Name)
         else:
@@ -1084,8 +1062,6 @@ class FabSolid(FabNode):
             # model_file.ViewObject = view_object
 
         if tracing:
-            context_keys = tuple(sorted(context.keys()))
-            print(f"{tracing}After Context: {context_keys=}")
             print(f"{tracing}<=FabSolid.pre_produce('{self.Name}')")
         return ()
 

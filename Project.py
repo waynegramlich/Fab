@@ -30,7 +30,7 @@ import Embed
 Embed.setup()
 
 from dataclasses import dataclass, field
-from typing import Any, cast, Dict, List, Optional, Set, Tuple
+from typing import Any, cast, List, Optional, Set, Tuple
 from pathlib import Path
 
 
@@ -83,10 +83,6 @@ class FabGroup(FabNode):
         self.Group = group
         visibility_set(group)
 
-        context: Dict[str, Any] = self.Context
-        context["parent_object"] = group
-        context["parent_name"] = self.Name
-
         if tracing:
             print(f"{tracing}<=FabGroup({self.Name}).pre_produce()")
         return ()
@@ -96,15 +92,7 @@ class FabGroup(FabNode):
         """Create the FreeCAD group object."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>FabGroup({self.Name}).produce()")
-
-        child: FabNode
-        context: Dict[str, Any] = self.Context
-        context["parent_object"] = self.Group
-        context["parent_name"] = self.Name
-
-        if tracing:
-            print(f"{tracing}<=FabGroup({self.Name}).produce()")
+            print(f"{tracing}<=>FabGroup({self.Name}).produce()")
         return ()
 
     # FabGroup.is_group():
@@ -219,11 +207,6 @@ class FabDocument(FabNode):
             self._GuiDocument = gui_document
             self._GuiObject = gui_document
 
-        # TODO: Delete this:
-        context: Dict[str, Any] = self.Context
-        context["parent_object"] = app_document
-        context["parent_name"] = app_document.Name
-
         if tracing:
             print(f"{tracing}<=FabDocument({self.Name}).pre_produce()")
         return ()
@@ -238,36 +221,8 @@ class FabDocument(FabNode):
         """Produce FabDocument."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>FabDocument.produce('{self.Name}', *)")
-
-        # Create the new *app_document*:
-        errors: List[str] = []
-        if self.Construct:  # Construct OK
-            context: Dict[str, Any] = self.Context
-            context_keys: Tuple[str, ...]
-            if tracing:
-                context_keys = tuple(sorted(context.keys()))
-                print(f"{tracing}Before Context: {context_keys}")
-
-            # Create *app_document* and save it away in both *self* and *context*:
-            # app_document = cast(App.Document, App.newDocument(self.Name))  # Why the cast?
-            # assert isinstance(app_document, App.Document)  # Just to be sure.
-            # self._AppDocument = app_document
-            # self._AppObject = app_document
-            app_document: App.Document = self._AppDocument
-            context["parent_object"] = app_document
-            context["parent_name"] = app_document.Name
-
-            # If the GUI is up, get the associated *gui_document* and save it into *context*:
-            # if App.GuiUp:  # pragma: no unit cover
-            #     gui_document = cast(Gui.Document, Gui.getDocument(self.Name))
-            #     assert isinstance(gui_document, Gui.Document)  # Just to be sure.
-            #     self._GuiDocument = gui_document
-            #     self._GuiObject = gui_document
-
-        if tracing:
-            print(f"{tracing}<=FabDocument.produce('{self.Name}', *)")
-        return tuple(errors)
+            print(f"{tracing}<=>FabDocument.produce('{self.Name}', *)")
+        return ()
 
     # FabDocument.post_produce():
     def post_produce(self) -> Tuple[str, ...]:
@@ -707,17 +662,8 @@ class TestSolid(FabSolid):
         if True or self.Construct:
             origin: Vector = Vector()
             normal: Vector = Vector(0, 0, 1)
-            context: Dict[str, Any] = self._Context
-            assert isinstance(context, dict)
-            context_keys: Tuple[str, ...]
-            if tracing:
-                context_keys = tuple(sorted(context.keys()))
-                print(f"{tracing}{origin=} {self.TNE=} {self.BSW=} {self.DT=}")
             top_mount: FabMount = self.mount(
                 "Top", origin, self.DT, self.DN, depth, tracing=tracing)
-            if tracing:
-                context_keys = tuple(sorted(context.keys()))
-                print(f"{tracing}After mount context: {context_keys}")
 
             # Perform the first Extrude:
             z_offset: float = 0.0

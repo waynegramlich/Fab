@@ -44,16 +44,6 @@ Recursively checks for errors during the check phase and returns a tuple of erro
 Recursively used to build the model and generate any production files (CNC, STL, DWG, etc.)
 Any errors and warnings are returned as a tuple of strings.</li>
 </ul>
-<p>The <em>check</em> and <em>build</em> methods take an <em>context</em> argument which is a dictionarly (Dict[str, Any].)
-Values are inserted to communication information from a high node to the lower tree nodes.
-The higher level node stuffs a value into the dictionary and lower values can read them back.
-Any values stuffed into a lower level are not accessed by the upper level because by convention
-each recursion step makes a shallow dictionary copy of the context before passing down to the
-next level down.  This is shown below:</p>
-<pre><code> # Iterate across children FabNode's:
- for child in self.Children:
-     child.visit(context.copy(), ...)
-</code></pre>
 <p>There are currently 1 &quot;invisible&quot; and 3 user visible recursion phases:</p>
 <ul>
 <li>Setup Phase:
@@ -229,7 +219,6 @@ Inherited Attributes:</p>
 <li><em>Name</em> (str): The FabNode name.</li>
 <li><em>Up</em> (FabNode): The FabNode parent.</li>
 <li><em>FullPath</em> (str):  The FabNode full path from the root.  (Filled in)</li>
-<li><em>Context</em> (Dict[str, Any]): A context dictionary used during production.</li>
 <li><em>Tracing</em> (str):
 A non-empty indentation string when tracing is enabled.
 This field is recursively set when <em>set_tracing</em>() is explicitly set.</li>

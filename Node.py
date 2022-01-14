@@ -46,17 +46,6 @@ The FabNode base class implements three recursive methods:
   Recursively used to build the model and generate any production files (CNC, STL, DWG, etc.)
   Any errors and warnings are returned as a tuple of strings.
 
-The *check* and *build* methods take an *context* argument which is a dictionarly (Dict[str, Any].)
-Values are inserted to communication information from a high node to the lower tree nodes.
-The higher level node stuffs a value into the dictionary and lower values can read them back.
-Any values stuffed into a lower level are not accessed by the upper level because by convention
-each recursion step makes a shallow dictionary copy of the context before passing down to the
-next level down.  This is shown below:
-
-     # Iterate across children FabNode's:
-     for child in self.Children:
-         child.visit(context.copy(), ...)
-
 There are currently 1 "invisible" and 3 user visible recursion phases:
 * Setup Phase:
   This phase does consistency checking and fills in values such as FullPath.
@@ -86,7 +75,7 @@ import Embed
 Embed.setup()
 
 from dataclasses import dataclass, field
-from typing import Any, cast, Dict, List, Sequence, Tuple, Union
+from typing import Any, cast, List, Sequence, Tuple, Union
 from FreeCAD import BoundBox, Placement, Vector  # type: ignore
 import FreeCAD as App  # type: ignore
 import FreeCADGui as Gui  # type: ignore
@@ -836,7 +825,6 @@ class FabNode(FabBox):
     * *Name* (str): The FabNode name.
     * *Up* (FabNode): The FabNode parent.
     * *FullPath* (str):  The FabNode full path from the root.  (Filled in)
-    * *Context* (Dict[str, Any]): A context dictionary used during production.
     * *Tracing* (str):
       A non-empty indentation string when tracing is enabled.
       This field is recursively set when *set_tracing*() is explicitly set.
@@ -846,7 +834,6 @@ class FabNode(FabBox):
     _Name: str
     _Parent: "FabNode" = field(repr=False)  # Property is named Up, not Parent.
     _FullPath: str = field(init=False, repr=False)
-    _Context: Dict[str, Any] = field(init=False, repr=False)
     _Tracing: str = field(init=False, repr=False)
     # The next fields are private and are not user accessible via property accessors:
     _Children: "OrderedDict[str, FabNode]" = field(init=False, repr=False)
@@ -867,7 +854,6 @@ class FabNode(FabBox):
         # Initialize the remaining fields to bogus values that get updated by the _setup() method.
         self._Children = OrderedDict()
         self._FullPath = "??"
-        self._Context = {}
         self._AppObject = None
         self._GuiObject = None
 
@@ -953,12 +939,6 @@ class FabNode(FabBox):
     def Tracing(self) -> str:
         """Return the FabNode tracing indentation string."""
         return self._Tracing
-
-    # FabNode.Context():
-    @property
-    def Context(self) -> Dict[str, Any]:
-        """Return the Context dictionary."""
-        return self._Context
 
     # FabNode.Construct():
     @property
@@ -1099,12 +1079,8 @@ class FabNode(FabBox):
         if tracing:
             print(f"{tracing}=>FabNode({self.Name})_produce_walk()")
 
-        # Accumulate all *errors* and make sure each lower level gets a Context copy:
-        if self._Parent is self:
-            self._Context = {}
-        context: Dict[str, Any] = self._Context
+        # Process the FabNode dispatching on *mode*:
         errors: List[str] = []
-
         if mode == self.WALK_PRE_PRODUCE:
             errors.extend(self.pre_produce())
         elif mode == self.WALK_PRODUCE:
@@ -1112,27 +1088,10 @@ class FabNode(FabBox):
         elif mode == self.WALK_POST_PRODUCE:
             errors.extend(self.post_produce())
 
-        # Step 1: Call pre_produce() which is allowed to access and modify its *context*.
-        # In general, end-users are not expect to override pre_produce().
-        # errors.extend(self.pre_produce())
-
-        # Step 3: Call produce() which is allowed to access and modify its *context* by accessing
-        # the `self.Context` property.  In general, end-user *ARE* expected to override produce*().
-        # errors.extend(self.produce())
-
-        # Step 2: Visit each *child* giving them a copy of the *context* which may have
-        # been modified in step 1.
-
+        # Visit each *child* recusively:
         child: FabNode
         for child in self._Children.values():
-            child._Context = context.copy()
             errors.extend(child._produce_walk(mode))
-
-        # Setp 3: Now that eahc *child* has been visited.  Call post_produce() to do any
-        # clean up steps (e.g. close files, recomptes, etc.)  Since each *child* got its
-        # own copy of the *context*, this *context* is the same as it was prior to step 2.
-        # In general, end-users are not expect to override post_produce().
-        # self.post_produce()
 
         if tracing:
             print(f"{tracing}<=FabNode({self.Name})._produce_walk()=>|{len(errors)}|")
