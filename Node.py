@@ -805,8 +805,8 @@ class FabNode(FabBox):
     _Parent: "FabNode" = field(repr=False)  # Property is named Up, not Parent.
     _FullPath: str = field(init=False, repr=False)
     _Tracing: str = field(init=False, repr=False)
-    # The next fields are private and are not user accessible via property accessors:
     _Children: "OrderedDict[str, FabNode]" = field(init=False, repr=False)
+    # The next fields are private and are not user accessible via property accessors:
     _Project: "FabNode" = field(init=False, repr=False)
     _AppObject: Any = field(init=False, repr=False)
     _GuiObject: Any = field(init=False, repr=False)
@@ -874,6 +874,18 @@ class FabNode(FabBox):
             raise RuntimeError(f"FabNode({self._Label}).AppObject(): No AppObject has been set.")
         return self._AppObject
 
+    # FabNode.Construct():
+    @property
+    def Construct(self) -> bool:
+        """Return the FabNode construct mode."""
+        return self._Project.get_construct()
+
+    # FabNode.Children():
+    @property
+    def Children(self) -> Tuple["FabNode", ...]:
+        """Return the FabNode construct mode."""
+        return tuple(self._Children.values())
+
     # FabNode.GuiObject():
     @property
     def GuiObject(self) -> Any:
@@ -882,22 +894,17 @@ class FabNode(FabBox):
             raise RuntimeError(f"FabNode({self._Label}).GuiObject(): No GuiObject has been set.")
         return self._GuiObject
 
-    # FabNode.Label():
-    @property
-    def Label(self) -> str:
-        """Return the FabNode name."""
-        return self._Label
-
     # FabNode.FullPath():
     @property
     def FullPath(self) -> str:
         """Return the FabNode full path."""
         return self._FullPath
 
+    # FabNode.Label():
     @property
-    def Up(self) -> "FabNode":
-        """Return the FabNode parent."""
-        return self._Parent
+    def Label(self) -> str:
+        """Return the FabNode name."""
+        return self._Label
 
     @property
     def Project(self) -> "FabNode":
@@ -910,11 +917,10 @@ class FabNode(FabBox):
         """Return the FabNode tracing indentation string."""
         return self._Tracing
 
-    # FabNode.Construct():
     @property
-    def Construct(self) -> bool:
-        """Return the FabNode construct mode."""
-        return self._Project.get_construct()
+    def Up(self) -> "FabNode":
+        """Return the FabNode parent."""
+        return self._Parent
 
     # FabNode.is_project():
     def is_project(self) -> bool:
@@ -991,23 +997,45 @@ class FabNode(FabBox):
             print(f"{tracing}=>FabNode({self._Label}).get_gui_document()=>{node}")
         return node
 
-    # FabNode.set_object():
-    def set_object(self, app_object: Any) -> None:
-        """Set FabNode AppObject and GuiObject."""
+    # FabNode.set_app_object_only():
+    def set_app_object_only(self, app_object: Any) -> None:
+        """Set FabNode AppObject only."""
         if self._AppObject:
-            raise RuntimeError(f"FabNode.set_object({self._Label}): Object is already set.")
+            raise RuntimeError(f"FabNode.set_object({self._Label}): App Object is already set.")
         if app_object is None:
-            raise RuntimeError(f"FabNode.set_object({self._Label}): Object is None.")
+            raise RuntimeError(f"FabNode.set_object({self._Label}): App Object is None.")
         self._AppObject = app_object
 
+    # FabNode.set_gui_object_only():
+    def set_gui_object_only(self, gui_object: Any) -> None:
+        """Set FabNode GuiObject only."""
+        if self._GuiObject:
+            raise RuntimeError(f"FabNode.set_object({self._Label}): Gui Object is already set.")
+        if gui_object is None:
+            raise RuntimeError(f"FabNode.set_object({self._Label}): Gui Object is None.")
+        self._GuiObject = gui_object
+
+    # FabNode.set_object():
+    def set_object(self, app_object: Any) -> None:
+        """Set both AppObject and GuiObject in FabNode."""
+        self.set_app_object_only(app_object)
         if App.GuiUp:
             # Search up the document tree to find the FabDocument:
-            node: FabNode = self
-            while not node.is_document() and not node.is_project():
-                node = node._Parent
-            if node.is_document():
-                gui_document = cast(Gui.Document, Gui.getDocument(node.Label))
-                self._GuiObject: Any = gui_document.getObject(app_object.Label)
+            search_node: FabNode = self
+            while not search_node.is_document() and not search_node.is_project():
+                search_node = search_node._Parent
+
+            app_document: Any = search_node._AppObject
+            if not isinstance(app_document, App.Document):
+                raise RuntimeError(
+                    f"FabNode.set_object({self._Label}): No App.Document {app_document}")
+
+            gui_document: Any = Gui.getDocument(app_document.Name)
+            if not isinstance(gui_document, Gui.Document):
+                raise RuntimeError(
+                    f"FabNode.set_object({self._Label}): No Gui.Document {app_document}")
+
+            self._GuiObject: Any = gui_document.getObject(app_object.Name)
 
     # FabNode.set_tracing():
     def set_tracing(self, tracing: str):

@@ -988,10 +988,13 @@ class FabSolid(FabNode):
 
         # Create the *geometry_group* that contains all of the 2D geometry (line, arc, circle.):
         parent: FabNode = self.Up
-        parent_object: Any = parent._AppObject
+        parent_object: Any = parent.AppObject
         geometry_group: App.DocumentObjectGroup
         geometry_group_name: str = f"{self.Label}_Geometry"
+        # if parent.is_document():
         if isinstance(parent_object, App.Document):
+            if tracing:
+                print(f"{tracing}=>FabSolid.pre_produce('{self.Label}'): {parent_object}")
             geometry_group = parent_object.addObject(
                 "App::DocumentObjectGroup", geometry_group_name)
         else:

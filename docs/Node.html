@@ -54,11 +54,13 @@ See the FabNode documentation for further attributes.</li>
 <li>2.8 <a href="#node----produce">produce()</a>: Empty FabNode produce method to be over-ridden.</li>
 <li>2.9 <a href="#node----post-produce">post_produce()</a>: Empty FabNode post_produce method to be over-ridden as needed.</li>
 <li>2.10 <a href="#node----get-parent-document">get_parent_document()</a>: NO DOC STRING!</li>
-<li>2.11 <a href="#node----set-object">set_object()</a>: Set FabNode AppObject and GuiObject.</li>
-<li>2.12 <a href="#node----set-tracing">set_tracing()</a>: Set the FabNode indentation tracing level.</li>
-<li>2.13 <a href="#node----probe">probe()</a>: Perform a probe operation.</li>
-<li>2.14 <a href="#node----configure">configure()</a>: Configure FabNode.</li>
-<li>2.15 <a href="#node----configurations-append">configurations_append()</a>: Append specified attributes to configurations list.</li>
+<li>2.11 <a href="#node----set-app-object-only">set_app_object_only()</a>: Set FabNode AppObject only.</li>
+<li>2.12 <a href="#node----set-gui-object-only">set_gui_object_only()</a>: Set FabNode GuiObject only.</li>
+<li>2.13 <a href="#node----set-object">set_object()</a>: Set both AppObject and GuiObject in FabNode.</li>
+<li>2.14 <a href="#node----set-tracing">set_tracing()</a>: Set the FabNode indentation tracing level.</li>
+<li>2.15 <a href="#node----probe">probe()</a>: Perform a probe operation.</li>
+<li>2.16 <a href="#node----configure">configure()</a>: Configure FabNode.</li>
+<li>2.17 <a href="#node----configurations-append">configurations_append()</a>: Append specified attributes to configurations list.</li>
 </ul>
 </li>
 </ul>
@@ -224,10 +226,16 @@ If this method is actually called, something is seriously wrong.</p>
 <h3><a name="node----get-parent-document"></a>2.10 <code>FabNode.</code>get_parent_document():</h3>
 <p>FabNode.get_parent_document(self, tracing: str = '') -&gt; 'FabNode':</p>
 <p>NO DOC STRING!</p>
-<h3><a name="node----set-object"></a>2.11 <code>FabNode.</code>set_object():</h3>
+<h3><a name="node----set-app-object-only"></a>2.11 <code>FabNode.</code>set_app_object_only():</h3>
+<p>FabNode.set_app_object_only(self, app_object: typing.Any) -&gt; None:</p>
+<p>Set FabNode AppObject only.</p>
+<h3><a name="node----set-gui-object-only"></a>2.12 <code>FabNode.</code>set_gui_object_only():</h3>
+<p>FabNode.set_gui_object_only(self, gui_object: typing.Any) -&gt; None:</p>
+<p>Set FabNode GuiObject only.</p>
+<h3><a name="node----set-object"></a>2.13 <code>FabNode.</code>set_object():</h3>
 <p>FabNode.set_object(self, app_object: typing.Any) -&gt; None:</p>
-<p>Set FabNode AppObject and GuiObject.</p>
-<h3><a name="node----set-tracing"></a>2.12 <code>FabNode.</code>set_tracing():</h3>
+<p>Set both AppObject and GuiObject in FabNode.</p>
+<h3><a name="node----set-tracing"></a>2.14 <code>FabNode.</code>set_tracing():</h3>
 <p>FabNode.set_tracing(self, tracing: str):</p>
 <p>Set the FabNode indentation tracing level.
 This typically done, by adding this call immediately after calling super().<strong>post_init</strong>().</p>
@@ -239,13 +247,13 @@ This typically done, by adding this call immediately after calling super().<stro
     self.set_tracing(&quot; &quot;)  # Set the tracing here.
     # All children nodes will that are added, will have tracing set as well.
 </code></pre>
-<h3><a name="node----probe"></a>2.13 <code>FabNode.</code>probe():</h3>
+<h3><a name="node----probe"></a>2.15 <code>FabNode.</code>probe():</h3>
 <p>FabNode.probe(self, label: str) -&gt; None:</p>
 <p>Perform a probe operation.
 This method can be overriden and called to perform debug probes.</p>
-<h3><a name="node----configure"></a>2.14 <code>FabNode.</code>configure():</h3>
+<h3><a name="node----configure"></a>2.16 <code>FabNode.</code>configure():</h3>
 <p>FabNode.configure(self, tracing: str = '') -&gt; None:</p>
 <p>Configure FabNode.</p>
-<h3><a name="node----configurations-append"></a>2.15 <code>FabNode.</code>configurations_append():</h3>
+<h3><a name="node----configurations-append"></a>2.17 <code>FabNode.</code>configurations_append():</h3>
 <p>FabNode.configurations_append(self, configurations: typing.List[str], tracing: str = '') -&gt; None:</p>
 <p>Append specified attributes to configurations list.</p>

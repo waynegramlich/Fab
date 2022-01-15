@@ -160,27 +160,33 @@ class FabDocument(FabNode):
 
     """
 
-    FilePath: Path = Path("bogus_file")
+    FilePath: Path = Path("/bogus_file")
     _AppDocument: Optional[App.Document] = field(init=False, repr=False)
+    _GuiDocument: Optional["Gui.Document"] = field(init=False, repr=False)
 
     # FabDocument.__post_init__():
     def __post_init__(self) -> None:
         """Initialize the FabDocument."""
 
+        # Initialize fields:
         super().__post_init__()
         self._AppDocument = None
+        self._GuiDocument = None
+
+        # Verfiy *suffix*;
+        if not isinstance(self.FilePath, Path):
+            raise RuntimeError(f"{self.FullPath}: '{self.FilePath}' is not a Path")
         suffix: str = self.FilePath.suffix
         valid_suffixes: Tuple[str, ...] = (".fcstd", ".FCStd")
         if suffix not in valid_suffixes:
             raise RuntimeError(f"{self.FullPath}: '{self.FilePath}' suffix '{suffix}' "
-                               f"is not one of {valid_suffixes}.")
-        self._check_children()
+                               f"is not a valid suffix {valid_suffixes}.")
 
-    # FabDocument._check_children():
-    def _check_children(self) -> None:
-        """Verify that children are valid types."""
+        # Verify that *children* have valid types:
+        # TODO: Is *children* always empty?
+        children: Tuple[FabNode, ...] = self.Children
         child: FabNode
-        for child in self._Children.values():
+        for child in children:
             if not isinstance(child, (FabAssembly, FabGroup, FabSolid)):
                 raise RuntimeError(
                     f"{self.FullPath}: {child.FullPath} is not a {type(child)}, "
@@ -195,17 +201,17 @@ class FabDocument(FabNode):
 
         # Create *app_document*:
         assert self.Construct
-        app_document = cast(App.Document, App.newDocument(self.Label))  # Why the cast?
+        app_document: Any = App.newDocument(self.Label)
         assert isinstance(app_document, App.Document)  # Just to be sure.
-        self.set_object(app_document)
+        self.set_app_object_only(app_document)
         self._AppDocument = app_document
 
         # If the GUI is up, get the associated *gui_document* and hang onto it:
         if App.GuiUp:  # pragma: no unit cover
-            gui_document = cast(Gui.Document, Gui.getDocument(self.Label))
-            assert isinstance(gui_document, Gui.Document)  # Just to be sure.
+            gui_document: Any = Gui.getDocument(app_document.Name)
+            assert isinstance(gui_document, Gui.Document)
+            self.set_gui_object_only(gui_document)
             self._GuiDocument = gui_document
-            self._GuiObject = gui_document
 
         if tracing:
             print(f"{tracing}<=FabDocument({self.Label}).pre_produce()")
