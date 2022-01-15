@@ -977,7 +977,7 @@ class FabSolid(FabNode):
             print(f"{tracing}<=FabSolid({self.Label}).drill_joins(|{len(joins)}|, *)")
 
     # FabSolid.pre_produce():
-    def pre_produce(self) -> Tuple[str, ...]:
+    def pre_produce(self) -> None:
         """Produce an Empty FabSolid prior to performing operations."""
         tracing: str = self.Tracing
         if tracing:
@@ -1036,7 +1036,6 @@ class FabSolid(FabNode):
 
         if tracing:
             print(f"{tracing}<=FabSolid.pre_produce('{self.Label}')")
-        return ()
 
 
 # TODO: Move this to FabNode class:

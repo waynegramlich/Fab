@@ -44,23 +44,25 @@ See the FabNode documentation for further attributes.</li>
 </li>
 <li>2 Class: <a href="#node--fabnode">FabNode</a>:
 <ul>
-<li>2.1 <a href="#node----is-project">is_project()</a>:  Return True if FabNode is a FabProject.</li>
-<li>2.2 <a href="#node----is-document">is_document()</a>:  Return True if FabNode is a FabProject.</li>
-<li>2.3 <a href="#node----is-group">is_group()</a>:  Return True if FabNode is a FabGroup.</li>
-<li>2.4 <a href="#node----is-assembly">is_assembly()</a>:  Return True if FabNode is a FabAssembly.</li>
-<li>2.5 <a href="#node----is-solid">is_solid()</a>:  Return True if FabNode is a FabAssembly.</li>
-<li>2.6 <a href="#node----get-construct">get_construct()</a>: Return construct flag.</li>
-<li>2.7 <a href="#node----pre-produce">pre_produce()</a>: Empty FabNode pre_produce method to be over-ridden as needed.</li>
-<li>2.8 <a href="#node----produce">produce()</a>: Empty FabNode produce method to be over-ridden.</li>
-<li>2.9 <a href="#node----post-produce">post_produce()</a>: Empty FabNode post_produce method to be over-ridden as needed.</li>
-<li>2.10 <a href="#node----get-parent-document">get_parent_document()</a>: NO DOC STRING!</li>
-<li>2.11 <a href="#node----set-app-object-only">set_app_object_only()</a>: Set FabNode AppObject only.</li>
-<li>2.12 <a href="#node----set-gui-object-only">set_gui_object_only()</a>: Set FabNode GuiObject only.</li>
-<li>2.13 <a href="#node----set-object">set_object()</a>: Set both AppObject and GuiObject in FabNode.</li>
-<li>2.14 <a href="#node----set-tracing">set_tracing()</a>: Set the FabNode indentation tracing level.</li>
-<li>2.15 <a href="#node----probe">probe()</a>: Perform a probe operation.</li>
-<li>2.16 <a href="#node----configure">configure()</a>: Configure FabNode.</li>
-<li>2.17 <a href="#node----configurations-append">configurations_append()</a>: Append specified attributes to configurations list.</li>
+<li>2.1 <a href="#node----get-construct">get_construct()</a>: Return construct flag.</li>
+<li>2.2 <a href="#node----get-errors">get_errors()</a>: Return FabNode errors list.</li>
+<li>2.3 <a href="#node----error">error()</a>: Record and error message with FabNode root.</li>
+<li>2.4 <a href="#node----is-project">is_project()</a>:  Return True if FabNode is a FabProject.</li>
+<li>2.5 <a href="#node----is-document">is_document()</a>:  Return True if FabNode is a FabProject.</li>
+<li>2.6 <a href="#node----is-group">is_group()</a>:  Return True if FabNode is a FabGroup.</li>
+<li>2.7 <a href="#node----is-assembly">is_assembly()</a>:  Return True if FabNode is a FabAssembly.</li>
+<li>2.8 <a href="#node----is-solid">is_solid()</a>:  Return True if FabNode is a FabAssembly.</li>
+<li>2.9 <a href="#node----pre-produce">pre_produce()</a>: Empty FabNode pre_produce method to be over-ridden as needed.</li>
+<li>2.10 <a href="#node----produce">produce()</a>: Empty FabNode produce method to be over-ridden.</li>
+<li>2.11 <a href="#node----post-produce">post_produce()</a>: Empty FabNode post_produce method to be over-ridden as needed.</li>
+<li>2.12 <a href="#node----get-parent-document">get_parent_document()</a>: NO DOC STRING!</li>
+<li>2.13 <a href="#node----set-app-object-only">set_app_object_only()</a>: Set FabNode AppObject only.</li>
+<li>2.14 <a href="#node----set-gui-object-only">set_gui_object_only()</a>: Set FabNode GuiObject only.</li>
+<li>2.15 <a href="#node----set-object">set_object()</a>: Set both AppObject and GuiObject in FabNode.</li>
+<li>2.16 <a href="#node----set-tracing">set_tracing()</a>: Set the FabNode indentation tracing level.</li>
+<li>2.17 <a href="#node----probe">probe()</a>: Perform a probe operation.</li>
+<li>2.18 <a href="#node----configure">configure()</a>: Configure FabNode.</li>
+<li>2.19 <a href="#node----configurations-append">configurations_append()</a>: Append specified attributes to configurations list.</li>
 </ul>
 </li>
 </ul>
@@ -194,48 +196,55 @@ Inherited Attributes:</p>
 A non-empty indentation string when tracing is enabled.
 This field is recursively set when <em>set_tracing</em>() is explicitly set.</li>
 </ul>
-<h3><a name="node----is-project"></a>2.1 <code>FabNode.</code>is_project():</h3>
-<p>FabNode.is_project(self) -&gt; bool:</p>
-<p>Return True if FabNode is a FabProject.</p>
-<h3><a name="node----is-document"></a>2.2 <code>FabNode.</code>is_document():</h3>
-<p>FabNode.is_document(self) -&gt; bool:</p>
-<p>Return True if FabNode is a FabProject.</p>
-<h3><a name="node----is-group"></a>2.3 <code>FabNode.</code>is_group():</h3>
-<p>FabNode.is_group(self) -&gt; bool:</p>
-<p>Return True if FabNode is a FabGroup.</p>
-<h3><a name="node----is-assembly"></a>2.4 <code>FabNode.</code>is_assembly():</h3>
-<p>FabNode.is_assembly(self) -&gt; bool:</p>
-<p>Return True if FabNode is a FabAssembly.</p>
-<h3><a name="node----is-solid"></a>2.5 <code>FabNode.</code>is_solid():</h3>
-<p>FabNode.is_solid(self) -&gt; bool:</p>
-<p>Return True if FabNode is a FabAssembly.</p>
-<h3><a name="node----get-construct"></a>2.6 <code>FabNode.</code>get_construct():</h3>
+<h3><a name="node----get-construct"></a>2.1 <code>FabNode.</code>get_construct():</h3>
 <p>FabNode.get_construct(self) -&gt; bool:</p>
 <p>Return construct flag.
 This method is overridden in FabProject only and should be call the only one called.
 If this method is actually called, something is seriously wrong.</p>
-<h3><a name="node----pre-produce"></a>2.7 <code>FabNode.</code>pre_produce():</h3>
-<p>FabNode.pre_produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<h3><a name="node----get-errors"></a>2.2 <code>FabNode.</code>get_errors():</h3>
+<p>FabNode.get_errors(self) -&gt; typing.List[str]:</p>
+<p>Return FabNode errors list.
+This method is only implemented by the FabProject class.</p>
+<h3><a name="node----error"></a>2.3 <code>FabNode.</code>error():</h3>
+<p>FabNode.error(self, error_message: str) -&gt; None:</p>
+<p>Record and error message with FabNode root.</p>
+<h3><a name="node----is-project"></a>2.4 <code>FabNode.</code>is_project():</h3>
+<p>FabNode.is_project(self) -&gt; bool:</p>
+<p>Return True if FabNode is a FabProject.</p>
+<h3><a name="node----is-document"></a>2.5 <code>FabNode.</code>is_document():</h3>
+<p>FabNode.is_document(self) -&gt; bool:</p>
+<p>Return True if FabNode is a FabProject.</p>
+<h3><a name="node----is-group"></a>2.6 <code>FabNode.</code>is_group():</h3>
+<p>FabNode.is_group(self) -&gt; bool:</p>
+<p>Return True if FabNode is a FabGroup.</p>
+<h3><a name="node----is-assembly"></a>2.7 <code>FabNode.</code>is_assembly():</h3>
+<p>FabNode.is_assembly(self) -&gt; bool:</p>
+<p>Return True if FabNode is a FabAssembly.</p>
+<h3><a name="node----is-solid"></a>2.8 <code>FabNode.</code>is_solid():</h3>
+<p>FabNode.is_solid(self) -&gt; bool:</p>
+<p>Return True if FabNode is a FabAssembly.</p>
+<h3><a name="node----pre-produce"></a>2.9 <code>FabNode.</code>pre_produce():</h3>
+<p>FabNode.pre_produce(self) -&gt; None:</p>
 <p>Empty FabNode pre_produce method to be over-ridden as needed.</p>
-<h3><a name="node----produce"></a>2.8 <code>FabNode.</code>produce():</h3>
-<p>FabNode.produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<h3><a name="node----produce"></a>2.10 <code>FabNode.</code>produce():</h3>
+<p>FabNode.produce(self) -&gt; None:</p>
 <p>Empty FabNode produce method to be over-ridden.</p>
-<h3><a name="node----post-produce"></a>2.9 <code>FabNode.</code>post_produce():</h3>
-<p>FabNode.post_produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<h3><a name="node----post-produce"></a>2.11 <code>FabNode.</code>post_produce():</h3>
+<p>FabNode.post_produce(self) -&gt; None:</p>
 <p>Empty FabNode post_produce method to be over-ridden as needed.</p>
-<h3><a name="node----get-parent-document"></a>2.10 <code>FabNode.</code>get_parent_document():</h3>
+<h3><a name="node----get-parent-document"></a>2.12 <code>FabNode.</code>get_parent_document():</h3>
 <p>FabNode.get_parent_document(self, tracing: str = '') -&gt; 'FabNode':</p>
 <p>NO DOC STRING!</p>
-<h3><a name="node----set-app-object-only"></a>2.11 <code>FabNode.</code>set_app_object_only():</h3>
+<h3><a name="node----set-app-object-only"></a>2.13 <code>FabNode.</code>set_app_object_only():</h3>
 <p>FabNode.set_app_object_only(self, app_object: typing.Any) -&gt; None:</p>
 <p>Set FabNode AppObject only.</p>
-<h3><a name="node----set-gui-object-only"></a>2.12 <code>FabNode.</code>set_gui_object_only():</h3>
+<h3><a name="node----set-gui-object-only"></a>2.14 <code>FabNode.</code>set_gui_object_only():</h3>
 <p>FabNode.set_gui_object_only(self, gui_object: typing.Any) -&gt; None:</p>
 <p>Set FabNode GuiObject only.</p>
-<h3><a name="node----set-object"></a>2.13 <code>FabNode.</code>set_object():</h3>
+<h3><a name="node----set-object"></a>2.15 <code>FabNode.</code>set_object():</h3>
 <p>FabNode.set_object(self, app_object: typing.Any) -&gt; None:</p>
 <p>Set both AppObject and GuiObject in FabNode.</p>
-<h3><a name="node----set-tracing"></a>2.14 <code>FabNode.</code>set_tracing():</h3>
+<h3><a name="node----set-tracing"></a>2.16 <code>FabNode.</code>set_tracing():</h3>
 <p>FabNode.set_tracing(self, tracing: str):</p>
 <p>Set the FabNode indentation tracing level.
 This typically done, by adding this call immediately after calling super().<strong>post_init</strong>().</p>
@@ -247,13 +256,13 @@ This typically done, by adding this call immediately after calling super().<stro
     self.set_tracing(&quot; &quot;)  # Set the tracing here.
     # All children nodes will that are added, will have tracing set as well.
 </code></pre>
-<h3><a name="node----probe"></a>2.15 <code>FabNode.</code>probe():</h3>
+<h3><a name="node----probe"></a>2.17 <code>FabNode.</code>probe():</h3>
 <p>FabNode.probe(self, label: str) -&gt; None:</p>
 <p>Perform a probe operation.
 This method can be overriden and called to perform debug probes.</p>
-<h3><a name="node----configure"></a>2.16 <code>FabNode.</code>configure():</h3>
+<h3><a name="node----configure"></a>2.18 <code>FabNode.</code>configure():</h3>
 <p>FabNode.configure(self, tracing: str = '') -&gt; None:</p>
 <p>Configure FabNode.</p>
-<h3><a name="node----configurations-append"></a>2.17 <code>FabNode.</code>configurations_append():</h3>
+<h3><a name="node----configurations-append"></a>2.19 <code>FabNode.</code>configurations_append():</h3>
 <p>FabNode.configurations_append(self, configurations: typing.List[str], tracing: str = '') -&gt; None:</p>
 <p>Append specified attributes to configurations list.</p>

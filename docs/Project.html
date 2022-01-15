@@ -38,8 +38,9 @@
 <li>6 Class: <a href="#project--fabproject">FabProject</a>:
 <ul>
 <li>6.1 <a href="#project----get-construct">get_construct()</a>: Return the Construct mode.</li>
-<li>6.2 <a href="#project----is-project">is_project()</a>:  Return True if FabNode is a FabGroup.</li>
-<li>6.3 <a href="#project----run">run()</a>: NO DOC STRING!</li>
+<li>6.2 <a href="#project----get-errors">get_errors()</a>: Return the FabProject errors list.</li>
+<li>6.3 <a href="#project----is-project">is_project()</a>:  Return True if FabNode is a FabGroup.</li>
+<li>6.4 <a href="#project----run">run()</a>: NO DOC STRING!</li>
 </ul>
 </li>
 <li>7 Class: <a href="#project--testassembly">TestAssembly</a>:</li>
@@ -83,7 +84,7 @@ Builds a box given a length, width, height, material, thickness and center point
 <li><em>Fasten</em> (FabFasten): The screw template to use.</li>
 </ul>
 <h3><a name="project----produce"></a>1.1 <code>Box.</code>produce():</h3>
-<p>Box.produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<p>Box.produce(self) -&gt; None:</p>
 <p>Produce the Box.</p>
 <h3><a name="project----get-all-screws"></a>1.2 <code>Box.</code>get_all_screws():</h3>
 <p>Box.get_all_screws(self) -&gt; typing.Tuple[Join.FabJoin, ...]:</p>
@@ -107,7 +108,7 @@ Inherited Constructor Attributes:</p>
 <li><em>Depth</em> float: Depth of side (opposite direction of <em>normal</em>.</li>
 </ul>
 <h3><a name="project----produce"></a>2.1 <code>BoxSide.</code>produce():</h3>
-<p>BoxSide.produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<p>BoxSide.produce(self) -&gt; None:</p>
 <p>Produce BoxSide.</p>
 <h2><a name="project--fabassembly"></a>3 Class FabAssembly:</h2>
 <p>A group FabSolid's and sub-FabAssembly's.</p>
@@ -115,13 +116,13 @@ Inherited Constructor Attributes:</p>
 <p>FabAssembly.is_assembly(self) -&gt; bool:</p>
 <p>Return True if FabNode is a FabGroup.</p>
 <h3><a name="project----pre-produce"></a>3.2 <code>FabAssembly.</code>pre_produce():</h3>
-<p>FabAssembly.pre_produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<p>FabAssembly.pre_produce(self) -&gt; None:</p>
 <p>Preproduce a FabAssembly</p>
 <h3><a name="project----produce"></a>3.3 <code>FabAssembly.</code>produce():</h3>
-<p>FabAssembly.produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<p>FabAssembly.produce(self) -&gt; None:</p>
 <p>Preproduce a FabAssembly</p>
 <h3><a name="project----post-produce"></a>3.4 <code>FabAssembly.</code>post_produce():</h3>
-<p>FabAssembly.post_produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<p>FabAssembly.post_produce(self) -&gt; None:</p>
 <p>Preproduce a FabAssembly</p>
 <h2><a name="project--fabdocument"></a>4 Class FabDocument:</h2>
 <p>Represents a FreeCAD document Document.
@@ -138,16 +139,16 @@ The children nodes which are constrained to &quot;group-like&quot; or a FabSolid
 The Python pathlib.Path file name which must have a suffix of <code>.fcstd</code> or <code>.FCStd</code>.</li>
 </ul>
 <h3><a name="project----pre-produce"></a>4.1 <code>FabDocument.</code>pre_produce():</h3>
-<p>FabDocument.pre_produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<p>FabDocument.pre_produce(self) -&gt; None:</p>
 <p>Produce FabDocument.</p>
 <h3><a name="project----is-document"></a>4.2 <code>FabDocument.</code>is_document():</h3>
 <p>FabDocument.is_document(self) -&gt; bool:</p>
 <p>Return True if FabNode is a FabGroup.</p>
 <h3><a name="project----produce"></a>4.3 <code>FabDocument.</code>produce():</h3>
-<p>FabDocument.produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<p>FabDocument.produce(self) -&gt; None:</p>
 <p>Produce FabDocument.</p>
 <h3><a name="project----post-produce"></a>4.4 <code>FabDocument.</code>post_produce():</h3>
-<p>FabDocument.post_produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<p>FabDocument.post_produce(self) -&gt; None:</p>
 <p>Close the FabDocument.</p>
 <h2><a name="project--fabgroup"></a>5 Class FabGroup:</h2>
 <p>A named group of FabNode's.
@@ -158,10 +159,10 @@ Inherited Attributes:</p>
 <li><em>Children</em> (Tuple[FabNode, ...)</li>
 </ul>
 <h3><a name="project----pre-produce"></a>5.1 <code>FabGroup.</code>pre_produce():</h3>
-<p>FabGroup.pre_produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<p>FabGroup.pre_produce(self) -&gt; None:</p>
 <p>Preproduce a FabGroup.</p>
 <h3><a name="project----produce"></a>5.2 <code>FabGroup.</code>produce():</h3>
-<p>FabGroup.produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<p>FabGroup.produce(self) -&gt; None:</p>
 <p>Create the FreeCAD group object.</p>
 <h3><a name="project----is-group"></a>5.3 <code>FabGroup.</code>is_group():</h3>
 <p>FabGroup.is_group(self) -&gt; bool:</p>
@@ -182,10 +183,13 @@ the run method.</p>
 </code></pre>
 <p>which calls this method to get the construct status.  This is a pretty convoluted
 way to get the information, but it works.</p>
-<h3><a name="project----is-project"></a>6.2 <code>FabProject.</code>is_project():</h3>
+<h3><a name="project----get-errors"></a>6.2 <code>FabProject.</code>get_errors():</h3>
+<p>FabProject.get_errors(self) -&gt; typing.List[str]:</p>
+<p>Return the FabProject errors list.</p>
+<h3><a name="project----is-project"></a>6.3 <code>FabProject.</code>is_project():</h3>
 <p>FabProject.is_project(self) -&gt; bool:</p>
 <p>Return True if FabNode is a FabGroup.</p>
-<h3><a name="project----run"></a>6.3 <code>FabProject.</code>run():</h3>
+<h3><a name="project----run"></a>6.4 <code>FabProject.</code>run():</h3>
 <p>FabProject.run(self) -&gt; None:</p>
 <p>NO DOC STRING!</p>
 <h2><a name="project--testassembly"></a>7 Class TestAssembly:</h2>
@@ -200,5 +204,5 @@ way to get the information, but it works.</p>
 <h2><a name="project--testsolid"></a>10 Class TestSolid:</h2>
 <p>A test solid to exercise FabSolid code.</p>
 <h3><a name="project----produce"></a>10.1 <code>TestSolid.</code>produce():</h3>
-<p>TestSolid.produce(self) -&gt; typing.Tuple[str, ...]:</p>
+<p>TestSolid.produce(self) -&gt; None:</p>
 <p>NO DOC STRING!</p>

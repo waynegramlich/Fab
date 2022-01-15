@@ -922,6 +922,30 @@ class FabNode(FabBox):
         """Return the FabNode parent."""
         return self._Parent
 
+    # FabNode.get_construct():
+    def get_construct(self) -> bool:
+        """Return construct flag.
+
+        This method is overridden in FabProject only and should be call the only one called.
+        If this method is actually called, something is seriously wrong.
+        """
+        assert False
+        return False  # Make linters happy.
+
+    # FabNode.get_errors():
+    def get_errors(self) -> List[str]:
+        """Return FabNode errors list.
+
+        This method is only implemented by the FabProject class.
+        """
+        raise RuntimeError(f"FabNode.get_errors({self._Label}).get_errors(): not implemented")
+        return []  # Make linters happy.
+
+    # FabNode.error():
+    def error(self, error_message: str) -> None:
+        """Record and error message with FabNode root."""
+        self._Project.get_errors().append(error_message)
+
     # FabNode.is_project():
     def is_project(self) -> bool:
         """ Return True if FabNode is a FabProject."""
@@ -947,39 +971,26 @@ class FabNode(FabBox):
         """ Return True if FabNode is a FabAssembly."""
         return False  # FabSolid class returns True.
 
-    # FabNode.Construct():
-    def get_construct(self) -> bool:
-        """Return construct flag.
-
-        This method is overridden in FabProject only and should be call the only one called.
-        If this method is actually called, something is seriously wrong.
-        """
-        assert False
-        return False  # Make linters happy.
-
     # FabNode.pre_produce():
-    def pre_produce(self) -> Tuple[str, ...]:
+    def pre_produce(self) -> None:
         """Empty FabNode pre_produce method to be over-ridden as needed."""
         tracing: str = self.Tracing
         if tracing:
             print(f"{tracing}<=>FabNode({self._Label}).pre_produce()=>()")
-        return ()
 
     # FabNode.produce():
-    def produce(self) -> Tuple[str, ...]:
+    def produce(self) -> None:
         """Empty FabNode produce method to be over-ridden."""
         tracing: str = self.Tracing
         if tracing:
             print(f"{tracing}<=>FabNode({self._Label}).produce()=>()")
-        return ()
 
     # FabNode.post_produce():
-    def post_produce(self) -> Tuple[str, ...]:
+    def post_produce(self) -> None:
         """Empty FabNode post_produce method to be over-ridden as needed."""
         tracing: str = self.Tracing
         if tracing:
             print(f"{tracing}<=>FabNode({self._Label}).post_produce()=>()")
-        return ()
 
     # FabNode.get_parent_document():
     def get_parent_document(self, tracing: str = "") -> "FabNode":
@@ -1071,7 +1082,7 @@ class FabNode(FabBox):
     WALK_POST_PRODUCE = 1
 
     # FabNode._produce_walk()
-    def _produce_walk(self, mode: int) -> Tuple[str, ...]:
+    def _produce_walk(self, mode: int) -> None:
         """Recursively walk FabNode Tree performing produce/post_produce operations."""
         tracing: str = self.Tracing
         if tracing:
@@ -1080,20 +1091,19 @@ class FabNode(FabBox):
         # Process the FabNode dispatching on *mode*:
         errors: List[str] = []
         if mode == self.WALK_PRE_PRODUCE:
-            errors.extend(self.pre_produce())
+            self.pre_produce()
         elif mode == self.WALK_PRODUCE:
-            errors.extend(self.produce())
+            self.produce()
         elif mode == self.WALK_POST_PRODUCE:
-            errors.extend(self.post_produce())
+            self.post_produce()
 
         # Visit each *child* recusively:
         child: FabNode
         for child in self._Children.values():
-            errors.extend(child._produce_walk(mode))
+            child._produce_walk(mode)
 
         if tracing:
             print(f"{tracing}<=FabNode({self._Label})._produce_walk()=>|{len(errors)}|")
-        return tuple(errors)
 
     # FabNode.configure():
     def configure(self, tracing: str = "") -> None:

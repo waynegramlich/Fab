@@ -66,7 +66,7 @@ class FabGroup(FabNode):
         super().__post_init__()
 
     # FabGroup.pre_produce():
-    def pre_produce(self) -> Tuple[str, ...]:
+    def pre_produce(self) -> None:
         """Preproduce a FabGroup."""
         tracing: str = self.Tracing
         if tracing:
@@ -85,15 +85,13 @@ class FabGroup(FabNode):
 
         if tracing:
             print(f"{tracing}<=FabGroup({self.Label}).pre_produce()")
-        return ()
 
     # FabGroup.produce():
-    def produce(self) -> Tuple[str, ...]:
+    def produce(self) -> None:
         """Create the FreeCAD group object."""
         tracing: str = self.Tracing
         if tracing:
             print(f"{tracing}<=>FabGroup({self.Label}).produce()")
-        return ()
 
     # FabGroup.is_group():
     def is_group(self) -> bool:
@@ -122,25 +120,24 @@ class FabAssembly(FabGroup):
         return True  # All other FabNode's return False.
 
     # FabAssembly.pre_produce():
-    def pre_produce(self) -> Tuple[str, ...]:
+    def pre_produce(self) -> None:
         """Preproduce a FabAssembly"""
         tracing: str = self.Tracing
         if tracing:
             print(f"{tracing}=>FabAssembly.pre_produce({self.Label}).pre_produce()")
-        errors: Tuple[str, ...] = super().pre_produce()
+        super().pre_produce()
         if tracing:
             print(f"{tracing}<=FabAssembly.pre_produce({self.Label}).pre_produce()")
-        return errors
 
     # FabAssembly.produce():
-    def produce(self) -> Tuple[str, ...]:
+    def produce(self) -> None:
         """Preproduce a FabAssembly"""
-        return super().post_produce()
+        super().produce()
 
     # FabAssembly.post_produce():
-    def post_produce(self) -> Tuple[str, ...]:
+    def post_produce(self) -> None:
         """Preproduce a FabAssembly"""
-        return super().post_produce()
+        super().post_produce()
 
 
 # FabDocument:
@@ -193,7 +190,7 @@ class FabDocument(FabNode):
                     "not FabAssembly/FabGroup/FabSolid")
 
     # FabDocument.pre_produce():
-    def pre_produce(self) -> Tuple[str, ...]:
+    def pre_produce(self) -> None:
         """Produce FabDocument."""
         tracing: str = self.Tracing
         if tracing:
@@ -215,7 +212,6 @@ class FabDocument(FabNode):
 
         if tracing:
             print(f"{tracing}<=FabDocument({self.Label}).pre_produce()")
-        return ()
 
     # FabDocument.is_document():
     def is_document(self) -> bool:
@@ -223,15 +219,14 @@ class FabDocument(FabNode):
         return True  # All other FabNode's return False.
 
     # FabDocument.produce():
-    def produce(self) -> Tuple[str, ...]:
+    def produce(self) -> None:
         """Produce FabDocument."""
         tracing: str = self.Tracing
         if tracing:
             print(f"{tracing}<=>FabDocument.produce('{self.Label}', *)")
-        return ()
 
     # FabDocument.post_produce():
-    def post_produce(self) -> Tuple[str, ...]:
+    def post_produce(self) -> None:
         """Close the FabDocument."""
         tracing: str = self.Tracing
         if tracing:
@@ -246,7 +241,6 @@ class FabDocument(FabNode):
         if tracing:
             print(f"{tracing}Saved {self.FilePath}")
             print(f"{tracing}<=FabDocument({self.Label}).post_produce()")
-        return ()
 
 
 @dataclass
@@ -256,6 +250,7 @@ class FabProject(FabNode):
 
     _AllNodes: Tuple[FabNode, ...] = field(init=False, repr=False)
     _Construct: bool = field(init=False, repr=False)
+    _Errors: List[str] = field(init=False, repr=False)
 
     # FabProject.__post_init__():
     def __post_init__(self) -> None:
@@ -263,6 +258,7 @@ class FabProject(FabNode):
         super().__post_init__()
         self._AllNodes = ()
         self._Construct = False
+        self._Errors = []
 
     # FabProject.get_construct():
     def get_construct(self) -> bool:
@@ -283,6 +279,11 @@ class FabProject(FabNode):
         way to get the information, but it works.
         """
         return self._Construct
+
+    # FabProject.get_errors():
+    def get_errors(self) -> List[str]:
+        """Return the FabProject errors list."""
+        return self._Errors
 
     # FabProject.is_project():
     def is_project(self) -> bool:
@@ -305,10 +306,10 @@ class FabProject(FabNode):
         if tracing:
             print(f"{tracing}=>Project({self.Label}).run()")
         error: str
-        errors: List[str]
         index: int
         name: str
         node: FabNode
+        errors: List[str] = self._Errors
 
         # Phase 1: Iterate over tree in constraint mode:
         if tracing:
@@ -320,14 +321,14 @@ class FabProject(FabNode):
         reversed_nodes: Tuple[FabNode, ...] = tuple(reversed(all_nodes))
         iteration: int
         for iteration in range(1000):
-            errors = []
+            del errors[:]  # Clear *errors*
             current_constraints: Set[str] = set()
             # Update all boxes in bottom-up order:
             for node in reversed_nodes:
                 node.enclose(tuple(self._Children.values()))
             # Call *produce* in top-down order first.
             for node in all_nodes:
-                errors.extend(node.produce())
+                node.produce()
                 attribute: Any
                 for name, attribute in node.__dict__.items():
                     if name and name[0].isupper() and (
@@ -360,18 +361,22 @@ class FabProject(FabNode):
             print()
             print(f"{tracing}Project({self.Label}).run(): Phase 2: Construct: {self._Construct=}")
 
-        errors = []
         if tracing:
             print(f"{tracing}Phase 3A: Pre Produce:")
-        errors.extend(self._produce_walk(FabNode.WALK_PRE_PRODUCE))
+        del errors[:]  # Clear *errors*
+        self._produce_walk(FabNode.WALK_PRE_PRODUCE)
         if tracing:
             print("")
             print(f"{tracing}Phase 3B: Produce:")
-        errors.extend(self._produce_walk(FabNode.WALK_PRODUCE))
+        del errors[:]  # Clear *errors*
+        self._produce_walk(FabNode.WALK_PRODUCE)
         if tracing:
             print("")
             print(f"{tracing}Phase 3C: Post Produce:")
-        errors.extend(self._produce_walk(FabNode.WALK_POST_PRODUCE))
+        del errors[:]  # Clear *errors*
+        self._produce_walk(FabNode.WALK_POST_PRODUCE)
+
+        # Output any *errors*:
         if errors:
             print("Construction Errors:")
             # Mypy currently chokes on: `for index, error in enumerate(errors):`
@@ -425,7 +430,7 @@ class BoxSide(FabSolid):
         self.Screws = []
 
     # BoxSide.produce():
-    def produce(self) -> Tuple[str, ...]:
+    def produce(self) -> None:
         """Produce BoxSide."""
         tracing: str = self.Tracing
         if tracing:
@@ -489,7 +494,6 @@ class BoxSide(FabSolid):
 
         if tracing:
             print(f"{tracing}<=BoxSide({self.Label}).produce()")
-        return ()
 
 # Box:
 @dataclass
@@ -567,7 +571,7 @@ class Box(FabAssembly):
             print(f"{tracing}<=Box({self.Label}).__post_init__()")
 
     # Box.produce():
-    def produce(self) -> Tuple[str, ...]:
+    def produce(self) -> None:
         """Produce the Box."""
         tracing: str = self.Tracing
         if tracing:
@@ -627,7 +631,6 @@ class Box(FabAssembly):
 
         if tracing:
             print(f"{tracing}<=Box({self.Label}.produce())")
-        return ()
 
     # Box.get_all_screws():
     def get_all_screws(self) -> Tuple[FabJoin, ...]:
@@ -654,13 +657,11 @@ class TestSolid(FabSolid):
             print(f"{tracing}<=>TestSolid({self.Label}).__post_init__()")
 
     # TestSolid.produce()
-    def produce(self) -> Tuple[str, ...]:
+    def produce(self) -> None:
         tracing: str = self.Tracing
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>TestSolid({self.Label}).produce()")
-
-        errors: List[str] = []
 
         # Create *top_mount*:
         depth: float = 10.0
@@ -708,7 +709,6 @@ class TestSolid(FabSolid):
 
         if tracing:
             print(f"{tracing}<=TestSolid({self.Label}).produce()")
-        return tuple(errors)
 
 
 # TestAssembly:
