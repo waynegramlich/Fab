@@ -364,17 +364,23 @@ class FabProject(FabNode):
         if tracing:
             print(f"{tracing}Phase 3A: Pre Produce:")
         del errors[:]  # Clear *errors*
-        self._produce_walk(FabNode.WALK_POST_PRODUCE1)
+        for node in all_nodes:
+            node.post_produce1()
+
         if tracing:
             print("")
             print(f"{tracing}Phase 3B: Produce:")
         del errors[:]  # Clear *errors*
-        self._produce_walk(FabNode.WALK_PRODUCE)
+        for node in all_nodes:
+            node.produce()
+
         if tracing:
             print("")
             print(f"{tracing}Phase 3C: Post Produce:")
         del errors[:]  # Clear *errors*
-        self._produce_walk(FabNode.WALK_POST_PRODUCE)
+
+        for node in all_nodes:
+            node.post_produce()
 
         # Output any *errors*:
         if errors:

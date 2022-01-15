@@ -1077,34 +1077,6 @@ class FabNode(FabBox):
             assert False, dir(root)
         root.probe(label)
 
-    WALK_PRODUCE = 0
-    WALK_POST_PRODUCE1 = 1
-    WALK_POST_PRODUCE = 2
-
-    # FabNode._produce_walk()
-    def _produce_walk(self, mode: int) -> None:
-        """Recursively walk FabNode Tree performing produce/post_produce operations."""
-        tracing: str = self.Tracing
-        if tracing:
-            print(f"{tracing}=>FabNode({self._Label})_produce_walk()")
-
-        # Process the FabNode dispatching on *mode*:
-        errors: List[str] = []
-        if mode == self.WALK_PRODUCE:
-            self.produce()
-        elif mode == self.WALK_POST_PRODUCE1:
-            self.post_produce1()
-        elif mode == self.WALK_POST_PRODUCE:
-            self.post_produce()
-
-        # Visit each *child* recusively:
-        child: FabNode
-        for child in self._Children.values():
-            child._produce_walk(mode)
-
-        if tracing:
-            print(f"{tracing}<=FabNode({self._Label})._produce_walk()=>|{len(errors)}|")
-
     # FabNode.configure():
     def configure(self, tracing: str = "") -> None:
         """Configure FabNode."""
