@@ -61,8 +61,6 @@ See the FabNode documentation for further attributes.</li>
 <li>2.15 <a href="#node----set-object">set_object()</a>: Set both AppObject and GuiObject in FabNode.</li>
 <li>2.16 <a href="#node----set-tracing">set_tracing()</a>: Set the FabNode indentation tracing level.</li>
 <li>2.17 <a href="#node----probe">probe()</a>: Perform a probe operation.</li>
-<li>2.18 <a href="#node----configure">configure()</a>: Configure FabNode.</li>
-<li>2.19 <a href="#node----configurations-append">configurations_append()</a>: Append specified attributes to configurations list.</li>
 </ul>
 </li>
 </ul>
@@ -260,9 +258,3 @@ This typically done, by adding this call immediately after calling super().<stro
 <p>FabNode.probe(self, label: str) -&gt; None:</p>
 <p>Perform a probe operation.
 This method can be overriden and called to perform debug probes.</p>
-<h3><a name="node----configure"></a>2.18 <code>FabNode.</code>configure():</h3>
-<p>FabNode.configure(self, tracing: str = '') -&gt; None:</p>
-<p>Configure FabNode.</p>
-<h3><a name="node----configurations-append"></a>2.19 <code>FabNode.</code>configurations_append():</h3>
-<p>FabNode.configurations_append(self, configurations: typing.List[str], tracing: str = '') -&gt; None:</p>
-<p>Append specified attributes to configurations list.</p>

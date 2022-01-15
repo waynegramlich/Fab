@@ -1077,33 +1077,6 @@ class FabNode(FabBox):
             assert False, dir(root)
         root.probe(label)
 
-    # FabNode.configure():
-    def configure(self, tracing: str = "") -> None:
-        """Configure FabNode."""
-        pass
-        assert False
-
-    # FabNode.configurations_append():
-    def configurations_append(self, configurations: List[str], tracing: str = "") -> None:
-        """Append specified attributes to configurations list."""
-        if tracing:
-            print(f"{tracing}=>FabNode.configurations_append('{self._Label}', *")
-        # attribute_name: str
-        # for attribute_name in self.AttributeLabels:
-        #     if tracing:
-        #         print(f"{tracing}Process '{attribute_name}'")
-        #     if not isinstance(attribute_name, str):
-        #         raise RuntimeError(
-        #             f"{self.FullPath}: Attribute name is {type(attribute_name)}, not str")
-        #     if not hasattr(self, attribute_name):
-        #         raise RuntimeError(
-        #             f"{self.FullPath}: Attribute '{attribute_name}' is not present.")
-        #     value: Any = getattr(self, attribute_name)
-        #     configurations.append(f"{self.FullPath}.{attribute_name}:{value}")
-        if tracing:
-            print(f"{tracing}<=FabNode.configurations_append('{self._Label}', *)=>"
-                  f"|{len(configurations)}|")
-
     @staticmethod
     # FabNode._is_valid_name():
     def _is_valid_name(name: str) -> bool:
