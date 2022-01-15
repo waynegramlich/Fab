@@ -948,35 +948,28 @@ class FabNode(FabBox):
 
     # FabNode.is_project():
     def is_project(self) -> bool:
-        """ Return True if FabNode is a FabProject."""
+        """Return True if FabNode is a FabProject."""
         return False  # FabProject class returns True.
 
     # FabNode.is_document():
     def is_document(self) -> bool:
-        """ Return True if FabNode is a FabProject."""
+        """Return True if FabNode is a FabProject."""
         return False  # FabProject class returns True.
 
     # FabNode.is_group():
     def is_group(self) -> bool:
-        """ Return True if FabNode is a FabGroup."""
+        """Return True if FabNode is a FabGroup."""
         return False  # FabGroup class returns True.
 
     # FabNode.is_assembly():
     def is_assembly(self) -> bool:
-        """ Return True if FabNode is a FabAssembly."""
+        """Return True if FabNode is a FabAssembly."""
         return False  # FabAssembly class returns True.
 
     # FabNode.is_solid():
     def is_solid(self) -> bool:
-        """ Return True if FabNode is a FabAssembly."""
+        """Return True if FabNode is a FabAssembly."""
         return False  # FabSolid class returns True.
-
-    # FabNode.pre_produce():
-    def pre_produce(self) -> None:
-        """Empty FabNode pre_produce method to be over-ridden as needed."""
-        tracing: str = self.Tracing
-        if tracing:
-            print(f"{tracing}<=>FabNode({self._Label}).pre_produce()=>()")
 
     # FabNode.produce():
     def produce(self) -> None:
@@ -984,6 +977,13 @@ class FabNode(FabBox):
         tracing: str = self.Tracing
         if tracing:
             print(f"{tracing}<=>FabNode({self._Label}).produce()=>()")
+
+    # FabNode.post_produce1():
+    def post_produce1(self) -> None:
+        """Do phase 1 FabNode post production."""
+        tracing: str = self.Tracing
+        if tracing:
+            print(f"{tracing}<=>FabNode({self._Label}).produce1()=>()")
 
     # FabNode.post_produce():
     def post_produce(self) -> None:
@@ -1077,9 +1077,9 @@ class FabNode(FabBox):
             assert False, dir(root)
         root.probe(label)
 
-    WALK_PRE_PRODUCE = -1
     WALK_PRODUCE = 0
-    WALK_POST_PRODUCE = 1
+    WALK_POST_PRODUCE1 = 1
+    WALK_POST_PRODUCE = 2
 
     # FabNode._produce_walk()
     def _produce_walk(self, mode: int) -> None:
@@ -1090,10 +1090,10 @@ class FabNode(FabBox):
 
         # Process the FabNode dispatching on *mode*:
         errors: List[str] = []
-        if mode == self.WALK_PRE_PRODUCE:
-            self.pre_produce()
-        elif mode == self.WALK_PRODUCE:
+        if mode == self.WALK_PRODUCE:
             self.produce()
+        elif mode == self.WALK_POST_PRODUCE1:
+            self.post_produce1()
         elif mode == self.WALK_POST_PRODUCE:
             self.post_produce()
 

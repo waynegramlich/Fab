@@ -65,12 +65,12 @@ class FabGroup(FabNode):
         """Initialize FabGroup."""
         super().__post_init__()
 
-    # FabGroup.pre_produce():
-    def pre_produce(self) -> None:
-        """Preproduce a FabGroup."""
+    # FabGroup.post_produce1():
+    def post_produce1(self) -> None:
+        """Perform FabGroup phase1 post production."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>FabGroup.=({self.Label}).pre_produce()")
+            print(f"{tracing}=>FabGroup({self.Label}).post_produce1()")
 
         # Create the *group* that contains the children FabNode's:
         parent_object: Any = self.Up.AppObject
@@ -84,7 +84,7 @@ class FabGroup(FabNode):
         visibility_set(group)
 
         if tracing:
-            print(f"{tracing}<=FabGroup({self.Label}).pre_produce()")
+            print(f"{tracing}<=FabGroup({self.Label}).post_produce1()")
 
     # FabGroup.produce():
     def produce(self) -> None:
@@ -119,15 +119,15 @@ class FabAssembly(FabGroup):
         """ Return True if FabNode is a FabGroup."""
         return True  # All other FabNode's return False.
 
-    # FabAssembly.pre_produce():
-    def pre_produce(self) -> None:
-        """Preproduce a FabAssembly"""
+    # FabAssembly.post_produce1():
+    def post_produce1(self) -> None:
+        """Preform FabAssebmly phase1 post production."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>FabAssembly.pre_produce({self.Label}).pre_produce()")
-        super().pre_produce()
+            print(f"{tracing}=>FabAssembly({self.Label}).post_produce1()")
+        super().post_produce1()
         if tracing:
-            print(f"{tracing}<=FabAssembly.pre_produce({self.Label}).pre_produce()")
+            print(f"{tracing}<=FabAssembly({self.Label}).post_produce1()")
 
     # FabAssembly.produce():
     def produce(self) -> None:
@@ -189,12 +189,12 @@ class FabDocument(FabNode):
                     f"{self.FullPath}: {child.FullPath} is not a {type(child)}, "
                     "not FabAssembly/FabGroup/FabSolid")
 
-    # FabDocument.pre_produce():
-    def pre_produce(self) -> None:
-        """Produce FabDocument."""
+    # FabDocument.post_produce1():
+    def post_produce1(self) -> None:
+        """Perform FabDocument phase 1 post production."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>FabDocument({self.Label}).pre_produce()")
+            print(f"{tracing}=>FabDocument({self.Label}).post_produce1()")
 
         # Create *app_document*:
         assert self.Construct
@@ -211,7 +211,7 @@ class FabDocument(FabNode):
             self._GuiDocument = gui_document
 
         if tracing:
-            print(f"{tracing}<=FabDocument({self.Label}).pre_produce()")
+            print(f"{tracing}<=FabDocument({self.Label}).post_produce1()")
 
     # FabDocument.is_document():
     def is_document(self) -> bool:
@@ -364,7 +364,7 @@ class FabProject(FabNode):
         if tracing:
             print(f"{tracing}Phase 3A: Pre Produce:")
         del errors[:]  # Clear *errors*
-        self._produce_walk(FabNode.WALK_PRE_PRODUCE)
+        self._produce_walk(FabNode.WALK_POST_PRODUCE1)
         if tracing:
             print("")
             print(f"{tracing}Phase 3B: Produce:")

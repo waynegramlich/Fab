@@ -17,7 +17,7 @@
 <li>2.2 <a href="#solid----is-solid">is_solid()</a>:  Return True if FabNode is a FabAssembly.</li>
 <li>2.3 <a href="#solid----mount">mount()</a>: Return a new FabMount.</li>
 <li>2.4 <a href="#solid----drill-joins">drill_joins()</a>: Apply drill FabJoin holes for a FabSolid.</li>
-<li>2.5 <a href="#solid----pre-produce">pre_produce()</a>: Produce an Empty FabSolid prior to performing operations.</li>
+<li>2.5 <a href="#solid----post-produce1">post_produce1()</a>: Perform FabSolid Phase1 post production.</li>
 </ul>
 </li>
 </ul>
@@ -92,6 +92,6 @@ The mounts to to apply the <em>joins</em> to.  If <em>mounts</em> is <em>None</e
 mounts for the current FabSolid are used.  (Default: None)</li>
 </ul>
 <p>For now, please call this method after all FabMount's are created.</p>
-<h3><a name="solid----pre-produce"></a>2.5 <code>FabSolid.</code>pre_produce():</h3>
-<p>FabSolid.pre_produce(self) -&gt; None:</p>
-<p>Produce an Empty FabSolid prior to performing operations.</p>
+<h3><a name="solid----post-produce1"></a>2.5 <code>FabSolid.</code>post_produce1():</h3>
+<p>FabSolid.post_produce1(self) -&gt; None:</p>
+<p>Perform FabSolid Phase1 post production.</p>

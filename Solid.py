@@ -976,12 +976,12 @@ class FabSolid(FabNode):
         if tracing:
             print(f"{tracing}<=FabSolid({self.Label}).drill_joins(|{len(joins)}|, *)")
 
-    # FabSolid.pre_produce():
-    def pre_produce(self) -> None:
-        """Produce an Empty FabSolid prior to performing operations."""
+    # FabSolid.post_produce1():
+    def post_produce1(self) -> None:
+        """Perform FabSolid Phase1 post production."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>FabSolid.pre_produce('{self.Label}')")
+            print(f"{tracing}=>FabSolid.post_produce1('{self.Label}')")
 
         # Only do work in construct mode:
         assert self.Construct
@@ -994,7 +994,7 @@ class FabSolid(FabNode):
         # if parent.is_document():
         if isinstance(parent_object, App.Document):
             if tracing:
-                print(f"{tracing}=>FabSolid.pre_produce('{self.Label}'): {parent_object}")
+                print(f"{tracing}=>FabSolid.post_produce1('{self.Label}'): {parent_object}")
             geometry_group = parent_object.addObject(
                 "App::DocumentObjectGroup", geometry_group_name)
         else:
@@ -1035,7 +1035,7 @@ class FabSolid(FabNode):
             # model_file.ViewObject = view_object
 
         if tracing:
-            print(f"{tracing}<=FabSolid.pre_produce('{self.Label}')")
+            print(f"{tracing}<=FabSolid.post_produce1('{self.Label}')")
 
 
 # TODO: Move this to FabNode class:
