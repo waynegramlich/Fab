@@ -129,11 +129,6 @@ class FabAssembly(FabGroup):
         if tracing:
             print(f"{tracing}<=FabAssembly({self.Label}).post_produce1()")
 
-    # FabAssembly.produce():
-    def produce(self) -> None:
-        """Preproduce a FabAssembly"""
-        super().produce()
-
     # FabAssembly.post_produce():
     def post_produce(self) -> None:
         """Preproduce a FabAssembly"""
@@ -328,6 +323,7 @@ class FabProject(FabNode):
                 node.enclose(tuple(self._Children.values()))
             # Call *produce* in top-down order first.
             for node in all_nodes:
+                node.pre_produce()
                 node.produce()
                 attribute: Any
                 for name, attribute in node.__dict__.items():

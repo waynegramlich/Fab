@@ -474,15 +474,19 @@ def main() -> int:
     module_name: str
     for module_name in module_names:
         # Import each Module Name and process it:
-        model_module: ModelModule
+        module: Any = None
         try:
-            module: Any = importlib.import_module(module_name)
-            model_module = ModelModule(module)
+            module = importlib.import_module(module_name)
         except ModuleNotFoundError as module_not_found_error:
             print(f"Unable to open module '{module_name}': {str(module_not_found_error)}")
             return 1
         except TypeError as type_error:
             print(f"Error with import of module '{module_name}: {str(type_error)}")
+        if module is None:
+            print(f"Unable to open module '{module_name}': Not clear why")
+            return 1
+
+        model_module: ModelModule = ModelModule(module)
         model_module.set_annotations("", "")
         modules.append(model_module)
 

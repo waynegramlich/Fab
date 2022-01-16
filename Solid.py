@@ -876,7 +876,7 @@ class FabSolid(FabNode):
 
     Material: str
     Color: str
-    _Mounts: Dict[str, FabMount] = field(init=False, repr=False)
+    _Mounts: "OrderedDict[str, FabMount]" = field(init=False, repr=False)
     _GeometryGroup: Optional[App.DocumentObjectGroup] = field(init=False, repr=False)
     _Body: Optional[Part.BodyBase] = field(init=False, repr=False)
 
@@ -888,7 +888,7 @@ class FabSolid(FabNode):
         if tracing:
             print(f"{tracing}=>FabSolid({self.Label}).__post_init__()")
         # TODO: Do additional type checking here:
-        self._Mounts = {}
+        self._Mounts = OrderedDict()
         self._GeometryGroup = None
         self._Body = None
 
@@ -912,6 +912,16 @@ class FabSolid(FabNode):
     def is_solid(self) -> bool:
         """ Return True if FabNode is a FabAssembly."""
         return True  # All other FabNode's return False.
+
+    # FabSolid.pre_produce():
+    def pre_produce(self) -> None:
+        """Perform FabSolid pre production."""
+        tracing: str = self.Tracing
+        if tracing:
+            print("f{tracing}=>FabSolid({self.Label}).pre_produce()")
+        self._Mounts = OrderedDict()
+        if tracing:
+            print("f{tracing}<=FabSolid({self.Label}).pre_produce()")
 
     # FabSolid.Construct():
     @property

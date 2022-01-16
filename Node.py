@@ -971,6 +971,13 @@ class FabNode(FabBox):
         """Return True if FabNode is a FabAssembly."""
         return False  # FabSolid class returns True.
 
+    # FabNode.pre_produce():
+    def pre_produce(self) -> None:
+        """Perform FabNode pre produce operations."""
+        tracing: str = self.Tracing
+        if tracing:
+            print(f"{tracing}<=>FabNode({self._Label}).pre_produce()=>()")
+
     # FabNode.produce():
     def produce(self) -> None:
         """Empty FabNode produce method to be over-ridden."""
