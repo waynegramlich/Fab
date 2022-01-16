@@ -354,7 +354,7 @@ _HoleKey = Tuple[str, str, float, bool, int]
 
 # _Hole:
 @dataclass(order=True)
-class _Hole(object):
+class _Hole(_Operation):
     """_Hole: FabDrill helper class that represents a hole."""
 
     # Size: str  # Essentially the diameter
@@ -365,13 +365,19 @@ class _Hole(object):
     IsTop: bool  # Is the top of the fastener
     Unique: int  # Non-zero to force otherwise common holes into separate operations.
     Center: Vector = field(compare=False)  # The Center (start point) of the drill
-    Join: FabJoin = field(compare=False)  # The associated FabJoin
+    Join: FabJoin = field(compare=False, repr=False)  # The associated FabJoin
+    _Name: str  # Hole name
 
     # _Hole.Key():
     @property
     def Key(self) -> _HoleKey:
         """Return a Hole key."""
         return (self.ThreadName, self.Kind, self.Depth, self.IsTop, self.Unique)
+
+    # _Hole.get_name()
+    def get_name(self) -> str:
+        """Return _Hole name."""
+        return self._Name
 
 
 # FabMount:
@@ -715,8 +721,9 @@ class FabMount(object):
                             print(f"{tracing}{mount_depth=} {trimmed_depth=}")
                         assert trimmed_depth > 0.0, trimmed_depth
                         unique: int = -1 if mount_z_aligned else join_index
-                        hole: _Hole = _Hole(fasten.ThreadName, kind,
-                                            trimmed_depth, is_top, unique, mount_start, join)
+                        hole_name: str = f"Hole{join_index}"
+                        hole: _Hole = _Hole(self, fasten.ThreadName, kind, trimmed_depth, is_top,
+                                            unique, mount_start, join, hole_name)
                         holes.append(hole)
 
             # If there is nothing to *holes* intersected:
