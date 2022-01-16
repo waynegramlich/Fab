@@ -45,51 +45,9 @@ from Node import FabBox, FabNode
 from Utilities import FabColor
 
 
-# _Internal:
-@dataclass(order=True)
-class _Internal(object):
-    """_Internal: Base class for various FabSolid internal classes.
-
-    Attributes:
-    * *Name* (str): Internal element name.
-
-    """
-
-    _Name: str = field(compare=False)
-
-    # _Internal.__post_init__():
-    def __post_init__(self) -> None:
-        """Verify _Internal name."""
-        if not isinstance(self._Name, str):
-            raise RuntimeError(f"_Internal.__post_init__(): Name is {type(self._Name)}, not str")
-        if not FabNode._is_valid_name(self._Name):
-            raise RuntimeError(f"_Internal.__post_init__(): Name '{self._Name}' is not valid.")
-
-    @property
-    # _Internal.Name():
-    def Name(self) -> str:
-        """Return _Internal Name."""
-        return self._Name
-
-    # _Internal.is_mount():
-    def is_mount(self) -> bool:
-        """Return True for a FabMount."""
-        return False   # Override in FabMount class.
-
-    # _Internal.is_operation():
-    def is_operation(self) -> bool:
-        """Return True for a FabMount."""
-        return False   # Override in FabOperation class.
-
-    # _Internal.is_solid():
-    def is_solid(self) -> bool:
-        """Return True for a FabSolid."""
-        return False   # Override in FabSolid class.
-
-
 # _Operation:
 @dataclass(order=True)
-class _Operation(_Internal):
+class _Operation(object):
     """_Operation: An base class for FabMount operations -- _Extrude, _Pocket, FabHole, etc.
 
     Attributes:
@@ -103,26 +61,26 @@ class _Operation(_Internal):
     # _Operation.__post_init__():
     def __post_init__(self) -> None:
         """Initialize _Operation."""
-        super().__post_init__()
         # TODO: Enable check:
         # if not self._Mount.is_mount():
         #   raise RuntimeError("_Operation.__post_init__(): {type(self._Mount)} is not FabMount")
 
-    # _Operation.Mount():
-    @property
-    def Mount(self) -> "FabMount":
-        """Return the Opartion FabMount."""
-        return self._Mount
-
-    # _Operation.is_operation():
-    def is_operation(self) -> bool:
-        """Return True for FabOperation."""
-        return True
-
     # _Operation.get_name():
     def get_name(self) -> str:
         """Return FabOperation name."""
-        return self.Name
+        raise RuntimeError("_Operation().get_name() not implemented for {type(self)}")
+
+    # _Operation.Mount():
+    @property
+    def Mount(self) -> "FabMount":
+        """Return _Operation FabMount."""
+        return self._Mount
+
+    # _Operation.Name():
+    @property
+    def Name(self) -> str:
+        """Return the operation name."""
+        return self.get_name()
 
     # _Operation.produce():
     def produce(self, tracing: str = "") -> Tuple[str, ...]:
@@ -188,6 +146,7 @@ class _Extrude(_Operation):
 
     """
 
+    _Name: str
     _Geometry: Union[FabGeometry, Tuple[FabGeometry, ...]] = field(compare=False)
     _Depth: float
     # TODO: Make _Geometries be comparable.
@@ -230,6 +189,11 @@ class _Extrude(_Operation):
     def Depth(self) -> float:
         """Return the Depth."""
         return self._Depth
+
+    # _Extrude.get_name():
+    def get_name(self) -> str:
+        """Return _Extrude name."""
+        return self._Name
 
     # _Extrude.produce():
     def produce(self, tracing: str = "") -> Tuple[str, ...]:
@@ -297,6 +261,7 @@ class _Pocket(_Operation):
 
     """
 
+    _Name: str
     _Geometry: Union[FabGeometry, Tuple[FabGeometry, ...]] = field(compare=False)
     _Depth: float
     # TODO: Make _Geometries be comparable.
@@ -341,7 +306,7 @@ class _Pocket(_Operation):
     # _Pocket.get_name():
     def get_name(self) -> str:
         """Return _Pocket name."""
-        return self.Name
+        return self._Name
 
     # _Pocket.produce():
     def produce(self, tracing: str = "") -> Tuple[str, ...]:
@@ -411,7 +376,7 @@ class _Hole(object):
 
 # FabMount:
 @dataclass
-class FabMount(_Internal):
+class FabMount(object):
     """FabMount: An operations plane that can be oriented for subsequent machine operations.
 
     This class basically corresponds to a FreeCad Datum Plane.  It is basically the surface
@@ -429,6 +394,7 @@ class FabMount(_Internal):
 
     """
 
+    _Name: str
     _Solid: "FabSolid"
     _Contact: Vector
     _Normal: Vector
@@ -445,7 +411,6 @@ class FabMount(_Internal):
     def __post_init__(self) -> None:
         """Verify that FabMount arguments are valid."""
 
-        super().__post_init__()
         solid: "FabSolid" = self._Solid
 
         tracing: str = solid.Tracing
@@ -453,7 +418,7 @@ class FabMount(_Internal):
             print(f"{tracing}=>FabMount({self.Name}).__post_init__()")
 
         # Do type checking here.
-        # assert isinstance(self._Name, str)
+        assert isinstance(self._Name, str)
         assert isinstance(self._Solid, FabSolid)
         assert isinstance(self._Contact, Vector)
         assert isinstance(self._Normal, Vector)
@@ -646,7 +611,7 @@ class FabMount(_Internal):
             print(f"{tracing}{self._Solid.BB=}")
 
         # Create and record the *extrude*:
-        extrude: _Extrude = _Extrude(name, self, shapes, depth)
+        extrude: _Extrude = _Extrude(self, name, shapes, depth)
         self.record_operation(extrude)
         # if tracing:
         #     print(f"{tracing}{extrude=}")
@@ -670,7 +635,7 @@ class FabMount(_Internal):
             print(f"{tracing}=>FabMount({self.Name}).pocket('{name}', *)")
 
         # Create the *pocket* and record it into the FabMount:
-        pocket: _Pocket = _Pocket(name, self, shapes, depth)
+        pocket: _Pocket = _Pocket(self, name, shapes, depth)
         self.record_operation(pocket)
 
         errors: List[str] = []
