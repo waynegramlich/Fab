@@ -46,7 +46,7 @@ from Utilities import FabColor
 
 
 # _Internal:
-@dataclass
+@dataclass(order=True)
 class _Internal(object):
     """_Internal: Base class for various FabSolid internal classes.
 
@@ -55,7 +55,7 @@ class _Internal(object):
 
     """
 
-    _Name: str
+    _Name: str = field(compare=False)
 
     # _Internal.__post_init__():
     def __post_init__(self) -> None:
@@ -70,18 +70,6 @@ class _Internal(object):
     def Name(self) -> str:
         """Return _Internal Name."""
         return self._Name
-
-    # _Internal.Mount():
-    # @property
-    # def Mount(self) -> "FabMount":
-    #     """Return Mount."""
-    #     raise RuntimeError(f"_Internal.Mount(): Not implemented for {type(self)}")
-
-    # _Internal.Solid():
-    # @property
-    # def Solid(self) -> "FabSolid":
-    #     """Return Solid"""
-    #     raise RuntimeError(f"_Internal.Solid(): Not implemented for {type(self)}")
 
     # _Internal.is_mount():
     def is_mount(self) -> bool:
@@ -100,7 +88,7 @@ class _Internal(object):
 
 
 # _Operation:
-@dataclass
+@dataclass(order=True)
 class _Operation(_Internal):
     """_Operation: An base class for FabMount operations -- _Extrude, _Pocket, FabHole, etc.
 
@@ -110,7 +98,7 @@ class _Operation(_Internal):
 
     """
 
-    _Mount: "FabMount"
+    _Mount: "FabMount" = field(repr=False, compare=False)
 
     # _Operation.__post_init__():
     def __post_init__(self) -> None:
@@ -186,7 +174,7 @@ class _Operation(_Internal):
 
 
 # _Extrude:
-@dataclass
+@dataclass(order=True)
 class _Extrude(_Operation):
     """_Extrude: A FreeCAD PartDesign Extrude operation.
 
@@ -200,9 +188,10 @@ class _Extrude(_Operation):
 
     """
 
-    _Geometry: Union[FabGeometry, Tuple[FabGeometry, ...]]
-    _Geometries: Tuple[FabGeometry, ...] = field(init=False, repr=False)
+    _Geometry: Union[FabGeometry, Tuple[FabGeometry, ...]] = field(compare=False)
     _Depth: float
+    # TODO: Make _Geometries be comparable.
+    _Geometries: Tuple[FabGeometry, ...] = field(init=False, repr=False, compare=False)
 
     # _Extrude.__post_init__():
     def __post_init__(self) -> None:
@@ -295,7 +284,7 @@ class _Extrude(_Operation):
         return ()
 
 # _Pocket:
-@dataclass
+@dataclass(order=True)
 class _Pocket(_Operation):
     """_Pocket: A FreeCAD PartDesign Pocket operation.
 
@@ -308,9 +297,10 @@ class _Pocket(_Operation):
 
     """
 
-    _Geometry: Union[FabGeometry, Tuple[FabGeometry, ...]]
+    _Geometry: Union[FabGeometry, Tuple[FabGeometry, ...]] = field(compare=False)
     _Depth: float
-    _Geometries: Tuple[FabGeometry, ...] = field(init=False, repr=False)
+    # TODO: Make _Geometries be comparable.
+    _Geometries: Tuple[FabGeometry, ...] = field(init=False, repr=False, compare=False)
 
     # _Pocket__post_init__():
     def __post_init__(self) -> None:
