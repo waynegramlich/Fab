@@ -363,12 +363,12 @@ class FabProject(FabNode):
         for node in all_nodes:
             node.post_produce1()
 
-        if tracing:
-            print("")
-            print(f"{tracing}Phase 3B: Produce:")
-        del errors[:]  # Clear *errors*
-        for node in all_nodes:
-            node.produce()
+        # if tracing:
+        #     print("")
+        #     print(f"{tracing}Phase 3B: Produce:")
+        # del errors[:]  # Clear *errors*
+        # for node in all_nodes:
+        #    node.produce()
 
         if tracing:
             print("")

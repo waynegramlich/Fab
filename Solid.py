@@ -88,6 +88,10 @@ class _Operation(object):
         raise NotImplementedError(f"{type(self)}.produce() is not implemented")
         return ()
 
+    # _Operation.post_produce1():
+    def post_produce1(self, tracing: str = "") -> None:
+        raise NotImplementedError(f"{type(self)}.post_produce1() is not implemented")
+
     # _Operation.produce_shape_binder():
     def produce_shape_binder(self, part_geometries: Tuple[Part.Part2DObject, ...],
                              prefix: str, tracing: str = "") -> Part.Feature:
@@ -195,12 +199,12 @@ class _Extrude(_Operation):
         """Return _Extrude name."""
         return self._Name
 
-    # _Extrude.produce():
-    def produce(self, tracing: str = "") -> Tuple[str, ...]:
+    # _Extrude.post_produce1():
+    def post_produce1(self, tracing: str = "") -> None:
         """Produce the Extrude."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>_Extrude.produce('{self.Name}')")
+            print(f"{tracing}=>_Extrude.produce1('{self.Name}')")
 
         # Extract the *part_geometries* and create the associated *shape_binder*:
         construct: bool = self._Mount._Solid.Construct
@@ -244,8 +248,8 @@ class _Extrude(_Operation):
             self._viewer_update(body, extrude)
 
         if tracing:
-            print(f"{tracing}<=_Extrude.produce('{self.Name}')")
-        return ()
+            print(f"{tracing}<=_Extrude.post_produce1('{self.Name}')")
+
 
 # _Pocket:
 @dataclass(order=True)
@@ -308,11 +312,11 @@ class _Pocket(_Operation):
         """Return _Pocket name."""
         return self._Name
 
-    # _Pocket.produce():
-    def produce(self, tracing: str = "") -> Tuple[str, ...]:
+    # _Pocket.post_produce1():
+    def post_produce1(self, tracing: str = "") -> None:
         """Produce the Pocket."""
         if tracing:
-            print("{tracing}=>_Pocket.produce('{self.Name}')")
+            print("{tracing}=>_Pocket.post_produce1('{self.Name}')")
 
         # Extract the *part_geometries* from *geometries*:
         geometries: Tuple[FabGeometry, ...] = self._Geometries
@@ -345,8 +349,7 @@ class _Pocket(_Operation):
         self._viewer_update(body, pocket)
 
         if tracing:
-            print("{tracing}<=_Pocket.produce('{self.Name}')")
-        return ()
+            print("{tracing}<=_Pocket.post_produce1('{self.Name}')")
 
 
 _HoleKey = Tuple[str, str, float, bool, int]
@@ -509,14 +512,15 @@ class FabMount(object):
         """Set the FabMount GeometryGroup need for the FabGeometryContex."""
         self._GeometryContext.set_geometry_group(geometry_group)
 
-    # FabMount.produce():
-    def produce(self, tracing: str = "") -> Tuple[str, ...]:
-        """Create the FreeCAD DatumPlane used for the drawing support."""
+    # FabMount.post_process1():
+    def post_process1(self, tracing: str = "") -> None:
+        """Perform FabMount phase 1 post procduction."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>FabMount.produce('{self.Name}')")
+            print(f"{tracing}=>FabMount.post_process1('{self.Name}')")
 
-        if self.Construct:  # and len(self._Operations):
+        # Create the FreeCAD DatumPlane used for the drawing support.
+        if True:
             contact: Vector = self._Contact
             normal: Vector = self._Normal
             z_axis: Vector = Vector(0.0, 0.0, 1.0)
@@ -576,11 +580,19 @@ class FabMount(object):
                 setattr(gui_datum_plane, "Visibility", False)
                 self._GuiDatum_plane = gui_datum_plane
 
-            # Install the FabMount (i.e. *self*) and *datum_plane* into *model_file* prior
-            # to recursively performing the *operations*:
+        # Process each *operation* in *operations*:
+        operations: "OrderedDict[str, _Operation]" = self._Operations
+        operation_name: str
+        operation: _Operation
+        for operation_name, operation in operations.items():
             if tracing:
-                print(f"{tracing}<=FabMount.produce('{self.Name}')")
-        return ()
+                print(f"{tracing}Operation[{operation_name}]:")
+            operation.post_produce1(tracing=next_tracing)
+
+        # Install the FabMount (i.e. *self*) and *datum_plane* into *model_file* prior
+        # to recursively performing the *operations*:
+        if tracing:
+            print(f"{tracing}<=FabMount.produce('{self.Name}')")
 
     # FabMount.extrude():
     def extrude(self, name: str, shapes: Union[FabGeometry, Tuple[FabGeometry, ...]],
@@ -726,7 +738,7 @@ class FabMount(object):
                                             unique, mount_start, join, hole_name)
                         holes.append(hole)
 
-            # If there is nothing to *holes* intersected:
+            # *holes* is empty if none intersected the *solid* bounding box.:
             if holes:
                 if tracing:
                     print(f"{tracing}{len(holes)=}")
@@ -880,10 +892,12 @@ class FabSolid(FabNode):
         """Perform FabSolid pre production."""
         tracing: str = self.Tracing
         if tracing:
-            print("f{tracing}=>FabSolid({self.Label}).pre_produce()")
+            print(f"{tracing}=>FabSolid({self.Label}).pre_produce()")
         self._Mounts = OrderedDict()
         if tracing:
-            print("f{tracing}<=FabSolid({self.Label}).pre_produce()")
+            print(f"{tracing}>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+            print(f"{tracing}{len(self._Mounts)=}")
+            print(f"{tracing}<=FabSolid({self.Label}).pre_produce()")
 
     # FabSolid.Construct():
     @property
@@ -895,15 +909,14 @@ class FabSolid(FabNode):
     def mount(self, name: str, contact: Vector, normal: Vector, orient: Vector,
               depth: float, tracing: str = "") -> FabMount:
         """Return a new FabMount."""
-        next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabSolid({self.Label}).mount('{name}', ...)")
 
+        mounts: "OrderedDict[str, FabMount]" = self._Mounts
+        if name in mounts:
+            raise RuntimeError(f"FabSolid({self._Label}).mount(): Mount {name} is not unique.")
         fab_mount: FabMount = FabMount(name, self, contact, normal, orient, depth)
         self._Mounts[name] = fab_mount
-        assert len(self._Mounts) > 0, "FabSolid.mount()"
-        if self.Construct:
-            fab_mount.produce(tracing=next_tracing)
 
         if tracing:
             print(f"{tracing}=>FabSolid({self.Label}).mount('{name}', ...)=>{fab_mount}")
@@ -952,6 +965,7 @@ class FabSolid(FabNode):
     def post_produce1(self) -> None:
         """Perform FabSolid Phase1 post production."""
         tracing: str = self.Tracing
+        next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabSolid.post_produce1('{self.Label}')")
 
@@ -1005,6 +1019,17 @@ class FabSolid(FabNode):
             # view_object: "ViewProviderDocumentObject"  = body.getLinkedObject(True).ViewObject
             # assert isinstance(view_object, ViewProviderDocumentObject), type(view_object)
             # model_file.ViewObject = view_object
+
+        # Now process each *mount*
+        mounts: "OrderedDict[str, FabMount]" = self._Mounts
+        if tracing:
+            print(f"{tracing}Iterate over |{len(mounts)}| mounts")
+        mount_name: str
+        mount: FabMount
+        for mount_name, mount in mounts.items():
+            if tracing:
+                print(f"{tracing}[{mount_name}]: process")
+            mount.post_process1(tracing=next_tracing)
 
         if tracing:
             print(f"{tracing}<=FabSolid.post_produce1('{self.Label}')")

@@ -1012,7 +1012,7 @@ class FabNode(FabBox):
                 print(f"{tracing}{node=}")
         assert node.is_document()
         if tracing:
-            print(f"{tracing}=>FabNode({self._Label}).get_gui_document()=>{node}")
+            print(f"{tracing}<=FabNode({self._Label}).get_gui_document()=>{node}")
         return node
 
     # FabNode.set_app_object_only():
