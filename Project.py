@@ -492,7 +492,7 @@ class BoxSide(FabSolid):
 
         polygon: FabPolygon = FabPolygon(corners)
         mount.extrude(f"{name}Extrude", polygon, depth)
-        self.drill_joins(all_screws)
+        self.drill_joins("Screws", all_screws)
 
         if tracing:
             print(f"{tracing}<=BoxSide({self.Label}).produce()")
