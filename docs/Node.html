@@ -145,7 +145,7 @@ are introduced as well.</p>
 </li>
 </ul>
 <h3><a name="node----enclose"></a>1.1 <code>FabBox.</code>enclose():</h3>
-<p>FabBox.enclose(self, bounds: typing.Sequence[typing.Union[Base.Vector, Base.BoundBox, ForwardRef('FabBox')]]) -&gt; None:</p>
+<p>FabBox.enclose(self, bounds: Sequence[Union[Base.Vector, Base.BoundBox, ForwardRef('FabBox')]]) -&gt; None:</p>
 <p>Initialize a FabBox.
 Arguments:</p>
 <ul>
@@ -166,7 +166,7 @@ X/Y/Z axes.  In particular, box volume is <em>not</em> conserved.</p>
 <li><em>placement</em> (Placement): The placement of the box corners.</li>
 </ul>
 <h3><a name="node----intersect"></a>1.3 <code>FabBox.</code>intersect():</h3>
-<p>FabBox.intersect(self, segment_start: Base.Vector, segment_end: Base.Vector, tracing: str = '') -&gt; typing.Tuple[bool, float, float]:</p>
+<p>FabBox.intersect(self, segment_start: Base.Vector, segment_end: Base.Vector, tracing: str = '') -&gt; Tuple[bool, float, float]:</p>
 <p>Compute Line Segment intersection with a FabBox.
 Arguments:</p>
 <ul>
@@ -195,7 +195,7 @@ A non-empty indentation string when tracing is enabled.
 This field is recursively set when <em>set_tracing</em>() is explicitly set.</li>
 </ul>
 <h3><a name="node----get-errors"></a>2.1 <code>FabNode.</code>get_errors():</h3>
-<p>FabNode.get_errors(self) -&gt; typing.List[str]:</p>
+<p>FabNode.get_errors(self) -&gt; List[str]:</p>
 <p>Return FabNode errors list.
 This method is only implemented by the FabProject class.</p>
 <h3><a name="node----error"></a>2.2 <code>FabNode.</code>error():</h3>
@@ -232,13 +232,13 @@ This method is only implemented by the FabProject class.</p>
 <p>FabNode.get_parent_document(self, tracing: str = '') -&gt; 'FabNode':</p>
 <p>NO DOC STRING!</p>
 <h3><a name="node----set-app-object-only"></a>2.13 <code>FabNode.</code>set_app_object_only():</h3>
-<p>FabNode.set_app_object_only(self, app_object: typing.Any) -&gt; None:</p>
+<p>FabNode.set_app_object_only(self, app_object: Any) -&gt; None:</p>
 <p>Set FabNode AppObject only.</p>
 <h3><a name="node----set-gui-object-only"></a>2.14 <code>FabNode.</code>set_gui_object_only():</h3>
-<p>FabNode.set_gui_object_only(self, gui_object: typing.Any) -&gt; None:</p>
+<p>FabNode.set_gui_object_only(self, gui_object: Any) -&gt; None:</p>
 <p>Set FabNode GuiObject only.</p>
 <h3><a name="node----set-object"></a>2.15 <code>FabNode.</code>set_object():</h3>
-<p>FabNode.set_object(self, app_object: typing.Any) -&gt; None:</p>
+<p>FabNode.set_object(self, app_object: Any) -&gt; None:</p>
 <p>Set both AppObject and GuiObject in FabNode.</p>
 <h3><a name="node----set-tracing"></a>2.16 <code>FabNode.</code>set_tracing():</h3>
 <p>FabNode.set_tracing(self, tracing: str):</p>
