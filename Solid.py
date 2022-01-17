@@ -440,24 +440,14 @@ class _Hole(_Operation):
         # Now do the FreeCAD stuff:
         # Create the *shape_binder*:
         # suffix: str = "Holes" if len(hole_group) > 1 else "Hole"
-        prefix: str = f"{self.Name}_{name}"
-        binder_placement: Placement = Placement()  # Do not move/reorient anything.
-        if tracing:
-            print(f"{tracing}{binder_placement.Rotation.Axis=}")
 
-        # suffix = "Drills" if len(hole_group) > 1 else "Drill"
-        suffix = "Drill"
-        solid_name: str = f"{prefix}_{suffix}"
-        shape_binder: Part.Feature = body.newObject(
-            "PartDesign::SubShapeBinder", f"{solid_name}_Binder")
-        assert isinstance(shape_binder, Part.Feature)
-        shape_binder.Placement = binder_placement
-        shape_binder.Support = (part_geometries)
-        # shape_binder.Support = (datum_plane, [""])
-        shape_binder.Visibility = False
+        # Create the *shape_binder*:
+        prefix: str = f"{self.Name}_{name}"
+        shape_binder: Part.Feature = self.produce_shape_binder(tuple(part_geometries), prefix)
 
         # TODO: fill in actual values for Hole.
         # Create the *hole* and upstate the view provider for GUI mode:
+        solid_name: str = f"{prefix}_Drill"
         part_hole: Part.Feature = body.newObject("PartDesign::Hole", solid_name)
         assert isinstance(part_hole, Part.Feature)
         part_hole.Profile = shape_binder
