@@ -129,11 +129,6 @@ class FabAssembly(FabGroup):
         if tracing:
             print(f"{tracing}<=FabAssembly({self.Label}).post_produce1()")
 
-    # FabAssembly.post_produce():
-    def post_produce(self) -> None:
-        """Preproduce a FabAssembly"""
-        super().post_produce()
-
 
 # FabDocument:
 @dataclass
@@ -192,7 +187,6 @@ class FabDocument(FabNode):
             print(f"{tracing}=>FabDocument({self.Label}).post_produce1()")
 
         # Create *app_document*:
-        assert self.Construct
         app_document: Any = App.newDocument(self.Label)
         assert isinstance(app_document, App.Document)  # Just to be sure.
         self.set_app_object_only(app_document)
@@ -208,6 +202,22 @@ class FabDocument(FabNode):
         if tracing:
             print(f"{tracing}<=FabDocument({self.Label}).post_produce1()")
 
+    # FabDocument.post_produce2():
+    def post_produce2(self) -> None:
+        """Close the FabDocument."""
+        tracing: str = self.Tracing
+        if tracing:
+            print(f"{tracing}=>FabDocument({self.Label}).post_produce1()")
+
+        # Save the document:
+        app_document: App.Document = self._AppDocument
+        app_document.recompute()
+        app_document.saveAs(str(self.FilePath))
+
+        if tracing:
+            print(f"{tracing}Saved {self.FilePath}")
+            print(f"{tracing}<=FabDocument({self.Label}).post_produce2()")
+
     # FabDocument.is_document():
     def is_document(self) -> bool:
         """ Return True if FabNode is a FabGroup."""
@@ -220,23 +230,6 @@ class FabDocument(FabNode):
         if tracing:
             print(f"{tracing}<=>FabDocument.produce('{self.Label}', *)")
 
-    # FabDocument.post_produce():
-    def post_produce(self) -> None:
-        """Close the FabDocument."""
-        tracing: str = self.Tracing
-        if tracing:
-            print(f"{tracing}=>FabDocument({self.Label}).post_produce()")
-
-        if self.Construct:  # Construct OK
-            # Recompute and save:
-            app_document: App.Document = self._AppDocument
-            app_document.recompute()
-            app_document.saveAs(str(self.FilePath))
-
-        if tracing:
-            print(f"{tracing}Saved {self.FilePath}")
-            print(f"{tracing}<=FabDocument({self.Label}).post_produce()")
-
 
 @dataclass
 # FabProject:
@@ -244,7 +237,6 @@ class FabProject(FabNode):
     """FabProject: The Root mode a FabNode tree."""
 
     _AllNodes: Tuple[FabNode, ...] = field(init=False, repr=False)
-    _Construct: bool = field(init=False, repr=False)
     _Errors: List[str] = field(init=False, repr=False)
 
     # FabProject.__post_init__():
@@ -252,28 +244,7 @@ class FabProject(FabNode):
         """Process FabRoot."""
         super().__post_init__()
         self._AllNodes = ()
-        self._Construct = False
         self._Errors = []
-
-    # FabProject.get_construct():
-    def get_construct(self) -> bool:
-        """Return the Construct mode.
-
-        The default get_construct() method in FabNode always returns False.  This method
-        overrides that method and returns the value of the _Construct field.  This field
-        is set to False in phase 1 of the run() method.  It is set to True in phase 2 of
-        the run method.
-
-        Many other classes implement a Construct property as follows:
-
-             @property
-             def Construct(self) -> bool:
-                 return self.SOME_FABNODE._Root.Construct
-
-        which calls this method to get the construct status.  This is a pretty convoluted
-        way to get the information, but it works.
-        """
-        return self._Construct
 
     # FabProject.get_errors():
     def get_errors(self) -> List[str]:
@@ -309,7 +280,7 @@ class FabProject(FabNode):
         # Phase 1: Iterate over tree in constraint mode:
         if tracing:
             print("")
-            print(f"{tracing}Project({self.Label}).run(): Phase 1: Constraints")
+            print(f"{tracing}Project({self.Label}).run(): Phase 1: Constraint Propagation")
         previous_constraints: Set[str] = set()
         differences: List[int] = []
         all_nodes: Tuple[FabNode, ...] = self._AllNodes
@@ -352,31 +323,21 @@ class FabProject(FabNode):
                 break
 
         # Phase 2: Run top-down in "construct" mode, where *post_produce*() also gets called:
-        self._Construct = True
-        if tracing:
-            print()
-            print(f"{tracing}Project({self.Label}).run(): Phase 2: Construct: {self._Construct=}")
+        if not errors:
+            if tracing:
+                print()
+                print(f"{tracing}Project({self.Label}).run(): Phase 2: Construct")
 
-        if tracing:
-            print(f"{tracing}Phase 3A: Pre Produce:")
-        del errors[:]  # Clear *errors*
-        for node in all_nodes:
-            node.post_produce1()
+            if tracing:
+                print(f"{tracing}Phase 2A: post_produce1():")
+            del errors[:]  # Clear *errors*
+            for node in all_nodes:
+                node.post_produce1()
 
-        # if tracing:
-        #     print("")
-        #     print(f"{tracing}Phase 3B: Produce:")
-        # del errors[:]  # Clear *errors*
-        # for node in all_nodes:
-        #    node.produce()
-
-        if tracing:
-            print("")
-            print(f"{tracing}Phase 3C: Post Produce:")
-        del errors[:]  # Clear *errors*
-
-        for node in all_nodes:
-            node.post_produce()
+            if tracing:
+                print(f"{tracing}Phase 2b: post_produce2():")
+            for node in all_nodes:
+                node.post_produce2()
 
         # Output any *errors*:
         if errors:
@@ -668,46 +629,45 @@ class TestSolid(FabSolid):
         # Create *top_mount*:
         depth: float = 10.0
         depth2: float = depth / 2.0
-        if True or self.Construct:
-            origin: Vector = Vector()
-            normal: Vector = Vector(0, 0, 1)
-            top_mount: FabMount = self.mount(
-                "Top", origin, self.DT, self.DN, depth, tracing=tracing)
+        origin: Vector = Vector()
+        normal: Vector = Vector(0, 0, 1)
+        top_mount: FabMount = self.mount(
+            "Top", origin, self.DT, self.DN, depth, tracing=tracing)
 
-            # Perform the first Extrude:
-            z_offset: float = 0.0
-            extrude_fillet_radius: float = 10.0
-            extrude_polygon: FabPolygon = FabPolygon((
-                (Vector(-40, -60, z_offset), extrude_fillet_radius),  # SW
-                (Vector(40, -60, z_offset), extrude_fillet_radius),  # SE
-                (Vector(40, 20, z_offset), extrude_fillet_radius),  # NE
-                (Vector(-40, 20, z_offset), extrude_fillet_radius),  # NW
-            ))
-            top_mount.extrude("Extrude", extrude_polygon, depth, tracing=next_tracing)
+        # Perform the first Extrude:
+        z_offset: float = 0.0
+        extrude_fillet_radius: float = 10.0
+        extrude_polygon: FabPolygon = FabPolygon((
+            (Vector(-40, -60, z_offset), extrude_fillet_radius),  # SW
+            (Vector(40, -60, z_offset), extrude_fillet_radius),  # SE
+            (Vector(40, 20, z_offset), extrude_fillet_radius),  # NE
+            (Vector(-40, 20, z_offset), extrude_fillet_radius),  # NW
+        ))
+        top_mount.extrude("Extrude", extrude_polygon, depth, tracing=next_tracing)
 
-            # Perform a pocket:
-            pocket_fillet_radius: float = 2.5
-            left_polygon: FabPolygon = FabPolygon((
-                (Vector(-30, -10, z_offset), pocket_fillet_radius),  # SW
-                (Vector(-10, -10, z_offset), pocket_fillet_radius),  # SE
-                (Vector(-10, 10, z_offset), pocket_fillet_radius),  # NE
-                (Vector(-30, 10, z_offset), pocket_fillet_radius),  # NW
-            ))
-            top_mount.pocket("LeftPocket", left_polygon, depth)
+        # Perform a pocket:
+        pocket_fillet_radius: float = 2.5
+        left_polygon: FabPolygon = FabPolygon((
+            (Vector(-30, -10, z_offset), pocket_fillet_radius),  # SW
+            (Vector(-10, -10, z_offset), pocket_fillet_radius),  # SE
+            (Vector(-10, 10, z_offset), pocket_fillet_radius),  # NE
+            (Vector(-30, 10, z_offset), pocket_fillet_radius),  # NW
+        ))
+        top_mount.pocket("LeftPocket", left_polygon, depth)
 
-            right_pocket: FabPolygon = FabPolygon((
-                (Vector(10, -10, z_offset), pocket_fillet_radius),  # SW
-                (Vector(30, -10, z_offset), pocket_fillet_radius),  # SE
-                (Vector(30, 10, z_offset), pocket_fillet_radius),  # NE
-                (Vector(10, 10, z_offset), pocket_fillet_radius),  # NW
-            ))
-            top_mount.pocket("RightPocket", right_pocket, depth2)
+        right_pocket: FabPolygon = FabPolygon((
+            (Vector(10, -10, z_offset), pocket_fillet_radius),  # SW
+            (Vector(30, -10, z_offset), pocket_fillet_radius),  # SE
+            (Vector(30, 10, z_offset), pocket_fillet_radius),  # NE
+            (Vector(10, 10, z_offset), pocket_fillet_radius),  # NW
+        ))
+        top_mount.pocket("RightPocket", right_pocket, depth2)
 
-            right_circle: FabCircle = FabCircle(Vector(20, 0, z_offset), normal, 10)
-            top_mount.pocket("RightCircle", right_circle, depth)
+        right_circle: FabCircle = FabCircle(Vector(20, 0, z_offset), normal, 10)
+        top_mount.pocket("RightCircle", right_circle, depth)
 
-            center_circle: FabCircle = FabCircle(Vector(0, 0, z_offset), normal, 10)
-            top_mount.pocket("CenterCircle", center_circle, depth2)
+        center_circle: FabCircle = FabCircle(Vector(0, 0, z_offset), normal, 10)
+        top_mount.pocket("CenterCircle", center_circle, depth2)
 
         if tracing:
             print(f"{tracing}<=TestSolid({self.Label}).produce()")

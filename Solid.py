@@ -207,45 +207,43 @@ class _Extrude(_Operation):
             print(f"{tracing}=>_Extrude.produce1('{self.Name}')")
 
         # Extract the *part_geometries* and create the associated *shape_binder*:
-        construct: bool = self._Mount._Solid.Construct
-        if construct:
-            part_geometries: List[Part.Part2DObject] = []
-            mount: FabMount = self.Mount
-            geometry_context: FabGeometryContext = mount._GeometryContext
-            geometry_group: App.DocumentObjectGroup = mount._Solid._GeometryGroup
-            assert isinstance(geometry_group, App.DocumentObjectGroup), geometry_group
-            geometry_context.set_geometry_group(geometry_group)
+        part_geometries: List[Part.Part2DObject] = []
+        mount: FabMount = self.Mount
+        geometry_context: FabGeometryContext = mount._GeometryContext
+        geometry_group: App.DocumentObjectGroup = mount._Solid._GeometryGroup
+        assert isinstance(geometry_group, App.DocumentObjectGroup), geometry_group
+        geometry_context.set_geometry_group(geometry_group)
 
-            geometry_prefix: str = f"{mount.Name}_{self.Name}"
-            for geometry in self._Geometries:
-                part_geometries.extend(geometry.produce(geometry_context, geometry_prefix))
+        geometry_prefix: str = f"{mount.Name}_{self.Name}"
+        for geometry in self._Geometries:
+            part_geometries.extend(geometry.produce(geometry_context, geometry_prefix))
 
-            binder_prefix: str = f"{mount.Name}_{self.Name}"
-            shape_binder: Part.Feature = self.produce_shape_binder(
-                tuple(part_geometries), binder_prefix, tracing=next_tracing)
-            assert isinstance(shape_binder, Part.Feature)
-            shape_binder.Visibility = False
+        binder_prefix: str = f"{mount.Name}_{self.Name}"
+        shape_binder: Part.Feature = self.produce_shape_binder(
+            tuple(part_geometries), binder_prefix, tracing=next_tracing)
+        assert isinstance(shape_binder, Part.Feature)
+        shape_binder.Visibility = False
 
-            # Perform The Extrude operation:
-            body: Part.BodyBase = mount.Body
-            mount_normal: Vector = mount.Normal
-            pad_name: str = f"{mount.Name}_{self.Name}_Extrude"
-            extrude: Part.Feature = body.newObject("PartDesign::Pad", pad_name)
-            assert isinstance(extrude, Part.Feature)
-            # Type must be one of ("Length", "TwoLengths", "UpToLast", "UpToFirst", "UpToFace")
-            extrude.Type = "Length"
-            extrude.Profile = shape_binder
-            extrude.Length = self.Depth
-            extrude.Length2 = 0  # Only for Type == "TwoLengths"
-            extrude.UseCustomVector = True
-            extrude.Direction = mount_normal  # This may be bogus
-            extrude.UpToFace = None
-            extrude.Reversed = True
-            extrude.Midplane = False
-            extrude.Offset = 0  # Only for Type in ("UpToLast", "UpToFirst", "UpToFace")
+        # Perform The Extrude operation:
+        body: Part.BodyBase = mount.Body
+        mount_normal: Vector = mount.Normal
+        pad_name: str = f"{mount.Name}_{self.Name}_Extrude"
+        extrude: Part.Feature = body.newObject("PartDesign::Pad", pad_name)
+        assert isinstance(extrude, Part.Feature)
+        # Type must be one of ("Length", "TwoLengths", "UpToLast", "UpToFirst", "UpToFace")
+        extrude.Type = "Length"
+        extrude.Profile = shape_binder
+        extrude.Length = self.Depth
+        extrude.Length2 = 0  # Only for Type == "TwoLengths"
+        extrude.UseCustomVector = True
+        extrude.Direction = mount_normal  # This may be bogus
+        extrude.UpToFace = None
+        extrude.Reversed = True
+        extrude.Midplane = False
+        extrude.Offset = 0  # Only for Type in ("UpToLast", "UpToFirst", "UpToFace")
 
-            # For the GUI, update the view provider:
-            self._viewer_update(body, extrude)
+        # For the GUI, update the view provider:
+        self._viewer_update(body, extrude)
 
         if tracing:
             print(f"{tracing}<=_Extrude.post_produce1('{self.Name}')")
@@ -605,12 +603,6 @@ class FabMount(object):
         """Return the depth."""
         return self._Depth
 
-    # FabMount.Construct:
-    @property
-    def Construct(self) -> bool:
-        """Return whether construction is turned on."""
-        return self._Solid.Construct
-
     # FabMount.record_operation():
     def record_operation(self, operation: _Operation) -> None:
         """Record an operation to a FabMount."""
@@ -711,7 +703,6 @@ class FabMount(object):
                 depth: float, tracing: str = "") -> None:
         """Perform a extrude operation."""
         tracing = self._Solid.Tracing
-        next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabMount({self.Name}).extrude('{name}', *, {depth})")
 
@@ -743,24 +734,14 @@ class FabMount(object):
         # Create and record the *extrude*:
         extrude: _Extrude = _Extrude(self, name, shapes, depth)
         self.record_operation(extrude)
-        # if tracing:
-        #     print(f"{tracing}{extrude=}")
-
-        errors: List[str] = []
-        if self.Construct:
-            assert isinstance(shapes, FabGeometry)
-            assert depth > 0.0
-            errors.extend(extrude.produce(next_tracing))
 
         if tracing:
-            print(f"{tracing}<=FabMount({self.Name}).extrude('{name}', *, "
-                  f"{depth})=>|{len(errors)}|")
+            print(f"{tracing}<=FabMount({self.Name}).extrude('{name}', *, {depth})")
 
     # FabMount.pocket():
     def pocket(self, name: str, shapes: Union[FabGeometry, Tuple[FabGeometry, ...]],
                depth: float, tracing: str = "") -> None:
         """Perform a pocket operation."""
-        next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabMount({self.Name}).pocket('{name}', *)")
 
@@ -768,14 +749,8 @@ class FabMount(object):
         pocket: _Pocket = _Pocket(self, name, shapes, depth)
         self.record_operation(pocket)
 
-        errors: List[str] = []
-        if self.Construct:   # Construct OK
-            assert isinstance(shapes, FabGeometry)
-            assert depth > 0.0
-            errors.extend(pocket.produce(next_tracing))
-
         if tracing:
-            print(f"{tracing}<=FabMount({self.Name}).pocket('{name}', *)=>|{len(errors)}|")
+            print(f"{tracing}<=FabMount({self.Name}).pocket('{name}', *)")
 
     # FabMount.drill_joins():
     def drill_joins(self, joins_name: str,
@@ -930,12 +905,6 @@ class FabSolid(FabNode):
             print(f"{tracing}{len(self._Mounts)=}")
             print(f"{tracing}<=FabSolid({self.Label}).pre_produce()")
 
-    # FabSolid.Construct():
-    @property
-    def Construct(self) -> bool:
-        """Return the construct mode flag."""
-        return self.Project.Construct
-
     # FabSolid.mount():
     def mount(self, name: str, contact: Vector, normal: Vector, orient: Vector,
               depth: float, tracing: str = "") -> FabMount:
@@ -995,9 +964,6 @@ class FabSolid(FabNode):
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabSolid.post_produce1('{self.Label}')")
-
-        # Only do work in construct mode:
-        assert self.Construct
 
         # Create the *geometry_group* that contains all of the 2D geometry (line, arc, circle.):
         parent: FabNode = self.Up

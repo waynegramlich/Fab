@@ -874,16 +874,10 @@ class FabNode(FabBox):
             raise RuntimeError(f"FabNode({self._Label}).AppObject(): No AppObject has been set.")
         return self._AppObject
 
-    # FabNode.Construct():
-    @property
-    def Construct(self) -> bool:
-        """Return the FabNode construct mode."""
-        return self._Project.get_construct()
-
     # FabNode.Children():
     @property
     def Children(self) -> Tuple["FabNode", ...]:
-        """Return the FabNode construct mode."""
+        """Return the FabNode Children."""
         return tuple(self._Children.values())
 
     # FabNode.GuiObject():
@@ -921,16 +915,6 @@ class FabNode(FabBox):
     def Up(self) -> "FabNode":
         """Return the FabNode parent."""
         return self._Parent
-
-    # FabNode.get_construct():
-    def get_construct(self) -> bool:
-        """Return construct flag.
-
-        This method is overridden in FabProject only and should be call the only one called.
-        If this method is actually called, something is seriously wrong.
-        """
-        assert False
-        return False  # Make linters happy.
 
     # FabNode.get_errors():
     def get_errors(self) -> List[str]:
@@ -987,17 +971,17 @@ class FabNode(FabBox):
 
     # FabNode.post_produce1():
     def post_produce1(self) -> None:
-        """Do phase 1 FabNode post production."""
+        """Do FabNode phase 1 post production."""
         tracing: str = self.Tracing
         if tracing:
             print(f"{tracing}<=>FabNode({self._Label}).produce1()=>()")
 
-    # FabNode.post_produce():
-    def post_produce(self) -> None:
-        """Empty FabNode post_produce method to be over-ridden as needed."""
+    # FabNode.post_produce2():
+    def post_produce2(self) -> None:
+        """Do FabNode phase 2 post production."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}<=>FabNode({self._Label}).post_produce()=>()")
+            print(f"{tracing}<=>FabNode({self._Label}).post_produce2()=>()")
 
     # FabNode.get_parent_document():
     def get_parent_document(self, tracing: str = "") -> "FabNode":
