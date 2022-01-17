@@ -33,8 +33,11 @@ from PathScripts import PathPostProcessor  # type: ignore
 from PathScripts import PathUtil  # type: ignore
 
 
-def get_document(name: str) -> "App.Document":
+def get_document(name: str, tracing: str = "") -> "App.Document":
     """Return the active document."""
+    if tracing:
+        print(f"{tracing}=>get_document('{name}')")
+
     document: Optional["App.Document"] = App.activeDocument()
 
     if document is None:
@@ -48,6 +51,8 @@ def get_document(name: str) -> "App.Document":
             document.removeObject(obj.Name)
         # if App.GuiUp:
         #     VIEW = App.Gui.ActiveDocument.ActiveView
+    if tracing:
+        print(f"{tracing}<=get_document('{name}')=>{document}")
     return document
 
 
@@ -62,16 +67,18 @@ def setview(document: "App.Document") -> "App.Document":
 
 
 def box_make(document: "App.Document", name: str,
-             shape: Vector, offset: Vector, rotate: float = 0) -> "App.Document":
+             shape: Vector, offset: Vector, rotate: float = 0, tracing: str = "") -> "App.Document":
     """Create a box."""
-    print(f"=>box_make('{name}', {shape=}, {offset=})")
+    if tracing:
+        print(f"{tracing}=>box_make('{name}', {shape=}, {offset=})")
     box: Any = document.addObject("Part::Box", name)
     box.Width = shape.x
     box.Length = shape.y
     box.Height = shape.z
     box.Placement = App.Placement(offset, App.Rotation(Vector(0, 0, 1), rotate))
     document.recompute()
-    print(f"<=box_make('{name}', {shape=}, {offset=})")
+    if tracing:
+        print(f"{tracing}<=box_make('{name}', {shape=}, {offset=})=>{box}")
     return box
 
 
@@ -99,9 +106,10 @@ def top_faces(obj: Any) -> List[str]:
 
 
 def donut(document: "App.Document", name: str, box_shape: Vector,
-          offset: Vector, rotate: float = 0.0) -> "Part.Cut":
+          offset: Vector, rotate: float = 0.0, tracing: str = "") -> "Part.Cut":
     """Create a square donut."""
-    print(f"=>donut('{name}', {box_shape=}, {offset=})")
+    if tracing:
+        print(f"{tracing}=>donut({name=}, {box_shape=}, {offset=}, {rotate=})")
     box: "Part.Box" = box_make(document, f"{name}Box", box_shape, offset, rotate)
     extra: int = 5
     hole_shape: Vector = Vector(box_shape.x / 2, box_shape.y / 2, box_shape.z + 2 * extra)
@@ -110,11 +118,14 @@ def donut(document: "App.Document", name: str, box_shape: Vector,
     hole: "Part.Box" = box_make(document, f"{name}Hole", hole_shape, hole_offset, rotate)
     # cut: "Part.Cut" = box_cut(document, f"{name}Cut", box, hole)
     box_cut(document, f"{name}Cut", box, hole)
-    print(f"<=donut('{name}', {box_shape=}, {offset=})")
+    if tracing:
+        print(f"{tracing}<=donut()=>{box}")
     return box
 
 
-def contour(obj: Any, name: str, job: Any) -> Any:
+def contour(obj: Any, name: str, job: Any, tracing: str = "") -> Any:
+    if tracing:
+        print(f"{tracing}=>contour({obj=}, {name=}, {job=})")
     """Create an exterior contour."""
     top_face_name: str = top_faces(obj)[0]
     profile = PathProfile.Create(name)
@@ -129,17 +140,29 @@ def contour(obj: Any, name: str, job: Any) -> Any:
     profile.processPerimeter = True
 
     profile.recompute()
+    if tracing:
+        print(f"{tracing}<=contour()=>{profile}")
+    return profile
 
 
-def model(document: "App.Document") -> None:
+def model(document: "App.Document", tracing: str = "") -> None:
     """Create the model."""
-    gcodePath = "/tmp/engrave.ngc"
+    next_tracing: str = tracing + " " if tracing else ""
+    if tracing:
+        print(f"{tracing}=>model()")
 
-    donut_a: "Part.Cut" = donut(document, "DonutA", Vector(100, 100, 10), Vector(0, 0, 0))
+    donut_a: "Part.Cut" = donut(
+        document, "DonutA", Vector(100, 100, 10), Vector(0, 0, 0), tracing=next_tracing)
     # donut_b: "Part.Cut" = donut(document, "DonutB", Vector(100, 100, 10), Vector(0, 0, 0),
     #                              rotate=45)
 
+    # Create the *job* for *donut_a*.
     job = PathJob.Create('Job', [donut_a], None)
+    gcode_path: str = "/tmp/engrave.ngc"
+    job.PostProcessorOutputFile = gcode_path
+    job.PostProcessor = 'grbl'
+    job.PostProcessorArgs = '--no-show-editor'
+
     if App.GuiUp:  # pragma: no unit cover
         proxy: Any = PathJobGui.ViewProvider(job.ViewObject)
         # The statement below causes a bunch of rearrangement of the FreeCAD object tree
@@ -150,11 +173,14 @@ def model(document: "App.Document") -> None:
         # does not occur in embedded mode, so the resulting object trees look quite different.
         # Such is life.
         job.ViewObject.Proxy = proxy  # This assignment rearranges the Job.
+    if tracing:
+        print(f"{tracing}{job=}")
 
     index: int
     part: Any
     for index, part in enumerate(job.Model.OutList):
-        print(f"Part[{index}]:'{part.Name}' '{part.Label}'")
+        if tracing:
+            print(f"{tracing}Part[{index}]:'{part.Name}' '{part.Label}'")
 
     clone_a: Any = job.Model.getObject("Clone")
     # clone_b: Any = job.Model.getObject("Clone001")
@@ -174,7 +200,8 @@ def model(document: "App.Document") -> None:
     # print(f"{stock.Shape=}")
     # print(f"{dir(stock.Shape)=}")
     # print(f"{dir(stock.Shape.OuterShell)=}")
-    print(f"{stock.Shape.OuterShell.BoundBox=}")
+    if tracing:
+        print(f"{tracing}{stock.Shape.OuterShell.BoundBox=}")
     stock.Placement.Base = Vector(-150, 0, 0)
 
     # print(f"{job.Model.Name=} {job.Model.Label=}")
@@ -187,47 +214,53 @@ def model(document: "App.Document") -> None:
     # print(f"{clone.Placement.Position=}")
     # print(f"{clone.Placement.Rotation=}")
 
-    contour(clone_a, "ProfileA", job)
+    # This operation appends *opertation* onto *job.Operations.Group*:
+    operation: Any = contour(clone_a, "ProfileA", job, tracing=next_tracing)
+    if tracing:
+        print(f"{tracing}{id(operation)=}")
     # contour(clone_b, "ProfileB", job)
 
     document.recompute()
 
-    job.PostProcessorOutputFile = gcodePath
-    job.PostProcessor = 'grbl'
-    job.PostProcessorArgs = '--no-show-editor'
+    # Create *post_list* which is a list of tool controllers and *operations*:
+    post_list: List[Any] = []
+    current_tool_number: int = -99999999
+    for index, operation in enumerate(job.Operations.Group):
+        tool_controller: Any = PathUtil.toolControllerForOp(operation)
+        if tool_controller is not None:
+            if tool_controller.ToolNumber != current_tool_number:
+                post_list.append(tool_controller)
+                current_tool_number = tool_controller.ToolNumber
+        post_list.append(operation)
 
-    postlist = []
-    currTool = None
-
-    for obj in job.Operations.Group:
-        print(obj.Name)
-        tc = PathUtil.toolControllerForOp(obj)
-        if tc is not None:
-            if tc.ToolNumber != currTool:
-                postlist.append(tc)
-                currTool = tc.ToolNumber
-        postlist.append(obj)
-
-    post = PathPostProcessor.PostProcessor.load(job.PostProcessor)
-    # gcode = post.export(postlist, gcodePath , job.PostProcessorArgs)
-    post.export(postlist, gcodePath, job.PostProcessorArgs)
+    # Generate the G-code *post* and export it to *gcode_path*:
+    post: Any = PathPostProcessor.PostProcessor.load(job.PostProcessor)
+    post.export(post_list, gcode_path , job.PostProcessorArgs)
+    if tracing:
+        print(f"{tracing}{post=}")
 
     # ops = document.getObject("Operations")
     # ops.Visibility = True
+    if tracing:
+        print(f"{tracing}<=model()")
 
 
-def main() -> None:
+def main(tracing: str = "") -> None:
     """Run the main program."""
+    next_tracing: str = tracing + " " if tracing else ""
+    if tracing:
+        print(f"{tracing}=>main()")
     document_name: str = "JobTest"
-    document: "App.Document" = get_document(document_name)
+    document: "App.Document" = get_document(document_name, tracing=next_tracing)
 
-    model(document)
+    model(document, tracing=next_tracing)
 
     document.recompute()
     document.saveAs("/tmp/bar.fcstd")
 
-    print("--- done ---")
+    if tracing:
+        print(f"{tracing}<=main()")
 
 
 if __name__ == "__main__":
-    main()
+    main(tracing=" ")
