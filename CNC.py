@@ -3,6 +3,7 @@
 
 # <--------------------------------------- 100 characters ---------------------------------------> #
 
+
 import sys
 sys.path.append(".")
 import Embed
@@ -10,7 +11,9 @@ Embed.setup()
 
 import FreeCAD as App  # type: ignore
 import FreeCADGui as Gui  # type: ignore
-from typing import Any, List, Optional
+from typing import Any, IO, List, Optional, Tuple, Union
+from dataclasses import dataclass, field
+from pathlib import Path
 
 # import math
 from FreeCAD import Vector  # type: ignore
@@ -24,6 +27,8 @@ if App.GuiUp:
 
 from PathScripts import PathProfile  # type: ignore
 
+
+
 # import PathScripts.PathDressupDogbone as PathDressupDogbone  # type: ignore
 
 # import PathScripts.PathDressupHoldingTags as PathDressupHoldingTags  # type: ignore
@@ -32,6 +37,169 @@ from PathScripts import PathProfile  # type: ignore
 from PathScripts import PathPostProcessor  # type: ignore
 from PathScripts import PathUtil  # type: ignore
 
+
+# FabCNCTemplate:
+@dataclass
+class FabCNCTemplate(object):
+    """FabCNCShape: Base class for CNC tool bit templates.
+
+    Attributes:
+    * *Name* (str): The name of the tool template.
+    * *FileName* (str): The tool template file name (must have a suffix of`.fcstd` file)
+
+    """
+    
+    Name: str
+    FileName: str
+    ToolHolderHeight: Union[float, str]
+    ParameterNames: Tuple[str, ...] = field(init=False, default=())
+    AttributeNames: Tuple[str, ...] = field(init=False, default=())
+    
+    # FabCNCTemplate.__post_init__():
+    def __post_init__(self) -> None:
+        """Initialize the FabCNCTemplate."""
+        self.str_check("Name")
+        self.str_check("FileName")
+        self.length_check("ToolHolderHeight")
+        if not self.Name:
+            raise RuntimeError(f"FabCNCTemplate.__post_init__(): Empty name")
+        if not self.FileName.endswith(".fcstd"):
+            raise RuntimeError(
+                f"FabCNCTemplate.__post_init__(): Filename {self.FileName} does not end in .fcstd")
+        
+        self._ParameterNames = ()
+        self._AttributeNames = ("ToolHolderHeight",)
+        
+
+    # FabCNCTemplate.attribute_get():
+    def attribute_get(self, attribute_name: str, types: Tuple[type, ...]) -> Any:
+        """Return an attribute value by name."""
+        if not hasattr(self, attribute_name):
+            raise RuntimeError("FabCNCTemplate.attribute_get(): "
+                               f"Attribute '{attribute_name} is not present.'")
+        attribute: Any = getattr(self, attribute_name)
+        if not isinstance(attribute, types):
+            raise RuntimeError("FabCNCTemplate.attribute_get(): "
+                               f"Attribute '{attribute_name} is {type(attribute)}, not {types}'")
+        return attribute
+
+    # FabCNCTemplate.length_check():
+    def length_check(self, attribute_name: str) -> None:
+        """Verify that length is valid. """
+        _ = self.attribute_get(attribute_name, (str, float))
+
+    # FabCNCTemplate.int_check():
+    def int_check(self, attribute_name: str, minimum: int) -> None:
+        """Verify that length is valid. """
+        value: Any = self.attribute_get(attribute_name, (int,))
+        if value < minimum:
+            raise RuntimeError(f"FabCNCTemplate.int_check('{attribute_name}'): "
+                               f"value {value} is less than minumum ({minimum})")
+
+    # FabCNCTemplate.material_check():
+    def material_check(self, attribute_name: str) -> None:
+        """Verify that integer value is correct."""
+        _ = self.attribute_get(attribute_name, (tuple,))
+
+    # FabCNCTemplate.str_check():
+    def str_check(self, attribute_name: str) -> None:
+        """Verify that text is a string."""
+        _ = self.attribute_get(attribute_name, (str,))
+
+    # FabCNCTemplate.write_json():
+    def write_json(self, file_path: Path) -> None:
+        """Write FabCNCTemptlate out to a JSON file."""
+        comma: str
+        index: int
+        name: str
+        value: Union[float, str]
+
+        # Collect all output into *lines*:
+        lines: List[str] = [
+            '{',
+            '  "version": 2,',
+            f'  "name": "{self.Name}",',
+            f'  "shape": "{self.FileName}",',
+        ]
+
+        # Output parameter table:
+        lines.append('  "parameter", {')
+        size: int = len(self.ParameterNames)
+        for index, name in enumerate(self.ParameterNames):
+            value = getattr(self, name)
+            if isinstance(value, float):
+                value = f'{value:.4f} mm'
+            comma = "" if index + 1 == size else ","
+            lines.append(f'    "{name}": "{value}"{comma}')
+        lines.append('  },')
+
+        # Output attribute table:
+        lines.append('  "attribute", {')
+        size = len(self.AttributeNames)
+        for index, name in enumerate(self.AttributeNames):
+            value = getattr(self, name)
+            if isinstance(value, float):
+                value = f'{value:.4f} mm'
+            comma = "" if index + 1 == size else ","
+            lines.append(f'    "{name}": "{value}"{comma}')
+        lines.append('  }')  # No comma for last itme in list.
+
+        # Write *lines* to *file_path*:
+        lines.append('}')
+        lines.append('')
+        json_file: IO[str]
+        with open(file_path, 'w') as json_file:
+            json_file.write('\n'.join(lines))
+
+
+# FabEndMill:
+@dataclass
+class FabEndMill(FabCNCTemplate):
+    """FabEndMill: An end-mill tool template.
+
+    Inherited Attributes:
+    * *Name* (str): The name of the tool template.
+    * *FileName* (str): The tool template file name (must have a suffix of`.fcstd` file)
+
+    Attributes:
+    * *CuttingEdgeHeight* (Union[str, float]): The cutting edge height.
+    * *Diameter* (Union[str, float]): The end mill cutter diameter.
+    * *Length* (Union[str, float]): The total length of the end mill.
+    * *ShankDiameter: (Union[str, float]): The shank diameter.
+    * *ToolHolderHeight: (Union[str, float]): The distance to the tool holder.
+    * *Flutes*: (int): The number of flutes.
+    * *Material: (str): The tool material.
+    * *VendorName*: (str): The vendor name (default: "")
+    * *VendorPart*: (str): The vendor part number (default: "")
+
+    """
+
+    CuttingEdgeHeight: Union[str, float]
+    Diameter: Union[str, float]
+    Length: Union[str, float]
+    ShankDiameter: Union[str, float]
+    Flutes: int
+    Material: Tuple[str, ...]
+    Vendor: str = ""
+    PartNumber: str = ""
+
+    # FabEndMill.__post_init__():
+    def __post_init__(self) -> None:
+        """Initialze the FabCNCEndMill."""
+        super().__post_init__()
+        self.length_check("CuttingEdgeHeight")
+        self.length_check("Diameter")
+        self.length_check("Length")
+        self.length_check("ShankDiameter")
+        self.int_check("Flutes", 1)
+        self.material_check("Material")
+        self.str_check("Vendor")
+        self.str_check("PartNumber")
+        self.ParameterNames += ("CuttingEdgeHeight", "Diameter", "Length", "ShankDiameter")
+        self.AttributeNames += ("Flutes", "Material", "Vendor", "PartNumber")
+        print(f"{self.ParameterNames=}")
+        print(f"{self.AttributeNames=}")
+    
 
 def get_document(name: str, tracing: str = "") -> "App.Document":
     """Return the active document."""
@@ -222,11 +390,54 @@ def model(document: "App.Document", tracing: str = "") -> None:
 
     document.recompute()
 
+    # From TestPathToolController.py:
+    # def createTool(self, name='t1', diameter=1.75):
+    #     if PathPreferences.toolsUseLegacyTools():
+    #         return Path.Tool(name=name, diameter=diameter)
+    # attrs = {
+    #     'shape': None,
+    #     'name': name,
+    #     'parameter': {
+    #         'Diameter': diameter},
+    #     'attribute': []
+    # }
+    #     return PathToolBit.Factory.CreateFromAttrs(attrs, name)
+
+
+    # Defined in `.../Path/PathScripts/PathToolController.py`:216:
+    # Is a function, not an method:
+    # def Create(
+    #         name: str, tool: "Tool", toolNumber: int, assignViewProvider: bool = True,
+    #         assignTool=True) -> None
+    # )
+
     # Create *post_list* which is a list of tool controllers and *operations*:
     post_list: List[Any] = []
     current_tool_number: int = -99999999
     for index, operation in enumerate(job.Operations.Group):
         tool_controller: Any = PathUtil.toolControllerForOp(operation)
+        if tracing:
+            print(f"{tracing}{tool_controller.ToolNumber=}")
+            print(f"{tracing}{tool_controller.Name=}")
+            print(f"{tracing}{tool_controller.FullName=}")
+            print(f"{tracing}{tool_controller.Label=}")
+            print(f"{tracing}{tool_controller.Label2=}")
+            print(f"{tracing}{tool_controller.Tool=}")
+            print(f"{tracing}{tool_controller.HorizFeed=}")
+            print(f"{tracing}{tool_controller.HorizRapid=}")
+            print(f"{tracing}{tool_controller.VertFeed=}")
+            print(f"{tracing}{tool_controller.VertRapid=}")
+            print(f"{tracing}{tool_controller.SpindleDir=}")
+            print(f"{tracing}{tool_controller.SpindleSpeed=}")
+            print(f"{tracing}{tool_controller.State=}")
+            print(dir(tool_controller))
+            print("")
+        tool: Any = tool_controller.Tool
+        if tracing:
+            print(f"{tracing}{tool=}")
+            print(dir(tool))
+            print("")
+
         if tool_controller is not None:
             if tool_controller.ToolNumber != current_tool_number:
                 post_list.append(tool_controller)
@@ -257,6 +468,19 @@ def main(tracing: str = "") -> None:
 
     document.recompute()
     document.saveAs("/tmp/bar.fcstd")
+
+    end_mill: FabEndMill = FabEndMill(
+        Name="5mm EndMill",
+        FileName="endmill.fcstd",
+        ToolHolderHeight=20.0,
+        CuttingEdgeHeight="30.0000 mm",
+        Diameter="5.0000 mm",
+        Length="50.0000 mm",
+        ShankDiameter="3.0000 mm",
+        Flutes=2,
+        Material=("steel", "HSS")
+    )
+    end_mill.write_json(Path("5mm_Endmill.fctb"))
 
     if tracing:
         print(f"{tracing}<=main()")
