@@ -314,7 +314,7 @@ class _Pocket(_Operation):
     def post_produce1(self, tracing: str = "") -> None:
         """Produce the Pocket."""
         if tracing:
-            print("{tracing}=>_Pocket.post_produce1('{self.Name}')")
+            print(f"{tracing}=>_Pocket.post_produce1('{self.Name}')")
 
         # Extract the *part_geometries* from *geometries*:
         geometries: Tuple[FabGeometry, ...] = self._Geometries
@@ -347,7 +347,7 @@ class _Pocket(_Operation):
         self._viewer_update(body, pocket)
 
         if tracing:
-            print("{tracing}<=_Pocket.post_produce1('{self.Name}')")
+            print(f"{tracing}<=_Pocket.post_produce1('{self.Name}')")
 
 
 _HoleKey = Tuple[str, str, float, bool, int]
