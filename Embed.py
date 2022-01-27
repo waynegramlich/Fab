@@ -195,6 +195,30 @@ The following piece of code will exit the window system when the GUI is up:
      # It might make sense to save any open documents before exiting.
      if App.GuiUp:
          Gui.getMainWindow().close()
+
+When the python version changes the followning packages need to be intalled:
+
+* python3.9 -m pip install shiboken
+* python3.9 -m pip install PySide2
+
+
+* [Set up Pyhton Virtual Environments]
+  (https://www.freecodecamp.org/news/how-to-set-up-python-virtual-environment-on-ubuntu-20-04/)
+* [Create Python 3.9 Virtual Environment]
+  (https://www.ntweekly.com/2021/04/14/create-a-python-3-9-virtual-environment-ubuntu/)
+
+     # Install ubuntu Python 3.9 packages:
+     sudo apt update
+     sudo apt install python3.9
+     sudo apt install python3.9-dev python3.9-venv
+
+     # Create `freecad` virtual environment.
+     python3.9 -m venv sandbox  # Should be ~/.virtualenvs
+
+     # To activate:
+     source 
+
+
 """
 import os
 import sys
