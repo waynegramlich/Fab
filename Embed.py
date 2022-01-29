@@ -198,14 +198,22 @@ The following piece of code will exit the window system when the GUI is up:
 
 When the python version changes the followning packages need to be intalled:
 
+
+
 * python3.9 -m pip install shiboken
-* python3.9 -m pip install PySide2
+* python3.9 -m pip install PySide2 setuptools
 
 
 * [Set up Pyhton Virtual Environments]
   (https://www.freecodecamp.org/news/how-to-set-up-python-virtual-environment-on-ubuntu-20-04/)
 * [Create Python 3.9 Virtual Environment]
   (https://www.ntweekly.com/2021/04/14/create-a-python-3-9-virtual-environment-ubuntu/)
+
+     # ... == /home/wayne/public_html/projects/hbrc_ros_robot_platform
+     source .../bin/virtualenvwrapper.sh
+
+     # Create the virtual environment:
+     mkvirtualenv freecad19  #  Specify python version
 
      # Install ubuntu Python 3.9 packages:
      sudo apt update
@@ -216,10 +224,8 @@ When the python version changes the followning packages need to be intalled:
      python3.9 -m venv sandbox  # Should be ~/.virtualenvs
 
      # To activate:
-     source 
-
-
 """
+
 import os
 import sys
 from pathlib import Path

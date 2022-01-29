@@ -1,1 +1,186 @@
 <h1>CNC: ApexPath: Apex interface to FreeCAD Path workbench.</h1>
+<h2>Table of Contents (alphabetical order):</h2>
+<ul>
+<li>1 Class: <a href="#cnc--fabballendbit">FabBallEndBit</a>:</li>
+<li>2 Class: <a href="#cnc--fabbittemplate">FabBitTemplate</a>:
+<ul>
+<li>2.1 <a href="#cnc----to-json">to_json()</a>: Return FabBitTemptlate as a JSON string.</li>
+<li>2.2 <a href="#cnc----write-json">write_json()</a>: Write FabBitTemptlate out to a JSON file.</li>
+</ul>
+</li>
+<li>3 Class: <a href="#cnc--fabbullnosebit">FabBullNoseBit</a>:</li>
+<li>4 Class: <a href="#cnc--fabchamferbit">FabChamferBit</a>:</li>
+<li>5 Class: <a href="#cnc--fabdrillbit">FabDrillBit</a>:</li>
+<li>6 Class: <a href="#cnc--fabendmillbit">FabEndMillBit</a>:</li>
+<li>7 Class: <a href="#cnc--fabprobebit">FabProbeBit</a>:</li>
+<li>8 Class: <a href="#cnc--fabslittingsawbit">FabSlittingSawBit</a>:</li>
+<li>9 Class: <a href="#cnc--fabthreadcutter">FabThreadCutter</a>:</li>
+<li>10 Class: <a href="#cnc--fabvbit">FabVBit</a>:</li>
+</ul>
+<h2><!-- raw HTML omitted --><!-- raw HTML omitted -->1 Class FabBallEndBit:</h2>
+<p>An end-mill bit template.
+Required Base Attributes: <em>Name</em>, <em>FileName</em>.
+Keyword Only Base Attributes: <em>Material</em>, <em>ToolHolderHeight</em>, <em>VendorName</em>, <em>VendorPartNumber</em>.</p>
+<p>Required FreeCAD Parameter Attributes:</p>
+<ul>
+<li><em>CuttingEdgeHeight</em> (Union[str, float]): The cutting edge height.</li>
+<li><em>Diameter</em> (Union[str, float]): The end mill cutter diameter.</li>
+<li><em>Length</em> (Union[str, float]): The total length of the end mill.</li>
+<li>*ShankDiameter: (Union[str, float]): The shank diameter.</li>
+</ul>
+<p>Extra Keyword Only Attributes:</p>
+<ul>
+<li><em>Flutes</em>: (int): The number of flutes.</li>
+</ul>
+<h2><!-- raw HTML omitted --><!-- raw HTML omitted -->2 Class FabBitTemplate:</h2>
+<p>FabCNCShape: Base class for CNC tool bit templates.
+Required Base Attributes:</p>
+<ul>
+<li><em>Name</em> (str): The name of the tool template.</li>
+<li><em>FileName</em> (pathlib.Path): The tool template file name (must have a suffix of<code>.fcstd</code> file)</li>
+</ul>
+<p>Keyword Only Base Attributes:</p>
+<ul>
+<li>*Material: (Tuple[str, ...] = ()):
+The tool material as a tulple from generic to specific
+(e.g. <code>Material=(&quot;steel&quot;, &quot;HSS&quot;, &quot;Cobalt&quot;)</code>.)</li>
+<li>*ToolHolderHeight: (Union[None, str, float] = None):
+The distance from tool tip to the base of the tool holder.</li>
+</ul>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.1 <code>FabBitTemplate.</code>to_json():</h3>
+<p>FabBitTemplate.to_json(self, with_attributes: bool = True) -&gt; str:</p>
+<p>Return FabBitTemptlate as a JSON string.
+Arguments:</p>
+<ul>
+<li><em>with_attributes</em> (bool = True):
+If True include additional &quot;non-FreeCAD&quot; attributes; otherwise leave blank.</li>
+</ul>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.2 <code>FabBitTemplate.</code>write_json():</h3>
+<p>FabBitTemplate.write_json(self, file_path: pathlib.Path) -&gt; None:</p>
+<p>Write FabBitTemptlate out to a JSON file.</p>
+<h2><!-- raw HTML omitted --><!-- raw HTML omitted -->3 Class FabBullNoseBit:</h2>
+<p>FabBullNose: A bull nose template.
+Required Base Attributes: <em>Name</em>, <em>FileName</em>.
+Keyword Only Base Attributes: <em>Material</em>, <em>ToolHolderHeight</em>, <em>VendorName</em>, <em>VendorPartNumber</em>.</p>
+<p>Required FreeCAD Parameter Attributes:</p>
+<ul>
+<li><em>CuttingEdgeHeight</em> (Union[str, float]): The total length of the cutting edge.</li>
+<li><em>Diameter</em> (Union[str, float]): The primary diameter</li>
+<li><em>FlatRadius</em> (Union[str, float]):
+The radius at the flat portion at the bottom where cutters are rounded.</li>
+<li><em>Length</em> (Union[str, float]): The total length of the bull nose cutter.</li>
+<li>*ShankDiameter: (Union[str, float]): The shank diameter.</li>
+</ul>
+<p>Extra Keyword Only Attributes:</p>
+<ul>
+<li><em>Flutes</em>: (int = 0): The number of flutes.</li>
+</ul>
+<h2><!-- raw HTML omitted --><!-- raw HTML omitted -->4 Class FabChamferBit:</h2>
+<p>FabDrillBit: An drill bit template.
+Required Base Attributes: <em>Name</em>, <em>FileName</em>.
+Keyword Only Base Attributes: <em>Material</em>, <em>ToolHolderHeight</em>, <em>VendorName</em>, <em>VendorPartNumber</em>.</p>
+<p>Required FreeCAD Parameter Attributes:</p>
+<ul>
+<li><em>CuttingEdgeHeight</em> (Union[str, float]): The cutting edge edge height.</li>
+<li><em>Diameter</em> (Union[str, float]): The widest diameter.</li>
+<li><em>CuttingEdgeAngle</em> (Union[str, float]): The cutting edge angle in degrees.</li>
+<li><em>Length</em> (Union[str, float]): The total length of the chamfer bit.</li>
+<li><em>ShankDiameter</em>: (Union[str, float]): The shank diameter.</li>
+<li><em>TipDiameter</em>: (Union[str, float]): The diameter at the &quot;tip&quot;.</li>
+</ul>
+<p>Extra Keyword Only Attributes:</p>
+<ul>
+<li><em>Flutes</em>: (int = 0): The number of flutes.</li>
+</ul>
+<h2><!-- raw HTML omitted --><!-- raw HTML omitted -->5 Class FabDrillBit:</h2>
+<p>An drill bit template.
+Required Base Attributes: <em>Name</em>, <em>FileName</em>.
+Keyword Only Base Attributes: <em>Material</em>, <em>ToolHolderHeight</em>, <em>VendorName</em>, <em>VendorPartNumber</em>.</p>
+<p>Required FreeCAD Parameter Attributes:</p>
+<ul>
+<li><em>Diameter</em> (Union[str, float]): The end mill cutter diameter.</li>
+<li><em>Length</em> (Union[str, float]): The total length of the end mill.</li>
+<li>*TipAngle: (Union[str, float]): The shank diameter.</li>
+</ul>
+<p>Extra Keyword Only Attributes:</p>
+<ul>
+<li><em>Flutes</em>: (int = 0): The number of flutes.</li>
+<li><em>FlutesLength</em> (Union[str, float] = 0.0): The drill flutes length (i.e. maximum drill depth).</li>
+<li><em>SplitPoint</em> (bool = False): True if self-centering split points are present.</li>
+</ul>
+<h2><!-- raw HTML omitted --><!-- raw HTML omitted -->6 Class FabEndMillBit:</h2>
+<p>An end-mill bit template.
+Required Base Attributes: <em>Name</em>, <em>FileName</em>.
+Keyword Only Base Attributes: <em>Material</em>, <em>ToolHolderHeight</em>, <em>VendorName</em>, <em>VendorPartNumber</em>.</p>
+<p>Required FreeCAD Parameter Attributes:</p>
+<ul>
+<li><em>CuttingEdgeHeight</em> (Union[str, float]): The cutting edge height.</li>
+<li><em>Diameter</em> (Union[str, float]): The end mill cutter diameter.</li>
+<li><em>Length</em> (Union[str, float]): The total length of the end mill.</li>
+<li>*ShankDiameter: (Union[str, float]): The shank diameter.</li>
+</ul>
+<p>Extra Keyword Only Attributes:</p>
+<ul>
+<li><em>Flutes</em>: (int): The number of flutes.</li>
+</ul>
+<h2><!-- raw HTML omitted --><!-- raw HTML omitted -->7 Class FabProbeBit:</h2>
+<p>A touch off probe.
+Required Base Attributes: <em>Name</em>, <em>FileName</em>.
+Keyword Only Base Attributes: <em>Material</em>, <em>ToolHolderHeight</em>, <em>VendorName</em>, <em>VendorPartNumber</em>.</p>
+<p>Required FreeCAD Parameter Attributes:</p>
+<ul>
+<li><em>Diameter</em> (Union[str, float]): The end mill cutter diameter.</li>
+<li><em>Length</em> (Union[str, float]): The total length of the end mill.</li>
+<li>*ShaftDiameter: (Union[str, float]): The shaft diameter.</li>
+</ul>
+<h2><!-- raw HTML omitted --><!-- raw HTML omitted -->8 Class FabSlittingSawBit:</h2>
+<p>An slitting saw bit.
+Required Base Attributes: <em>Name</em>, <em>FileName</em>.
+Keyword Only Base Attributes: <em>Material</em>, <em>ToolHolderHeight</em>, <em>VendorName</em>, <em>VendorPartNumber</em>.</p>
+<p>Required FreeCAD Parameter Attributes:</p>
+<ul>
+<li><em>BladeThickness</em> (Union[str, float]): The blade thickness.</li>
+<li><em>CapHeight</em> (Union[str, float]): The screw cap height.</li>
+<li><em>CapDiameter</em> (Union[str, float]): The screw cap diameter.</li>
+<li><em>Diameter</em> (Union[str, float]): The blade diameter.</li>
+<li><em>Length</em> (Union[str, float]): The over tool length.</li>
+<li><em>ShankDiameter</em> (Union[str, float]): The diameter of the shank above the blade.</li>
+</ul>
+<p>Extra Keyword Only Attributes:</p>
+<ul>
+<li><em>Teeth</em>: (int = 0): The of teeth on the saw blade.</li>
+</ul>
+<h2><!-- raw HTML omitted --><!-- raw HTML omitted -->9 Class FabThreadCutter:</h2>
+<p>An thread cutter bit.
+Required Base Attributes: <em>Name</em>, <em>FileName</em>.
+Keyword Only Base Attributes: <em>Material</em>, <em>ToolHolderHeight</em>, <em>VendorName</em>, <em>VendorPartNumber</em>.</p>
+<p>Required FreeCAD Parameter Attributes:</p>
+<ul>
+<li><em>Crest</em> (Union[str, float]): The height of the cutting disk.</li>
+<li><em>Diameter</em> (Union[str, float]): The diameter of the cutting disk.</li>
+<li><em>Length</em> (Union[str, float]): The over tool length.</li>
+<li><em>NeckDiameter</em> (Union[str, float]): The diameter of the neck poartion above the cutting disk.</li>
+<li><em>NeckLength</em> (Union[str, float]): The length of the neck portion above the cutting disk.</li>
+<li><em>ShankDiameter</em> (Union[str, float]): The diameter of the shank above the Disk.</li>
+</ul>
+<p>Extra Keyword Only Attributes:</p>
+<ul>
+<li><em>Flutes</em>: (int = 0): The number of flutes.</li>
+</ul>
+<h2><!-- raw HTML omitted --><!-- raw HTML omitted -->10 Class FabVBit:</h2>
+<p>An V bit template.
+Required Base Attributes: <em>Name</em>, <em>FileName</em>.
+Keyword Only Base Attributes: <em>Material</em>, <em>ToolHolderHeight</em>, <em>VendorName</em>, <em>VendorPartNumber</em>.</p>
+<p>Required FreeCAD Parameter Attributes:</p>
+<ul>
+<li><em>CuttingEdgeAngle</em> (Union[str, float]): The cutting edge angle in degrees.</li>
+<li><em>Diameter</em> (Union[str, float]): The widest diameter.</li>
+<li><em>CuttingEdgeHeight</em> (Union[str, float]): The cutting edge edge height.</li>
+<li><em>TipDiameter</em>: (Union[str, float]): The diameter at the &quot;tip&quot;.</li>
+<li><em>Length</em> (Union[str, float]): The total length of the chamfer bit.</li>
+<li><em>ShankDiameter</em>: (Union[str, float]): The shank diameter.</li>
+</ul>
+<p>Extra Keyword Only Attributes:</p>
+<ul>
+<li><em>Flutes</em>: (int = 0): The number of flutes.</li>
+</ul>

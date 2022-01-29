@@ -1028,14 +1028,15 @@ class FabNode(FabBox):
                 search_node = search_node._Parent
 
             app_document: Any = search_node._AppObject
-            if not isinstance(app_document, App.Document):
+            # if not isinstance(app_document, App.Document):
+            if not hasattr(app_document, "FileName"):  # Only App document has FileName
                 raise RuntimeError(
                     f"FabNode.set_object({self._Label}): No App.Document {app_document}")
 
             gui_document: Any = Gui.getDocument(app_document.Name)
-            if not isinstance(gui_document, Gui.Document):
-                raise RuntimeError(
-                    f"FabNode.set_object({self._Label}): No Gui.Document {app_document}")
+            # if not isinstance(gui_document, Gui.Document):
+            #     raise RuntimeError(
+            #         f"FabNode.set_object({self._Label}): No Gui.Document {app_document}")
 
             self._GuiObject: Any = gui_document.getObject(app_object.Name)
 

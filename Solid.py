@@ -93,13 +93,13 @@ class _Operation(object):
         raise NotImplementedError(f"{type(self)}.post_produce1() is not implemented")
 
     # _Operation.produce_shape_binder():
-    def produce_shape_binder(self, part_geometries: Tuple[Part.Part2DObject, ...],
+    def produce_shape_binder(self, part_geometries: Tuple[Any, ...],
                              prefix: str, tracing: str = "") -> Part.Feature:
         """Produce the shape binder needed for the extrude, pocket, hole, ... operations."""
         if tracing:
             print(f"{tracing}=>FabOperation.produce_shape_binder()")
         mount: FabMount = self.Mount
-        body: Part.BodyBase = mount.Body
+        body: Any = mount.Body
 
         binder_placement: Placement = Placement()  # Do not move/reorient anything.
         if tracing:
@@ -117,7 +117,7 @@ class _Operation(object):
         return shape_binder
 
     # _Operation._viewer_update():
-    def _viewer_update(self, body: Part.BodyBase, part_feature: Part.Feature) -> None:
+    def _viewer_update(self, body: Any, part_feature: Part.Feature) -> None:
         """Update the view Body view provider."""
         if App.GuiUp:  # pragma: no unit cover
             visibility_set(part_feature, True)
@@ -207,11 +207,11 @@ class _Extrude(_Operation):
             print(f"{tracing}=>_Extrude.produce1('{self.Name}')")
 
         # Extract the *part_geometries* and create the associated *shape_binder*:
-        part_geometries: List[Part.Part2DObject] = []
+        part_geometries: List[Any] = []
         mount: FabMount = self.Mount
         geometry_context: FabGeometryContext = mount._GeometryContext
-        geometry_group: App.DocumentObjectGroup = mount._Solid._GeometryGroup
-        assert isinstance(geometry_group, App.DocumentObjectGroup), geometry_group
+        geometry_group: Any = mount._Solid._GeometryGroup
+        # assert isinstance(geometry_group, Any), geometry_group
         geometry_context.set_geometry_group(geometry_group)
 
         geometry_prefix: str = f"{mount.Name}_{self.Name}"
@@ -225,7 +225,7 @@ class _Extrude(_Operation):
         shape_binder.Visibility = False
 
         # Perform The Extrude operation:
-        body: Part.BodyBase = mount.Body
+        body: Any = mount.Body
         mount_normal: Vector = mount.Normal
         pad_name: str = f"{mount.Name}_{self.Name}_Extrude"
         extrude: Part.Feature = body.newObject("PartDesign::Pad", pad_name)
@@ -320,7 +320,7 @@ class _Pocket(_Operation):
         geometries: Tuple[FabGeometry, ...] = self._Geometries
         mount: FabMount = self.Mount
         prefix: str = f"{mount.Name}_{self.Name}"
-        part_geometries: List[Part.Part2DObject] = []
+        part_geometries: List[Any] = []
         geometry_context: FabGeometryContext = mount._GeometryContext
         geometry: FabGeometry
         for geometry in geometries:
@@ -331,7 +331,7 @@ class _Pocket(_Operation):
         assert isinstance(shape_binder, Part.Feature)
 
         # Create the *pocket* into *body*:
-        body: Part.BodyBase = mount.Body
+        body: Any = mount.Body
         pocket: Part.Feature = body.newObject("PartDesign::Pocket", f"{prefix}_Pocket")
         assert isinstance(pocket, Part.Feature)
         pocket.Profile = shape_binder
@@ -403,9 +403,9 @@ class _Hole(_Operation):
         mount_normal: Vector = mount.Normal
         geometry_context: FabGeometryContext = mount._GeometryContext
         solid: FabSolid = mount.Solid
-        body: Part.BodyBase = solid.Body
-        geometry_group: App.DocumentObjectGroup = solid._GeometryGroup
-        assert isinstance(geometry_group, App.DocumentObjectGroup), geometry_group
+        body: Any = solid.Body
+        geometry_group: Any = solid._GeometryGroup
+        # assert isinstance(geometry_group, Any), geometry_group
         geometry_context.set_geometry_group(geometry_group)
 
         fasten: FabFasten = join.Fasten
@@ -413,7 +413,7 @@ class _Hole(_Operation):
         geometry_prefix: str = name
 
         circle: FabCircle = FabCircle(center, mount_normal, diameter)
-        part_geometries: List[Part.Part2DObject] = []
+        part_geometries: List[Any] = []
         part_geometries.extend(circle.produce(
             geometry_context, geometry_prefix, tracing=next_tracing))
 
@@ -426,7 +426,7 @@ class _Hole(_Operation):
         #     diameter: float = fasten.get_diameter(kind)
 
         #     # Construct the *part_geometries* for each *hole*:
-        #     part_geometries: List[Part.Part2DObject] = []
+        #     part_geometries: List[Any] = []
         #     hole_group: List[_Hole] = hole_groups[key]
         #     for hole_index, hole in enumerate(hole_group):
         #         center: Vector = hole.Center
@@ -565,7 +565,7 @@ class FabMount(object):
 
     # FabMount.Body:
     @property
-    def Body(self) -> Part.BodyBase:
+    def Body(self) -> Any:
         """Return PartBodyBase fr FabMount."""
         return self._Solid.Body
 
@@ -602,7 +602,7 @@ class FabMount(object):
         self._Operations[operation.Name] = operation
 
     # FabMount.set_geometry_group():
-    def set_geometry_group(self, geometry_group: App.DocumentObjectGroup) -> None:
+    def set_geometry_group(self, geometry_group: Any) -> None:
         """Set the FabMount GeometryGroup need for the FabGeometryContex."""
         self._GeometryContext.set_geometry_group(geometry_group)
 
@@ -638,7 +638,7 @@ class FabMount(object):
                 print(f"{tracing}{normal=}")
 
             # Create, save and return the *datum_plane*:
-            body: Part.BodyBase = self.Body
+            body: Any = self.Body
             datum_plane_name: str = f"{self.Name}_Datum_Plane"
             datum_plane: "Part.Geometry" = body.newObject("PartDesign::Plane", datum_plane_name)
             # assert isinstance(datum_plane, Part.Geometry), datum_plane
@@ -847,8 +847,8 @@ class FabSolid(FabNode):
     Material: str
     Color: str
     _Mounts: "OrderedDict[str, FabMount]" = field(init=False, repr=False)
-    _GeometryGroup: Optional[App.DocumentObjectGroup] = field(init=False, repr=False)
-    _Body: Optional[Part.BodyBase] = field(init=False, repr=False)
+    _GeometryGroup: Optional[Any] = field(init=False, repr=False)
+    _Body: Optional[Any] = field(init=False, repr=False)
 
     # FabSolid.__post_init__():
     def __post_init__(self) -> None:
@@ -867,14 +867,14 @@ class FabSolid(FabNode):
 
     # FabSolid.Body():
     @property
-    def Body(self) -> Part.BodyBase:
+    def Body(self) -> Any:
         """Return BodyBase for FabSolid."""
         if not self._Body:
             raise RuntimeError(f"FabSolid.Body({self.Label}).Body(): body not set yet")
         return self._Body
 
     # FabSolid.set_body():
-    def set_body(self, body: Part.BodyBase) -> None:
+    def set_body(self, body: Any) -> None:
         """Set the BodyBase of a FabSolid."""
         self._Body = body
 
@@ -958,10 +958,11 @@ class FabSolid(FabNode):
         # Create the *geometry_group* that contains all of the 2D geometry (line, arc, circle.):
         parent: FabNode = self.Up
         parent_object: Any = parent.AppObject
-        geometry_group: App.DocumentObjectGroup
+        geometry_group: Any
         geometry_group_name: str = f"{self.Label}_Geometry"
         # if parent.is_document():
-        if isinstance(parent_object, App.Document):
+        # if isinstance(parent_object, App.Document):
+        if hasattr(parent_object, "FileName"):  # Only App.Document has a FileName.
             if tracing:
                 print(f"{tracing}=>FabSolid.post_produce1('{self.Label}'): {parent_object}")
             geometry_group = parent_object.addObject(
@@ -973,8 +974,9 @@ class FabSolid(FabNode):
         geometry_group.Visibility = False
 
         # Create the *body*
-        body: Part.BodyBase
-        if isinstance(parent_object, App.Document):
+        body: Any
+        # if isinstance(parent_object, App.Document):
+        if hasattr(parent_object, "FileName"):  # Only App.Document has FileName.
             body = parent_object.addObject("PartDesign::Body", self.Label)  # TODO: add hash
         else:
             body = parent_object.newObject("PartDesign::Body")

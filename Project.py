@@ -57,8 +57,7 @@ class FabGroup(FabNode):
 
     """
 
-    Group: App.DocumentObjectGroup = field(
-        init=False, repr=False, default=cast(App.DocumentObjectGroup, None))
+    Group: Any = field(init=False, repr=False, default=None)
 
     # FabGroup.__post_init__():
     def __post_init__(self):
@@ -74,13 +73,21 @@ class FabGroup(FabNode):
 
         # Create the *group* that contains the children FabNode's:
         parent_object: Any = self.Up.AppObject
-        group: App.DocumentObjectGroup = parent_object.addObject(
+        if tracing:
+            print(f"{tracing}=>FabGroup({self.Label}).post_produce1(): here 1")
+        group: Any = parent_object.addObject(
             "App::DocumentObjectGroup", f"{self.Label}")
-        assert isinstance(group, App.DocumentObjectGroup), group
+        if tracing:
+            print(f"{tracing}=>FabGroup({self.Label}).post_produce1(): here 2")
+        # assert isinstance(group, Any), group
         self.set_object(group)
+        if tracing:
+            print(f"{tracing}=>FabGroup({self.Label}).post_produce1(): here 3")
 
         group.Visibility = True
         self.Group = group
+        if tracing:
+            print(f"{tracing}=>FabGroup({self.Label}).post_produce1(): here 4")
         visibility_set(group)
 
         if tracing:
@@ -148,7 +155,7 @@ class FabDocument(FabNode):
     """
 
     FilePath: Path = Path("/bogus_file")
-    _AppDocument: Optional[App.Document] = field(init=False, repr=False)
+    _AppDocument: Optional["App.Document"] = field(init=False, repr=False)
     _GuiDocument: Optional["Gui.Document"] = field(init=False, repr=False)
 
     # FabDocument.__post_init__():
@@ -188,14 +195,14 @@ class FabDocument(FabNode):
 
         # Create *app_document*:
         app_document: Any = App.newDocument(self.Label)
-        assert isinstance(app_document, App.Document)  # Just to be sure.
+        # assert isinstance(app_document, App.Document)  # Just to be sure.
         self.set_app_object_only(app_document)
         self._AppDocument = app_document
 
         # If the GUI is up, get the associated *gui_document* and hang onto it:
         if App.GuiUp:  # pragma: no unit cover
             gui_document: Any = Gui.getDocument(app_document.Name)
-            assert isinstance(gui_document, Gui.Document)
+            # assert isinstance(gui_document, Gui.Document)
             self.set_gui_object_only(gui_document)
             self._GuiDocument = gui_document
 
@@ -207,10 +214,10 @@ class FabDocument(FabNode):
         """Close the FabDocument."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>FabDocument({self.Label}).post_produce1()")
+            print(f"{tracing}=>FabDocument({self.Label}).post_produce2()")
 
         # Save the document:
-        app_document: App.Document = self._AppDocument
+        app_document: Any = self._AppDocument
         app_document.recompute()
         app_document.saveAs(str(self.FilePath))
 

@@ -55,7 +55,7 @@ class FabGeometryContext(object):
     _PlaneContact: Vector
     _PlaneNormal: Vector
     _Copy: Vector = field(init=False, repr=False)
-    _GeometryGroup: Optional[App.DocumentObjectGroup] = field(init=False, repr=False)
+    _GeometryGroup: Optional[Any] = field(init=False, repr=False)
 
     # FabGeometryContext.__post_init__():
     def __post_init__(self) -> None:
@@ -88,18 +88,18 @@ class FabGeometryContext(object):
 
     # FabGeometryContext.GeometryGroup():
     @property
-    def GeometryGroup(self) -> App.DocumentObjectGroup:
+    def GeometryGroup(self) -> Any:
         """Return FabGeometry normal tSo 2D plane."""
         if not self._GeometryGroup:
             raise RuntimeError(f"FabGeometryContext.GeometryGroup(): not set yet; must be set")
         return self._GeometryGroup
 
     # FabGeometryContext.set_geometry_Group():
-    def set_geometry_group(self, geometry_group: App.DocumentObjectGroup) -> None:
+    def set_geometry_group(self, geometry_group: Any) -> None:
         """Set the GeometryContext geometry group."""
-        if not isinstance(geometry_group, App.DocumentObjectGroup):
-            raise RuntimeError(f"FabGeometryContext.set_geometry_grouop(): "
-                               f"{type(geometry_group)} is not App.DocumentObjectGroup")
+        # if not isinstance(geometry_group, App.DocumentObjectGroup):
+        #     raise RuntimeError(f"FabGeometryContext.set_geometry_grouop(): "
+        #                        f"{type(geometry_group)} is not App.DocumentObjectGroup")
         self._GeometryGroup = geometry_group
 
 
@@ -113,7 +113,7 @@ class _Geometry(object):
 
     # _Geometry.produce():
     def produce(self, geometry_context: FabGeometryContext, prefix: str,
-                index: int, tracing: str = "") -> Part.Part2DObject:
+                index: int, tracing: str = "") -> Any:
         raise NotImplementedError(f"{type(self)}.produce() is not implemented yet")
 
 # _Arc:
@@ -248,7 +248,7 @@ class _Arc(_Geometry):
 
     # _Arc.produce():
     def produce(self, geometry_context: FabGeometryContext, prefix: str,
-                index: int, tracing: str = "") -> Part.Part2DObject:
+                index: int, tracing: str = "") -> Any:
         """Return line segment after moving it into Geometry group."""
         plane_contact: Vector = geometry_context.PlaneContact
         plane_normal: Vector = geometry_context.PlaneNormal
@@ -261,17 +261,17 @@ class _Arc(_Geometry):
         placement.Base = self.Center
 
         # Create and label *part_arc*:
-        # part_arc: Part.Part2DObject = Draft.makeCircle(
+        # part_arc: Part.Any = Draft.makeCircle(
         #     self.Radius, placement=placement, face=False,  # face=True,
         #     startangle=math.degrees(self.StartAngle),
         #     endangle=math.degrees(self.StartAngle + self.DeltaAngle),
         #     support=None)
-        part_arc: Part.Part2DObject = _Arc.make_arc_3points(
+        part_arc: Any = _Arc.make_arc_3points(
             (self.Start, self.Middle, self.Finish))
-        # part_arc: Part.Part2DObject=Draft.make_arc_3points([self.Start, self.Middle, self.Finish])
+        # part_arc: Any=Draft.make_arc_3points([self.Start, self.Middle, self.Finish])
 
         label: str = f"{prefix}_Arc_{index:03d}"
-        assert isinstance(part_arc, Part.Part2DObject)
+        # assert isinstance(part_arc, Any)
         part_arc.Label = label
         part_arc.Visibility = False
 
@@ -298,7 +298,7 @@ class _Circle(_Geometry):
 
     # _Circle.produce():
     def produce(self, geometry_context: FabGeometryContext, prefix: str, index: int,
-                tracing: str = "") -> Part.Part2DObject:
+                tracing: str = "") -> Any:
         """Return line segment after moving it into Geometry group."""
         if tracing:
             print(f"{tracing}=>_Circle.produce()")
@@ -322,10 +322,10 @@ class _Circle(_Geometry):
             print(f"{tracing}{rotation * z_axis=}")
 
         # Create and label *part_arc*:
-        part_circle: Part.Part2DObject = Draft.makeCircle(
+        part_circle: Any = Draft.makeCircle(
             self.Diameter / 2.0, placement=placement, face=True,
             support=None)
-        assert isinstance(part_circle, Part.Part2DObject)
+        # assert isinstance(part_circle, Any)
         part_circle.Label = label
         part_circle.Visibility = False
 
@@ -355,7 +355,7 @@ class _Line(_Geometry):
 
     # _Line.produce():
     def produce(self, geometry_context: FabGeometryContext, prefix: str,
-                index: int, tracing: str = "") -> Part.Part2DObject:
+                index: int, tracing: str = "") -> Any:
         """Return line segment after moving it into Geometry group."""
         label: str = f"{prefix}_Line_{index:03d}"
         placement: Placement = Placement()
@@ -364,9 +364,9 @@ class _Line(_Geometry):
 
         # Create and label *line_segment*:
         points = [self.Start, self.Finish]
-        line_segment: Part.Part2DObject = Draft.makeWire(
+        line_segment: Any = Draft.makeWire(
             points, placement=placement, closed=False, face=True, support=None)
-        assert isinstance(line_segment, Part.Part2DObject)
+        # assert isinstance(line_segment, Any)
         line_segment.Label = label
 
         # Draft.autogroup(line_segment)
@@ -578,7 +578,7 @@ class FabGeometry(object):
 
     # FabGeometry.produce():
     def produce(self, geometry_context: FabGeometryContext,
-                prefix: str) -> Tuple[Part.Part2DObject, ...]:
+                prefix: str) -> Tuple[Any, ...]:
         """Produce the necessary FreeCAD objects for the FabGeometry."""
         raise NotImplementedError(f"{type(self)}.produce() is not implemented")
 
@@ -670,7 +670,7 @@ class FabCircle(FabGeometry):
 
     # FabCircle.produce():
     def produce(self, geometry_context: FabGeometryContext, prefix: str,
-                tracing: str = "") -> Tuple[Part.Part2DObject, ...]:
+                tracing: str = "") -> Tuple[Any, ...]:
         """Produce the FreeCAD objects needed for FabPolygon."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
@@ -678,11 +678,11 @@ class FabCircle(FabGeometry):
         geometries: Tuple[_Geometry, ...] = self.get_geometries()
         geometry: _Geometry
         index: int
-        part_geometries: List[Part.Part2DObject] = []
+        part_geometries: List[Any] = []
         for index, geometry in enumerate(geometries):
-            part_geometry: Part.Part2DObject = geometry.produce(
+            part_geometry: Any = geometry.produce(
                 geometry_context, prefix, index, tracing=next_tracing)
-            assert isinstance(part_geometry, Part.Part2DObject)
+            # assert isinstance(part_geometry, Any)
             part_geometries.append(part_geometry)
         if tracing:
             print(f"{tracing}<=FabCircle.produce()")
@@ -925,7 +925,7 @@ class FabPolygon(FabGeometry):
 
     # FabPolygon.produce():
     def produce(self,
-                geometry_context: FabGeometryContext, prefix: str) -> Tuple[Part.Part2DObject, ...]:
+                geometry_context: FabGeometryContext, prefix: str) -> Tuple[Any, ...]:
         """Produce the FreeCAD objects needed for FabPolygon."""
         # Extract mount plane *contact* and *normal* from *geometry_context*:
         assert isinstance(geometry_context, FabGeometryContext), geometry_context
@@ -951,10 +951,10 @@ class FabPolygon(FabGeometry):
         geometries: Tuple[_Geometry, ...] = self.get_geometries(plane_contact, plane_normal)
         geometry: _Geometry
         index: int
-        part_geometries: List[Part.Part2DObject] = []
+        part_geometries: List[Any] = []
         for index, geometry in enumerate(geometries):
-            part_geometry: Part.Part2DObject = geometry.produce(geometry_context, prefix, index)
-            assert isinstance(part_geometry, Part.Part2DObject)
+            part_geometry: Any = geometry.produce(geometry_context, prefix, index)
+            # assert isinstance(part_geometry, Any)
             part_geometries.append(part_geometry)
         return tuple(part_geometries)
 

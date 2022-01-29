@@ -15,12 +15,12 @@ to make it work discussed below:</p>
 <li><a href="#Introduction">Introduction</a></li>
 <li><a href="#the-freecad-and-freecadgui-modules">The FreeCAD and FreeCadGUI Modules</a></li>
 </ul>
-<h2><a name="introduction"></a>Introduction</h2>
+<h2><!-- raw HTML omitted --><!-- raw HTML omitted -->Introduction</h2>
 <p>It is totally awesome that FreeCAD exposes a much of its internals via Python interfaces.
 There are multiple ways of accessing these FreeCAD Python interfaces.
 The pros and cons of each FreeCAD Python access method are discussed in this document.</p>
 <p>This document is Linux focused, since the original author uses neither Windows nor MacOS.</p>
-<h2><A name="the-freecad-and-freecadgui-modules"></A>The FreeCAD and FreeCADGui Modules</h2>
+<h2><!-- raw HTML omitted --><!-- raw HTML omitted -->The FreeCAD and FreeCADGui Modules</h2>
 <p>There are two top level modules in FreeCAD:</p>
 <ul>
 <li>FreeCAD:
@@ -161,3 +161,31 @@ This code looks as follows:</p>
  if App.GuiUp:
      Gui.getMainWindow().close()
 </code></pre>
+<p>When the python version changes the followning packages need to be intalled:</p>
+<ul>
+<li>
+<p>python3.9 -m pip install shiboken</p>
+</li>
+<li>
+<p>python3.9 -m pip install PySide2 setuptools</p>
+</li>
+<li>
+<p>[Set up Pyhton Virtual Environments]
+(https://www.freecodecamp.org/news/how-to-set-up-python-virtual-environment-on-ubuntu-20-04/)</p>
+</li>
+<li>
+<p>[Create Python 3.9 Virtual Environment]
+(https://www.ntweekly.com/2021/04/14/create-a-python-3-9-virtual-environment-ubuntu/)</p>
+<h1>... == /home/wayne/public_html/projects/hbrc_ros_robot_platform</h1>
+<p>source .../bin/virtualenvwrapper.sh</p>
+<h1>Create the virtual environment:</h1>
+<p>mkvirtualenv freecad19  #  Specify python version</p>
+<h1>Install ubuntu Python 3.9 packages:</h1>
+<p>sudo apt update
+sudo apt install python3.9
+sudo apt install python3.9-dev python3.9-venv</p>
+<h1>Create <code>freecad</code> virtual environment.</h1>
+<p>python3.9 -m venv sandbox  # Should be ~/.virtualenvs</p>
+<h1>To activate:</h1>
+</li>
+</ul>

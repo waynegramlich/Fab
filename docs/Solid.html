@@ -22,7 +22,7 @@
 </ul>
 </li>
 </ul>
-<h2><a name="solid--fabmount"></a>1 Class FabMount:</h2>
+<h2><!-- raw HTML omitted --><!-- raw HTML omitted -->1 Class FabMount:</h2>
 <p>An operations plane that can be oriented for subsequent machine operations.
 This class basically corresponds to a FreeCad Datum Plane.  It is basically the surface
 to which the 2D FabGeometry's are mapped onto prior to performing each operation.</p>
@@ -37,25 +37,25 @@ A vector that is projected onto the mount plane to specify orientation
 when mounted for CNC operations.</li>
 <li><em>Depth</em> (float): The maximum depth limit for all operations.</li>
 </ul>
-<h3><a name="solid----record-operation"></a>1.1 <code>FabMount.</code>record_operation():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->1.1 <code>FabMount.</code>record_operation():</h3>
 <p>FabMount.record_operation(self, operation: Solid._Operation) -&gt; None:</p>
 <p>Record an operation to a FabMount.</p>
-<h3><a name="solid----set-geometry-group"></a>1.2 <code>FabMount.</code>set_geometry_group():</h3>
-<p>FabMount.set_geometry_group(self, geometry_group: App.DocumentObjectGroup) -&gt; None:</p>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->1.2 <code>FabMount.</code>set_geometry_group():</h3>
+<p>FabMount.set_geometry_group(self, geometry_group: typing.Any) -&gt; None:</p>
 <p>Set the FabMount GeometryGroup need for the FabGeometryContex.</p>
-<h3><a name="solid----post-produce1"></a>1.3 <code>FabMount.</code>post_produce1():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->1.3 <code>FabMount.</code>post_produce1():</h3>
 <p>FabMount.post_produce1(self, tracing: str = '') -&gt; None:</p>
 <p>Perform FabMount phase 1 post procduction.</p>
-<h3><a name="solid----extrude"></a>1.4 <code>FabMount.</code>extrude():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->1.4 <code>FabMount.</code>extrude():</h3>
 <p>FabMount.extrude(self, name: str, shapes: typing.Union[Geometry.FabGeometry, typing.Tuple[Geometry.FabGeometry, ...]], depth: float, tracing: str = '') -&gt; None:</p>
 <p>Perform a extrude operation.</p>
-<h3><a name="solid----pocket"></a>1.5 <code>FabMount.</code>pocket():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->1.5 <code>FabMount.</code>pocket():</h3>
 <p>FabMount.pocket(self, name: str, shapes: typing.Union[Geometry.FabGeometry, typing.Tuple[Geometry.FabGeometry, ...]], depth: float, tracing: str = '') -&gt; None:</p>
 <p>Perform a pocket operation.</p>
-<h3><a name="solid----drill-joins"></a>1.6 <code>FabMount.</code>drill_joins():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->1.6 <code>FabMount.</code>drill_joins():</h3>
 <p>FabMount.drill_joins(self, joins_name: str, joins: typing.Union[Join.FabJoin, typing.Sequence[Join.FabJoin]], tracing: str = '') -&gt; None:</p>
 <p>Drill some FabJoin's into a FabMount.</p>
-<h2><a name="solid--fabsolid"></a>2 Class FabSolid:</h2>
+<h2><!-- raw HTML omitted --><!-- raw HTML omitted -->2 Class FabSolid:</h2>
 <p>Fab: Represents a single part constructed using FreeCAD Part Design paradigm.
 Inherited Attributes:</p>
 <ul>
@@ -67,19 +67,19 @@ Inherited Attributes:</p>
 <li><em>Material</em> (str): The material to use.</li>
 <li><em>Color</em> (str): The color to use.</li>
 </ul>
-<h3><a name="solid----set-body"></a>2.1 <code>FabSolid.</code>set_body():</h3>
-<p>FabSolid.set_body(self, body: Part.BodyBase) -&gt; None:</p>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.1 <code>FabSolid.</code>set_body():</h3>
+<p>FabSolid.set_body(self, body: typing.Any) -&gt; None:</p>
 <p>Set the BodyBase of a FabSolid.</p>
-<h3><a name="solid----is-solid"></a>2.2 <code>FabSolid.</code>is_solid():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.2 <code>FabSolid.</code>is_solid():</h3>
 <p>FabSolid.is_solid(self) -&gt; bool:</p>
 <p>Return True if FabNode is a FabAssembly.</p>
-<h3><a name="solid----pre-produce"></a>2.3 <code>FabSolid.</code>pre_produce():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.3 <code>FabSolid.</code>pre_produce():</h3>
 <p>FabSolid.pre_produce(self) -&gt; None:</p>
 <p>Perform FabSolid pre production.</p>
-<h3><a name="solid----mount"></a>2.4 <code>FabSolid.</code>mount():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.4 <code>FabSolid.</code>mount():</h3>
 <p>FabSolid.mount(self, name: str, contact: Base.Vector, normal: Base.Vector, orient: Base.Vector, depth: float, tracing: str = '') -&gt; Solid.FabMount:</p>
 <p>Return a new FabMount.</p>
-<h3><a name="solid----drill-joins"></a>2.5 <code>FabSolid.</code>drill_joins():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.5 <code>FabSolid.</code>drill_joins():</h3>
 <p>FabSolid.drill_joins(self, name: str, joins: typing.Sequence[Join.FabJoin], mounts: typing.Union[typing.Sequence[Solid.FabMount], NoneType] = None) -&gt; None:</p>
 <p>Apply drill FabJoin holes for a FabSolid.
 Iterate pairwise through a sequence of FabJoin's and FabMount's and for each pair
@@ -97,6 +97,6 @@ The mounts to to apply the <em>joins</em> to.  If <em>mounts</em> is <em>None</e
 mounts for the current FabSolid are used.  (Default: None)</li>
 </ul>
 <p>For now, please call this method after all FabMount's are created.</p>
-<h3><a name="solid----post-produce1"></a>2.6 <code>FabSolid.</code>post_produce1():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.6 <code>FabSolid.</code>post_produce1():</h3>
 <p>FabSolid.post_produce1(self) -&gt; None:</p>
 <p>Perform FabSolid Phase1 post production.</p>

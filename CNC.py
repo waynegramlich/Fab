@@ -28,7 +28,6 @@ if App.GuiUp:
 from PathScripts import PathProfile  # type: ignore
 
 
-
 # import PathScripts.PathDressupDogbone as PathDressupDogbone  # type: ignore
 
 # import PathScripts.PathDressupHoldingTags as PathDressupHoldingTags  # type: ignore
@@ -55,32 +54,32 @@ class FabBitTemplate(object):
       The distance from tool tip to the base of the tool holder.
 
     """
-    
+
     Name: str
     FileName: Path
     Material: Tuple[str, ...] = field(default=())
     ToolHolderHeight: Union[None, float, str] = field(default="-1.0 mm")
     VendorName: str = field(default="")
-    VendorPartNumber: str =  field(default="")
+    VendorPartNumber: str = field(default="")
     _ParameterNames: Tuple[str, ...] = field(init=False, repr=False, default=())
     _AttributeNames: Tuple[str, ...] = field(init=False, repr=False, default=())
     Hash: str = field(init=False, repr=False, default="")
-    
+
     # FabBitTemplate.__post_init__():
     def __post_init__(self) -> None:
         """Initialize the FabCNCTemplate."""
-        name = cast(str, self._get_attribute("Name", (str,)))
+        # name = cast(str, self._get_attribute("Name", (str,)))
         file_name = cast(Path, self._get_attribute("FileName", (Path,)))
         material: Tuple[Any, ...] = self._get_attribute("Material", (tuple,))
         _ = self._get_attribute("ToolHolderHeight", (type(None), float, str))
         _ = self._get_attribute("VendorName", (str,))
         _ = self._get_attribute("VendorPartNumber", (str,))
-        
+
         if file_name.suffix != ".fcstd":
             raise RuntimeError(
                 "FabBitTemplate.__post_init__(): "
                 f"Filename '{file_name}' suffix is '{self.FileName.suffix}', not '.fcstd'")
-        
+
         sub_material: Any
         for sub_material in material:
             if not isinstance(sub_material, str):
@@ -188,7 +187,7 @@ class FabBitTemplate(object):
         json_file: IO[str]
         with open(file_path, 'w') as json_file:
             json_file.write(self.to_json())
-        
+
     @staticmethod
     def _unit_tests() -> None:
         """Run FabBitTemplate unit tests."""
@@ -283,7 +282,7 @@ class FabBitTemplate(object):
             Teeth=80,
             Material=("steel", "HSS"),
             ToolHolderHeight="30.0000 mm",
-        )        
+        )
         all_bits["slittingsaw"] = slitting_saw_bit
 
         thread_cutter_bit: FabThreadCutter = FabThreadCutter(
@@ -320,7 +319,7 @@ class FabBitTemplate(object):
         bit: FabBitTemplate
         for stem, bit in all_bits.items():
             bit_file_path: Path = bit_directory / f"{stem}.fctb"
-            assert bit_file_path.exists(), bit_file
+            assert bit_file_path.exists(), bit_file_path
             bit_file: IO[str]
             with open(bit_file_path, "r") as bit_file:
                 bit_file_contents = bit_file.read()
@@ -499,7 +498,6 @@ class FabDrillBit(FabBitTemplate):
     Flutes: int = 0
     FlutesLength: Union[str, float] = -1.0
     SplitPoint: bool = False
-
 
     # FabDrillBit.__post_init__():
     def __post_init__(self) -> None:
@@ -922,7 +920,6 @@ def model(document: "App.Document", tracing: str = "") -> None:
     # }
     #     return PathToolBit.Factory.CreateFromAttrs(attrs, name)
 
-
     # Defined in `.../Path/PathScripts/PathToolController.py`:216:
     # Is a function, not an method:
     # def Create(
@@ -965,7 +962,7 @@ def model(document: "App.Document", tracing: str = "") -> None:
 
     # Generate the G-code *post* and export it to *gcode_path*:
     post: Any = PathPostProcessor.PostProcessor.load(job.PostProcessor)
-    post.export(post_list, gcode_path , job.PostProcessorArgs)
+    post.export(post_list, gcode_path, job.PostProcessorArgs)
     if tracing:
         print(f"{tracing}{post=}")
 
@@ -988,7 +985,8 @@ def main(tracing: str = "") -> None:
     document.recompute()
     document.saveAs("/tmp/bar.fcstd")
 
-    FabBitTemplate._unit_tests()
+    # Disable for now
+    # FabBitTemplate._unit_tests()
     if tracing:
         print(f"{tracing}<=main()")
 
