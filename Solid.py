@@ -40,11 +40,11 @@ if USE_FREECAD:
     import FreeCADGui as Gui  # type: ignore
     from FreeCAD import Placement, Rotation, Vector
 if USE_CAD_QUERY:
-    from cadquery import Vector
+    from cadquery import Vector, Plane  # type: ignore
 
 # import Part  # type: ignore
 
-from Geometry import FabCircle, FabGeometry, FabGeometryContext
+from Geometry import FabCircle, FabGeometry, FabGeometryContext, FabPlane
 from Join import FabFasten, FabJoin
 from Node import FabBox, FabNode
 from Utilities import FabColor
@@ -547,7 +547,8 @@ class FabMount(object):
         # FreeCAD Vector metheds like to modify Vector contents; force copies beforehand:
         self._Orient = (self._Orient + copy).projectToPlane(
             self._Contact + copy, self._Normal + copy)
-        self._GeometryContext = FabGeometryContext(self._Contact, self._Normal)
+        plane: FabPlane = FabPlane(self._Contact, normal=self._Normal)
+        self._GeometryContext = FabGeometryContext(plane)
         self._AppDatumPlane = None
         self._GuiDatumPlane = None
 

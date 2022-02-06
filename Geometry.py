@@ -39,8 +39,38 @@ if USE_FREECAD:
 
     from FreeCAD import Placement, Rotation, Vector
 if USE_CAD_QUERY:
-    from cadquery import Vector
+    from cadquery import Plane, Vector  # type: ignore
 from Node import FabBox
+
+# Plane:
+@dataclass
+class _Plane(object):
+    """Plane: A plane object for FreeCAD.
+
+    * *origin* (Vector):  The mutable plane origin.
+    * *xDir* (Optional[Vector]):  The plane +X direction.
+    * *normal* (Vector): The normal to the plane.
+    """
+
+    origin: Vector
+    xDir: Optional[Vector] = Vector(1.0, 0.0, 0.0)
+    normal: Vector = Vector(0.0, 0.0, 1.0)
+
+
+if USE_FREECAD:
+    Plane = _Plane
+
+
+# FabPlane:
+class FabPlane(Plane):
+    """FabPlane: A Plane class.
+
+    * *origin* (Vector):  The contact point of the plane.
+    * *xDir* (Vector):  The +X direction of the plane (Cad Query Concept)
+    * *normal* (Vector): The normal to the plane.
+    """
+    pass
+    
 
 # FabGeometryContext:
 @dataclass
@@ -48,47 +78,34 @@ class FabGeometryContext(object):
     """GeometryProduce: Context needed to produce FreeCAD geometry objects.
 
     Attributes:
-    * *PlaneContact* (Vector): One point on the 2D Geometry plane.
-    * *PlaneNormal* (Vector): Normal to the 2D Geometry plane.
+    * *Plane* (Plane): Plane to use.
     * *GeometryGroup*: (App.DocumentObjectGroup):
       The FreeCAD group to store FreeCAD Geometry objects into.
       This field needs to be set prior to use with set_geometry_group() method.
 
     """
 
-    _PlaneContact: Vector
-    _PlaneNormal: Vector
-    _Copy: Vector = field(init=False, repr=False)
-    _GeometryGroup: Optional[Any] = field(init=False, repr=False)
+    _plane: Plane
+    _geometry_group: Optional[Any] = field(init=False, repr=False)
+    _copy: Vector = field(init=False, repr=False)
 
     # FabGeometryContext.__post_init__():
     def __post_init__(self) -> None:
         """Initialize FabGeometryContex."""
 
-        if not isinstance(self._PlaneContact, Vector):
+        if not isinstance(self._plane, Plane):
             raise RuntimeError(
-                f"FabGeometryContext.__post_init__(): {type(self._PlaneContact)} is not a Vector")
-        if not isinstance(self._PlaneNormal, Vector):
-            raise RuntimeError(
-                f"FabGeometryContext.__post_init__(): {type(self._PlaneNormal)} is not a Vector")
+                f"FabGeometryContext.__post_init__(): {type(self._plane)} is not a Plane")
 
         copy: Vector = Vector()
-        self._Copy: Vector = copy
-        self._PlaneContact += copy
-        self._PlaneNormal += copy
+        self._copy: Vector = copy
         self._GeometryGroup = None  # Set with set_geometry_group() method
 
-    # FabGeometryContext.PlaneContact():
+    # FabGemetryContext.Plane():
     @property
-    def PlaneContact(self) -> Vector:
-        """Return FabGeometryContext contact point on 2D plane."""
-        return self._PlaneContact + self._Copy
-
-    # FabGeometryContext.PlaneNormal():
-    @property
-    def PlaneNormal(self) -> Vector:
-        """Return FabGeometry normal to 2D plane."""
-        return self._PlaneNormal + self._Copy
+    def plane(self) -> Plane:
+        """Return the Plane."""
+        return self._plane
 
     # FabGeometryContext.GeometryGroup():
     @property
@@ -254,8 +271,8 @@ class _Arc(_Geometry):
     def produce(self, geometry_context: FabGeometryContext, prefix: str,
                 index: int, tracing: str = "") -> Any:
         """Return line segment after moving it into Geometry group."""
-        plane_contact: Vector = geometry_context.PlaneContact
-        plane_normal: Vector = geometry_context.PlaneNormal
+        plane_contact: Vector = geometry_context.plane.origin
+        plane_normal: Vector = geometry_context.plane.normal
 
         # TODO: Simplify:
         mount_placement: Any = Placement(plane_contact, plane_normal, 0.0)  # Base, Axis, Angle
@@ -307,8 +324,8 @@ class _Circle(_Geometry):
         if tracing:
             print(f"{tracing}=>_Circle.produce()")
         # Extract mount plane *contact* and *normal* from *geometry_context* for 2D projection:
-        plane_contact: Vector = geometry_context.PlaneContact
-        plane_normal: Vector = geometry_context.PlaneNormal
+        plane_contact: Vector = geometry_context.plane.origin
+        plane_normal: Vector = geometry_context.plane.normal
         # FreeCAD Vector metheds like to modify Vector contents; force copies beforehand:
         copy: Vector = Vector()
         center_on_plane: Vector = (self.Center + copy).projectToPlane(
@@ -664,12 +681,12 @@ class FabCircle(FabGeometry):
 
         """
         if tracing:
-            print(f"{tracing}=>FabCircle.projet_to_plane({contact}, {normal})")
+            print(f"{tracing}=>FabCircle.project_to_plane({contact}, {normal})")
         copy: Vector = Vector()
         new_center: Vector = (self.Center + copy).ProjectToPlane(contact + copy, normal + copy)
         new_circle: "FabCircle" = FabCircle(new_center, normal, self.Diameter)
         if tracing:
-            print(f"{tracing}<=FabCircle.projet_to_plane({contact}, {normal}) => *")
+            print(f"{tracing}<=FabCircle.project_to_plane({contact}, {normal}) => *")
         return new_circle
 
     # FabCircle.produce():
@@ -933,8 +950,8 @@ class FabPolygon(FabGeometry):
         """Produce the FreeCAD objects needed for FabPolygon."""
         # Extract mount plane *contact* and *normal* from *geometry_context*:
         assert isinstance(geometry_context, FabGeometryContext), geometry_context
-        plane_contact: Vector = geometry_context.PlaneContact
-        plane_normal: Vector = geometry_context.PlaneNormal
+        plane_contact: Vector = geometry_context.plane.origin
+        plane_normal: Vector = geometry_context.plane.normal
 
         # Use *contact*/*normal* for 2D projection:
         self._plane_2d_project(plane_contact, plane_normal)

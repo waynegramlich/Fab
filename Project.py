@@ -42,7 +42,7 @@ if USE_FREECAD:
     import FreeCAD as App  # type: ignore
     import FreeCADGui as Gui  # type: ignore
 if USE_CAD_QUERY:
-    from cadquery import Vector
+    from cadquery import Vector  # type: ignore
 
 from Geometry import FabCircle, FabPolygon
 from Join import FabFasten, FabJoin
