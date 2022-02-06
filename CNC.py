@@ -7,35 +7,39 @@
 import sys
 sys.path.append(".")
 import Embed
-Embed.setup()
+USE_FREECAD: bool
+USE_CAD_QUERY: bool
+USE_FREECAD, USE_CAD_QUERY = Embed.setup()
 
-import FreeCAD as App  # type: ignore
-import FreeCADGui as Gui  # type: ignore
 from typing import Any, cast, Dict, IO, List, Optional, Tuple, Union
 from dataclasses import dataclass, field
 from pathlib import Path
 
 # import math
-from FreeCAD import Vector  # type: ignore
-import Part  # type: ignore
-# import Path  # type: ignore
-# import Draft  # type: ignore
+if USE_FREECAD:
+    import FreeCAD as App  # type: ignore
+    import FreeCADGui as Gui  # type: ignore
+    from FreeCAD import Vector  # type: ignore
+    import Part  # type: ignore
+    # import Path  # type: ignore
+    # import Draft  # type: ignore
 
-from PathScripts import PathJob  # type: ignore
-if App.GuiUp:
-    from PathScripts import PathJobGui  # type: ignore
+    from PathScripts import PathJob  # type: ignore
+    if App.GuiUp:
+        from PathScripts import PathJobGui  # type: ignore
 
-from PathScripts import PathProfile  # type: ignore
+    from PathScripts import PathProfile  # type: ignore
 
 
-# import PathScripts.PathDressupDogbone as PathDressupDogbone  # type: ignore
+    # import PathScripts.PathDressupDogbone as PathDressupDogbone  # type: ignore
 
-# import PathScripts.PathDressupHoldingTags as PathDressupHoldingTags  # type: ignore
+    # import PathScripts.PathDressupHoldingTags as PathDressupHoldingTags  # type: ignore
 
-# from PathScripts import PathGeom  # type: ignore
-from PathScripts import PathPostProcessor  # type: ignore
-from PathScripts import PathUtil  # type: ignore
-
+    # from PathScripts import PathGeom  # type: ignore
+    from PathScripts import PathPostProcessor  # type: ignore
+    from PathScripts import PathUtil  # type: ignore
+if USE_CAD_QUERY:
+    from cadquery import Vector
 
 # FabBitTemplate:
 @dataclass(frozen=True)
@@ -977,13 +981,14 @@ def main(tracing: str = "") -> None:
     next_tracing: str = tracing + " " if tracing else ""
     if tracing:
         print(f"{tracing}=>main()")
-    document_name: str = "JobTest"
-    document: "App.Document" = get_document(document_name, tracing=next_tracing)
+    # Disable for now
+    # document_name: str = "JobTest"
+    # document: "App.Document" = get_document(document_name, tracing=next_tracing)
 
-    model(document, tracing=next_tracing)
+    # model(document, tracing=next_tracing)
 
-    document.recompute()
-    document.saveAs("/tmp/bar.fcstd")
+    # document.recompute()
+    # document.saveAs("/tmp/bar.fcstd")
 
     # Disable for now
     # FabBitTemplate._unit_tests()

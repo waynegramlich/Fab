@@ -25,18 +25,23 @@
 import sys
 sys.path.append(".")
 import Embed
-Embed.setup()
+USE_FREECAD: bool
+USE_CAD_QUERY: bool
+USE_FREECAD, USE_CAD_QUERY = Embed.setup()
 
 from dataclasses import dataclass, field
 from typing import Any, List, Optional, Sequence, Tuple, Union
 from collections import OrderedDict
 
-import FreeCAD  # type: ignore
-import Part  # type: ignore
-import FreeCAD as App  # type: ignore
-import FreeCADGui as Gui  # type: ignore
+if USE_FREECAD:
+    import FreeCAD  # type: ignore
+    import Part  # type: ignore
+    import FreeCAD as App  # type: ignore
+    import FreeCADGui as Gui  # type: ignore
+    from FreeCAD import Placement, Rotation, Vector
+if USE_CAD_QUERY:
+    from cadquery import Vector
 
-from FreeCAD import Placement, Rotation, Vector
 # import Part  # type: ignore
 
 from Geometry import FabCircle, FabGeometry, FabGeometryContext
@@ -94,7 +99,7 @@ class _Operation(object):
 
     # _Operation.produce_shape_binder():
     def produce_shape_binder(self, part_geometries: Tuple[Any, ...],
-                             prefix: str, tracing: str = "") -> Part.Feature:
+                             prefix: str, tracing: str = "") -> "Part.Feature":
         """Produce the shape binder needed for the extrude, pocket, hole, ... operations."""
         if tracing:
             print(f"{tracing}=>FabOperation.produce_shape_binder()")
@@ -117,7 +122,7 @@ class _Operation(object):
         return shape_binder
 
     # _Operation._viewer_update():
-    def _viewer_update(self, body: Any, part_feature: Part.Feature) -> None:
+    def _viewer_update(self, body: Any, part_feature: "Part.Feature") -> None:
         """Update the view Body view provider."""
         if App.GuiUp:  # pragma: no unit cover
             visibility_set(part_feature, True)
@@ -529,9 +534,9 @@ class FabMount(object):
         # Do type checking here.
         assert isinstance(self._Name, str)
         assert isinstance(self._Solid, FabSolid)
-        assert isinstance(self._Contact, Vector)
-        assert isinstance(self._Normal, Vector)
-        assert isinstance(self._Orient, Vector)
+        assert isinstance(self._Contact, Vector), (self._Contact, type(self._Contact))
+        assert isinstance(self._Normal, Vector), self._Normal
+        assert isinstance(self._Orient, Vector), self._Orient
         assert isinstance(self._Depth, float)
 
         copy: Vector = Vector()  # Make private copy of Vector's.

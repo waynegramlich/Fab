@@ -27,17 +27,22 @@
 import sys
 sys.path.append(".")
 import Embed
-Embed.setup()
+USE_FREECAD: bool
+USE_CAD_QUERY: bool
+USE_FREECAD, USE_CAD_QUERY = Embed.setup()
 
 from dataclasses import dataclass, field
 from typing import Any, cast, List, Optional, Set, Tuple
 from pathlib import Path
 
 
-import FreeCAD  # type: ignore
-from FreeCAD import Vector
-import FreeCAD as App  # type: ignore
-import FreeCADGui as Gui  # type: ignore
+if USE_FREECAD:
+    import FreeCAD  # type: ignore
+    from FreeCAD import Vector
+    import FreeCAD as App  # type: ignore
+    import FreeCADGui as Gui  # type: ignore
+if USE_CAD_QUERY:
+    from cadquery import Vector
 
 from Geometry import FabCircle, FabPolygon
 from Join import FabFasten, FabJoin

@@ -229,9 +229,9 @@ When the python version changes the followning packages need to be intalled:
 import os
 import sys
 from pathlib import Path
+from typing import Tuple
 
-
-def setup():
+def setup() -> Tuple[bool, bool]:
     # print(f"=>Embed.setup(): Before {sys.path=}")
     assert sys.version_info.major == 3  # Python 3.x
     assert sys.version_info.minor == 8  # Python 3.8
@@ -253,3 +253,7 @@ def setup():
         sys.path.append(current_directory)
         # print(f"Inserted {freecad_path} followed by '.'")
     # print(f"<=Embed.setup(): After {directory=} {sys.path=}")
+
+    use_cad_query: bool = "CONDA_PROMPT_MODIFIER" in os.environ
+    use_freecad: bool = not use_cad_query
+    return use_freecad, use_cad_query

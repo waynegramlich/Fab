@@ -42,15 +42,20 @@ See the FabNode documentation for further attributes.
 import sys
 sys.path.append(".")
 import Embed
-Embed.setup()
+USE_FREECAD: bool
+USE_CAD_QUERY: bool
+USE_FREECAD, USE_CAD_QUERY = Embed.setup()
 
 from dataclasses import dataclass, field
 from typing import Any, cast, List, Sequence, Tuple, Union
-from FreeCAD import BoundBox, Placement, Vector  # type: ignore
-import FreeCAD as App  # type: ignore
-import FreeCADGui as Gui  # type: ignore
 from collections import OrderedDict
 
+if USE_FREECAD:
+    from FreeCAD import BoundBox, Placement, Vector  # type: ignore
+    import FreeCAD as App  # type: ignore
+    import FreeCADGui as Gui  # type: ignore
+if USE_CAD_QUERY:
+    from cadquery import Vector  # type: ignore
 
 # FabBox:
 @dataclass
@@ -140,7 +145,7 @@ class FabBox(object):
         self._ZMax = 1.0
 
     # FabBox.enclose():
-    def enclose(self, bounds: Sequence[Union[Vector, BoundBox, "FabBox"]]) -> None:
+    def enclose(self, bounds: Sequence[Union[Vector, "BoundBox", "FabBox"]]) -> None:
         """Initialize a FabBox.
 
         Arguments:
@@ -162,7 +167,7 @@ class FabBox(object):
         for bound in bounds:
             if isinstance(bound, Vector):
                 vectors.append(bound)
-            elif isinstance(bound, BoundBox):
+            elif USE_FREECAD and isinstance(bound, BoundBox):
                 vectors.append(Vector(bound.XMin, bound.YMin, bound.ZMin))
                 vectors.append(Vector(bound.XMax, bound.YMax, bound.ZMax))
             elif isinstance(bound, FabBox):
@@ -372,7 +377,7 @@ class FabBox(object):
     # Miscellaneous attributes:
 
     @property
-    def BB(self) -> BoundBox:
+    def BB(self) -> "BoundBox":
         """Return a corresponding FreeCAD BoundBox."""
         return BoundBox(self._XMin, self._YMin, self._ZMin, self._XMax, self._YMax, self._ZMax)
 
@@ -431,7 +436,7 @@ class FabBox(object):
         return self._ZMax - self._ZMin
 
     # FabBox.reorient():
-    def reorient(self, placement: Placement) -> "FabBox":
+    def reorient(self, placement: "Placement") -> "FabBox":
         """Reorient FabBox given a Placement.
 
         Note after the *placement* is applied, the resulting box is still rectilinear with the
@@ -1021,7 +1026,7 @@ class FabNode(FabBox):
     def set_object(self, app_object: Any) -> None:
         """Set both AppObject and GuiObject in FabNode."""
         self.set_app_object_only(app_object)
-        if App.GuiUp:
+        if USE_FREECAD and App.GuiUp:
             # Search up the document tree to find the FabDocument:
             search_node: FabNode = self
             while not search_node.is_document() and not search_node.is_project():

@@ -23,20 +23,24 @@
 import sys
 sys.path.append(".")
 import Embed
-Embed.setup()
+USE_FREECAD: bool
+USE_CAD_QUERY: bool
+USE_FREECAD, USE_CAD_QUERY = Embed.setup()
 
 from dataclasses import dataclass, field
 import math
 from typing import Any, List, Optional, Tuple, Union
 
-import FreeCAD  # type: ignore
-import Draft  # type: ignore
-import Part  # type: ignore
-import FreeCAD as App  # type: ignore
+if USE_FREECAD:
+    import FreeCAD  # type: ignore
+    import Draft  # type: ignore
+    import Part  # type: ignore
+    import FreeCAD as App  # type: ignore
 
-from FreeCAD import Placement, Rotation, Vector
+    from FreeCAD import Placement, Rotation, Vector
+if USE_CAD_QUERY:
+    from cadquery import Vector
 from Node import FabBox
-
 
 # FabGeometryContext:
 @dataclass
