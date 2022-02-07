@@ -41,7 +41,7 @@ if USE_FREECAD:
     from FreeCAD import Vector
     import FreeCAD as App  # type: ignore
     import FreeCADGui as Gui  # type: ignore
-if USE_CAD_QUERY:
+elif USE_CAD_QUERY:
     from cadquery import Vector  # type: ignore
 
 from Geometry import FabCircle, FabPolygon
@@ -419,10 +419,10 @@ class BoxSide(FabSolid):
         contact: Vector = self.Contact
         copy: Vector = Vector()
         depth: float = self.Depth
-        normal_direction: Vector = (self.Normal + copy).normalize()
-        length_direction: Vector = (self.HalfLength + copy).normalize()
+        normal_direction: Vector = self.Normal / self.Normal.Length
+        length_direction: Vector = self.HalfLength / self.HalfLength.Length
         length: float = self.HalfLength.Length
-        width_direction: Vector = (self.HalfWidth + copy).normalize()
+        width_direction: Vector = self.HalfWidth / self.HalfWidth.Length
         width: float = self.HalfWidth.Length
 
         # Create all of the *screws*:
@@ -455,7 +455,7 @@ class BoxSide(FabSolid):
         edge_index: int = 0
         direction: Vector
         for direction in (self.HalfLength, -self.HalfLength, self.HalfWidth, -self.HalfWidth):
-            edge_normal: Vector = (direction + copy).normalize()
+            edge_normal: Vector = direction / direction.Length
             random_orient: Vector = (self.Normal + copy).cross(direction + copy)
             edge_mount: FabMount = self.mount(
                 f"{name}Edge{edge_index}Mount", contact + direction,

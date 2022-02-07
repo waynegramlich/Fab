@@ -63,13 +63,18 @@ hardware.
 import sys
 sys.path.append(".")
 import Embed
-Embed.setup()
+USE_FREECAD: bool
+USE_CAD_QUERY: bool
+USE_FREECAD, USE_CAD_QUERY = Embed.setup()
 
 from dataclasses import dataclass, field
 from typing import cast, ClassVar, Dict, List, Tuple
 
 from Utilities import FabCheck, FabMaterial
-from FreeCAD import Vector  # type: ignore
+if USE_FREECAD:
+    from FreeCAD import Vector  # type: ignore
+elif USE_CAD_QUERY:
+    from cadquery import Vector  # type: ignore
 
 
 # _MDrillTap
@@ -1502,9 +1507,9 @@ class FabJoin(object):
     def normal_aligned(self, test_normal: Vector) -> bool:
         """Return whether the normal is aligned with the FabJoin."""
         EPSILON = 1.0e-8
-        join_normal: Vector = (self._Start - self.End).normalize()
-        copy: Vector = Vector()
-        test_normal = (test_normal + copy).normalize()
+        join_direction: Vector = self._Start - self.End
+        join_normal: Vector = join_direction / join_direction.Length
+        test_normal = test_normal / test_normal.Length
         same_direction: bool = (join_normal - test_normal).Length < EPSILON
         opposite_direction: bool = (join_normal + test_normal).Length < EPSILON
         return same_direction or opposite_direction

@@ -30,7 +30,6 @@ if USE_FREECAD:
 
     from PathScripts import PathProfile  # type: ignore
 
-
     # import PathScripts.PathDressupDogbone as PathDressupDogbone  # type: ignore
 
     # import PathScripts.PathDressupHoldingTags as PathDressupHoldingTags  # type: ignore
@@ -38,8 +37,8 @@ if USE_FREECAD:
     # from PathScripts import PathGeom  # type: ignore
     from PathScripts import PathPostProcessor  # type: ignore
     from PathScripts import PathUtil  # type: ignore
-if USE_CAD_QUERY:
-    from cadquery import Vector
+elif USE_CAD_QUERY:
+    from cadquery import Vector  # type: ignore
 
 # FabBitTemplate:
 @dataclass(frozen=True)
@@ -978,7 +977,7 @@ def model(document: "App.Document", tracing: str = "") -> None:
 
 def main(tracing: str = "") -> None:
     """Run the main program."""
-    next_tracing: str = tracing + " " if tracing else ""
+    # next_tracing: str = tracing + " " if tracing else ""
     if tracing:
         print(f"{tracing}=>main()")
     # Disable for now

@@ -54,7 +54,7 @@ if USE_FREECAD:
     from FreeCAD import BoundBox, Placement, Vector  # type: ignore
     import FreeCAD as App  # type: ignore
     import FreeCADGui as Gui  # type: ignore
-if USE_CAD_QUERY:
+elif USE_CAD_QUERY:
     from cadquery import Vector  # type: ignore
 
 # FabBox:

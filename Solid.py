@@ -38,9 +38,9 @@ if USE_FREECAD:
     import Part  # type: ignore
     import FreeCAD as App  # type: ignore
     import FreeCADGui as Gui  # type: ignore
-    from FreeCAD import Placement, Rotation, Vector
-if USE_CAD_QUERY:
-    from cadquery import Vector, Plane  # type: ignore
+    from FreeCAD import Placement, Rotation, Vector  # type: ignore
+elif USE_CAD_QUERY:
+    from cadquery import Vector  # type: ignore
 
 # import Part  # type: ignore
 
@@ -520,6 +520,7 @@ class FabMount(object):
     _GeometryContext: FabGeometryContext = field(init=False, repr=False)
     _AppDatumPlane: Optional["Part.Geometry"] = field(init=False, repr=False)
     _GuiDatumPlane: Any = field(init=False, repr=False)
+    _Plane: FabPlane = field(init=False, repr=False)
 
     # FabMount.__post_init__():
     def __post_init__(self) -> None:
@@ -545,10 +546,9 @@ class FabMount(object):
         self._Normal = self._Normal + copy
         self._Operations = OrderedDict()
         # FreeCAD Vector metheds like to modify Vector contents; force copies beforehand:
-        self._Orient = (self._Orient + copy).projectToPlane(
-            self._Contact + copy, self._Normal + copy)
-        plane: FabPlane = FabPlane(self._Contact, normal=self._Normal)
-        self._GeometryContext = FabGeometryContext(plane)
+        self._Plane: FabPlane = FabPlane(self._Contact, self._Normal)
+        self._Orient = self._Plane.point_project(self._Orient + copy)
+        self._GeometryContext = FabGeometryContext(self._Plane)
         self._AppDatumPlane = None
         self._GuiDatumPlane = None
 
@@ -704,8 +704,7 @@ class FabMount(object):
 
         # Figure out the contact
         top_contact: Vector = self._Contact
-        copy: Vector = Vector()
-        normal: Vector = (self._Normal + copy).normalize()
+        normal: Vector = self._Normal / self._Normal.Length
         bottom_contact: Vector = top_contact - depth * normal
         if tracing:
             print(f"{tracing}{top_contact=} {normal=} {bottom_contact=}")
@@ -724,8 +723,6 @@ class FabMount(object):
             boxes.append(geometry.project_to_plane(top_contact, normal).Box)
             boxes.append(geometry.project_to_plane(bottom_contact, normal).Box)
         self._Solid.enclose(boxes)
-        if tracing:
-            print(f"{tracing}{self._Solid.BB=}")
 
         # Create and record the *extrude*:
         extrude: _Extrude = _Extrude(self, name, shapes, depth)
@@ -766,9 +763,9 @@ class FabMount(object):
         if tracing:
             print(f"{tracing}=>FabMount({self.Name}).drill_joins(|{len(joins)}|")
 
-        copy: Vector = Vector()
         mount_contact: Vector = self._Contact
-        mount_normal: Vector = (self._Normal + copy).normalize()
+        mount_normal: Vector = self._Normal / self._Normal.Length
+        mount_plane: FabPlane = FabPlane(mount_contact, mount_normal)
         mount_depth: float = self._Depth
         solid: "FabSolid" = self._Solid
 
@@ -790,8 +787,7 @@ class FabMount(object):
                 trimmed_end: Vector
                 intersect, trimmed_start, trimmed_end = solid.intersect(join_start, join_end)
                 if intersect:
-                    mount_start: Vector = (join_start + copy).projectToPlane(
-                        mount_contact + copy, mount_normal + copy)
+                    mount_start: Vector = mount_plane.point_project(join_start)
                     trimmed_length: float = (trimmed_start - trimmed_end).Length
                     trimmed_depth: float = min(trimmed_length, mount_depth)
                     if tracing:

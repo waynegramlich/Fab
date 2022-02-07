@@ -231,6 +231,7 @@ import sys
 from pathlib import Path
 from typing import Tuple
 
+
 def setup() -> Tuple[bool, bool]:
     # print(f"=>Embed.setup(): Before {sys.path=}")
     assert sys.version_info.major == 3  # Python 3.x

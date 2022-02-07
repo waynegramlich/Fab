@@ -19,13 +19,19 @@
 <li>3.1 <a href="#geometry----set-geometry-group">set_geometry_group()</a>: Set the GeometryContext geometry group.</li>
 </ul>
 </li>
-<li>4 Class: <a href="#geometry--fabpolygon">FabPolygon</a>:
+<li>4 Class: <a href="#geometry--fabplane">FabPlane</a>:
 <ul>
-<li>4.1 <a href="#geometry----project-to-plane">project_to_plane()</a>: Return nre FabPolygon prejected onto a plane.</li>
-<li>4.2 <a href="#geometry----get-geometries">get_geometries()</a>: Return the FabPolygon lines and arcs.</li>
-<li>4.3 <a href="#geometry----produce">produce()</a>: Produce the FreeCAD objects needed for FabPolygon.</li>
+<li>4.1 <a href="#geometry----point-project">point_project()</a>: Project a point onto a plane.</li>
 </ul>
 </li>
+<li>5 Class: <a href="#geometry--fabpolygon">FabPolygon</a>:
+<ul>
+<li>5.1 <a href="#geometry----project-to-plane">project_to_plane()</a>: Return nre FabPolygon prejected onto a plane.</li>
+<li>5.2 <a href="#geometry----get-geometries">get_geometries()</a>: Return the FabPolygon lines and arcs.</li>
+<li>5.3 <a href="#geometry----produce">produce()</a>: Produce the FreeCAD objects needed for FabPolygon.</li>
+</ul>
+</li>
+<li>6 Class: <a href="#geometry---plane">_Plane</a>:</li>
 </ul>
 <h2><!-- raw HTML omitted --><!-- raw HTML omitted -->1 Class FabCircle:</h2>
 <p>A circle with a center and a radius.
@@ -67,8 +73,7 @@ Arguments:</p>
 <p>GeometryProduce: Context needed to produce FreeCAD geometry objects.
 Attributes:</p>
 <ul>
-<li><em>PlaneContact</em> (Vector): One point on the 2D Geometry plane.</li>
-<li><em>PlaneNormal</em> (Vector): Normal to the 2D Geometry plane.</li>
+<li><em>Plane</em> (Plane): Plane to use.</li>
 <li><em>GeometryGroup</em>: (App.DocumentObjectGroup):
 The FreeCAD group to store FreeCAD Geometry objects into.
 This field needs to be set prior to use with set_geometry_group() method.</li>
@@ -76,7 +81,16 @@ This field needs to be set prior to use with set_geometry_group() method.</li>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->3.1 <code>FabGeometryContext.</code>set_geometry_group():</h3>
 <p>FabGeometryContext.set_geometry_group(self, geometry_group: typing.Any) -&gt; None:</p>
 <p>Set the GeometryContext geometry group.</p>
-<h2><!-- raw HTML omitted --><!-- raw HTML omitted -->4 Class FabPolygon:</h2>
+<h2><!-- raw HTML omitted --><!-- raw HTML omitted -->4 Class FabPlane:</h2>
+<p>A Plane class.</p>
+<ul>
+<li><em>Contact</em> (Vector):  The contact point of the plane.</li>
+<li><em>Normal</em> (Vector): The normal to the plane.</li>
+</ul>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->4.1 <code>FabPlane.</code>point_project():</h3>
+<p>FabPlane.point_project(self, point: Base.Vector) -&gt; Base.Vector:</p>
+<p>Project a point onto a plane.</p>
+<h2><!-- raw HTML omitted --><!-- raw HTML omitted -->5 Class FabPolygon:</h2>
 <p>An immutable polygon with rounded corners.
 A FabPolygon is represented as a sequence of corners (i.e. a Vector) where each corner can
 optionally be filleted with a radius.  In order to make it easier to use, a corner can be
@@ -97,7 +111,7 @@ Vector(10, -10, 0),  # Lower right (no radius)
 <li><em>Corners</em> (Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]):
 See description below for more on corners.</li>
 </ul>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->4.1 <code>FabPolygon.</code>project_to_plane():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->5.1 <code>FabPolygon.</code>project_to_plane():</h3>
 <p>FabPolygon.project_to_plane(self, contact: Base.Vector, normal: Base.Vector, tracing: str = '') -&gt; 'FabPolygon':</p>
 <p>Return nre FabPolygon prejected onto a plane.
 Arguments:</p>
@@ -109,9 +123,16 @@ Arguments:</p>
 <ul>
 <li>(FabPolyGon): The newly projected FabPolygon.</li>
 </ul>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->4.2 <code>FabPolygon.</code>get_geometries():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->5.2 <code>FabPolygon.</code>get_geometries():</h3>
 <p>FabPolygon.get_geometries(self, contact: Base.Vector, Normal: Base.Vector) -&gt; typing.Tuple[Geometry._Geometry, ...]:</p>
 <p>Return the FabPolygon lines and arcs.</p>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->4.3 <code>FabPolygon.</code>produce():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->5.3 <code>FabPolygon.</code>produce():</h3>
 <p>FabPolygon.produce(self, geometry_context: Geometry.FabGeometryContext, prefix: str) -&gt; typing.Tuple[typing.Any, ...]:</p>
 <p>Produce the FreeCAD objects needed for FabPolygon.</p>
+<h2><!-- raw HTML omitted --><!-- raw HTML omitted -->6 Class _Plane:</h2>
+<p>Plane: A plane object for FreeCAD.</p>
+<ul>
+<li><em>origin</em> (Vector):  The mutable plane origin.</li>
+<li><em>xDir</em> (Optional[Vector]):  The plane +X direction.</li>
+<li><em>normal</em> (Vector): The normal to the plane.</li>
+</ul>

@@ -145,7 +145,7 @@ are introduced as well.</p>
 </li>
 </ul>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->1.1 <code>FabBox.</code>enclose():</h3>
-<p>FabBox.enclose(self, bounds: typing.Sequence[typing.Union[Base.Vector, Base.BoundBox, ForwardRef('FabBox')]]) -&gt; None:</p>
+<p>FabBox.enclose(self, bounds: typing.Sequence[typing.Union[Base.Vector, ForwardRef('BoundBox'), ForwardRef('FabBox')]]) -&gt; None:</p>
 <p>Initialize a FabBox.
 Arguments:</p>
 <ul>
@@ -157,7 +157,7 @@ A sequence of points or boxes to enclose.</li>
 <li>ValueError: For bad or empty corners.</li>
 </ul>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->1.2 <code>FabBox.</code>reorient():</h3>
-<p>FabBox.reorient(self, placement: Base.Placement) -&gt; 'FabBox':</p>
+<p>FabBox.reorient(self, placement: 'Placement') -&gt; 'FabBox':</p>
 <p>Reorient FabBox given a Placement.
 Note after the <em>placement</em> is applied, the resulting box is still rectilinear with the
 X/Y/Z axes.  In particular, box volume is <em>not</em> conserved.</p>

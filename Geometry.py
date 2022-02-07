@@ -29,7 +29,7 @@ USE_FREECAD, USE_CAD_QUERY = Embed.setup()
 
 from dataclasses import dataclass, field
 import math
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, cast, List, Optional, Tuple, Union
 
 if USE_FREECAD:
     import FreeCAD  # type: ignore
@@ -38,8 +38,8 @@ if USE_FREECAD:
     import FreeCAD as App  # type: ignore
 
     from FreeCAD import Placement, Rotation, Vector
-if USE_CAD_QUERY:
-    from cadquery import Plane, Vector  # type: ignore
+elif USE_CAD_QUERY:
+    from cadquery import Vector  # type: ignore
 from Node import FabBox
 
 # Plane:
@@ -59,18 +59,56 @@ class _Plane(object):
 
 if USE_FREECAD:
     Plane = _Plane
+elif USE_CAD_QUERY:
+    from cadquery import Plane  # type: ignore
 
 
 # FabPlane:
-class FabPlane(Plane):
+@dataclass
+class FabPlane(object):
     """FabPlane: A Plane class.
 
-    * *origin* (Vector):  The contact point of the plane.
-    * *xDir* (Vector):  The +X direction of the plane (Cad Query Concept)
-    * *normal* (Vector): The normal to the plane.
+    * *Contact* (Vector):  The contact point of the plane.
+    * *Normal* (Vector): The normal to the plane.
     """
-    pass
-    
+
+    _Contact: Vector
+    _Normal: Vector
+    _Plane: Plane = field(init=False)
+    _Copy: Vector = field(init=False)
+
+    # FabPlane.__pos_init__():
+    def __post_init__(self) -> None:
+        """Initialize FabPlane."""
+        copy: Vector = Vector()
+        self._Contact = self._Contact + copy
+        self._Normal = self._Normal + copy
+        self._Plane = Plane(self._Contact, normal=self._Normal)
+        self._Copy = copy
+
+    # FabPlane.point_project():
+    def point_project(self, point: Vector) -> Vector:
+        """Project a point onto a plane."""
+        projected_point: Vector = cast(Vector, None)
+        if USE_FREECAD:
+            copy: Vector = self._Copy
+            projected_point = ((point + copy).projectToPlane(self._Contact, self._Normal) + copy)
+        if USE_CAD_QUERY:
+            projected_point = point.projectToPlane(self._Plane)
+        return projected_point
+
+    # FabPlane.Contact():
+    @property
+    def Contact(self) -> Vector:
+        """Return FabPlane Contact."""
+        return self._Contact + self._Copy
+
+    # FabPlane.Normal():
+    @property
+    def Normal(self) -> Vector:
+        """Return FabPlane Normal."""
+        return self._Normal + self._Copy
+
 
 # FabGeometryContext:
 @dataclass
@@ -85,7 +123,7 @@ class FabGeometryContext(object):
 
     """
 
-    _plane: Plane
+    _Plane: FabPlane
     _geometry_group: Optional[Any] = field(init=False, repr=False)
     _copy: Vector = field(init=False, repr=False)
 
@@ -93,7 +131,7 @@ class FabGeometryContext(object):
     def __post_init__(self) -> None:
         """Initialize FabGeometryContex."""
 
-        if not isinstance(self._plane, Plane):
+        if not isinstance(self._Plane, FabPlane):
             raise RuntimeError(
                 f"FabGeometryContext.__post_init__(): {type(self._plane)} is not a Plane")
 
@@ -103,9 +141,9 @@ class FabGeometryContext(object):
 
     # FabGemetryContext.Plane():
     @property
-    def plane(self) -> Plane:
-        """Return the Plane."""
-        return self._plane
+    def Plane(self) -> FabPlane:
+        """Return the FabPlane."""
+        return self._Plane
 
     # FabGeometryContext.GeometryGroup():
     @property
@@ -271,8 +309,8 @@ class _Arc(_Geometry):
     def produce(self, geometry_context: FabGeometryContext, prefix: str,
                 index: int, tracing: str = "") -> Any:
         """Return line segment after moving it into Geometry group."""
-        plane_contact: Vector = geometry_context.plane.origin
-        plane_normal: Vector = geometry_context.plane.normal
+        plane_contact: Vector = geometry_context.Plane.Contact
+        plane_normal: Vector = geometry_context.Plane.Normal
 
         # TODO: Simplify:
         mount_placement: Any = Placement(plane_contact, plane_normal, 0.0)  # Base, Axis, Angle
@@ -324,8 +362,8 @@ class _Circle(_Geometry):
         if tracing:
             print(f"{tracing}=>_Circle.produce()")
         # Extract mount plane *contact* and *normal* from *geometry_context* for 2D projection:
-        plane_contact: Vector = geometry_context.plane.origin
-        plane_normal: Vector = geometry_context.plane.normal
+        plane_contact: Vector = geometry_context.Plane.Contact
+        plane_normal: Vector = geometry_context.Plane.Normal
         # FreeCAD Vector metheds like to modify Vector contents; force copies beforehand:
         copy: Vector = Vector()
         center_on_plane: Vector = (self.Center + copy).projectToPlane(
@@ -839,23 +877,19 @@ class FabPolygon(FabGeometry):
         """
         if tracing:
             print(f"{tracing}=>FabPolygon.project_to_plane({contact}, {normal})")
-        copy: Vector = Vector()
+        plane: FabPlane = FabPlane(contact, normal)
         corner: Union[Vector, Tuple[Vector, Union[int, float]]]
         projected_corners: List[Union[Vector, Tuple[Vector, Union[int, float]]]] = []
         for corner in self.Corners:
             if isinstance(corner, Vector):
-                projected_corners.append(
-                    (corner + copy).projectToPlane(contact + copy, normal + copy)
-                )
+                projected_corners.append(plane.point_project(corner))
             elif isinstance(corner, tuple):
                 assert len(corner) == 2
                 point: Any = corner[0]
                 radius: Any = corner[1]
                 assert isinstance(point, Vector)
                 assert isinstance(radius, (int, float))
-                projected_corners.append(
-                    ((point + copy).projectToPlane(contact + copy, normal + copy), radius)
-                )
+                projected_corners.append(plane.point_project(point))
         projected_polygon: "FabPolygon" = FabPolygon(tuple(projected_corners))
         if tracing:
             print(f"{tracing}<=FabPolygon.project_to_plane({contact}, {normal})=>*")
@@ -950,8 +984,8 @@ class FabPolygon(FabGeometry):
         """Produce the FreeCAD objects needed for FabPolygon."""
         # Extract mount plane *contact* and *normal* from *geometry_context*:
         assert isinstance(geometry_context, FabGeometryContext), geometry_context
-        plane_contact: Vector = geometry_context.plane.origin
-        plane_normal: Vector = geometry_context.plane.normal
+        plane_contact: Vector = geometry_context.Plane.Contact
+        plane_normal: Vector = geometry_context.Plane.Normal
 
         # Use *contact*/*normal* for 2D projection:
         self._plane_2d_project(plane_contact, plane_normal)
