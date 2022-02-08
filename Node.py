@@ -74,7 +74,7 @@ if USE_FREECAD:
     from FreeCAD import BoundBox
 elif USE_CAD_QUERY:
     BoundBox = _BoundBox
-    
+
 
 # FabBox:
 @dataclass
@@ -1108,4 +1108,3 @@ if __name__ == "__main__":
     # _unit_tests("")
     if USE_FREECAD:
         FabBox._unit_tests()
-

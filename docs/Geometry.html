@@ -21,7 +21,7 @@
 </li>
 <li>4 Class: <a href="#geometry--fabplane">FabPlane</a>:
 <ul>
-<li>4.1 <a href="#geometry----point-project">point_project()</a>: Project a point onto a plane.</li>
+<li>4.1 <a href="#geometry----project-point">project_point()</a>: Project a point onto a plane.</li>
 </ul>
 </li>
 <li>5 Class: <a href="#geometry--fabpolygon">FabPolygon</a>:
@@ -44,12 +44,11 @@ circle later on.</p>
 <li><em>Diameter</em> (float): The diameter in millimeters.</li>
 </ul>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->1.1 <code>FabCircle.</code>project_to_plane():</h3>
-<p>FabCircle.project_to_plane(self, contact: Base.Vector, normal: Base.Vector, tracing: str = '') -&gt; 'FabCircle':</p>
+<p>FabCircle.project_to_plane(self, plane: Geometry.FabPlane, tracing: str = '') -&gt; 'FabCircle':</p>
 <p>Return a new FabCircle projected onto a plane.
 Arguments:</p>
 <ul>
-<li><em>contact</em> (Vector): One point on the plane.</li>
-<li><em>normal</em> (Vector): A normal to the plane.</li>
+<li><em>plane</em> (FabPlane): Plane to proejct to.</li>
 </ul>
 <p>Returns:</p>
 <ul>
@@ -67,7 +66,7 @@ Arguments:</p>
 <p>FabGeometry.produce(self, geometry_context: Geometry.FabGeometryContext, prefix: str) -&gt; typing.Tuple[typing.Any, ...]:</p>
 <p>Produce the necessary FreeCAD objects for the FabGeometry.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.2 <code>FabGeometry.</code>project_to_plane():</h3>
-<p>FabGeometry.project_to_plane(self, contact: Base.Vector, normal: Base.Vector) -&gt; 'FabGeometry':</p>
+<p>FabGeometry.project_to_plane(self, plane: Geometry.FabPlane) -&gt; 'FabGeometry':</p>
 <p>Return a new FabGeometry projected onto a plane.</p>
 <h2><!-- raw HTML omitted --><!-- raw HTML omitted -->3 Class FabGeometryContext:</h2>
 <p>GeometryProduce: Context needed to produce FreeCAD geometry objects.
@@ -87,8 +86,8 @@ This field needs to be set prior to use with set_geometry_group() method.</li>
 <li><em>Contact</em> (Vector):  The contact point of the plane.</li>
 <li><em>Normal</em> (Vector): The normal to the plane.</li>
 </ul>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->4.1 <code>FabPlane.</code>point_project():</h3>
-<p>FabPlane.point_project(self, point: Base.Vector) -&gt; Base.Vector:</p>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->4.1 <code>FabPlane.</code>project_point():</h3>
+<p>FabPlane.project_point(self, point: Base.Vector) -&gt; Base.Vector:</p>
 <p>Project a point onto a plane.</p>
 <h2><!-- raw HTML omitted --><!-- raw HTML omitted -->5 Class FabPolygon:</h2>
 <p>An immutable polygon with rounded corners.
@@ -112,12 +111,11 @@ Vector(10, -10, 0),  # Lower right (no radius)
 See description below for more on corners.</li>
 </ul>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->5.1 <code>FabPolygon.</code>project_to_plane():</h3>
-<p>FabPolygon.project_to_plane(self, contact: Base.Vector, normal: Base.Vector, tracing: str = '') -&gt; 'FabPolygon':</p>
+<p>FabPolygon.project_to_plane(self, plane: Geometry.FabPlane, tracing: str = '') -&gt; 'FabPolygon':</p>
 <p>Return nre FabPolygon prejected onto a plane.
 Arguments:</p>
 <ul>
-<li><em>contact</em> (Vector): One point on the plane.</li>
-<li><em>normal</em> (Vector): A normal to the plane.</li>
+<li><em>plane</em> (FabPlane): The plane to project onto.</li>
 </ul>
 <p>Returns:</p>
 <ul>

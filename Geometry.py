@@ -109,6 +109,16 @@ class FabPlane(object):
         """Return FabPlane Normal."""
         return self._Normal + self._Copy
 
+    # FabPlane.CQPlane
+    @property
+    def CQPlane(self) -> Plane:
+        """Return the CadQuery plane name as a string."""
+        normal: Vector = self._Normal / self._Normal.Length
+        origin: Vector = self._Contact
+        x_direction: Optional[Vector] = None  # Not clear what to do with this one.
+        plane: Plane = Plane(origin=origin, normal=normal, xDir=x_direction)
+        return plane
+
 
 # FabGeometryContext:
 @dataclass

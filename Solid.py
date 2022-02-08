@@ -40,7 +40,7 @@ if USE_FREECAD:
     import FreeCADGui as Gui  # type: ignore
     from FreeCAD import Placement, Rotation, Vector  # type: ignore
 elif USE_CAD_QUERY:
-    from cadquery import Vector  # type: ignore
+    from cadquery import Vector, Workplane  # type: ignore
 
 # import Part  # type: ignore
 
@@ -620,14 +620,14 @@ class FabMount(object):
             print(f"{tracing}=>FabMount.post_produce1('{self.Name}')")
 
         # Create the FreeCAD DatumPlane used for the drawing support.
-        if True:
-            contact: Vector = self._Contact
-            normal: Vector = self._Normal
+        plane: FabPlane = self._Plane
+        contact: Vector = plane.Contact
+        normal: Vector = plane.Normal
+        if USE_FREECAD:
             z_axis: Vector = Vector(0.0, 0.0, 1.0)
             origin: Vector = Vector()
             # FreeCAD Vector methods like to modify Vector contents; force copies beforehand:
-            copy: Vector = Vector()
-            projected_origin: Vector = (origin + copy).projectToPlane(contact + copy, normal + copy)
+            projected_origin: Vector = plane.project_point(contact)
             rotation: Rotation = Rotation(z_axis, normal)
             placement: Placement = Placement()
             placement.Base = projected_origin
@@ -679,6 +679,10 @@ class FabMount(object):
                 assert hasattr(gui_datum_plane, "Visibility"), gui_datum_plane
                 setattr(gui_datum_plane, "Visibility", False)
                 self._GuiDatum_plane = gui_datum_plane
+        elif USE_CAD_QUERY:
+            workplane: Optional[Workplane] = self._Solid._workplane
+            assert isinstance(workplane, Workplane), workplane
+            workplane = workplane.copyWorkplane(Workplane(plane.CQPlane))
 
         # Process each *operation* in *operations*:
         operations: "OrderedDict[str, _Operation]" = self._Operations
@@ -853,6 +857,7 @@ class FabSolid(FabNode):
     _Mounts: "OrderedDict[str, FabMount]" = field(init=False, repr=False)
     _GeometryGroup: Optional[Any] = field(init=False, repr=False)
     _Body: Optional[Any] = field(init=False, repr=False)
+    _workplane: Optional[Any] = field(init=False, repr=False)
 
     # FabSolid.__post_init__():
     def __post_init__(self) -> None:
@@ -865,6 +870,7 @@ class FabSolid(FabNode):
         self._Mounts = OrderedDict()
         self._GeometryGroup = None
         self._Body = None
+        self._workplane = None
 
         if tracing:
             print(f"{tracing}<=FabSolid({self.Label}).__post_init__()")
@@ -959,55 +965,58 @@ class FabSolid(FabNode):
         if tracing:
             print(f"{tracing}=>FabSolid.post_produce1('{self.Label}')")
 
-        # Create the *geometry_group* that contains all of the 2D geometry (line, arc, circle.):
-        parent: FabNode = self.Up
-        parent_object: Any = parent.AppObject
-        geometry_group: Any
-        geometry_group_name: str = f"{self.Label}_Geometry"
-        # if parent.is_document():
-        # if isinstance(parent_object, App.Document):
-        if hasattr(parent_object, "FileName"):  # Only App.Document has a FileName.
-            if tracing:
-                print(f"{tracing}=>FabSolid.post_produce1('{self.Label}'): {parent_object}")
-            geometry_group = parent_object.addObject(
-                "App::DocumentObjectGroup", geometry_group_name)
-        else:
-            geometry_group = parent_object.newObject("App::DocumentObjectGroup")
-            geometry_group.Label = geometry_group_name
-        self._GeometryGroup = geometry_group
-        geometry_group.Visibility = False
+        if USE_FREECAD:
+            # Create the *geometry_group* that contains all of the 2D geometry (line, arc, circle.):
+            parent: FabNode = self.Up
+            parent_object: Any = parent.AppObject
+            geometry_group: Any
+            geometry_group_name: str = f"{self.Label}_Geometry"
+            # if parent.is_document():
+            # if isinstance(parent_object, App.Document):
+            if hasattr(parent_object, "FileName"):  # Only App.Document has a FileName.
+                if tracing:
+                    print(f"{tracing}=>FabSolid.post_produce1('{self.Label}'): {parent_object}")
+                geometry_group = parent_object.addObject(
+                    "App::DocumentObjectGroup", geometry_group_name)
+            else:
+                geometry_group = parent_object.newObject("App::DocumentObjectGroup")
+                geometry_group.Label = geometry_group_name
+            self._GeometryGroup = geometry_group
+            geometry_group.Visibility = False
 
-        # Create the *body*
-        body: Any
-        # if isinstance(parent_object, App.Document):
-        if hasattr(parent_object, "FileName"):  # Only App.Document has FileName.
-            body = parent_object.addObject("PartDesign::Body", self.Label)  # TODO: add hash
-        else:
-            body = parent_object.newObject("PartDesign::Body")
-        self.set_body(body)
-        body.Label = self.Label
+            # Create the *body*
+            body: Any
+            # if isinstance(parent_object, App.Document):
+            if hasattr(parent_object, "FileName"):  # Only App.Document has FileName.
+                body = parent_object.addObject("PartDesign::Body", self.Label)  # TODO: add hash
+            else:
+                body = parent_object.newObject("PartDesign::Body")
+            self.set_body(body)
+            body.Label = self.Label
 
-        # Copy "view" fields from *body* to *gui_body* (if we are in graphical mode):
-        if App.GuiUp:  # pragma: no cover
-            document: FabNode = self.get_parent_document()
-            gui_document: Any = document._GuiObject
-            assert gui_document, "No GUI document"
-            assert hasattr(gui_document, "getObject")
-            gui_body: Any = getattr(gui_document, body.Name)
-            assert gui_body, "No GUI body"
-            assert hasattr(gui_body, "ShapeColor"), "Something is wrong"
-            if hasattr(gui_body, "Proxy"):
-                # This magical line seems to get a view provider object into the Proxy field:
-                setattr(gui_body, "Proxy", 0)  # Must not be `None`
-            if hasattr(gui_body, "DisplayMode"):
-                setattr(gui_body, "DisplayMode", "Shaded")
-            if hasattr(gui_body, "ShapeColor"):
-                rgb = FabColor.svg_to_rgb(self.Color)
-                setattr(gui_body, "ShapeColor", rgb)
+            # Copy "view" fields from *body* to *gui_body* (if we are in graphical mode):
+            if App.GuiUp:  # pragma: no cover
+                document: FabNode = self.get_parent_document()
+                gui_document: Any = document._GuiObject
+                assert gui_document, "No GUI document"
+                assert hasattr(gui_document, "getObject")
+                gui_body: Any = getattr(gui_document, body.Name)
+                assert gui_body, "No GUI body"
+                assert hasattr(gui_body, "ShapeColor"), "Something is wrong"
+                if hasattr(gui_body, "Proxy"):
+                    # This magical line seems to get a view provider object into the Proxy field:
+                    setattr(gui_body, "Proxy", 0)  # Must not be `None`
+                if hasattr(gui_body, "DisplayMode"):
+                    setattr(gui_body, "DisplayMode", "Shaded")
+                if hasattr(gui_body, "ShapeColor"):
+                    rgb = FabColor.svg_to_rgb(self.Color)
+                    setattr(gui_body, "ShapeColor", rgb)
 
-            # view_object: "ViewProviderDocumentObject"  = body.getLinkedObject(True).ViewObject
-            # assert isinstance(view_object, ViewProviderDocumentObject), type(view_object)
-            # model_file.ViewObject = view_object
+                # view_object: "ViewProviderDocumentObject"  = body.getLinkedObject(True).ViewObject
+                # assert isinstance(view_object, ViewProviderDocumentObject), type(view_object)
+                # model_file.ViewObject = view_object
+        elif USE_CAD_QUERY:
+            self._workplane: Workplane = Workplane("XY")
 
         # Now process each *mount*
         mounts: "OrderedDict[str, FabMount]" = self._Mounts
