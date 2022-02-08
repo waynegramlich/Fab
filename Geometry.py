@@ -86,8 +86,8 @@ class FabPlane(object):
         self._Plane = Plane(self._Contact, normal=self._Normal)
         self._Copy = copy
 
-    # FabPlane.point_project():
-    def point_project(self, point: Vector) -> Vector:
+    # FabPlane.project_point():
+    def project_point(self, point: Vector) -> Vector:
         """Project a point onto a plane."""
         projected_point: Vector = cast(Vector, None)
         if USE_FREECAD:
@@ -642,7 +642,7 @@ class FabGeometry(object):
         raise NotImplementedError(f"{type(self)}.produce() is not implemented")
 
     # FabGeometry.project_to_plane():
-    def project_to_plane(self, contact: Vector, normal: Vector) -> "FabGeometry":
+    def project_to_plane(self, plane: FabPlane) -> "FabGeometry":
         """Return a new FabGeometry projected onto a plane."""
         raise NotImplementedError(f"{type(self)}.project_to_plane is not implemented")
 
@@ -707,24 +707,22 @@ class FabCircle(FabGeometry):
         return box
 
     # FabCircle.project_to_plane():
-    def project_to_plane(self, contact: Vector, normal: Vector, tracing: str = "") -> "FabCircle":
+    def project_to_plane(self, plane: FabPlane, tracing: str = "") -> "FabCircle":
         """Return a new FabCircle projected onto a plane.
 
         Arguments:
-        * *contact* (Vector): One point on the plane.
-        * *normal* (Vector): A normal to the plane.
+        * *plane* (FabPlane): Plane to proejct to.
 
         Returns:
         * (FabCircle): The newly projected FabCicle.
 
         """
         if tracing:
-            print(f"{tracing}=>FabCircle.project_to_plane({contact}, {normal})")
-        copy: Vector = Vector()
-        new_center: Vector = (self.Center + copy).ProjectToPlane(contact + copy, normal + copy)
-        new_circle: "FabCircle" = FabCircle(new_center, normal, self.Diameter)
+            print(f"{tracing}=>FabCircle.project_to_plane({plane})")
+        new_center: Vector = plane.project_point(plane)
+        new_circle: "FabCircle" = FabCircle(new_center, plane.Normal, self.Diameter)
         if tracing:
-            print(f"{tracing}<=FabCircle.project_to_plane({contact}, {normal}) => *")
+            print(f"{tracing}<=FabCircle.project_to_plane({plane}) => *")
         return new_circle
 
     # FabCircle.produce():
@@ -864,35 +862,33 @@ class FabPolygon(FabGeometry):
         # self._compute_lines()
 
     # FabPolygon.project_to_plane():
-    def project_to_plane(self, contact: Vector, normal: Vector, tracing: str = "") -> "FabPolygon":
+    def project_to_plane(self, plane: FabPlane, tracing: str = "") -> "FabPolygon":
         """Return nre FabPolygon prejected onto a plane.
 
         Arguments:
-        * *contact* (Vector): One point on the plane.
-        * *normal* (Vector): A normal to the plane.
+        * *plane* (FabPlane): The plane to project onto.
 
         Returns:
         * (FabPolyGon): The newly projected FabPolygon.
 
         """
         if tracing:
-            print(f"{tracing}=>FabPolygon.project_to_plane({contact}, {normal})")
-        plane: FabPlane = FabPlane(contact, normal)
+            print(f"{tracing}=>FabPolygon.project_to_plane({plane})")
         corner: Union[Vector, Tuple[Vector, Union[int, float]]]
         projected_corners: List[Union[Vector, Tuple[Vector, Union[int, float]]]] = []
         for corner in self.Corners:
             if isinstance(corner, Vector):
-                projected_corners.append(plane.point_project(corner))
+                projected_corners.append(plane.project_point(corner))
             elif isinstance(corner, tuple):
                 assert len(corner) == 2
                 point: Any = corner[0]
                 radius: Any = corner[1]
                 assert isinstance(point, Vector)
                 assert isinstance(radius, (int, float))
-                projected_corners.append(plane.point_project(point))
+                projected_corners.append(plane.project_point(point))
         projected_polygon: "FabPolygon" = FabPolygon(tuple(projected_corners))
         if tracing:
-            print(f"{tracing}<=FabPolygon.project_to_plane({contact}, {normal})=>*")
+            print(f"{tracing}<=FabPolygon.project_to_plane({plane})=>*")
         return projected_polygon
 
     # FabPolygon._double_link():

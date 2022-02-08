@@ -547,7 +547,7 @@ class FabMount(object):
         self._Operations = OrderedDict()
         # FreeCAD Vector metheds like to modify Vector contents; force copies beforehand:
         self._Plane: FabPlane = FabPlane(self._Contact, self._Normal)
-        self._Orient = self._Plane.point_project(self._Orient + copy)
+        self._Orient = self._Plane.project_point(self._Orient + copy)
         self._GeometryContext = FabGeometryContext(self._Plane)
         self._AppDatumPlane = None
         self._GuiDatumPlane = None
@@ -706,6 +706,8 @@ class FabMount(object):
         top_contact: Vector = self._Contact
         normal: Vector = self._Normal / self._Normal.Length
         bottom_contact: Vector = top_contact - depth * normal
+        top_plane: FabPlane = FabPlane(top_contact, normal)
+        bottom_plane: FabPlane = FabPlane(bottom_contact, normal)
         if tracing:
             print(f"{tracing}{top_contact=} {normal=} {bottom_contact=}")
 
@@ -720,8 +722,8 @@ class FabMount(object):
         for geometry in geometries:
             # if tracing:
             #     print(f"{tracing}{geometry=}")
-            boxes.append(geometry.project_to_plane(top_contact, normal).Box)
-            boxes.append(geometry.project_to_plane(bottom_contact, normal).Box)
+            boxes.append(geometry.project_to_plane(top_plane).Box)
+            boxes.append(geometry.project_to_plane(bottom_plane).Box)
         self._Solid.enclose(boxes)
 
         # Create and record the *extrude*:
@@ -787,7 +789,7 @@ class FabMount(object):
                 trimmed_end: Vector
                 intersect, trimmed_start, trimmed_end = solid.intersect(join_start, join_end)
                 if intersect:
-                    mount_start: Vector = mount_plane.point_project(join_start)
+                    mount_start: Vector = mount_plane.project_point(join_start)
                     trimmed_length: float = (trimmed_start - trimmed_end).Length
                     trimmed_depth: float = min(trimmed_length, mount_depth)
                     if tracing:

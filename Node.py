@@ -51,11 +51,30 @@ from typing import Any, cast, List, Sequence, Tuple, Union
 from collections import OrderedDict
 
 if USE_FREECAD:
-    from FreeCAD import BoundBox, Placement, Vector  # type: ignore
+    from FreeCAD import Placement, Vector  # type: ignore
     import FreeCAD as App  # type: ignore
     import FreeCADGui as Gui  # type: ignore
 elif USE_CAD_QUERY:
     from cadquery import Vector  # type: ignore
+
+
+@dataclass
+class _BoundBox(object):
+    """Fake BoundBox class."""
+
+    XMin: float
+    YMin: float
+    ZMin: float
+    XMax: float
+    YMax: float
+    ZMax: float
+
+
+if USE_FREECAD:
+    from FreeCAD import BoundBox
+elif USE_CAD_QUERY:
+    BoundBox = _BoundBox
+    
 
 # FabBox:
 @dataclass
@@ -168,6 +187,9 @@ class FabBox(object):
             if isinstance(bound, Vector):
                 vectors.append(bound)
             elif USE_FREECAD and isinstance(bound, BoundBox):
+                vectors.append(Vector(bound.XMin, bound.YMin, bound.ZMin))
+                vectors.append(Vector(bound.XMax, bound.YMax, bound.ZMax))
+            elif USE_CAD_QUERY and isinstance(bound, _BoundBox):
                 vectors.append(Vector(bound.XMin, bound.YMin, bound.ZMin))
                 vectors.append(Vector(bound.XMax, bound.YMax, bound.ZMax))
             elif isinstance(bound, FabBox):
@@ -1084,5 +1106,6 @@ class FabNode(FabBox):
 
 if __name__ == "__main__":
     # _unit_tests("")
-    FabBox._unit_tests()
-    pass
+    if USE_FREECAD:
+        FabBox._unit_tests()
+
