@@ -547,7 +547,7 @@ class FabMount(object):
         self._Operations = OrderedDict()
         # FreeCAD Vector metheds like to modify Vector contents; force copies beforehand:
         self._Plane: FabPlane = FabPlane(self._Contact, self._Normal)
-        self._Orient = self._Plane.project_point(self._Orient + copy)
+        self._Orient = self._Plane.point_project(self._Orient)
         self._GeometryContext = FabGeometryContext(self._Plane)
         self._AppDatumPlane = None
         self._GuiDatumPlane = None
@@ -627,7 +627,7 @@ class FabMount(object):
             z_axis: Vector = Vector(0.0, 0.0, 1.0)
             origin: Vector = Vector()
             # FreeCAD Vector methods like to modify Vector contents; force copies beforehand:
-            projected_origin: Vector = plane.project_point(contact)
+            projected_origin: Vector = plane.point_project(contact)
             rotation: Rotation = Rotation(z_axis, normal)
             placement: Placement = Placement()
             placement.Base = projected_origin
@@ -793,7 +793,7 @@ class FabMount(object):
                 trimmed_end: Vector
                 intersect, trimmed_start, trimmed_end = solid.intersect(join_start, join_end)
                 if intersect:
-                    mount_start: Vector = mount_plane.project_point(join_start)
+                    mount_start: Vector = mount_plane.point_project(join_start)
                     trimmed_length: float = (trimmed_start - trimmed_end).Length
                     trimmed_depth: float = min(trimmed_length, mount_depth)
                     if tracing:

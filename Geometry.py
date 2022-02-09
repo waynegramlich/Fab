@@ -86,8 +86,8 @@ class FabPlane(object):
         self._Plane = Plane(self._Contact, normal=self._Normal)
         self._Copy = copy
 
-    # FabPlane.project_point():
-    def project_point(self, point: Vector) -> Vector:
+    # FabPlane.point_project():
+    def point_project(self, point: Vector) -> Vector:
         """Project a point onto a plane."""
         projected_point: Vector = cast(Vector, None)
         if USE_FREECAD:
@@ -540,9 +540,12 @@ class _Fillet(object):
             print(f"{tracing}{radius=} {before=} {apex=} {after=}")
 
         # Steps 1 and 2: Compute unit vectors <XB>, <XA>, and <XC>
-        unit_before: Vector = (before - apex).normalize()  # <XB>
-        unit_after: Vector = (after - apex).normalize()  # <XA>
-        unit_center: Vector = (unit_before + unit_after).normalize()  # <XC>
+        apex_to_before: Vector = before - apex
+        unit_before: Vector = apex_to_before / apex_to_before.Length  # <XB>
+        apex_to_after: Vector = after - apex
+        unit_after: Vector = apex_to_after / apex_to_after.Length  # <XA>
+        apex_to_center: Vector = apex_to_before + apex_to_after
+        unit_center: Vector = apex_to_center / apex_to_center.Length  # <XC>
         if tracing:
             print(f"{tracing}{unit_before=} {unit_center=} {unit_after=}")
 
@@ -612,17 +615,17 @@ class _Fillet(object):
         return arc
 
     # _Fillet.plane_2d_project:
-    def plane_2d_project(self, contact: Vector, normal: Vector) -> None:
+    def plane_2d_project(self, plane: FabPlane) -> None:
         """Project the Apex onto a plane.
 
         Arguments:
-        * *contact* (Vector): A point on the projection plane.
-        * *normal* (Vector): A normal to the projection plane.
+        * *plane* (FabPlane): The plane to project the _Fillet onto.
+
+        Modifies _Fillet.
 
         """
         # FreeCAD Vector metheds like to modify Vector contents; force copies beforehand:
-        copy: Vector = Vector()
-        self.Apex = (self.Apex + copy).projectToPlane(contact + copy, normal + copy)
+        self.Apex = plane.point_project(self.Apex)
 
     # _Fillet.get_geometries():
     def get_geometries(self) -> Tuple[_Geometry, ...]:
@@ -729,7 +732,7 @@ class FabCircle(FabGeometry):
         """
         if tracing:
             print(f"{tracing}=>FabCircle.project_to_plane({plane})")
-        new_center: Vector = plane.project_point(plane)
+        new_center: Vector = plane.point_project(plane)
         new_circle: "FabCircle" = FabCircle(new_center, plane.Normal, self.Diameter)
         if tracing:
             print(f"{tracing}<=FabCircle.project_to_plane({plane}) => *")
@@ -888,14 +891,14 @@ class FabPolygon(FabGeometry):
         projected_corners: List[Union[Vector, Tuple[Vector, Union[int, float]]]] = []
         for corner in self.Corners:
             if isinstance(corner, Vector):
-                projected_corners.append(plane.project_point(corner))
+                projected_corners.append(plane.point_project(corner))
             elif isinstance(corner, tuple):
                 assert len(corner) == 2
                 point: Any = corner[0]
                 radius: Any = corner[1]
                 assert isinstance(point, Vector)
                 assert isinstance(radius, (int, float))
-                projected_corners.append(plane.project_point(point))
+                projected_corners.append(plane.point_project(point))
         projected_polygon: "FabPolygon" = FabPolygon(tuple(projected_corners))
         if tracing:
             print(f"{tracing}<=FabPolygon.project_to_plane({plane})=>*")
@@ -972,17 +975,16 @@ class FabPolygon(FabGeometry):
         return tuple(geometries)
 
     # FabPolygon._plane_2d_project():
-    def _plane_2d_project(self, contact: Vector, normal: Vector) -> None:
+    def _plane_2d_project(self, plane: FabPlane) -> None:
         """Update the _Fillet's to be projected onto a Plane.
 
         Arguments:
-        * *contact* (Vector): A point on the plane.
-        * *normal* (Vector): A plane normal.
+        * *plane* (FabPlane): The plane to modify the _Fillet's to be on.
 
         """
         fillet: _Fillet
         for fillet in self._Fillets:
-            fillet.plane_2d_project(contact, normal)
+            fillet.plane_2d_project(plane)
 
     # FabPolygon.produce():
     def produce(self,
@@ -992,9 +994,10 @@ class FabPolygon(FabGeometry):
         assert isinstance(geometry_context, FabGeometryContext), geometry_context
         plane_contact: Vector = geometry_context.Plane.Contact
         plane_normal: Vector = geometry_context.Plane.Normal
+        plane: FabPlane = FabPlane(plane_contact, plane_normal)
 
         # Use *contact*/*normal* for 2D projection:
-        self._plane_2d_project(plane_contact, plane_normal)
+        self._plane_2d_project(plane)
 
         # Double check for radii and colinear errors that result from 2D projection:
         radius_error: str = self._radii_check()
