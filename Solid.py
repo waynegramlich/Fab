@@ -30,7 +30,7 @@ USE_CAD_QUERY: bool
 USE_FREECAD, USE_CAD_QUERY = Embed.setup()
 
 from dataclasses import dataclass, field
-from typing import Any, List, Optional, Sequence, Tuple, Union
+from typing import Any, cast, List, Optional, Sequence, Tuple, Union
 from collections import OrderedDict
 
 if USE_FREECAD:
@@ -212,43 +212,48 @@ class _Extrude(_Operation):
             print(f"{tracing}=>_Extrude.produce1('{self.Name}')")
 
         # Extract the *part_geometries* and create the associated *shape_binder*:
-        part_geometries: List[Any] = []
         mount: FabMount = self.Mount
         geometry_context: FabGeometryContext = mount._GeometryContext
-        geometry_group: Any = mount._Solid._GeometryGroup
-        # assert isinstance(geometry_group, Any), geometry_group
-        geometry_context.set_geometry_group(geometry_group)
+        if USE_FREECAD:
+            part_geometries: List[Any] = []
+            geometry_group: Any = mount._Solid._GeometryGroup
+            # assert isinstance(geometry_group, Any), geometry_group
+            geometry_context.set_geometry_group(geometry_group)
 
-        geometry_prefix: str = f"{mount.Name}_{self.Name}"
-        for geometry in self._Geometries:
-            part_geometries.extend(geometry.produce(geometry_context, geometry_prefix))
+            geometry_prefix: str = f"{mount.Name}_{self.Name}"
+            for geometry in self._Geometries:
+                part_geometries.extend(geometry.produce(geometry_context, geometry_prefix))
 
-        binder_prefix: str = f"{mount.Name}_{self.Name}"
-        shape_binder: Part.Feature = self.produce_shape_binder(
-            tuple(part_geometries), binder_prefix, tracing=next_tracing)
-        assert isinstance(shape_binder, Part.Feature)
-        shape_binder.Visibility = False
+            binder_prefix: str = f"{mount.Name}_{self.Name}"
+            shape_binder: Part.Feature = self.produce_shape_binder(
+                tuple(part_geometries), binder_prefix, tracing=next_tracing)
+            assert isinstance(shape_binder, Part.Feature)
+            shape_binder.Visibility = False
 
-        # Perform The Extrude operation:
-        body: Any = mount.Body
-        mount_normal: Vector = mount.Normal
-        pad_name: str = f"{mount.Name}_{self.Name}_Extrude"
-        extrude: Part.Feature = body.newObject("PartDesign::Pad", pad_name)
-        assert isinstance(extrude, Part.Feature)
-        # Type must be one of ("Length", "TwoLengths", "UpToLast", "UpToFirst", "UpToFace")
-        extrude.Type = "Length"
-        extrude.Profile = shape_binder
-        extrude.Length = self.Depth
-        extrude.Length2 = 0  # Only for Type == "TwoLengths"
-        extrude.UseCustomVector = True
-        extrude.Direction = mount_normal  # This may be bogus
-        extrude.UpToFace = None
-        extrude.Reversed = True
-        extrude.Midplane = False
-        extrude.Offset = 0  # Only for Type in ("UpToLast", "UpToFirst", "UpToFace")
+            # Perform The Extrude operation:
+            body: Any = mount.Body
+            mount_normal: Vector = mount.Normal
+            pad_name: str = f"{mount.Name}_{self.Name}_Extrude"
+            extrude: Part.Feature = body.newObject("PartDesign::Pad", pad_name)
+            assert isinstance(extrude, Part.Feature)
+            # Type must be one of ("Length", "TwoLengths", "UpToLast", "UpToFirst", "UpToFace")
+            extrude.Type = "Length"
+            extrude.Profile = shape_binder
+            extrude.Length = self.Depth
+            extrude.Length2 = 0  # Only for Type == "TwoLengths"
+            extrude.UseCustomVector = True
+            extrude.Direction = mount_normal  # This may be bogus
+            extrude.UpToFace = None
+            extrude.Reversed = True
+            extrude.Midplane = False
+            extrude.Offset = 0  # Only for Type in ("UpToLast", "UpToFirst", "UpToFace")
 
-        # For the GUI, update the view provider:
-        self._viewer_update(body, extrude)
+            # For the GUI, update the view provider:
+            self._viewer_update(body, extrude)
+        elif USE_CAD_QUERY:
+            workplane = cast(Workplane, geometry_context.WorkPlane)
+            workplane = workplane.extrude(self.Depth)
+            geometry_context.WorkPlane = workplane
 
         if tracing:
             print(f"{tracing}<=_Extrude.post_produce1('{self.Name}')")
@@ -521,6 +526,7 @@ class FabMount(object):
     _AppDatumPlane: Optional["Part.Geometry"] = field(init=False, repr=False)
     _GuiDatumPlane: Any = field(init=False, repr=False)
     _Plane: FabPlane = field(init=False, repr=False)
+    _WorkPlane: Any = field(init=False, repr=False, default=None)
 
     # FabMount.__post_init__():
     def __post_init__(self) -> None:
@@ -551,6 +557,7 @@ class FabMount(object):
         self._GeometryContext = FabGeometryContext(self._Plane)
         self._AppDatumPlane = None
         self._GuiDatumPlane = None
+        self._WorkPlane = None
 
         if tracing:
             print(f"{tracing}{self._Contact=} {self._Normal=} "
@@ -598,6 +605,26 @@ class FabMount(object):
     def Depth(self) -> float:
         """Return the depth."""
         return self._Depth
+
+    # FabMount.WorkPlane():
+    @property
+    def WorkPlane(self) -> Any:
+        """Return CadQuery Workplane."""
+        if not USE_CAD_QUERY:
+            raise RuntimeError("FabMount.WorkPlane(): Not in CadQuery mode")
+        if not self._WorkPlane:
+            raise RuntimeError("FabMount.WorkPlane(): workplane not set.")
+        return self._WorkPlane
+
+    # FabMount.WorkPlane.setter():
+    @WorkPlane.setter
+    def WorkPlane(self, workplane: Any) -> None:
+        """Set CadQuery Workplane."""
+        if not USE_CAD_QUERY:
+            raise RuntimeError("FabMount.WorkPlane(): Not in CadQuery mode")
+        if not isinstance(workplane, Workplane):
+            raise RuntimeError(f"FabMount.WorkPlane(): Got {type(workplane)}, not Workplane.")
+        self._WorkPlane = workplane
 
     # FabMount.record_operation():
     def record_operation(self, operation: _Operation) -> None:
@@ -691,7 +718,10 @@ class FabMount(object):
         for operation_name, operation in operations.items():
             if tracing:
                 print(f"{tracing}Operation[{operation_name}]:")
-            operation.post_produce1(tracing=next_tracing)
+            if USE_FREECAD:
+                operation.post_produce1(tracing=next_tracing)
+            elif USE_CAD_QUERY:
+                operation.post_produce1(tracing=next_tracing)
 
         # Install the FabMount (i.e. *self*) and *datum_plane* into *model_file* prior
         # to recursively performing the *operations*:
@@ -1027,7 +1057,12 @@ class FabSolid(FabNode):
         for mount_name, mount in mounts.items():
             if tracing:
                 print(f"{tracing}[{mount_name}]: process")
-            mount.post_produce1(tracing=next_tracing)
+            if USE_FREECAD:
+                mount.post_produce1(tracing=next_tracing)
+            elif USE_CAD_QUERY:
+                mount.WorkPlane = self._workplane
+                mount.post_produce1(tracing=next_tracing)
+                self._workplane = mount.WorkPlane
 
         if tracing:
             print(f"{tracing}<=FabSolid.post_produce1('{self.Label}')")

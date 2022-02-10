@@ -39,7 +39,7 @@ if USE_FREECAD:
 
     from FreeCAD import Placement, Rotation, Vector
 elif USE_CAD_QUERY:
-    from cadquery import Vector  # type: ignore
+    from cadquery import Workplane, Vector  # type: ignore
 from Node import FabBox
 
 # Plane:
@@ -136,6 +136,7 @@ class FabGeometryContext(object):
     _Plane: FabPlane
     _geometry_group: Optional[Any] = field(init=False, repr=False)
     _copy: Vector = field(init=False, repr=False)
+    _WorkPlane: Any = field(init=False, repr=False, default=None)
 
     # FabGeometryContext.__post_init__():
     def __post_init__(self) -> None:
@@ -149,11 +150,32 @@ class FabGeometryContext(object):
         self._copy: Vector = copy
         self._GeometryGroup = None  # Set with set_geometry_group() method
 
-    # FabGemetryContext.Plane():
+    # FabGeometryContext.Plane():
     @property
     def Plane(self) -> FabPlane:
         """Return the FabPlane."""
         return self._Plane
+
+    # FabGeometryContext.WorkPlane():
+    @property
+    def WorkPlane(self) -> Any:
+        """Return the FabQuery Workplane."""
+        if not USE_CAD_QUERY:
+            raise RuntimeError("FabGeomtery.WorkPlane(): Only accessible in CadQuery mode.")
+        if not self._WorkPlane:
+            raise RuntimeError("FabGeomtery.WorkPlane(): Workplane is not set.")
+        return self._WorkPlane
+            
+    # FabGeometryContext.WorkPlane.setter():
+    @WorkPlane.setter
+    def WorkPlane(self, workplane: Any):
+        """Set the FabQuery Workplane."""
+        if not USE_CAD_QUERY:
+            raise RuntimeError("FabGeomtery.WorkPlane(): Only accessible in CadQuery mode.")
+        if not isinstance(workplane, Workplane):
+            raise RuntimeError(
+                f"FabGeomtery.WorkPlane(): Workplane {type(workplane)}, not workplane.")
+        self._WorkPlane = workplane
 
     # FabGeometryContext.GeometryGroup():
     @property
@@ -426,27 +448,34 @@ class _Line(_Geometry):
     def produce(self, geometry_context: FabGeometryContext, prefix: str,
                 index: int, tracing: str = "") -> Any:
         """Return line segment after moving it into Geometry group."""
-        label: str = f"{prefix}_Line_{index:03d}"
-        placement: Placement = Placement()
-        placement.Rotation.Q = (0.0, 0.0, 0.0, 1.0)
-        placement.Base = self.Start
+        line_segment: Any = None
+        if USE_FREECAD:
+            label: str = f"{prefix}_Line_{index:03d}"
+            placement: Placement = Placement()
+            placement.Rotation.Q = (0.0, 0.0, 0.0, 1.0)
+            placement.Base = self.Start
 
-        # Create and label *line_segment*:
-        points = [self.Start, self.Finish]
-        line_segment: Any = Draft.makeWire(
-            points, placement=placement, closed=False, face=True, support=None)
-        # assert isinstance(line_segment, Any)
-        line_segment.Label = label
+            # Create and label *line_segment*:
+            points = [self.Start, self.Finish]
+            line_segment = Draft.makeWire(
+                points, placement=placement, closed=False, face=True, support=None)
+            # assert isinstance(line_segment, Any)
+            line_segment.Label = label
 
-        # Draft.autogroup(line_segment)
-        # app_document: App.Document = model_file.AppDocument
-        # app_document.recompute()
+            # Draft.autogroup(line_segment)
+            # app_document: App.Document = model_file.AppDocument
+            # app_document.recompute()
 
-        # Move *line_segment* into *geometry_group*:
-        geometry_group: App.DocumentObjectGroup = geometry_context.GeometryGroup
-        line_segment.adjustRelativeLinks(geometry_group)
-        line_segment.Visibility = False
-        geometry_group.addObject(line_segment)
+            # Move *line_segment* into *geometry_group*:
+            geometry_group: App.DocumentObjectGroup = geometry_context.GeometryGroup
+            line_segment.adjustRelativeLinks(geometry_group)
+            line_segment.Visibility = False
+            geometry_group.addObject(line_segment)
+        elif USE_CAD_QUERY:
+            workplane: Workplane = geometry_context.WorkPlane
+            workplane = workplane.moveTo(self.Start.X, self.Start.Y)
+            workplane = workplane.lineTo(self.Finish.X, self.Finish.Y)
+            geometry_context.WorkPlane = workplane
 
         return line_segment
 
