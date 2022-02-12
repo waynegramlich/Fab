@@ -15,9 +15,15 @@ The Utilitly classes are:
 import sys
 sys.path.append(".")
 import Embed
+USE_FREECAD: bool
+USE_CAD_QUERY: bool
+USE_FREECAD, USE_CAD_QUERY = Embed.setup()
 Embed.setup()
 
-from FreeCAD import Vector  # type: ignore
+if USE_FREECAD:
+    from FreeCAD import Vector  # type: ignore
+elif USE_CAD_QUERY:
+    from cadquery import Vector  # type: ignore
 
 # import colorsys  # Color conversion routines.
 from dataclasses import dataclass

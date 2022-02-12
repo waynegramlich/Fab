@@ -30,7 +30,7 @@ USE_CAD_QUERY: bool
 USE_FREECAD, USE_CAD_QUERY = Embed.setup()
 
 from dataclasses import dataclass, field
-from typing import Any, cast, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 from collections import OrderedDict
 
 if USE_FREECAD:
@@ -40,11 +40,11 @@ if USE_FREECAD:
     import FreeCADGui as Gui  # type: ignore
     from FreeCAD import Placement, Rotation, Vector  # type: ignore
 elif USE_CAD_QUERY:
-    from cadquery import Vector, Workplane  # type: ignore
+    from cadquery import Vector  # type: ignore
 
 # import Part  # type: ignore
 
-from Geometry import FabCircle, FabGeometry, FabGeometryContext, FabPlane
+from Geometry import FabCircle, FabGeometry, FabGeometryContext, FabPlane, FabWorkPlane
 from Join import FabFasten, FabJoin
 from Node import FabBox, FabNode
 from Utilities import FabColor
@@ -213,6 +213,7 @@ class _Extrude(_Operation):
 
         # Extract the *part_geometries* and create the associated *shape_binder*:
         mount: FabMount = self.Mount
+        geometry_prefix: str = f"{mount.Name}_{self.Name}"
         geometry_context: FabGeometryContext = mount._GeometryContext
         if USE_FREECAD:
             part_geometries: List[Any] = []
@@ -220,9 +221,10 @@ class _Extrude(_Operation):
             # assert isinstance(geometry_group, Any), geometry_group
             geometry_context.set_geometry_group(geometry_group)
 
-            geometry_prefix: str = f"{mount.Name}_{self.Name}"
-            for geometry in self._Geometries:
-                part_geometries.extend(geometry.produce(geometry_context, geometry_prefix))
+            index: int
+            for index, geometry in enumerate(self._Geometries):
+                part_geometries.extend(
+                    geometry.produce(geometry_context, geometry_prefix, index))
 
             binder_prefix: str = f"{mount.Name}_{self.Name}"
             shape_binder: Part.Feature = self.produce_shape_binder(
@@ -251,9 +253,12 @@ class _Extrude(_Operation):
             # For the GUI, update the view provider:
             self._viewer_update(body, extrude)
         elif USE_CAD_QUERY:
-            workplane = cast(Workplane, geometry_context.WorkPlane)
-            workplane = workplane.extrude(self.Depth)
-            geometry_context.WorkPlane = workplane
+            for index, geometry in enumerate(self._Geometries):
+                if tracing:
+                    print(f"{tracing}Geometry[{index}]:{geometry=}")
+                geometry.produce(geometry_context, geometry_prefix, index, tracing=next_tracing)
+            # geometry_context.WorkPlane.close(tracing=next_tracing)
+            geometry_context.WorkPlane.extrude(self.Depth, tracing=next_tracing)
 
         if tracing:
             print(f"{tracing}<=_Extrude.post_produce1('{self.Name}')")
@@ -333,8 +338,9 @@ class _Pocket(_Operation):
         part_geometries: List[Any] = []
         geometry_context: FabGeometryContext = mount._GeometryContext
         geometry: FabGeometry
-        for geometry in geometries:
-            part_geometries.extend(geometry.produce(geometry_context, prefix))
+        index: int
+        for index, geometry in enumerate(geometries):
+            part_geometries.extend(geometry.produce(geometry_context, prefix, index))
 
         # Create the *shape_binder*:
         shape_binder: Part.Feature = self.produce_shape_binder(tuple(part_geometries), prefix)
@@ -425,7 +431,7 @@ class _Hole(_Operation):
         circle: FabCircle = FabCircle(center, mount_normal, diameter)
         part_geometries: List[Any] = []
         part_geometries.extend(circle.produce(
-            geometry_context, geometry_prefix, tracing=next_tracing))
+            geometry_context, geometry_prefix, 0, tracing=next_tracing))
 
         # Sweep through *hole_groups* generating *part_geometries*:
         # group_index: int
@@ -510,6 +516,7 @@ class FabMount(object):
       A vector that is projected onto the mount plane to specify orientation
       when mounted for CNC operations.
     * *Depth* (float): The maximum depth limit for all operations.
+    * *WorkPlane* (FabWorkPlane): The CadQuery workplane wrapper class object.
 
     """
 
@@ -519,6 +526,7 @@ class FabMount(object):
     _Normal: Vector
     _Orient: Vector
     _Depth: float
+    _WorkPlane: FabWorkPlane
     _Operations: "OrderedDict[str, _Operation]" = field(init=False, repr=False)
     _Copy: Vector = field(init=False, repr=False)  # Used for making private copies of Vector's
     _Tracing: str = field(init=False, repr=False)
@@ -526,7 +534,6 @@ class FabMount(object):
     _AppDatumPlane: Optional["Part.Geometry"] = field(init=False, repr=False)
     _GuiDatumPlane: Any = field(init=False, repr=False)
     _Plane: FabPlane = field(init=False, repr=False)
-    _WorkPlane: Any = field(init=False, repr=False, default=None)
 
     # FabMount.__post_init__():
     def __post_init__(self) -> None:
@@ -554,10 +561,9 @@ class FabMount(object):
         # FreeCAD Vector metheds like to modify Vector contents; force copies beforehand:
         self._Plane: FabPlane = FabPlane(self._Contact, self._Normal)
         self._Orient = self._Plane.point_project(self._Orient)
-        self._GeometryContext = FabGeometryContext(self._Plane)
+        self._GeometryContext = FabGeometryContext(self._Plane, self._WorkPlane)
         self._AppDatumPlane = None
         self._GuiDatumPlane = None
-        self._WorkPlane = None
 
         if tracing:
             print(f"{tracing}{self._Contact=} {self._Normal=} "
@@ -605,26 +611,6 @@ class FabMount(object):
     def Depth(self) -> float:
         """Return the depth."""
         return self._Depth
-
-    # FabMount.WorkPlane():
-    @property
-    def WorkPlane(self) -> Any:
-        """Return CadQuery Workplane."""
-        if not USE_CAD_QUERY:
-            raise RuntimeError("FabMount.WorkPlane(): Not in CadQuery mode")
-        if not self._WorkPlane:
-            raise RuntimeError("FabMount.WorkPlane(): workplane not set.")
-        return self._WorkPlane
-
-    # FabMount.WorkPlane.setter():
-    @WorkPlane.setter
-    def WorkPlane(self, workplane: Any) -> None:
-        """Set CadQuery Workplane."""
-        if not USE_CAD_QUERY:
-            raise RuntimeError("FabMount.WorkPlane(): Not in CadQuery mode")
-        if not isinstance(workplane, Workplane):
-            raise RuntimeError(f"FabMount.WorkPlane(): Got {type(workplane)}, not Workplane.")
-        self._WorkPlane = workplane
 
     # FabMount.record_operation():
     def record_operation(self, operation: _Operation) -> None:
@@ -707,9 +693,9 @@ class FabMount(object):
                 setattr(gui_datum_plane, "Visibility", False)
                 self._GuiDatum_plane = gui_datum_plane
         elif USE_CAD_QUERY:
-            workplane: Optional[Workplane] = self._Solid._workplane
-            assert isinstance(workplane, Workplane), workplane
-            workplane = workplane.copyWorkplane(Workplane(plane.CQPlane))
+            work_plane: Optional[FabWorkPlane] = self._Solid._WorkPlane
+            assert isinstance(work_plane, FabWorkPlane), work_plane
+            work_plane.copy_workplane(plane)
 
         # Process each *operation* in *operations*:
         operations: "OrderedDict[str, _Operation]" = self._Operations
@@ -887,7 +873,7 @@ class FabSolid(FabNode):
     _Mounts: "OrderedDict[str, FabMount]" = field(init=False, repr=False)
     _GeometryGroup: Optional[Any] = field(init=False, repr=False)
     _Body: Optional[Any] = field(init=False, repr=False)
-    _workplane: Optional[Any] = field(init=False, repr=False)
+    _WorkPlane: FabWorkPlane = field(init=False, repr=False)
 
     # FabSolid.__post_init__():
     def __post_init__(self) -> None:
@@ -900,7 +886,7 @@ class FabSolid(FabNode):
         self._Mounts = OrderedDict()
         self._GeometryGroup = None
         self._Body = None
-        self._workplane = None
+        self._WorkPlane = FabWorkPlane()
 
         if tracing:
             print(f"{tracing}<=FabSolid({self.Label}).__post_init__()")
@@ -945,7 +931,7 @@ class FabSolid(FabNode):
         mounts: "OrderedDict[str, FabMount]" = self._Mounts
         if name in mounts:
             raise RuntimeError(f"FabSolid({self._Label}).mount(): Mount {name} is not unique.")
-        fab_mount: FabMount = FabMount(name, self, contact, normal, orient, depth)
+        fab_mount: FabMount = FabMount(name, self, contact, normal, orient, depth, self._WorkPlane)
         self._Mounts[name] = fab_mount
 
         if tracing:
@@ -988,7 +974,7 @@ class FabSolid(FabNode):
             print(f"{tracing}<=FabSolid({self.Label}).drill_joins('{name}', *)")
 
     # FabSolid.post_produce1():
-    def post_produce1(self) -> None:
+    def post_produce1(self, objects_table: Dict[str, Any]) -> None:
         """Perform FabSolid Phase1 post production."""
         tracing: str = self.Tracing
         next_tracing: str = tracing + " " if tracing else ""
@@ -1046,7 +1032,7 @@ class FabSolid(FabNode):
                 # assert isinstance(view_object, ViewProviderDocumentObject), type(view_object)
                 # model_file.ViewObject = view_object
         elif USE_CAD_QUERY:
-            self._workplane: Workplane = Workplane("XY")
+            objects_table[self.Label] = self._WorkPlane
 
         # Now process each *mount*
         mounts: "OrderedDict[str, FabMount]" = self._Mounts
@@ -1057,12 +1043,7 @@ class FabSolid(FabNode):
         for mount_name, mount in mounts.items():
             if tracing:
                 print(f"{tracing}[{mount_name}]: process")
-            if USE_FREECAD:
-                mount.post_produce1(tracing=next_tracing)
-            elif USE_CAD_QUERY:
-                mount.WorkPlane = self._workplane
-                mount.post_produce1(tracing=next_tracing)
-                self._workplane = mount.WorkPlane
+            mount.post_produce1(tracing=next_tracing)
 
         if tracing:
             print(f"{tracing}<=FabSolid.post_produce1('{self.Label}')")

@@ -1,4 +1,4 @@
-<h1>Geometry: Solid: A module for constructing 3D solids.</h1>
+<h1>Geometry: Geometry: A module for constructing 2D geometry.</h1>
 <h2>Table of Contents (alphabetical order):</h2>
 <ul>
 <li>1 Class: <a href="#geometry--fabcircle">FabCircle</a>:
@@ -31,7 +31,18 @@
 <li>5.3 <a href="#geometry----produce">produce()</a>: Produce the FreeCAD objects needed for FabPolygon.</li>
 </ul>
 </li>
-<li>6 Class: <a href="#geometry---plane">_Plane</a>:</li>
+<li>6 Class: <a href="#geometry--fabworkplane">FabWorkPlane</a>:
+<ul>
+<li>6.1 <a href="#geometry----circle">circle()</a>: Draw a circle to a point.</li>
+<li>6.2 <a href="#geometry----close">close()</a>: Close a sequence of arcs and lines.</li>
+<li>6.3 <a href="#geometry----copy-workplane">copy_workplane()</a>: Create a new CadQuery workplane and push it onto the stack.</li>
+<li>6.4 <a href="#geometry----extrude">extrude()</a>: Extrude current 2D object to a known depth.</li>
+<li>6.5 <a href="#geometry----line-to">line_to()</a>: Draw a line to a point.</li>
+<li>6.6 <a href="#geometry----move-to">move_to()</a>: Draw a line to a point.</li>
+<li>6.7 <a href="#geometry----three-point-arc">three_point_arc()</a>: Draw a three point arc.</li>
+</ul>
+</li>
+<li>7 Class: <a href="#geometry---plane">_Plane</a>:</li>
 </ul>
 <h2><!-- raw HTML omitted --><!-- raw HTML omitted -->1 Class FabCircle:</h2>
 <p>A circle with a center and a radius.
@@ -55,7 +66,7 @@ Arguments:</p>
 <li>(FabCircle): The newly projected FabCicle.</li>
 </ul>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->1.2 <code>FabCircle.</code>produce():</h3>
-<p>FabCircle.produce(self, geometry_context: Geometry.FabGeometryContext, prefix: str, tracing: str = '') -&gt; typing.Tuple[typing.Any, ...]:</p>
+<p>FabCircle.produce(self, geometry_context: Geometry.FabGeometryContext, prefix: str, index: int, tracing: str = '') -&gt; typing.Tuple[typing.Any, ...]:</p>
 <p>Produce the FreeCAD objects needed for FabPolygon.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->1.3 <code>FabCircle.</code>get_geometries():</h3>
 <p>FabCircle.get_geometries(self) -&gt; typing.Tuple[Geometry._Geometry, ...]:</p>
@@ -63,7 +74,7 @@ Arguments:</p>
 <h2><!-- raw HTML omitted --><!-- raw HTML omitted -->2 Class FabGeometry:</h2>
 <p>The base class for FabPolygon and FabCircle.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.1 <code>FabGeometry.</code>produce():</h3>
-<p>FabGeometry.produce(self, geometry_context: Geometry.FabGeometryContext, prefix: str) -&gt; typing.Tuple[typing.Any, ...]:</p>
+<p>FabGeometry.produce(self, geometry_context: Geometry.FabGeometryContext, prefix: str, index: int, tracing: str = '') -&gt; typing.Tuple[typing.Any, ...]:</p>
 <p>Produce the necessary FreeCAD objects for the FabGeometry.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.2 <code>FabGeometry.</code>project_to_plane():</h3>
 <p>FabGeometry.project_to_plane(self, plane: Geometry.FabPlane) -&gt; 'FabGeometry':</p>
@@ -76,6 +87,7 @@ Attributes:</p>
 <li><em>GeometryGroup</em>: (App.DocumentObjectGroup):
 The FreeCAD group to store FreeCAD Geometry objects into.
 This field needs to be set prior to use with set_geometry_group() method.</li>
+<li><em>WorkPlane</em> (FabWorkPlane): The CadQuery Workplane wrapper to use.</li>
 </ul>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->3.1 <code>FabGeometryContext.</code>set_geometry_group():</h3>
 <p>FabGeometryContext.set_geometry_group(self, geometry_group: typing.Any) -&gt; None:</p>
@@ -125,9 +137,33 @@ Arguments:</p>
 <p>FabPolygon.get_geometries(self, contact: Base.Vector, Normal: Base.Vector) -&gt; typing.Tuple[Geometry._Geometry, ...]:</p>
 <p>Return the FabPolygon lines and arcs.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->5.3 <code>FabPolygon.</code>produce():</h3>
-<p>FabPolygon.produce(self, geometry_context: Geometry.FabGeometryContext, prefix: str) -&gt; typing.Tuple[typing.Any, ...]:</p>
+<p>FabPolygon.produce(self, geometry_context: Geometry.FabGeometryContext, prefix: str, index: int, tracing: str = '') -&gt; typing.Tuple[typing.Any, ...]:</p>
 <p>Produce the FreeCAD objects needed for FabPolygon.</p>
-<h2><!-- raw HTML omitted --><!-- raw HTML omitted -->6 Class _Plane:</h2>
+<h2><!-- raw HTML omitted --><!-- raw HTML omitted -->6 Class FabWorkPlane:</h2>
+<p>A CadQuery Workplane wrapper.
+This class just wraps CadQuery operations to ensure that a workplane chain is maintained.</p>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.1 <code>FabWorkPlane.</code>circle():</h3>
+<p>FabWorkPlane.circle(self, center: Base.Vector, radius: float, for_construction=False) -&gt; None:</p>
+<p>Draw a circle to a point.</p>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.2 <code>FabWorkPlane.</code>close():</h3>
+<p>FabWorkPlane.close(self, tracing: str = '') -&gt; None:</p>
+<p>Close a sequence of arcs and lines.</p>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.3 <code>FabWorkPlane.</code>copy_workplane():</h3>
+<p>FabWorkPlane.copy_workplane(self, plane: Geometry.FabPlane, tracing: str = '') -&gt; None:</p>
+<p>Create a new CadQuery workplane and push it onto the stack.</p>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.4 <code>FabWorkPlane.</code>extrude():</h3>
+<p>FabWorkPlane.extrude(self, depth: float, tracing: str = '') -&gt; None:</p>
+<p>Extrude current 2D object to a known depth.</p>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.5 <code>FabWorkPlane.</code>line_to():</h3>
+<p>FabWorkPlane.line_to(self, end: Base.Vector, for_construction=False, tracing: str = '') -&gt; None:</p>
+<p>Draw a line to a point.</p>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.6 <code>FabWorkPlane.</code>move_to():</h3>
+<p>FabWorkPlane.move_to(self, point: Base.Vector, tracing: str = '') -&gt; None:</p>
+<p>Draw a line to a point.</p>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.7 <code>FabWorkPlane.</code>three_point_arc():</h3>
+<p>FabWorkPlane.three_point_arc(self, middle: Base.Vector, end: Base.Vector, for_construction: bool = False, tracing: str = '') -&gt; None:</p>
+<p>Draw a three point arc.</p>
+<h2><!-- raw HTML omitted --><!-- raw HTML omitted -->7 Class _Plane:</h2>
 <p>Plane: A plane object for FreeCAD.</p>
 <ul>
 <li><em>origin</em> (Vector):  The mutable plane origin.</li>

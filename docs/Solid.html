@@ -36,6 +36,7 @@ to which the 2D FabGeometry's are mapped onto prior to performing each operation
 A vector that is projected onto the mount plane to specify orientation
 when mounted for CNC operations.</li>
 <li><em>Depth</em> (float): The maximum depth limit for all operations.</li>
+<li><em>WorkPlane</em> (FabWorkPlane): The CadQuery workplane wrapper class object.</li>
 </ul>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->1.1 <code>FabMount.</code>record_operation():</h3>
 <p>FabMount.record_operation(self, operation: Solid._Operation) -&gt; None:</p>
@@ -98,5 +99,5 @@ mounts for the current FabSolid are used.  (Default: None)</li>
 </ul>
 <p>For now, please call this method after all FabMount's are created.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.6 <code>FabSolid.</code>post_produce1():</h3>
-<p>FabSolid.post_produce1(self) -&gt; None:</p>
+<p>FabSolid.post_produce1(self, objects_table: typing.Dict[str, typing.Any]) -&gt; None:</p>
 <p>Perform FabSolid Phase1 post production.</p>

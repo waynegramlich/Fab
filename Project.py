@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Solid: A module for constructing 3D solids."""
+"""Project: A module for creating Fab projects."""
 
 # [Part2DObject](http://www.iesensor.com/FreeCADDoc/0.16-dev/d9/d57/classPart_1_1Part2DObject.html)
 # [App FeaturePython](https://wiki.freecadweb.org/App_FeaturePython)
@@ -32,7 +32,7 @@ USE_CAD_QUERY: bool
 USE_FREECAD, USE_CAD_QUERY = Embed.setup()
 
 from dataclasses import dataclass, field
-from typing import Any, cast, List, Optional, Set, Tuple
+from typing import Any, cast, Dict, List, Optional, Set, Tuple
 from pathlib import Path
 
 
@@ -44,7 +44,7 @@ if USE_FREECAD:
 elif USE_CAD_QUERY:
     from cadquery import Vector  # type: ignore
 
-from Geometry import FabCircle, FabPolygon
+from Geometry import FabCircle, FabPolygon, FabWorkPlane
 from Join import FabFasten, FabJoin
 from Node import FabNode
 from Solid import FabMount, FabSolid, visibility_set
@@ -70,33 +70,25 @@ class FabGroup(FabNode):
         super().__post_init__()
 
     # FabGroup.post_produce1():
-    def post_produce1(self) -> None:
+    def post_produce1(self, objects_table: Dict[str, Any]) -> None:
         """Perform FabGroup phase1 post production."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>FabGroup({self.Label}).post_produce1()")
+            print(f"{tracing}=>FabGroup({self.Label}).post_produce1(*)")
 
         # Create the *group* that contains the children FabNode's:
         parent_object: Any = self.Up.AppObject
-        if tracing:
-            print(f"{tracing}=>FabGroup({self.Label}).post_produce1(): here 1")
         group: Any = parent_object.addObject(
             "App::DocumentObjectGroup", f"{self.Label}")
-        if tracing:
-            print(f"{tracing}=>FabGroup({self.Label}).post_produce1(): here 2")
         # assert isinstance(group, Any), group
         self.set_object(group)
-        if tracing:
-            print(f"{tracing}=>FabGroup({self.Label}).post_produce1(): here 3")
 
         group.Visibility = True
         self.Group = group
-        if tracing:
-            print(f"{tracing}=>FabGroup({self.Label}).post_produce1(): here 4")
         visibility_set(group)
 
         if tracing:
-            print(f"{tracing}<=FabGroup({self.Label}).post_produce1()")
+            print(f"{tracing}<=FabGroup({self.Label}).post_produce1(*)")
 
     # FabGroup.produce():
     def produce(self) -> None:
@@ -132,12 +124,12 @@ class FabAssembly(FabGroup):
         return True  # All other FabNode's return False.
 
     # FabAssembly.post_produce1():
-    def post_produce1(self) -> None:
+    def post_produce1(self, objects_table: Dict[str, Any]) -> None:
         """Preform FabAssebmly phase1 post production."""
         tracing: str = self.Tracing
         if tracing:
             print(f"{tracing}=>FabAssembly({self.Label}).post_produce1()")
-        super().post_produce1()
+        super().post_produce1(objects_table)
         if tracing:
             print(f"{tracing}<=FabAssembly({self.Label}).post_produce1()")
 
@@ -192,24 +184,27 @@ class FabDocument(FabNode):
                     "not FabAssembly/FabGroup/FabSolid")
 
     # FabDocument.post_produce1():
-    def post_produce1(self) -> None:
+    def post_produce1(self, objects_table: Dict[str, Any]) -> None:
         """Perform FabDocument phase 1 post production."""
         tracing: str = self.Tracing
         if tracing:
             print(f"{tracing}=>FabDocument({self.Label}).post_produce1()")
 
         # Create *app_document*:
-        app_document: Any = App.newDocument(self.Label)
-        # assert isinstance(app_document, App.Document)  # Just to be sure.
-        self.set_app_object_only(app_document)
-        self._AppDocument = app_document
+        if USE_FREECAD:
+            app_document: Any = App.newDocument(self.Label)
+            # assert isinstance(app_document, App.Document)  # Just to be sure.
+            self.set_app_object_only(app_document)
+            self._AppDocument = app_document
 
-        # If the GUI is up, get the associated *gui_document* and hang onto it:
-        if App.GuiUp:  # pragma: no unit cover
-            gui_document: Any = Gui.getDocument(app_document.Name)
-            # assert isinstance(gui_document, Gui.Document)
-            self.set_gui_object_only(gui_document)
-            self._GuiDocument = gui_document
+            # If the GUI is up, get the associated *gui_document* and hang onto it:
+            if App.GuiUp:  # pragma: no unit cover
+                gui_document: Any = Gui.getDocument(app_document.Name)
+                # assert isinstance(gui_document, Gui.Document)
+                self.set_gui_object_only(gui_document)
+                self._GuiDocument = gui_document
+        elif USE_CAD_QUERY:
+            pass
 
         if tracing:
             print(f"{tracing}<=FabDocument({self.Label}).post_produce1()")
@@ -221,10 +216,11 @@ class FabDocument(FabNode):
         if tracing:
             print(f"{tracing}=>FabDocument({self.Label}).post_produce2()")
 
-        # Save the document:
-        app_document: Any = self._AppDocument
-        app_document.recompute()
-        app_document.saveAs(str(self.FilePath))
+        if USE_FREECAD:
+            # Save the document:
+            app_document: Any = self._AppDocument
+            app_document.recompute()
+            app_document.saveAs(str(self.FilePath))
 
         if tracing:
             print(f"{tracing}Saved {self.FilePath}")
@@ -278,7 +274,7 @@ class FabProject(FabNode):
         return project
 
     # FabProject.run():
-    def run(self) -> None:
+    def run(self, objects_table: Dict[str, Any] = {}) -> None:
         # Shared variables:
         tracing: str = self.Tracing
         if tracing:
@@ -344,7 +340,7 @@ class FabProject(FabNode):
                 print(f"{tracing}Phase 2A: post_produce1():")
             del errors[:]  # Clear *errors*
             for node in all_nodes:
-                node.post_produce1()
+                node.post_produce1(objects_table)
 
             if tracing:
                 print(f"{tracing}Phase 2b: post_produce2():")
@@ -657,29 +653,30 @@ class TestSolid(FabSolid):
         ))
         top_mount.extrude("Extrude", extrude_polygon, depth, tracing=next_tracing)
 
-        # Perform a pocket:
-        pocket_fillet_radius: float = 2.5
-        left_polygon: FabPolygon = FabPolygon((
-            (Vector(-30, -10, z_offset), pocket_fillet_radius),  # SW
-            (Vector(-10, -10, z_offset), pocket_fillet_radius),  # SE
-            (Vector(-10, 10, z_offset), pocket_fillet_radius),  # NE
-            (Vector(-30, 10, z_offset), pocket_fillet_radius),  # NW
-        ))
-        top_mount.pocket("LeftPocket", left_polygon, depth)
+        if USE_FREECAD:
+            # Perform a pocket:
+            pocket_fillet_radius: float = 2.5
+            left_polygon: FabPolygon = FabPolygon((
+                (Vector(-30, -10, z_offset), pocket_fillet_radius),  # SW
+                (Vector(-10, -10, z_offset), pocket_fillet_radius),  # SE
+                (Vector(-10, 10, z_offset), pocket_fillet_radius),  # NE
+                (Vector(-30, 10, z_offset), pocket_fillet_radius),  # NW
+            ))
+            top_mount.pocket("LeftPocket", left_polygon, depth)
 
-        right_pocket: FabPolygon = FabPolygon((
-            (Vector(10, -10, z_offset), pocket_fillet_radius),  # SW
-            (Vector(30, -10, z_offset), pocket_fillet_radius),  # SE
-            (Vector(30, 10, z_offset), pocket_fillet_radius),  # NE
-            (Vector(10, 10, z_offset), pocket_fillet_radius),  # NW
-        ))
-        top_mount.pocket("RightPocket", right_pocket, depth2)
+            right_pocket: FabPolygon = FabPolygon((
+                (Vector(10, -10, z_offset), pocket_fillet_radius),  # SW
+                (Vector(30, -10, z_offset), pocket_fillet_radius),  # SE
+                (Vector(30, 10, z_offset), pocket_fillet_radius),  # NE
+                (Vector(10, 10, z_offset), pocket_fillet_radius),  # NW
+            ))
+            top_mount.pocket("RightPocket", right_pocket, depth2)
 
-        right_circle: FabCircle = FabCircle(Vector(20, 0, z_offset), normal, 10)
-        top_mount.pocket("RightCircle", right_circle, depth)
+            right_circle: FabCircle = FabCircle(Vector(20, 0, z_offset), normal, 10)
+            top_mount.pocket("RightCircle", right_circle, depth)
 
-        center_circle: FabCircle = FabCircle(Vector(0, 0, z_offset), normal, 10)
-        top_mount.pocket("CenterCircle", center_circle, depth2)
+            center_circle: FabCircle = FabCircle(Vector(0, 0, z_offset), normal, 10)
+            top_mount.pocket("CenterCircle", center_circle, depth2)
 
         if tracing:
             print(f"{tracing}<=TestSolid({self.Label}).produce()")
@@ -704,9 +701,9 @@ class TestAssembly(FabAssembly):
 class TestDocument(FabDocument):
     """A Test file."""
 
-    _Assembly: TestAssembly = field(init=False, repr=False)
-    _TestSolid: TestSolid = field(init=False, repr=False)
-    _Box: Box = field(init=False, repr=False)
+    _Assembly: TestAssembly = field(init=False, repr=False, default=cast(TestAssembly, None))
+    _TestSolid: TestSolid = field(init=False, repr=False, default=cast(TestSolid, None))
+    _Box: Box = field(init=False, repr=False, default=cast(Box, None))
 
     # TestDocument.__post_init__():
     def __post_init__(self) -> None:
@@ -716,8 +713,9 @@ class TestDocument(FabDocument):
         if tracing:
             print(f"{tracing}=>TestDocument({self.Label}).__post_init__()")
         self._TestSolid = TestSolid("TestSolid", self, "HDPE", "red")
-        self._Box = Box("TestBox", self, 200.0, 150.0, 75.0, 6.0, "HDPE", Vector(0, 0, 0))
-        # self._TestAssembly = TestAssembly("TestAssembly", self)
+        if USE_FREECAD:
+            self._Box = Box("TestBox", self, 200.0, 150.0, 75.0, 6.0, "HDPE", Vector(0, 0, 0))
+            self._TestAssembly = TestAssembly("TestAssembly", self)
         if tracing:
             print(f"{tracing}<=TestDocument({self.Label}).__post_init__()")
 
@@ -762,10 +760,11 @@ class TestProject(FabProject):
         pass
 
 
-def main() -> None:
+def main(key: str = "") -> None:
     """Run main program."""
+    objects_table: Dict[str, Any] = {}
     test_project: TestProject = TestProject.new("TestProject")
-    test_project.run()
+    test_project.run(objects_table)
 
     # Create the models:
     # test_solid: TestSolid = TestSolid("TestSolid")
@@ -776,6 +775,17 @@ def main() -> None:
     # root: FabProject = FabProject("Root")
     # root._Children = (model_file,)
     # root.run(tracing="")
+
+    result: Any = 0
+    if USE_CAD_QUERY:
+        print("project.py: main():4")
+        if key in objects_table:
+            result = objects_table[key]
+            if isinstance(result, FabWorkPlane):
+                result = result.WorkPlane
+        elif key:
+            print(f"'{key}' is not one of {tuple(objects_table.keys())}")
+    return result
 
 
 if __name__ == "__main__":

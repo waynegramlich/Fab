@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Solid: A module for constructing 3D solids."""
+"""Geometry: A module for constructing 2D geometry."""
 
 # [Part2DObject](http://www.iesensor.com/FreeCADDoc/0.16-dev/d9/d57/classPart_1_1Part2DObject.html)
 # [App FeaturePython](https://wiki.freecadweb.org/App_FeaturePython)
@@ -130,13 +130,14 @@ class FabGeometryContext(object):
     * *GeometryGroup*: (App.DocumentObjectGroup):
       The FreeCAD group to store FreeCAD Geometry objects into.
       This field needs to be set prior to use with set_geometry_group() method.
+    * *WorkPlane* (FabWorkPlane): The CadQuery Workplane wrapper to use.
 
     """
 
     _Plane: FabPlane
+    _WorkPlane: "FabWorkPlane"
     _geometry_group: Optional[Any] = field(init=False, repr=False)
     _copy: Vector = field(init=False, repr=False)
-    _WorkPlane: Any = field(init=False, repr=False, default=None)
 
     # FabGeometryContext.__post_init__():
     def __post_init__(self) -> None:
@@ -165,7 +166,7 @@ class FabGeometryContext(object):
         if not self._WorkPlane:
             raise RuntimeError("FabGeomtery.WorkPlane(): Workplane is not set.")
         return self._WorkPlane
-            
+
     # FabGeometryContext.WorkPlane.setter():
     @WorkPlane.setter
     def WorkPlane(self, workplane: Any):
@@ -206,6 +207,12 @@ class _Geometry(object):
     def produce(self, geometry_context: FabGeometryContext, prefix: str,
                 index: int, tracing: str = "") -> Any:
         raise NotImplementedError(f"{type(self)}.produce() is not implemented yet")
+
+    # _Geometry.Start():
+    def get_start(self) -> Vector:
+        """Return start point of geometry."""
+        raise NotImplementedError(f"{type(self)}.get_start() is not implemented yet")
+
 
 # _Arc:
 @dataclass(frozen=True)
@@ -341,36 +348,46 @@ class _Arc(_Geometry):
     def produce(self, geometry_context: FabGeometryContext, prefix: str,
                 index: int, tracing: str = "") -> Any:
         """Return line segment after moving it into Geometry group."""
-        plane_contact: Vector = geometry_context.Plane.Contact
-        plane_normal: Vector = geometry_context.Plane.Normal
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>_Arc.produce(*, '{prefix}', {index})")
+        part_arc: Any = None
+        if USE_FREECAD:
+            plane_contact: Vector = geometry_context.Plane.Contact
+            plane_normal: Vector = geometry_context.Plane.Normal
 
-        # TODO: Simplify:
-        mount_placement: Any = Placement(plane_contact, plane_normal, 0.0)  # Base, Axis, Angle
-        assert isinstance(mount_placement, Placement), mount_placement
-        placement: Placement = Placement()  # Should be Placement(mount_count, mount_normal, 0.0)
-        placement.Rotation = mount_placement.Rotation  # Delete
-        placement.Base = self.Center
+            # TODO: Simplify:
+            mount_placement: Any = Placement(plane_contact, plane_normal, 0.0)  # Base, Axis, Angle
+            assert isinstance(mount_placement, Placement), mount_placement
+            # Should be Placement(mount_count, mount_normal, 0.0)
+            placement: Placement = Placement()
+            placement.Rotation = mount_placement.Rotation  # Delete
+            placement.Base = self.Center
 
-        # Create and label *part_arc*:
-        # part_arc: Part.Any = Draft.makeCircle(
-        #     self.Radius, placement=placement, face=False,  # face=True,
-        #     startangle=math.degrees(self.StartAngle),
-        #     endangle=math.degrees(self.StartAngle + self.DeltaAngle),
-        #     support=None)
-        part_arc: Any = _Arc.make_arc_3points(
-            (self.Start, self.Middle, self.Finish))
-        # part_arc: Any=Draft.make_arc_3points([self.Start, self.Middle, self.Finish])
+            # Create and label *part_arc*:
+            # part_arc: Part.Any = Draft.makeCircle(
+            #     self.Radius, placement=placement, face=False,  # face=True,
+            #     startangle=math.degrees(self.StartAngle),
+            #     endangle=math.degrees(self.StartAngle + self.DeltaAngle),
+            #     support=None)
+            part_arc = _Arc.make_arc_3points(
+                (self.Start, self.Middle, self.Finish))
+            # part_arc: Any=Draft.make_arc_3points([self.Start, self.Middle, self.Finish])
 
-        label: str = f"{prefix}_Arc_{index:03d}"
-        # assert isinstance(part_arc, Any)
-        part_arc.Label = label
-        part_arc.Visibility = False
+            label: str = f"{prefix}_Arc_{index:03d}"
+            # assert isinstance(part_arc, Any)
+            part_arc.Label = label
+            part_arc.Visibility = False
 
-        # Move *part_arc* into *geometry_group*:
-        geometry_group: App.DocumentObjectGroup = geometry_context.GeometryGroup
-        part_arc.adjustRelativeLinks(geometry_group)
-        geometry_group.addObject(part_arc)
-
+            # Move *part_arc* into *geometry_group*:
+            geometry_group: App.DocumentObjectGroup = geometry_context.GeometryGroup
+            part_arc.adjustRelativeLinks(geometry_group)
+            geometry_group.addObject(part_arc)
+        elif USE_CAD_QUERY:
+            geometry_context.WorkPlane.three_point_arc(
+                self.Middle, self.Finish, tracing=next_tracing)
+        if tracing:
+            print(f"{tracing}<=_Arc.produce(*, '{prefix}', {index})=>{part_arc}")
         return part_arc
 
 
@@ -388,8 +405,8 @@ class _Circle(_Geometry):
     Diameter: float
 
     # _Circle.produce():
-    def produce(self, geometry_context: FabGeometryContext, prefix: str, index: int,
-                tracing: str = "") -> Any:
+    def produce(self, geometry_context: FabGeometryContext, prefix: str,
+                index: int, tracing: str = "") -> Any:
         """Return line segment after moving it into Geometry group."""
         if tracing:
             print(f"{tracing}=>_Circle.produce()")
@@ -444,10 +461,18 @@ class _Line(_Geometry):
     Start: Vector
     Finish: Vector
 
+    # _Line.get_start():
+    def get_start(self) -> Vector:
+        """Return the start point of the _Line."""
+        return self.Start
+
     # _Line.produce():
     def produce(self, geometry_context: FabGeometryContext, prefix: str,
                 index: int, tracing: str = "") -> Any:
         """Return line segment after moving it into Geometry group."""
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>_Line.produce()")
         line_segment: Any = None
         if USE_FREECAD:
             label: str = f"{prefix}_Line_{index:03d}"
@@ -472,11 +497,10 @@ class _Line(_Geometry):
             line_segment.Visibility = False
             geometry_group.addObject(line_segment)
         elif USE_CAD_QUERY:
-            workplane: Workplane = geometry_context.WorkPlane
-            workplane = workplane.moveTo(self.Start.X, self.Start.Y)
-            workplane = workplane.lineTo(self.Finish.X, self.Finish.Y)
-            geometry_context.WorkPlane = workplane
+            geometry_context.WorkPlane.line_to(self.Finish, tracing=next_tracing)
 
+        if tracing:
+            print(f"{tracing}<=_Line.produce()=>{line_segment}")
         return line_segment
 
 
@@ -678,8 +702,8 @@ class FabGeometry(object):
         raise NotImplementedError(f"{type(self)}.Box() is not implemented")
 
     # FabGeometry.produce():
-    def produce(self, geometry_context: FabGeometryContext,
-                prefix: str) -> Tuple[Any, ...]:
+    def produce(self, geometry_context: FabGeometryContext, prefix: str,
+                index: int, tracing: str = "") -> Tuple[Any, ...]:
         """Produce the necessary FreeCAD objects for the FabGeometry."""
         raise NotImplementedError(f"{type(self)}.produce() is not implemented")
 
@@ -769,14 +793,13 @@ class FabCircle(FabGeometry):
 
     # FabCircle.produce():
     def produce(self, geometry_context: FabGeometryContext, prefix: str,
-                tracing: str = "") -> Tuple[Any, ...]:
+                index: int, tracing: str = "") -> Tuple[Any, ...]:
         """Produce the FreeCAD objects needed for FabPolygon."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabCircle.produce()")
         geometries: Tuple[_Geometry, ...] = self.get_geometries()
         geometry: _Geometry
-        index: int
         part_geometries: List[Any] = []
         for index, geometry in enumerate(geometries):
             part_geometry: Any = geometry.produce(
@@ -1016,10 +1039,14 @@ class FabPolygon(FabGeometry):
             fillet.plane_2d_project(plane)
 
     # FabPolygon.produce():
-    def produce(self,
-                geometry_context: FabGeometryContext, prefix: str) -> Tuple[Any, ...]:
+    def produce(self, geometry_context: FabGeometryContext, prefix: str,
+                index: int, tracing: str = "") -> Tuple[Any, ...]:
         """Produce the FreeCAD objects needed for FabPolygon."""
         # Extract mount plane *contact* and *normal* from *geometry_context*:
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabPolygon.produce()")
+        part_geometry: Any
         assert isinstance(geometry_context, FabGeometryContext), geometry_context
         plane_contact: Vector = geometry_context.Plane.Contact
         plane_normal: Vector = geometry_context.Plane.Normal
@@ -1042,13 +1069,25 @@ class FabPolygon(FabGeometry):
 
         # Extract the geometries using *contact* and *normal* to specify the projecton plane:
         geometries: Tuple[_Geometry, ...] = self.get_geometries(plane_contact, plane_normal)
-        geometry: _Geometry
-        index: int
         part_geometries: List[Any] = []
-        for index, geometry in enumerate(geometries):
-            part_geometry: Any = geometry.produce(geometry_context, prefix, index)
-            # assert isinstance(part_geometry, Any)
-            part_geometries.append(part_geometry)
+
+        if USE_FREECAD:
+            geometry: _Geometry
+            for index, geometry in enumerate(geometries):
+                part_geometry = geometry.produce(geometry_context, prefix, index)
+                part_geometries.append(part_geometry)
+        elif USE_CAD_QUERY:
+            if not geometries:
+                raise RuntimeError("FabPolygon.produce(): empty geometries.")
+            geometry0: _Geometry = geometries[0]
+            start: Vector = geometry0.get_start()
+            geometry_context.WorkPlane.move_to(start, tracing=next_tracing)
+            for index, geometry in enumerate(geometries):
+                part_geometry = geometry.produce(
+                    geometry_context, prefix, index, tracing=next_tracing)
+            geometry_context.WorkPlane.close(tracing=next_tracing)
+        if tracing:
+            print(f"{tracing}<=FabPolygon.produce()=>*")
         return tuple(part_geometries)
 
     # FabPolygon._unit_tests():
@@ -1067,6 +1106,114 @@ class FabPolygon(FabGeometry):
         # geometry: _Geometry
         # for index, geometry in enumerate(geometries):
         #     print(f"Geometry[{index}]: {geometry}")
+
+
+# FabWorkPlane:
+@dataclass
+class FabWorkPlane(object):
+    """FabWorkPlane: A CadQuery Workplane wrapper.
+
+    This class just wraps CadQuery operations to ensure that a workplane chain is maintained.
+    """
+    WorkPlane: Any = None
+
+    # FabWorkPlane.__post_init__():
+    def __post_init__(self) -> None:
+        """Initialize FabPlane"""
+        if USE_CAD_QUERY:
+            self.WorkPlane = Workplane("XY")
+
+    # FabWorkPlane.circle():
+    def circle(self, center: Vector, radius: float, for_construction=False) -> None:
+        """Draw a circle to a point."""
+        if USE_CAD_QUERY:
+            self.WorkPlane = (
+                cast(Workplane, self.WorkPlane)
+                .moveTo(center.X, center.Y)
+                .circle(radius, for_construction)
+            )
+
+    # FabWorkPlane.close():
+    def close(self, tracing: str = "") -> None:
+        """Close a sequence of arcs and lines."""
+        if USE_CAD_QUERY:
+            if tracing:
+                print(f"    .close()  # >>>>>>>> {self.WorkPlane}")
+            self.WorkPlane = (
+                cast(Workplane, self.WorkPlane)
+                .close()
+            )
+            if tracing:
+                print(f"    .close()  # <<<<<<<< {self.WorkPlane}")
+
+    # FabWorkPlane.copy_workplane():
+    def copy_workplane(self, plane: FabPlane, tracing: str = "") -> None:
+        """Create a new CadQuery workplane and push it onto the stack."""
+        if USE_CAD_QUERY:
+            self.WorkPlane = (
+                cast(Workplane, self.WorkPlane)
+                .copyWorkplane(Workplane(plane.CQPlane))
+            )
+
+    # FabWorkPlane.extrude():
+    def extrude(self, depth: float, tracing: str = "") -> None:
+        """Extrude current 2D object to a known depth."""
+        if USE_CAD_QUERY:
+            if tracing:
+                f"{tracing}=>FabWorkPlane.extrude({depth})  # >>>>>>>> {self.WorkPlane}"
+            self.WorkPlane = (
+                cast(Workplane, self.WorkPlane)
+                .extrude(depth)
+            )
+            if tracing:
+                f"{tracing}=>FabWorkPlane.extrude({depth})  # <<<<<<<< {self.WorkPlane}"
+
+    # FabWorkPlane.line_to():
+    def line_to(self, end: Vector, for_construction=False, tracing: str = "") -> None:
+        """Draw a line to a point."""
+        if USE_CAD_QUERY:
+            if tracing:
+                print(f"    .lineTo({end.x:.2f}, {end.y:.2f})  # >>>>>>>> {self.WorkPlane}")
+            self.WorkPlane = (
+                cast(Workplane, self.WorkPlane)
+                .lineTo(end.x, end.y)
+            )
+            if tracing:
+                print(f"    .lineTo({end.x:.2f}, {end.y:.2f})  # <<<<<<<< {self.WorkPlane}")
+
+    # FabWorkPlane.move_to():
+    def move_to(self, point: Vector, tracing: str = "") -> None:
+        """Draw a line to a point."""
+        if USE_CAD_QUERY:
+            if tracing:
+                print(f"    .moveTo({point.x:.2f}, {point.y:.2f})  # >>>>>>> {self.WorkPlane}")
+            assert isinstance(point, Vector), point
+            self.WorkPlane = (
+                cast(Workplane, self.WorkPlane)
+                .moveTo(point.x, point.y)
+            )
+            if tracing:
+                print(f"    .moveTo({point.x:.2f}, {point.y:.2f})  # <<<<<<<< {self.WorkPlane}")
+
+    # FabWorkPlane.three_point_arc():
+    def three_point_arc(self, middle: Vector, end: Vector,
+                        for_construction: bool = False, tracing: str = "") -> None:
+        """Draw a three point arc."""
+        if USE_CAD_QUERY:
+            if tracing:
+                # print(f"{tracing}<=>FabWorkPlane.three_point_arc("
+                #       f"{middle}, {end}, {for_construction})<<<<<<<<<<<<<<<<")
+                print(f"    .threePointArc("
+                      f"({middle.x:.2f}, {middle.y:.2f}), "
+                      f"({end.x:.2f}, {end.y:.2f}))  # >>>>>>>> {self.WorkPlane}")
+            self.WorkPlane = (
+                cast(Workplane, self.WorkPlane)
+                .threePointArc((middle.x, middle.y), (end.x, end.y))
+            )
+            if tracing:
+                print(f"    .threePointArc("
+                      f"({middle.x:.2f}, {middle.y:.2f}), "
+                      f"({end.x:.2f}, {end.y:.2f}))  # <<<<<<<< {self.WorkPlane}")
 
 
 def main() -> None:

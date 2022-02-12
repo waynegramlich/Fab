@@ -47,7 +47,7 @@ USE_CAD_QUERY: bool
 USE_FREECAD, USE_CAD_QUERY = Embed.setup()
 
 from dataclasses import dataclass, field
-from typing import Any, cast, List, Sequence, Tuple, Union
+from typing import Any, cast, Dict, List, Sequence, Tuple, Union
 from collections import OrderedDict
 
 if USE_FREECAD:
@@ -997,7 +997,7 @@ class FabNode(FabBox):
             print(f"{tracing}<=>FabNode({self._Label}).produce()=>()")
 
     # FabNode.post_produce1():
-    def post_produce1(self) -> None:
+    def post_produce1(self, objects_table: Dict[str, Any]) -> None:
         """Do FabNode phase 1 post production."""
         tracing: str = self.Tracing
         if tracing:
