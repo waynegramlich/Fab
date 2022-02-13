@@ -409,39 +409,45 @@ class _Circle(_Geometry):
     def produce(self, geometry_context: FabGeometryContext, prefix: str,
                 index: int, tracing: str = "") -> Any:
         """Return line segment after moving it into Geometry group."""
+        next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>_Circle.produce()")
-        # Extract mount plane *contact* and *normal* from *geometry_context* for 2D projection:
-        plane_contact: Vector = geometry_context.Plane.Contact
-        plane_normal: Vector = geometry_context.Plane.Normal
-        # FreeCAD Vector metheds like to modify Vector contents; force copies beforehand:
-        copy: Vector = Vector()
-        center_on_plane: Vector = (self.Center + copy).projectToPlane(
-            plane_contact + copy, plane_normal + copy)
+        plane: FabPlane = geometry_context.Plane
+        center_on_plane: Vector = plane.point_project(self.Center)
+        part_circle: Any = None
+        if USE_FREECAD:
+            # Extract mount plane *contact* and *normal* from *geometry_context* for 2D projection:
+            plane_contact: Vector = plane.Contact
+            plane_normal: Vector = plane.Normal
+            # FreeCAD Vector metheds like to modify Vector contents; force copies beforehand:
+            copy: Vector = Vector()
 
-        label: str = f"{prefix}_Circle_{index:03d}"
-        z_axis: Vector = Vector(0.0, 0.0, 1.0)
-        rotation: Rotation = Rotation(z_axis, plane_normal)
-        placement: Placement = Placement()
-        placement.Rotation = rotation
-        placement.Base = center_on_plane
-        if tracing:
-            print(f"{tracing}{center_on_plane=} {plane_normal=}")
-            print(f"{tracing}{placement=}")
-            print(f"{tracing}{rotation * z_axis=}")
+            label: str = f"{prefix}_Circle_{index:03d}"
+            z_axis: Vector = Vector(0.0, 0.0, 1.0)
+            rotation: Rotation = Rotation(z_axis, plane_normal)
+            placement: Placement = Placement()
+            placement.Rotation = rotation
+            placement.Base = center_on_plane
+            if tracing:
+                print(f"{tracing}{center_on_plane=} {plane_normal=}")
+                print(f"{tracing}{placement=}")
+                print(f"{tracing}{rotation * z_axis=}")
 
-        # Create and label *part_arc*:
-        part_circle: Any = Draft.makeCircle(
-            self.Diameter / 2.0, placement=placement, face=True,
-            support=None)
-        # assert isinstance(part_circle, Any)
-        part_circle.Label = label
-        part_circle.Visibility = False
+            # Create and label *part_arc*:
+            part_circle = Draft.makeCircle(
+                self.Diameter / 2.0, placement=placement, face=True,
+                support=None)
+            # assert isinstance(part_circle, Any)
+            part_circle.Label = label
+            part_circle.Visibility = False
 
-        # Move *part_arc* into *geometry_group*:
-        geometry_group: App.DocumentObjectGroup = geometry_context.GeometryGroup
-        part_circle.adjustRelativeLinks(geometry_group)
-        geometry_group.addObject(part_circle)
+            # Move *part_arc* into *geometry_group*:
+            geometry_group: App.DocumentObjectGroup = geometry_context.GeometryGroup
+            part_circle.adjustRelativeLinks(geometry_group)
+            geometry_group.addObject(part_circle)
+        elif USE_CAD_QUERY:
+            work_plane: "FabWorkPlane" = geometry_context.WorkPlane
+            work_plane.circle(center_on_plane, self.Diameter / 2, tracing=next_tracing)
 
         if tracing:
             print(f"{tracing}<=_Circle.produce()")
@@ -1125,9 +1131,12 @@ class FabWorkPlane(object):
             self.WorkPlane = Workplane("XY")
 
     # FabWorkPlane.circle():
-    def circle(self, center: Vector, radius: float, for_construction=False) -> None:
+    def circle(self, center: Vector, radius: float,
+               for_construction=False, tracing: str = "") -> None:
         """Draw a circle to a point."""
         if USE_CAD_QUERY:
+            if tracing:
+                print(f"{tracing}<=>FabWorkPlane.circle({center}, {radius}, {for_construction})")
             self.WorkPlane = (
                 cast(Workplane, self.WorkPlane)
                 .moveTo(center.X, center.Y)
