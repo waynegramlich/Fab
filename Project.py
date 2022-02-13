@@ -653,8 +653,8 @@ class TestSolid(FabSolid):
         ))
         top_mount.extrude("Extrude", extrude_polygon, depth, tracing=next_tracing)
 
-        if USE_FREECAD:
-            # Perform a pocket:
+        # Perform a pocket:
+        if False:
             pocket_fillet_radius: float = 2.5
             left_polygon: FabPolygon = FabPolygon((
                 (Vector(-30, -10, z_offset), pocket_fillet_radius),  # SW
@@ -672,6 +672,7 @@ class TestSolid(FabSolid):
             ))
             top_mount.pocket("RightPocket", right_pocket, depth2)
 
+        if False:
             right_circle: FabCircle = FabCircle(Vector(20, 0, z_offset), normal, 10)
             top_mount.pocket("RightCircle", right_circle, depth)
 
@@ -778,7 +779,6 @@ def main(key: str = "") -> None:
 
     result: Any = 0
     if USE_CAD_QUERY:
-        print("project.py: main():4")
         if key in objects_table:
             result = objects_table[key]
             if isinstance(result, FabWorkPlane):
