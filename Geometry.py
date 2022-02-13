@@ -128,10 +128,10 @@ class FabGeometryContext(object):
 
     Attributes:
     * *Plane* (Plane): Plane to use.
+    * *WorkPlane* (FabWorkPlane): The CadQuery Workplane wrapper to use.
     * *GeometryGroup*: (App.DocumentObjectGroup):
       The FreeCAD group to store FreeCAD Geometry objects into.
       This field needs to be set prior to use with set_geometry_group() method.
-    * *WorkPlane* (FabWorkPlane): The CadQuery Workplane wrapper to use.
 
     """
 
@@ -146,7 +146,11 @@ class FabGeometryContext(object):
 
         if not isinstance(self._Plane, FabPlane):
             raise RuntimeError(
-                f"FabGeometryContext.__post_init__(): {type(self._plane)} is not a Plane")
+                f"FabGeometryContext.__post_init__(): {type(self._Plane)} is not a FabPlane")
+        if not isinstance(self._WorkPlane, FabWorkPlane):
+            raise RuntimeError(
+                "FabGeometryContext.__post_init__(): "
+                f"{type(self._WorkPlane)} is not a FabWorkPlane")
 
         copy: Vector = Vector()
         self._copy: Vector = copy
@@ -164,8 +168,6 @@ class FabGeometryContext(object):
         """Return the FabQuery Workplane."""
         if not USE_CAD_QUERY:
             raise RuntimeError("FabGeomtery.WorkPlane(): Only accessible in CadQuery mode.")
-        if not self._WorkPlane:
-            raise RuntimeError("FabGeomtery.WorkPlane(): Workplane is not set.")
         return self._WorkPlane
 
     # FabGeometryContext.WorkPlane.setter():
@@ -186,6 +188,15 @@ class FabGeometryContext(object):
         if not self._GeometryGroup:
             raise RuntimeError(f"FabGeometryContext.GeometryGroup(): not set yet; must be set")
         return self._GeometryGroup
+
+    # FabGeometryContext.copy():
+    def copy(self, tracing: str = "") -> "FabGeometryContext":
+        """Return a FabGeometryContext copy."""
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}<=>FabGeometryContext.copy()")
+        new_work_plane: FabWorkPlane = FabWorkPlane(self._Plane)
+        return FabGeometryContext(self._Plane, new_work_plane)
 
     # FabGeometryContext.set_geometry_Group():
     def set_geometry_group(self, geometry_group: Any) -> None:
@@ -446,7 +457,7 @@ class _Circle(_Geometry):
             part_circle.adjustRelativeLinks(geometry_group)
             geometry_group.addObject(part_circle)
         elif USE_CAD_QUERY:
-            work_plane: "FabWorkPlane" = geometry_context.WorkPlane
+            work_plane: FabWorkPlane = geometry_context.WorkPlane
             work_plane.circle(center_on_plane, self.Diameter / 2, tracing=next_tracing)
 
         if tracing:
@@ -1122,12 +1133,14 @@ class FabWorkPlane(object):
 
     This class just wraps CadQuery operations to ensure that a workplane chain is maintained.
     """
+    Plane: FabPlane
     WorkPlane: Any = None
 
     # FabWorkPlane.__post_init__():
     def __post_init__(self) -> None:
         """Initialize FabPlane"""
         if USE_CAD_QUERY:
+            # TODO(): Fix to use *Plane*.
             self.WorkPlane = Workplane("XY")
 
     # FabWorkPlane.circle():
