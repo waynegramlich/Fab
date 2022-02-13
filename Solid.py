@@ -883,10 +883,14 @@ class FabSolid(FabNode):
         if tracing:
             print(f"{tracing}=>FabSolid({self.Label}).__post_init__()")
         # TODO: Do additional type checking here:
+        # Initial WorkPlane does not matter, it gets set by FabMount.
+        origin: Vector = Vector(0.0, 0.0, 0.0)
+        z_axis: Vector = Vector(0.0, 0.0, 1.0)
+        initial_plane: FabPlane = FabPlane(origin, z_axis)
         self._Mounts = OrderedDict()
         self._GeometryGroup = None
         self._Body = None
-        self._WorkPlane = FabWorkPlane()
+        self._WorkPlane = FabWorkPlane(initial_plane)
 
         if tracing:
             print(f"{tracing}<=FabSolid({self.Label}).__post_init__()")

@@ -39,6 +39,7 @@ if USE_FREECAD:
 
     from FreeCAD import Placement, Rotation, Vector
 elif USE_CAD_QUERY:
+    import cadquery  # type: ignore
     from cadquery import Workplane, Vector  # type: ignore
 from Node import FabBox
 
@@ -1195,6 +1196,61 @@ class FabWorkPlane(object):
             if tracing:
                 print(f"    .moveTo({point.x:.2f}, {point.y:.2f})  # <<<<<<<< {self.WorkPlane}")
 
+    # FabWorkPlane.show():
+    def show(self, label: str, tracing: str = "") -> None:
+        """Print a detailed dump of a FabWorkPlane."""
+        # This is basically copied from the section "An Introspective Example" in the
+        # CadQuery documentation.
+        
+        def tidy_repr(obj) -> str:
+            """ Shortens a default repr string
+            """
+            return repr(obj).split('.')[-1].rstrip('>')
+
+        def _ctx_str(self):
+            return (
+                tidy_repr(self) + ":\n"
+                + f"{tracing}    pendingWires: {self.pendingWires}\n"
+                + f"{tracing}    pendingEdges: {self.pendingEdges}\n"
+                + f"{tracing}    tags: {self.tags}"
+            )
+
+        def _plane_str(self) -> str:
+            return (
+                tidy_repr(self) + ":\n"
+                + f"{tracing}    origin: {self.origin.toTuple()}\n"
+                + f"{tracing}    z direction: {self.zDir.toTuple()}"
+            )
+
+        def _wp_str(self) -> str:
+            out = tidy_repr(self) + ":\n"
+            out += (f"{tracing}  parent: {tidy_repr(self.parent)}\n"
+                    if self.parent else f"{tracing}  no parent\n")
+            out += f"{tracing}  plane: {self.plane}\n"
+            out += f"{tracing}  objects: {self.objects}\n"
+            out += f"{tracing}  modelling context: {self.ctx}"
+            return out
+
+        # Save *previous_functions*:
+        previous_functions: Tuple[Any, Any, Any] = (
+            cadquery.cq.CQContext.__str__,
+            cadquery.occ_impl.geom.Plane.__str__,
+            cadquery.Workplane.__str__
+        )
+
+        # Install *new_functions*
+        new_functions: Tuple[Any, Any, Any] = (_ctx_str, _plane_str, _wp_str)
+        (cadquery.cq.CQContext.__str__, cadquery.occ_impl.geom.Plane.__str__,
+         cadquery.Workplane.__str__) = new_functions
+
+        # Now print the the contents:
+        print(f"{tracing}Label: {label}")
+        print(self.WorkPlane)
+
+        # Now restore the *previous_functions*:
+        (cadquery.cq.CQContext.__str__, cadquery.occ_impl.geom.Plane.__str__,
+         cadquery.Workplane.__str__) = previous_functions
+
     # FabWorkPlane.three_point_arc():
     def three_point_arc(self, middle: Vector, end: Vector,
                         for_construction: bool = False, tracing: str = "") -> None:
@@ -1214,7 +1270,6 @@ class FabWorkPlane(object):
                 print(f"    .threePointArc("
                       f"({middle.x:.2f}, {middle.y:.2f}), "
                       f"({end.x:.2f}, {end.y:.2f}))  # <<<<<<<< {self.WorkPlane}")
-
 
 def main() -> None:
     """Run main program."""
