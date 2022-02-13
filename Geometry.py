@@ -1131,17 +1131,40 @@ class FabPolygon(FabGeometry):
 class FabWorkPlane(object):
     """FabWorkPlane: A CadQuery Workplane wrapper.
 
-    This class just wraps CadQuery operations to ensure that a workplane chain is maintained.
+    This class creates CadQuery Workplane provides a consistent head of the Workplane chain..
+    CadQuery Operations are added as needed.
+
+    Attributes:
+    * *Plane* (FabPlane): The plain to use for CadQuery initialization.
+    * *WorkPlane: (cadquery.Workplane): The resulting CadQuery Workplane object.
+
     """
-    Plane: FabPlane
-    WorkPlane: Any = None
+    _Plane: FabPlane
+    _WorkPlane: Any = field(init=False, repr=False, default=None)
+
+    # FabWorkPlane.Plane():
+    @property
+    def Plane(self) -> FabPlane:
+        """Return the FabPlane associated from a FabWorkPlane."""
+        return self._WorkPlane
+
+    # FabWorkPlane.Plane():
+    @property
+    def WorkPlane(self) -> Any:
+        """Return the Workplane associated from a FabWorkPlane."""
+        if not USE_CAD_QUERY:
+            raise RuntimeError("FabWorkPlane Not in cad queury mode.")
+        return self._WorkPlane
 
     # FabWorkPlane.__post_init__():
     def __post_init__(self) -> None:
         """Initialize FabPlane"""
+        if not isinstance(self._Plane, FabPlane):
+            raise RuntimeError(
+                f"FabWorkPlane.__post_init__(): Got {type(self._Plane)}, not FabPlane")
         if USE_CAD_QUERY:
             # TODO(): Fix to use *Plane*.
-            self.WorkPlane = Workplane("XY")
+            self._WorkPlane = Workplane("XY", origin=self._Plane.Contact)
 
     # FabWorkPlane.circle():
     def circle(self, center: Vector, radius: float,
@@ -1150,8 +1173,8 @@ class FabWorkPlane(object):
         if USE_CAD_QUERY:
             if tracing:
                 print(f"{tracing}<=>FabWorkPlane.circle({center}, {radius}, {for_construction})")
-            self.WorkPlane = (
-                cast(Workplane, self.WorkPlane)
+            self._WorkPlane = (
+                cast(Workplane, self._WorkPlane)
                 .moveTo(center.X, center.Y)
                 .circle(radius, for_construction)
             )
@@ -1161,62 +1184,70 @@ class FabWorkPlane(object):
         """Close a sequence of arcs and lines."""
         if USE_CAD_QUERY:
             if tracing:
-                print(f"    .close()  # >>>>>>>> {self.WorkPlane}")
-            self.WorkPlane = (
-                cast(Workplane, self.WorkPlane)
+                print(f"{tracing}<=>FabWorkPlane.close()")
+            self._WorkPlane = (
+                cast(Workplane, self._WorkPlane)
                 .close()
             )
-            if tracing:
-                print(f"    .close()  # <<<<<<<< {self.WorkPlane}")
 
     # FabWorkPlane.copy_workplane():
     def copy_workplane(self, plane: FabPlane, tracing: str = "") -> None:
         """Create a new CadQuery workplane and push it onto the stack."""
         if USE_CAD_QUERY:
-            self.WorkPlane = (
-                cast(Workplane, self.WorkPlane)
+            if tracing:
+                print(f"{tracing}<=>FabWorkPlane.copy_workPlane({plane})")
+            if not isinstance(plane, FabPlane):
+                raise RuntimeError(
+                    f"FabWorkPlane.copy_workplane(): Got {type(plane)}, not FabPlane")
+            self._WorkPlane = (
+                cast(Workplane, self._WorkPlane)
                 .copyWorkplane(Workplane(plane.CQPlane))
             )
 
+    # FabWorkPlane.cut():
+    def cut_blind(self, depth: float, tracing: str = "") -> None:
+        """Use the current 2D object to cut a pocket to a known depth."""
+        if USE_CAD_QUERY:
+            if tracing:
+                print(f"{tracing}<=>FabWorkPlane.cut_blind({depth})")
+            self._WorkPlane = (
+                cast(Workplane, self._WorkPlane)
+                .cutBlind(depth)
+            )
+            
     # FabWorkPlane.extrude():
     def extrude(self, depth: float, tracing: str = "") -> None:
         """Extrude current 2D object to a known depth."""
         if USE_CAD_QUERY:
             if tracing:
-                f"{tracing}=>FabWorkPlane.extrude({depth})  # >>>>>>>> {self.WorkPlane}"
-            self.WorkPlane = (
-                cast(Workplane, self.WorkPlane)
+                f"{tracing}<=>FabWorkPlane.extrude({depth})"
+            self._WorkPlane = (
+                cast(Workplane, self._WorkPlane)
                 .extrude(depth)
             )
-            if tracing:
-                f"{tracing}=>FabWorkPlane.extrude({depth})  # <<<<<<<< {self.WorkPlane}"
 
     # FabWorkPlane.line_to():
     def line_to(self, end: Vector, for_construction=False, tracing: str = "") -> None:
         """Draw a line to a point."""
         if USE_CAD_QUERY:
             if tracing:
-                print(f"    .lineTo({end.x:.2f}, {end.y:.2f})  # >>>>>>>> {self.WorkPlane}")
-            self.WorkPlane = (
-                cast(Workplane, self.WorkPlane)
+                print(f"{tracing}FabWorkPlane.lineTo({end}, {for_construction})")
+            self._WorkPlane = (
+                cast(Workplane, self._WorkPlane)
                 .lineTo(end.x, end.y)
             )
-            if tracing:
-                print(f"    .lineTo({end.x:.2f}, {end.y:.2f})  # <<<<<<<< {self.WorkPlane}")
 
     # FabWorkPlane.move_to():
     def move_to(self, point: Vector, tracing: str = "") -> None:
         """Draw a line to a point."""
         if USE_CAD_QUERY:
             if tracing:
-                print(f"    .moveTo({point.x:.2f}, {point.y:.2f})  # >>>>>>> {self.WorkPlane}")
+                print(f"FabWorkPlane.moveTo({point})")
             assert isinstance(point, Vector), point
-            self.WorkPlane = (
-                cast(Workplane, self.WorkPlane)
+            self._WorkPlane = (
+                cast(Workplane, self._WorkPlane)
                 .moveTo(point.x, point.y)
             )
-            if tracing:
-                print(f"    .moveTo({point.x:.2f}, {point.y:.2f})  # <<<<<<<< {self.WorkPlane}")
 
     # FabWorkPlane.show():
     def show(self, label: str, tracing: str = "") -> None:
@@ -1267,7 +1298,7 @@ class FabWorkPlane(object):
 
         # Now print the the contents:
         print(f"{tracing}Label: {label}")
-        print(self.WorkPlane)
+        print(self._WorkPlane)
 
         # Now restore the *previous_functions*:
         (cadquery.cq.CQContext.__str__, cadquery.occ_impl.geom.Plane.__str__,
@@ -1279,19 +1310,12 @@ class FabWorkPlane(object):
         """Draw a three point arc."""
         if USE_CAD_QUERY:
             if tracing:
-                # print(f"{tracing}<=>FabWorkPlane.three_point_arc("
-                #       f"{middle}, {end}, {for_construction})<<<<<<<<<<<<<<<<")
-                print(f"    .threePointArc("
-                      f"({middle.x:.2f}, {middle.y:.2f}), "
-                      f"({end.x:.2f}, {end.y:.2f}))  # >>>>>>>> {self.WorkPlane}")
-            self.WorkPlane = (
-                cast(Workplane, self.WorkPlane)
+                print(f"FabWorkPlane.threePointArc({middle}), {end})")
+            self._WorkPlane = (
+                cast(Workplane, self._WorkPlane)
                 .threePointArc((middle.x, middle.y), (end.x, end.y))
             )
-            if tracing:
-                print(f"    .threePointArc("
-                      f"({middle.x:.2f}, {middle.y:.2f}), "
-                      f"({end.x:.2f}, {end.y:.2f}))  # <<<<<<<< {self.WorkPlane}")
+
 
 def main() -> None:
     """Run main program."""
