@@ -1142,6 +1142,16 @@ class FabWorkPlane(object):
     _Plane: FabPlane
     _WorkPlane: Any = field(init=False, repr=False, default=None)
 
+    # FabWorkPlane.__post_init__():
+    def __post_init__(self) -> None:
+        """Initialize FabPlane"""
+        if not isinstance(self._Plane, FabPlane):
+            raise RuntimeError(
+                f"FabWorkPlane.__post_init__(): Got {type(self._Plane)}, not FabPlane")
+        if USE_CAD_QUERY:
+            # TODO(): Fix to use *Plane*.
+            self._WorkPlane = Workplane("XY", origin=self._Plane.Contact)
+
     # FabWorkPlane.Plane():
     @property
     def Plane(self) -> FabPlane:
@@ -1156,16 +1166,6 @@ class FabWorkPlane(object):
             raise RuntimeError("FabWorkPlane Not in cad queury mode.")
         return self._WorkPlane
 
-    # FabWorkPlane.__post_init__():
-    def __post_init__(self) -> None:
-        """Initialize FabPlane"""
-        if not isinstance(self._Plane, FabPlane):
-            raise RuntimeError(
-                f"FabWorkPlane.__post_init__(): Got {type(self._Plane)}, not FabPlane")
-        if USE_CAD_QUERY:
-            # TODO(): Fix to use *Plane*.
-            self._WorkPlane = Workplane("XY", origin=self._Plane.Contact)
-
     # FabWorkPlane.circle():
     def circle(self, center: Vector, radius: float,
                for_construction=False, tracing: str = "") -> None:
@@ -1175,7 +1175,7 @@ class FabWorkPlane(object):
                 print(f"{tracing}<=>FabWorkPlane.circle({center}, {radius}, {for_construction})")
             self._WorkPlane = (
                 cast(Workplane, self._WorkPlane)
-                .moveTo(center.X, center.Y)
+                .moveTo(center.x, center.y)
                 .circle(radius, for_construction)
             )
 
@@ -1220,10 +1220,10 @@ class FabWorkPlane(object):
         """Extrude current 2D object to a known depth."""
         if USE_CAD_QUERY:
             if tracing:
-                f"{tracing}<=>FabWorkPlane.extrude({depth})"
+                print(f"{tracing}<=>FabWorkPlane.extrude({depth})")
             self._WorkPlane = (
                 cast(Workplane, self._WorkPlane)
-                .extrude(depth)
+                .extrude(-depth)
             )
 
     # FabWorkPlane.line_to():
@@ -1231,7 +1231,7 @@ class FabWorkPlane(object):
         """Draw a line to a point."""
         if USE_CAD_QUERY:
             if tracing:
-                print(f"{tracing}FabWorkPlane.lineTo({end}, {for_construction})")
+                print(f"{tracing}FabWorkPlane.line_to({end}, {for_construction})")
             self._WorkPlane = (
                 cast(Workplane, self._WorkPlane)
                 .lineTo(end.x, end.y)
@@ -1242,7 +1242,7 @@ class FabWorkPlane(object):
         """Draw a line to a point."""
         if USE_CAD_QUERY:
             if tracing:
-                print(f"FabWorkPlane.moveTo({point})")
+                print(f"FabWorkPlane.move_to({point})")
             assert isinstance(point, Vector), point
             self._WorkPlane = (
                 cast(Workplane, self._WorkPlane)
@@ -1304,13 +1304,24 @@ class FabWorkPlane(object):
         (cadquery.cq.CQContext.__str__, cadquery.occ_impl.geom.Plane.__str__,
          cadquery.Workplane.__str__) = previous_functions
 
+    # FabWorkPlane.subtract():
+    def subtract(self, remove_solid: "FabWorkPlane", tracing: str = "") -> None:
+        """Subtract one solid form a FabWorkPlane."""
+        if USE_CAD_QUERY:
+            if tracing:
+                print(f"{tracing}<=>FabWorkPlane.subtract()")
+            self._WorkPlane = (
+               cast(Workplane, self._WorkPlane)
+                - remove_solid.WorkPlane
+            )
+
     # FabWorkPlane.three_point_arc():
     def three_point_arc(self, middle: Vector, end: Vector,
                         for_construction: bool = False, tracing: str = "") -> None:
         """Draw a three point arc."""
         if USE_CAD_QUERY:
             if tracing:
-                print(f"FabWorkPlane.threePointArc({middle}), {end})")
+                print(f"FabWorkPlane.three_point_arc({middle}), {end})")
             self._WorkPlane = (
                 cast(Workplane, self._WorkPlane)
                 .threePointArc((middle.x, middle.y), (end.x, end.y))
