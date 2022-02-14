@@ -631,9 +631,9 @@ class FabBox(object):
                 got_intersect, got_begin, got_finish = box.intersect(want_start, want_end, tracing)
                 header: str = ""
                 if got_intersect != want_intersect:
-                    header = f"Intersect mismatch"  # pragma: no unit cover
+                    header = "Intersect mismatch"  # pragma: no unit cover
                 elif want_intersect and abs(got_begin - want_begin).Length > EPSILON:
-                    header = f" Begin mismatch"  # pragma: no unit cover
+                    header = " Begin mismatch"  # pragma: no unit cover
                 elif want_intersect and abs(got_finish - want_finish).Length > EPSILON:
                     header = "Finish mismatch:"  # pragma: no unit cover
 

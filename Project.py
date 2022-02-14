@@ -358,6 +358,7 @@ class FabProject(FabNode):
         if tracing:
             print(f"{tracing}<=Project({self.Label}).run()")
 
+
 # BoxSide:
 @dataclass
 class BoxSide(FabSolid):
@@ -465,6 +466,7 @@ class BoxSide(FabSolid):
 
         if tracing:
             print(f"{tracing}<=BoxSide({self.Label}).produce()")
+
 
 # Box:
 @dataclass
@@ -654,30 +656,28 @@ class TestSolid(FabSolid):
         top_mount.extrude("Extrude", extrude_polygon, depth, tracing=next_tracing)
 
         # Perform a pocket:
-        if False:
-            pocket_fillet_radius: float = 2.5
-            left_polygon: FabPolygon = FabPolygon((
-                (Vector(-30, -10, z_offset), pocket_fillet_radius),  # SW
-                (Vector(-10, -10, z_offset), pocket_fillet_radius),  # SE
-                (Vector(-10, 10, z_offset), pocket_fillet_radius),  # NE
-                (Vector(-30, 10, z_offset), pocket_fillet_radius),  # NW
-            ))
-            top_mount.pocket("LeftPocket", left_polygon, depth)
+        pocket_fillet_radius: float = 2.5
+        left_polygon: FabPolygon = FabPolygon((
+            (Vector(-30, -10, z_offset), pocket_fillet_radius),  # SW
+            (Vector(-10, -10, z_offset), pocket_fillet_radius),  # SE
+            (Vector(-10, 10, z_offset), pocket_fillet_radius),  # NE
+            (Vector(-30, 10, z_offset), pocket_fillet_radius),  # NW
+        ))
+        top_mount.pocket("LeftPocket", left_polygon, depth)
 
-            right_pocket: FabPolygon = FabPolygon((
-                (Vector(10, -10, z_offset), pocket_fillet_radius),  # SW
-                (Vector(30, -10, z_offset), pocket_fillet_radius),  # SE
-                (Vector(30, 10, z_offset), pocket_fillet_radius),  # NE
-                (Vector(10, 10, z_offset), pocket_fillet_radius),  # NW
-            ))
-            top_mount.pocket("RightPocket", right_pocket, depth2)
+        right_pocket: FabPolygon = FabPolygon((
+            (Vector(10, -10, z_offset), pocket_fillet_radius),  # SW
+            (Vector(30, -10, z_offset), pocket_fillet_radius),  # SE
+            (Vector(30, 10, z_offset), pocket_fillet_radius),  # NE
+            (Vector(10, 10, z_offset), pocket_fillet_radius),  # NW
+        ))
+        top_mount.pocket("RightPocket", right_pocket, depth2)
 
-        if False:
-            right_circle: FabCircle = FabCircle(Vector(20, 0, z_offset), normal, 10)
-            top_mount.pocket("RightCircle", right_circle, depth)
+        right_circle: FabCircle = FabCircle(Vector(20, 0, z_offset), normal, 10)
+        top_mount.pocket("RightCircle", right_circle, depth)
 
-            center_circle: FabCircle = FabCircle(Vector(0, 0, z_offset), normal, 10)
-            top_mount.pocket("CenterCircle", center_circle, depth2)
+        center_circle: FabCircle = FabCircle(Vector(0, 0, z_offset), normal, 10)
+        top_mount.pocket("CenterCircle", center_circle, depth2)
 
         if tracing:
             print(f"{tracing}<=TestSolid({self.Label}).produce()")

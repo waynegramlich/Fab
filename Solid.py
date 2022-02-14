@@ -328,6 +328,7 @@ class _Pocket(_Operation):
     # _Pocket.post_produce1():
     def post_produce1(self, tracing: str = "") -> None:
         """Produce the Pocket."""
+        next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>_Pocket.post_produce1('{self.Name}')")
 
@@ -339,29 +340,49 @@ class _Pocket(_Operation):
         geometry_context: FabGeometryContext = mount._GeometryContext
         geometry: FabGeometry
         index: int
-        for index, geometry in enumerate(geometries):
-            part_geometries.extend(geometry.produce(geometry_context, prefix, index))
+        if USE_FREECAD:
+            for index, geometry in enumerate(geometries):
+                part_geometries.extend(geometry.produce(geometry_context, prefix, index))
 
-        # Create the *shape_binder*:
-        shape_binder: Part.Feature = self.produce_shape_binder(tuple(part_geometries), prefix)
-        assert isinstance(shape_binder, Part.Feature)
+            # Create the *shape_binder*:
+            shape_binder: Part.Feature = self.produce_shape_binder(tuple(part_geometries), prefix)
+            assert isinstance(shape_binder, Part.Feature)
 
-        # Create the *pocket* into *body*:
-        body: Any = mount.Body
-        pocket: Part.Feature = body.newObject("PartDesign::Pocket", f"{prefix}_Pocket")
-        assert isinstance(pocket, Part.Feature)
-        pocket.Profile = shape_binder
-        pocket.Length = self._Depth
-        pocket.Length2 = 10.0 * self._Depth
-        pocket.Type = 0
-        pocket.UpToFace = None
-        pocket.Reversed = 0
-        pocket.Midplane = 0
-        pocket.Offset = 0
+            # Create the *pocket* into *body*:
+            body: Any = mount.Body
+            pocket: Part.Feature = body.newObject("PartDesign::Pocket", f"{prefix}_Pocket")
+            assert isinstance(pocket, Part.Feature)
+            pocket.Profile = shape_binder
+            pocket.Length = self._Depth
+            pocket.Length2 = 10.0 * self._Depth
+            pocket.Type = 0
+            pocket.UpToFace = None
+            pocket.Reversed = 0
+            pocket.Midplane = 0
+            pocket.Offset = 0
 
-        # For the GUI, update the view provider:
-        self._viewer_update(body, pocket)
+            # For the GUI, update the view provider:
+            self._viewer_update(body, pocket)
+        elif USE_CAD_QUERY:
+            pocket_context: FabGeometryContext = geometry_context.copy(tracing=next_tracing)
+            pocket_work_plane: FabWorkPlane = pocket_context.WorkPlane
+            if tracing:
+                pocket_work_plane.show("Pocket Context Before", tracing)
+            for index, geometry in enumerate(geometries):
+                geometry.produce(pocket_context, prefix, index, tracing=next_tracing)
+                if tracing:
+                    pocket_work_plane.show(f"Pocket Context after Geometry {index}", tracing)
+            pocket_work_plane.extrude(self._Depth, tracing=next_tracing)
+            if tracing:
+                pocket_work_plane.show("Pocket Context after Extrude:", tracing)
 
+            work_plane: Any = geometry_context.WorkPlane
+            assert isinstance(work_plane, FabWorkPlane), work_plane
+            if tracing:
+                work_plane.show("Pocket Main Before Subtract", tracing)
+            geometry_context.WorkPlane.subtract(pocket_work_plane, tracing=next_tracing)
+            if tracing:
+                work_plane.show("Pocket After Subtract", tracing)
         if tracing:
             print(f"{tracing}<=_Pocket.post_produce1('{self.Name}')")
 
@@ -852,6 +873,7 @@ class FabMount(object):
 
         if tracing:
             print(f"{tracing}<=FabMount({self.Name}).drill_joins(|{len(joins)}|")
+
 
 # FabSolid:
 @dataclass

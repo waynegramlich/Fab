@@ -43,6 +43,7 @@ elif USE_CAD_QUERY:
     from cadquery import Workplane, Vector  # type: ignore
 from Node import FabBox
 
+
 # Plane:
 @dataclass
 class _Plane(object):
@@ -186,13 +187,13 @@ class FabGeometryContext(object):
     def GeometryGroup(self) -> Any:
         """Return FabGeometry normal tSo 2D plane."""
         if not self._GeometryGroup:
-            raise RuntimeError(f"FabGeometryContext.GeometryGroup(): not set yet; must be set")
+            raise RuntimeError("FabGeometryContext.GeometryGroup(): not set yet; must be set")
         return self._GeometryGroup
 
     # FabGeometryContext.copy():
     def copy(self, tracing: str = "") -> "FabGeometryContext":
         """Return a FabGeometryContext copy."""
-        next_tracing: str = tracing + " " if tracing else ""
+        # next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}<=>FabGeometryContext.copy()")
         new_work_plane: FabWorkPlane = FabWorkPlane(self._Plane)
@@ -428,10 +429,9 @@ class _Circle(_Geometry):
         part_circle: Any = None
         if USE_FREECAD:
             # Extract mount plane *contact* and *normal* from *geometry_context* for 2D projection:
-            plane_contact: Vector = plane.Contact
+            # plane_contact: Vector = plane.Contact
             plane_normal: Vector = plane.Normal
             # FreeCAD Vector metheds like to modify Vector contents; force copies beforehand:
-            copy: Vector = Vector()
 
             label: str = f"{prefix}_Circle_{index:03d}"
             z_axis: Vector = Vector(0.0, 0.0, 1.0)
@@ -1214,7 +1214,7 @@ class FabWorkPlane(object):
                 cast(Workplane, self._WorkPlane)
                 .cutBlind(depth)
             )
-            
+
     # FabWorkPlane.extrude():
     def extrude(self, depth: float, tracing: str = "") -> None:
         """Extrude current 2D object to a known depth."""
@@ -1254,25 +1254,24 @@ class FabWorkPlane(object):
         """Print a detailed dump of a FabWorkPlane."""
         # This is basically copied from the section "An Introspective Example" in the
         # CadQuery documentation.
-        
+
         def tidy_repr(obj) -> str:
-            """ Shortens a default repr string
-            """
+            """ Shortens a default repr string."""
             return repr(obj).split('.')[-1].rstrip('>')
 
         def _ctx_str(self):
             return (
-                tidy_repr(self) + ":\n"
-                + f"{tracing}    pendingWires: {self.pendingWires}\n"
-                + f"{tracing}    pendingEdges: {self.pendingEdges}\n"
-                + f"{tracing}    tags: {self.tags}"
+                tidy_repr(self) + ":\n" +
+                f"{tracing}    pendingWires: {self.pendingWires}\n" +
+                f"{tracing}    pendingEdges: {self.pendingEdges}\n" +
+                f"{tracing}    tags: {self.tags}"
             )
 
         def _plane_str(self) -> str:
             return (
-                tidy_repr(self) + ":\n"
-                + f"{tracing}    origin: {self.origin.toTuple()}\n"
-                + f"{tracing}    z direction: {self.zDir.toTuple()}"
+                tidy_repr(self) + ":\n" +
+                f"{tracing}    origin: {self.origin.toTuple()}\n" +
+                f"{tracing}    z direction: {self.zDir.toTuple()}"
             )
 
         def _wp_str(self) -> str:
@@ -1311,8 +1310,8 @@ class FabWorkPlane(object):
             if tracing:
                 print(f"{tracing}<=>FabWorkPlane.subtract()")
             self._WorkPlane = (
-               cast(Workplane, self._WorkPlane)
-                - remove_solid.WorkPlane
+                cast(Workplane, self._WorkPlane) -
+                remove_solid.WorkPlane
             )
 
     # FabWorkPlane.three_point_arc():

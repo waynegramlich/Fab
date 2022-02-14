@@ -40,6 +40,7 @@ import sys
 from typing import Any, Callable, cast, IO, List, Set, Tuple, Optional
 import subprocess
 
+
 # ModelDoc:
 @dataclass
 class ModelDoc(object):

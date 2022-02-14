@@ -137,6 +137,7 @@ class FabDrillChoice:
     ImperialName: str
     ImperialDiameter: float
 
+
 # FabDrillTap:
 @dataclass
 class FabDrillTap:
@@ -147,6 +148,7 @@ class FabDrillTap:
     Thread50: FabDrillChoice
     Close: FabDrillChoice
     Standard: FabDrillChoice
+
 
 # _IDrillTap:
 @dataclass
@@ -906,9 +908,9 @@ class FabNut(FabOption):
         if value_error:
             raise ValueError(value_error)
         if not self.Name:
-            raise ValueError(f"Name is empty")
+            raise ValueError("Name is empty")
         if not self.Detail:
-            raise ValueError(f"Detail is empty")
+            raise ValueError("Detail is empty")
         if self.Sides not in (4, 6):
             raise ValueError(f"Sides (={self.Sides}) is neither 4 nor 6")
         if self.Width <= 0.0:

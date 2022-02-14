@@ -40,6 +40,7 @@ if USE_FREECAD:
 elif USE_CAD_QUERY:
     from cadquery import Vector  # type: ignore
 
+
 # FabBitTemplate:
 @dataclass(frozen=True)
 class FabBitTemplate(object):
@@ -431,6 +432,7 @@ class FabBullNoseBit(FabBitTemplate):
         self._extend_attribute_names(("Flutes",))
         self._set_hash()
 
+
 # FabChamferBit:
 @dataclass(frozen=True)
 class FabChamferBit(FabBitTemplate):
@@ -475,6 +477,7 @@ class FabChamferBit(FabBitTemplate):
              "ShankDiameter", "TipDiameter"))
         self._extend_attribute_names(("Flutes",))
         self._set_hash()
+
 
 # FabDrillBit:
 @dataclass(frozen=True)
@@ -674,6 +677,7 @@ class FabThreadCutter(FabBitTemplate):
             ("Crest", "Diameter", "Length", "NeckDiameter", "NeckLength", "ShankDiameter"))
         self._extend_attribute_names(("Flutes",))
         self._set_hash()
+
 
 # FabVBit:
 @dataclass(frozen=True)

@@ -693,13 +693,13 @@ class FabMaterial(object):
             raise ValueError(value_error)
         assert isinstance(self.Name, tuple)
         if len(self.Name) == 0:
-            raise ValueError(f"Material is an empty tuple.")
+            raise ValueError("Material is an empty tuple.")
         name: str
         for name in self.Name:
             if not name:
                 raise ValueError("Name contains an empty string")
         if not self.Color:
-            raise ValueError(f"Color name is empty")
+            raise ValueError("Color name is empty")
 
     def __repr__(self) -> str:
         """Return string representation of FabMaterial."""
