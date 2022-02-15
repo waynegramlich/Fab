@@ -864,7 +864,7 @@ class FabTools(object):
 
     Name: str
     Description: str
-    _Table: Dict[int, FabTool] = field(init=False, default={})
+    _Table: Dict[int, FabTool] = field(init=False, repr=False)
 
     # FabTools.__post_init__():
     def __post_init__(self) -> None:

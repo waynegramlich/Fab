@@ -40,7 +40,7 @@ if USE_FREECAD:
     from FreeCAD import Placement, Rotation, Vector
 elif USE_CAD_QUERY:
     import cadquery  # type: ignore
-    from cadquery import Workplane, Vector  # type: ignore
+    from cadquery import Vector, Workplane  # type: ignore
 from Node import FabBox
 
 
@@ -78,15 +78,44 @@ class FabPlane(object):
     _Normal: Vector
     _Plane: Plane = field(init=False)
     _Copy: Vector = field(init=False)
+    _Origin: Vector = field(init=False)
 
     # FabPlane.__pos_init__():
     def __post_init__(self) -> None:
         """Initialize FabPlane."""
-        copy: Vector = Vector()
-        self._Contact = self._Contact + copy
-        self._Normal = self._Normal + copy
-        self._Plane = Plane(self._Contact, normal=self._Normal)
+        # Use [Wolfram MathWorld Plane](https://mathworld.wolfram.com/Plane.html) for reference.
+        #
+        # N is non-unit length vector (Nx, Ny, Nz)   #  Mathworld uses (a, b, c)
+        # C is contact point on plane (Cx, Cy, Cz)   #  Mathword uses X0 = (x0, y0, z0)
+        #
+        # d is "magic" value:
+        #
+        #     d = -Nx*Cx - Ny*Cy - Nz*Cz
+        #       = -(Nx*Cx + Ny*Cy + Nz*Cz)
+        #       = -(N . C)
+        #
+        # D is the distance from the origin along the normal to the "projected" origin on the plane:
+        #
+        #     D = d / ||N||    # ||N|| is the length of the normal.
+        #
+        # This, the origin projected onto the plane is:
+        #
+        #     O = D * <<N>>    # <<N>> is the unit normal
+
+        copy: Vector = Vector(0.0, 0.0, 0.0)
+        contact: Vector = self._Contact + copy  # C
+        normal: Vector = self._Normal + copy   # N
+        d: Vector = -normal.dot(contact)  # d = -(N . C)
+        normal_length: float = normal.Length  # ||N||
+        distance: float = d / normal_length   # D = d / ||N||
+        unit_normal: Vector = normal / normal_length  # <<N>>
+        origin: Vector = distance * unit_normal   # D * <<N>>
+
+        self._Contact = contact
+        self._Normal = normal
+        self._Plane = Plane(origin=origin, normal=normal)
         self._Copy = copy
+        self._Origin = origin
 
     # FabPlane.point_project():
     def point_project(self, point: Vector) -> Vector:
@@ -110,6 +139,12 @@ class FabPlane(object):
     def Normal(self) -> Vector:
         """Return FabPlane Normal."""
         return self._Normal + self._Copy
+
+    # FablPlane.Origin():
+    @property
+    def Origin(self) -> Vector:
+        """Return FabPlane Origin in 3D space."""
+        return self._Origin + self._Copy
 
     # FabPlane.CQPlane
     @property
@@ -1149,8 +1184,11 @@ class FabWorkPlane(object):
             raise RuntimeError(
                 f"FabWorkPlane.__post_init__(): Got {type(self._Plane)}, not FabPlane")
         if USE_CAD_QUERY:
-            # TODO(): Fix to use *Plane*.
-            self._WorkPlane = Workplane("XY", origin=self._Plane.Contact)
+            # TODO(): Fix to use CadQuery *Plane* object.
+            origin: Vector = self._Plane.Origin
+            normal: Vector = self._Plane.Normal
+            plane: Plane = Plane(origin=origin, normal=normal)
+            self._WorkPlane = Workplane(plane)
 
     # FabWorkPlane.Plane():
     @property
