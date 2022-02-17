@@ -76,16 +76,17 @@ class FabGroup(FabNode):
         if tracing:
             print(f"{tracing}=>FabGroup({self.Label}).post_produce1(*)")
 
-        # Create the *group* that contains the children FabNode's:
-        parent_object: Any = self.Up.AppObject
-        group: Any = parent_object.addObject(
-            "App::DocumentObjectGroup", f"{self.Label}")
-        # assert isinstance(group, Any), group
-        self.set_object(group)
+        if USE_FREECAD:
+            # Create the *group* that contains the children FabNode's:
+            parent_object: Any = self.Up.AppObject
+            group: Any = parent_object.addObject(
+                "App::DocumentObjectGroup", f"{self.Label}")
+            # assert isinstance(group, Any), group
+            self.set_object(group)
 
-        group.Visibility = True
-        self.Group = group
-        visibility_set(group)
+            group.Visibility = True
+            self.Group = group
+            visibility_set(group)
 
         if tracing:
             print(f"{tracing}<=FabGroup({self.Label}).post_produce1(*)")
@@ -688,7 +689,8 @@ class TestSolid(FabSolid):
 class TestAssembly(FabAssembly):
     """TestAssembly: A Class to test an assembly."""
 
-    Solid: TestSolid = field(init=False, repr=False)
+    Solid: TestSolid = field(init=False, repr=False, default=cast(TestSolid, None))
+    Box: Box = field(init=False, repr=False, default=cast(Box, None))
 
     # TestAssembly.__post_init__():
     def __post_init__(self):
@@ -702,9 +704,9 @@ class TestAssembly(FabAssembly):
 class TestDocument(FabDocument):
     """A Test file."""
 
-    _Assembly: TestAssembly = field(init=False, repr=False, default=cast(TestAssembly, None))
-    _TestSolid: TestSolid = field(init=False, repr=False, default=cast(TestSolid, None))
-    _Box: Box = field(init=False, repr=False, default=cast(Box, None))
+    Assembly: TestAssembly = field(init=False, repr=False, default=cast(TestAssembly, None))
+    # _TestSolid: TestSolid = field(init=False, repr=False, default=cast(TestSolid, None))
+    Box: Box = field(init=False, repr=False, default=cast(Box, None))
 
     # TestDocument.__post_init__():
     def __post_init__(self) -> None:
@@ -713,10 +715,9 @@ class TestDocument(FabDocument):
         tracing: str = self.Tracing
         if tracing:
             print(f"{tracing}=>TestDocument({self.Label}).__post_init__()")
-        self._TestSolid = TestSolid("TestSolid", self, "HDPE", "red")
+        self.Assembly = TestAssembly("TestAssembly", self)
         if USE_FREECAD:
-            self._Box = Box("TestBox", self, 200.0, 150.0, 75.0, 6.0, "HDPE", Vector(0, 0, 0))
-            self._TestAssembly = TestAssembly("TestAssembly", self)
+            self.Box = Box("TestBox", self, 200.0, 150.0, 75.0, 6.0, "HDPE", Vector(0, 0, 0))
         if tracing:
             print(f"{tracing}<=TestDocument({self.Label}).__post_init__()")
 
