@@ -1334,8 +1334,9 @@ class FabWorkPlane(object):
          cadquery.Workplane.__str__) = new_functions
 
         # Now print the the contents:
-        print(f"{tracing}Label: {label}")
-        print(self._WorkPlane)
+        if tracing:
+            print(f"{tracing}Label: {label}")
+            print(f"{tracing}{self._WorkPlane}")
 
         # Now restore the *previous_functions*:
         (cadquery.cq.CQContext.__str__, cadquery.occ_impl.geom.Plane.__str__,

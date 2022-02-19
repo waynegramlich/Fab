@@ -30,7 +30,7 @@ USE_CAD_QUERY: bool
 USE_FREECAD, USE_CAD_QUERY = Embed.setup()
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, cast, Dict, List, Optional, Sequence, Tuple, Union
 from collections import OrderedDict
 
 if USE_FREECAD:
@@ -40,7 +40,7 @@ if USE_FREECAD:
     import FreeCADGui as Gui  # type: ignore
     from FreeCAD import Placement, Rotation, Vector  # type: ignore
 elif USE_CAD_QUERY:
-    from cadquery import Vector  # type: ignore
+    from cadquery import Assembly, Color, Vector  # type: ignore
 
 # import Part  # type: ignore
 
@@ -896,6 +896,7 @@ class FabSolid(FabNode):
     _GeometryGroup: Optional[Any] = field(init=False, repr=False)
     _Body: Optional[Any] = field(init=False, repr=False)
     _WorkPlane: FabWorkPlane = field(init=False, repr=False)
+    _Assembly: Assembly = field(init=False, repr=False)
 
     # FabSolid.__post_init__():
     def __post_init__(self) -> None:
@@ -913,6 +914,7 @@ class FabSolid(FabNode):
         self._GeometryGroup = None
         self._Body = None
         self._WorkPlane = FabWorkPlane(initial_plane)
+        self._Assembly = cast(Assembly, None)
 
         if tracing:
             print(f"{tracing}<=FabSolid({self.Label}).__post_init__()")
@@ -1058,7 +1060,7 @@ class FabSolid(FabNode):
                 # assert isinstance(view_object, ViewProviderDocumentObject), type(view_object)
                 # model_file.ViewObject = view_object
         elif USE_CAD_QUERY:
-            objects_table[self.Label] = self._WorkPlane
+            pass
 
         # Now process each *mount*
         mounts: "OrderedDict[str, FabMount]" = self._Mounts
@@ -1070,6 +1072,16 @@ class FabSolid(FabNode):
             if tracing:
                 print(f"{tracing}[{mount_name}]: process")
             mount.post_produce1(tracing=next_tracing)
+
+        if USE_CAD_QUERY:
+            # CadQuery workplanes do not have a color, but Assemblies do.
+            rgb_color: Tuple[float, float, float] = FabColor.svg_to_rgb(self.Color)
+            assembly: Assembly = Assembly(
+                self._WorkPlane.Plane, name=self.Label, color=Color(*rgb_color))
+            # objects_table[self.Label] = self._WorkPlane
+            self._Assembly = assembly
+            objects_table[self.Label] = assembly
+            assembly.save(f"/tmp/{self.Label}.step", "STEP")
 
         if tracing:
             print(f"{tracing}<=FabSolid.post_produce1('{self.Label}')")
