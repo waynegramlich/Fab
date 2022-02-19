@@ -1280,7 +1280,7 @@ class FabWorkPlane(object):
         """Draw a line to a point."""
         if USE_CAD_QUERY:
             if tracing:
-                print(f"FabWorkPlane.move_to({point})")
+                print(f"{tracing}FabWorkPlane.move_to({point})")
             assert isinstance(point, Vector), point
             self._WorkPlane = (
                 cast(Workplane, self._WorkPlane)
@@ -1359,7 +1359,7 @@ class FabWorkPlane(object):
         """Draw a three point arc."""
         if USE_CAD_QUERY:
             if tracing:
-                print(f"FabWorkPlane.three_point_arc({middle}), {end})")
+                print(f"{tracing}FabWorkPlane.three_point_arc({middle}), {end})")
             self._WorkPlane = (
                 cast(Workplane, self._WorkPlane)
                 .threePointArc((middle.x, middle.y), (end.x, end.y))

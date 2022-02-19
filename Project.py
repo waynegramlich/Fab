@@ -42,6 +42,7 @@ if USE_FREECAD:
     import FreeCAD as App  # type: ignore
     import FreeCADGui as Gui  # type: ignore
 elif USE_CAD_QUERY:
+    import cadquery as cq  # type: ignore
     from cadquery import Vector  # type: ignore
 
 from Geometry import FabCircle, FabPolygon, FabWorkPlane
@@ -111,12 +112,13 @@ class FabGroup(FabNode):
 class FabAssembly(FabGroup):
     """FabAssembly: A group FabSolid's and sub-FabAssembly's."""
 
-    _Zilch: int = field(init=False, repr=False, default=0)  # Empty dataclasses are not allowed.
+    _Assembly: Any = field(init=False, repr=False)
 
     # FabAssembly.__post_init__():
     def __post_init__(self) -> None:
         """Initialize FabAssembly."""
         super().__post_init__()
+        self._Assembly = None
         tracing: str = self.Tracing
         if tracing:
             print(f"{tracing}<=>FabAssembly({self.Label}).__post_init__()")
@@ -128,13 +130,42 @@ class FabAssembly(FabGroup):
 
     # FabAssembly.post_produce1():
     def post_produce1(self, objects_table: Dict[str, Any]) -> None:
-        """Preform FabAssebmly phase1 post production."""
+        """Preform FabAssembly phase1 post production."""
         tracing: str = self.Tracing
         if tracing:
             print(f"{tracing}=>FabAssembly({self.Label}).post_produce1()")
         super().post_produce1(objects_table)
         if tracing:
             print(f"{tracing}<=FabAssembly({self.Label}).post_produce1()")
+
+    # FabAssembly.post_produce2():
+    def post_produce2(self) -> None:
+        """Perform FabAssembly phase 2 post production."""
+        tracing: str = self.Tracing
+        if tracing:
+            print(f"{tracing}=>FabAssembly({self.Label}).post_produce2()")
+        if USE_CAD_QUERY:
+            child_node: FabNode
+            assembly: cq.Assembly = cq.Assembly()
+            for child_node in self.Children:
+                sub_assembly: cq.Assembly
+                if isinstance(child_node, FabAssembly):
+                    sub_assembly = child_node._Assembly
+                elif isinstance(child_node, FabSolid):
+                    sub_assembly = child_node._Assembly
+                else:
+                    raise RuntimeError(
+                        f"FabAssembly.post_produce1({self.Label}):"
+                        f"{child_node} is {type(child_node)}, not FabSolid or FabAssembly")
+
+                if not isinstance(sub_assembly, cq.Assembly):
+                    raise RuntimeError(
+                        f"FabAssembly.post_produce1({self.Label}):"
+                        f"{sub_assembly} is {type(sub_assembly)}, not cq.Assembly")
+                assembly.add(sub_assembly, name=child_node.Label)
+            self._Assembly = assembly
+        if tracing:
+            print(f"{tracing}<=FabAssembly({self.Label}).post_produce2()")
 
 
 # FabDocument:
@@ -347,7 +378,7 @@ class FabProject(FabNode):
 
             if tracing:
                 print(f"{tracing}Phase 2b: post_produce2():")
-            for node in all_nodes:
+            for node in reversed(all_nodes):
                 node.post_produce2()
 
         # Output any *errors*:

@@ -29,9 +29,9 @@ USE_FREECAD: bool
 USE_CAD_QUERY: bool
 USE_FREECAD, USE_CAD_QUERY = Embed.setup()
 
-from dataclasses import dataclass, field
-from typing import Any, cast, Dict, List, Optional, Sequence, Tuple, Union
 from collections import OrderedDict
+from dataclasses import dataclass, field
+from typing import Any, Dict, Generator, IO, List, Optional, Sequence, Tuple, Union
 
 if USE_FREECAD:
     import FreeCAD  # type: ignore
@@ -48,6 +48,37 @@ from Geometry import FabCircle, FabGeometry, FabGeometryContext, FabPlane, FabWo
 from Join import FabFasten, FabJoin
 from Node import FabBox, FabNode
 from Utilities import FabColor
+
+# The following code loosely is copied from:
+#   [I/O Redirect](https://stackoverflow.com/questions/4675728/redirect-stdout-to-a-file-in-python)
+# This code is used to suppress extraneous output from lower levels of cadquery.Assembly.save().
+
+import os
+from contextlib import contextmanager
+
+
+@contextmanager
+def _suppress_stdout() -> Generator:
+    """Suppress standard output."""
+    stdout: IO[str] = sys.stdout
+    stdout.flush()
+    with open("/dev/null", "wb") as dev_null:
+        dev_null_fd: int = dev_null.fileno()
+        # IPython (used in cq-editor) does not support *fileno*() method...
+        # So we just hard code it to be 1.
+        original_stdout_fd: int = 1
+        assert isinstance(original_stdout_fd, int), original_stdout_fd
+        # Copy original stdout FD to someplace else and restore it later.
+        copied_stdout: Any
+        with os.fdopen(os.dup(original_stdout_fd), "wb") as copied_stdout:
+            copied_stdout_fd: int = copied_stdout.fileno()
+            os.dup2(dev_null_fd, original_stdout_fd)
+            try:
+                yield sys.stdout  # Allow the code be run with redirected stdout
+            finally:
+                # Restore stdout:
+                sys.stdout.flush()
+                os.dup2(copied_stdout_fd, original_stdout_fd)
 
 
 # _Operation:
@@ -896,7 +927,7 @@ class FabSolid(FabNode):
     _GeometryGroup: Optional[Any] = field(init=False, repr=False)
     _Body: Optional[Any] = field(init=False, repr=False)
     _WorkPlane: FabWorkPlane = field(init=False, repr=False)
-    _Assembly: Assembly = field(init=False, repr=False)
+    _Assembly: Any = field(init=False, repr=False)
 
     # FabSolid.__post_init__():
     def __post_init__(self) -> None:
@@ -914,7 +945,7 @@ class FabSolid(FabNode):
         self._GeometryGroup = None
         self._Body = None
         self._WorkPlane = FabWorkPlane(initial_plane)
-        self._Assembly = cast(Assembly, None)
+        self._Assembly = None
 
         if tracing:
             print(f"{tracing}<=FabSolid({self.Label}).__post_init__()")
@@ -1081,7 +1112,10 @@ class FabSolid(FabNode):
             # objects_table[self.Label] = self._WorkPlane
             self._Assembly = assembly
             objects_table[self.Label] = assembly
-            assembly.save(f"/tmp/{self.Label}.step", "STEP")
+            # This is really ugly.  The cq.Assembly.save() method spews out uninteresting
+            # "debug" information.  See the comment at the beginning for a little more information.
+            with _suppress_stdout():
+                assembly.save(f"/tmp/{self.Label}.step", "STEP")
 
         if tracing:
             print(f"{tracing}<=FabSolid.post_produce1('{self.Label}')")
