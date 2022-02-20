@@ -1004,7 +1004,7 @@ class FabNode(FabBox):
             print(f"{tracing}<=>FabNode({self._Label}).post_produce1()=>()")
 
     # FabNode.post_produce2():
-    def post_produce2(self) -> None:
+    def post_produce2(self, objects_table: Dict[str, Any]) -> None:
         """Do FabNode phase 2 post production."""
         tracing: str = self.Tracing
         if tracing:

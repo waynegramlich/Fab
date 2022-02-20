@@ -139,7 +139,7 @@ class FabAssembly(FabGroup):
             print(f"{tracing}<=FabAssembly({self.Label}).post_produce1()")
 
     # FabAssembly.post_produce2():
-    def post_produce2(self) -> None:
+    def post_produce2(self, objects_table: Dict[str, Any]) -> None:
         """Perform FabAssembly phase 2 post production."""
         tracing: str = self.Tracing
         if tracing:
@@ -163,6 +163,7 @@ class FabAssembly(FabGroup):
                         f"FabAssembly.post_produce1({self.Label}):"
                         f"{sub_assembly} is {type(sub_assembly)}, not cq.Assembly")
                 assembly.add(sub_assembly, name=child_node.Label)
+            objects_table[self.Label] = assembly
             self._Assembly = assembly
         if tracing:
             print(f"{tracing}<=FabAssembly({self.Label}).post_produce2()")
@@ -244,7 +245,7 @@ class FabDocument(FabNode):
             print(f"{tracing}<=FabDocument({self.Label}).post_produce1()")
 
     # FabDocument.post_produce2():
-    def post_produce2(self) -> None:
+    def post_produce2(self, objects_table: Dict[str, Any]) -> None:
         """Close the FabDocument."""
         tracing: str = self.Tracing
         if tracing:
@@ -379,7 +380,7 @@ class FabProject(FabNode):
             if tracing:
                 print(f"{tracing}Phase 2b: post_produce2():")
             for node in reversed(all_nodes):
-                node.post_produce2()
+                node.post_produce2(objects_table)
 
         # Output any *errors*:
         if errors:
@@ -650,6 +651,51 @@ class Box(FabAssembly):
         )
 
 
+# TestSide:
+@dataclass
+class TestSide(FabSolid):
+    """TestSide: A test box side."""
+
+    zilch: None = None
+
+    # TestSide.__post_init__():
+    def __post_init__(self) -> None:
+        """Initialize TestSide."""
+        super().__post_init__()
+        tracing: str = self.Tracing
+        if tracing:
+            print(f"{tracing}<=>TestSide({self.Label}).__post_init__()")
+
+    # TestSide.produce()
+    def produce(self) -> None:
+        tracing: str = self.Tracing
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>TestSide({self.Label}).produce()")
+
+        # Create *top_mount*:
+        depth: float = 10.0
+        # depth2: float = depth / 2.0
+        # origin: Vector = Vector()
+        # normal: Vector = Vector(0, 0, 1)
+        top_mount: FabMount = self.mount(
+            "Top", Vector(0.0, 0.0, -20.0), self.DT, self.DN, depth, tracing=tracing)
+
+        # Perform the first Extrude:
+        z_offset: float = 0.0
+        extrude_fillet_radius: float = 5.0
+        extrude_polygon: FabPolygon = FabPolygon((
+            (Vector(-100, -80, z_offset), extrude_fillet_radius),  # SW
+            (Vector(100, -80, z_offset), extrude_fillet_radius),  # SE
+            (Vector(100, 80, z_offset), extrude_fillet_radius),  # NE
+            (Vector(-100, 80, z_offset), extrude_fillet_radius),  # NW
+        ))
+        top_mount.extrude("Extrude", extrude_polygon, depth, tracing=next_tracing)
+
+        if tracing:
+            print(f"{tracing}<=TestSide({self.Label}).produce()")
+
+
 # TestSolid:
 @dataclass
 class TestSolid(FabSolid):
@@ -724,6 +770,7 @@ class TestAssembly(FabAssembly):
 
     Solid: TestSolid = field(init=False, repr=False, default=cast(TestSolid, None))
     Box: Box = field(init=False, repr=False, default=cast(Box, None))
+    Side: TestSide = field(init=False, repr=False, default=cast(TestSide, None))
 
     # TestAssembly.__post_init__():
     def __post_init__(self):
@@ -732,6 +779,8 @@ class TestAssembly(FabAssembly):
         self.Solid = TestSolid("TestSolid", self, "HDPE", "red")
         if USE_FREECAD:
             self.Box = Box("TestBox", self, 200.0, 150.0, 75.0, 6.0, "HDPE", Vector(0, 0, 0))
+        elif USE_CAD_QUERY:
+            self.Side = TestSide("TestSide", self, "HDPE", "purple")
 
 
 # TestDocument:
