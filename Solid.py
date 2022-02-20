@@ -49,7 +49,7 @@ from Join import FabFasten, FabJoin
 from Node import FabBox, FabNode
 from Utilities import FabColor
 
-# The following code loosely is copied from:
+# The *_suppress_stdout* function is based on code from:
 #   [I/O Redirect](https://stackoverflow.com/questions/4675728/redirect-stdout-to-a-file-in-python)
 # This code is used to suppress extraneous output from lower levels of cadquery.Assembly.save().
 
@@ -57,9 +57,10 @@ import os
 from contextlib import contextmanager
 
 
+# _suppress_stdout():
 @contextmanager
 def _suppress_stdout() -> Generator:
-    """Suppress standard output."""
+    """Suppress standard output inside of a context."""
     stdout: IO[str] = sys.stdout
     stdout.flush()
     with open("/dev/null", "wb") as dev_null:
@@ -79,6 +80,9 @@ def _suppress_stdout() -> Generator:
                 # Restore stdout:
                 sys.stdout.flush()
                 os.dup2(copied_stdout_fd, original_stdout_fd)
+                # os.close(copied_std_fd)
+                # Logical the statement immediately above should be called to close the file
+                # descriptor.  In fact, it is automagically closed.  It is unclear why this happens.
 
 
 # _Operation:

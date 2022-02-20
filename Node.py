@@ -1001,7 +1001,7 @@ class FabNode(FabBox):
         """Do FabNode phase 1 post production."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}<=>FabNode({self._Label}).produce1()=>()")
+            print(f"{tracing}<=>FabNode({self._Label}).post_produce1()=>()")
 
     # FabNode.post_produce2():
     def post_produce2(self) -> None:
