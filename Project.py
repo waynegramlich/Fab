@@ -656,7 +656,7 @@ class Box(FabAssembly):
 class TestSide(FabSolid):
     """TestSide: A test box side."""
 
-    zilch: None = None
+    _zilch: None = None  # Empy dataclasses are not allowed.
 
     # TestSide.__post_init__():
     def __post_init__(self) -> None:
@@ -668,6 +668,7 @@ class TestSide(FabSolid):
 
     # TestSide.produce()
     def produce(self) -> None:
+        """Produce a TestSide."""
         tracing: str = self.Tracing
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
@@ -675,22 +676,45 @@ class TestSide(FabSolid):
 
         # Create *top_mount*:
         depth: float = 10.0
-        # depth2: float = depth / 2.0
-        # origin: Vector = Vector()
-        # normal: Vector = Vector(0, 0, 1)
-        top_mount: FabMount = self.mount(
-            "Top", Vector(0.0, 0.0, -20.0), self.DT, self.DN, depth, tracing=tracing)
+        origin: Vector
+        normal: Vector
+        dl: Vector
+        dw: Vector
+        orient: Vector
+
+        if True:
+            # Bottom:
+            origin = Vector(0.0, 0.0, -20.0)
+            normal = Vector(0.0, 0.0, -1.0)  # -Z
+            dl = Vector(100.0, 0.0, 0.0)
+            dw = Vector(0.0, 80.0, 0.0)
+            orient = Vector(0.0, 1.0, 0.0)  # +Y
+        else:
+            # North:
+            origin = Vector(0.0, 50.0, 0.0)
+            normal = Vector(0.0, -1.0, 0.0)  # -Y
+            dl = Vector(100.0, 0.0, 0.0)
+            dw = Vector(0.0, 0.0, 50.0)
+            orient = Vector(0.0, 0.0, 1.0)  # +Z
+
+        mount: FabMount = self.mount(
+            "Mount", origin, normal, orient, depth, tracing=tracing)
 
         # Perform the first Extrude:
-        z_offset: float = 0.0
         extrude_fillet_radius: float = 5.0
+        corners: Tuple[Tuple[Vector, float], ...] = (
+        )
+        if tracing:
+            print(f"{tracing}****************************************************************")
+            print(f"{tracing}{dl=} {dw=}")
+            print(f"{tracing}{corners=}")
         extrude_polygon: FabPolygon = FabPolygon((
-            (Vector(-100, -80, z_offset), extrude_fillet_radius),  # SW
-            (Vector(100, -80, z_offset), extrude_fillet_radius),  # SE
-            (Vector(100, 80, z_offset), extrude_fillet_radius),  # NE
-            (Vector(-100, 80, z_offset), extrude_fillet_radius),  # NW
+            (origin - dl - dw, extrude_fillet_radius),  # SW
+            (origin + dl - dw, extrude_fillet_radius),  # SE
+            (origin + dl + dw, extrude_fillet_radius),  # NE
+            (origin - dl + dw, extrude_fillet_radius),  # NW
         ))
-        top_mount.extrude("Extrude", extrude_polygon, depth, tracing=next_tracing)
+        mount.extrude("Extrude", extrude_polygon, depth, tracing=next_tracing)
 
         if tracing:
             print(f"{tracing}<=TestSide({self.Label}).produce()")
@@ -776,8 +800,8 @@ class TestAssembly(FabAssembly):
     def __post_init__(self):
         """Initialize Test Assembly."""
         super().__post_init__()
-        self.Solid = TestSolid("TestSolid", self, "HDPE", "red")
         if USE_FREECAD:
+            self.Solid = TestSolid("TestSolid", self, "HDPE", "red")
             self.Box = Box("TestBox", self, 200.0, 150.0, 75.0, 6.0, "HDPE", Vector(0, 0, 0))
         elif USE_CAD_QUERY:
             self.Side = TestSide("TestSide", self, "HDPE", "purple")
