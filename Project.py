@@ -682,7 +682,7 @@ class TestSide(FabSolid):
         dw: Vector
         orient: Vector
 
-        if True:
+        if False:
             # Bottom:
             origin = Vector(0.0, 0.0, -20.0)
             normal = Vector(0.0, 0.0, -1.0)  # -Z
@@ -691,8 +691,8 @@ class TestSide(FabSolid):
             orient = Vector(0.0, 1.0, 0.0)  # +Y
         else:
             # North:
-            origin = Vector(0.0, 50.0, 0.0)
-            normal = Vector(0.0, -1.0, 0.0)  # -Y
+            origin = Vector(0.0, 60.0, 0.0)
+            normal = Vector(0.0, 1.0, 0.0)  # +Y
             dl = Vector(100.0, 0.0, 0.0)
             dw = Vector(0.0, 0.0, 50.0)
             orient = Vector(0.0, 0.0, 1.0)  # +Z
@@ -701,19 +701,25 @@ class TestSide(FabSolid):
             "Mount", origin, normal, orient, depth, tracing=tracing)
 
         # Perform the first Extrude:
-        extrude_fillet_radius: float = 5.0
-        corners: Tuple[Tuple[Vector, float], ...] = (
+        # extrude_fillet_radius: float = 5.0
+        # extrude_fillet_radius = 0.0
+        corners: Tuple[Vector, ...] = (
+            origin - dl - dw,
+            origin + dl - dw,
+            origin + dl + dw,
+            origin - dl + dw,
         )
         if tracing:
             print(f"{tracing}****************************************************************")
             print(f"{tracing}{dl=} {dw=}")
             print(f"{tracing}{corners=}")
-        extrude_polygon: FabPolygon = FabPolygon((
-            (origin - dl - dw, extrude_fillet_radius),  # SW
-            (origin + dl - dw, extrude_fillet_radius),  # SE
-            (origin + dl + dw, extrude_fillet_radius),  # NE
-            (origin - dl + dw, extrude_fillet_radius),  # NW
-        ))
+        extrude_polygon: FabPolygon = FabPolygon(corners)
+        # extrude_polygon: FabPolygon = FabPolygon((
+        #     (origin - dl - dw, extrude_fillet_radius),  # SW
+        #     (origin + dl - dw, extrude_fillet_radius),  # SE
+        #     (origin + dl + dw, extrude_fillet_radius),  # NE
+        #     (origin - dl + dw, extrude_fillet_radius),  # NW
+        # ))
         mount.extrude("Extrude", extrude_polygon, depth, tracing=next_tracing)
 
         if tracing:

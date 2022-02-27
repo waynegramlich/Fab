@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Geometry: A module for constructing 2D geometry."""
 
+# <--------------------------------------- 100 characters ---------------------------------------> #
+
 # [Part2DObject](http://www.iesensor.com/FreeCADDoc/0.16-dev/d9/d57/classPart_1_1Part2DObject.html)
 # [App FeaturePython](https://wiki.freecadweb.org/App_FeaturePython)
 # [Vidos from "Part Design Scripting" Guy](https://www.youtube.com/c/mwganson/videos)
@@ -157,29 +159,40 @@ class FabPlane(object):
         plane: Plane = Plane(origin=origin, normal=normal, xDir=x_direction)
         return plane
 
-    # FabPlane._rotate_to_z_axis():
-    @staticmethod
-    def _rotate_to_z_axis(plane_contact: Vector, plane_normal: Vector, tracing: str = "") -> Vector:
-        """Return Point point on a plane around origin until normal is +Z ."""
+    # FabPlane.rotate_to_z_axis():
+    def rotate_to_z_axis(self, point: Vector, tracing: str = "") -> Vector:
+        """Rotate a point around the origin until the normal is +Z ."""
         if tracing:
-            print(f"{tracing}=>_rotate_to_z_axis({plane_contact}, {plane_normal})")
+            print(f"{tracing}=>FabPlane.rotate_to_z_axis({point})")
         result: Vector = cast(Vector, None)  # Force failure if something is broken.
         if USE_FREECAD:
             assert "not implemented yet"
-        elif USE_FREECAD:
+        elif USE_CAD_QUERY:
+            # This code uses the `mathutils` package Vector/Matrix classes instead of CadQuery
+            # Vector/Matrix classes.  The reason for this is because CadQuery does not actually
+            # implement a completely generic Matrix class.  Instead it uses the OCD (OpenCascade)
+            # library which constrains matrices to be orthogonal.  An orthogonal matrix is one
+            # M * Mt = I, where M is the matrix, Mt is transpose of matrix M and I is the identity
+            # matrix.  For an orthogonal matrix, it turns out Mt is the inverse of M, so computing
+            # the inverse's are very computationally fast.  This speed comes a the cost of
+            # disallowing more general matrices.  The bottom line is that this function can not
+            # use CadQuery Matrices for this reason.  Hence, the handstands converting between
+            # the two representations in the code below.
+
             z_axis: mathutils.Vector = mathutils.Vector((0.0, 0.0, 1.0))
-            contact: mathutils.Vector = mathutils.Vector(
-                (plane_contact.x, plane_contact.y, plane_contact.z))
+            plane_normal: Vector = self._Normal
             normal: mathutils.Vector = mathutils.Vector(
                 (plane_normal.x, plane_normal.y, plane_normal.z))
             normal = normal.normalized()
+            if tracing:
+                print(f"{tracing}{normal=}")
 
             epsilon: float = 1.0e-8
             rotate_matrix: mathutils.Matrix
-            if abs((normal - z_axis).magnitude) < epsilon:
+            if abs((normal - z_axis).magnitude) < epsilon:  # magnitude is the vector length
                 if tracing:
                     print(f"{tracing}Aligned with +Z axis")
-                rotate_matrix = mathutils.Matrix()
+                rotate_matrix = mathutils.Matrix()  # Identity matrix
             else:
                 rotate_axis: mathutils.Vector
                 rotate_angle: float
@@ -187,15 +200,19 @@ class FabPlane(object):
                     if tracing:
                         print(f"{tracing}Aligned with -Z axis")
                     rotate_axis = mathutils.Vector((0.0, 1.0, 0.0))  # Y axis
-                    rotate_angle = -math.pi
+                    rotate_angle = -math.pi  # 180 degrees
                 else:
-                    rotate_axis = z_axis.cross(normal)
+                    rotate_axis = z_axis.cross(normal)  # An orthogonal rotation axis
                     rotate_angle = z_axis.angle(normal)
-                rotate_matrix = mathutils.Matrix.Rotation(-rotate_angle, 4, rotate_axis)
-            rotated_contact: mathutils.Vector = rotate_matrix @ contact
-            result = Vector(rotated_contact.x, rotated_contact.y, rotated_contact.z)
+                    if tracing:
+                        rotate_degrees: float = math.degrees(rotate_angle)
+                        print(f"{tracing}{rotate_axis=} {rotate_degrees=}")
+                rotate_matrix = mathutils.Matrix.Rotation(-rotate_angle, 4, rotate_axis)  # 4x4
+            rotated_point: mathutils.Vector = rotate_matrix @ mathutils.Vector(
+                (point.x, point.y, point.z))
+            result = Vector(rotated_point.x, rotated_point.y, rotated_point.z)
         if tracing:
-            print(f"{tracing}=>_rotate_to_z_axis({plane_contact}, {plane_normal})=>{result}")
+            print(f"{tracing}<=FabPlane.rotate_to_z_axis({point})=>{result}")
         return result
 
 
@@ -474,8 +491,11 @@ class _Arc(_Geometry):
             part_arc.adjustRelativeLinks(geometry_group)
             geometry_group.addObject(part_arc)
         elif USE_CAD_QUERY:
+            plane: FabPlane = geometry_context._Plane
+            rotated_middle: Vector = plane.rotate_to_z_axis(self.Middle)
+            rotated_finish: Vector = plane.rotate_to_z_axis(self.Finish)
             geometry_context.WorkPlane.three_point_arc(
-                self.Middle, self.Finish, tracing=next_tracing)
+                rotated_middle, rotated_finish, tracing=next_tracing)
         if tracing:
             print(f"{tracing}<=_Arc.produce(*, '{prefix}', {index})=>{part_arc}")
         return part_arc
@@ -592,7 +612,11 @@ class _Line(_Geometry):
             line_segment.Visibility = False
             geometry_group.addObject(line_segment)
         elif USE_CAD_QUERY:
-            geometry_context.WorkPlane.line_to(self.Finish, tracing=next_tracing)
+            plane: FabPlane = geometry_context._Plane
+            rotated_finish: Vector = plane.rotate_to_z_axis(self.Finish, tracing=next_tracing)
+            if tracing:
+                print(f"{tracing}{self.Finish} ==> {rotated_finish}")
+            geometry_context.WorkPlane.line_to(rotated_finish, tracing=next_tracing)
 
         if tracing:
             print(f"{tracing}<=_Line.produce()=>{line_segment}")
@@ -1140,7 +1164,7 @@ class FabPolygon(FabGeometry):
         # Extract mount plane *contact* and *normal* from *geometry_context*:
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>FabPolygon.produce()")
+            print(f"{tracing}=>FabPolygon.produce(*, '{prefix}', {index})")
         part_geometry: Any
         assert isinstance(geometry_context, FabGeometryContext), geometry_context
         plane_contact: Vector = geometry_context.Plane.Contact
@@ -1176,13 +1200,15 @@ class FabPolygon(FabGeometry):
                 raise RuntimeError("FabPolygon.produce(): empty geometries.")
             geometry0: _Geometry = geometries[0]
             start: Vector = geometry0.get_start()
-            geometry_context.WorkPlane.move_to(start, tracing=next_tracing)
+            rotated_start: Vector = geometry_context._Plane.rotate_to_z_axis(
+                start, tracing=next_tracing)
+            geometry_context.WorkPlane.move_to(rotated_start)
             for index, geometry in enumerate(geometries):
                 part_geometry = geometry.produce(
                     geometry_context, prefix, index, tracing=next_tracing)
             geometry_context.WorkPlane.close(tracing=next_tracing)
         if tracing:
-            print(f"{tracing}<=FabPolygon.produce()=>*")
+            print(f"{tracing}<=FabPolygon.produce(*, '{prefix}', {index})=>*")
         return tuple(part_geometries)
 
     # FabPolygon._unit_tests():
@@ -1253,9 +1279,10 @@ class FabWorkPlane(object):
         if USE_CAD_QUERY:
             if tracing:
                 print(f"{tracing}<=>FabWorkPlane.circle({center}, {radius}, {for_construction})")
+            rotated_center: Vector = self._Plane.rotate_to_z_axis(center)
             self._WorkPlane = (
                 cast(Workplane, self._WorkPlane)
-                .moveTo(center.x, center.y)
+                .moveTo(rotated_center.x, rotated_center.y)
                 .circle(radius, for_construction)
             )
 

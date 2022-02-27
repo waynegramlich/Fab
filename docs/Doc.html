@@ -64,10 +64,10 @@ Attributes:</p>
 <p>ModelClass.set_annotations(self, anchor_prefix: str, number_prefix: str) -&gt; None:</p>
 <p>Set the Markdown anchor.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->1.2 <code>ModelClass.</code>summary_lines():</h3>
-<p>ModelClass.summary_lines(self, indent: str) -&gt; Tuple[str, ...]:</p>
+<p>ModelClass.summary_lines(self, indent: str) -&gt; typing.Tuple[str, ...]:</p>
 <p>Return ModelModule summary lines.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->1.3 <code>ModelClass.</code>documentation_lines():</h3>
-<p>ModelClass.documentation_lines(self, prefix: str) -&gt; Tuple[str, ...]:</p>
+<p>ModelClass.documentation_lines(self, prefix: str) -&gt; typing.Tuple[str, ...]:</p>
 <p>Return the ModelModule documentaion lines.</p>
 <h2><!-- raw HTML omitted --><!-- raw HTML omitted -->2 Class ModelDoc:</h2>
 <p>Base class ModelFunction, ModelClass, and ModelModule classes.
@@ -86,7 +86,7 @@ have underscores converted to hypen.</li>
 The Table of contents number as a string.  '#&quot; for classes and &quot;#.#&quot; for functions.</li>
 </ul>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.1 <code>ModelDoc.</code>set_lines():</h3>
-<p>ModelDoc.set_lines(self, doc_string: Union[str, NoneType]) -&gt; None:</p>
+<p>ModelDoc.set_lines(self, doc_string: typing.Union[str, NoneType]) -&gt; None:</p>
 <p>Set the Lines field of a ModelDoc.
 Arguments:</p>
 <ul>
@@ -118,7 +118,7 @@ Attributes:</p>
 <p>Set the markdown annotations.
 (see <a href="#Doc-ModelDoc-set_annotations">ModeDoc.set_annoations</a></p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->3.2 <code>ModelFunction.</code>summary_lines():</h3>
-<p>ModelFunction.summary_lines(self, class_name: str, indent: str) -&gt; Tuple[str, ...]:</p>
+<p>ModelFunction.summary_lines(self, class_name: str, indent: str) -&gt; typing.Tuple[str, ...]:</p>
 <p>Return ModelModule table of contents summary lines.
 Arguments:</p>
 <ul>
@@ -126,7 +126,7 @@ Arguments:</p>
 <li><em>indent</em> (int) The prefix spaces to make the markdown work.</li>
 </ul>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->3.3 <code>ModelFunction.</code>documentation_lines():</h3>
-<p>ModelFunction.documentation_lines(self, class_name: str, prefix: str) -&gt; Tuple[str, ...]:</p>
+<p>ModelFunction.documentation_lines(self, class_name: str, prefix: str) -&gt; typing.Tuple[str, ...]:</p>
 <p>Return the ModelModule documentaion lines.
 Arguments:</p>
 <ul>
@@ -138,10 +138,10 @@ Arguments:</p>
 <p>ModelModule.set_annotations(self, anchor_prefix: str, number_prefix: str) -&gt; None:</p>
 <p>Set the Markdown anchor.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->4.2 <code>ModelModule.</code>summary_lines():</h3>
-<p>ModelModule.summary_lines(self) -&gt; Tuple[str, ...]:</p>
+<p>ModelModule.summary_lines(self) -&gt; typing.Tuple[str, ...]:</p>
 <p>Return ModelModule summary lines.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->4.3 <code>ModelModule.</code>documentation_lines():</h3>
-<p>ModelModule.documentation_lines(self, prefix: str) -&gt; Tuple[str, ...]:</p>
+<p>ModelModule.documentation_lines(self, prefix: str) -&gt; typing.Tuple[str, ...]:</p>
 <p>Return the ModelModule documentaion lines.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->4.4 <code>ModelModule.</code>generate():</h3>
 <p>ModelModule.generate(self, document_directory: pathlib.Path, markdown_program: str) -&gt; None:</p>
