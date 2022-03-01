@@ -79,11 +79,13 @@ class FabPlane(object):
 
     _Contact: Vector
     _Normal: Vector
+    tracing: str = ""
     _Plane: Plane = field(init=False)
     _Copy: Vector = field(init=False)
     _Origin: Vector = field(init=False)
+    _XDirection: Vector = field(init=False)
 
-    # FabPlane.__pos_init__():
+    # FabPlane.__post_init__():
     def __post_init__(self) -> None:
         """Initialize FabPlane."""
         # Use [Wolfram MathWorld Plane](https://mathworld.wolfram.com/Plane.html) for reference.
@@ -97,6 +99,11 @@ class FabPlane(object):
         #       = -(Nx*Cx + Ny*Cy + Nz*Cz)
         #       = -(N . C)
         #
+        # (Note that a plane normal can actually be on either side of the of the plane.
+        # Apparently, the Wolfram description appears to assume that the normal always
+        # point to the origin.  The code below assumes the opposite.  Hence there is a sign change.
+        # Thus, d = N . D )
+        #
         # D is the distance from the origin along the normal to the "projected" origin on the plane:
         #
         #     D = d / ||N||    # ||N|| is the length of the normal.
@@ -104,6 +111,10 @@ class FabPlane(object):
         # This, the origin projected onto the plane is:
         #
         #     O = D * <<N>>    # <<N>> is the unit normal
+        tracing: str = self.tracing
+        if tracing:
+            print(f"{tracing}=>FabPlane.__post_init__({self._Contact}, {self._Normal})")
+        next_tracing: str = tracing + " " if tracing else ""
 
         copy: Vector = Vector(0.0, 0.0, 0.0)
         contact: Vector = self._Contact + copy  # C
@@ -113,12 +124,50 @@ class FabPlane(object):
         distance: float = d / normal_length   # D = d / ||N||
         unit_normal: Vector = normal / normal_length  # <<N>>
         origin: Vector = distance * unit_normal   # D * <<N>>
+        if tracing:
+            print(f"{tracing}{contact=} {normal=}")
+            print(f"{tracing}{distance=} {unit_normal=} {origin=}")
 
+        # Computing the xDir argument to the Plane() constructor is a bit convoluted.
+        # This requires taking a unit vector in the +X axis direction and reverse mapping it back
+        # to original plane.  This requires the *reversed* option of the *rotate_to_z_axis*
+        # method.  Thus, all fields except _Plane are filled in first so that that
+        # *rotate_to_z_axis* method can be invoked (since it does not access the _Plane field.)
         self._Contact = contact
         self._Normal = normal
-        self._Plane = Plane(origin=origin, normal=normal)
+        self._Plane = Plane(origin=origin, normal=normal)  # TODO: remove
         self._Copy = copy
         self._Origin = origin
+
+        # Rotating *origin* to the +Z axis created *rotated_origin* which is a distance *d*
+        # along the +Z axis, where *distance* can be negative:
+        rotated_origin: Vector = Vector(0.0, 0.0, distance)
+
+        # *rotated_x_direction* with a unit +X axis vector added to it:
+        rotated_x_direction: Vector = rotated_origin + Vector(1.0, 0.0, 0.0)
+
+        if USE_FREECAD:
+            self._XDirection = cast(Vector, "BOGUS")  # Force failure if accessed in FreeCAD mode.
+        elif USE_CAD_QUERY:
+            # *x_direction* is computed by rotating it back to align with the *normal* and
+            # offsetting against *origin*:
+            unrotated_x_direction: Vector = self.rotate_to_z_axis(
+                rotated_x_direction, reversed=True, tracing=next_tracing)
+            assert isinstance(unrotated_x_direction, Vector), unrotated_x_direction
+            x_direction: Vector = unrotated_x_direction - origin
+            self._XDirection = x_direction
+
+        # TODO: enable
+        # Now the Plane* can be created:
+        # self._Plane = Plane(origin=origin, normal=normal, xDir=x_direction)
+        if tracing:
+            print(f"{tracing}{rotated_origin=} {rotated_x_direction=}")
+            print(f"{tracing}{origin=} {unrotated_x_direction=}")
+            print(f"{tracing}{x_direction=}")
+            print(f"{tracing}{self._Plane=}")
+            print(f"{tracing}<=FabPlane.__post_init__({self._Contact}, {self._Normal})")
+
+        self._XDirection = Vector()  # TODO: Fix
 
     # FabPlane.point_project():
     def point_project(self, point: Vector) -> Vector:
@@ -155,18 +204,28 @@ class FabPlane(object):
         """Return the CadQuery plane name as a string."""
         normal: Vector = self._Normal / self._Normal.Length
         origin: Vector = self._Contact
-        x_direction: Optional[Vector] = None  # Not clear what to do with this one.
+        x_direction: Optional[Vector] = None  # TODO fix this!!!!
         plane: Plane = Plane(origin=origin, normal=normal, xDir=x_direction)
         return plane
+        # return self._Plane
 
     # FabPlane.rotate_to_z_axis():
-    def rotate_to_z_axis(self, point: Vector, tracing: str = "") -> Vector:
-        """Rotate a point around the origin until the normal is +Z ."""
+    def rotate_to_z_axis(self, point: Vector, reversed: bool = False, tracing: str = "") -> Vector:
+        """Rotate a point around the origin until the normal aligns with the +Z axis.
+
+        Arguments:
+        * *point* (Vector): The point to rotate.
+        * *reversed* (bool = False): If True, do the inverse rotation.
+
+        Returns:
+        * (Vector): The rotated vector position.
+
+        """
         if tracing:
             print(f"{tracing}=>FabPlane.rotate_to_z_axis({point})")
         result: Vector = cast(Vector, None)  # Force failure if something is broken.
         if USE_FREECAD:
-            assert "not implemented yet"
+            assert False, f"Not implemented for FreeCAD {USE_FREECAD=} {USE_CAD_QUERY=}"
         elif USE_CAD_QUERY:
             # This code uses the `mathutils` package Vector/Matrix classes instead of CadQuery
             # Vector/Matrix classes.  The reason for this is because CadQuery does not actually
@@ -174,10 +233,10 @@ class FabPlane(object):
             # library which constrains matrices to be orthogonal.  An orthogonal matrix is one
             # M * Mt = I, where M is the matrix, Mt is transpose of matrix M and I is the identity
             # matrix.  For an orthogonal matrix, it turns out Mt is the inverse of M, so computing
-            # the inverse's are very computationally fast.  This speed comes a the cost of
+            # the inverse's are very computationally fast.  This speed comes at the cost of
             # disallowing more general matrices.  The bottom line is that this function can not
             # use CadQuery Matrices for this reason.  Hence, the handstands converting between
-            # the two representations in the code below.
+            # the mathutils/CadQuery Vector/Matrix classes.
 
             z_axis: mathutils.Vector = mathutils.Vector((0.0, 0.0, 1.0))
             plane_normal: Vector = self._Normal
@@ -187,23 +246,25 @@ class FabPlane(object):
             if tracing:
                 print(f"{tracing}{normal=}")
 
+            to_axis: mathutils.Vector = normal if reversed else z_axis
+            from_axis: mathutils.Vector = z_axis if reversed else normal
             epsilon: float = 1.0e-8
             rotate_matrix: mathutils.Matrix
-            if abs((normal - z_axis).magnitude) < epsilon:  # magnitude is the vector length
+            if abs((from_axis - to_axis).magnitude) < epsilon:  # magnitude is the vector length
                 if tracing:
                     print(f"{tracing}Aligned with +Z axis")
                 rotate_matrix = mathutils.Matrix()  # Identity matrix
             else:
                 rotate_axis: mathutils.Vector
                 rotate_angle: float
-                if abs((normal + z_axis).magnitude) < epsilon:
+                if abs((from_axis + to_axis).magnitude) < epsilon:
                     if tracing:
                         print(f"{tracing}Aligned with -Z axis")
                     rotate_axis = mathutils.Vector((0.0, 1.0, 0.0))  # Y axis
                     rotate_angle = -math.pi  # 180 degrees
                 else:
-                    rotate_axis = z_axis.cross(normal)  # An orthogonal rotation axis
-                    rotate_angle = z_axis.angle(normal)
+                    rotate_axis = to_axis.cross(from_axis)  # An orthogonal rotation axis
+                    rotate_angle = to_axis.angle(from_axis)
                     if tracing:
                         rotate_degrees: float = math.degrees(rotate_angle)
                         print(f"{tracing}{rotate_axis=} {rotate_degrees=}")
@@ -211,6 +272,8 @@ class FabPlane(object):
             rotated_point: mathutils.Vector = rotate_matrix @ mathutils.Vector(
                 (point.x, point.y, point.z))
             result = Vector(rotated_point.x, rotated_point.y, rotated_point.z)
+        else:
+            assert False
         if tracing:
             print(f"{tracing}<=FabPlane.rotate_to_z_axis({point})=>{result}")
         return result

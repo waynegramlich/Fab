@@ -23,7 +23,7 @@
 <li>4 Class: <a href="#geometry--fabplane">FabPlane</a>:
 <ul>
 <li>4.1 <a href="#geometry----point-project">point_project()</a>: Project a point onto a plane.</li>
-<li>4.2 <a href="#geometry----rotate-to-z-axis">rotate_to_z_axis()</a>: Rotate a point around the origin until the normal is +Z .</li>
+<li>4.2 <a href="#geometry----rotate-to-z-axis">rotate_to_z_axis()</a>: Rotate a point around the origin until the normal aligns with the +Z axis.</li>
 </ul>
 </li>
 <li>5 Class: <a href="#geometry--fabpolygon">FabPolygon</a>:
@@ -110,8 +110,17 @@ This field needs to be set prior to use with set_geometry_group() method.</li>
 <p>FabPlane.point_project(self, point: Base.Vector) -&gt; Base.Vector:</p>
 <p>Project a point onto a plane.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->4.2 <code>FabPlane.</code>rotate_to_z_axis():</h3>
-<p>FabPlane.rotate_to_z_axis(self, point: Base.Vector, tracing: str = '') -&gt; Base.Vector:</p>
-<p>Rotate a point around the origin until the normal is +Z .</p>
+<p>FabPlane.rotate_to_z_axis(self, point: Base.Vector, reversed: bool = False, tracing: str = '') -&gt; Base.Vector:</p>
+<p>Rotate a point around the origin until the normal aligns with the +Z axis.
+Arguments:</p>
+<ul>
+<li><em>point</em> (Vector): The point to rotate.</li>
+<li><em>reversed</em> (bool = False): If True, do the inverse rotation.</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li>(Vector): The rotated vector position.</li>
+</ul>
 <h2><!-- raw HTML omitted --><!-- raw HTML omitted -->5 Class FabPolygon:</h2>
 <p>An immutable polygon with rounded corners.
 A FabPolygon is represented as a sequence of corners (i.e. a Vector) where each corner can

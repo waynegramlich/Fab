@@ -598,6 +598,8 @@ class FabMount(object):
         solid: "FabSolid" = self._Solid
 
         tracing: str = solid.Tracing
+        next_tracing: str = tracing + " " if tracing else ""
+        _ = next_tracing  # Until it is used elsewhere
         if tracing:
             print(f"{tracing}=>FabMount({self.Name}).__post_init__()")
 
@@ -615,15 +617,15 @@ class FabMount(object):
         self._Normal = self._Normal + copy
         self._Operations = OrderedDict()
         # FreeCAD Vector metheds like to modify Vector contents; force copies beforehand:
-        self._Plane: FabPlane = FabPlane(self._Contact, self._Normal)
+        self._Plane: FabPlane = FabPlane(self._Contact, self._Normal)  # , tracing=next_tracing)
         self._Orient = self._Plane.point_project(self._Orient)
         self._GeometryContext = FabGeometryContext(self._Plane, self._WorkPlane)
         self._AppDatumPlane = None
         self._GuiDatumPlane = None
 
         if tracing:
-            print(f"{tracing}{self._Contact=} {self._Normal=} "
-                  f"{self._Depth=} {self._GeometryContext=}")
+            print(f"{tracing}{self._Contact=} {self._Normal=}")
+            print(f"{tracing}{self._Depth=} {self._GeometryContext=}")
             print(f"{tracing}<=FabMount({self.Name}).__post_init__()")
 
     # FabMount.Name():
@@ -662,6 +664,12 @@ class FabMount(object):
         """Return the FabMount Orientation."""
         return self._Orient + self._Copy
 
+    # FabMount.Plane:
+    @property
+    def Plane(self) -> FabPlane:
+        """Return the FabPlane."""
+        return self._Plane
+
     # FabMount.Depth:
     @property
     def Depth(self) -> float:
@@ -689,7 +697,8 @@ class FabMount(object):
             print(f"{tracing}=>FabMount.post_produce1('{self.Name}')")
 
         # Create the FreeCAD DatumPlane used for the drawing support.
-        plane: FabPlane = self._Plane
+        plane: FabPlane = self.Plane
+        assert isinstance(plane, FabPlane), plane
         contact: Vector = plane.Contact
         normal: Vector = plane.Normal
         if USE_FREECAD:
@@ -749,9 +758,21 @@ class FabMount(object):
                 setattr(gui_datum_plane, "Visibility", False)
                 self._GuiDatum_plane = gui_datum_plane
         elif USE_CAD_QUERY:
+            if tracing:
+                print(f"{tracing}Name={self._Name}")
+                print(f"{tracing}Solid={self._Solid.Label}")
+                print(f"{tracing}Contact={contact}")
+                print(f"{tracing}Normal={normal}")
+                print(f"{tracing}Orient={self._Orient}")
+                print(f"{tracing}Depth={self._Depth}")
+                print(f"{tracing}Contact={contact}")
+
+            if tracing:
+                print(f"{tracing}{plane=}")
+
             work_plane: Optional[FabWorkPlane] = self._Solid._WorkPlane
             assert isinstance(work_plane, FabWorkPlane), work_plane
-            work_plane.copy_workplane(plane)
+            work_plane.copy_workplane(plane, tracing=next_tracing)
 
         # Process each *operation* in *operations*:
         operations: "OrderedDict[str, _Operation]" = self._Operations
@@ -938,13 +959,15 @@ class FabSolid(FabNode):
         """Verify FabSolid arguments."""
         super().__post_init__()
         tracing: str = self.Tracing
+        next_tracing: str = tracing + " " if tracing else ""
+        _ = next_tracing  # Until it is used elsewhere.
         if tracing:
             print(f"{tracing}=>FabSolid({self.Label}).__post_init__()")
         # TODO: Do additional type checking here:
         # Initial WorkPlane does not matter, it gets set by FabMount.
         origin: Vector = Vector(0.0, 0.0, 0.0)
         z_axis: Vector = Vector(0.0, 0.0, 1.0)
-        initial_plane: FabPlane = FabPlane(origin, z_axis)
+        initial_plane: FabPlane = FabPlane(origin, z_axis)  # , tracing=next_tracing)
         self._Mounts = OrderedDict()
         self._GeometryGroup = None
         self._Body = None
@@ -980,7 +1003,6 @@ class FabSolid(FabNode):
             print(f"{tracing}=>FabSolid({self.Label}).pre_produce()")
         self._Mounts = OrderedDict()
         if tracing:
-            print(f"{tracing}>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
             print(f"{tracing}{len(self._Mounts)=}")
             print(f"{tracing}<=FabSolid({self.Label}).pre_produce()")
 
