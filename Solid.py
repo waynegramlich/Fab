@@ -40,7 +40,8 @@ if USE_FREECAD:
     import FreeCADGui as Gui  # type: ignore
     from FreeCAD import Placement, Rotation, Vector  # type: ignore
 elif USE_CAD_QUERY:
-    from cadquery import Assembly, Color, Vector  # type: ignore
+    import cadquery as cq  # type: ignore
+    from cadquery import Vector  # type: ignore
 
 # import Part  # type: ignore
 
@@ -1133,8 +1134,8 @@ class FabSolid(FabNode):
         if USE_CAD_QUERY:
             # CadQuery workplanes do not have a color, but Assemblies do.
             rgb_color: Tuple[float, float, float] = FabColor.svg_to_rgb(self.Color)
-            assembly: Assembly = Assembly(
-                self._WorkPlane.Plane, name=self.Label, color=Color(*rgb_color))
+            assembly: cq.Assembly = cq.Assembly(
+                self._WorkPlane.WorkPlane, name=self.Label, color=cq.Color(*rgb_color))
             # objects_table[self.Label] = self._WorkPlane
             self._Assembly = assembly
             objects_table[self.Label] = assembly

@@ -41,31 +41,10 @@ if USE_FREECAD:
 
     from FreeCAD import Placement, Rotation, Vector
 elif USE_CAD_QUERY:
-    import cadquery  # type: ignore
-    from cadquery import Vector, Workplane  # type: ignore
+    import cadquery as cq  # type: ignore
+    from cadquery import Vector  # type: ignore
     import mathutils  # type: ignore
 from Node import FabBox
-
-
-# Plane:
-@dataclass
-class _Plane(object):
-    """Plane: A plane object for FreeCAD.
-
-    * *origin* (Vector):  The mutable plane origin.
-    * *xDir* (Optional[Vector]):  The plane +X direction.
-    * *normal* (Vector): The normal to the plane.
-    """
-
-    origin: Vector
-    xDir: Optional[Vector] = Vector(1.0, 0.0, 0.0)
-    normal: Vector = Vector(0.0, 0.0, 1.0)
-
-
-if USE_FREECAD:
-    Plane = _Plane
-elif USE_CAD_QUERY:
-    from cadquery import Plane  # type: ignore
 
 
 # FabPlane:
@@ -80,7 +59,7 @@ class FabPlane(object):
     _Contact: Vector
     _Normal: Vector
     tracing: str = ""
-    _Plane: Plane = field(init=False)
+    _Plane: Any = field(init=False)  # Used by CadQuery
     _Copy: Vector = field(init=False)
     _Origin: Vector = field(init=False)
     _XDirection: Vector = field(init=False)
@@ -135,7 +114,6 @@ class FabPlane(object):
         # *rotate_to_z_axis* method can be invoked (since it does not access the _Plane field.)
         self._Contact = contact
         self._Normal = normal
-        self._Plane = Plane(origin=origin, normal=normal)  # TODO: remove
         self._Copy = copy
         self._Origin = origin
 
@@ -147,6 +125,7 @@ class FabPlane(object):
         rotated_x_direction: Vector = rotated_origin + Vector(1.0, 0.0, 0.0)
 
         if USE_FREECAD:
+            self._Plane = "BOGUS"
             self._XDirection = cast(Vector, "BOGUS")  # Force failure if accessed in FreeCAD mode.
         elif USE_CAD_QUERY:
             # *x_direction* is computed by rotating it back to align with the *normal* and
@@ -155,6 +134,7 @@ class FabPlane(object):
                 rotated_x_direction, reversed=True, tracing=next_tracing)
             assert isinstance(unrotated_x_direction, Vector), unrotated_x_direction
             x_direction: Vector = unrotated_x_direction - origin
+            self._Plane = cq.Plane(origin=origin, normal=normal)  # TODO: remove
             self._XDirection = x_direction
 
         # TODO: enable
@@ -198,14 +178,17 @@ class FabPlane(object):
 
     # FabPlane.CQPlane
     @property
-    def CQPlane(self) -> Plane:
+    def CQPlane(self) -> Any:
         """Return the CadQuery plane name as a string."""
-        normal: Vector = self._Normal / self._Normal.Length
-        origin: Vector = self._Contact
-        x_direction: Optional[Vector] = None  # TODO fix this!!!!
-        plane: Plane = Plane(origin=origin, normal=normal, xDir=x_direction)
-        return plane
-        # return self._Plane
+        plane: Any = "BOGUS"
+        if USE_FREECAD:
+            raise RuntimeError("FabPlane.CQPlane(): Not available in FreeCAD mode.")
+        elif USE_CAD_QUERY:
+            normal: Vector = self._Normal / self._Normal.Length
+            origin: Vector = self._Contact
+            x_direction: Optional[Vector] = None  # TODO fix this!!!!
+            plane = cq.Plane(origin=origin, normal=normal, xDir=x_direction)
+        return plane   # TODO: return self._Plane
 
     # FabPlane.rotate_to_z_axis():
     def rotate_to_z_axis(self, point: Vector, reversed: bool = False, tracing: str = "") -> Vector:
@@ -332,7 +315,7 @@ class FabGeometryContext(object):
         """Set the FabQuery Workplane."""
         if not USE_CAD_QUERY:
             raise RuntimeError("FabGeomtery.WorkPlane(): Only accessible in CadQuery mode.")
-        if not isinstance(workplane, Workplane):
+        if not isinstance(workplane, cq.Workplane):
             raise RuntimeError(
                 f"FabGeomtery.WorkPlane(): Workplane {type(workplane)}, not workplane.")
         self._WorkPlane = workplane
@@ -1316,16 +1299,17 @@ class FabWorkPlane(object):
             # TODO(): Fix to use CadQuery *Plane* object.
             origin: Vector = self._Plane.Origin
             normal: Vector = self._Plane.Normal
-            plane: Plane = Plane(origin=origin, normal=normal)
-            self._WorkPlane = Workplane(plane)
+            plane: cq.Plane = cq.Plane(origin=origin, normal=normal)
+            self._WorkPlane = cq.Workplane(plane)
 
     # FabWorkPlane.Plane():
     @property
     def Plane(self) -> FabPlane:
         """Return the FabPlane associated from a FabWorkPlane."""
-        return self._WorkPlane
+        assert isinstance(self._Plane, FabPlane), self._Plane
+        return self._Plane
 
-    # FabWorkPlane.Plane():
+    # FabWorkPlane.WorkPlane():
     @property
     def WorkPlane(self) -> Any:
         """Return the Workplane associated from a FabWorkPlane."""
@@ -1342,7 +1326,7 @@ class FabWorkPlane(object):
                 print(f"{tracing}<=>FabWorkPlane.circle({center}, {radius}, {for_construction})")
             rotated_center: Vector = self._Plane.rotate_to_z_axis(center)
             self._WorkPlane = (
-                cast(Workplane, self._WorkPlane)
+                cast(cq.Workplane, self._WorkPlane)
                 .moveTo(rotated_center.x, rotated_center.y)
                 .circle(radius, for_construction)
             )
@@ -1354,7 +1338,7 @@ class FabWorkPlane(object):
             if tracing:
                 print(f"{tracing}<=>FabWorkPlane.close()")
             self._WorkPlane = (
-                cast(Workplane, self._WorkPlane)
+                cast(cq.Workplane, self._WorkPlane)
                 .close()
             )
 
@@ -1370,8 +1354,8 @@ class FabWorkPlane(object):
             if tracing:
                 print(f"{tracing}{plane=}")
             self._WorkPlane = (
-                cast(Workplane, self._WorkPlane)
-                .copyWorkplane(Workplane(plane.CQPlane))
+                cast(cq.Workplane, self._WorkPlane)
+                .copyWorkplane(cq.Workplane(plane.CQPlane))
             )
             if tracing:
                 print(f"{tracing}<=FabWorkPlane.copy_workPlane({plane})")
@@ -1383,7 +1367,7 @@ class FabWorkPlane(object):
             if tracing:
                 print(f"{tracing}<=>FabWorkPlane.cut_blind({depth})")
             self._WorkPlane = (
-                cast(Workplane, self._WorkPlane)
+                cast(cq.Workplane, self._WorkPlane)
                 .cutBlind(depth)
             )
 
@@ -1394,7 +1378,7 @@ class FabWorkPlane(object):
             if tracing:
                 print(f"{tracing}<=>FabWorkPlane.extrude({depth})")
             self._WorkPlane = (
-                cast(Workplane, self._WorkPlane)
+                cast(cq.Workplane, self._WorkPlane)
                 .extrude(-depth)
             )
 
@@ -1405,7 +1389,7 @@ class FabWorkPlane(object):
             if tracing:
                 print(f"{tracing}<=>FabWorkPlane.line_to({end}, {for_construction})")
             self._WorkPlane = (
-                cast(Workplane, self._WorkPlane)
+                cast(cq.Workplane, self._WorkPlane)
                 .lineTo(end.x, end.y)
             )
 
@@ -1418,7 +1402,7 @@ class FabWorkPlane(object):
                 print(f"{tracing}{self._WorkPlane.plane=}")
             assert isinstance(point, Vector), point
             self._WorkPlane = (
-                cast(Workplane, self._WorkPlane)
+                cast(cq.Workplane, self._WorkPlane)
                 .moveTo(point.x, point.y)
             )
             if tracing:
@@ -1460,15 +1444,15 @@ class FabWorkPlane(object):
 
         # Save *previous_functions*:
         previous_functions: Tuple[Any, Any, Any] = (
-            cadquery.cq.CQContext.__str__,
-            cadquery.occ_impl.geom.Plane.__str__,
-            cadquery.Workplane.__str__
+            cq.cq.CQContext.__str__,
+            cq.occ_impl.geom.Plane.__str__,
+            cq.Workplane.__str__
         )
 
         # Install *new_functions*
         new_functions: Tuple[Any, Any, Any] = (_ctx_str, _plane_str, _wp_str)
-        (cadquery.cq.CQContext.__str__, cadquery.occ_impl.geom.Plane.__str__,
-         cadquery.Workplane.__str__) = new_functions
+        (cq.cq.CQContext.__str__, cq.occ_impl.geom.Plane.__str__,
+         cq.Workplane.__str__) = new_functions
 
         # Now print the the contents:
         if tracing:
@@ -1476,8 +1460,8 @@ class FabWorkPlane(object):
             print(f"{tracing}{self._WorkPlane}")
 
         # Now restore the *previous_functions*:
-        (cadquery.cq.CQContext.__str__, cadquery.occ_impl.geom.Plane.__str__,
-         cadquery.Workplane.__str__) = previous_functions
+        (cq.cq.CQContext.__str__, cq.occ_impl.geom.Plane.__str__,
+         cq.Workplane.__str__) = previous_functions
 
     # FabWorkPlane.subtract():
     def subtract(self, remove_solid: "FabWorkPlane", tracing: str = "") -> None:
@@ -1486,7 +1470,7 @@ class FabWorkPlane(object):
             if tracing:
                 print(f"{tracing}<=>FabWorkPlane.subtract()")
             self._WorkPlane = (
-                cast(Workplane, self._WorkPlane) -
+                cast(cq.Workplane, self._WorkPlane) -
                 remove_solid.WorkPlane
             )
 
@@ -1498,7 +1482,7 @@ class FabWorkPlane(object):
             if tracing:
                 print(f"{tracing}FabWorkPlane.three_point_arc({middle}), {end})")
             self._WorkPlane = (
-                cast(Workplane, self._WorkPlane)
+                cast(cq.Workplane, self._WorkPlane)
                 .threePointArc((middle.x, middle.y), (end.x, end.y))
             )
 
