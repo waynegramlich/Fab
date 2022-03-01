@@ -167,8 +167,6 @@ class FabPlane(object):
             print(f"{tracing}{self._Plane=}")
             print(f"{tracing}<=FabPlane.__post_init__({self._Contact}, {self._Normal})")
 
-        self._XDirection = Vector()  # TODO: Fix
-
     # FabPlane.point_project():
     def point_project(self, point: Vector) -> Vector:
         """Project a point onto a plane."""
@@ -1265,7 +1263,7 @@ class FabPolygon(FabGeometry):
             start: Vector = geometry0.get_start()
             rotated_start: Vector = geometry_context._Plane.rotate_to_z_axis(
                 start, tracing=next_tracing)
-            geometry_context.WorkPlane.move_to(rotated_start)
+            geometry_context.WorkPlane.move_to(rotated_start, tracing=next_tracing)
             for index, geometry in enumerate(geometries):
                 part_geometry = geometry.produce(
                     geometry_context, prefix, index, tracing=next_tracing)
@@ -1365,14 +1363,18 @@ class FabWorkPlane(object):
         """Create a new CadQuery workplane and push it onto the stack."""
         if USE_CAD_QUERY:
             if tracing:
-                print(f"{tracing}<=>FabWorkPlane.copy_workPlane({plane})")
+                print(f"{tracing}=>FabWorkPlane.copy_workPlane({plane})")
             if not isinstance(plane, FabPlane):
                 raise RuntimeError(
                     f"FabWorkPlane.copy_workplane(): Got {type(plane)}, not FabPlane")
+            if tracing:
+                print(f"{tracing}{plane=}")
             self._WorkPlane = (
                 cast(Workplane, self._WorkPlane)
                 .copyWorkplane(Workplane(plane.CQPlane))
             )
+            if tracing:
+                print(f"{tracing}<=FabWorkPlane.copy_workPlane({plane})")
 
     # FabWorkPlane.cut():
     def cut_blind(self, depth: float, tracing: str = "") -> None:
@@ -1401,7 +1403,7 @@ class FabWorkPlane(object):
         """Draw a line to a point."""
         if USE_CAD_QUERY:
             if tracing:
-                print(f"{tracing}FabWorkPlane.line_to({end}, {for_construction})")
+                print(f"{tracing}<=>FabWorkPlane.line_to({end}, {for_construction})")
             self._WorkPlane = (
                 cast(Workplane, self._WorkPlane)
                 .lineTo(end.x, end.y)
@@ -1412,12 +1414,15 @@ class FabWorkPlane(object):
         """Draw a line to a point."""
         if USE_CAD_QUERY:
             if tracing:
-                print(f"{tracing}FabWorkPlane.move_to({point})")
+                print(f"{tracing}=>FabWorkPlane.move_to({point})")
+                print(f"{tracing}{self._WorkPlane.plane=}")
             assert isinstance(point, Vector), point
             self._WorkPlane = (
                 cast(Workplane, self._WorkPlane)
                 .moveTo(point.x, point.y)
             )
+            if tracing:
+                print(f"{tracing}<=FabWorkPlane.move_to({point})")
 
     # FabWorkPlane.show():
     def show(self, label: str, tracing: str = "") -> None:
