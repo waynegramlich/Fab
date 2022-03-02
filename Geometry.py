@@ -59,10 +59,10 @@ class FabPlane(object):
     _Contact: Vector
     _Normal: Vector
     tracing: str = ""
-    _Plane: Any = field(init=False)  # Used by CadQuery
     _Copy: Vector = field(init=False)
     _Origin: Vector = field(init=False)
     _XDirection: Vector = field(init=False)
+    _Plane: Any = field(init=False)  # Used by CadQuery
 
     # FabPlane.__post_init__():
     def __post_init__(self) -> None:
@@ -107,6 +107,7 @@ class FabPlane(object):
             print(f"{tracing}{contact=} {normal=}")
             print(f"{tracing}{distance=} {unit_normal=} {origin=}")
 
+        # TODO: This code should be moved inside the USE_CAD_QUERY block!!!
         # Computing the xDir argument to the Plane() constructor is a bit convoluted.
         # This requires taking a unit vector in the +X axis direction and reverse mapping it back
         # to original plane.  This requires the *reversed* option of the *rotate_to_z_axis*
@@ -134,12 +135,9 @@ class FabPlane(object):
                 rotated_x_direction, reversed=True, tracing=next_tracing)
             assert isinstance(unrotated_x_direction, Vector), unrotated_x_direction
             x_direction: Vector = unrotated_x_direction - origin
-            self._Plane = cq.Plane(origin=origin, normal=normal)  # TODO: remove
             self._XDirection = x_direction
-
-        # TODO: enable
-        # Now the Plane* can be created:
-        # self._Plane = Plane(origin=origin, normal=normal, xDir=x_direction)
+            # Now the Plane* can be created:
+            self._Plane = cq.Plane(origin=origin, normal=normal, xDir=x_direction)
         if tracing:
             print(f"{tracing}{rotated_origin=} {rotated_x_direction=}")
             print(f"{tracing}{origin=} {unrotated_x_direction=}")
@@ -184,11 +182,9 @@ class FabPlane(object):
         if USE_FREECAD:
             raise RuntimeError("FabPlane.CQPlane(): Not available in FreeCAD mode.")
         elif USE_CAD_QUERY:
-            normal: Vector = self._Normal / self._Normal.Length
-            origin: Vector = self._Contact
-            x_direction: Optional[Vector] = None  # TODO fix this!!!!
-            plane = cq.Plane(origin=origin, normal=normal, xDir=x_direction)
-        return plane   # TODO: return self._Plane
+            plane = self._Plane
+            assert isinstance(plane, cq.Plane), plane
+        return plane
 
     # FabPlane.rotate_to_z_axis():
     def rotate_to_z_axis(self, point: Vector, reversed: bool = False, tracing: str = "") -> Vector:
