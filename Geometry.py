@@ -80,8 +80,9 @@ class FabPlane(object):
         #
         # (Note that a plane normal can actually be on either side of the of the plane.
         # Apparently, the Wolfram description appears to assume that the normal always
-        # point to the origin.  The code below assumes the opposite.  Hence there is a sign change.
-        # Thus, d = N . D )
+        # point to the origin.  The code below assumes that the normal always points away
+        # from the origint.  Hence there is a sign change. Thus, d = N . D is used instead
+        # of d = -(N . D).
         #
         # D is the distance from the origin along the normal to the "projected" origin on the plane:
         #
@@ -98,7 +99,7 @@ class FabPlane(object):
         copy: Vector = Vector(0.0, 0.0, 0.0)
         contact: Vector = self._Contact + copy  # C
         normal: Vector = self._Normal + copy   # N
-        d: Vector = -normal.dot(contact)  # d = -(N . C)
+        d: Vector = normal.dot(contact)  # d = N . C
         normal_length: float = normal.Length  # ||N||
         distance: float = d / normal_length   # D = d / ||N||
         unit_normal: Vector = normal / normal_length  # <<N>>
