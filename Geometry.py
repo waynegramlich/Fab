@@ -533,8 +533,8 @@ class _Arc(_Geometry):
             geometry_group.addObject(part_arc)
         elif USE_CAD_QUERY:
             plane: FabPlane = geometry_context._Plane
-            rotated_middle: Vector = plane.rotate_to_z_axis(self.Middle)
-            rotated_finish: Vector = plane.rotate_to_z_axis(self.Finish)
+            rotated_middle: Vector = plane.rotate_to_z_axis(self.Middle, tracing=next_tracing)
+            rotated_finish: Vector = plane.rotate_to_z_axis(self.Finish, tracing=next_tracing)
             geometry_context.WorkPlane.three_point_arc(
                 rotated_middle, rotated_finish, tracing=next_tracing)
         if tracing:
@@ -697,12 +697,12 @@ class _Fillet(object):
         """Return the arc associated with a _Fillet with non-zero radius."""
         # A fillet is represented as an arc that traverses a sphere with a specified radius.
         #
-        # Each fillet specifies an 3D apex point and a radius.  The this fillet the apex point is
+        # Each fillet specifies an 3D center point and a radius.  The the fillet the corner point is
         # X and the radius is r.  Each fillet also has two neighbors on the polygon (called before
-        # and after) and each of the respectively have apex points called B and A.  These three
+        # and after) and each of the respectively have corner points called B and A.  These three
         # points specify line segment XB and XA respectively.  XB and XA also specify a plane
         # called AXB.  The goal is to find a center point C of a sphere of radius r that is on
-        # the plane AXB and it tangent to line segment XB and XA.  (If r too large, there is no
+        # the plane AXB and it tangent to line segments XB and XA.  (If r too large, there is no
         # solution, but the radius check code elsewhere will detect that situation and raise an
         # exception.  The plane AXB slices the sphere into a circle of radius r.  The arc lies
         # on this circle.  The start tangent point S is on the circle on line segment XB.
@@ -741,7 +741,7 @@ class _Fillet(object):
         # 5. Using X, d, <XB> and <XA>, both S and F are computed.
         # 6. Given d and r, using the Pythagorean theorem, |XC| is computed
         # 7. Now C is computed using X and <XC> and |XC|.
-        # 8. The arc mid-point is computed using X, <XC>, |XC| and r.
+        # 8. The arc middle point M is computed using X, <XC>, |XC| and r.
 
         # Step 0: Extract *radius*, *before* (B), *apex* (X) and *after* (A) points:
         radius: float = self.Radius
@@ -749,7 +749,7 @@ class _Fillet(object):
         apex: Vector = self.Apex
         after: Vector = self.After.Apex
         if tracing:
-            print(f"{tracing}=>_Fillet.compute_arc({apex})")
+            print(f"{tracing}=>_Fillet.compute_arc()")
             print(f"{tracing}{radius=} {before=} {apex=} {after=}")
 
         # Steps 1 and 2: Compute unit vectors <XB>, <XA>, and <XC>
@@ -757,8 +757,8 @@ class _Fillet(object):
         unit_before: Vector = apex_to_before / apex_to_before.Length  # <XB>
         apex_to_after: Vector = after - apex
         unit_after: Vector = apex_to_after / apex_to_after.Length  # <XA>
-        apex_to_center: Vector = apex_to_before + apex_to_after
-        unit_center: Vector = apex_to_center / apex_to_center.Length  # <XC>
+        to_center: Vector = unit_before + unit_after
+        unit_center: Vector = to_center / to_center.Length  # <XC>
         if tracing:
             print(f"{tracing}{unit_before=} {unit_center=} {unit_after=}")
 
@@ -824,7 +824,7 @@ class _Fillet(object):
         # assert abs(start_plus_delta_angle - finish_angle) < 1.0e-8, "Delta angle is wrong."
 
         if tracing:
-            print(f"{tracing}<=_Fillet.compute_arc({apex})=>{arc}")
+            print(f"{tracing}<=_Fillet.compute_arc()=>{arc}")
         return arc
 
     # _Fillet.plane_2d_project:
@@ -849,6 +849,41 @@ class _Fillet(object):
             geometries.append(self.Arc)
         return tuple(geometries)
 
+    # _Fillet.unit_tests():
+    @staticmethod
+    def unit_tests() -> None:
+        # Create 4 corners centered.
+        dx: float = Vector(20.0, 0.0, 0.0)
+        dy: float = Vector(0.0, 10.0, 0.0)
+        radius: float = 4.0
+
+        # Create the corner Vector's:
+        center: Vector = Vector(0.0, 0.0, 0.0)
+        ne_corner: Vector = Vector(center + dx + dy)
+        nw_corner: Vector = Vector(center - dx + dy)
+        sw_corner: Vector = Vector(center - dx - dy)
+        se_corner: Vector = Vector(center + dx - dy)
+
+        # Create the _Fillet's:
+        ne_fillet: _Fillet = _Fillet(ne_corner, radius)
+        nw_fillet: _Fillet = _Fillet(nw_corner, radius)
+        sw_fillet: _Fillet = _Fillet(sw_corner, radius)
+        se_fillet: _Fillet = _Fillet(se_corner, radius)
+
+        # Provide before/after _Fillets:
+        ne_fillet.Before = se_fillet
+        nw_fillet.Before = ne_fillet
+        sw_fillet.Before = nw_fillet
+        se_fillet.Before = sw_fillet
+        ne_fillet.After = nw_fillet
+        nw_fillet.After = sw_fillet
+        sw_fillet.After = se_fillet
+        se_fillet.After = ne_fillet
+
+        ne_fillet.compute_arc(tracing="NE:")
+        nw_fillet.compute_arc(tracing="NW:")
+        sw_fillet.compute_arc(tracing="SW:")
+        se_fillet.compute_arc(tracing="SE:")
 
 # FabGeometry:
 @dataclass(frozen=True)
@@ -1384,11 +1419,15 @@ class FabWorkPlane(object):
         """Draw a line to a point."""
         if USE_CAD_QUERY:
             if tracing:
-                print(f"{tracing}<=>FabWorkPlane.line_to({end}, {for_construction})")
+                print(f"{tracing}=>FabWorkPlane.line_to({end}, {for_construction})")
+            end_tuple: Tuple[float, float] = (end.x, end.y)
             self._WorkPlane = (
                 cast(cq.Workplane, self._WorkPlane)
                 .lineTo(end.x, end.y)
             )
+            if tracing:
+                print(f"{tracing}{end_tuple=}")
+                print(f"{tracing}<=FabWorkPlane.line_to({end}, {for_construction})")
 
     # FabWorkPlane.move_to():
     def move_to(self, point: Vector, tracing: str = "") -> None:
@@ -1477,11 +1516,16 @@ class FabWorkPlane(object):
         """Draw a three point arc."""
         if USE_CAD_QUERY:
             if tracing:
-                print(f"{tracing}FabWorkPlane.three_point_arc({middle}), {end})")
+                print(f"{tracing}=>FabWorkPlane.three_point_arc({middle}), {end})")
+            middle_tuple: Tuple[float, float] = (middle.x, middle.y)
+            end_tuple: Tuple[float, float] = (end.x, end.y)
             self._WorkPlane = (
                 cast(cq.Workplane, self._WorkPlane)
-                .threePointArc((middle.x, middle.y), (end.x, end.y))
+                .threePointArc(middle_tuple, end_tuple)
             )
+            if tracing:
+                print(f"{tracing}{middle_tuple=} {end_tuple=}")
+                print(f"{tracing}<=FabWorkPlane.three_point_arc({middle}), {end})")
 
 
 def main() -> None:
@@ -1490,6 +1534,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    _Fillet.unit_tests()
     FabCircle._unit_tests()
     FabPolygon._unit_tests()
     main()

@@ -474,13 +474,14 @@ class BoxSide(FabSolid):
         # Extrude the side:
         half_length: Vector = self.HalfLength
         half_width: Vector = self.HalfWidth
+        radius: float = 0.5
         all_screws: Tuple[FabJoin, ...] = box.get_all_screws()
         mount: FabMount = self.mount(f"{name}FaceMount", contact, self.Normal, self.Orient, depth)
         corners: Tuple[Vector, ...] = (
-            contact + half_length + half_width,
-            contact + half_length - half_width,
-            contact - half_length - half_width,
-            contact - half_length + half_width,
+            (contact + half_length + half_width, radius),
+            (contact + half_length - half_width, radius),
+            (contact - half_length - half_width, radius),
+            (contact - half_length + half_width, radius),
         )
         # Create *edge_mounts*:
         edge_mounts: List[FabMount] = []
@@ -701,7 +702,7 @@ class TestSide(FabSolid):
             "Mount", origin, normal, orient, depth, tracing=tracing)
 
         # Perform the first Extrude:
-        # extrude_fillet_radius: float = 5.0
+        extrude_fillet_radius: float = 5.0
         # extrude_fillet_radius = 0.0
         corners: Tuple[Vector, ...] = (
             origin - dl - dw,
@@ -713,13 +714,13 @@ class TestSide(FabSolid):
             print(f"{tracing}****************************************************************")
             print(f"{tracing}{dl=} {dw=}")
             print(f"{tracing}{corners=}")
-        extrude_polygon: FabPolygon = FabPolygon(corners)
-        # extrude_polygon: FabPolygon = FabPolygon((
-        #     (origin - dl - dw, extrude_fillet_radius),  # SW
-        #     (origin + dl - dw, extrude_fillet_radius),  # SE
-        #     (origin + dl + dw, extrude_fillet_radius),  # NE
-        #     (origin - dl + dw, extrude_fillet_radius),  # NW
-        # ))
+        # extrude_polygon: FabPolygon = FabPolygon(corners)
+        extrude_polygon: FabPolygon = FabPolygon((
+            (origin - dl - dw, extrude_fillet_radius),  # SW
+            (origin + dl - dw, extrude_fillet_radius),  # SE
+            (origin + dl + dw, extrude_fillet_radius),  # NE
+            (origin - dl + dw, extrude_fillet_radius),  # NW
+        ))
         mount.extrude("Extrude", extrude_polygon, depth, tracing=next_tracing)
 
         if tracing:
