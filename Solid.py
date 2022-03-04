@@ -700,92 +700,92 @@ class FabMount(object):
         if tracing:
             print(f"{tracing}=>FabMount.post_produce1('{self.Name}')")
 
-        # Create the FreeCAD DatumPlane used for the drawing support.
-        plane: FabPlane = self.Plane
-        assert isinstance(plane, FabPlane), plane
-        contact: Vector = plane.Contact
-        normal: Vector = plane.Normal
-        if USE_FREECAD:
-            z_axis: Vector = Vector(0.0, 0.0, 1.0)
-            origin: Vector = Vector()
-            # FreeCAD Vector methods like to modify Vector contents; force copies beforehand:
-            projected_origin: Vector = plane.point_project(contact)
-            rotation: Rotation = Rotation(z_axis, normal)
-            placement: Placement = Placement()
-            placement.Base = projected_origin
-            placement.Rotation = rotation
-
-            if tracing:
-                print(f"{tracing}{contact=}")
-                print(f"{tracing}{normal=}")
-                print(f"{tracing}{origin=}")
-                print(f"{tracing}{projected_origin=}")
-                print(f"{tracing}{rotation=}")
-                print(f"{tracing}{placement=}")
-                print(f"{tracing}{rotation*z_axis=}")
-                print(f"{tracing}{normal=}")
-
-            # Create, save and return the *datum_plane*:
-            body: Any = self.Body
-            datum_plane_name: str = f"{self.Name}_Datum_Plane"
-            datum_plane: "Part.Geometry" = body.newObject("PartDesign::Plane", datum_plane_name)
-            # assert isinstance(datum_plane, Part.Geometry), datum_plane
-            self._AppDatumPlane = datum_plane
-
-            # visibility_set(datum_plane, False)
-            datum_plane.Visibility = False
-            # xy_plane: App.GeoGeometry = body.getObject("XY_Plane")
-            if tracing:
-                print(f"{tracing}{placement=}")
-            datum_plane.Label = self._Name
-            datum_plane.AttachmentOffset = placement
-            datum_plane.Placement = placement
-            datum_plane.MapMode = "Translate"
-            datum_plane.MapPathParameter = 0.0
-            datum_plane.MapReversed = False
-            datum_plane.Support = None
-            datum_plane.recompute()
-
-            if App.GuiUp:  # pragma: no unit cover
-                if tracing:
-                    print(f"{tracing}get_gui_document()")
-                document_node: FabNode = self._Solid.get_parent_document(tracing=next_tracing)
-                gui_document: Any = document_node._GuiObject
-                if tracing:
-                    print(f"{tracing}{gui_document=}")
-                assert hasattr(gui_document, "getObject")
-                gui_datum_plane: Any = getattr(gui_document, datum_plane.Name)
-                if tracing:
-                    print(f"{tracing}{gui_datum_plane=}")
-                assert gui_datum_plane is not None
-                assert hasattr(gui_datum_plane, "Visibility"), gui_datum_plane
-                setattr(gui_datum_plane, "Visibility", False)
-                self._GuiDatum_plane = gui_datum_plane
-        elif USE_CAD_QUERY:
-            if tracing:
-                print(f"{tracing}Name={self._Name}")
-                print(f"{tracing}Solid={self._Solid.Label}")
-                print(f"{tracing}Contact={contact}")
-                print(f"{tracing}Normal={normal}")
-                print(f"{tracing}Orient={self._Orient}")
-                print(f"{tracing}Depth={self._Depth}")
-                print(f"{tracing}Contact={contact}")
-
-            if tracing:
-                print(f"{tracing}{plane=}")
-
-            work_plane: Optional[FabWorkPlane] = self._Solid._WorkPlane
-            assert isinstance(work_plane, FabWorkPlane), work_plane
-            work_plane.copy_workplane(plane, tracing=next_tracing)
-
-        # Process each *operation* in *operations*:
+        # If there are no *operations* there is nothing to do:
         operations: "OrderedDict[str, _Operation]" = self._Operations
-        operation_name: str
-        operation: _Operation
-        for operation_name, operation in operations.items():
-            if tracing:
-                print(f"{tracing}Operation[{operation_name}]:")
-            operation.post_produce1(tracing=next_tracing)
+        if operations:
+            # Create the FreeCAD DatumPlane used for the drawing support.
+            plane: FabPlane = self.Plane
+            assert isinstance(plane, FabPlane), plane
+            contact: Vector = plane.Contact
+            normal: Vector = plane.Normal
+            if USE_FREECAD:
+                z_axis: Vector = Vector(0.0, 0.0, 1.0)
+                origin: Vector = Vector()
+                # FreeCAD Vector methods like to modify Vector contents; force copies beforehand:
+                projected_origin: Vector = plane.point_project(contact)
+                rotation: Rotation = Rotation(z_axis, normal)
+                placement: Placement = Placement()
+                placement.Base = projected_origin
+                placement.Rotation = rotation
+
+                if tracing:
+                    print(f"{tracing}{contact=}")
+                    print(f"{tracing}{normal=}")
+                    print(f"{tracing}{origin=}")
+                    print(f"{tracing}{projected_origin=}")
+                    print(f"{tracing}{rotation=}")
+                    print(f"{tracing}{placement=}")
+                    print(f"{tracing}{rotation*z_axis=}")
+                    print(f"{tracing}{normal=}")
+
+                # Create, save and return the *datum_plane*:
+                body: Any = self.Body
+                datum_plane_name: str = f"{self.Name}_Datum_Plane"
+                datum_plane: "Part.Geometry" = body.newObject("PartDesign::Plane", datum_plane_name)
+                # assert isinstance(datum_plane, Part.Geometry), datum_plane
+                self._AppDatumPlane = datum_plane
+
+                # visibility_set(datum_plane, False)
+                datum_plane.Visibility = False
+                # xy_plane: App.GeoGeometry = body.getObject("XY_Plane")
+                if tracing:
+                    print(f"{tracing}{placement=}")
+                datum_plane.Label = self._Name
+                datum_plane.AttachmentOffset = placement
+                datum_plane.Placement = placement
+                datum_plane.MapMode = "Translate"
+                datum_plane.MapPathParameter = 0.0
+                datum_plane.MapReversed = False
+                datum_plane.Support = None
+                datum_plane.recompute()
+
+                if App.GuiUp:  # pragma: no unit cover
+                    if tracing:
+                        print(f"{tracing}get_gui_document()")
+                    document_node: FabNode = self._Solid.get_parent_document(tracing=next_tracing)
+                    gui_document: Any = document_node._GuiObject
+                    if tracing:
+                        print(f"{tracing}{gui_document=}")
+                    assert hasattr(gui_document, "getObject")
+                    gui_datum_plane: Any = getattr(gui_document, datum_plane.Name)
+                    if tracing:
+                        print(f"{tracing}{gui_datum_plane=}")
+                    assert gui_datum_plane is not None
+                    assert hasattr(gui_datum_plane, "Visibility"), gui_datum_plane
+                    setattr(gui_datum_plane, "Visibility", False)
+                    self._GuiDatum_plane = gui_datum_plane
+            elif USE_CAD_QUERY:
+                if tracing:
+                    print(f"{tracing}Name={self._Name}")
+                    print(f"{tracing}Solid={self._Solid.Label}")
+                    print(f"{tracing}Contact={contact}")
+                    print(f"{tracing}Normal={normal}")
+                    print(f"{tracing}Orient={self._Orient}")
+                    print(f"{tracing}Depth={self._Depth}")
+                    print(f"{tracing}Contact={contact}")
+                    print(f"{tracing}{plane=}")
+
+                work_plane: Optional[FabWorkPlane] = self._Solid._WorkPlane
+                assert isinstance(work_plane, FabWorkPlane), work_plane
+                work_plane.copy_workplane(plane, tracing=next_tracing)
+
+            # Process each *operation* in *operations*:
+            operation_name: str
+            operation: _Operation
+            for operation_name, operation in operations.items():
+                if tracing:
+                    print(f"{tracing}Operation[{operation_name}]:")
+                operation.post_produce1(tracing=next_tracing)
 
         # Install the FabMount (i.e. *self*) and *datum_plane* into *model_file* prior
         # to recursively performing the *operations*:

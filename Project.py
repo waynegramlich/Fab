@@ -24,6 +24,8 @@
 
 # <--------------------------------------- 100 characters ---------------------------------------> #
 
+# IGNORE!
+
 import sys
 sys.path.append(".")
 import Embed
@@ -144,7 +146,10 @@ class FabAssembly(FabGroup):
         tracing: str = self.Tracing
         if tracing:
             print(f"{tracing}=>FabAssembly({self.Label}).post_produce2()")
-        if USE_CAD_QUERY:
+        if USE_FREECAD:
+            pass
+        elif USE_CAD_QUERY:
+            # Create the CadQuery *assembly* and fill it in:
             child_node: FabNode
             assembly: cq.Assembly = cq.Assembly()
             for child_node in self.Children:
@@ -495,13 +500,10 @@ class BoxSide(FabSolid):
         for direction in (self.HalfLength, -self.HalfLength, self.HalfWidth, -self.HalfWidth):
             edge_normal: Vector = direction / direction.Length
             random_orient: Vector = (self.Normal + copy).cross(direction + copy)
-            if USE_FREECAD:
-                edge_mount: FabMount = self.mount(
-                    f"{name}Edge{edge_index}Mount", contact + direction,
-                    edge_normal, random_orient, depth)
-                edge_mounts.append(edge_mount)
-            elif USE_CAD_QUERY:
-                pass
+            edge_mount: FabMount = self.mount(
+                f"{name}Edge{edge_index}Mount", contact + direction,
+                edge_normal, random_orient, depth)
+            edge_mounts.append(edge_mount)
             edge_index += 1
         self.drill_joins("Screws", all_screws)
 
@@ -649,17 +651,15 @@ class Box(FabAssembly):
     # Box.get_all_screws():
     def get_all_screws(self) -> Tuple[FabJoin, ...]:
         """Return all Box screws."""
-        screws: Tuple[FabJoin, ...] = ()
+        screws: List[FabJoin] = []
         if USE_FREECAD:
-            screws = (
-                tuple(cast(BoxSide, self.Top).Screws) +
-                tuple(cast(BoxSide, self.Bottom).Screws) +
-                tuple(cast(BoxSide, self.North).Screws) +
-                tuple(cast(BoxSide, self.South).Screws)
-            )
+            screws.extend(self.Top.Screws)
+            screws.extend(self.Bottom.Screws)
+            screws.extend(self.North.Screws)
+            screws.extend(self.South.Screws)
         elif USE_CAD_QUERY:
             pass
-        return screws
+        return tuple(screws)
 
 
 # TestSolid:
@@ -811,7 +811,9 @@ def main(key: str = "") -> None:
     test_project.run(objects_table)
 
     result: Any = 0
-    if USE_CAD_QUERY:
+    if USE_FREECAD:
+        pass
+    elif USE_CAD_QUERY:
         if key in objects_table:
             result = objects_table[key]
             if isinstance(result, FabWorkPlane):
