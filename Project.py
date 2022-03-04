@@ -32,7 +32,7 @@ USE_CAD_QUERY: bool
 USE_FREECAD, USE_CAD_QUERY = Embed.setup()
 
 from dataclasses import dataclass, field
-from typing import Any, cast, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, cast, Dict, List, Optional, Set, Tuple
 from pathlib import Path
 
 
@@ -546,12 +546,12 @@ class Box(FabAssembly):
     Material: str = "HDPE"
     Center: Vector = Vector()
 
-    Top: Union[BoxSide, "TestSide"] = field(init=False, repr=False)
-    Bottom: Union[BoxSide, "TestSide"] = field(init=False, repr=False)
-    North: Union[BoxSide, "TestSide"] = field(init=False, repr=False)
-    South: Union[BoxSide, "TestSide"] = field(init=False, repr=False)
-    East: Union[BoxSide, "TestSide"] = field(init=False, repr=False)
-    West: Union[BoxSide, "TestSide"] = field(init=False, repr=False)
+    Top: BoxSide = field(init=False, repr=False)
+    Bottom: BoxSide = field(init=False, repr=False)
+    North: BoxSide = field(init=False, repr=False)
+    South: BoxSide = field(init=False, repr=False)
+    East: BoxSide = field(init=False, repr=False)
+    West: BoxSide = field(init=False, repr=False)
     Fasten: FabFasten = field(init=False, repr=False)
 
     # Box.__post_init__():
@@ -567,25 +567,18 @@ class Box(FabAssembly):
         x_axis: Vector = Vector(1, 0, 0)
         y_axis: Vector = Vector(0, 1, 0)
         z_axis: Vector = Vector(0, 0, 1)
-        if True:  # USE_FREECAD:
-            self.Top = BoxSide("Top", self, Normal=z_axis, Orient=y_axis,
-                               Depth=depth, Material=material, Color="lime")
-            self.Bottom = BoxSide("Bottom", self, Normal=-z_axis, Orient=y_axis,
-                                  Depth=depth, Material=material, Color="green")
-            self.North = BoxSide("North", self, Normal=y_axis, Orient=-z_axis,
-                                 Depth=depth, Material=material, Color="orange")
-            self.South = BoxSide("South", self, Normal=-y_axis, Orient=z_axis,
-                                 Depth=depth, Material=material, Color="yellow")
-            self.East = BoxSide("East", self, Normal=x_axis, Orient=y_axis,
-                                Depth=depth, Material=material, Color="pink")
-            self.West = BoxSide("West", self, Normal=-x_axis, Orient=y_axis,
-                                Depth=depth, Material=material, Color="cyan")
-        if False:  # USE_CAD_QUERY:
-            self.Top = BoxSide("Top", self, Normal=z_axis, Orient=y_axis,
-                               Depth=depth, Material=material, Color="lime")
-            self.Bottom = BoxSide("Bottom", self, Normal=-z_axis, Orient=y_axis,
-                                  Depth=depth, Material=material, Color="azure")
-            # self.Top = TestSide("Top", self, "HDPE", "purple")
+        self.Top = BoxSide("Top", self, Normal=z_axis, Orient=y_axis,
+                           Depth=depth, Material=material, Color="lime")
+        self.Bottom = BoxSide("Bottom", self, Normal=-z_axis, Orient=y_axis,
+                              Depth=depth, Material=material, Color="green")
+        self.North = BoxSide("North", self, Normal=y_axis, Orient=-z_axis,
+                             Depth=depth, Material=material, Color="orange")
+        self.South = BoxSide("South", self, Normal=-y_axis, Orient=z_axis,
+                             Depth=depth, Material=material, Color="yellow")
+        self.East = BoxSide("East", self, Normal=x_axis, Orient=y_axis,
+                            Depth=depth, Material=material, Color="pink")
+        self.West = BoxSide("West", self, Normal=-x_axis, Orient=y_axis,
+                            Depth=depth, Material=material, Color="cyan")
         self.Fasten = FabFasten("BoxFasten", "M3x.5", ())  # No options yet.
 
         if tracing:
@@ -669,81 +662,6 @@ class Box(FabAssembly):
         return screws
 
 
-# TestSide:
-@dataclass
-class TestSide(FabSolid):
-    """TestSide: A test box side."""
-
-    _zilch: None = None  # Empy dataclasses are not allowed.
-
-    # TestSide.__post_init__():
-    def __post_init__(self) -> None:
-        """Initialize TestSide."""
-        super().__post_init__()
-        tracing: str = self.Tracing
-        if tracing:
-            print(f"{tracing}<=>TestSide({self.Label}).__post_init__()")
-
-    # TestSide.produce()
-    def produce(self) -> None:
-        """Produce a TestSide."""
-        tracing: str = self.Tracing
-        next_tracing: str = tracing + " " if tracing else ""
-        if tracing:
-            print(f"{tracing}=>TestSide({self.Label}).produce()")
-
-        # Create *top_mount*:
-        depth: float = 10.0
-        origin: Vector
-        normal: Vector
-        dl: Vector
-        dw: Vector
-        orient: Vector
-
-        if False:
-            # Bottom:
-            origin = Vector(0.0, 0.0, -20.0)
-            normal = Vector(0.0, 0.0, -1.0)  # -Z
-            dl = Vector(100.0, 0.0, 0.0)
-            dw = Vector(0.0, 80.0, 0.0)
-            orient = Vector(0.0, 1.0, 0.0)  # +Y
-        else:
-            # North:
-            origin = Vector(0.0, 60.0, 0.0)
-            normal = Vector(0.0, 1.0, 0.0)  # +Y
-            dl = Vector(100.0, 0.0, 0.0)
-            dw = Vector(0.0, 0.0, 50.0)
-            orient = Vector(0.0, 0.0, 1.0)  # +Z
-
-        mount: FabMount = self.mount(
-            "Mount", origin, normal, orient, depth, tracing=tracing)
-
-        # Perform the first Extrude:
-        extrude_fillet_radius: float = 5.0
-        # extrude_fillet_radius = 0.0
-        corners: Tuple[Vector, ...] = (
-            origin - dl - dw,
-            origin + dl - dw,
-            origin + dl + dw,
-            origin - dl + dw,
-        )
-        if tracing:
-            print(f"{tracing}****************************************************************")
-            print(f"{tracing}{dl=} {dw=}")
-            print(f"{tracing}{corners=}")
-        # extrude_polygon: FabPolygon = FabPolygon(corners)
-        extrude_polygon: FabPolygon = FabPolygon((
-            (origin - dl - dw, extrude_fillet_radius),  # SW
-            (origin + dl - dw, extrude_fillet_radius),  # SE
-            (origin + dl + dw, extrude_fillet_radius),  # NE
-            (origin - dl + dw, extrude_fillet_radius),  # NW
-        ))
-        mount.extrude("Extrude", extrude_polygon, depth, tracing=next_tracing)
-
-        if tracing:
-            print(f"{tracing}<=TestSide({self.Label}).produce()")
-
-
 # TestSolid:
 @dataclass
 class TestSolid(FabSolid):
@@ -818,19 +736,13 @@ class TestAssembly(FabAssembly):
 
     Solid: TestSolid = field(init=False, repr=False, default=cast(TestSolid, None))
     Box: Box = field(init=False, repr=False, default=cast(Box, None))
-    Side: TestSide = field(init=False, repr=False, default=cast(TestSide, None))
 
     # TestAssembly.__post_init__():
     def __post_init__(self):
         """Initialize Test Assembly."""
         super().__post_init__()
-        if USE_FREECAD:
-            self.Solid = TestSolid("TestSolid", self, "HDPE", "red")
-            self.Box = Box("TestBox", self, 200.0, 150.0, 75.0, 6.0, "HDPE", Vector(0, 0, 0))
-        elif USE_CAD_QUERY:
-            self.Solid = TestSolid("TestSolid", self, "HDPE", "red")
-            # self.Side = TestSide("TestSide", self, "HDPE", "purple")
-            self.Box = Box("TestBox", self, 200.0, 150.0, 75.0, 6.0, "HDPE", Vector(0, 0, 0))
+        self.Solid = TestSolid("TestSolid", self, "HDPE", "red")
+        self.Box = Box("TestBox", self, 200.0, 150.0, 75.0, 6.0, "HDPE", Vector(0, 0, 0))
 
 
 # TestDocument:
@@ -897,16 +809,6 @@ def main(key: str = "") -> None:
     objects_table: Dict[str, Any] = {}
     test_project: TestProject = TestProject.new("TestProject")
     test_project.run(objects_table)
-
-    # Create the models:
-    # test_solid: TestSolid = TestSolid("TestSolid")
-    # box: Box = Box("Box", Center=Vector())  # 0, 100.0, 0.0))
-    # solids: Tuple[Union[FabSolid, FabAssembly], ...] = (box, )  # , test_solid)
-    # model_file: FabDocument = FabDocument("Test", Path("/tmp/test.fcstd"))
-    # model_file._Children = solids
-    # root: FabProject = FabProject("Root")
-    # root._Children = (model_file,)
-    # root.run(tracing="")
 
     result: Any = 0
     if USE_CAD_QUERY:

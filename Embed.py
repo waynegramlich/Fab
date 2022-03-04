@@ -204,7 +204,7 @@ When the python version changes the followning packages need to be intalled:
 * python3.9 -m pip install PySide2 setuptools
 
 
-* [Set up Pyhton Virtual Environments]
+* [Set up Python Virtual Environments]
   (https://www.freecodecamp.org/news/how-to-set-up-python-virtual-environment-on-ubuntu-20-04/)
 * [Create Python 3.9 Virtual Environment]
   (https://www.ntweekly.com/2021/04/14/create-a-python-3-9-virtual-environment-ubuntu/)
@@ -224,6 +224,15 @@ When the python version changes the followning packages need to be intalled:
      python3.9 -m venv sandbox  # Should be ~/.virtualenvs
 
      # To activate:
+
+## Setting up GitHub
+
+
+[GitHub with SSH](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)
+
+`git pull` to get latest
+`git push -u origin main` to push
+
 """
 
 import os
