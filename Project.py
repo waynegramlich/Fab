@@ -474,36 +474,36 @@ class BoxSide(FabSolid):
         mount.extrude(f"{name}Extrude", polygon, depth)
 
         # Create all of the *screws*:
-        if USE_FREECAD:
-            del screws[:]
-            dlength: float
-            dwidth: float
-            if name in ("Top", "Bottom", "North", "South"):
-                length_adjust = 0.5 * depth if name in ("Top", "Bottom") else 0.5 * depth
-                width_adjust = 0.5 * depth if name in ("Top", "Bottom") else 3.0 * depth
-                for dlength in (length - length_adjust, -length + length_adjust):
-                    for dwidth in (width - width_adjust, -width + width_adjust):
-                        start: Vector = (
-                            contact + dlength * length_direction + dwidth * width_direction)
-                        end: Vector = start - (3 * depth) * normal_direction
-                        screw: FabJoin = FabJoin(f"{name}Join{len(screws)}", fasten, start, end)
-                        screws.append(screw)
+        del screws[:]
+        dlength: float
+        dwidth: float
+        if name in ("Top", "Bottom", "North", "South"):
+            length_adjust = 0.5 * depth if name in ("Top", "Bottom") else 0.5 * depth
+            width_adjust = 0.5 * depth if name in ("Top", "Bottom") else 3.0 * depth
+            for dlength in (length - length_adjust, -length + length_adjust):
+                for dwidth in (width - width_adjust, -width + width_adjust):
+                    start: Vector = (
+                        contact + dlength * length_direction + dwidth * width_direction)
+                    end: Vector = start - (3 * depth) * normal_direction
+                    screw: FabJoin = FabJoin(f"{name}Join{len(screws)}", fasten, start, end)
+                    screws.append(screw)
 
-            # Create *edge_mounts*:
-            edge_mounts: List[FabMount] = []
-            edge_index: int = 0
-            direction: Vector
-            for direction in (self.HalfLength, -self.HalfLength, self.HalfWidth, -self.HalfWidth):
-                edge_normal: Vector = direction / direction.Length
-                random_orient: Vector = (self.Normal + copy).cross(direction + copy)
+        # Create *edge_mounts*:
+        edge_mounts: List[FabMount] = []
+        edge_index: int = 0
+        direction: Vector
+        for direction in (self.HalfLength, -self.HalfLength, self.HalfWidth, -self.HalfWidth):
+            edge_normal: Vector = direction / direction.Length
+            random_orient: Vector = (self.Normal + copy).cross(direction + copy)
+            if USE_FREECAD:
                 edge_mount: FabMount = self.mount(
                     f"{name}Edge{edge_index}Mount", contact + direction,
                     edge_normal, random_orient, depth)
                 edge_mounts.append(edge_mount)
-                edge_index += 1
-            self.drill_joins("Screws", all_screws)
-        elif USE_CAD_QUERY:
-            pass
+            elif USE_CAD_QUERY:
+                pass
+            edge_index += 1
+        self.drill_joins("Screws", all_screws)
 
         if tracing:
             print(f"{tracing}<=BoxSide({self.Label}).produce()")

@@ -510,47 +510,50 @@ class _Hole(_Operation):
         #             circle.produce(geometry_context,
         #                            geometry_prefix, tracing=next_tracing))
 
-        # Now do the FreeCAD stuff:
-        # Create the *shape_binder*:
-        # suffix: str = "Holes" if len(hole_group) > 1 else "Hole"
+        if USE_FREECAD:
+            # Now do the FreeCAD stuff:
+            # Create the *shape_binder*:
+            # suffix: str = "Holes" if len(hole_group) > 1 else "Hole"
 
-        # Create the *shape_binder*:
-        prefix: str = f"{self.Name}_{name}"
-        shape_binder: Part.Feature = self.produce_shape_binder(tuple(part_geometries), prefix)
+            # Create the *shape_binder*:
+            prefix: str = f"{self.Name}_{name}"
+            shape_binder: Part.Feature = self.produce_shape_binder(tuple(part_geometries), prefix)
 
-        # TODO: fill in actual values for Hole.
-        # Create the *hole* and upstate the view provider for GUI mode:
-        solid_name: str = f"{prefix}_Drill"
-        part_hole: Part.Feature = body.newObject("PartDesign::Hole", solid_name)
-        assert isinstance(part_hole, Part.Feature)
-        part_hole.Profile = shape_binder
-        part_hole.Diameter = diameter
-        part_hole.Depth = depth
-        part_hole.UpToFace = None
-        part_hole.Reversed = False
-        part_hole.Midplane = 0
+            # TODO: fill in actual values for Hole.
+            # Create the *hole* and upstate the view provider for GUI mode:
+            solid_name: str = f"{prefix}_Drill"
+            part_hole: Part.Feature = body.newObject("PartDesign::Hole", solid_name)
+            assert isinstance(part_hole, Part.Feature)
+            part_hole.Profile = shape_binder
+            part_hole.Diameter = diameter
+            part_hole.Depth = depth
+            part_hole.UpToFace = None
+            part_hole.Reversed = False
+            part_hole.Midplane = 0
 
-        # Fill in other fields for the top mount.
-        # if is_top:
-        #     assert False, "Fill in other fields."
+            # Fill in other fields for the top mount.
+            # if is_top:
+            #     assert False, "Fill in other fields."
 
-        # For the GUI, update the view provider:
-        # self._viewer_update(body, part_hole)
+            # For the GUI, update the view provider:
+            # self._viewer_update(body, part_hole)
 
-        if App.GuiUp:  # pragma: no unit cover
-            visibility_set(part_hole, True)
-            view_object: Any = body.getLinkedObject(True).ViewObject
-            part_hole.ViewObject.LineColor = getattr(
-                view_object, "LineColor", part_hole.ViewObject.LineColor)
-            part_hole.ViewObject.ShapeColor = getattr(
-                view_object, "ShapeColor", part_hole.ViewObject.ShapeColor)
-            part_hole.ViewObject.PointColor = getattr(
-                view_object, "PointColor", part_hole.ViewObject.PointColor)
-            part_hole.ViewObject.Transparency = getattr(
-                view_object, "Transparency", part_hole.ViewObject.Transparency)
-            # The following code appears to disable edge highlighting:
-            # part_hole.ViewObject.DisplayMode = getattr(
-            #    view_object, "DisplayMode", part_hole.ViewObject.DisplayMode)
+            if App.GuiUp:  # pragma: no unit cover
+                visibility_set(part_hole, True)
+                view_object: Any = body.getLinkedObject(True).ViewObject
+                part_hole.ViewObject.LineColor = getattr(
+                    view_object, "LineColor", part_hole.ViewObject.LineColor)
+                part_hole.ViewObject.ShapeColor = getattr(
+                    view_object, "ShapeColor", part_hole.ViewObject.ShapeColor)
+                part_hole.ViewObject.PointColor = getattr(
+                    view_object, "PointColor", part_hole.ViewObject.PointColor)
+                part_hole.ViewObject.Transparency = getattr(
+                    view_object, "Transparency", part_hole.ViewObject.Transparency)
+                # The following code appears to disable edge highlighting:
+                # part_hole.ViewObject.DisplayMode = getattr(
+                #    view_object, "DisplayMode", part_hole.ViewObject.DisplayMode)
+        elif USE_CAD_QUERY:
+            pass
 
         if tracing:
             print(f"{tracing}<=_Hole({self.Name}).post_produce1()")
@@ -782,10 +785,7 @@ class FabMount(object):
         for operation_name, operation in operations.items():
             if tracing:
                 print(f"{tracing}Operation[{operation_name}]:")
-            if USE_FREECAD:
-                operation.post_produce1(tracing=next_tracing)
-            elif USE_CAD_QUERY:
-                operation.post_produce1(tracing=next_tracing)
+            operation.post_produce1(tracing=next_tracing)
 
         # Install the FabMount (i.e. *self*) and *datum_plane* into *model_file* prior
         # to recursively performing the *operations*:
@@ -1131,7 +1131,9 @@ class FabSolid(FabNode):
                 print(f"{tracing}[{mount_name}]: process")
             mount.post_produce1(tracing=next_tracing)
 
-        if USE_CAD_QUERY:
+        if USE_FREECAD:
+            pass
+        elif USE_CAD_QUERY:
             # CadQuery workplanes do not have a color, but Assemblies do.
             rgb_color: Tuple[float, float, float] = FabColor.svg_to_rgb(self.Color)
             assembly: cq.Assembly = cq.Assembly(
