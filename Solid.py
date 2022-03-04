@@ -922,11 +922,14 @@ class FabMount(object):
         #         hole_groups[key] = []
         #     hole_groups[key].append(hole)
 
-        hole_index: int
-        for hole_index, hole in enumerate(holes):
-            if tracing:
-                print(f"{tracing}Hole[{hole_index}]: record_operation()")
-            self.record_operation(hole)
+        if USE_FREECAD:
+            hole_index: int
+            for hole_index, hole in enumerate(holes):
+                if tracing:
+                    print(f"{tracing}Hole[{hole_index}]: record_operation()")
+                self.record_operation(hole)
+        elif USE_CAD_QUERY:
+            pass
 
         if tracing:
             print(f"{tracing}<=FabMount({self.Name}).drill_joins(|{len(joins)}|")

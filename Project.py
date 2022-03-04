@@ -652,13 +652,10 @@ class Box(FabAssembly):
     def get_all_screws(self) -> Tuple[FabJoin, ...]:
         """Return all Box screws."""
         screws: List[FabJoin] = []
-        if USE_FREECAD:
-            screws.extend(self.Top.Screws)
-            screws.extend(self.Bottom.Screws)
-            screws.extend(self.North.Screws)
-            screws.extend(self.South.Screws)
-        elif USE_CAD_QUERY:
-            pass
+        screws.extend(self.Top.Screws)
+        screws.extend(self.Bottom.Screws)
+        screws.extend(self.North.Screws)
+        screws.extend(self.South.Screws)
         return tuple(screws)
 
 
@@ -804,16 +801,14 @@ class TestProject(FabProject):
         pass
 
 
-def main(key: str = "") -> None:
+def main(key: str = "") -> Any:
     """Run main program."""
     objects_table: Dict[str, Any] = {}
     test_project: TestProject = TestProject.new("TestProject")
     test_project.run(objects_table)
 
     result: Any = 0
-    if USE_FREECAD:
-        pass
-    elif USE_CAD_QUERY:
+    if key:
         if key in objects_table:
             result = objects_table[key]
             if isinstance(result, FabWorkPlane):
