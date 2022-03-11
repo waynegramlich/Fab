@@ -24,7 +24,7 @@
 
 # <--------------------------------------- 100 characters ---------------------------------------> #
 
-# IGNORE!
+# IGNORE!!!
 
 import sys
 sys.path.append(".")
@@ -505,8 +505,7 @@ class BoxSide(FabSolid):
                 edge_normal, random_orient, depth)
             edge_mounts.append(edge_mount)
             edge_index += 1
-        if USE_FREECAD:
-            self.drill_joins("Screws", all_screws)
+        self.drill_joins("Screws", all_screws)
 
         if tracing:
             print(f"{tracing}<=BoxSide({self.Label}).produce()")
@@ -693,15 +692,19 @@ class TestSolid(FabSolid):
         normal: Vector = Vector(0, 0, 1)
         top_mount: FabMount = self.mount(
             "Top", top_origin, self.DT, self.DN, depth, tracing=tracing)
+        wx: float = -40.0
+        ex: float = 40.0
+        ny: float = 20.0
+        sy: float = -60.0
 
         # Perform the first Extrude:
         z_offset: float = top_origin.z
         extrude_fillet_radius: float = 10.0
         extrude_polygon: FabPolygon = FabPolygon((
-            (Vector(-40, -60, z_offset), extrude_fillet_radius),  # SW
-            (Vector(40, -60, z_offset), extrude_fillet_radius),  # SE
-            (Vector(40, 20, z_offset), extrude_fillet_radius),  # NE
-            (Vector(-40, 20, z_offset), extrude_fillet_radius),  # NW
+            (Vector(wx, sy, z_offset), extrude_fillet_radius),  # SW
+            (Vector(ex, sy, z_offset), extrude_fillet_radius),  # SE
+            (Vector(ex, ny, z_offset), extrude_fillet_radius),  # NE
+            (Vector(wx, ny, z_offset), extrude_fillet_radius),  # NW
         ))
         top_mount.extrude("Extrude", extrude_polygon, depth, tracing=next_tracing)
 
@@ -731,9 +734,17 @@ class TestSolid(FabSolid):
 
         screw_start: Vector = Vector(0.0, -10.0, z_offset)
         screw_end: Vector = Vector(0.0, -10.0, z_offset - depth)
-        self.Screw1: FabJoin = FabJoin(f"Screw1", self.Fasten, screw_start, screw_end)
+        self.Screw1: FabJoin = FabJoin("Screw1", self.Fasten, screw_start, screw_end)
 
         top_mount.drill_joins("Screw1", (self.Screw1,), tracing=next_tracing)
+
+        north_start: Vector = self.N
+        north_end: Vector = self.C
+        north_mount: FabMount = self.mount(
+            "North", self.N, self.DN, self.DE, self.YMax - self.YMin, tracing=tracing)
+        self.ScrewN: FabJoin = FabJoin("ScrewN", self.Fasten, north_start, north_end)
+
+        north_mount.drill_joins("ScrewN", (self.ScrewN,), tracing=next_tracing)
 
         if tracing:
             print(f"{tracing}<=TestSolid({self.Label}).produce()")

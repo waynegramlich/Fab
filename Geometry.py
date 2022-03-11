@@ -987,7 +987,7 @@ class FabCircle(FabGeometry):
         new_center: Vector = plane.point_project(center)
         new_circle: "FabCircle" = FabCircle(new_center, plane.Normal, self.Diameter)
         if tracing:
-            print(f"{tracing}<=FabCircle.project_to_plane({plane}) => *")
+            print(f"{tracing}<=FabCircle.project_to_plane({plane}) => {new_circle}")
         return new_circle
 
     # FabCircle.produce():

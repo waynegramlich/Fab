@@ -559,11 +559,14 @@ class _Hole(_Operation):
                 #    view_object, "DisplayMode", part_hole.ViewObject.DisplayMode)
         elif USE_CAD_QUERY:
             if tracing:
-                print(f"{tracing}Hole({self.Name}).post_produce1():")
-                circle = circle.project_to_plane(geometry_context.Plane, tracing=next_tracing)
-                center = circle.Center
-                geometry_context.WorkPlane.move_to(center, tracing=next_tracing)
-                geometry_context.WorkPlane.hole(diameter, depth, tracing=next_tracing)
+                print(f"{tracing}hole={self}:")
+            plane: FabPlane = geometry_context.Plane
+            projected_circle: FabCircle = circle.project_to_plane(plane, tracing=next_tracing)
+            projected_center: Vector = projected_circle.Center
+            rotated_center: Vector = plane.rotate_to_z_axis(projected_center, tracing=next_tracing)
+
+            geometry_context.WorkPlane.move_to(rotated_center, tracing=next_tracing)
+            geometry_context.WorkPlane.hole(diameter, depth, tracing=next_tracing)
 
         if tracing:
             print(f"{tracing}<=_Hole({self.Name}).post_produce1()")

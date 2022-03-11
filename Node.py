@@ -86,7 +86,7 @@ class FabBox(object):
     BoundBox object, but with way more attributes to access various points on the cuboid surface.
 
     The basic attribute nomenclature is based on the compass points North (+Y), South (-Y),
-    East (+X) and West (-X).  Two additional "compass" points call Top (+Z) and Bottom (-Z)
+    East (+X) and West (-X).  Two additional "compass" points called Top (+Z) and Bottom (-Z)
     are introduced as well.
 
     Thus:
