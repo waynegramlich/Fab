@@ -26,7 +26,7 @@ The Join module deals with the following issues:
   Collecting all of the fasteners into a bill of materials.
 * Assembly View:
   When assembly views are supported, all of the fasteners are exploded out with a dashed
-  line to connect them all.
+  line to connect them all.  (Not done implemented.)
 * Fastener WorkBench:
   The FreeCAD Fasteners workbench is used wherever possible.
 

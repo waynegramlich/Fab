@@ -505,7 +505,8 @@ class BoxSide(FabSolid):
                 edge_normal, random_orient, depth)
             edge_mounts.append(edge_mount)
             edge_index += 1
-        self.drill_joins("Screws", all_screws)
+        if USE_FREECAD:
+            self.drill_joins("Screws", all_screws)
 
         if tracing:
             print(f"{tracing}<=BoxSide({self.Label}).produce()")
@@ -664,13 +665,19 @@ class Box(FabAssembly):
 class TestSolid(FabSolid):
     """TestSolid: A test solid to exercise FabSolid code."""
 
+    Fasten: FabFasten = field(init=False, repr=False)
+    Screw1: FabJoin = field(init=False, repr=False)
+
     # TestSolid.__post_init__():
     def __post_init__(self) -> None:
         """Initialize TestSolid."""
         super().__post_init__()
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}<=>TestSolid({self.Label}).__post_init__()")
+            print(f"{tracing}=>TestSolid({self.Label}).__post_init__()")
+        self.Fasten = FabFasten("TestSolidFasten", "M3x.5", ())  # No options yet.
+        if tracing:
+            print(f"{tracing}<=TestSolid({self.Label}).__post_init__()")
 
     # TestSolid.produce()
     def produce(self) -> None:
@@ -721,6 +728,12 @@ class TestSolid(FabSolid):
 
         center_circle: FabCircle = FabCircle(Vector(0, 0, z_offset), normal, 10)
         top_mount.pocket("CenterCircle", center_circle, depth2)
+
+        screw_start: Vector = Vector(0.0, -10.0, z_offset)
+        screw_end: Vector = Vector(0.0, -10.0, z_offset - depth)
+        self.Screw1: FabJoin = FabJoin(f"Screw1", self.Fasten, screw_start, screw_end)
+
+        top_mount.drill_joins("Screw1", (self.Screw1,), tracing=next_tracing)
 
         if tracing:
             print(f"{tracing}<=TestSolid({self.Label}).produce()")

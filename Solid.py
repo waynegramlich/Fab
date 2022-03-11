@@ -474,21 +474,26 @@ class _Hole(_Operation):
 
         # Unpack *mount* and *solid*:
         mount_normal: Vector = mount.Normal
-        geometry_context: FabGeometryContext = mount._GeometryContext
-        solid: FabSolid = mount.Solid
-        body: Any = solid.Body
-        geometry_group: Any = solid._GeometryGroup
-        # assert isinstance(geometry_group, Any), geometry_group
-        geometry_context.set_geometry_group(geometry_group)
-
         fasten: FabFasten = join.Fasten
         diameter: Vector = fasten.get_diameter(kind)
+        circle: FabCircle = FabCircle(center, mount_normal, diameter)
+
+        geometry_context: FabGeometryContext = mount._GeometryContext
         geometry_prefix: str = name
 
-        circle: FabCircle = FabCircle(center, mount_normal, diameter)
-        part_geometries: List[Any] = []
-        part_geometries.extend(circle.produce(
-            geometry_context, geometry_prefix, 0, tracing=next_tracing))
+        solid: FabSolid = mount.Solid
+        if USE_FREECAD:
+            body: Any = solid.Body
+            geometry_group: Any = solid._GeometryGroup
+            # assert isinstance(geometry_group, Any), geometry_group
+            geometry_context.set_geometry_group(geometry_group)
+
+            # TODO: Move *part_geometries* to into *USE_FREECAD*:
+            part_geometries: List[Any] = []
+            part_geometries.extend(circle.produce(
+                geometry_context, geometry_prefix, 0, tracing=next_tracing))
+        elif USE_CAD_QUERY:
+            pass
 
         # Sweep through *hole_groups* generating *part_geometries*:
         # group_index: int
@@ -553,7 +558,12 @@ class _Hole(_Operation):
                 # part_hole.ViewObject.DisplayMode = getattr(
                 #    view_object, "DisplayMode", part_hole.ViewObject.DisplayMode)
         elif USE_CAD_QUERY:
-            pass
+            if tracing:
+                print(f"{tracing}Hole({self.Name}).post_produce1():")
+                circle = circle.project_to_plane(geometry_context.Plane, tracing=next_tracing)
+                center = circle.Center
+                geometry_context.WorkPlane.move_to(center, tracing=next_tracing)
+                geometry_context.WorkPlane.hole(diameter, depth, tracing=next_tracing)
 
         if tracing:
             print(f"{tracing}<=_Hole({self.Name}).post_produce1()")
@@ -908,9 +918,11 @@ class FabMount(object):
                     assert trimmed_depth > 0.0, trimmed_depth
                     # unique: int = -1 if mount_z_aligned else join_index
                     unique: int = join_index
-                    hole_name: str = f"{joins_name}{join_index}"
+                    hole_name: str = f"{joins_name}_{join_index}"
                     hole: _Hole = _Hole(self, fasten.ThreadName, kind, trimmed_depth, is_top,
                                         unique, mount_start, join, hole_name)
+                    if tracing:
+                        print(f"{tracing}Append {hole=}")
                     holes.append(hole)
 
         # Group *holes* into *hole_groups* that can be done with one PartDesign hole:
@@ -922,14 +934,11 @@ class FabMount(object):
         #         hole_groups[key] = []
         #     hole_groups[key].append(hole)
 
-        if USE_FREECAD:
-            hole_index: int
-            for hole_index, hole in enumerate(holes):
-                if tracing:
-                    print(f"{tracing}Hole[{hole_index}]: record_operation()")
-                self.record_operation(hole)
-        elif USE_CAD_QUERY:
-            pass
+        hole_index: int
+        for hole_index, hole in enumerate(holes):
+            if tracing:
+                print(f"{tracing}Hole[{hole_index}]: record_operation({hole})")
+            self.record_operation(hole)
 
         if tracing:
             print(f"{tracing}<=FabMount({self.Name}).drill_joins(|{len(joins)}|")

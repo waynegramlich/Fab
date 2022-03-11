@@ -40,11 +40,12 @@
 <li>6.3 <a href="#geometry----copy-workplane">copy_workplane()</a>: Create a new CadQuery workplane and push it onto the stack.</li>
 <li>6.4 <a href="#geometry----cut-blind">cut_blind()</a>: Use the current 2D object to cut a pocket to a known depth.</li>
 <li>6.5 <a href="#geometry----extrude">extrude()</a>: Extrude current 2D object to a known depth.</li>
-<li>6.6 <a href="#geometry----line-to">line_to()</a>: Draw a line to a point.</li>
-<li>6.7 <a href="#geometry----move-to">move_to()</a>: Draw a line to a point.</li>
-<li>6.8 <a href="#geometry----show">show()</a>: Print a detailed dump of a FabWorkPlane.</li>
-<li>6.9 <a href="#geometry----subtract">subtract()</a>: Subtract one solid form a FabWorkPlane.</li>
-<li>6.10 <a href="#geometry----three-point-arc">three_point_arc()</a>: Draw a three point arc.</li>
+<li>6.6 <a href="#geometry----hole">hole()</a>: Drill a hole.</li>
+<li>6.7 <a href="#geometry----line-to">line_to()</a>: Draw a line to a point.</li>
+<li>6.8 <a href="#geometry----move-to">move_to()</a>: Draw a line to a point.</li>
+<li>6.9 <a href="#geometry----show">show()</a>: Print a detailed dump of a FabWorkPlane.</li>
+<li>6.10 <a href="#geometry----subtract">subtract()</a>: Subtract one solid form a FabWorkPlane.</li>
+<li>6.11 <a href="#geometry----three-point-arc">three_point_arc()</a>: Draw a three point arc.</li>
 </ul>
 </li>
 </ul>
@@ -182,18 +183,21 @@ CadQuery Operations are added as needed.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.5 <code>FabWorkPlane.</code>extrude():</h3>
 <p>FabWorkPlane.extrude(self, depth: float, tracing: str = '') -&gt; None:</p>
 <p>Extrude current 2D object to a known depth.</p>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.6 <code>FabWorkPlane.</code>line_to():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.6 <code>FabWorkPlane.</code>hole():</h3>
+<p>FabWorkPlane.hole(self, diameter: float, depth: float, tracing: str = '') -&gt; None:</p>
+<p>Drill a hole.</p>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.7 <code>FabWorkPlane.</code>line_to():</h3>
 <p>FabWorkPlane.line_to(self, end: Base.Vector, for_construction=False, tracing: str = '') -&gt; None:</p>
 <p>Draw a line to a point.</p>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.7 <code>FabWorkPlane.</code>move_to():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.8 <code>FabWorkPlane.</code>move_to():</h3>
 <p>FabWorkPlane.move_to(self, point: Base.Vector, tracing: str = '') -&gt; None:</p>
 <p>Draw a line to a point.</p>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.8 <code>FabWorkPlane.</code>show():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.9 <code>FabWorkPlane.</code>show():</h3>
 <p>FabWorkPlane.show(self, label: str, tracing: str = '') -&gt; None:</p>
 <p>Print a detailed dump of a FabWorkPlane.</p>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.9 <code>FabWorkPlane.</code>subtract():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.10 <code>FabWorkPlane.</code>subtract():</h3>
 <p>FabWorkPlane.subtract(self, remove_solid: 'FabWorkPlane', tracing: str = '') -&gt; None:</p>
 <p>Subtract one solid form a FabWorkPlane.</p>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.10 <code>FabWorkPlane.</code>three_point_arc():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.11 <code>FabWorkPlane.</code>three_point_arc():</h3>
 <p>FabWorkPlane.three_point_arc(self, middle: Base.Vector, end: Base.Vector, for_construction: bool = False, tracing: str = '') -&gt; None:</p>
 <p>Draw a three point arc.</p>

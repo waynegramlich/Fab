@@ -149,12 +149,15 @@ class FabPlane(object):
     # FabPlane.point_project():
     def point_project(self, point: Vector) -> Vector:
         """Project a point onto a plane."""
+        assert isinstance(point, Vector), point
         projected_point: Vector = cast(Vector, None)
         if USE_FREECAD:
             copy: Vector = self._Copy
             projected_point = ((point + copy).projectToPlane(self._Contact, self._Normal) + copy)
-        if USE_CAD_QUERY:
-            projected_point = point.projectToPlane(self._Plane)
+        elif USE_CAD_QUERY:
+            plane: Any = self._Plane
+            assert isinstance(plane, cq.Plane)
+            projected_point = point.projectToPlane(plane)
         return projected_point
 
     # FabPlane.Contact():
@@ -980,7 +983,8 @@ class FabCircle(FabGeometry):
         """
         if tracing:
             print(f"{tracing}=>FabCircle.project_to_plane({plane})")
-        new_center: Vector = plane.point_project(plane)
+        center: Vector = self.Center
+        new_center: Vector = plane.point_project(center)
         new_circle: "FabCircle" = FabCircle(new_center, plane.Normal, self.Diameter)
         if tracing:
             print(f"{tracing}<=FabCircle.project_to_plane({plane}) => *")
@@ -1413,6 +1417,19 @@ class FabWorkPlane(object):
                 cast(cq.Workplane, self._WorkPlane)
                 .extrude(-depth)
             )
+
+    # FabWorkPlane.hole():
+    def hole(self, diameter: float, depth: float, tracing: str = "") -> None:
+        """Drill a hole."""
+        if USE_CAD_QUERY:
+            if tracing:
+                print(f"{tracing}=>FabWorkPlane.hole({diameter}, {depth})")
+            self._WorkPlane = (
+                cast(cq.Workplane, self._WorkPlane)
+                .hole(diameter=diameter, depth=depth)
+            )
+            if tracing:
+                print(f"{tracing}<=FabWorkPlane.hole({diameter}, {depth})")
 
     # FabWorkPlane.line_to():
     def line_to(self, end: Vector, for_construction=False, tracing: str = "") -> None:
