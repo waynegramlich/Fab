@@ -85,7 +85,7 @@ Builds a box given a length, width, height, material, thickness and center point
 <p>Box.produce(self) -&gt; None:</p>
 <p>Produce the Box.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->1.2 <code>Box.</code>get_all_screws():</h3>
-<p>Box.get_all_screws(self) -&gt; typing.Tuple[Join.FabJoin, ...]:</p>
+<p>Box.get_all_screws(self) -&gt; Tuple[Join.FabJoin, ...]:</p>
 <p>Return all Box screws.</p>
 <h2><!-- raw HTML omitted --><!-- raw HTML omitted -->2 Class BoxSide:</h2>
 <p>A Box side.
@@ -114,10 +114,10 @@ Inherited Constructor Attributes:</p>
 <p>FabAssembly.is_assembly(self) -&gt; bool:</p>
 <p>Return True if FabNode is a FabGroup.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->3.2 <code>FabAssembly.</code>post_produce1():</h3>
-<p>FabAssembly.post_produce1(self, objects_table: typing.Dict[str, typing.Any]) -&gt; None:</p>
+<p>FabAssembly.post_produce1(self, objects_table: Dict[str, Any]) -&gt; None:</p>
 <p>Preform FabAssembly phase1 post production.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->3.3 <code>FabAssembly.</code>post_produce2():</h3>
-<p>FabAssembly.post_produce2(self, objects_table: typing.Dict[str, typing.Any]) -&gt; None:</p>
+<p>FabAssembly.post_produce2(self, objects_table: Dict[str, Any]) -&gt; None:</p>
 <p>Perform FabAssembly phase 2 post production.</p>
 <h2><!-- raw HTML omitted --><!-- raw HTML omitted -->4 Class FabDocument:</h2>
 <p>Represents a FreeCAD document Document.
@@ -134,10 +134,10 @@ The children nodes which are constrained to &quot;group-like&quot; or a FabSolid
 The Python pathlib.Path file name which must have a suffix of <code>.fcstd</code> or <code>.FCStd</code>.</li>
 </ul>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->4.1 <code>FabDocument.</code>post_produce1():</h3>
-<p>FabDocument.post_produce1(self, objects_table: typing.Dict[str, typing.Any]) -&gt; None:</p>
+<p>FabDocument.post_produce1(self, objects_table: Dict[str, Any]) -&gt; None:</p>
 <p>Perform FabDocument phase 1 post production.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->4.2 <code>FabDocument.</code>post_produce2():</h3>
-<p>FabDocument.post_produce2(self, objects_table: typing.Dict[str, typing.Any]) -&gt; None:</p>
+<p>FabDocument.post_produce2(self, objects_table: Dict[str, Any]) -&gt; None:</p>
 <p>Close the FabDocument.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->4.3 <code>FabDocument.</code>is_document():</h3>
 <p>FabDocument.is_document(self) -&gt; bool:</p>
@@ -154,7 +154,7 @@ Inherited Attributes:</p>
 <li><em>Children</em> (Tuple[FabNode, ...)</li>
 </ul>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->5.1 <code>FabGroup.</code>post_produce1():</h3>
-<p>FabGroup.post_produce1(self, objects_table: typing.Dict[str, typing.Any]) -&gt; None:</p>
+<p>FabGroup.post_produce1(self, objects_table: Dict[str, Any]) -&gt; None:</p>
 <p>Perform FabGroup phase 1 post production.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->5.2 <code>FabGroup.</code>produce():</h3>
 <p>FabGroup.produce(self) -&gt; None:</p>
@@ -165,13 +165,13 @@ Inherited Attributes:</p>
 <h2><!-- raw HTML omitted --><!-- raw HTML omitted -->6 Class FabProject:</h2>
 <p>The Root mode a FabNode tree.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.1 <code>FabProject.</code>get_errors():</h3>
-<p>FabProject.get_errors(self) -&gt; typing.List[str]:</p>
+<p>FabProject.get_errors(self) -&gt; List[str]:</p>
 <p>Return the FabProject errors list.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.2 <code>FabProject.</code>is_project():</h3>
 <p>FabProject.is_project(self) -&gt; bool:</p>
 <p>Return True if FabNode is a FabGroup.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.3 <code>FabProject.</code>run():</h3>
-<p>FabProject.run(self, objects_table: typing.Dict[str, typing.Any] = {}) -&gt; None:</p>
+<p>FabProject.run(self, objects_table: Dict[str, Any] = {}) -&gt; None:</p>
 <p>NO DOC STRING!</p>
 <h2><!-- raw HTML omitted --><!-- raw HTML omitted -->7 Class TestAssembly:</h2>
 <p>A Class to test an assembly.</p>

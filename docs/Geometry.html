@@ -3,15 +3,17 @@
 <ul>
 <li>1 Class: <a href="#geometry--fabcircle">FabCircle</a>:
 <ul>
-<li>1.1 <a href="#geometry----project-to-plane">project_to_plane()</a>: Return a new FabCircle projected onto a plane.</li>
-<li>1.2 <a href="#geometry----produce">produce()</a>: Produce the FreeCAD objects needed for FabPolygon.</li>
-<li>1.3 <a href="#geometry----get-geometries">get_geometries()</a>: Return the FabPolygon lines and arcs.</li>
+<li>1.1 <a href="#geometry----get-hash">get_hash()</a>: Feturn FabCircle hash.</li>
+<li>1.2 <a href="#geometry----project-to-plane">project_to_plane()</a>: Return a new FabCircle projected onto a plane.</li>
+<li>1.3 <a href="#geometry----produce">produce()</a>: Produce the FreeCAD objects needed for FabPolygon.</li>
+<li>1.4 <a href="#geometry----get-geometries">get_geometries()</a>: Return the FabPolygon lines and arcs.</li>
 </ul>
 </li>
 <li>2 Class: <a href="#geometry--fabgeometry">FabGeometry</a>:
 <ul>
-<li>2.1 <a href="#geometry----produce">produce()</a>: Produce the necessary FreeCAD objects for the FabGeometry.</li>
-<li>2.2 <a href="#geometry----project-to-plane">project_to_plane()</a>: Return a new FabGeometry projected onto a plane.</li>
+<li>2.1 <a href="#geometry----get-hash">get_hash()</a>: Return FabGeometry hash.</li>
+<li>2.2 <a href="#geometry----produce">produce()</a>: Produce the necessary FreeCAD objects for the FabGeometry.</li>
+<li>2.3 <a href="#geometry----project-to-plane">project_to_plane()</a>: Return a new FabGeometry projected onto a plane.</li>
 </ul>
 </li>
 <li>3 Class: <a href="#geometry--fabgeometrycontext">FabGeometryContext</a>:
@@ -28,9 +30,10 @@
 </li>
 <li>5 Class: <a href="#geometry--fabpolygon">FabPolygon</a>:
 <ul>
-<li>5.1 <a href="#geometry----project-to-plane">project_to_plane()</a>: Return nre FabPolygon prejected onto a plane.</li>
-<li>5.2 <a href="#geometry----get-geometries">get_geometries()</a>: Return the FabPolygon lines and arcs.</li>
-<li>5.3 <a href="#geometry----produce">produce()</a>: Produce the FreeCAD objects needed for FabPolygon.</li>
+<li>5.1 <a href="#geometry----get-hash">get_hash()</a>: Return the FabPolygon Hash.</li>
+<li>5.2 <a href="#geometry----project-to-plane">project_to_plane()</a>: Return nre FabPolygon prejected onto a plane.</li>
+<li>5.3 <a href="#geometry----get-geometries">get_geometries()</a>: Return the FabPolygon lines and arcs.</li>
+<li>5.4 <a href="#geometry----produce">produce()</a>: Produce the FreeCAD objects needed for FabPolygon.</li>
 </ul>
 </li>
 <li>6 Class: <a href="#geometry--fabworkplane">FabWorkPlane</a>:
@@ -59,7 +62,10 @@ circle later on.</p>
 <li><em>Normal</em> (Vector): The normal to circle plane.</li>
 <li><em>Diameter</em> (float): The diameter in millimeters.</li>
 </ul>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->1.1 <code>FabCircle.</code>project_to_plane():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->1.1 <code>FabCircle.</code>get_hash():</h3>
+<p>FabCircle.get_hash(self) -&gt; int:</p>
+<p>Feturn FabCircle hash.</p>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->1.2 <code>FabCircle.</code>project_to_plane():</h3>
 <p>FabCircle.project_to_plane(self, plane: Geometry.FabPlane, tracing: str = '') -&gt; 'FabCircle':</p>
 <p>Return a new FabCircle projected onto a plane.
 Arguments:</p>
@@ -70,18 +76,21 @@ Arguments:</p>
 <ul>
 <li>(FabCircle): The newly projected FabCicle.</li>
 </ul>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->1.2 <code>FabCircle.</code>produce():</h3>
-<p>FabCircle.produce(self, geometry_context: Geometry.FabGeometryContext, prefix: str, index: int, tracing: str = '') -&gt; typing.Tuple[typing.Any, ...]:</p>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->1.3 <code>FabCircle.</code>produce():</h3>
+<p>FabCircle.produce(self, geometry_context: Geometry.FabGeometryContext, prefix: str, index: int, tracing: str = '') -&gt; Tuple[Any, ...]:</p>
 <p>Produce the FreeCAD objects needed for FabPolygon.</p>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->1.3 <code>FabCircle.</code>get_geometries():</h3>
-<p>FabCircle.get_geometries(self) -&gt; typing.Tuple[Geometry._Geometry, ...]:</p>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->1.4 <code>FabCircle.</code>get_geometries():</h3>
+<p>FabCircle.get_geometries(self) -&gt; Tuple[Geometry._Geometry, ...]:</p>
 <p>Return the FabPolygon lines and arcs.</p>
 <h2><!-- raw HTML omitted --><!-- raw HTML omitted -->2 Class FabGeometry:</h2>
 <p>The base class for FabPolygon and FabCircle.</p>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.1 <code>FabGeometry.</code>produce():</h3>
-<p>FabGeometry.produce(self, geometry_context: Geometry.FabGeometryContext, prefix: str, index: int, tracing: str = '') -&gt; typing.Tuple[typing.Any, ...]:</p>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.1 <code>FabGeometry.</code>get_hash():</h3>
+<p>FabGeometry.get_hash(self) -&gt; int:</p>
+<p>Return FabGeometry hash.</p>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.2 <code>FabGeometry.</code>produce():</h3>
+<p>FabGeometry.produce(self, geometry_context: Geometry.FabGeometryContext, prefix: str, index: int, tracing: str = '') -&gt; Tuple[Any, ...]:</p>
 <p>Produce the necessary FreeCAD objects for the FabGeometry.</p>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.2 <code>FabGeometry.</code>project_to_plane():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.3 <code>FabGeometry.</code>project_to_plane():</h3>
 <p>FabGeometry.project_to_plane(self, plane: Geometry.FabPlane) -&gt; 'FabGeometry':</p>
 <p>Return a new FabGeometry projected onto a plane.</p>
 <h2><!-- raw HTML omitted --><!-- raw HTML omitted -->3 Class FabGeometryContext:</h2>
@@ -98,7 +107,7 @@ This field needs to be set prior to use with set_geometry_group() method.</li>
 <p>FabGeometryContext.copy(self, tracing: str = '') -&gt; 'FabGeometryContext':</p>
 <p>Return a FabGeometryContext copy.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->3.2 <code>FabGeometryContext.</code>set_geometry_group():</h3>
-<p>FabGeometryContext.set_geometry_group(self, geometry_group: typing.Any) -&gt; None:</p>
+<p>FabGeometryContext.set_geometry_group(self, geometry_group: Any) -&gt; None:</p>
 <p>Set the GeometryContext geometry group.</p>
 <h2><!-- raw HTML omitted --><!-- raw HTML omitted -->4 Class FabPlane:</h2>
 <p>A Plane class.</p>
@@ -107,10 +116,10 @@ This field needs to be set prior to use with set_geometry_group() method.</li>
 <li><em>Normal</em> (Vector): The normal to the plane.</li>
 </ul>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->4.1 <code>FabPlane.</code>point_project():</h3>
-<p>FabPlane.point_project(self, point: Base.Vector) -&gt; Base.Vector:</p>
+<p>FabPlane.point_project(self, point: cadquery.occ_impl.geom.Vector) -&gt; cadquery.occ_impl.geom.Vector:</p>
 <p>Project a point onto a plane.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->4.2 <code>FabPlane.</code>rotate_to_z_axis():</h3>
-<p>FabPlane.rotate_to_z_axis(self, point: Base.Vector, reversed: bool = False, tracing: str = '') -&gt; Base.Vector:</p>
+<p>FabPlane.rotate_to_z_axis(self, point: cadquery.occ_impl.geom.Vector, reversed: bool = False, tracing: str = '') -&gt; cadquery.occ_impl.geom.Vector:</p>
 <p>Rotate a point around the origin until the normal aligns with the +Z axis.
 Arguments:</p>
 <ul>
@@ -142,7 +151,10 @@ Vector(10, -10, 0),  # Lower right (no radius)
 <li><em>Corners</em> (Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]):
 See description below for more on corners.</li>
 </ul>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->5.1 <code>FabPolygon.</code>project_to_plane():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->5.1 <code>FabPolygon.</code>get_hash():</h3>
+<p>FabPolygon.get_hash(self) -&gt; int:</p>
+<p>Return the FabPolygon Hash.</p>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->5.2 <code>FabPolygon.</code>project_to_plane():</h3>
 <p>FabPolygon.project_to_plane(self, plane: Geometry.FabPlane, tracing: str = '') -&gt; 'FabPolygon':</p>
 <p>Return nre FabPolygon prejected onto a plane.
 Arguments:</p>
@@ -153,11 +165,11 @@ Arguments:</p>
 <ul>
 <li>(FabPolyGon): The newly projected FabPolygon.</li>
 </ul>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->5.2 <code>FabPolygon.</code>get_geometries():</h3>
-<p>FabPolygon.get_geometries(self, contact: Base.Vector, Normal: Base.Vector) -&gt; typing.Tuple[Geometry._Geometry, ...]:</p>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->5.3 <code>FabPolygon.</code>get_geometries():</h3>
+<p>FabPolygon.get_geometries(self, contact: cadquery.occ_impl.geom.Vector, Normal: cadquery.occ_impl.geom.Vector) -&gt; Tuple[Geometry._Geometry, ...]:</p>
 <p>Return the FabPolygon lines and arcs.</p>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->5.3 <code>FabPolygon.</code>produce():</h3>
-<p>FabPolygon.produce(self, geometry_context: Geometry.FabGeometryContext, prefix: str, index: int, tracing: str = '') -&gt; typing.Tuple[typing.Any, ...]:</p>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->5.4 <code>FabPolygon.</code>produce():</h3>
+<p>FabPolygon.produce(self, geometry_context: Geometry.FabGeometryContext, prefix: str, index: int, tracing: str = '') -&gt; Tuple[Any, ...]:</p>
 <p>Produce the FreeCAD objects needed for FabPolygon.</p>
 <h2><!-- raw HTML omitted --><!-- raw HTML omitted -->6 Class FabWorkPlane:</h2>
 <p>A CadQuery Workplane wrapper.
@@ -169,7 +181,7 @@ CadQuery Operations are added as needed.</p>
 <li>*WorkPlane: (cadquery.Workplane): The resulting CadQuery Workplane object.</li>
 </ul>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.1 <code>FabWorkPlane.</code>circle():</h3>
-<p>FabWorkPlane.circle(self, center: Base.Vector, radius: float, for_construction=False, tracing: str = '') -&gt; None:</p>
+<p>FabWorkPlane.circle(self, center: cadquery.occ_impl.geom.Vector, radius: float, for_construction=False, tracing: str = '') -&gt; None:</p>
 <p>Draw a circle to a point.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.2 <code>FabWorkPlane.</code>close():</h3>
 <p>FabWorkPlane.close(self, tracing: str = '') -&gt; None:</p>
@@ -187,10 +199,10 @@ CadQuery Operations are added as needed.</p>
 <p>FabWorkPlane.hole(self, diameter: float, depth: float, tracing: str = '') -&gt; None:</p>
 <p>Drill a hole.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.7 <code>FabWorkPlane.</code>line_to():</h3>
-<p>FabWorkPlane.line_to(self, end: Base.Vector, for_construction=False, tracing: str = '') -&gt; None:</p>
+<p>FabWorkPlane.line_to(self, end: cadquery.occ_impl.geom.Vector, for_construction=False, tracing: str = '') -&gt; None:</p>
 <p>Draw a line to a point.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.8 <code>FabWorkPlane.</code>move_to():</h3>
-<p>FabWorkPlane.move_to(self, point: Base.Vector, tracing: str = '') -&gt; None:</p>
+<p>FabWorkPlane.move_to(self, point: cadquery.occ_impl.geom.Vector, tracing: str = '') -&gt; None:</p>
 <p>Draw a line to a point.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.9 <code>FabWorkPlane.</code>show():</h3>
 <p>FabWorkPlane.show(self, label: str, tracing: str = '') -&gt; None:</p>
@@ -199,5 +211,5 @@ CadQuery Operations are added as needed.</p>
 <p>FabWorkPlane.subtract(self, remove_solid: 'FabWorkPlane', tracing: str = '') -&gt; None:</p>
 <p>Subtract one solid form a FabWorkPlane.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.11 <code>FabWorkPlane.</code>three_point_arc():</h3>
-<p>FabWorkPlane.three_point_arc(self, middle: Base.Vector, end: Base.Vector, for_construction: bool = False, tracing: str = '') -&gt; None:</p>
+<p>FabWorkPlane.three_point_arc(self, middle: cadquery.occ_impl.geom.Vector, end: cadquery.occ_impl.geom.Vector, for_construction: bool = False, tracing: str = '') -&gt; None:</p>
 <p>Draw a three point arc.</p>

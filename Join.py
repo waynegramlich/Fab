@@ -704,6 +704,7 @@ class FabOption(object):
         FabCheck("Detail", ("+", str)),
     )
 
+    # FabOption.__post_init__():
     def __post_init__(self) -> None:
         """Ensure values are reasonable."""
         arguments = (self.Name, self.Detail)
@@ -711,6 +712,12 @@ class FabOption(object):
         if value_error:
             raise ValueError(value_error)
 
+    # FabOption.get_hash():
+    def get_hash(self) -> int:
+        """Return FabOption hash."""
+        raise RuntimeError(f"get_hash() is not implemented for {type(self)}")
+
+    # FabOption._unit_tests():
     @staticmethod
     def _unit_tests() -> None:
         """Run FabOption unit tests."""
@@ -1409,6 +1416,15 @@ class FabFasten:
             if not isinstance(option, FabOption):
                 raise ValueError(f"{option} is not an FabOption")
 
+    # FabFasten.get_hash():
+    def get_hash(self) -> int:
+        """Return FabFasten hash."""
+        hashes: List[int] = [hash(self.Name), hash(self.ThreadName)]
+        option: FabOption
+        for option in self.Options:
+            hashes.append(option.get_hash())
+        return hash(tuple(hashes))
+
     # FabFasten.get_diameter():
     def get_diameter(self, kind: str) -> float:
         """Return actual diameter based on request hole kind."""
@@ -1474,6 +1490,24 @@ class FabJoin(object):
         FabCheck("End", (Vector,)),
     )
 
+    # FabJoin.get_hash():
+    def get_hash(self) -> int:
+        """Return FabJoin hash."""
+        start: Vector = self._Start
+        end: Vector = self._End
+        values: Tuple[int, ...] = (
+            hash(self._Name),
+            self._Fasten.get_hash(),
+            hash(start.x),
+            hash(start.y),
+            hash(start.z),
+            hash(end.x),
+            hash(end.y),
+            hash(end.z),
+        )
+        return hash(values)
+
+    # FabJoin.__post_init__():
     def __post_init__(self) -> None:
         """Initialize a single FabJoin."""
         # Make private copies of everything.

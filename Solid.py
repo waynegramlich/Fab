@@ -108,8 +108,13 @@ class _Operation(object):
 
     # _Operation.get_name():
     def get_name(self) -> str:
-        """Return FabOperation name."""
-        raise RuntimeError("_Operation().get_name() not implemented for {type(self)}")
+        """Return _Operation name."""
+        raise RuntimeError(f"_Operation().get_name() not implemented for {type(self)}")
+
+    # _Operation.get_hash():
+    def get_hash(self) -> int:
+        """Return _Operation hash."""
+        raise RuntimeError(f"_Operation().get_hash() not implemented for {type(self)}")
 
     # _Operation.Mount():
     @property
@@ -240,6 +245,18 @@ class _Extrude(_Operation):
         """Return _Extrude name."""
         return self._Name
 
+    # _Extrude.get_hash():
+    def get_hash(self) -> int:
+        """Return hash for _Extrude operation."""
+        hashes: List[int] = [hash(self._Name), hash(self._Depth)]
+        geometries: Union[FabGeometry, Tuple[FabGeometry, ...]] = self._Geometry
+        if isinstance(geometries, FabGeometry):
+            geometries = (geometries,)
+        geometry: FabGeometry
+        for geometry in geometries:
+            hashes.append(geometry.get_hash())
+        return hash(tuple(hashes))
+
     # _Extrude.post_produce1():
     def post_produce1(self, tracing: str = "") -> None:
         """Produce the Extrude."""
@@ -356,6 +373,15 @@ class _Pocket(_Operation):
         """Return the original Depth."""
         return self._Depth
 
+    # _Pocket.get_hash():
+    def get_hash(self) -> int:
+        """Return _Pocket hash."""
+        hashes: List[int] = [hash(self._Name), hash(self._Depth)]
+        geometry: FabGeometry
+        for geometry in self._Geometries:
+            hashes.append(geometry.get_hash())
+        return hash(tuple(hashes))
+
     # _Pocket.get_name():
     def get_name(self) -> str:
         """Return _Pocket name."""
@@ -452,6 +478,24 @@ class _Hole(_Operation):
     def get_name(self) -> str:
         """Return _Hole name."""
         return self._Name
+
+    # _Hole.get_hash():
+    def get_hash(self) -> int:
+        """Return _Hole hash."""
+        center: Vector = self.Center
+        hashes: Tuple[int, ...] = (
+            hash(self.ThreadName),
+            hash(self.Kind),
+            hash(self.Depth),
+            hash(self.IsTop),
+            hash(self.Unique),
+            hash(center.x),
+            hash(center.y),
+            hash(center.z),
+            self.Join.get_hash(),
+            hash(self._Name),
+        )
+        return hash(hashes)
 
     # _Hole.post_produce1():
     def post_produce1(self, tracing: str = "") -> None:
@@ -692,6 +736,24 @@ class FabMount(object):
     def Depth(self) -> float:
         """Return the depth."""
         return self._Depth
+
+    # FabMount.get_hash():
+    def get_hash(self) -> int:
+        """Return a has the current contents of a FabMount."""
+        hashes: List[int] = [
+            hash(self._Name),
+            hash(self._Contact.x),
+            hash(self._Contact.y),
+            hash(self._Contact.z),
+            hash(self._Normal.x),
+            hash(self._Normal.y),
+            hash(self._Normal.z),
+            hash(self._Depth),
+        ]
+        operation: _Operation
+        for operation in self._Operations.values():
+            hashes.append(operation.get_hash())
+        return hash(tuple(hashes))
 
     # FabMount.record_operation():
     def record_operation(self, operation: _Operation) -> None:
@@ -1022,6 +1084,15 @@ class FabSolid(FabNode):
             print(f"{tracing}{len(self._Mounts)=}")
             print(f"{tracing}<=FabSolid({self.Label}).pre_produce()")
 
+    # FabSolid.get_hash():
+    def get_hash(self) -> int:
+        """Return FabSolid hash."""
+        hashes: List[int] = [hash(self.Material), hash(self.Color)]
+        mount: FabMount
+        for mount in self._Mounts.values():
+            hashes.append(mount.get_hash())
+        return hash(tuple(hashes))
+
     # FabSolid.mount():
     def mount(self, name: str, contact: Vector, normal: Vector, orient: Vector,
               depth: float, tracing: str = "") -> FabMount:
@@ -1151,6 +1222,10 @@ class FabSolid(FabNode):
         elif USE_CAD_QUERY:
             # CadQuery workplanes do not have a color, but Assemblies do.
             rgb_color: Tuple[float, float, float] = FabColor.svg_to_rgb(self.Color)
+            # TODO: move this code into FabWorkPlane:
+
+            hash: int = self.get_hash()
+            _ = hash
             assembly: cq.Assembly = cq.Assembly(
                 self._WorkPlane.WorkPlane, name=self.Label, color=cq.Color(*rgb_color))
             # objects_table[self.Label] = self._WorkPlane

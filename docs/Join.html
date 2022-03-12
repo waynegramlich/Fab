@@ -59,18 +59,24 @@ hardware.</p>
 <li>2 Class: <a href="#join--fabdrilltap">FabDrillTap</a>:</li>
 <li>3 Class: <a href="#join--fabfasten">FabFasten</a>:
 <ul>
-<li>3.1 <a href="#join----get-diameter">get_diameter()</a>: Return actual diameter based on request hole kind.</li>
+<li>3.1 <a href="#join----get-hash">get_hash()</a>: Return FabFasten hash.</li>
+<li>3.2 <a href="#join----get-diameter">get_diameter()</a>: Return actual diameter based on request hole kind.</li>
 </ul>
 </li>
 <li>4 Class: <a href="#join--fabfastentables">FabFastenTables</a>:</li>
 <li>5 Class: <a href="#join--fabhead">FabHead</a>:</li>
 <li>6 Class: <a href="#join--fabjoin">FabJoin</a>:
 <ul>
-<li>6.1 <a href="#join----normal-aligned">normal_aligned()</a>: Return whether the normal is aligned with the FabJoin.</li>
+<li>6.1 <a href="#join----get-hash">get_hash()</a>: Return FabJoin hash.</li>
+<li>6.2 <a href="#join----normal-aligned">normal_aligned()</a>: Return whether the normal is aligned with the FabJoin.</li>
 </ul>
 </li>
 <li>7 Class: <a href="#join--fabnut">FabNut</a>:</li>
-<li>8 Class: <a href="#join--faboption">FabOption</a>:</li>
+<li>8 Class: <a href="#join--faboption">FabOption</a>:
+<ul>
+<li>8.1 <a href="#join----get-hash">get_hash()</a>: Return FabOption hash.</li>
+</ul>
+</li>
 <li>9 Class: <a href="#join--fabwasher">FabWasher</a>:</li>
 </ul>
 <h2><!-- raw HTML omitted --><!-- raw HTML omitted -->1 Class FabDrillChoice:</h2>
@@ -103,7 +109,10 @@ Attributes:</p>
 <li>ThreadName (str): A thread selection (e.g. &quot;M3x.5&quot;, &quot;#4-40&quot;, &quot;1/4-20&quot;)</li>
 <li>Options (Tuple[FabOption, ...]): Various Head/Tail options for fastener stack</li>
 </ul>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->3.1 <code>FabFasten.</code>get_diameter():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->3.1 <code>FabFasten.</code>get_hash():</h3>
+<p>FabFasten.get_hash(self) -&gt; int:</p>
+<p>Return FabFasten hash.</p>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->3.2 <code>FabFasten.</code>get_diameter():</h3>
 <p>FabFasten.get_diameter(self, kind: str) -&gt; float:</p>
 <p>Return actual diameter based on request hole kind.</p>
 <h2><!-- raw HTML omitted --><!-- raw HTML omitted -->4 Class FabFastenTables:</h2>
@@ -127,8 +136,11 @@ Attributes:</p>
 <li>Start (Vector): Start point for FabJoin.</li>
 <li>End (Vector): End point for FabJoin.</li>
 </ul>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.1 <code>FabJoin.</code>normal_aligned():</h3>
-<p>FabJoin.normal_aligned(self, test_normal: Base.Vector) -&gt; bool:</p>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.1 <code>FabJoin.</code>get_hash():</h3>
+<p>FabJoin.get_hash(self) -&gt; int:</p>
+<p>Return FabJoin hash.</p>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.2 <code>FabJoin.</code>normal_aligned():</h3>
+<p>FabJoin.normal_aligned(self, test_normal: cadquery.occ_impl.geom.Vector) -&gt; bool:</p>
 <p>Return whether the normal is aligned with the FabJoin.</p>
 <h2><!-- raw HTML omitted --><!-- raw HTML omitted -->7 Class FabNut:</h2>
 <p>A class the represents a fastener nut.
@@ -148,6 +160,9 @@ Attributes:</p>
 <li><em>Name</em> (str): The option name.</li>
 <li><em>Detail</em> (str): More detailed information about the option.</li>
 </ul>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->8.1 <code>FabOption.</code>get_hash():</h3>
+<p>FabOption.get_hash(self) -&gt; int:</p>
+<p>Return FabOption hash.</p>
 <h2><!-- raw HTML omitted --><!-- raw HTML omitted -->9 Class FabWasher:</h2>
 <p>FabWahser: Represents a washer.
 Constants:</p>

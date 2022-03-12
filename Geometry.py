@@ -888,6 +888,7 @@ class _Fillet(object):
         sw_fillet.compute_arc(tracing="SW:")
         se_fillet.compute_arc(tracing="SE:")
 
+
 # FabGeometry:
 @dataclass(frozen=True)
 class FabGeometry(object):
@@ -898,6 +899,11 @@ class FabGeometry(object):
     def Box(self) -> FabBox:
         """Return a FabBox that encloses the FabGeometry."""
         raise NotImplementedError(f"{type(self)}.Box() is not implemented")
+
+    # FabGeometry.get_hash():
+    def get_hash(self) -> int:
+        """Return FabGeometry hash."""
+        raise NotImplementedError(f"{type(self)}.get_hash() is not implemented")
 
     # FabGeometry.produce():
     def produce(self, geometry_context: FabGeometryContext, prefix: str,
@@ -939,6 +945,22 @@ class FabCircle(FabGeometry):
         copy: Vector = Vector()
         object.__setattr__(self, "Center", self.Center + copy)  # Makes a copy.
         object.__setattr__(self, "Normal", self.Normal + copy)  # Makes a copy.
+
+    # FabCircle.get_hash():
+    def get_hash(self) -> int:
+        """Feturn FabCircle hash."""
+        center: Vector = self.Center
+        normal: Vector = self.Normal
+        values: Tuple[float, ...] = (
+            center.x,
+            center.y,
+            center.z,
+            normal.x,
+            normal.y,
+            normal.z,
+            self.Diameter,
+        )
+        return hash(values)
 
     # FabGeometry.Box():
     @property
@@ -1082,6 +1104,23 @@ class FabPolygon(FabGeometry):
         box: FabBox = FabBox()
         box.enclose(points)
         return box
+
+    # FabPolygon.get_hash():
+    def get_hash(self) -> int:
+        """Return the FabPolygon Hash."""
+        hashes: List[int] = []
+        corner: Union[Vector, Tuple[Vector, Union[int, float]]]
+        for corner in self.Corners:
+            if isinstance(corner, Vector):
+                corner = (corner, 0.0)
+            point: Vector
+            radius: float
+            point, radius = corner
+            hashes.append(hash(point.x))
+            hashes.append(hash(point.y))
+            hashes.append(hash(point.z))
+            hashes.append(hash(radius))
+        return hash(tuple(hashes))
 
     # FabPolygon.__post_init__():
     def __post_init__(self) -> None:
