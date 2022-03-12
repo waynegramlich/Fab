@@ -24,7 +24,7 @@
 
 # <--------------------------------------- 100 characters ---------------------------------------> #
 
-# IGNORE!!!
+# IGNORE!
 
 import sys
 sys.path.append(".")
@@ -49,7 +49,7 @@ elif USE_CAD_QUERY:
 
 from Geometry import FabCircle, FabPolygon, FabWorkPlane
 from Join import FabFasten, FabJoin
-from Node import FabNode
+from Node import FabNode, FabSteps
 from Solid import FabMount, FabSolid, visibility_set
 
 
@@ -73,11 +73,11 @@ class FabGroup(FabNode):
         super().__post_init__()
 
     # FabGroup.post_produce1():
-    def post_produce1(self, objects_table: Dict[str, Any]) -> None:
+    def post_produce1(self, objects_table: Dict[str, Any], fab_steps: FabSteps) -> None:
         """Perform FabGroup phase 1 post production."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>FabGroup({self.Label}).post_produce1(*)")
+            print(f"{tracing}=>FabGroup({self.Label}).post_produce1(*, *)")
 
         if USE_FREECAD:
             # Create the *group* that contains the children FabNode's:
@@ -94,7 +94,7 @@ class FabGroup(FabNode):
             visibility_set(group)
 
         if tracing:
-            print(f"{tracing}<=FabGroup({self.Label}).post_produce1(*)")
+            print(f"{tracing}<=FabGroup({self.Label}).post_produce1(*, *)")
 
     # FabGroup.produce():
     def produce(self) -> None:
@@ -131,14 +131,14 @@ class FabAssembly(FabGroup):
         return True  # All other FabNode's return False.
 
     # FabAssembly.post_produce1():
-    def post_produce1(self, objects_table: Dict[str, Any]) -> None:
+    def post_produce1(self, objects_table: Dict[str, Any], fab_steps: FabSteps) -> None:
         """Preform FabAssembly phase1 post production."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>FabAssembly({self.Label}).post_produce1()")
-        super().post_produce1(objects_table)
+            print(f"{tracing}=>FabAssembly({self.Label}).post_produce1(*, *)")
+        super().post_produce1(objects_table, fab_steps)
         if tracing:
-            print(f"{tracing}<=FabAssembly({self.Label}).post_produce1()")
+            print(f"{tracing}<=FabAssembly({self.Label}).post_produce1(*, *)")
 
     # FabAssembly.post_produce2():
     def post_produce2(self, objects_table: Dict[str, Any]) -> None:
@@ -160,12 +160,12 @@ class FabAssembly(FabGroup):
                     sub_assembly = child_node._Assembly
                 else:
                     raise RuntimeError(
-                        f"FabAssembly.post_produce1({self.Label}):"
+                        f"FabAssembly.post_produce2({self.Label}):"
                         f"{child_node} is {type(child_node)}, not FabSolid or FabAssembly")
 
                 if not isinstance(sub_assembly, cq.Assembly):
                     raise RuntimeError(
-                        f"FabAssembly.post_produce1({self.Label}):"
+                        f"FabAssembly.post_produce2({self.Label}):"
                         f"{sub_assembly} is {type(sub_assembly)}, not cq.Assembly")
                 assembly.add(sub_assembly, name=child_node.Label)
             objects_table[self.Label] = assembly
@@ -224,11 +224,11 @@ class FabDocument(FabNode):
                     "not FabAssembly/FabGroup/FabSolid")
 
     # FabDocument.post_produce1():
-    def post_produce1(self, objects_table: Dict[str, Any]) -> None:
+    def post_produce1(self, objects_table: Dict[str, Any], fab_steps: FabSteps) -> None:
         """Perform FabDocument phase 1 post production."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>FabDocument({self.Label}).post_produce1()")
+            print(f"{tracing}=>FabDocument({self.Label}).post_produce1(*, *)")
 
         # Create *app_document*:
         if USE_FREECAD:
@@ -247,7 +247,7 @@ class FabDocument(FabNode):
             pass
 
         if tracing:
-            print(f"{tracing}<=FabDocument({self.Label}).post_produce1()")
+            print(f"{tracing}<=FabDocument({self.Label}).post_produce1(*, *)")
 
     # FabDocument.post_produce2():
     def post_produce2(self, objects_table: Dict[str, Any]) -> None:
@@ -314,7 +314,8 @@ class FabProject(FabNode):
         return project
 
     # FabProject.run():
-    def run(self, objects_table: Dict[str, Any] = {}) -> None:
+    def run(self, objects_table: Optional[Dict[str, Any]] = None,
+            step_directory: Optional[Path] = None) -> None:
         # Shared variables:
         tracing: str = self.Tracing
         if tracing:
@@ -329,6 +330,10 @@ class FabProject(FabNode):
         if tracing:
             print("")
             print(f"{tracing}Project({self.Label}).run(): Phase 1: Constraint Propagation")
+        if objects_table is None:
+            objects_table = {}
+        if step_directory is None:
+            step_directory = Path("/tmp")
         previous_constraints: Set[str] = set()
         differences: List[int] = []
         all_nodes: Tuple[FabNode, ...] = self._AllNodes
@@ -376,11 +381,12 @@ class FabProject(FabNode):
                 print()
                 print(f"{tracing}Project({self.Label}).run(): Phase 2: Construct")
 
+            fab_steps: FabSteps = FabSteps(Path("/tmp"))
             if tracing:
-                print(f"{tracing}Phase 2A: post_produce1():")
+                print(f"{tracing}Phase 2A: post_produce1(*, '{step_directory}'):")
             del errors[:]  # Clear *errors*
             for node in all_nodes:
-                node.post_produce1(objects_table)
+                node.post_produce1(objects_table, fab_steps)
 
             if tracing:
                 print(f"{tracing}Phase 2b: post_produce2():")

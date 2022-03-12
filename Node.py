@@ -46,9 +46,10 @@ USE_FREECAD: bool
 USE_CAD_QUERY: bool
 USE_FREECAD, USE_CAD_QUERY = Embed.setup()
 
-from dataclasses import dataclass, field
-from typing import Any, cast, Dict, List, Sequence, Tuple, Union
 from collections import OrderedDict
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, cast, Dict, IO, List, Sequence, Set, Tuple, Union
 
 if USE_FREECAD:
     from FreeCAD import Placement, Vector  # type: ignore
@@ -997,11 +998,11 @@ class FabNode(FabBox):
             print(f"{tracing}<=>FabNode({self._Label}).produce()=>()")
 
     # FabNode.post_produce1():
-    def post_produce1(self, objects_table: Dict[str, Any]) -> None:
+    def post_produce1(self, objects_table: Dict[str, Any], fab_steps: "FabSteps") -> None:
         """Do FabNode phase 1 post production."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}<=>FabNode({self._Label}).post_produce1()=>()")
+            print(f"{tracing}<=>FabNode({self._Label}).post_produce1(*, *)=>()")
 
     # FabNode.post_produce2():
     def post_produce2(self, objects_table: Dict[str, Any]) -> None:
@@ -1104,7 +1105,141 @@ class FabNode(FabBox):
         return len(no_underscores) >= 1 and no_underscores.isalnum() and no_underscores[0].isalpha()
 
 
+# FabSteps:
+@dataclass
+class FabSteps(object):
+    """FabSteps: Manage directory of .step files.
+
+    This class will scan a directory for step files of the format `Name__XXXXXXXXXXXXXXXX.step`,
+    where  `Name` is the human readable name of the file and `XXXXXXXXXXXXXXXX` is the 64-bit
+    has value associated with the .step file contents.  There are three opertations:
+
+    * FabSteps(): This is the initalizer.
+    * activate(): This method is used to activate a .step file for reading and/or writing.
+    * flush_stales(): This method is used to previous .step files that are now longer used.
+
+    """
+    StepsDirectory: Path
+    _scanned_steps: Dict[int, Path] = field(init=False, repr=False)
+    _active_steps: Dict[int, Path] = field(init=False, repr=False)
+
+    # FabSteps.__post_init__():
+    def __post_init__(self) -> None:
+        """Initialize FabSteps directory of .step files."""
+        self._scanned_steps = {}
+        self._active_steps = {}
+
+    # FabSteps.scan():
+    def scan(self, tracing: str = "") -> None:
+        """Scan the associated directory for matching .step files."""
+        if tracing:
+            print(f"{tracing}=>FabSteps('{str(self.StepsDirectory)}').scan()")
+        scanned_steps: Dict[int, Path] = {}
+        glob_pattern: str = "*__" + (16 * "[0-9a-f]") + ".step"
+        for step_file in self.StepsDirectory.glob(glob_pattern):
+            hash: int = int(step_file.stem[-16:], 16)  # "XXX...X" -> int
+            scanned_steps[hash] = step_file
+        self._scanned_steps = scanned_steps
+        if tracing:
+            print(f"{tracing}<=FabSteps('{self.StepsDirectory}').scan()"
+                  f"=>|{len(self._scanned_steps)}|")
+
+    # FabSteps.activate():
+    def activate(self, name: str, hash: int, tracing: str = "") -> Path:
+        """Reserve a .step file name to be read/written.
+
+        This method reserves a .step file name to be read/written.
+
+        Arguments:
+        * name (str): The human readable name of the step file.
+        * hash (int): An integer that is converted into 16 digit hex value.
+
+        Returns:
+        * (Path): The full path to the .step file to be read/written.
+        """
+        if tracing:
+            print(f"{tracing}=>FabSteps('{str(self.StepsDirectory)}').activate('{name}', {hash:x})")
+        hash_text: str = f"{abs(hash):016x}"[:16]
+        active_step: Path = self.StepsDirectory / Path(f"{name}__{hash_text}.step")
+        self._active_steps[hash] = active_step
+        if tracing:
+            print(f"{tracing}=>FabSteps('{str(self.StepsDirectory)}').activate('{name}', {hash:x})"
+                  f"=>{active_step}")
+        return active_step
+
+    # FabSteps.flush_inactives():
+    def flush_inactives(self, tracing: str = "") -> None:
+        """Delete inactive .step files."""
+        if tracing:
+            print(f"{tracing}=>FabSteps('{str(self.StepsDirectory)}').flush_inactives()")
+        active_hashes: Set[int] = set(self._active_steps.keys())
+        scanned_hashes: Set[int] = set(self._scanned_steps.keys())
+        inactive_hashes: Set[int] = scanned_hashes - active_hashes
+        if tracing:
+            print(f"{tracing}{active_hashes=}")
+            print(f"{tracing}{scanned_hashes=}")
+            print(f"{tracing}{inactive_hashes=}")
+
+        scanned_steps: Dict[int, Path] = self._scanned_steps
+        inactive_hash: int
+        for inactive_hash in inactive_hashes:
+            inactive_step: Path = scanned_steps[inactive_hash]
+            inactive_step.unlink()
+            if tracing:
+                print(f"{tracing}unlink({'str(inactive_step)'}).")
+            del scanned_steps[inactive_hash]
+        if tracing:
+
+            print(f"{tracing},=FabSteps('{str(self.StepsDirectory)}').flush_inactives()"
+                  f"=>|{len(inactive_hashes)}|")
+
+    # FabSteps._unit_tests():
+    @staticmethod
+    def _unit_tests(tracing: str = "") -> None:
+        """Unit tests for FabSteps."""
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabSteps._unit_tests()")
+        fab_steps: FabSteps = FabSteps(Path("/tmp"))
+        fab_steps.flush_inactives()
+        assert not fab_steps._scanned_steps, f"Should be empty {fab_steps._scanned_steps}"
+
+        def steps_test(test_name: str, steps: Dict[int, str],
+                       tracing: str = "") -> None:
+            """Write out some step files."""
+            next_tracing: str = tracing + " " if tracing else ""
+            if tracing:
+                print(f"{tracing}=>steps_test('{test_name}', *, {steps})")
+            fab_steps: FabSteps = FabSteps(Path("/tmp"))
+            fab_steps.scan(tracing=next_tracing)
+            if tracing:
+                print(f"{tracing}{fab_steps._scanned_steps=}")
+            hash: int
+            name: str
+            for hash, name in steps.items():
+                step_path: Path = fab_steps.activate(name, hash)
+                step_file: IO[str]
+                with open(step_path, "w") as step_file:
+                    step_file.write(f"{name} {hash}\n")
+                assert step_path.exists()
+                if tracing:
+                    print(f"{tracing}Wrote out {step_path}")
+            fab_steps.flush_inactives(tracing=next_tracing)
+            if tracing:
+                print(f"{tracing}<=steps_test('{test_name}', *, {steps})")
+                print("")
+
+        steps_test("pass1", {1: "a", 2: "b", 3: "c"}, tracing=next_tracing)
+        steps_test("pass2", {1: "a", 4: "b", 6: "d"}, tracing=next_tracing)
+        steps_test("pass3", {1: "a", 2: "b", 5: "c"}, tracing=next_tracing)
+        steps_test("pass4", {}, tracing=next_tracing)
+
+        if tracing:
+            print(f"{tracing}<=FabSteps._unit_tests()")
+
+
 if __name__ == "__main__":
     # _unit_tests("")
     if USE_FREECAD:
+        FabSteps._unit_tests(" ")
         FabBox._unit_tests()

@@ -47,7 +47,7 @@ elif USE_CAD_QUERY:
 
 from Geometry import FabCircle, FabGeometry, FabGeometryContext, FabPlane, FabWorkPlane
 from Join import FabFasten, FabJoin
-from Node import FabBox, FabNode
+from Node import FabBox, FabNode, FabSteps
 from Utilities import FabColor
 
 # The *_suppress_stdout* function is based on code from:
@@ -1146,7 +1146,7 @@ class FabSolid(FabNode):
             print(f"{tracing}<=FabSolid({self.Label}).drill_joins('{name}', *)")
 
     # FabSolid.post_produce1():
-    def post_produce1(self, objects_table: Dict[str, Any]) -> None:
+    def post_produce1(self, objects_table: Dict[str, Any], fab_steps: FabSteps) -> None:
         """Perform FabSolid Phase1 post production."""
         tracing: str = self.Tracing
         next_tracing: str = tracing + " " if tracing else ""
@@ -1224,7 +1224,7 @@ class FabSolid(FabNode):
             rgb_color: Tuple[float, float, float] = FabColor.svg_to_rgb(self.Color)
             # TODO: move this code into FabWorkPlane:
 
-            hash: int = self.get_hash()
+            hash: int = abs(self.get_hash()) & 0xffffffffffffffff
             _ = hash
             assembly: cq.Assembly = cq.Assembly(
                 self._WorkPlane.WorkPlane, name=self.Label, color=cq.Color(*rgb_color))
