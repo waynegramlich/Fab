@@ -1110,7 +1110,7 @@ class FabNode(FabBox):
 class FabSteps(object):
     """FabSteps: Manage directory of .step files.
 
-    This class will scan a directory for step files of the format `Name__XXXXXXXXXXXXXXXX.step`,
+    This class will scan a directory for step files of the format `Name__XXXXXXXXXXXXXXXX.stp`,
     where  `Name` is the human readable name of the file and `XXXXXXXXXXXXXXXX` is the 64-bit
     has value associated with the .step file contents.  There are three opertations:
 
@@ -1135,7 +1135,7 @@ class FabSteps(object):
         if tracing:
             print(f"{tracing}=>FabSteps('{str(self.StepsDirectory)}').scan()")
         scanned_steps: Dict[int, Path] = {}
-        glob_pattern: str = "*__" + (16 * "[0-9a-f]") + ".step"
+        glob_pattern: str = "*__" + (16 * "[0-9a-f]") + ".stp"
         for step_file in self.StepsDirectory.glob(glob_pattern):
             hash: int = int(step_file.stem[-16:], 16)  # "XXX...X" -> int
             scanned_steps[hash] = step_file
@@ -1160,7 +1160,7 @@ class FabSteps(object):
         if tracing:
             print(f"{tracing}=>FabSteps('{str(self.StepsDirectory)}').activate('{name}', {hash:x})")
         hash_text: str = f"{abs(hash):016x}"[:16]
-        active_step: Path = self.StepsDirectory / Path(f"{name}__{hash_text}.step")
+        active_step: Path = self.StepsDirectory / Path(f"{name}__{hash_text}.stp")
         self._active_steps[hash] = active_step
         if tracing:
             print(f"{tracing}=>FabSteps('{str(self.StepsDirectory)}').activate('{name}', {hash:x})"

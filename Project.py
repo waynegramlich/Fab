@@ -24,7 +24,7 @@
 
 # <--------------------------------------- 100 characters ---------------------------------------> #
 
-# IGNORE!
+# IGNORE!!
 
 import sys
 sys.path.append(".")
@@ -382,11 +382,13 @@ class FabProject(FabNode):
                 print(f"{tracing}Project({self.Label}).run(): Phase 2: Construct")
 
             fab_steps: FabSteps = FabSteps(Path("/tmp"))
+            fab_steps.scan()
             if tracing:
                 print(f"{tracing}Phase 2A: post_produce1(*, '{step_directory}'):")
             del errors[:]  # Clear *errors*
             for node in all_nodes:
                 node.post_produce1(objects_table, fab_steps)
+            fab_steps.flush_inactives()
 
             if tracing:
                 print(f"{tracing}Phase 2b: post_produce2():")

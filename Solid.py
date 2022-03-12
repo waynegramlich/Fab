@@ -31,6 +31,7 @@ USE_FREECAD, USE_CAD_QUERY = Embed.setup()
 
 from collections import OrderedDict
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Dict, Generator, IO, List, Optional, Sequence, Tuple, Union
 
 if USE_FREECAD:
@@ -1225,7 +1226,6 @@ class FabSolid(FabNode):
             # TODO: move this code into FabWorkPlane:
 
             hash: int = abs(self.get_hash()) & 0xffffffffffffffff
-            _ = hash
             assembly: cq.Assembly = cq.Assembly(
                 self._WorkPlane.WorkPlane, name=self.Label, color=cq.Color(*rgb_color))
             # objects_table[self.Label] = self._WorkPlane
@@ -1233,8 +1233,9 @@ class FabSolid(FabNode):
             objects_table[self.Label] = assembly
             # This is really ugly.  The cq.Assembly.save() method spews out uninteresting
             # "debug" information.  See the comment at the beginning for a little more information.
+            step_path: Path = fab_steps.activate(self.Label, hash)
             with _suppress_stdout():
-                assembly.save(f"/tmp/{self.Label}.step", "STEP")
+                assembly.save(str(step_path), "STEP")
 
         if tracing:
             print(f"{tracing}<=FabSolid.post_produce1('{self.Label}')")
