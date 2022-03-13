@@ -15,16 +15,18 @@
 <li>3 Class: <a href="#project--fabassembly">FabAssembly</a>:
 <ul>
 <li>3.1 <a href="#project----is-assembly">is_assembly()</a>:  Return True if FabNode is a FabGroup.</li>
-<li>3.2 <a href="#project----post-produce1">post_produce1()</a>: Preform FabAssembly phase1 post production.</li>
-<li>3.3 <a href="#project----post-produce2">post_produce2()</a>: Perform FabAssembly phase 2 post production.</li>
+<li>3.2 <a href="#project----to-json">to_json()</a>: Return FabProject JSON structure.</li>
+<li>3.3 <a href="#project----post-produce1">post_produce1()</a>: Preform FabAssembly phase1 post production.</li>
+<li>3.4 <a href="#project----post-produce2">post_produce2()</a>: Perform FabAssembly phase 2 post production.</li>
 </ul>
 </li>
 <li>4 Class: <a href="#project--fabdocument">FabDocument</a>:
 <ul>
-<li>4.1 <a href="#project----post-produce1">post_produce1()</a>: Perform FabDocument phase 1 post production.</li>
-<li>4.2 <a href="#project----post-produce2">post_produce2()</a>: Close the FabDocument.</li>
-<li>4.3 <a href="#project----is-document">is_document()</a>:  Return True if FabNode is a FabGroup.</li>
-<li>4.4 <a href="#project----produce">produce()</a>: Produce FabDocument.</li>
+<li>4.1 <a href="#project----to-json">to_json()</a>: Return FabProject JSON structure.</li>
+<li>4.2 <a href="#project----post-produce1">post_produce1()</a>: Perform FabDocument phase 1 post production.</li>
+<li>4.3 <a href="#project----post-produce2">post_produce2()</a>: Close the FabDocument.</li>
+<li>4.4 <a href="#project----is-document">is_document()</a>:  Return True if FabNode is a FabGroup.</li>
+<li>4.5 <a href="#project----produce">produce()</a>: Produce FabDocument.</li>
 </ul>
 </li>
 <li>5 Class: <a href="#project--fabgroup">FabGroup</a>:
@@ -38,7 +40,8 @@
 <ul>
 <li>6.1 <a href="#project----get-errors">get_errors()</a>: Return the FabProject errors list.</li>
 <li>6.2 <a href="#project----is-project">is_project()</a>:  Return True if FabNode is a FabGroup.</li>
-<li>6.3 <a href="#project----run">run()</a>: NO DOC STRING!</li>
+<li>6.3 <a href="#project----to-json">to_json()</a>: Return FabProject JSON structure.</li>
+<li>6.4 <a href="#project----run">run()</a>: NO DOC STRING!</li>
 </ul>
 </li>
 <li>7 Class: <a href="#project--testassembly">TestAssembly</a>:</li>
@@ -113,10 +116,13 @@ Inherited Constructor Attributes:</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->3.1 <code>FabAssembly.</code>is_assembly():</h3>
 <p>FabAssembly.is_assembly(self) -&gt; bool:</p>
 <p>Return True if FabNode is a FabGroup.</p>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->3.2 <code>FabAssembly.</code>post_produce1():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->3.2 <code>FabAssembly.</code>to_json():</h3>
+<p>FabAssembly.to_json(self) -&gt; typing.Dict[str, typing.Any]:</p>
+<p>Return FabProject JSON structure.</p>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->3.3 <code>FabAssembly.</code>post_produce1():</h3>
 <p>FabAssembly.post_produce1(self, objects_table: typing.Dict[str, typing.Any], fab_steps: Node.FabSteps) -&gt; None:</p>
 <p>Preform FabAssembly phase1 post production.</p>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->3.3 <code>FabAssembly.</code>post_produce2():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->3.4 <code>FabAssembly.</code>post_produce2():</h3>
 <p>FabAssembly.post_produce2(self, objects_table: typing.Dict[str, typing.Any]) -&gt; None:</p>
 <p>Perform FabAssembly phase 2 post production.</p>
 <h2><!-- raw HTML omitted --><!-- raw HTML omitted -->4 Class FabDocument:</h2>
@@ -133,16 +139,19 @@ The children nodes which are constrained to &quot;group-like&quot; or a FabSolid
 <li><em>FilePath</em> (Path):
 The Python pathlib.Path file name which must have a suffix of <code>.fcstd</code> or <code>.FCStd</code>.</li>
 </ul>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->4.1 <code>FabDocument.</code>post_produce1():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->4.1 <code>FabDocument.</code>to_json():</h3>
+<p>FabDocument.to_json(self) -&gt; typing.Dict[str, typing.Any]:</p>
+<p>Return FabProject JSON structure.</p>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->4.2 <code>FabDocument.</code>post_produce1():</h3>
 <p>FabDocument.post_produce1(self, objects_table: typing.Dict[str, typing.Any], fab_steps: Node.FabSteps) -&gt; None:</p>
 <p>Perform FabDocument phase 1 post production.</p>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->4.2 <code>FabDocument.</code>post_produce2():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->4.3 <code>FabDocument.</code>post_produce2():</h3>
 <p>FabDocument.post_produce2(self, objects_table: typing.Dict[str, typing.Any]) -&gt; None:</p>
 <p>Close the FabDocument.</p>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->4.3 <code>FabDocument.</code>is_document():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->4.4 <code>FabDocument.</code>is_document():</h3>
 <p>FabDocument.is_document(self) -&gt; bool:</p>
 <p>Return True if FabNode is a FabGroup.</p>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->4.4 <code>FabDocument.</code>produce():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->4.5 <code>FabDocument.</code>produce():</h3>
 <p>FabDocument.produce(self) -&gt; None:</p>
 <p>Produce FabDocument.</p>
 <h2><!-- raw HTML omitted --><!-- raw HTML omitted -->5 Class FabGroup:</h2>
@@ -170,7 +179,10 @@ Inherited Attributes:</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.2 <code>FabProject.</code>is_project():</h3>
 <p>FabProject.is_project(self) -&gt; bool:</p>
 <p>Return True if FabNode is a FabGroup.</p>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.3 <code>FabProject.</code>run():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.3 <code>FabProject.</code>to_json():</h3>
+<p>FabProject.to_json(self) -&gt; typing.Dict[str, typing.Any]:</p>
+<p>Return FabProject JSON structure.</p>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->6.4 <code>FabProject.</code>run():</h3>
 <p>FabProject.run(self, objects_table: typing.Union[typing.Dict[str, typing.Any], NoneType] = None, step_directory: typing.Union[pathlib.Path, NoneType] = None) -&gt; None:</p>
 <p>NO DOC STRING!</p>
 <h2><!-- raw HTML omitted --><!-- raw HTML omitted -->7 Class TestAssembly:</h2>

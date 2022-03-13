@@ -983,6 +983,22 @@ class FabNode(FabBox):
         """Return True if FabNode is a FabAssembly."""
         return False  # FabSolid class returns True.
 
+    # FabNode.to_json():
+    def to_json(self) -> Dict[str, Any]:
+        """Return a dictionary for JSON output."""
+        children_json: List[Any] = []
+        child_name: str
+        child_node: FabNode
+        for child_name, child_node in self._Children.items():
+            child_json: Dict[str, Any] = child_node.to_json()
+            if child_json:
+                children_json.append((child_name, child_json))
+
+        node_json: Dict[str, Any] = {"Label": self.Label}
+        if children_json:
+            node_json["children"] = children_json
+        return node_json
+
     # FabNode.pre_produce():
     def pre_produce(self) -> None:
         """Perform FabNode pre produce operations."""

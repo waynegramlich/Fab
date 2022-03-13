@@ -24,7 +24,7 @@
 
 # <--------------------------------------- 100 characters ---------------------------------------> #
 
-# IGNORE!
+# IGNORE!!
 
 import sys
 sys.path.append(".")
@@ -34,7 +34,8 @@ USE_CAD_QUERY: bool
 USE_FREECAD, USE_CAD_QUERY = Embed.setup()
 
 from dataclasses import dataclass, field
-from typing import Any, cast, Dict, List, Optional, Set, Tuple
+import json
+from typing import Any, cast, Dict, IO, List, Optional, Set, Tuple
 from pathlib import Path
 
 
@@ -130,6 +131,13 @@ class FabAssembly(FabGroup):
         """ Return True if FabNode is a FabGroup."""
         return True  # All other FabNode's return False.
 
+    # FabAssembly.to_json():
+    def to_json(self) -> Dict[str, Any]:
+        """Return FabProject JSON structure."""
+        json: Dict[str, Any] = super().to_json()
+        json["Kind"] = "Assembly"
+        return json
+
     # FabAssembly.post_produce1():
     def post_produce1(self, objects_table: Dict[str, Any], fab_steps: FabSteps) -> None:
         """Preform FabAssembly phase1 post production."""
@@ -223,6 +231,13 @@ class FabDocument(FabNode):
                     f"{self.FullPath}: {child.FullPath} is not a {type(child)}, "
                     "not FabAssembly/FabGroup/FabSolid")
 
+    # FabDocument.to_json():
+    def to_json(self) -> Dict[str, Any]:
+        """Return FabProject JSON structure."""
+        json: Dict[str, Any] = super().to_json()
+        json["Kind"] = "Document"
+        return json
+
     # FabDocument.post_produce1():
     def post_produce1(self, objects_table: Dict[str, Any], fab_steps: FabSteps) -> None:
         """Perform FabDocument phase 1 post production."""
@@ -313,6 +328,13 @@ class FabProject(FabNode):
         # print(f"<=Project.new({name})=>{project}")
         return project
 
+    # FabProject.to_json():
+    def to_json(self) -> Dict[str, Any]:
+        """Return FabProject JSON structure."""
+        json: Dict[str, Any] = super().to_json()
+        json["Kind"] = "Project"
+        return json
+
     # FabProject.run():
     def run(self, objects_table: Optional[Dict[str, Any]] = None,
             step_directory: Optional[Path] = None) -> None:
@@ -394,6 +416,11 @@ class FabProject(FabNode):
                 print(f"{tracing}Phase 2b: post_produce2():")
             for node in reversed(all_nodes):
                 node.post_produce2(objects_table)
+
+        top_json: Dict[str, Any] = self.to_json()
+        json_file: IO[str]
+        with open(f"/tmp/{self.Label}.json", "w") as json_file:
+            json_file.write(json.dumps(top_json, indent=2, sort_keys=True))
 
         # Output any *errors*:
         if errors:

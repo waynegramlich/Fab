@@ -1043,6 +1043,8 @@ class FabSolid(FabNode):
     _Body: Optional[Any] = field(init=False, repr=False)
     _WorkPlane: FabWorkPlane = field(init=False, repr=False)
     _Assembly: Any = field(init=False, repr=False)
+    _StepFile: Optional[Path] = field(init=False, repr=False)
+    _Color: Optional[Tuple[float, ...]] = field(init=False, repr=False)
 
     # FabSolid.__post_init__():
     def __post_init__(self) -> None:
@@ -1063,6 +1065,8 @@ class FabSolid(FabNode):
         self._Body = None
         self._WorkPlane = FabWorkPlane(initial_plane)
         self._Assembly = None
+        self._StepFile = None
+        self._Color = None
 
         if tracing:
             print(f"{tracing}<=FabSolid({self.Label}).__post_init__()")
@@ -1074,6 +1078,17 @@ class FabSolid(FabNode):
         if not self._Body:
             raise RuntimeError(f"FabSolid.Body({self.Label}).Body(): body not set yet")
         return self._Body
+
+    # FabSolid.to_json():
+    def to_json(self) -> Dict[str, Any]:
+        """Return FabProject JSON structure."""
+        json: Dict[str, Any] = super().to_json()
+        json["Kind"] = "Solid"
+        if self._StepFile:
+            json["Step"] = str(self._StepFile)
+        if self._Color:
+            json["Color"] = self._Color
+        return json
 
     # FabSolid.set_body():
     def set_body(self, body: Any) -> None:
@@ -1240,6 +1255,7 @@ class FabSolid(FabNode):
             step_path = fab_steps.activate(self.Label, hash_text)
             if step_path.exists():
                 use_cached_step = True
+            self._StepFile = step_path
 
         # Perform all of the mount operations if unable to *use_cached_step*:
         if not use_cached_step:
@@ -1265,6 +1281,7 @@ class FabSolid(FabNode):
                 # Read in step file here:
                 work_plane: cq.Workplane = cq.importers.importStep(str(step_path))
                 assembly = cq.Assembly(work_plane, name=self.Label, color=cq.Color(*rgb_color))
+                self._Color = rgb_color
                 if tracing:
                     print(f"{tracing}Read file '{str(step_path)}' !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             else:

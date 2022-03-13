@@ -14,13 +14,14 @@
 </li>
 <li>2 Class: <a href="#solid--fabsolid">FabSolid</a>:
 <ul>
-<li>2.1 <a href="#solid----set-body">set_body()</a>: Set the BodyBase of a FabSolid.</li>
-<li>2.2 <a href="#solid----is-solid">is_solid()</a>:  Return True if FabNode is a FabAssembly.</li>
-<li>2.3 <a href="#solid----pre-produce">pre_produce()</a>: Perform FabSolid pre production.</li>
-<li>2.4 <a href="#solid----get-hash">get_hash()</a>: Return FabSolid hash.</li>
-<li>2.5 <a href="#solid----mount">mount()</a>: Return a new FabMount.</li>
-<li>2.6 <a href="#solid----drill-joins">drill_joins()</a>: Apply drill FabJoin holes for a FabSolid.</li>
-<li>2.7 <a href="#solid----post-produce1">post_produce1()</a>: Perform FabSolid Phase1 post production.</li>
+<li>2.1 <a href="#solid----to-json">to_json()</a>: Return FabProject JSON structure.</li>
+<li>2.2 <a href="#solid----set-body">set_body()</a>: Set the BodyBase of a FabSolid.</li>
+<li>2.3 <a href="#solid----is-solid">is_solid()</a>:  Return True if FabNode is a FabAssembly.</li>
+<li>2.4 <a href="#solid----pre-produce">pre_produce()</a>: Perform FabSolid pre production.</li>
+<li>2.5 <a href="#solid----get-hash">get_hash()</a>: Return FabSolid hash.</li>
+<li>2.6 <a href="#solid----mount">mount()</a>: Return a new FabMount.</li>
+<li>2.7 <a href="#solid----drill-joins">drill_joins()</a>: Apply drill FabJoin holes for a FabSolid.</li>
+<li>2.8 <a href="#solid----post-produce1">post_produce1()</a>: Perform FabSolid Phase1 post production.</li>
 </ul>
 </li>
 </ul>
@@ -73,22 +74,25 @@ Inherited Attributes:</p>
 <li><em>Material</em> (str): The material to use.</li>
 <li><em>Color</em> (str): The color to use.</li>
 </ul>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.1 <code>FabSolid.</code>set_body():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.1 <code>FabSolid.</code>to_json():</h3>
+<p>FabSolid.to_json(self) -&gt; typing.Dict[str, typing.Any]:</p>
+<p>Return FabProject JSON structure.</p>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.2 <code>FabSolid.</code>set_body():</h3>
 <p>FabSolid.set_body(self, body: typing.Any) -&gt; None:</p>
 <p>Set the BodyBase of a FabSolid.</p>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.2 <code>FabSolid.</code>is_solid():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.3 <code>FabSolid.</code>is_solid():</h3>
 <p>FabSolid.is_solid(self) -&gt; bool:</p>
 <p>Return True if FabNode is a FabAssembly.</p>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.3 <code>FabSolid.</code>pre_produce():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.4 <code>FabSolid.</code>pre_produce():</h3>
 <p>FabSolid.pre_produce(self) -&gt; None:</p>
 <p>Perform FabSolid pre production.</p>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.4 <code>FabSolid.</code>get_hash():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.5 <code>FabSolid.</code>get_hash():</h3>
 <p>FabSolid.get_hash(self) -&gt; typing.Tuple[typing.Any, ...]:</p>
 <p>Return FabSolid hash.</p>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.5 <code>FabSolid.</code>mount():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.6 <code>FabSolid.</code>mount():</h3>
 <p>FabSolid.mount(self, name: str, contact: Base.Vector, normal: Base.Vector, orient: Base.Vector, depth: float, tracing: str = '') -&gt; Solid.FabMount:</p>
 <p>Return a new FabMount.</p>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.6 <code>FabSolid.</code>drill_joins():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.7 <code>FabSolid.</code>drill_joins():</h3>
 <p>FabSolid.drill_joins(self, name: str, joins: typing.Sequence[Join.FabJoin], mounts: typing.Union[typing.Sequence[Solid.FabMount], NoneType] = None) -&gt; None:</p>
 <p>Apply drill FabJoin holes for a FabSolid.
 Iterate pairwise through a sequence of FabJoin's and FabMount's and for each pair
@@ -106,6 +110,6 @@ The mounts to to apply the <em>joins</em> to.  If <em>mounts</em> is <em>None</e
 mounts for the current FabSolid are used.  (Default: None)</li>
 </ul>
 <p>For now, please call this method after all FabMount's are created.</p>
-<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.7 <code>FabSolid.</code>post_produce1():</h3>
+<h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.8 <code>FabSolid.</code>post_produce1():</h3>
 <p>FabSolid.post_produce1(self, objects_table: typing.Dict[str, typing.Any], fab_steps: Node.FabSteps) -&gt; None:</p>
 <p>Perform FabSolid Phase1 post production.</p>
