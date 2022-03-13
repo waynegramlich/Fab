@@ -41,7 +41,7 @@ when mounted for CNC operations.</li>
 <li><em>WorkPlane</em> (FabWorkPlane): The CadQuery workplane wrapper class object.</li>
 </ul>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->1.1 <code>FabMount.</code>get_hash():</h3>
-<p>FabMount.get_hash(self) -&gt; int:</p>
+<p>FabMount.get_hash(self) -&gt; typing.Tuple[typing.Any, ...]:</p>
 <p>Return a has the current contents of a FabMount.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->1.2 <code>FabMount.</code>record_operation():</h3>
 <p>FabMount.record_operation(self, operation: Solid._Operation) -&gt; None:</p>
@@ -83,7 +83,7 @@ Inherited Attributes:</p>
 <p>FabSolid.pre_produce(self) -&gt; None:</p>
 <p>Perform FabSolid pre production.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.4 <code>FabSolid.</code>get_hash():</h3>
-<p>FabSolid.get_hash(self) -&gt; int:</p>
+<p>FabSolid.get_hash(self) -&gt; typing.Tuple[typing.Any, ...]:</p>
 <p>Return FabSolid hash.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.5 <code>FabSolid.</code>mount():</h3>
 <p>FabSolid.mount(self, name: str, contact: Base.Vector, normal: Base.Vector, orient: Base.Vector, depth: float, tracing: str = '') -&gt; Solid.FabMount:</p>

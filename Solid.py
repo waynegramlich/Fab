@@ -31,8 +31,9 @@ USE_FREECAD, USE_CAD_QUERY = Embed.setup()
 
 from collections import OrderedDict
 from dataclasses import dataclass, field
+import hashlib
 from pathlib import Path
-from typing import Any, Dict, Generator, IO, List, Optional, Sequence, Tuple, Union
+from typing import Any, cast, Dict, Generator, IO, List, Optional, Sequence, Tuple, Union
 
 if USE_FREECAD:
     import FreeCAD  # type: ignore
@@ -113,7 +114,7 @@ class _Operation(object):
         raise RuntimeError(f"_Operation().get_name() not implemented for {type(self)}")
 
     # _Operation.get_hash():
-    def get_hash(self) -> int:
+    def get_hash(self) -> Tuple[Any, ...]:
         """Return _Operation hash."""
         raise RuntimeError(f"_Operation().get_hash() not implemented for {type(self)}")
 
@@ -247,16 +248,20 @@ class _Extrude(_Operation):
         return self._Name
 
     # _Extrude.get_hash():
-    def get_hash(self) -> int:
+    def get_hash(self) -> Tuple[Any, ...]:
         """Return hash for _Extrude operation."""
-        hashes: List[int] = [hash(self._Name), hash(self._Depth)]
+        hashes: List[Union[int, str, Tuple[Any, ...]]] = [
+            "_Extrude",
+            self._Name,
+            f"{self._Depth:.6f}"
+        ]
         geometries: Union[FabGeometry, Tuple[FabGeometry, ...]] = self._Geometry
         if isinstance(geometries, FabGeometry):
             geometries = (geometries,)
         geometry: FabGeometry
         for geometry in geometries:
             hashes.append(geometry.get_hash())
-        return hash(tuple(hashes))
+        return tuple(hashes)
 
     # _Extrude.post_produce1():
     def post_produce1(self, tracing: str = "") -> None:
@@ -375,13 +380,17 @@ class _Pocket(_Operation):
         return self._Depth
 
     # _Pocket.get_hash():
-    def get_hash(self) -> int:
+    def get_hash(self) -> Tuple[Any, ...]:
         """Return _Pocket hash."""
-        hashes: List[int] = [hash(self._Name), hash(self._Depth)]
+        hashes: List[Any] = [
+            "_Pocket",
+            self._Name,
+            f"{self._Depth:.6f}",
+        ]
         geometry: FabGeometry
         for geometry in self._Geometries:
             hashes.append(geometry.get_hash())
-        return hash(tuple(hashes))
+        return tuple(hashes)
 
     # _Pocket.get_name():
     def get_name(self) -> str:
@@ -481,22 +490,23 @@ class _Hole(_Operation):
         return self._Name
 
     # _Hole.get_hash():
-    def get_hash(self) -> int:
+    def get_hash(self) -> Tuple[Any, ...]:
         """Return _Hole hash."""
         center: Vector = self.Center
-        hashes: Tuple[int, ...] = (
-            hash(self.ThreadName),
-            hash(self.Kind),
-            hash(self.Depth),
-            hash(self.IsTop),
-            hash(self.Unique),
-            hash(center.x),
-            hash(center.y),
-            hash(center.z),
+        hashes: Tuple[Any, ...] = (
+            "_Hole",
+            self._Name,
+            self.ThreadName,
+            self.Kind,
+            self.IsTop,
+            self.Unique,
+            f"{self.Depth:.6f}",
+            f"{center.x:.6f}",
+            f"{center.y:.6f}",
+            f"{center.z:.6f}",
             self.Join.get_hash(),
-            hash(self._Name),
         )
-        return hash(hashes)
+        return hashes
 
     # _Hole.post_produce1():
     def post_produce1(self, tracing: str = "") -> None:
@@ -739,22 +749,23 @@ class FabMount(object):
         return self._Depth
 
     # FabMount.get_hash():
-    def get_hash(self) -> int:
+    def get_hash(self) -> Tuple[Any, ...]:
         """Return a has the current contents of a FabMount."""
-        hashes: List[int] = [
-            hash(self._Name),
-            hash(self._Contact.x),
-            hash(self._Contact.y),
-            hash(self._Contact.z),
-            hash(self._Normal.x),
-            hash(self._Normal.y),
-            hash(self._Normal.z),
-            hash(self._Depth),
+        hashes: List[Any] = [
+            "FabMount",
+            self._Name,
+            f"{self._Contact.x:.6f}",
+            f"{self._Contact.y:.6f}",
+            f"{self._Contact.z:.6f}",
+            f"{self._Normal.x:.6f}",
+            f"{self._Normal.y:.6f}",
+            f"{self._Normal.z:.6f}",
+            f"{self._Depth:.6f}",
         ]
         operation: _Operation
         for operation in self._Operations.values():
             hashes.append(operation.get_hash())
-        return hash(tuple(hashes))
+        return tuple(hashes)
 
     # FabMount.record_operation():
     def record_operation(self, operation: _Operation) -> None:
@@ -1086,13 +1097,17 @@ class FabSolid(FabNode):
             print(f"{tracing}<=FabSolid({self.Label}).pre_produce()")
 
     # FabSolid.get_hash():
-    def get_hash(self) -> int:
+    def get_hash(self) -> Tuple[Any, ...]:
         """Return FabSolid hash."""
-        hashes: List[int] = [hash(self.Material), hash(self.Color)]
+        hashes: List[Any] = [
+            "FabSolid",
+            self.Material,
+            self.Color,
+        ]
         mount: FabMount
         for mount in self._Mounts.values():
             hashes.append(mount.get_hash())
-        return hash(tuple(hashes))
+        return tuple(hashes)
 
     # FabSolid.mount():
     def mount(self, name: str, contact: Vector, normal: Vector, orient: Vector,
@@ -1207,16 +1222,36 @@ class FabSolid(FabNode):
         elif USE_CAD_QUERY:
             pass
 
-        # Now process each *mount*
-        mounts: "OrderedDict[str, FabMount]" = self._Mounts
-        if tracing:
-            print(f"{tracing}Iterate over |{len(mounts)}| mounts")
-        mount_name: str
-        mount: FabMount
-        for mount_name, mount in mounts.items():
+        # Deterimine wether it is posible to *use_cached_step*:
+        use_cached_step: bool = False
+        step_path: Path = cast(Path, None)  # Force runtime error if used.
+        if USE_FREECAD:
+            pass
+        elif USE_CAD_QUERY:
+            # This was a shocker.  It turns out that __hash__() methods are not necessarily
+            # consistent between Python runs.  In other words  __hash__() is non-deterministic.
+            # Instead use one of the hashlib hash functions instead:
+            #     hash_tuple* => repr string => hashlib.sha256 => trim to 16 bytes
+            hash_tuple: Tuple[Any, ...] = self.get_hash()
+            hash_bytes: bytes = repr(hash_tuple).encode("utf-8")
+            hasher: Any = hashlib.new("sha256")
+            hasher.update(hash_bytes)
+            hash_text: str = hasher.hexdigest()[:16]
+            step_path = fab_steps.activate(self.Label, hash_text)
+            if step_path.exists():
+                use_cached_step = True
+
+        # Perform all of the mount operations if unable to *use_cached_step*:
+        if not use_cached_step:
+            mounts: "OrderedDict[str, FabMount]" = self._Mounts
             if tracing:
-                print(f"{tracing}[{mount_name}]: process")
-            mount.post_produce1(tracing=next_tracing)
+                print(f"{tracing}Iterate over |{len(mounts)}| mounts")
+            mount_name: str
+            mount: FabMount
+            for mount_name, mount in mounts.items():
+                if tracing:
+                    print(f"{tracing}[{mount_name}]: process")
+                mount.post_produce1(tracing=next_tracing)
 
         if USE_FREECAD:
             pass
@@ -1225,17 +1260,25 @@ class FabSolid(FabNode):
             rgb_color: Tuple[float, float, float] = FabColor.svg_to_rgb(self.Color)
             # TODO: move this code into FabWorkPlane:
 
-            hash: int = abs(self.get_hash()) & 0xffffffffffffffff
-            assembly: cq.Assembly = cq.Assembly(
-                self._WorkPlane.WorkPlane, name=self.Label, color=cq.Color(*rgb_color))
-            # objects_table[self.Label] = self._WorkPlane
+            assembly: cq.Assembly
+            if use_cached_step:
+                # Read in step file here:
+                work_plane: cq.Workplane = cq.importers.importStep(str(step_path))
+                assembly = cq.Assembly(work_plane, name=self.Label, color=cq.Color(*rgb_color))
+                if tracing:
+                    print(f"{tracing}Read file '{str(step_path)}' !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            else:
+                assembly = cq.Assembly(
+                    self._WorkPlane.WorkPlane, name=self.Label, color=cq.Color(*rgb_color))
+                # This is really ugly.  The cq.Assembly.save() method spews out uninteresting
+                # "debug" information.  See the code comments of _suppress_stdout() for more
+                # information.
+                with _suppress_stdout():
+                    assembly.save(str(step_path), "STEP")
+                if tracing:
+                    print(f"{tracing}Wrote out {str(step_path)}")
             self._Assembly = assembly
             objects_table[self.Label] = assembly
-            # This is really ugly.  The cq.Assembly.save() method spews out uninteresting
-            # "debug" information.  See the comment at the beginning for a little more information.
-            step_path: Path = fab_steps.activate(self.Label, hash)
-            with _suppress_stdout():
-                assembly.save(str(step_path), "STEP")
 
         if tracing:
             print(f"{tracing}<=FabSolid.post_produce1('{self.Label}')")

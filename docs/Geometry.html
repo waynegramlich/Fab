@@ -63,7 +63,7 @@ circle later on.</p>
 <li><em>Diameter</em> (float): The diameter in millimeters.</li>
 </ul>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->1.1 <code>FabCircle.</code>get_hash():</h3>
-<p>FabCircle.get_hash(self) -&gt; int:</p>
+<p>FabCircle.get_hash(self) -&gt; typing.Tuple[typing.Any, ...]:</p>
 <p>Feturn FabCircle hash.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->1.2 <code>FabCircle.</code>project_to_plane():</h3>
 <p>FabCircle.project_to_plane(self, plane: Geometry.FabPlane, tracing: str = '') -&gt; 'FabCircle':</p>
@@ -85,7 +85,7 @@ Arguments:</p>
 <h2><!-- raw HTML omitted --><!-- raw HTML omitted -->2 Class FabGeometry:</h2>
 <p>The base class for FabPolygon and FabCircle.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.1 <code>FabGeometry.</code>get_hash():</h3>
-<p>FabGeometry.get_hash(self) -&gt; int:</p>
+<p>FabGeometry.get_hash(self) -&gt; typing.Tuple[typing.Any, ...]:</p>
 <p>Return FabGeometry hash.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->2.2 <code>FabGeometry.</code>produce():</h3>
 <p>FabGeometry.produce(self, geometry_context: Geometry.FabGeometryContext, prefix: str, index: int, tracing: str = '') -&gt; typing.Tuple[typing.Any, ...]:</p>
@@ -152,7 +152,7 @@ Vector(10, -10, 0),  # Lower right (no radius)
 See description below for more on corners.</li>
 </ul>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->5.1 <code>FabPolygon.</code>get_hash():</h3>
-<p>FabPolygon.get_hash(self) -&gt; int:</p>
+<p>FabPolygon.get_hash(self) -&gt; typing.Tuple[typing.Any, ...]:</p>
 <p>Return the FabPolygon Hash.</p>
 <h3><!-- raw HTML omitted --><!-- raw HTML omitted -->5.2 <code>FabPolygon.</code>project_to_plane():</h3>
 <p>FabPolygon.project_to_plane(self, plane: Geometry.FabPlane, tracing: str = '') -&gt; 'FabPolygon':</p>

@@ -68,7 +68,7 @@ USE_CAD_QUERY: bool
 USE_FREECAD, USE_CAD_QUERY = Embed.setup()
 
 from dataclasses import dataclass, field
-from typing import cast, ClassVar, Dict, List, Tuple
+from typing import Any, cast, ClassVar, Dict, List, Tuple, Union
 
 from Utilities import FabCheck, FabMaterial
 if USE_FREECAD:
@@ -713,7 +713,7 @@ class FabOption(object):
             raise ValueError(value_error)
 
     # FabOption.get_hash():
-    def get_hash(self) -> int:
+    def get_hash(self) -> Tuple[Any, ...]:
         """Return FabOption hash."""
         raise RuntimeError(f"get_hash() is not implemented for {type(self)}")
 
@@ -1417,13 +1417,17 @@ class FabFasten:
                 raise ValueError(f"{option} is not an FabOption")
 
     # FabFasten.get_hash():
-    def get_hash(self) -> int:
+    def get_hash(self) -> Tuple[Any, ...]:
         """Return FabFasten hash."""
-        hashes: List[int] = [hash(self.Name), hash(self.ThreadName)]
+        hashes: List[Union[int, str, Tuple[Any, ...]]] = [
+            "FabFasten",
+            self.Name,
+            self.ThreadName,
+        ]
         option: FabOption
         for option in self.Options:
             hashes.append(option.get_hash())
-        return hash(tuple(hashes))
+        return tuple(hashes)
 
     # FabFasten.get_diameter():
     def get_diameter(self, kind: str) -> float:
@@ -1491,21 +1495,22 @@ class FabJoin(object):
     )
 
     # FabJoin.get_hash():
-    def get_hash(self) -> int:
+    def get_hash(self) -> Tuple[Any, ...]:
         """Return FabJoin hash."""
         start: Vector = self._Start
         end: Vector = self._End
-        values: Tuple[int, ...] = (
-            hash(self._Name),
+        hashes: Tuple[Union[int, str, Tuple[Any, ...]], ...] = (
+            "FabJoin",
+            self._Name,
             self._Fasten.get_hash(),
-            hash(start.x),
-            hash(start.y),
-            hash(start.z),
-            hash(end.x),
-            hash(end.y),
-            hash(end.z),
+            f"{start.x:.6f}",
+            f"{start.y:.6f}",
+            f"{start.z:.6f}",
+            f"{end.x:.6f}",
+            f"{end.y:.6f}",
+            f"{end.z:.6f}",
         )
-        return hash(values)
+        return hashes
 
     # FabJoin.__post_init__():
     def __post_init__(self) -> None:

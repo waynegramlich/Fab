@@ -901,7 +901,7 @@ class FabGeometry(object):
         raise NotImplementedError(f"{type(self)}.Box() is not implemented")
 
     # FabGeometry.get_hash():
-    def get_hash(self) -> int:
+    def get_hash(self) -> Tuple[Any, ...]:
         """Return FabGeometry hash."""
         raise NotImplementedError(f"{type(self)}.get_hash() is not implemented")
 
@@ -947,20 +947,21 @@ class FabCircle(FabGeometry):
         object.__setattr__(self, "Normal", self.Normal + copy)  # Makes a copy.
 
     # FabCircle.get_hash():
-    def get_hash(self) -> int:
+    def get_hash(self) -> Tuple[Any, ...]:
         """Feturn FabCircle hash."""
         center: Vector = self.Center
         normal: Vector = self.Normal
-        values: Tuple[float, ...] = (
-            center.x,
-            center.y,
-            center.z,
-            normal.x,
-            normal.y,
-            normal.z,
-            self.Diameter,
+        hashes: Tuple[Union[int, str, Tuple[Any, ...]], ...] = (
+            "FabCircle.get_hash",
+            f"{center.x:.6f}",
+            f"{center.y:.6f}",
+            f"{center.z:.6f}",
+            f"{normal.x:.6f}",
+            f"{normal.y:.6f}",
+            f"{normal.z:.6f}",
+            f"{self.Diameter:.6f}",
         )
-        return hash(values)
+        return hashes
 
     # FabGeometry.Box():
     @property
@@ -1106,9 +1107,9 @@ class FabPolygon(FabGeometry):
         return box
 
     # FabPolygon.get_hash():
-    def get_hash(self) -> int:
+    def get_hash(self) -> Tuple[Any, ...]:
         """Return the FabPolygon Hash."""
-        hashes: List[int] = []
+        hashes: List[Union[int, str, Tuple[Any, ...]]] = ["FabPolygon"]
         corner: Union[Vector, Tuple[Vector, Union[int, float]]]
         for corner in self.Corners:
             if isinstance(corner, Vector):
@@ -1116,11 +1117,11 @@ class FabPolygon(FabGeometry):
             point: Vector
             radius: float
             point, radius = corner
-            hashes.append(hash(point.x))
-            hashes.append(hash(point.y))
-            hashes.append(hash(point.z))
-            hashes.append(hash(radius))
-        return hash(tuple(hashes))
+            hashes.append(f"{point.x:.6f}")
+            hashes.append(f"{point.y:.6f}")
+            hashes.append(f"{point.z:.6f}")
+            hashes.append(f"{radius:.6f}")
+        return tuple(hashes)
 
     # FabPolygon.__post_init__():
     def __post_init__(self) -> None:
