@@ -10,6 +10,7 @@ PY2MD := py2md.py
 #     py2md.py
 PY_FILES := \
     CNC.py \
+    CQtoFC.py \
     Doc.py \
     Embed.py \
     Geometry.py \
@@ -33,6 +34,7 @@ HTML_FILES := README.html docs/ModFab.html ${PY_FILES:%.py=docs/%.html}
 
 MODULES := \
     CNC \
+    CQtoFc \
     Embed \
     FreeCAD \
     FreeCADGui \
