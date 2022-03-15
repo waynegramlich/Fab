@@ -4,6 +4,10 @@
 # <--------------------------------------- 100 characters ---------------------------------------> #
 
 
+# [Path Inputs](https://forum.freecadweb.org/viewtopic.php?f=15&t=64089&p=552158)
+# [Some Code that might work](https://forum.freecadweb.org/viewtopic.php?f=15&t=64624)
+# [More code](https://forum.freecadweb.org/viewtopic.php?f=15&t=64624&p=554648
+
 import sys
 sys.path.append(".")
 import Embed

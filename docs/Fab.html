@@ -1,78 +1,259 @@
-<h1>Fab: Python Model/Fabrication w/FreeCAD.</h1>
+<h1>Fab: Python Modeling and Fabrication.</h1>
 <h2>Table of Contents:</h2>
 <ul>
 <li><a href="#introduction">Introduction</a></li>
 <li><a href="#overview">Overview</a></li>
+<li><a href="#commonly-used-fab-classes">Commonly Used Fab Classes</a></li>
+<li><a href="#workflow">Workflow</a></li>
 <li><a href="#python-modules">Python Modules</a></li>
 <li><a href="#additional-documentation">Addtional Documentation</a></li>
 <li><a href="#installation">Installation</a></li>
 </ul>
 <h2>Introduction <!-- raw HTML omitted --><!-- raw HTML omitted --></h2>
-<p>The Fab package is a FreeCAD focused Python library that supports a DFM workflow where:</p>
+<p>The Fab package is a FreeCAD/CadQuery focused Python library that supports a DFM workflow where:</p>
 <ul>
-<li>FreeCAD is an open source CAD/CAM (Computer Aided Design/Manufacturing) application,</li>
+<li>FreeCAD/CadQuery are an open source CAD/CAM (Computer Aided Design/Manufacturing) applications,</li>
 <li>Python is rather popular programming language, and</li>
 <li>DFM stands for Design For Manufacture.
-The Fab Python package aids the process of transforming an idea int a design and eventually
+The Fab Python package aids the process of transforming an idea into a design and eventually
 into finalized physical object.</li>
 </ul>
 <p>In Fab, each individual part conceptually starts with some stock material followed by operations
 performed on the stock material (e.g. contour outlines, drill holes, remove pockets, etc.)
-All of the individual parts are assembled into a final assembly which can be viewed
-using FreeCAD.</p>
-<p>Fab supports the concept of multiple different shops, where the specific shop machines
-and tooling are specified.
+All of the individual parts are assembled into a final assembly which can be viewed using FreeCAD.</p>
+<p>Fab supports the concept of multiple different shops,
+where the specific machines and associated tooling within each shop are specified.
 The Fab design in conjunction with a the Fab shop specification generates the various files
 (<code>.cnc</code>, <code>.stl</code>, <code>.dxf</code>, etc.) needed to manufacture the part for a specific shop.
 Thus, one Fab design can be shared among multiple people with different shops and
 still get basically the same physical objects.</p>
 <h2>Overview <!-- raw HTML omitted --><!-- raw HTML omitted --></h2>
-<p>The Fab strategy is to construct nested tree of FabNode's, where a FabNode is the primitive
-base class and roughly (but not exactly) corresponds to an object in the FreeCAD object tree.
-There are various sub-classes of FabNode -- FabGeometry, FabOperation, FabSolid,
-FabAssembly, FabFile, and FabRoot, where FabRoot is the root of the FabNode tree.</p>
-<p>The FabNode tree is constructed in a bottom up fashion:</p>
+<p>The abbreviations NIY (Not Implemented Yet) and WIP (Work In Progress) are used
+to indicate current development status.</p>
+<p>The way Fab works is as follows:</p>
 <ol>
-<li>Various lengths and angles are defined.</li>
-<li>3D points, called Vectors's, are defined using the various lengths and angles.</li>
-<li>Subsets of the Vectors's are projected onto a 2D plane to form lines, arcs, and circles
-which are then converted to form a 2D drawing which based the FreeCAD Draft workbench.
-The 2D geometry is the FabGeometry.</li>
-<li>These drawings are converted into solid geometry using the some additional FabNode's
-(called FabOperation's) that basically schedule the FreeCAD PartDesign workbench to
-perform using a variety of 3D operations (e.g. extrude, pocket, drill, etc.) resulting
-in a FabSolid.</li>
-<li>The various parts are configured into assemblies (FabAssembly) and FreeCAD <code>.FCstd</code> files
-(ModeFabFile) are stored in the root of the tree (FabRoot).</li>
+<li>
+<p>(WIP)
+You write one or more Python design modules (e.g. <code>.py</code> files) that defines of all of the parts
+you wish to buy/create and how they are assembled together.
+Simple projects can be in one Python module,
+but more complex projects will span multiple Python modules (e.g. a Python package.)
+These python modules are written to use generic mills, lathes, laser cutters, 3D printers, etc.
+These designs are meant to parametric in that somebody can change dimensions, materials, etc.</p>
+</li>
+<li>
+<p>(WIP)
+You may have access to multiple shops (e.g your home shop, a maker space, etc.)
+For each shop, somebody writes a Python module that describes the shop machines
+(e.g. 3D printers, laser cutters, mills, lathes, etc.)
+and any associated machine tooling (e.g. mill bits, lathe cutters, etc.)</p>
+</li>
+<li>
+<p>(NIY)
+A Python module is written that does the following:</p>
+<ol>
+<li>
+<p>Imports a collection of design files (step 1) and shops (step 2).</p>
+</li>
+<li>
+<p>Parametric values are specified (e.g. lengths, angle, materials, etc.)</p>
+</li>
+<li>
+<p>Specific shop machines are can be bound to specific parts.
+This will cause the correct output for each part to be generated
+(e.g. <code>.stl</code>, <code>.dxf</code>, <code>.cnc</code> files.)</p>
+</li>
 </ol>
-<p>Once the FabRoot is present there are 4 phases performed:</p>
+<p>In order, to keep this Python module small,
+defaults are used to simplify the shop machine to part binding process.</p>
+</li>
+</ol>
+<p>Using this architecture, the result is shareable parametric designs that fabricated
+using different shops and still get basically the same result.</p>
+<h2>Commonly Used Fab Classes <!-- raw HTML omitted --><!-- raw HTML omitted --></h2>
+<p>Each Fab project is implemented as one or more Python files that import Fab package classes.
+(As a side note, each user facing Fab class is always prefixed with <code>Fab</code>.)</p>
+<p>The Fab strategy is to construct nested tree of FabNode's,
+where a FabNode is a base class that sub-classed to provide additional structure.
+The sub-classes are:</p>
 <ol>
-<li>The FabRoot is iterated in configuration mode whereby constraints are propagated through
-out the Fab tree.  Sometimes there is a constraint loop, which is detected and reported
-as a failure that needs to get fixed.</li>
-<li>The FabRoot is iterated over to construct the 3D model which can be viewed using FreeCAD.</li>
-<li>When the design looks good, all of the manufacturing files are generated
-(e.g. .nc, .stl, .dxf files.)</li>
-<li>The manufacturing files are used to fabricate the individual parts which are
-then assembled into the final assembly.</li>
+<li>
+<p>FabProject: This is the top level FabNode that encapsulates your entire project.</p>
+</li>
+<li>
+<p>FabDocument: This corresponds to a FreeCAD document file (i.e. <code>.FCStd</code>).</p>
+</li>
+<li>
+<p>FabAssembly: This a group of smaller FabAssembly's and FabSolid's.</p>
+</li>
+<li>
+<p>FabSolid: This corresponds to a single Solid object
+that can be represented as CAD industry standard file interchange format call a STEP file.</p>
+</li>
+</ol>
+<p>There is one FabProject at the tree root, typically almost always just one FabDocument,
+followed nested as series of zero, one or more FabAssembly's,
+with the leaf nodes all being FabSolid's.</p>
+<p>An example decomposition is shown immediately below:</p>
+<ul>
+<li>FabProject (root)
+<ul>
+<li>FabDocument (usually only one of these)
+<ul>
+<li>FabAssembly 1 (usually there is just one top level FabAssembly just under the Fab Document)
+<ul>
+<li>FabSolid 1</li>
+<li>FabAssembly 2
+<ul>
+<li>FabSolid 2</li>
+<li>FabSolid 3</li>
+</ul>
+</li>
+<li>FabSolid 4</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>In addition, there is a FabGeometry base class that currently provides the following sub-classes
+which are assembled using Vector's (i.e. points) and dimensions (i.e. floats):</p>
+<ul>
+<li>
+<p>FabPolygon:
+This is defined as a sequence of Vector's that that define a loop of line segments in 3D space.
+In practice, these line segments are always projected onto plane in 3D space before being used.
+Each polygon corner has an optional rounding radius for filleting purposes.</p>
+</li>
+<li>
+<p>FabCircle: This defines a sphere of a known diameter/radius centered around a Vector (point).
+Again, this sphere is projected onto a plane to generate a circle in 3D space.</p>
+</li>
+</ul>
+<p>These FabGeoemtry objects are used by the FabSolid methods to generate 3D solids.</p>
+<p>A FabSolid is produced in a very CNC (Computer Numerical Control) fashion using a sequence of
+one or more mounts (called FabMount's) and performing operations on each FabMount.
+The FabMount class specifies a work plane in 3D space (this essentially a CadQuery Workplane.)
+Once the FabMount is created, sequence of operations are performed using FabMount methods.</p>
+<p>The current FabMount methods are:</p>
+<ul>
+<li>
+<p>extrude: Extrudes from an initial FabGeometry this can generate block of material or a
+more complex shape line C-channel, I-beam, 8020, etc.</p>
+</li>
+<li>
+<p>Pocket: Removes a pocket of material.</p>
+</li>
+<li>
+<p>Drill: Drill holes for fasteners.</p>
+</li>
+</ul>
+<p>It should be noted that order of the operations may be rearranged to optimize CNC G-code generation.</p>
+<h2>Workflow <!-- raw HTML omitted --><!-- raw HTML omitted --></h2>
+<p>The basic work flow is done in phases:</p>
+<ol>
+<li>
+<p>Instantiate Tree:</p>
+<p>The FabNode tree is instantiated once at the beginning and does change afterwards.
+This is performed via classic Python initializer technology where the FabProject
+is instantiated first, which instantiates one (or more) FabDocument's, and so
+forth until the entire tree is present.</p>
+<p>As a side note, the Fab package heavily uses Python both type hints and dataclasses.
+See the section <a href="data-classes-and-type-hints">dataclasses and type hints</a> for more information.</p>
+<p>The <code>run</code> method on the top level FabProject node is used to perform all of the work:
+In short, a Fab program looks like:</p>
+<pre><code>def main() -&gt; None:
+    project: FabProject = MyProject()
+    project.run()
+</code></pre>
+</li>
+<li>
+<p>Constraint Propagation.</p>
+<p>Constraint propagation is how parametric designs are supported.
+Constraint propagation is an iterative process where each FabNode is allow to
+access values defined in other FabNode's to compute new values for itself.
+The <code>produce</code> method of each for each FabNode is recursively called until the
+constraint values no longer change.
+It is possible to get into a loop where some constraints do not converge to a final stable value.
+When this occurs, Fab system lists the values that did not converge.</p>
+</li>
+<li>
+<p>Solid Construction.</p>
+<p>Using the same <code>produce</code> method for defined for each FabNode,
+each produce method is called once is &quot;construct&quot; mode.
+In this mode, the FabMount objects (see above) are activated
+and the underlying CadQuery machinery is activated to produce one STEP file per solid.
+A STEP file is a standard file format for the interchange of 3D parts and assemblies.
+In addition, a JSON file is generated that summarizes what was generated.</p>
+</li>
+<li>
+<p>Visualization.</p>
+<p>The FreeCAD program is used for both visualization of the resulting parts and assembly
+and for generating CNC G-code files.
+For technical reasons, CadQuery can not be subsumed into FreeCad, so this code has
+to be run separately.
+In the visualization step, the previously generated JSON file is read which, in turn,
+causes all of the generated STEP files to be read into FreeCad for viewing purposes.</p>
+<p>If CNC is specified, the FreeCad CNC Path package is accessed to generate G-code files.
+The G-code paths can also be visualized using FreeCAD.
+Indeed, the FreeCAD Path simulator can be used to simulate the machining process.</p>
+</li>
+<li>
+<p>Fabrication.</p>
+<p>The generated <code>.cnc</code>, <code>.dxf</code>, <code>.stl</code> files, can be fed into the appropriate shop machines
+to actually fabricate each part.</p>
+</li>
 </ol>
 <h2>Python Modules <!-- raw HTML omitted --><!-- raw HTML omitted --></h2>
-<p>The basic Python bottom up Python module list is:</p>
+<p>The (current) main Python modules are:</p>
 <ul>
-<li><a href="Utilities.html">Utilities</a>:
-Utilities module of miscellaneous classes -- Colors, Materials, etc.</li>
-<li><a href="Node.html">Node</a>:
-This defines the FabBox bounding box and FabNode tree node classes.</li>
-<li><a href="Geometry.html">Geometry</a>:
-The defines the 2D geometry FabNode classes for using the FreeCAD Draft workbench.</li>
-<li><a href="Solid.html">Solid</a>:
-A library that supports generating parts using the FreeCAD PartDesign workbench.</li>
-<li><a href="Shop.html">Shop</a>:
-A library that defines machines and tooling available in a given shop.</li>
-<li><a href="CNC.html">CNC</a>:
-A library that interfaces with the FreeCAD Path workbench for producing CNC files.</li>
+<li>
+<p><a href="docs/Project.html">Project</a>:
+The top level FabNode sub-classes of FabProject, FabDocument, and FabAssembly.</p>
+</li>
+<li>
+<p><a href="docs/Solid.html">Solid</a>:
+The Solid creation class of FabSolid and FabMount.</p>
+</li>
+<li>
+<p><a href="docs/Geometry.html">Geometry</a>:
+The FabPolygon, FabCircle sub-classes of FabGeometry.</p>
+</li>
+<li>
+<p><a href="docs/Node.html">Node</a>:
+The base FabNode class and associated FabBox class for describing bounding boxes.</p>
+</li>
+<li>
+<p><a href="doc/Utilities.html">Utilities</a>:
+This contains some utility classes like FabColor and FabMaterial.</p>
+</li>
 </ul>
-<h2>Type Hints and Data Classes</h2>
+<p>Additional Python modules are:</p>
+<ul>
+<li>
+<p><a href="docs/Shop.html">Shop</a>:
+Classes for defining Shop machines and tooling.</p>
+</li>
+<li>
+<p><a href="docs/CNC.html">CNC</a>:
+Classes for accessing the FreeCad Path CNC G-code generation library.</p>
+</li>
+<li>
+<p><a href="docs/Join.html">Join</a>:
+Classes for defining fastener stacks of screws, bolts, washers, nuts, etc.</p>
+</li>
+<li>
+<p><a href="docs/Doc.html">Doc</a>:
+A program for reading Python files and generating HTML documentation.</p>
+</li>
+<li>
+<p><a href="docs/BOM.html">BOM</a>:
+The beginnings of a Bill of Materials manager.</p>
+</li>
+</ul>
+<h2>Type Hints and Data Classes <!-- raw HTML omitted --><!-- raw HTML omitted --></h2>
+<p>(This section is really painful to read and needs to be fixed.)</p>
 <p>If you are completely unfamiliar with Python Type hints, please see the following references:</p>
 <ul>
 <li><a href="http://mypy-lang.org/">mypy</a></li>
