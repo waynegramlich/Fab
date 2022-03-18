@@ -1,27 +1,18 @@
-"""Fab: Python Modeling and Fabrication.
-
+# Fab: Python Modeling and Fabrication.
 ## Table of Contents:
 
 * [Introduction](#introduction)
-* [Overview](#overview)
-* [Commonly Used Fab Classes](#commonly-used-fab-classes)
 * [Workflow](#workflow)
-* [Type Hints and Data Classes](#type-hints-and-data-classes)
 * [Python Modules](#python-modules)
-* [Bearing Block Example](#bearing-block-example)
 * [Addtional Documentation](#additional-documentation)
 * [Installation](#installation)
 
-## Introduction
+## Introduction <a name="introduction"></a>
 
 The Fab package is a FreeCAD/CadQuery focused Python library that supports a DFM workflow where:
-
 * FreeCAD/CadQuery are an open source CAD/CAM (Computer Aided Design/Manufacturing) applications,
-
 * Python is rather popular programming language, and
-
 * DFM stands for Design For Manufacture.
-
 The Fab Python package aids the process of transforming an idea into a design and eventually
 into finalized physical object.
 
@@ -46,8 +37,8 @@ The way Fab works is as follows:
 1. (WIP)
    You write one or more Python design modules (e.g. `.py` files) that defines of all of the parts
    you wish to buy/create and how they are assembled together.
-   While simple projects can be in one Python module,
-   more complex projects will span multiple Python modules (e.g. a Python package.)
+   Simple projects can be in one Python module,
+   but more complex projects will span multiple Python modules (e.g. a Python package.)
    These python modules are written to use generic mills, lathes, laser cutters, 3D printers, etc.
    These designs are meant to parametric in that somebody can change dimensions, materials, etc.
 
@@ -74,7 +65,7 @@ The way Fab works is as follows:
 Using this architecture, the result is shareable parametric designs that fabricated
 using different shops and still get basically the same result.
 
-## Commonly Used Fab Classes
+## Commonly Used Fab Classes <a name="commonly-used-fab-classes"></a>
 
 Each Fab project is implemented as one or more Python files that import Fab package classes.
 (As a side note, each user facing Fab class is always prefixed with `Fab`.)
@@ -83,18 +74,13 @@ The Fab strategy is to construct nested tree of FabNode's,
 where a FabNode is a base class that sub-classed to provide additional structure.
 The sub-classes are:
 
-1. FabProject:
-   This is the top level FabNode that encapsulates your entire project.
+1. FabProject: This is the top level FabNode that encapsulates your entire project.
 
-2. FabDocument:
-   This corresponds to a FreeCAD document file (i.e. `.FCStd`).
-   There is usually only one of these.
+2. FabDocument: This corresponds to a FreeCAD document file (i.e. `.FCStd`).
 
-3. FabAssembly:
-   This a group of smaller FabAssembly's and individual FabSolid's.
+3. FabAssembly: This a group of smaller FabAssembly's and FabSolid's.
 
-4. FabSolid:
-   This corresponds to a single Solid object
+4. FabSolid: This corresponds to a single Solid object
    that can be represented as CAD industry standard file interchange format call a STEP file.
 
 There is one FabProject at the tree root, typically almost always just one FabDocument,
@@ -105,7 +91,7 @@ An example decomposition is shown immediately below:
 
 * FabProject (root)
   * FabDocument (usually only one of these)
-    * FabAssembly 1
+    * FabAssembly 1 (usually there is just one top level FabAssembly just under the Fab Document)
       * FabSolid 1
       * FabAssembly 2
         * FabSolid 2
@@ -181,7 +167,7 @@ The basic work flow is done in phases:
    A STEP file is a standard file format for the interchange of 3D parts and assemblies
    by Mechanical CAD program..
    In addition, a JSON file is generated that summarizes what was generated.
-   
+
 4. Visualization and CNC.
 
    The FreeCAD program is used for both visualization of the resulting parts and assembly
@@ -201,8 +187,6 @@ The basic work flow is done in phases:
    to actually fabricate each part.
 
 ## Python Modules <a name="python-modules"></a>
-
-TODO: (Reconcile Commonly USed Fab Classes with this section.)
 
 The (current) main Python modules are:
 
@@ -380,7 +364,7 @@ for one of the Fab classes and the Fab code will get confused.
 
 TBD:
 
-<!-- 
+<!--
 Some URL's:
 Note: [typeguard and dataclasses](https://stackoverflow.com/questions/71309231/typeddict-and-dataclass-check-with-typeguard)
 Note: [Awesome Python Typing](https://github.com/typeddjango/awesome-python-typing)
@@ -388,7 +372,7 @@ Note: [??](https://www.youtube.com/watch?v=WJmqgJn9TXg)
 Note: [Which Python @dataclass is best?](https://www.youtube.com/watch?v=vCLetdhswMg)
 -->
 
-## Additional documentation
+## Additional documentation <a name="additional-documentation"></a>
 
 There are some additional miscellaneous Python modules:
 * [Doc](docs/Doc.html):
@@ -421,5 +405,5 @@ These installation instructions are currently focused towards the Ubuntu 20.04 L
 
      make install
 
-"""
+
 

@@ -1,4 +1,4 @@
-# Fab: Python Model/Fabrication w/FreeCAD.
+# Fab: Python Modelinng and Fabrication.
 
-Please see [Fab Documentation](docs/Fab.html)
+Please see [Fab Documentation](docs/Fab.md)
 
