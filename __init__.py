@@ -421,5 +421,151 @@ These installation instructions are currently focused towards the Ubuntu 20.04 L
 
      make install
 
+## Installation
+
+Installation is always a problematic since there are mulitple operating systems out there
+(e.g. Windows, MacOS, Linux).
+In the Linux space, there are multple distributions (e.g. Ubuntu, Red Hat, Arch, etc.)
+On top of that there various versions of all of these platforms.
+
+Since this code is currently only has one developer,
+these installtion instructions are focused on Ubuntu 20.04LTS.
+In late November of 2202, the plan is to update to Ubuntu 22.04LTS.
+
+The three installtions steps are:
+
+1. [Install miniconda](#install-mini-conda)
+
+1. [Install CadQuery](#install-cad-query)
+
+2. [Install FreeCad](#install-freacad)
+
+3. [Install Fab](#install-fab)
+
+### Install miniconda
+
+Cadquery is currently deployed on via [miniconda](https://docs.conda.io/en/latest/miniconda.html).
+
+These are the steps to follow to install miniconda:
+
+1. Look at:
+   [Mini-conda linux installer](https://docs.conda.io/en/latest/miniconda.html#linux-installers)
+
+2. Grab Mminicconda with Python 3.8 for Ubuntu 20.04LTS:
+
+    ```
+        wget https://repo.anaconda.com/miniconda/Miniconda3-py38_4.10.3-Linux-x86_64.sh \
+	  -O /tmp/miniconda.sh
+    ```
+
+3. Verify [Miniconda hash information](https://docs.conda.io/en/latest/miniconda_hashes.html)
+
+   ```
+        shasum -a 256 /tmp/miniconda.sh
+   ```
+
+4. Follow the instructions in
+   [How to Install Miniconda In linux](https://ostechnix.com/how-to-install-miniconda-in-linux/):
+
+   ```
+        bash /tmp/miniconda.sh
+   ```
+
+5. Conda stuff was added to the end of `~/.bashrc` and `~/miniconda3` directory created.
+
+6. Do intilial miniconda activate:
+
+   Run:
+
+   ```
+        source `~/.bashrc`
+   ```
+
+   There is a new `(base) ` prefix in your shell prompt.
+
+   To avoid automatic conda on startup:
+
+   ```
+        conda config --set auto_activate_base false
+	source ~/.bashrc
+   ```
+
+7. Activate and decativate conda:
+
+   To activate/deactivate miniconda, use one of the commands below
+
+   ```
+        conda activate
+	conda deactive
+   ```
+
+8. Update miniconda.
+
+
+   ```
+        conda activate
+        conda update conda
+   ```
+
+If you eventually decide remove miniconda, do the following:
+
+1. Edit `~/.bashrc` and remove the stuff from `# >>> conda initialize >>>` to
+   `# <<< conda initialize <<<<`.
+
+2. Remove the `miniconda3` directory:
+
+   ```
+        rm -rf ~/miniconda3 ~/.condarc ~/.conda ~/continuum
+   ```
+
+### Install CadQuery
+
+After minconda is installed do the following:
+
+1. Install master branch of cad-query (5+ minutes is common):
+
+   ```
+        time conda install -c cadquery -c conda-forge cadquery=master
+   ```
+
+
+2. In theory, get a stable version of cadqury:
+
+   ```
+        time conda install -c conda-forge -c cadquery cadquery=2
+   ```
+
+   Sometimes this step does not work, so this step may need to be skipped.
+
+3. Test cadquery installation:
+
+   ```
+        python3
+        >> import cadquery
+        >> cadquery.Workplane('XY').box(1,2,3).toSvg()
+        # An SVG file should show up in your current directory.
+        # Type Control-C to exit python3
+   ```
+
+4. Install CQ-editor (5+ minutes is common):
+
+   ```
+        time conda install -c cadquery -c conda-forge cq-editor=master
+   ```
+
+5.Run `cq-editor`:
+
+   ```
+        cq-editor &
+   ```
+
+### Install FreeCad
+
+FreeCAd installation goes here.
+
+### Install Fab
+
+Fab installations instructions go here.
+
 """
 

@@ -2,17 +2,25 @@
 ## Table of Contents:
 
 * [Introduction](#introduction)
+* [Overview](#overview)
+* [Commonly Used Fab Classes](#commonly-used-fab-classes)
 * [Workflow](#workflow)
+* [Type Hints and Data Classes](#type-hints-and-data-classes)
 * [Python Modules](#python-modules)
+* [Bearing Block Example](#bearing-block-example)
 * [Addtional Documentation](#additional-documentation)
 * [Installation](#installation)
 
-## Introduction <a name="introduction"></a>
+## Introduction
 
 The Fab package is a FreeCAD/CadQuery focused Python library that supports a DFM workflow where:
+
 * FreeCAD/CadQuery are an open source CAD/CAM (Computer Aided Design/Manufacturing) applications,
+
 * Python is rather popular programming language, and
+
 * DFM stands for Design For Manufacture.
+
 The Fab Python package aids the process of transforming an idea into a design and eventually
 into finalized physical object.
 
@@ -37,8 +45,8 @@ The way Fab works is as follows:
 1. (WIP)
    You write one or more Python design modules (e.g. `.py` files) that defines of all of the parts
    you wish to buy/create and how they are assembled together.
-   Simple projects can be in one Python module,
-   but more complex projects will span multiple Python modules (e.g. a Python package.)
+   While simple projects can be in one Python module,
+   more complex projects will span multiple Python modules (e.g. a Python package.)
    These python modules are written to use generic mills, lathes, laser cutters, 3D printers, etc.
    These designs are meant to parametric in that somebody can change dimensions, materials, etc.
 
@@ -65,7 +73,7 @@ The way Fab works is as follows:
 Using this architecture, the result is shareable parametric designs that fabricated
 using different shops and still get basically the same result.
 
-## Commonly Used Fab Classes <a name="commonly-used-fab-classes"></a>
+## Commonly Used Fab Classes
 
 Each Fab project is implemented as one or more Python files that import Fab package classes.
 (As a side note, each user facing Fab class is always prefixed with `Fab`.)
@@ -74,13 +82,18 @@ The Fab strategy is to construct nested tree of FabNode's,
 where a FabNode is a base class that sub-classed to provide additional structure.
 The sub-classes are:
 
-1. FabProject: This is the top level FabNode that encapsulates your entire project.
+1. FabProject:
+   This is the top level FabNode that encapsulates your entire project.
 
-2. FabDocument: This corresponds to a FreeCAD document file (i.e. `.FCStd`).
+2. FabDocument:
+   This corresponds to a FreeCAD document file (i.e. `.FCStd`).
+   There is usually only one of these.
 
-3. FabAssembly: This a group of smaller FabAssembly's and FabSolid's.
+3. FabAssembly:
+   This a group of smaller FabAssembly's and individual FabSolid's.
 
-4. FabSolid: This corresponds to a single Solid object
+4. FabSolid:
+   This corresponds to a single Solid object
    that can be represented as CAD industry standard file interchange format call a STEP file.
 
 There is one FabProject at the tree root, typically almost always just one FabDocument,
@@ -91,7 +104,7 @@ An example decomposition is shown immediately below:
 
 * FabProject (root)
   * FabDocument (usually only one of these)
-    * FabAssembly 1 (usually there is just one top level FabAssembly just under the Fab Document)
+    * FabAssembly 1
       * FabSolid 1
       * FabAssembly 2
         * FabSolid 2
@@ -187,6 +200,8 @@ The basic work flow is done in phases:
    to actually fabricate each part.
 
 ## Python Modules <a name="python-modules"></a>
+
+TODO: (Reconcile Commonly USed Fab Classes with this section.)
 
 The (current) main Python modules are:
 
@@ -372,7 +387,7 @@ Note: [??](https://www.youtube.com/watch?v=WJmqgJn9TXg)
 Note: [Which Python @dataclass is best?](https://www.youtube.com/watch?v=vCLetdhswMg)
 -->
 
-## Additional documentation <a name="additional-documentation"></a>
+## Additional documentation
 
 There are some additional miscellaneous Python modules:
 * [Doc](docs/Doc.html):
@@ -404,6 +419,151 @@ These installation instructions are currently focused towards the Ubuntu 20.04 L
 * Run `make install`:
 
      make install
+
+## Installation
+
+Installation is always a problematic since there are mulitple operating systems out there
+(e.g. Windows, MacOS, Linux).
+In the Linux space, there are multple distributions (e.g. Ubuntu, Red Hat, Arch, etc.)
+On top of that there various versions of all of these platforms.
+
+Since this code is currently only has one developer,
+these installtion instructions are focused on Ubuntu 20.04LTS.
+In late November of 2202, the plan is to update to Ubuntu 22.04LTS.
+
+The three installtions steps are:
+
+1. [Install miniconda](#install-mini-conda)
+
+1. [Install CadQuery](#install-cad-query)
+
+2. [Install FreeCad](#install-freacad)
+
+3. [Install Fab](#install-fab)
+
+### Install miniconda
+
+Cadquery is currently deployed on via [miniconda](https://docs.conda.io/en/latest/miniconda.html).
+
+These are the steps to follow to install miniconda:
+
+1. Look at:
+   [Mini-conda linux installer](https://docs.conda.io/en/latest/miniconda.html#linux-installers)
+
+2. Grab Mminicconda with Python 3.8 for Ubuntu 20.04LTS:
+
+    ```
+        wget https://repo.anaconda.com/miniconda/Miniconda3-py38_4.10.3-Linux-x86_64.sh 	  -O /tmp/miniconda.sh
+    ```
+
+3. Verify [Miniconda hash information](https://docs.conda.io/en/latest/miniconda_hashes.html)
+
+   ```
+        shasum -a 256 /tmp/miniconda.sh
+   ```
+
+4. Follow the instructions in
+   [How to Install Miniconda In linux](https://ostechnix.com/how-to-install-miniconda-in-linux/):
+
+   ```
+        bash /tmp/miniconda.sh
+   ```
+
+5. Conda stuff was added to the end of `~/.bashrc` and `~/miniconda3` directory created.
+
+6. Do intilial miniconda activate:
+
+   Run:
+
+   ```
+        source `~/.bashrc`
+   ```
+
+   There is a new `(base) ` prefix in your shell prompt.
+
+   To avoid automatic conda on startup:
+
+   ```
+        conda config --set auto_activate_base false
+	source ~/.bashrc
+   ```
+
+7. Activate and decativate conda:
+
+   To activate/deactivate miniconda, use one of the commands below
+
+   ```
+        conda activate
+	conda deactive
+   ```
+
+8. Update miniconda.
+
+
+   ```
+        conda activate
+        conda update conda
+   ```
+
+If you eventually decide remove miniconda, do the following:
+
+1. Edit `~/.bashrc` and remove the stuff from `# >>> conda initialize >>>` to
+   `# <<< conda initialize <<<<`.
+
+2. Remove the `miniconda3` directory:
+
+   ```
+        rm -rf ~/miniconda3 ~/.condarc ~/.conda ~/continuum
+   ```
+
+### Install CadQuery
+
+After minconda is installed do the following:
+
+1. Install master branch of cad-query (5+ minutes is common):
+
+   ```
+        time conda install -c cadquery -c conda-forge cadquery=master
+   ```
+
+
+2. In theory, get a stable version of cadqury:
+
+   ```
+        time conda install -c conda-forge -c cadquery cadquery=2
+   ```
+
+   Sometimes this step does not work, so this step may need to be skipped.
+
+3. Test cadquery installation:
+
+   ```
+        python3
+        >> import cadquery
+        >> cadquery.Workplane('XY').box(1,2,3).toSvg()
+        # An SVG file should show up in your current directory.
+        # Type Control-C to exit python3
+   ```
+
+4. Install CQ-editor (5+ minutes is common):
+
+   ```
+        time conda install -c cadquery -c conda-forge cq-editor=master
+   ```
+
+5.Run `cq-editor`:
+
+   ```
+        cq-editor &
+   ```
+
+### Install FreeCad
+
+FreeCAd installation goes here.
+
+### Install Fab
+
+Fab installations instructions go here.
 
 
 
