@@ -2,8 +2,6 @@
 <h2>Table of Contents:</h2>
 <ul>
 <li><a href="#introduction">Introduction</a></li>
-<li><a href="#overview">Overview</a></li>
-<li><a href="#commonly-used-fab-classes">Commonly Used Fab Classes</a></li>
 <li><a href="#workflow">Workflow</a></li>
 <li><a href="#python-modules">Python Modules</a></li>
 <li><a href="#additional-documentation">Addtional Documentation</a></li>
@@ -171,10 +169,10 @@ In short, a Fab program looks like:</p>
 <li>
 <p>Constraint Propagation.</p>
 <p>Constraint propagation is how parametric designs are supported.
-Constraint propagation is an iterative process where each FabNode is allow to
+Constraint propagation is an iterative process where each FabNode is allowed to
 access values defined in other FabNode's to compute new values for itself.
-The <code>produce</code> method of each for each FabNode is recursively called until the
-constraint values no longer change.
+The <code>produce</code> recursively called for each FabNode is the tree
+until constraint values no longer change.
 It is possible to get into a loop where some constraints do not converge to a final stable value.
 When this occurs, Fab system lists the values that did not converge.</p>
 </li>
@@ -182,21 +180,22 @@ When this occurs, Fab system lists the values that did not converge.</p>
 <p>Solid Construction.</p>
 <p>Using the same <code>produce</code> method for defined for each FabNode,
 each produce method is called once is &quot;construct&quot; mode.
-In this mode, the FabMount objects (see above) are activated
-and the underlying CadQuery machinery is activated to produce one STEP file per solid.
-A STEP file is a standard file format for the interchange of 3D parts and assemblies.
+In this mode, the FabMount objects (mentioned above in the previous section) are activated
+and the underlying CadQuery machinery is activated to produce one STEP file per FabSolid.
+A STEP file is a standard file format for the interchange of 3D parts and assemblies
+by Mechanical CAD program..
 In addition, a JSON file is generated that summarizes what was generated.</p>
 </li>
 <li>
-<p>Visualization.</p>
+<p>Visualization and CNC.</p>
 <p>The FreeCAD program is used for both visualization of the resulting parts and assembly
 and for generating CNC G-code files.
-For technical reasons, CadQuery can not be subsumed into FreeCad, so this code has
-to be run separately.
-In the visualization step, the previously generated JSON file is read which, in turn,
-causes all of the generated STEP files to be read into FreeCad for viewing purposes.</p>
-<p>If CNC is specified, the FreeCad CNC Path package is accessed to generate G-code files.
-The G-code paths can also be visualized using FreeCAD.
+For technical reasons, CadQuery can not be subsumed into FreeCad,
+so this code has to be run separately.
+In the visualization step, the generated JSON file is read and processed causing all of
+the previously generated STEP files to be read into FreeCad for viewing purposes.</p>
+<p>If CNC G-Code generation is required, the FreeCad CNC Path package is used to generate G-code.
+The generated G-code paths can also be visualized using FreeCAD.
 Indeed, the FreeCAD Path simulator can be used to simulate the machining process.</p>
 </li>
 <li>
@@ -253,204 +252,127 @@ The beginnings of a Bill of Materials manager.</p>
 </li>
 </ul>
 <h2>Type Hints and Data Classes <!-- raw HTML omitted --><!-- raw HTML omitted --></h2>
-<p>(This section is really painful to read and needs to be fixed.)</p>
-<p>If you are completely unfamiliar with Python Type hints, please see the following references:</p>
-<ul>
-<li><a href="http://mypy-lang.org/">mypy</a></li>
-<li><a href="https://docs.python.org/3/library/typing.html"><code>typing</code> -- Support for type hints</a></li>
-</ul>
-<p>While the underlying FreeCAD Python support currently does not support Python type hints,
-the Fab Python package is heavily annotated with Python Type Hints.
-What this means is that if you write your Python code that uses the Fab package using type hints,
-you can frequently uncover errors via before execution using static analysis with the
-<code>mypy</code> program.</p>
-<p>In addition, all Fab Package classes are done using Python data classes (see immediately below).
-Python data classes which <em><strong>require</strong></em> type hints.
-Since the way the Fab package requires that you that you sub-class from Fab package classes,
-its necessary to learn more about both topics.</p>
-<p>The reference documentation of <a href="https://docs.python.org/3/library/dataclasses.html">Data Classes</a>
-is actually quite dense and difficult to understand.
-The readily available free tutorials are good,
-but tend to be introductory without getting into important details.
-This section attempts to delve into the data class issues that are important for the Fab package.</p>
-<p>A basic usage of data classes is:</p>
-<pre><code> # Import the `dataclass` &quot;decorator&quot; from the `dataclasses` package.
- from dataclasses import dataclass, field
+<p>The Fab project is implemented using both Python type hints and Python data classes.
+This section briefly discusses Python type hints and
+then goes into significantly more detail on using Python data classes and some of there &quot;quirks&quot;.
+This discussion is in preparation for the a simple Fab example in the following section.</p>
+<p>In short, Python type hints are based on importing the Python <code>typing</code> module and
+decorating variables, class attributes and return values with static type information.
+In general, type hints improve the legibility of Python functions and class methods.
+In addition, there are various type checking and documentation tools that use these type hints.
+In particular, the <code>mypy</code> program reads the type hints and attempts to flag static typing errors.
+There are plenty of Python type hint tutorials available in the web
+and you should read a few of them to get the idea how Python type hints work.
+You are strongly encouraged to learn use <code>mypy</code> on your own code to find and fix static type errors.</p>
+<p>Next, all of Fab classes are implemented as the Python data classes.
+Python data classes require Python type hints.
+There are plenty of type hint web tutorials available,
+but most data classes tutorials are pretty basic and miss some important issues.
+Please read some of the Python data classes tutorials,
+but come back for the discussion about data classes sub-class immediately below.</p>
+<p>In short, a Python data class is just a container with named and typed entries.
+For example:</p>
+<pre><code>     from dataclasses import dataclass, field  # `field` is use later on.
+     from typing import List
 
- # Define the dataclass:
- @dataclass  # Decorator that specifies class is a data class
- class ClassName(SubClass):  # The `class` definition with associated SubClass
-     '''Python class documentation string goes here.'''
+     @dataclass
+     class Book(object):
+         Title: str
+         Author: str
+         ISBN: str
 
-     FieldName1: Type1   # There ***MUST*** be at least one field defined.
-     FieldName2: Type2
-     # ...
-     FieldNameN: TypeN
-
-     def __post_init__(self) -&gt; None:
-         '''Python method documentation string goes here.'''
-         super().__post_init__()  # Required for sub-class.  Not needed for a base dataclass.
-
-         # Additional initialization code goes here.
+     def __post_init__(self) -&gt; None:   # _post_init__ is discussed later on
+         pass
 </code></pre>
-<p>The key thing is that it is a Python class definition with a preceding <code>@dataclass</code> decorator.
-There are one or more field names followed by a colon and a type hint.
-What the class decorator does is generate both an <code>__init__()</code> method and a <code>__repr__()</code>.</p>
-<p>The field names are defined in one of three ways:</p>
-<pre><code>    Required: Type
-    Optional: Type = InitialValue
-    Private: Type = field(init=False, ...)
+<p>The Python <code>@dataclass</code> decorator creates an <code>__init__</code>  for the <code>Book</code> class object;
+The generated <code>__init__</code> method looks basically as follows:</p>
+<pre><code>     def __init__(self, Title: str, Author: str, ISBN: str) -&gt; None:
+         self.Title = Title
+         self.Author = Author
+         self.ISBN = ISBN
+         if hasattr(self, &quot;__post_init__&quot;):
+             self.__post_init__()
 </code></pre>
-<p>All required and optional fields show up in the generated <code>__init__()</code> method.
-None of the private fields show up in the <code>__init__()</code> method.</p>
-<p>Understanding the <code>__init__()</code> method construction is <em>very</em> important.
-The order that fields show up in the <code>__init__()</code> method depends on sub-classing.
-Look at the following contrived example:</p>
-<pre><code> @dataclass
- class BaseClass(object):
-    BR1: BRT1  # Base Required 1
-    BR2: BRT2  # Base Required 2
-    BO1: BOT1 = BV1  # Base Optional 1
-    BO2: BOT2 = BV2  # Base Optional 2
-    BP1: BPT1 = field(init=False)  # Base Private 1
-    BP2: BPT2 = field(init=False)  # Base Private 2
-
- @dataclass
- class SubClass(object):
-    SR1: SRT1  # Base required type
-    SR2: SRT2  # Base required type
-    SO1: SOT1 = SV1 # Base optional type
-    SO2: SOT2 = SV2  # Base optional type
-    SP1: SPT1 = field(init=False)
-    SP2: SPT2 = field(init=False)
+<p>The <code>~@dataclass</code> decorator generates other methods (e.g. <code>__repr__</code>, <code>__eq__</code>, etc.)
+These other generated methods are not of any particular interest to the Fab package.</p>
+<p>A trivial example of usage Book class is shown immediately below:</p>
+<pre><code>     books: List[Book]: = [
+         Book(&quot;Snow Crash&quot;, &quot;Neal Stephenson&quot;, &quot;0553380958&quot;),
+         Book(&quot;The Shockwave Rider&quot;, &quot;John Brunner&quot;, &quot;0345467175&quot;),
+     ]
 </code></pre>
-<p>The generated <code>__init__()</code> method for BassClass is:</p>
-<pre><code> def __init__(BR1: BRT1, BR2: BRT2, BO1: BOT1 = BV1, BO2: BPT2 = BV2) -&gt; None:
-    ...
-</code></pre>
-<p>The generated <code>__init__()</code> method for SubClass is:</p>
-<pre><code> def __init__(BR1: BRT1, BR2: BRT2, BO1: BOT1 = BV1, BO2: BOT2 = BV2,
-              SR1: SRT1, SR2: SRT2, SO1: SOT1 = SV1, SO2: SOT2 = BV2) -&gt; None:
-     # ...
-</code></pre>
-<p>Notice that all of the required arguments are sorted first, followed by the optional arguments.
-None of the private fields show up in the <code>__init__()</code> method.</p>
-<p>This is really important.  All dataclass's should implement the <code>__post_init__()</code> method.
-This method is called by at the end of the generated <code>__init__()</code> method.  There are a
-few situations where it can be skipped, but they are not worth figuring out.  In addition,
-each sub_class needs to call the <code>__post_init__()</code> method of its super class.</p>
-<pre><code> @dataclass
- class BassClass(object):
-     '''Documentation string.'''
-
-     Field1: Type1
-     ...
-     FieldN: TypeN
-
-     def __post_init__(self) -&gt; None:
-         '''Documentation String.'''
-         # Either `pass` or some other initialization code goes here.
-
- @dataclass
- class SubClass(BaseClass):
-     '''Documentation string.'''
-
-     SField1: SType1
-     ...
-     SFieldN: STypeN
-
-     def __post_init__(self) -&gt; None:
-         '''Documentation string.'''
-         super().__post_init__()
-         # More initialization code goes here.
-</code></pre>
-<p>Next, the <code>__repr__()</code>  method needs discussion.  In general, every field will show up
-in the <code>__repr__()</code> method unless it is explicitly disabled.  The way to disable the
-field in <code>__repr__()</code> is as follows:</p>
-<pre><code>RequiredField: RequiredType = field(init=False)
-OptionalField: OptionalType = field(init=False, default=OptionalValue)
-PrivateField: PrivateType = field(init=False, repr=False)
-</code></pre>
-<p>By common convention, classes, methods, and fields that start with an underscore (<code>'_'</code>)
-are considered to be private and only the &quot;owner&quot; should access these fields.
-While other languages enforce private fields, Python does not.
-The preceding underscore convention is widely adhered to through out large bodies of Python code.</p>
-<p>Sometime it is desirable to provide read only access to field.
-The preferred way to solve this problem is to use a python property.
-(See <a href="https://pythonguide.readthedocs.io/en/latest/python/property.html">Methods and @property)</a>
-for more detail.</p>
-<p>In short a private field can provide a public read-only access as follows:</p>
-<pre><code> @dataclass
- class MyClass(object):
-     '''MyClass documentation string.'''
-
-     _Field: FieldType   # Internal field declaration
-
-    # Accessor function for
-    @property
-    def Field(self) -&gt; FieldType:
-        '''Field documentation string.'''
-        return self._Field
-</code></pre>
-<p>It should be noted that many of the most common FreeCAD base types
-(e.g. Vector, Rotation, Placement, etc.) are <em>mutable</em>, where mutable means that
-the contents can be changed.
-Usually, people like to treat these classes as if they are immutable.
-It is extremely copy to have accessor functions that return a copy of a private field.
-For the FreeCAD Vector class, the easiest way to make a copy is as follows:</p>
-<pre><code> @property
- def Normal(self) -&gt; Vector:
-     '''Return the Normal to the object.'''
-     copy: Vector = Vector()  # Returns Vector(0, 0, 0)
-     return self._Normal + copy  # Returns a copy of self._Normal.
-</code></pre>
-<p>Likewise when mutable object is passed into dataclass, it is frequently desirable to
-make a private copy.  This can be done in <code>__post_init__()</code>:</p>
+<p>Python data classes can be sub-classed.
+For example,</p>
 <pre><code>     @dataclass
-     class LineSegment(object):
-         '''LineSegment document string goes here.'''
+     class SeriesBook(Book):
+          Series: str
+          Number: int
 
-         _Point1: Vector
-         _Point2: Vector
-         _copy: Vector = field(init=False, repr=False)
-
-         def __post_init__(self) -&gt; self:
-             '''Document string goes here.'''
-             self._copy: Vector = Vector()
-             self._Point1 += copy  # Force copy into _Point1
-             self._Point2 += copy  # Force copy into _Point2
-
-         @property
-         def Point1(self) -&gt; Vector:
-             '''Document string goes here.'''
-             return self._Point1 + self._copy  # Return copy of _Point1
-
-         @property
-         def Point2(self) -&gt; Vector:
-             '''Document string goes here.'''
-             return self._Point2 + self._copy  # Return copy of _Point2
+     def __post_init__(self) -&gt; None:
+          super().__post_init__()
 </code></pre>
-<p>Usage of the class above would be like:</p>
-<pre><code> point1: Vector = Vector(1, 2, 3)
- point2: Vector = Vector(4, 5, 6)
- line_segment: LineSegment = LineSegment(point1, point2)
- # Copies of *point1* and *point2* are stored in *line_segment*.
-
- assert line_segment.point1 == Vector(1, 2, 3)
-
- point1.x = -1  # Modify point1
- assert point1 == Vector(-1, 2, 3)
-
- segment_point1: Vector = line_segment.Point1
- assert segment.point1 == Vector(1, 2, 3)  # The copies were used.
-
- segment_point1.y = -2
- assert segment_point == Vector(1, -2, 3)
-
- assert line_segment.Point1 == Vector(1, 2, 3)  # The accessor always returns a copy.
+<p>With usage:</p>
+<pre><code>     books.extend([
+         SeriesBook(&quot;The Fellowship of the Ring&quot;, &quot;J. R. R. Tolkien&quot;, &quot;0008376123&quot;,
+                    &quot;Lord of the Rings&quot;, 1),
+         SeriesBook(&quot;The Fellowship of the Ring&quot;, &quot;J. R. R. Tolkien&quot;, &quot;0345339711&quot;,
+                    &quot;Lord of the Rings&quot;, 2),
+         SeriesBook(&quot;The Return of the King&quot;, &quot;J. R. R. Tolkien&quot;, &quot;1514298139)&quot;,
+                    &quot;Lord of the Rings&quot;, 3),
+     ])
 </code></pre>
-<p>It would be nice if the FreeCAD Vector class were not mutable, but since it is not,
-extra care is the prudent way to avoid accidental mutations of internal values.</p>
+<p>You will notice that there is this method called <code>__post_init__()</code> is being shown.
+This method is used to initialize attributes that are not specified by <strong>init</strong> arguments.
+A contrived example, is to add a <code>Hash</code> attribute to the <code>Book</code> class:</p>
+<pre><code>     from dataclasses import import dataclass, field  # Note the added `field` type
+
+     @dataclass
+     class Book(object):
+         Title: str
+         Author: str
+         ISBN: str
+         Hash: int = field(init=False)  # Not an argument in the __init__() method
+
+     def __post_init__(self) -&gt; None:
+         self.Hash = hash(self.Title + self.Author + self.ISBN)
+
+     @dataclass
+     class SeriesBook(Book):
+          Series: str
+          Number: int
+
+     def __post_init__(self) -&gt; None:
+          super().__post_init__()
+</code></pre>
+<p>The <code>Book.__init__()</code> method always calls <code>__post_init__()</code> to initialize attributes that do not
+explicit <code>__init__()</code> method arguments (e.g. <code>Hash</code>.)</p>
+<p>With that introduction to sub-classing Python data classes, here are the &quot;rules&quot; for
+sub-classing Fab classes:</p>
+<ol>
+<li>
+<p>All FabClass's are Python data classes.</p>
+</li>
+<li>
+<p>All FabClass's have a <code>__post_init__()</code> method that <em><strong>MUST</strong></em> get called.</p>
+</li>
+<li>
+<p>Standard usage of Fab classes requires you to sub-class the
+FabProject, FabDocument, FabAssembly and FabSolid classes as Python data classes.</p>
+</li>
+<li>
+<p>This means that your sub-classes <em><strong>MUST</strong></em> define a <code>__post_init__()</code> method, <em><strong>AND</strong></em> ...</p>
+</li>
+<li>
+<p>Your <code>__post_init__()</code> method <em><strong>MUST</strong></em> call <code>super().__post_init()</code>.
+It can do other stuff as well, but the call to <code>__post_init__()</code> is required.</p>
+</li>
+</ol>
+<p>If you do not follow these steps,
+the Fab system will break horribly because <code>__post_init__()</code> does not get properly called
+for one of the Fab classes and the Fab code will get confused.</p>
+<h2>Bearing Block Example</h2>
+<p>(This section is really painful to read and needs to be fixed.)</p>
+<!-- raw HTML omitted -->
 <h2>Additional documentation <!-- raw HTML omitted --><!-- raw HTML omitted --></h2>
 <p>There are some additional miscellaneous Python modules:</p>
 <ul>
