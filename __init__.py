@@ -206,36 +206,36 @@ TODO: (Reconcile Commonly USed Fab Classes with this section.)
 
 The (current) main Python modules are:
 
-* [Project](docs/Project.html):
+* [Project](docs/Project.md):
   The top level FabNode sub-classes of FabProject, FabDocument, and FabAssembly.
 
-* [Solid](docs/Solid.html):
+* [Solid](docs/Solid.md):
   The Solid creation class of FabSolid and FabMount.
 
-* [Geometry](docs/Geometry.html):
+* [Geometry](docs/Geometry.md):
   The FabPolygon, FabCircle sub-classes of FabGeometry.
 
-* [Node](docs/Node.html):
+* [Node](docs/Node.md):
   The base FabNode class and associated FabBox class for describing bounding boxes.
 
-* [Utilities](doc/Utilities.html):
+* [Utilities](doc/Utilities.md):
   This contains some utility classes like FabColor and FabMaterial.
 
 Additional Python modules are:
 
-* [Shop](docs/Shop.html):
+* [Shop](docs/Shop.md):
   Classes for defining Shop machines and tooling.
 
-* [CNC](docs/CNC.html):
+* [CNC](docs/CNC.md):
   Classes for accessing the FreeCad Path CNC G-code generation library.
 
-* [Join](docs/Join.html):
+* [Join](docs/Join.md):
   Classes for defining fastener stacks of screws, bolts, washers, nuts, etc.
 
-* [Doc](docs/Doc.html):
+* [Doc](docs/Doc.md):
   A program for reading Python files and generating HTML documentation.
 
-* [BOM](docs/BOM.html):
+* [BOM](docs/BOM.md):
   The beginnings of a Bill of Materials manager.
 
 ## Type Hints and Data Classes <a name="type-hints-and-data-classes"></a>
@@ -391,15 +391,15 @@ Note: [Which Python @dataclass is best?](https://www.youtube.com/watch?v=vCLetdh
 ## Additional documentation
 
 There are some additional miscellaneous Python modules:
-* [Doc](docs/Doc.html):
+* [Doc](docs/Doc.md):
   A documentation extraction utility that reads the Python documentation strings and
   generates both markdown and HTML documentation files.
-* [Embedded FreeCAD](embedded_freecad.html):
+* [Embedded FreeCAD](embedded_freecad.md):
   This explains how the Fab modules can be run within or externally from FreeCAD.
-* [fcstd_tar_sync.py](fcstd_tar_sync.html)]:
+* [fcstd_tar_sync.py](fcstd_tar_sync.md)]:
   A program that mirrors FreeCAD `.fcstd` files to `.tar` files that are more easily stored
   under the `git` revision control system.
-* [Coding/Documentation/Testing](coding_documentation.html):
+* [Coding/Documentation/Testing](coding_documentation.md):
   The coding, documentation, and testing standards uses for code in
 * [LICENSE.md](LICENSE.md): The Open Source license for the Model source files.
 
