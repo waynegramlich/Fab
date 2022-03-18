@@ -433,11 +433,11 @@ In late November of 2202, the plan is to update to Ubuntu 22.04LTS.
 
 The three installtions steps are:
 
-1. [Install miniconda](#install-mini-conda)
+1. [Install miniconda](#install-miniconda)
 
-1. [Install CadQuery](#install-cad-query)
+1. [Install CadQuery](#install-cadquery)
 
-2. [Install FreeCad](#install-freacad)
+2. [Install FreeCad](#install-freecad)
 
 3. [Install Fab](#install-fab)
 
