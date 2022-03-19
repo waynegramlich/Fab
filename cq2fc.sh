@@ -69,7 +69,7 @@ if [[ -x "freecad19" ]]; then
 fi
 
 # Set to true to print out debugging:
-if true; then
+if false; then
     echo "SCRIPT_DIR='${SCRIPT_DIR}'"
     echo "VISUAL='${VISUAL}'"
     echo "CNC='${CNC}'"
