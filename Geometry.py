@@ -1375,7 +1375,7 @@ class FabWorkPlane(object):
             # TODO(): Fix to use CadQuery *Plane* object.
             origin: Vector = self._Plane.Origin
             normal: Vector = self._Plane.Normal
-            plane: cq.Plane = cq.Plane(origin=origin, normal=normal)
+            plane: cq.Plane = cq.Plane(origin=origin, normal=normal, xDir=None)
             self._WorkPlane = cq.Workplane(plane)
 
     # FabWorkPlane.Plane():
