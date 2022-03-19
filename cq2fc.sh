@@ -59,10 +59,12 @@ if [[ "${VISUAL}" == "" && "${CNC}" == "" ]]; then
     exit 1
 fi
 
+# Select which FreeCAD to use:
 FREECAD="freecad"
 if [[ -x "freecad19" ]]; then
     FREECAD="freecad19"
 fi
+
 # Set to true to print out debugging:
 if false; then
     echo "SCRIPT_DIR='${SCRIPT_DIR}'"
@@ -82,8 +84,11 @@ if [[ "${VISUAL}" == "" ]]; then
     # Non-visual mode:
     # In this modeFreeCAD prints out lines containing "..." and "Reading Step file......"
     # for each STEP file read in.  These annoying messages are suppressed:
-    CNC="${CNC}" "${FREECAD}" -M "${SCRIPT_DIR}" -c "${SCRIPT_DIR}/CQtoFC.py" | grep -F -v "..."
+    echo "Non visual mode"
+    CNC="${CNC}" JSON="${JSON}" "${FREECAD}" -M "${SCRIPT_DIR}" -c "${SCRIPT_DIR}/CQtoFC.py" | \
+	grep -F -v "..."
 else
     # Visual_mode:
-    CNC="${CNC}" "${FREECAD}" -M "${SCRIPT_DIR}" "${SCRIPT_DIR}/CQtoFC.FCMacro"
+    echo "Visual mode"
+    CNC="${CNC}" JSON="${JSON}" "${FREECAD}" -M "${SCRIPT_DIR}" "${SCRIPT_DIR}/CQtoFC.FCMacro"
 fi
