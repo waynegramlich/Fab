@@ -3,18 +3,18 @@
 
 # <--------------------------------------- 100 characters ---------------------------------------> #
 
-import sys
-from pathlib import Path
-
-if App.GuiUp:
-    from FreeCAD import ImportGui as FCImport
-else:
-    from FreeCAD import Import as FCImport
-
-
-import json
-from typing import Any, cast, List, Dict, IO, Tuple
 from dataclasses import dataclass, field
+import json
+import os
+from pathlib import Path
+import sys
+from typing import Any, cast, List, Dict, IO, Tuple
+
+if App.GuiUp:  # type: ignore
+    from FreeCAD import ImportGui as FCImport  # type: ignore
+else:
+    from FreeCAD import Import as FCImport  # type ignore
+
 
 # FabCQtoFC:
 @dataclass
@@ -46,7 +46,7 @@ class FabCQtoFC(object):
 
         # Create the *steps_document*:
         json_directory: Path = self.json_path.parent
-        steps_document: Any = App.newDocument("Step_Files")
+        steps_document: Any = App.newDocument("Step_Files")  # type: ignore
         self.steps_document = steps_document
         self.all_documents.append(steps_document)
 
@@ -104,7 +104,7 @@ class FabCQtoFC(object):
         if kind == "Project":
             pass
         elif kind == "Document":
-            project_document = App.newDocument(label)
+            project_document = App.newDocument(label)  # type: ignore
             project_document.Label = label
             self.project_document = project_document
             self.all_documents.append(project_document)
@@ -157,7 +157,7 @@ def main() -> None:
     """The main program."""
     json_reader: FabCQtoFC = FabCQtoFC(Path("/tmp/TestProject.json"))
     json_reader.process(indent="", tracing="")
-    if not App.GuiUp:
+    if not App.GuiUp:  # type: ignore
         sys.exit()
 
 if __name__ == "__main__":

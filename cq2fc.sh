@@ -21,6 +21,7 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 # Parse command line arguments:
 # [Parse](https://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash)
+FLAGS=""
 VISUAL=""
 CNC=""
 JSON=""
@@ -28,10 +29,12 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
 	-c|--cnc)
 	    CNC="$1"
+            FLAGS+="c"
 	    shift
 	    ;;
 	-v|--visual)
 	    VISUAL="$1"
+	    FLAGS+="v"
 	    shift
 	    ;;
 	*.json)
@@ -66,10 +69,11 @@ if [[ -x "freecad19" ]]; then
 fi
 
 # Set to true to print out debugging:
-if false; then
+if true; then
     echo "SCRIPT_DIR='${SCRIPT_DIR}'"
     echo "VISUAL='${VISUAL}'"
     echo "CNC='${CNC}'"
+    echo "FLAGS='${FLAGS}'"
     echo "JSON='${JSON}'"
     echo "FREECAD='${FREECAD}'"
 fi
@@ -85,10 +89,11 @@ if [[ "${VISUAL}" == "" ]]; then
     # In this modeFreeCAD prints out lines containing "..." and "Reading Step file......"
     # for each STEP file read in.  These annoying messages are suppressed:
     echo "Non visual mode"
-    CNC="${CNC}" JSON="${JSON}" "${FREECAD}" -M "${SCRIPT_DIR}" -c "${SCRIPT_DIR}/CQtoFC.py" | \
-	grep -F -v "..."
+    FLAGS="${FLAGS}" JSON="${JSON}" \
+       "${FREECAD}" -M "${SCRIPT_DIR}" -c "${SCRIPT_DIR}/CQtoFC.py" | grep -F -v "..."
 else
     # Visual_mode:
     echo "Visual mode"
-    CNC="${CNC}" JSON="${JSON}" "${FREECAD}" -M "${SCRIPT_DIR}" "${SCRIPT_DIR}/CQtoFC.FCMacro"
+    FLAGS="${FLAGS}" JSON="${JSON}" \
+	   "${FREECAD}" -M "${SCRIPT_DIR}" "${SCRIPT_DIR}/CQtoFC.FCMacro"
 fi
