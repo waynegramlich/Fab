@@ -453,58 +453,68 @@ These are the steps to follow to install miniconda:
 
 2. Grab Mminicconda with Python 3.8 for Ubuntu 20.04LTS:
 
-    ```
-        wget https://repo.anaconda.com/miniconda/Miniconda3-py38_4.10.3-Linux-x86_64.sh \
-	  -O /tmp/miniconda.sh
-    ```
+   ```
+   wget https://repo.anaconda.com/miniconda/Miniconda3-py38_4.10.3-Linux-x86_64.sh -O /tmp/miniconda.sh
+   ```
 
 3. Verify [Miniconda hash information](https://docs.conda.io/en/latest/miniconda_hashes.html)
 
    ```
-        shasum -a 256 /tmp/miniconda.sh
+   shasum -a 256 /tmp/miniconda.sh
    ```
 
 4. Follow the instructions in
    [How to Install Miniconda In linux](https://ostechnix.com/how-to-install-miniconda-in-linux/):
 
    ```
-        bash /tmp/miniconda.sh
+   bash /tmp/miniconda.sh
+   # It will ask some questions.
+   # Type ENTER to continue
+   # Type spaces to scroll through license
+   # Type "yes" to accept license
+   # Accept ENTER to accept default install directory: (/home/YOURLOGIN/miniconda3)
+   # Type "yes" for running conda init
+   # Type "yes" to initialize Miniconda3
+   # All done
    ```
 
-5. Conda stuff was added to the end of `~/.bashrc` and `~/miniconda3` directory created.
-
-6. Do intilial miniconda activate:
+6. Do intitial miniconda activate:
 
    Run:
 
    ```
-        source `~/.bashrc`
+   source `~/.bashrc`
    ```
 
    There is a new `(base) ` prefix in your shell prompt.
 
-   To avoid automatic conda on startup:
+
+6. Deactivate conda auto activate on shell startup:
 
    ```
-        conda config --set auto_activate_base false
-	source ~/.bashrc
+   conda config --set auto_activate_base false
+   source ~/.bashrc
    ```
+   # The `(base) ` prefix should disappear from your shell prompt.
 
 7. Activate and decativate conda:
 
    To activate/deactivate miniconda, use one of the commands below
 
    ```
-        conda activate
-	conda deactive
+   conda activate
+   # `(base) ` should appear
+   conda deactive
+   # `(base) ` should disappear
    ```
 
 8. Update miniconda.
 
 
    ```
-        conda activate
-        conda update conda
+   conda activate
+   conda update conda
+   # Type `y` to do the update.
    ```
 
 If you eventually decide remove miniconda, do the following:
@@ -525,14 +535,21 @@ After minconda is installed do the following:
 1. Install master branch of cad-query (5+ minutes is common):
 
    ```
-        time conda install -c cadquery -c conda-forge cadquery=master
+   time conda install -c cadquery -c conda-forge cadquery=master
+   # Solving environment: failed with initial frozen solve. Retrying with flexible solve.
+   # Solving environment: failed with repodata from current_repodata.json, will retry with next repodata source.
+   # Collecting package metadata (repodata.json): /
    ```
-
-
-2. In theory, get a stable version of cadqury:
+2. In theory, get a stable version of cadquery:
 
    ```
-        time conda install -c conda-forge -c cadquery cadquery=2
+   time conda install -c conda-forge -c cadquery cadquery=2
+   # The following packages will be UPDATES:
+   # ...
+   # The following packages will be SUPERSEDED by a higher-priority channel:
+   # ...
+   # Proceed ([y]/n])?
+   # Type ENTER
    ```
 
    Sometimes this step does not work, so this step may need to be skipped.
@@ -540,32 +557,75 @@ After minconda is installed do the following:
 3. Test cadquery installation:
 
    ```
-        python3
-        >> import cadquery
-        >> cadquery.Workplane('XY').box(1,2,3).toSvg()
-        # An SVG file should show up in your current directory.
-        # Type Control-C to exit python3
+   python3
+   >> import cadquery
+   >> cadquery.Workplane('XY').box(1,2,3).toSvg()
+   # An SVG file should print out.
+   # Type Control-D to exit python3
    ```
 
-4. Install CQ-editor (5+ minutes is common):
+4. Install CQ-editor:
 
    ```
-        time conda install -c cadquery -c conda-forge cq-editor=master
+   time conda install -c cadquery -c conda-forge cq-editor=master
+   # This can take 5+ minutes
    ```
 
 5.Run `cq-editor`:
 
    ```
-        cq-editor &
+   cq-editor &
+   # If a screen pops up, you have succeeded.
+   # If not, well miniconda failed you.  It is not strictly required.
+   # Exit the cq-editor
    ```
 
 ### Install FreeCad
 
-FreeCAd installation goes here.
+1. Using your web browser, visit the
+   [FreeCAD Downloads Page](https://www.freecadweb.org/downloads.php)
+
+2. Scroll to Linux tile and click on [64-Bit Appimage].
+   The file usually lands in the `~/Downloads` directory named something like
+   `FreeCAD_0.19.3-Linux-Conda_glibc2.12-x86_64.AppImage`
+
+3. Move the file to `~/bin` (or wherever you feel).
+
+4. Install a symbolic link to make the program a little shorter to type:
+
+   ```
+   ln -s ~/bin/FreeCAD_0.19.3-Linux-Conda_glibc2.12-x86_64.AppImage ~/bin/freecad
+   ```
+   
+4. Make the symbolic link executable:
+
+   chmod +x ~/bin/freecad
+
+4. Execute the FreeCAD program:
+
+   ```
+   freecad &
+   ```
+
+   The FreeCAD window should pop u.
 
 ### Install Fab
 
-Fab installations instructions go here.
+Do the following to install Fab:
+
+1. Clone 
+
+   ```
+   git clone https://github.com/waynegramlich/Fab.git
+   
+   ```
+
+2. Install packages:
+
+   ```
+   sudo apt install cmark
+   ```
+
 
 """
 
