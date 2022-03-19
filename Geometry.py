@@ -103,7 +103,7 @@ class FabPlane(object):
         normal_length: float = normal.Length  # ||N||
         distance: float = d / normal_length   # D = d / ||N||
         unit_normal: Vector = normal / normal_length  # <<N>>
-        origin: Vector = distance * unit_normal   # D * <<N>>
+        origin: Vector = unit_normal * distance   # D * <<N>>
         if tracing:
             print(f"{tracing}{contact=} {normal=}")
             print(f"{tracing}{distance=} {unit_normal=} {origin=}")
