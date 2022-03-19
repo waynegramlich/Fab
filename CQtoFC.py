@@ -4,15 +4,6 @@
 # <--------------------------------------- 100 characters ---------------------------------------> #
 
 import sys
-sys.path.append(".")
-import Embed
-USE_FREECAD: bool
-USE_CAD_QUERY: bool
-USE_FREECAD, USE_CAD_QUERY = Embed.setup()
-
-assert USE_FREECAD, "Not in FreeCAD mode"
-import FreeCAD  # type: ignore
-import FreeCAD as App  # type: ignore
 from pathlib import Path
 
 if App.GuiUp:
@@ -47,8 +38,12 @@ class FabCQtoFC(object):
         self.project_document = None
 
     # FabCQtoFC.process():
-    def process(self) -> None:
+    def process(self, indent: str = "", tracing: str = "") -> None:
         """Process a JSON file into a FreeCAD documents."""
+        next_tracing: str = tracing + "  " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabCQtFC.process()")
+
         # Create the *steps_document*:
         json_directory: Path = self.json_path.parent
         steps_document: Any = App.newDocument("Step_Files")
@@ -65,7 +60,7 @@ class FabCQtoFC(object):
         assert isinstance(json_root, dict), json_root
 
         # Recursively walk the tree starting at *json_root*:
-        self.node_process(json_root, group=None, indent="  ", tracing="  ")
+        self.node_process(json_root, group=None, indent=indent, tracing=next_tracing)
 
         # Save *all_documents*:
         document: Any
@@ -81,6 +76,8 @@ class FabCQtoFC(object):
         part: Any
         for link, part in self.pending_links:
             link.setLink(part)
+        if tracing:
+            print(f"{tracing}<=FabCQtFC.process()")
 
     # FabCQtoFC.node_process():
     def node_process(self, json_dict: Dict[str, Any], group: Any,
@@ -158,11 +155,10 @@ class FabCQtoFC(object):
 # main():
 def main() -> None:
     """The main program."""
-    print("Hello")
-
     json_reader: FabCQtoFC = FabCQtoFC(Path("/tmp/TestProject.json"))
-    json_reader.process()
-
+    json_reader.process(indent="", tracing="")
+    if not App.GuiUp:
+        sys.exit()
 
 if __name__ == "__main__":
     main()
