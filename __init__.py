@@ -460,7 +460,9 @@ These are the steps to follow to install miniconda:
 3. Verify [Miniconda hash information](https://docs.conda.io/en/latest/miniconda_hashes.html)
 
    ```
+   # You probably want "Miniconda3 Linux 64-bit"
    shasum -a 256 /tmp/miniconda.sh
+   # Example: 4bb91089ecc5cc2538dece680bfe2e8192de1901e5e420f63d4e78eb26b0ac1a
    ```
 
 4. Follow the instructions in
@@ -532,52 +534,60 @@ If you eventually decide remove miniconda, do the following:
 
 After minconda is installed do the following:
 
-1. Install master branch of cad-query (5+ minutes is common):
+1. Watch the 10 minute CadQuery installation [Video](https://www.youtube.com/watch?v=sjLTePOq8bQ).
+
+2. Install and activate miniforge:
 
    ```
-   time conda install -c cadquery -c conda-forge cadquery=master
-   # Solving environment: failed with initial frozen solve. Retrying with flexible solve.
-   # Solving environment: failed with repodata from current_repodata.json, will retry with next repodata source.
-   # Collecting package metadata (repodata.json): /
-   ```
-2. In theory, get a stable version of cadquery:
+   # Install miniforge in `~/miniconda` directory:
+   wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh -O miniforge.sh
+   bash miniforge.sh -b -p $HOME/miniconda
+   # Do not do the init step, since it modifies your `~/.bashrc`.
 
-   ```
-   time conda install -c conda-forge -c cadquery cadquery=2
-   # The following packages will be UPDATES:
-   # ...
-   # The following packages will be SUPERSEDED by a higher-priority channel:
-   # ...
-   # Proceed ([y]/n])?
-   # Type ENTER
+   # Each time you want to activate miniconda, doe the following command:
+   source $HOME/miniconda/bin/activate
    ```
 
-   Sometimes this step does not work, so this step may need to be skipped.
-
-3. Test cadquery installation:
+3. Create cadquery-dev and install CadQuery from master:
 
    ```
+   conda create -n cadquery-dev
+   # Type `y` for all questions except for the init.
+   conda activate cadquery-dev
+   conda install -c cadquery -c conda-forge cadquery=master
+   # Test things out
    python3
    >> import cadquery
-   >> cadquery.Workplane('XY').box(1,2,3).toSvg()
-   # An SVG file should print out.
-   # Type Control-D to exit python3
+   >> cadquery.Workplane()
+   # Deactivate cadquery-dev
+   conda deactivate
+
+4. Create cadquery-dev and install CadQuery stable:
+
+   # Create cadquery-stable and install 2.1:
+   conda create -n cadquery-stable
+   # Type `y` for all questions except for the init.
+   conda activate cadquery-stable
+   conda install -c cadquery -c conda-forge cadquery=2
+   # Test things out
+   python3
+   >> import cadquery
+   >> cadquery.Workplane()
+   # Deactivate cadquery-stable
+   conda deactivate
    ```
 
-4. Install CQ-editor:
+5. Install cq--editor into cadquery-master:
 
    ```
-   time conda install -c cadquery -c conda-forge cq-editor=master
-   # This can take 5+ minutes
-   ```
-
-5.Run `cq-editor`:
-
-   ```
-   cq-editor &
+   # Install cq-editor:
+   conda activate cadquery-master
+   conda install -c cadquery -c conda-forge cq-editor=master
+   cq-editor
    # If a screen pops up, you have succeeded.
    # If not, well miniconda failed you.  It is not strictly required.
    # Exit the cq-editor
+   conda deactivate
    ```
 
 ### Install FreeCad
@@ -623,9 +633,48 @@ Do the following to install Fab:
 2. Install packages:
 
    ```
-   sudo apt install cmark
+   # sudo apt install -y cmark
+   conda install pip
+   # conda install mathutils
+   python3 -m pip install mathutils
+   sudo apt install -y python3-pip
    ```
 
+<!--  Install failure on 20Mar2022
+conda install -c cadquery -c conda-forge cadquery=master
+Collecting package metadata (current_repodata.json): done
+Solving environment: - 
+The environment is inconsistent, please check the package plan carefully
+The following packages are causing the inconsistency:
+
+  - conda-forge/noarch::charset-normalizer==2.0.12=pyhd8ed1ab_0
+  - conda-forge/linux-64::python_abi==3.9=2_cp39
+  - conda-forge/linux-64::conda==4.11.0=py39hf3d152e_0
+  - conda-forge/linux-64::cryptography==36.0.1=py39h95dcef6_0
+  - conda-forge/noarch::wheel==0.37.1=pyhd8ed1ab_0
+  - conda-forge/noarch::urllib3==1.26.8=pyhd8ed1ab_1
+  - conda-forge/linux-64::ruamel_yaml==0.15.80=py39h3811e60_1006
+  - conda-forge/linux-64::conda-package-handling==1.7.3=py39h3811e60_1
+  - conda-forge/linux-64::brotlipy==0.7.0=py39h3811e60_1003
+  - conda-forge/linux-64::setuptools==60.9.3=py39hf3d152e_0
+  - conda-forge/linux-64::python==3.9.10=h85951f9_2_cpython
+  - conda-forge/noarch::requests==2.27.1=pyhd8ed1ab_0
+  - conda-forge/noarch::pycparser==2.21=pyhd8ed1ab_0
+  - conda-forge/noarch::tqdm==4.62.3=pyhd8ed1ab_0
+  - conda-forge/noarch::pyopenssl==22.0.0=pyhd8ed1ab_0
+  - conda-forge/noarch::six==1.16.0=pyh6c4a22f_0
+  - conda-forge/linux-64::cffi==1.15.0=py39h4bc2ebd_0
+  - conda-forge/noarch::pip==22.0.3=pyhd8ed1ab_0
+  - conda-forge/noarch::idna==3.3=pyhd8ed1ab_0
+  - conda-forge/noarch::colorama==0.4.4=pyh9f0ad1d_0
+  - conda-forge/linux-64::sqlite==3.37.0=h9cd32fc_0
+  - conda-forge/linux-64::certifi==2021.10.8=py39hf3d152e_1
+  - conda-forge/linux-64::pycosat==0.6.3=py39h3811e60_1009
+  - conda-forge/linux-64::pysocks==1.7.1=py39hf3d152e_4
+failed with initial frozen solve. Retrying with flexible solve.
+Solving environment: failed with repodata from current_repodata.json, will retry with next repodata source.
+Collecting package metadata (repodata.json): \ 
+-->
 
 """
 
