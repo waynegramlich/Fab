@@ -191,15 +191,19 @@ class FabPlane(object):
 
     # FabPlne._rotate():
     @staticmethod
-    def _rotate(axis: Vector, angle: float) -> cq.Matrix:
-        """Return a FreeCAD Matrix for rotation around an axis.
+    def _rotate(point: Vector,
+                axis: Vector, angle: float) -> Tuple[Vector, Tuple[Tuple[float, ...], ...]]:
+        """Return a point that has been rotated around an axis.
 
-        * Arguments:
-        * *axis* (Union[ApexPoint, Vector]): The axis to rotate around.
-          * *angle* (float): The number of radians to rotate by.
-        * Returns:
-          * Returns the FreeCAD rotation Matrix.
+        Arguments:
+        * *point* (Vector): The point to rotate
+        * *axis* (Vector): The axis to rotate around.
+        * *angle* (float): The number of radians to rotate by.
+
+        Returns:
+          * (Vector) The rotated *point*.
         """
+        assert isinstance(point, Vector), point
         assert isinstance(axis, Vector), axis
         assert isinstance(angle, float), angle
         # Normalize *angle* to be between -180.0 and 180.0 and convert to radians:
@@ -242,12 +246,32 @@ class FabPlane(object):
         ys = ny * s
         zs = nz * s
 
-        matrix: cq.Matrix = cq.Matrix([
-            [zf(nx * x_omc + c), zf(nx * y_omc - zs), zf(nx * z_omc + ys), 0.0],
-            [zf(ny * x_omc + zs), zf(ny * y_omc + c), zf(ny * z_omc - xs), 0.0],
-            [zf(nz * x_omc - ys), zf(nz * y_omc + xs), zf(nz * z_omc + c), 0.0],
-        ])
-        return matrix
+        # For some reason the Vector.transform method() always throws an exception:
+        #   OCP.Standard.Standard_ConstructionError: gp_GTrsf::Trsf() - non-orthogonal GTrsf
+        # on matrices that are clearly orthogonal (i.e. M * Mt = I, where Mt is the M transpose.)
+        # matrix: cq.Matrix = cq.Matrix([
+        #     [zf(nx * x_omc + c), zf(nx * y_omc - zs), zf(nx * z_omc + ys), 0.0],
+        #     [zf(ny * x_omc + zs), zf(ny * y_omc + c), zf(ny * z_omc - xs), 0.0],
+        #     [zf(nz * x_omc - ys), zf(nz * y_omc + xs), zf(nz * z_omc + c), 0.0],
+        # ])
+        # As a work around, skip cq.Vector and cq.Matrix and do the multiplication manually:
+        m00: float = zf(nx * x_omc + c)
+        m01: float = zf(nx * y_omc - zs)
+        m02: float = zf(nx * z_omc + ys)
+        m10: float = zf(ny * x_omc + zs)
+        m11: float = zf(ny * y_omc + c)
+        m12: float = zf(ny * z_omc - xs)
+        m20: float = zf(nz * x_omc - ys)
+        m21: float = zf(nz * y_omc + xs)
+        m22: float = zf(nz * z_omc + c)
+        x: float = point.x
+        y: float = point.y
+        z: float = point.z
+        rx: float = x * m00 + y * m10 + z * m20
+        ry: float = x * m01 + y * m11 + z * m21
+        rz: float = x * m02 + y * m12 + z * m22
+        rotated_point: Vector = Vector(rx, ry, rz)
+        return (rotated_point, ((m00, m10, m20), (m01, m11, m21), (m02, m12, m22)))
 
     # FabPlane.rotate_to_z_axis():
     def rotate_to_z_axis(self, point: Vector, reversed: bool = False, tracing: str = "") -> Vector:
@@ -296,18 +320,21 @@ class FabPlane(object):
             if tracing:
                 print(f"{tracing}{to_axis=}{from_axis=}")
 
-            epsilon: float = 1.0e-8
-            rotate_ratrix: Matrix
+            epsilon: float = 1.0e-5
+            rotate_axis: Vector
+            rotate_angle: float
+            rotate_angle_mu: float
+            rotate_axis_mu: mathutils.Vector
             rotate_matrix_mu: mathutils.Matrix
-            if abs((from_axis - to_axis).Length) < epsilon:  # magnitude is the vector length
+            if abs((from_axis - to_axis).Length) < epsilon:
                 if tracing:
                     print(f"{tracing}Aligned with +Z axis")
-                rotate_matrix = Matrix()
+                rotate_angle = 0.0
+                rotate_angle_mu = 0.0
+                rotate_axis = Vector(0.0, 0.0, 1.0)
+                rotate_axis_mu = mathutils.Vector((0.0, 0.0, 1.0))
                 rotate_matrix_mu = mathutils.Matrix()  # Identity matrix
             else:
-                rotate_axis: Vector
-                rotate_axis_mu: mathutils.Vector
-                rotate_angle: float
                 if abs((from_axis + to_axis).Length) < epsilon:
                     if tracing:
                         print(f"{tracing}Aligned with -Z axis")
@@ -316,20 +343,35 @@ class FabPlane(object):
                     rotate_axis = y_axis
                     rotate_axis_mu = y_axis_mu
                     rotate_angle = -math.pi  # 180 degrees
+                    rotate_angle_mu = -math.pi # 180 degrees
                 else:
                     rotate_axis = to_axis.cross(from_axis)
                     rotate_axis_mu = to_axis_mu.cross(from_axis_mu)  # An orthogonal rotation axis
-                    rotate_angle = to_axis_mu.angle(from_axis_mu)
+                    rotate_angle = to_axis.getAngle(from_axis)
+                    rotate_angle_mu = to_axis_mu.angle(from_axis_mu)
                     if tracing:
                         rotate_degrees: float = math.degrees(rotate_angle)
                         print(f"{tracing}{rotate_axis=} {rotate_degrees=}")
-                rotate_matrix = FabPlane._rotate(rotate_axis, -rotate_angle)
-                rotate_matrix_mu = mathutils.Matrix.Rotation(-rotate_angle, 4, rotate_axis_mu)
+                assert abs(rotate_angle_mu - rotate_angle) < epsilon, (
+                    rotate_angle_mu, rotate_angle, rotate_angle_mu - rotate_angle)
+                rotate_matrix_mu = mathutils.Matrix.Rotation(-rotate_angle_mu, 4, rotate_axis_mu)
 
             # Rotate the point:
+            assert abs(rotate_angle - rotate_angle_mu) < epsilon, (rotate_angle, rotate_angle_mu)
+            
+            rotate_matrix: Tuple[Tuple[float, ...], ...]
+            rotated_point, rotate_matrix = FabPlane._rotate(point, rotate_axis, rotate_angle)
             point_mu: mathutils.Vector = mathutils.Vector((point.x, point.y, point.z))
             rotated_point_mu: mathutils.Vector = rotate_matrix_mu @ point_mu
-            rotated_point = Vector(rotated_point_mu.x, rotated_point_mu.y, rotated_point_mu.z)
+            xxx: Vector = Vector(rotated_point_mu.x, rotated_point_mu.y, rotated_point_mu.z)
+            error: float = abs((xxx - rotated_point).Length)
+            if error > epsilon:
+                print(f"{error=} {epsilon=} {(error > epsilon)}")
+                print(f"{rotate_matrix=}")
+                print(f"{rotate_matrix_mu=}")
+                print(f"{rotated_point=}")
+                print(f"{rotated_point_mu=}")
+                assert False
         else:
             assert False
         if tracing:
