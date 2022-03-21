@@ -42,10 +42,9 @@ if USE_FREECAD:
     from FreeCAD import Placement, Rotation, Vector
 elif USE_CAD_QUERY:
     import cadquery as cq  # type: ignore
-    from cadquery import Vector  # type: ignore
+    from cadquery import Matrix, Vector  # type: ignore
     import mathutils  # type: ignore
 from Node import FabBox
-
 
 # FabPlane:
 @dataclass
@@ -178,7 +177,7 @@ class FabPlane(object):
         """Return FabPlane Origin in 3D space."""
         return self._Origin + self._Copy
 
-    # FabPlane.CQPlane
+    # FabPlane.CQPlane():
     @property
     def CQPlane(self) -> Any:
         """Return the CadQuery plane name as a string."""
@@ -189,6 +188,66 @@ class FabPlane(object):
             plane = self._Plane
             assert isinstance(plane, cq.Plane), plane
         return plane
+
+    # FabPlne._rotate():
+    @staticmethod
+    def _rotate(axis: Vector, angle: float) -> cq.Matrix:
+        """Return a FreeCAD Matrix for rotation around an axis.
+
+        * Arguments:
+        * *axis* (Union[ApexPoint, Vector]): The axis to rotate around.
+          * *angle* (float): The number of radians to rotate by.
+        * Returns:
+          * Returns the FreeCAD rotation Matrix.
+        """
+        assert isinstance(axis, Vector), axis
+        assert isinstance(angle, float), angle
+        # Normalize *angle* to be between -180.0 and 180.0 and convert to radians:
+        pi: float = math.pi
+        pi2: float = 2.0 * pi
+        angle = angle % pi2
+        angle = angle if angle <= pi else angle - pi2
+        assert -pi <= angle <= pi, f"{angle=}"
+
+        def zf(value: float) -> float:
+            """Return zero for values close to zero."""
+            return 0.0 if abs(value) < 1.0e-8 else value
+
+        # Compute the X/Y/Z components of a normal vector of *length* 1.
+        nx: float = zf(axis.x)
+        ny: float = zf(axis.y)
+        nz: float = zf(axis.z)
+        length: float = math.sqrt(nx * nx + ny * ny + nz * nz)
+        if length <= 0.0:
+            raise ValueError("Axis has a length of 0.0")
+        nx = zf(nx / length)
+        ny = zf(ny / length)
+        nz = zf(nz / length)
+
+        # The matrix for rotating by *angle* around the normal *axis* is:
+        #
+        #     [ xx(1-c)+c   xy(1-c)+zs  xz(1-c)-ys   0  ]
+        #     [ yx(1-c)-zs  yy(1-c)+c   yz(1-c)+xs   0  ]
+        #     [ zx(1-c)+ys  zy(1-c)-xs  zz(1-c)+c    0  ]
+        #     [ 0           0           0            1  ]
+
+        # Compute some sub expressions:
+        c = math.cos(angle)
+        s = math.sin(angle)
+        omc = 1.0 - c  # *omc* stands for One Minus *c*.
+        x_omc = nx * omc
+        y_omc = ny * omc
+        z_omc = nz * omc
+        xs = nx * s
+        ys = ny * s
+        zs = nz * s
+
+        matrix: cq.Matrix = cq.Matrix([
+            [zf(nx * x_omc + c), zf(nx * y_omc - zs), zf(nx * z_omc + ys), 0.0],
+            [zf(ny * x_omc + zs), zf(ny * y_omc + c), zf(ny * z_omc - xs), 0.0],
+            [zf(nz * x_omc - ys), zf(nz * y_omc + xs), zf(nz * z_omc + c), 0.0],
+        ])
+        return matrix
 
     # FabPlane.rotate_to_z_axis():
     def rotate_to_z_axis(self, point: Vector, reversed: bool = False, tracing: str = "") -> Vector:
@@ -202,9 +261,10 @@ class FabPlane(object):
         * (Vector): The rotated vector position.
 
         """
+
         if tracing:
             print(f"{tracing}=>FabPlane.rotate_to_z_axis({point})")
-        result: Vector = cast(Vector, None)  # Force failure if something is broken.
+        rotated_point: Vector = cast(Vector, None)  # Force failure if something is broken.
         if USE_FREECAD:
             assert False, f"Not implemented for FreeCAD {USE_FREECAD=} {USE_CAD_QUERY=}"
         elif USE_CAD_QUERY:
@@ -219,45 +279,62 @@ class FabPlane(object):
             # use CadQuery Matrices for this reason.  Hence, the handstands converting between
             # the mathutils/CadQuery Vector/Matrix classes.
 
-            z_axis: mathutils.Vector = mathutils.Vector((0.0, 0.0, 1.0))
+            z_axis: Vector = Vector(0.0, 0.0, 1.)
             plane_normal: Vector = self._Normal
-            normal: mathutils.Vector = mathutils.Vector(
-                (plane_normal.x, plane_normal.y, plane_normal.z))
-            normal = normal.normalized()
-            if tracing:
-                print(f"{tracing}{normal=}")
+            plane_normal = plane_normal / plane_normal.Length
 
-            to_axis: mathutils.Vector = normal if reversed else z_axis
-            from_axis: mathutils.Vector = z_axis if reversed else normal
+            z_axis_mu: mathutils.Vector = mathutils.Vector((z_axis.x, z_axis.y, z_axis.z))
+            plane_normal_mu: mathutils.Vector = mathutils.Vector(
+                (plane_normal.x, plane_normal.y, plane_normal.z))
+            if tracing:
+                print(f"{tracing}{plane_normal=} {plane_normal_mu=}")
+
+            to_axis: Vector = plane_normal if reversed else z_axis
+            from_axis: Vector = z_axis if reversed else plane_normal
+            to_axis_mu: mathutils.Vector = plane_normal_mu if reversed else z_axis_mu
+            from_axis_mu: mathutils.Vector = z_axis_mu if reversed else plane_normal_mu
+            if tracing:
+                print(f"{tracing}{to_axis=}{from_axis=}")
+
             epsilon: float = 1.0e-8
-            rotate_matrix: mathutils.Matrix
-            if abs((from_axis - to_axis).magnitude) < epsilon:  # magnitude is the vector length
+            rotate_ratrix: Matrix
+            rotate_matrix_mu: mathutils.Matrix
+            if abs((from_axis - to_axis).Length) < epsilon:  # magnitude is the vector length
                 if tracing:
                     print(f"{tracing}Aligned with +Z axis")
-                rotate_matrix = mathutils.Matrix()  # Identity matrix
+                rotate_matrix = Matrix()
+                rotate_matrix_mu = mathutils.Matrix()  # Identity matrix
             else:
-                rotate_axis: mathutils.Vector
+                rotate_axis: Vector
+                rotate_axis_mu: mathutils.Vector
                 rotate_angle: float
-                if abs((from_axis + to_axis).magnitude) < epsilon:
+                if abs((from_axis + to_axis).Length) < epsilon:
                     if tracing:
                         print(f"{tracing}Aligned with -Z axis")
-                    rotate_axis = mathutils.Vector((0.0, 1.0, 0.0))  # Y axis
+                    y_axis: Vector = Vector(0.0, 1.0, 0.0)
+                    y_axis_mu: Vector = mathutils.Vector((y_axis.x, y_axis.y, y_axis.z))
+                    rotate_axis = y_axis
+                    rotate_axis_mu = y_axis_mu
                     rotate_angle = -math.pi  # 180 degrees
                 else:
-                    rotate_axis = to_axis.cross(from_axis)  # An orthogonal rotation axis
-                    rotate_angle = to_axis.angle(from_axis)
+                    rotate_axis = to_axis.cross(from_axis)
+                    rotate_axis_mu = to_axis_mu.cross(from_axis_mu)  # An orthogonal rotation axis
+                    rotate_angle = to_axis_mu.angle(from_axis_mu)
                     if tracing:
                         rotate_degrees: float = math.degrees(rotate_angle)
                         print(f"{tracing}{rotate_axis=} {rotate_degrees=}")
-                rotate_matrix = mathutils.Matrix.Rotation(-rotate_angle, 4, rotate_axis)  # 4x4
-            rotated_point: mathutils.Vector = rotate_matrix @ mathutils.Vector(
-                (point.x, point.y, point.z))
-            result = Vector(rotated_point.x, rotated_point.y, rotated_point.z)
+                rotate_matrix = FabPlane._rotate(rotate_axis, -rotate_angle)
+                rotate_matrix_mu = mathutils.Matrix.Rotation(-rotate_angle, 4, rotate_axis_mu)
+
+            # Rotate the point:
+            point_mu: mathutils.Vector = mathutils.Vector((point.x, point.y, point.z))
+            rotated_point_mu: mathutils.Vector = rotate_matrix_mu @ point_mu
+            rotated_point = Vector(rotated_point_mu.x, rotated_point_mu.y, rotated_point_mu.z)
         else:
             assert False
         if tracing:
-            print(f"{tracing}<=FabPlane.rotate_to_z_axis({point})=>{result}")
-        return result
+            print(f"{tracing}<=FabPlane.rotate_to_z_axis({point})=>{rotated_point}")
+        return rotated_point
 
 
 # FabGeometryContext:
