@@ -152,7 +152,7 @@ Return FabJoin hash.
 
 ### <a name="join----normal-aligned"></a>6.2 `FabJoin.`normal_aligned():
 
-FabJoin.normal_aligned(self, test_normal: Base.Vector) -> bool:
+FabJoin.normal_aligned(self, test_normal: cadquery.occ_impl.geom.Vector) -> bool:
 
 Return whether the normal is aligned with the FabJoin.
 

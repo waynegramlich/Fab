@@ -5,12 +5,10 @@ PIP := $(PYTHON) -m pip
 COVERAGE := $(PYTHON) -m coverage
 PY2MD := py2md.py
 
-#     ApexPath.py \
-#     fcstd_tar_sync.py \
-#     py2md.py
+# Leave CQtoFC.py out for now.  It confuses Doc.py.
+
 PY_FILES := \
     CNC.py \
-    CQtoFC.py \
     Doc.py \
     Embed.py \
     Geometry.py \
@@ -18,6 +16,7 @@ PY_FILES := \
     Project.py \
     Solid.py \
     TarSync.py \
+    Test.py \
     Node.py \
     Utilities.py
 DOC_PY_FILES := __init__.py ${PY_FILES}
@@ -30,11 +29,12 @@ OTHER_MD_FILES := \
 COVER_FILES := ${PY_FILES:%.py=%.py,cover} __init__.py,cover
 LINT_FILES := ${PY_FILES:%.py=.%.lint}
 # ModFab is generated from __init__.py using a special rule:
-HTML_FILES := README.html docs/ModFab.html ${PY_FILES:%.py=docs/%.html}
+HTML_FILES := ${PY_FILES:%.py=docs/%.md}
+MD_FILES := ${PY_FILES:%.py=docs/%.md}
 
+# CQtoFc.py currently causes Doc.py to have indigestion.  So leave it off for now.
 MODULES := \
     CNC \
-    CQtoFc \
     Embed \
     FreeCAD \
     FreeCADGui \
@@ -82,8 +82,10 @@ tests: .tests
 
 
 # Pattern Rules:
-docs/%.html: %.py
+docs/%.md: %.py
 	./Doc.py $<
+*.html: %.md
+	cmark $@ > $<
 .%.lint: %.py
 	mypy  $<
 	flake8 --max-line-length=100 --ignore=E402,W504 $<
@@ -91,7 +93,5 @@ docs/%.html: %.py
 /tmp/%.txt:
 	python3 -c "import os ; import sys ; sys.path.extend([os.path.join(os.getcwd(), 'squashfs-root/usr/lib'), '.']) ; import FreeCAD ; import ${@:/tmp/%.txt=%} ; help(${@:/tmp/%.txt=%})" > $@
 
-
-
 clean:
-	rm -f ${COVER_FILES} ${LINT_FILES} ${HTML_FILES} ${MODULES_TXTS} .tests
+	rm -f ${COVER_FILES} ${LINT_FILES} ${MD_FILES} ${HTML_FILES} ${MODULES_TXTS} .tests

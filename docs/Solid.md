@@ -39,7 +39,7 @@ Attributes:
 
 ### <a name="solid----get-hash"></a>1.1 `FabMount.`get_hash():
 
-FabMount.get_hash(self) -> typing.Tuple[typing.Any, ...]:
+FabMount.get_hash(self) -> Tuple[Any, ...]:
 
 Return a has the current contents of a FabMount.
 
@@ -51,7 +51,7 @@ Record an operation to a FabMount.
 
 ### <a name="solid----set-geometry-group"></a>1.3 `FabMount.`set_geometry_group():
 
-FabMount.set_geometry_group(self, geometry_group: typing.Any) -> None:
+FabMount.set_geometry_group(self, geometry_group: Any) -> None:
 
 Set the FabMount GeometryGroup need for the FabGeometryContex.
 
@@ -63,19 +63,19 @@ Perform FabMount phase 1 post procduction.
 
 ### <a name="solid----extrude"></a>1.5 `FabMount.`extrude():
 
-FabMount.extrude(self, name: str, shapes: typing.Union[Geometry.FabGeometry, typing.Tuple[Geometry.FabGeometry, ...]], depth: float, tracing: str = '') -> None:
+FabMount.extrude(self, name: str, shapes: Union[Geometry.FabGeometry, Tuple[Geometry.FabGeometry, ...]], depth: float, tracing: str = '') -> None:
 
 Perform a extrude operation.
 
 ### <a name="solid----pocket"></a>1.6 `FabMount.`pocket():
 
-FabMount.pocket(self, name: str, shapes: typing.Union[Geometry.FabGeometry, typing.Tuple[Geometry.FabGeometry, ...]], depth: float, tracing: str = '') -> None:
+FabMount.pocket(self, name: str, shapes: Union[Geometry.FabGeometry, Tuple[Geometry.FabGeometry, ...]], depth: float, tracing: str = '') -> None:
 
 Perform a pocket operation.
 
 ### <a name="solid----drill-joins"></a>1.7 `FabMount.`drill_joins():
 
-FabMount.drill_joins(self, joins_name: str, joins: typing.Union[Join.FabJoin, typing.Sequence[Join.FabJoin]], tracing: str = '') -> None:
+FabMount.drill_joins(self, joins_name: str, joins: Union[Join.FabJoin, Sequence[Join.FabJoin]], tracing: str = '') -> None:
 
 Drill some FabJoin's into a FabMount.
 
@@ -93,13 +93,13 @@ Attributes:
 
 ### <a name="solid----to-json"></a>2.1 `FabSolid.`to_json():
 
-FabSolid.to_json(self) -> typing.Dict[str, typing.Any]:
+FabSolid.to_json(self) -> Dict[str, Any]:
 
 Return FabProject JSON structure.
 
 ### <a name="solid----set-body"></a>2.2 `FabSolid.`set_body():
 
-FabSolid.set_body(self, body: typing.Any) -> None:
+FabSolid.set_body(self, body: Any) -> None:
 
 Set the BodyBase of a FabSolid.
 
@@ -117,19 +117,19 @@ Perform FabSolid pre production.
 
 ### <a name="solid----get-hash"></a>2.5 `FabSolid.`get_hash():
 
-FabSolid.get_hash(self) -> typing.Tuple[typing.Any, ...]:
+FabSolid.get_hash(self) -> Tuple[Any, ...]:
 
 Return FabSolid hash.
 
 ### <a name="solid----mount"></a>2.6 `FabSolid.`mount():
 
-FabSolid.mount(self, name: str, contact: Base.Vector, normal: Base.Vector, orient: Base.Vector, depth: float, tracing: str = '') -> Solid.FabMount:
+FabSolid.mount(self, name: str, contact: cadquery.occ_impl.geom.Vector, normal: cadquery.occ_impl.geom.Vector, orient: cadquery.occ_impl.geom.Vector, depth: float, tracing: str = '') -> Solid.FabMount:
 
 Return a new FabMount.
 
 ### <a name="solid----drill-joins"></a>2.7 `FabSolid.`drill_joins():
 
-FabSolid.drill_joins(self, name: str, joins: typing.Sequence[Join.FabJoin], mounts: typing.Union[typing.Sequence[Solid.FabMount], NoneType] = None) -> None:
+FabSolid.drill_joins(self, name: str, joins: Sequence[Join.FabJoin], mounts: Union[Sequence[Solid.FabMount], NoneType] = None) -> None:
 
 Apply drill FabJoin holes for a FabSolid.
 Iterate pairwise through a sequence of FabJoin's and FabMount's and for each pair
@@ -150,7 +150,7 @@ For now, please call this method after all FabMount's are created.
 
 ### <a name="solid----post-produce1"></a>2.8 `FabSolid.`post_produce1():
 
-FabSolid.post_produce1(self, objects_table: typing.Dict[str, typing.Any], fab_steps: Node.FabSteps) -> None:
+FabSolid.post_produce1(self, objects_table: Dict[str, Any], fab_steps: Node.FabSteps) -> None:
 
 Perform FabSolid Phase1 post production.
 

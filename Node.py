@@ -693,6 +693,7 @@ class FabBox(object):
                 print(f"Test[{index}]: {error}")
         assert not errors, f"{errors} intersect occurred"
 
+    # FabBox._unit_tests():
     @staticmethod
     def _unit_tests() -> None:
         """Perform FabBox unit tests."""

@@ -452,57 +452,70 @@ These are the steps to follow to install miniconda:
 
 2. Grab Mminicconda with Python 3.8 for Ubuntu 20.04LTS:
 
-    ```
-        wget https://repo.anaconda.com/miniconda/Miniconda3-py38_4.10.3-Linux-x86_64.sh 	  -O /tmp/miniconda.sh
-    ```
+   ```
+   wget https://repo.anaconda.com/miniconda/Miniconda3-py38_4.10.3-Linux-x86_64.sh -O /tmp/miniconda.sh
+   ```
 
 3. Verify [Miniconda hash information](https://docs.conda.io/en/latest/miniconda_hashes.html)
 
    ```
-        shasum -a 256 /tmp/miniconda.sh
+   # You probably want "Miniconda3 Linux 64-bit"
+   shasum -a 256 /tmp/miniconda.sh
+   # Example: 4bb91089ecc5cc2538dece680bfe2e8192de1901e5e420f63d4e78eb26b0ac1a
    ```
 
 4. Follow the instructions in
    [How to Install Miniconda In linux](https://ostechnix.com/how-to-install-miniconda-in-linux/):
 
    ```
-        bash /tmp/miniconda.sh
+   bash /tmp/miniconda.sh
+   # It will ask some questions.
+   # Type ENTER to continue
+   # Type spaces to scroll through license
+   # Type "yes" to accept license
+   # Accept ENTER to accept default install directory: (/home/YOURLOGIN/miniconda3)
+   # Type "yes" for running conda init
+   # Type "yes" to initialize Miniconda3
+   # All done
    ```
 
-5. Conda stuff was added to the end of `~/.bashrc` and `~/miniconda3` directory created.
-
-6. Do intilial miniconda activate:
+6. Do intitial miniconda activate:
 
    Run:
 
    ```
-        source `~/.bashrc`
+   source `~/.bashrc`
    ```
 
    There is a new `(base) ` prefix in your shell prompt.
 
-   To avoid automatic conda on startup:
+
+6. Deactivate conda auto activate on shell startup:
 
    ```
-        conda config --set auto_activate_base false
-	source ~/.bashrc
+   conda config --set auto_activate_base false
+   source ~/.bashrc
    ```
+   # The `(base) ` prefix should disappear from your shell prompt.
 
 7. Activate and decativate conda:
 
    To activate/deactivate miniconda, use one of the commands below
 
    ```
-        conda activate
-	conda deactive
+   conda activate
+   # `(base) ` should appear
+   conda deactive
+   # `(base) ` should disappear
    ```
 
 8. Update miniconda.
 
 
    ```
-        conda activate
-        conda update conda
+   conda activate
+   conda update conda
+   # Type `y` to do the update.
    ```
 
 If you eventually decide remove miniconda, do the following:
@@ -520,50 +533,156 @@ If you eventually decide remove miniconda, do the following:
 
 After minconda is installed do the following:
 
-1. Install master branch of cad-query (5+ minutes is common):
+1. Watch the 10 minute CadQuery installation [Video](https://www.youtube.com/watch?v=sjLTePOq8bQ).
+
+2. Install and activate miniforge:
 
    ```
-        time conda install -c cadquery -c conda-forge cadquery=master
+   # Install miniforge in `~/miniconda` directory:
+   wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh -O miniforge.sh
+   bash miniforge.sh -b -p $HOME/miniconda
+   # Do not do the init step, since it modifies your `~/.bashrc`.
+
+   # Each time you want to activate miniconda, doe the following command:
+   source $HOME/miniconda/bin/activate
+   # The  miniconda/ directory is now ~407M.
    ```
 
 
-2. In theory, get a stable version of cadqury:
+3. Create cadquery-dev and install CadQuery from master:
 
    ```
-        time conda install -c conda-forge -c cadquery cadquery=2
-   ```
+   # Create the environment.
+   conda create -n cadquery-dev
+   # The miniconda/ directory is now ~500M.
+   # Type `y` for all questions except for the init.
+   conda activate cadquery-dev  # Do not forget to do this step
+   conda install -c cadquery -c conda-forge cadquery=master
+   # Test things out
+   python3
+   >> import cadquery
+   >> cadquery.Workplane()
+   # Deactivate cadquery-dev
+   conda deactivate
+   # The miniconda/ directory is ~3.2G.
 
-   Sometimes this step does not work, so this step may need to be skipped.
-
-3. Test cadquery installation:
-
-   ```
-        python3
-        >> import cadquery
-        >> cadquery.Workplane('XY').box(1,2,3).toSvg()
-        # An SVG file should show up in your current directory.
-        # Type Control-C to exit python3
-   ```
-
-4. Install CQ-editor (5+ minutes is common):
-
-   ```
-        time conda install -c cadquery -c conda-forge cq-editor=master
-   ```
-
-5.Run `cq-editor`:
+4. Install cq--editor into cadquery-master:
 
    ```
-        cq-editor &
+   # Install cq-editor:
+   conda activate cadquery-master
+   conda install -c cadquery -c conda-forge cq-editor=master
+   cq-editor
+   # If a screen pops up, you have succeeded.
+   # If not, well miniconda failed you.  It is not strictly required.
+   # Exit the cq-editor
+   conda deactivate
+   # The miniconda/ directory is ~3.6G.
+   ```
+
+5. Create cadquery-stable and install CadQuery stable:
+
+   # Create cadquery-stable and install 2.1:
+   conda create -n cadquery-stable
+   # Type `y` for all questions except for the init.
+   conda activate cadquery-stable  # Do not forget to do this step
+   conda install -c cadquery -c conda-forge cadquery=2
+   # Test things out
+   python3
+   >> import cadquery
+   >> cadquery.Workplane()
+   # Deactivate cadquery-stable
+   conda deactivate
+   # miniconda/ directroy is ~4.5G
    ```
 
 ### Install FreeCad
 
-FreeCAd installation goes here.
+1. Using your web browser, visit the
+   [FreeCAD Downloads Page](https://www.freecadweb.org/downloads.php)
+
+2. Scroll to Linux tile and click on [64-Bit Appimage].
+   The file usually lands in the `~/Downloads` directory named something like
+   `FreeCAD_0.19.3-Linux-Conda_glibc2.12-x86_64.AppImage`
+
+3. Move the file to `~/bin` (or wherever you feel).
+   This is currently about ~915MB.
+
+4. Install a symbolic link to make the program a little shorter to type:
+
+   ```
+   ln -s ~/bin/FreeCAD_0.19.3-Linux-Conda_glibc2.12-x86_64.AppImage ~/bin/freecad
+   ```
+
+4. Make the symbolic link executable:
+
+   chmod +x ~/bin/freecad
+
+4. Execute the FreeCAD program:
+
+   ```
+   freecad &
+   ```
+
+   The FreeCAD window should pop u.
 
 ### Install Fab
 
-Fab installations instructions go here.
+Do the following to install Fab:
+
+1. Clone
+
+   ```
+   git clone https://github.com/waynegramlich/Fab.git
+   # The Fab directory is ~1.9MB.
+
+   ```
+
+2. Install packages:
+
+   ```
+   # sudo apt install -y cmark
+   conda install pip
+   # conda install mathutils
+   python3 -m pip install mathutils
+   sudo apt install -y python3-pip
+   ```
+
+<!--  Install failure on 20Mar2022
+conda install -c cadquery -c conda-forge cadquery=master
+Collecting package metadata (current_repodata.json): done
+Solving environment: -
+The environment is inconsistent, please check the package plan carefully
+The following packages are causing the inconsistency:
+
+  - conda-forge/noarch::charset-normalizer==2.0.12=pyhd8ed1ab_0
+  - conda-forge/linux-64::python_abi==3.9=2_cp39
+  - conda-forge/linux-64::conda==4.11.0=py39hf3d152e_0
+  - conda-forge/linux-64::cryptography==36.0.1=py39h95dcef6_0
+  - conda-forge/noarch::wheel==0.37.1=pyhd8ed1ab_0
+  - conda-forge/noarch::urllib3==1.26.8=pyhd8ed1ab_1
+  - conda-forge/linux-64::ruamel_yaml==0.15.80=py39h3811e60_1006
+  - conda-forge/linux-64::conda-package-handling==1.7.3=py39h3811e60_1
+  - conda-forge/linux-64::brotlipy==0.7.0=py39h3811e60_1003
+  - conda-forge/linux-64::setuptools==60.9.3=py39hf3d152e_0
+  - conda-forge/linux-64::python==3.9.10=h85951f9_2_cpython
+  - conda-forge/noarch::requests==2.27.1=pyhd8ed1ab_0
+  - conda-forge/noarch::pycparser==2.21=pyhd8ed1ab_0
+  - conda-forge/noarch::tqdm==4.62.3=pyhd8ed1ab_0
+  - conda-forge/noarch::pyopenssl==22.0.0=pyhd8ed1ab_0
+  - conda-forge/noarch::six==1.16.0=pyh6c4a22f_0
+  - conda-forge/linux-64::cffi==1.15.0=py39h4bc2ebd_0
+  - conda-forge/noarch::pip==22.0.3=pyhd8ed1ab_0
+  - conda-forge/noarch::idna==3.3=pyhd8ed1ab_0
+  - conda-forge/noarch::colorama==0.4.4=pyh9f0ad1d_0
+  - conda-forge/linux-64::sqlite==3.37.0=h9cd32fc_0
+  - conda-forge/linux-64::certifi==2021.10.8=py39hf3d152e_1
+  - conda-forge/linux-64::pycosat==0.6.3=py39h3811e60_1009
+  - conda-forge/linux-64::pysocks==1.7.1=py39hf3d152e_4
+failed with initial frozen solve. Retrying with flexible solve.
+Solving environment: failed with repodata from current_repodata.json, will retry with next repodata source.
+Collecting package metadata (repodata.json): \
+-->
 
 
 

@@ -48,7 +48,7 @@ Attributes:
 
 ### <a name="geometry----get-hash"></a>1.1 `FabCircle.`get_hash():
 
-FabCircle.get_hash(self) -> typing.Tuple[typing.Any, ...]:
+FabCircle.get_hash(self) -> Tuple[Any, ...]:
 
 Feturn FabCircle hash.
 
@@ -65,13 +65,13 @@ Returns:
 
 ### <a name="geometry----produce"></a>1.3 `FabCircle.`produce():
 
-FabCircle.produce(self, geometry_context: Geometry.FabGeometryContext, prefix: str, index: int, tracing: str = '') -> typing.Tuple[typing.Any, ...]:
+FabCircle.produce(self, geometry_context: Geometry.FabGeometryContext, prefix: str, index: int, tracing: str = '') -> Tuple[Any, ...]:
 
 Produce the FreeCAD objects needed for FabPolygon.
 
 ### <a name="geometry----get-geometries"></a>1.4 `FabCircle.`get_geometries():
 
-FabCircle.get_geometries(self) -> typing.Tuple[Geometry._Geometry, ...]:
+FabCircle.get_geometries(self) -> Tuple[Geometry._Geometry, ...]:
 
 Return the FabPolygon lines and arcs.
 
@@ -82,13 +82,13 @@ The base class for FabPolygon and FabCircle.
 
 ### <a name="geometry----get-hash"></a>2.1 `FabGeometry.`get_hash():
 
-FabGeometry.get_hash(self) -> typing.Tuple[typing.Any, ...]:
+FabGeometry.get_hash(self) -> Tuple[Any, ...]:
 
 Return FabGeometry hash.
 
 ### <a name="geometry----produce"></a>2.2 `FabGeometry.`produce():
 
-FabGeometry.produce(self, geometry_context: Geometry.FabGeometryContext, prefix: str, index: int, tracing: str = '') -> typing.Tuple[typing.Any, ...]:
+FabGeometry.produce(self, geometry_context: Geometry.FabGeometryContext, prefix: str, index: int, tracing: str = '') -> Tuple[Any, ...]:
 
 Produce the necessary FreeCAD objects for the FabGeometry.
 
@@ -117,7 +117,7 @@ Return a FabGeometryContext copy.
 
 ### <a name="geometry----set-geometry-group"></a>3.2 `FabGeometryContext.`set_geometry_group():
 
-FabGeometryContext.set_geometry_group(self, geometry_group: typing.Any) -> None:
+FabGeometryContext.set_geometry_group(self, geometry_group: Any) -> None:
 
 Set the GeometryContext geometry group.
 
@@ -130,13 +130,13 @@ A Plane class.
 
 ### <a name="geometry----point-project"></a>4.1 `FabPlane.`point_project():
 
-FabPlane.point_project(self, point: Base.Vector) -> Base.Vector:
+FabPlane.point_project(self, point: cadquery.occ_impl.geom.Vector) -> cadquery.occ_impl.geom.Vector:
 
 Project a point onto a plane.
 
 ### <a name="geometry----rotate-to-z-axis"></a>4.2 `FabPlane.`rotate_to_z_axis():
 
-FabPlane.rotate_to_z_axis(self, point: Base.Vector, reversed: bool = False, tracing: str = '') -> Base.Vector:
+FabPlane.rotate_to_z_axis(self, point: cadquery.occ_impl.geom.Vector, reversed: bool = False, tracing: str = '') -> cadquery.occ_impl.geom.Vector:
 
 Rotate a point around the origin until the normal aligns with the +Z axis.
 Arguments:
@@ -172,7 +172,7 @@ Attributes:
 
 ### <a name="geometry----get-hash"></a>5.1 `FabPolygon.`get_hash():
 
-FabPolygon.get_hash(self) -> typing.Tuple[typing.Any, ...]:
+FabPolygon.get_hash(self) -> Tuple[Any, ...]:
 
 Return the FabPolygon Hash.
 
@@ -189,13 +189,13 @@ Returns:
 
 ### <a name="geometry----get-geometries"></a>5.3 `FabPolygon.`get_geometries():
 
-FabPolygon.get_geometries(self, contact: Base.Vector, Normal: Base.Vector) -> typing.Tuple[Geometry._Geometry, ...]:
+FabPolygon.get_geometries(self, contact: cadquery.occ_impl.geom.Vector, Normal: cadquery.occ_impl.geom.Vector) -> Tuple[Geometry._Geometry, ...]:
 
 Return the FabPolygon lines and arcs.
 
 ### <a name="geometry----produce"></a>5.4 `FabPolygon.`produce():
 
-FabPolygon.produce(self, geometry_context: Geometry.FabGeometryContext, prefix: str, index: int, tracing: str = '') -> typing.Tuple[typing.Any, ...]:
+FabPolygon.produce(self, geometry_context: Geometry.FabGeometryContext, prefix: str, index: int, tracing: str = '') -> Tuple[Any, ...]:
 
 Produce the FreeCAD objects needed for FabPolygon.
 
@@ -212,7 +212,7 @@ Attributes:
 
 ### <a name="geometry----circle"></a>6.1 `FabWorkPlane.`circle():
 
-FabWorkPlane.circle(self, center: Base.Vector, radius: float, for_construction=False, tracing: str = '') -> None:
+FabWorkPlane.circle(self, center: cadquery.occ_impl.geom.Vector, radius: float, for_construction=False, tracing: str = '') -> None:
 
 Draw a circle to a point.
 
@@ -248,13 +248,13 @@ Drill a hole.
 
 ### <a name="geometry----line-to"></a>6.7 `FabWorkPlane.`line_to():
 
-FabWorkPlane.line_to(self, end: Base.Vector, for_construction=False, tracing: str = '') -> None:
+FabWorkPlane.line_to(self, end: cadquery.occ_impl.geom.Vector, for_construction=False, tracing: str = '') -> None:
 
 Draw a line to a point.
 
 ### <a name="geometry----move-to"></a>6.8 `FabWorkPlane.`move_to():
 
-FabWorkPlane.move_to(self, point: Base.Vector, tracing: str = '') -> None:
+FabWorkPlane.move_to(self, point: cadquery.occ_impl.geom.Vector, tracing: str = '') -> None:
 
 Draw a line to a point.
 
@@ -272,7 +272,7 @@ Subtract one solid form a FabWorkPlane.
 
 ### <a name="geometry----three-point-arc"></a>6.11 `FabWorkPlane.`three_point_arc():
 
-FabWorkPlane.three_point_arc(self, middle: Base.Vector, end: Base.Vector, for_construction: bool = False, tracing: str = '') -> None:
+FabWorkPlane.three_point_arc(self, middle: cadquery.occ_impl.geom.Vector, end: cadquery.occ_impl.geom.Vector, for_construction: bool = False, tracing: str = '') -> None:
 
 Draw a three point arc.
 

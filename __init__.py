@@ -546,14 +546,18 @@ After minconda is installed do the following:
 
    # Each time you want to activate miniconda, doe the following command:
    source $HOME/miniconda/bin/activate
+   # The  miniconda/ directory is now ~407M.
    ```
+   
 
 3. Create cadquery-dev and install CadQuery from master:
 
    ```
+   # Create the environment.
    conda create -n cadquery-dev
+   # The miniconda/ directory is now ~500M.
    # Type `y` for all questions except for the init.
-   conda activate cadquery-dev
+   conda activate cadquery-dev  # Do not forget to do this step
    conda install -c cadquery -c conda-forge cadquery=master
    # Test things out
    python3
@@ -561,23 +565,9 @@ After minconda is installed do the following:
    >> cadquery.Workplane()
    # Deactivate cadquery-dev
    conda deactivate
+   # The miniconda/ directory is ~3.2G.
 
-4. Create cadquery-dev and install CadQuery stable:
-
-   # Create cadquery-stable and install 2.1:
-   conda create -n cadquery-stable
-   # Type `y` for all questions except for the init.
-   conda activate cadquery-stable
-   conda install -c cadquery -c conda-forge cadquery=2
-   # Test things out
-   python3
-   >> import cadquery
-   >> cadquery.Workplane()
-   # Deactivate cadquery-stable
-   conda deactivate
-   ```
-
-5. Install cq--editor into cadquery-master:
+4. Install cq--editor into cadquery-master:
 
    ```
    # Install cq-editor:
@@ -588,6 +578,23 @@ After minconda is installed do the following:
    # If not, well miniconda failed you.  It is not strictly required.
    # Exit the cq-editor
    conda deactivate
+   # The miniconda/ directory is ~3.6G.
+   ```
+
+5. Create cadquery-stable and install CadQuery stable:
+
+   # Create cadquery-stable and install 2.1:
+   conda create -n cadquery-stable
+   # Type `y` for all questions except for the init.
+   conda activate cadquery-stable  # Do not forget to do this step
+   conda install -c cadquery -c conda-forge cadquery=2
+   # Test things out
+   python3
+   >> import cadquery
+   >> cadquery.Workplane()
+   # Deactivate cadquery-stable
+   conda deactivate
+   # miniconda/ directroy is ~4.5G
    ```
 
 ### Install FreeCad
@@ -600,6 +607,7 @@ After minconda is installed do the following:
    `FreeCAD_0.19.3-Linux-Conda_glibc2.12-x86_64.AppImage`
 
 3. Move the file to `~/bin` (or wherever you feel).
+   This is currently about ~915MB.
 
 4. Install a symbolic link to make the program a little shorter to type:
 
@@ -627,6 +635,7 @@ Do the following to install Fab:
 
    ```
    git clone https://github.com/waynegramlich/Fab.git
+   # The Fab directory is ~1.9MB.
    
    ```
 

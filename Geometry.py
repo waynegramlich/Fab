@@ -1372,11 +1372,7 @@ class FabWorkPlane(object):
             raise RuntimeError(
                 f"FabWorkPlane.__post_init__(): Got {type(self._Plane)}, not FabPlane")
         if USE_CAD_QUERY:
-            # TODO(): Fix to use CadQuery *Plane* object.
-            origin: Vector = self._Plane.Origin
-            normal: Vector = self._Plane.Normal
-            plane: cq.Plane = cast(cq.Plane, self._Plane._Plane)
-            # plane: cq.Plane = cq.Plane(origin=origin, normal=normal)
+            plane = cast(cq.Plane, self._Plane._Plane)
             self._WorkPlane = cq.Workplane(plane)
 
     # FabWorkPlane.Plane():
