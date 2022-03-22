@@ -39,26 +39,17 @@ See the FabNode documentation for further attributes.
 
 # <--------------------------------------- 100 characters ---------------------------------------> #
 
-import sys
-sys.path.append(".")
-import Embed
-USE_FREECAD: bool
-USE_CAD_QUERY: bool
-USE_FREECAD, USE_CAD_QUERY = Embed.setup()
 
 from collections import OrderedDict
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, cast, Dict, IO, List, Sequence, Set, Tuple, Union
+import sys
 
-if USE_FREECAD:
-    from FreeCAD import Placement, Vector  # type: ignore
-    import FreeCAD as App  # type: ignore
-    import FreeCADGui as Gui  # type: ignore
-elif USE_CAD_QUERY:
-    from cadquery import Vector  # type: ignore
+from cadquery import Vector  # type: ignore
 
 
+# TODO: Why is the class still in existence?
 @dataclass
 class _BoundBox(object):
     """Fake BoundBox class."""
@@ -70,11 +61,15 @@ class _BoundBox(object):
     YMax: float
     ZMax: float
 
+    @property
+    def Center(self) -> Vector:
+        return Vector(
+            (self.XMin + self.XMax) / 2.0,
+            (self.YMin + self.YMax) / 2.0,
+            (self.ZMin + self.ZMax) / 2.0
+        )
 
-if USE_FREECAD:
-    from FreeCAD import BoundBox
-elif USE_CAD_QUERY:
-    BoundBox = _BoundBox
+BoundBox = _BoundBox
 
 
 # FabBox:
@@ -187,10 +182,7 @@ class FabBox(object):
         for bound in bounds:
             if isinstance(bound, Vector):
                 vectors.append(bound)
-            elif USE_FREECAD and isinstance(bound, BoundBox):
-                vectors.append(Vector(bound.XMin, bound.YMin, bound.ZMin))
-                vectors.append(Vector(bound.XMax, bound.YMax, bound.ZMax))
-            elif USE_CAD_QUERY and isinstance(bound, _BoundBox):
+            elif isinstance(bound, _BoundBox):
                 vectors.append(Vector(bound.XMin, bound.YMin, bound.ZMin))
                 vectors.append(Vector(bound.XMax, bound.YMax, bound.ZMax))
             elif isinstance(bound, FabBox):
@@ -459,7 +451,7 @@ class FabBox(object):
         return self._ZMax - self._ZMin
 
     # FabBox.reorient():
-    def reorient(self, placement: "Placement") -> "FabBox":
+    def reorient(self, placement: Any) -> "FabBox":
         """Reorient FabBox given a Placement.
 
         Note after the *placement* is applied, the resulting box is still rectilinear with the
@@ -472,6 +464,7 @@ class FabBox(object):
         reoriented_tne: Vector = placement * self.TNE
         box = FabBox()
         box.enclose((reoriented_bsw, reoriented_tne))
+        assert False, "TODO: Is this used anymore?"
         return box
 
     # FabBox.intersect():
@@ -1044,47 +1037,6 @@ class FabNode(FabBox):
             print(f"{tracing}<=FabNode({self._Label}).get_gui_document()=>{node}")
         return node
 
-    # FabNode.set_app_object_only():
-    def set_app_object_only(self, app_object: Any) -> None:
-        """Set FabNode AppObject only."""
-        if self._AppObject:
-            raise RuntimeError(f"FabNode.set_object({self._Label}): App Object is already set.")
-        if app_object is None:
-            raise RuntimeError(f"FabNode.set_object({self._Label}): App Object is None.")
-        self._AppObject = app_object
-
-    # FabNode.set_gui_object_only():
-    def set_gui_object_only(self, gui_object: Any) -> None:
-        """Set FabNode GuiObject only."""
-        if self._GuiObject:
-            raise RuntimeError(f"FabNode.set_object({self._Label}): Gui Object is already set.")
-        if gui_object is None:
-            raise RuntimeError(f"FabNode.set_object({self._Label}): Gui Object is None.")
-        self._GuiObject = gui_object
-
-    # FabNode.set_object():
-    def set_object(self, app_object: Any) -> None:
-        """Set both AppObject and GuiObject in FabNode."""
-        self.set_app_object_only(app_object)
-        if USE_FREECAD and App.GuiUp:
-            # Search up the document tree to find the FabDocument:
-            search_node: FabNode = self
-            while not search_node.is_document() and not search_node.is_project():
-                search_node = search_node._Parent
-
-            app_document: Any = search_node._AppObject
-            # if not isinstance(app_document, App.Document):
-            if not hasattr(app_document, "FileName"):  # Only App document has FileName
-                raise RuntimeError(
-                    f"FabNode.set_object({self._Label}): No App.Document {app_document}")
-
-            gui_document: Any = Gui.getDocument(app_document.Name)
-            # if not isinstance(gui_document, Gui.Document):
-            #     raise RuntimeError(
-            #         f"FabNode.set_object({self._Label}): No Gui.Document {app_document}")
-
-            self._GuiObject: Any = gui_document.getObject(app_object.Name)
-
     # FabNode.set_tracing():
     def set_tracing(self, tracing: str):
         """Set the FabNode indentation tracing level.
@@ -1266,5 +1218,4 @@ class FabSteps(object):
 if __name__ == "__main__":
     # _unit_tests("")
     FabSteps._unit_tests(" ")
-    if USE_FREECAD:
-        FabBox._unit_tests()
+    FabBox._unit_tests()
