@@ -26,27 +26,13 @@
 
 # IGNORE!
 
-import sys
-sys.path.append(".")
-import Embed
-USE_FREECAD: bool
-USE_CAD_QUERY: bool
-USE_FREECAD, USE_CAD_QUERY = Embed.setup()
-
 from dataclasses import dataclass, field
 import json
 from typing import Any, cast, Dict, IO, List, Optional, Set, Tuple
 from pathlib import Path
 
-
-if USE_FREECAD:
-    import FreeCAD  # type: ignore
-    from FreeCAD import Vector
-    import FreeCAD as App  # type: ignore
-    import FreeCADGui as Gui  # type: ignore
-elif USE_CAD_QUERY:
-    import cadquery as cq  # type: ignore
-    from cadquery import Vector  # type: ignore
+import cadquery as cq  # type: ignore
+from cadquery import Vector  # type: ignore
 
 from Node import FabNode, FabSteps
 from Solid import FabSolid, visibility_set
@@ -76,24 +62,7 @@ class FabGroup(FabNode):
         """Perform FabGroup phase 1 post production."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>FabGroup({self.Label}).post_produce1(*, *)")
-
-        if USE_FREECAD:
-            # Create the *group* that contains the children FabNode's:
-            parent_object: Any = self.Up.AppObject
-
-            # Adding a group to document is different from adding one to a non-document:
-            if hasattr(parent_object, "FileName"):  # Document has FileName attribute.
-                parent_object.addObject("App::DocumentObjectGroup", self.Label)
-            else:
-                parent_object.newObject("App::DocumentObjectGroup", self.Label)
-
-            group: Any = parent_object.getObject(self.Label)
-            self.set_object(group)
-            visibility_set(group)
-
-        if tracing:
-            print(f"{tracing}<=FabGroup({self.Label}).post_produce1(*, *)")
+            print(f"{tracing}<=>FabGroup({self.Label}).post_produce1(*, *)")
 
     # FabGroup.produce():
     def produce(self) -> None:
@@ -157,30 +126,29 @@ class FabAssembly(FabGroup):
         tracing: str = self.Tracing
         if tracing:
             print(f"{tracing}=>FabAssembly({self.Label}).post_produce2()")
-        if USE_FREECAD:
-            pass
-        elif USE_CAD_QUERY:
-            # Create the CadQuery *assembly* and fill it in:
-            child_node: FabNode
-            assembly: cq.Assembly = cq.Assembly()
-            for child_node in self.Children:
-                sub_assembly: cq.Assembly
-                if isinstance(child_node, FabAssembly):
-                    sub_assembly = child_node._Assembly
-                elif isinstance(child_node, FabSolid):
-                    sub_assembly = child_node._Assembly
-                else:
-                    raise RuntimeError(
-                        f"FabAssembly.post_produce2({self.Label}):"
-                        f"{child_node} is {type(child_node)}, not FabSolid or FabAssembly")
 
-                if not isinstance(sub_assembly, cq.Assembly):
-                    raise RuntimeError(
-                        f"FabAssembly.post_produce2({self.Label}):"
-                        f"{sub_assembly} is {type(sub_assembly)}, not cq.Assembly")
-                assembly.add(sub_assembly, name=child_node.Label)
-            objects_table[self.Label] = assembly
-            self._Assembly = assembly
+        # Create the CadQuery *assembly* and fill it in:
+        child_node: FabNode
+        assembly: cq.Assembly = cq.Assembly()
+        for child_node in self.Children:
+            sub_assembly: cq.Assembly
+            if isinstance(child_node, FabAssembly):
+                sub_assembly = child_node._Assembly
+            elif isinstance(child_node, FabSolid):
+                sub_assembly = child_node._Assembly
+            else:
+                raise RuntimeError(
+                    f"FabAssembly.post_produce2({self.Label}):"
+                    f"{child_node} is {type(child_node)}, not FabSolid or FabAssembly")
+
+            if not isinstance(sub_assembly, cq.Assembly):
+                raise RuntimeError(
+                    f"FabAssembly.post_produce2({self.Label}):"
+                    f"{sub_assembly} is {type(sub_assembly)}, not cq.Assembly")
+            assembly.add(sub_assembly, name=child_node.Label)
+        objects_table[self.Label] = assembly
+        self._Assembly = assembly
+
         if tracing:
             print(f"{tracing}<=FabAssembly({self.Label}).post_produce2()")
 
@@ -208,8 +176,8 @@ class FabDocument(FabNode):
     """
 
     FilePath: Path = Path("/bogus_file")
-    _AppDocument: Optional["App.Document"] = field(init=False, repr=False)
-    _GuiDocument: Optional["Gui.Document"] = field(init=False, repr=False)
+    _AppDocument: Any = field(init=False, repr=False)
+    _GuiDocument: Any = field(init=False, repr=False)
 
     # FabDocument.__post_init__():
     def __post_init__(self) -> None:
@@ -251,43 +219,14 @@ class FabDocument(FabNode):
         """Perform FabDocument phase 1 post production."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>FabDocument({self.Label}).post_produce1(*, *)")
-
-        # Create *app_document*:
-        if USE_FREECAD:
-            app_document: Any = App.newDocument(self.Label)
-            # assert isinstance(app_document, App.Document)  # Just to be sure.
-            self.set_app_object_only(app_document)
-            self._AppDocument = app_document
-
-            # If the GUI is up, get the associated *gui_document* and hang onto it:
-            if App.GuiUp:  # pragma: no unit cover
-                gui_document: Any = Gui.getDocument(app_document.Name)
-                # assert isinstance(gui_document, Gui.Document)
-                self.set_gui_object_only(gui_document)
-                self._GuiDocument = gui_document
-        elif USE_CAD_QUERY:
-            pass
-
-        if tracing:
-            print(f"{tracing}<=FabDocument({self.Label}).post_produce1(*, *)")
+            print(f"{tracing}<=>FabDocument({self.Label}).post_produce1(*, *)")
 
     # FabDocument.post_produce2():
     def post_produce2(self, objects_table: Dict[str, Any]) -> None:
         """Close the FabDocument."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>FabDocument({self.Label}).post_produce2()")
-
-        if USE_FREECAD:
-            # Save the document:
-            app_document: Any = self._AppDocument
-            app_document.recompute()
-            app_document.saveAs(str(self.FilePath))
-
-        if tracing:
-            print(f"{tracing}Saved {self.FilePath}")
-            print(f"{tracing}<=FabDocument({self.Label}).post_produce2()")
+            print(f"{tracing}<=>FabDocument({self.Label}).post_produce2()")
 
     # FabDocument.is_document():
     def is_document(self) -> bool:
