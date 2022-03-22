@@ -61,20 +61,12 @@ hardware.
 # <--------------------------------------- 100 characters ---------------------------------------> #
 
 import sys
-sys.path.append(".")
-import Embed
-USE_FREECAD: bool
-USE_CAD_QUERY: bool
-USE_FREECAD, USE_CAD_QUERY = Embed.setup()
-
 from dataclasses import dataclass, field
 from typing import Any, cast, ClassVar, Dict, List, Tuple, Union
 
+from cadquery import Vector  # type: ignore
+
 from Utilities import FabCheck, FabMaterial
-if USE_FREECAD:
-    from FreeCAD import Vector  # type: ignore
-elif USE_CAD_QUERY:
-    from cadquery import Vector  # type: ignore
 
 
 # _MDrillTap
