@@ -43,7 +43,6 @@ if USE_FREECAD:
 elif USE_CAD_QUERY:
     import cadquery as cq  # type: ignore
     from cadquery import Matrix, Vector  # type: ignore
-    import mathutils  # type: ignore
 from Node import FabBox
 
 # FabPlane:
@@ -307,71 +306,37 @@ class FabPlane(object):
             plane_normal: Vector = self._Normal
             plane_normal = plane_normal / plane_normal.Length
 
-            z_axis_mu: mathutils.Vector = mathutils.Vector((z_axis.x, z_axis.y, z_axis.z))
-            plane_normal_mu: mathutils.Vector = mathutils.Vector(
-                (plane_normal.x, plane_normal.y, plane_normal.z))
             if tracing:
-                print(f"{tracing}{plane_normal=} {plane_normal_mu=}")
+                print(f"{tracing}{plane_normal=}")
 
             to_axis: Vector = plane_normal if reversed else z_axis
             from_axis: Vector = z_axis if reversed else plane_normal
-            to_axis_mu: mathutils.Vector = plane_normal_mu if reversed else z_axis_mu
-            from_axis_mu: mathutils.Vector = z_axis_mu if reversed else plane_normal_mu
             if tracing:
                 print(f"{tracing}{to_axis=}{from_axis=}")
 
             epsilon: float = 1.0e-5
             rotate_axis: Vector
             rotate_angle: float
-            rotate_angle_mu: float
-            rotate_axis_mu: mathutils.Vector
-            rotate_matrix_mu: mathutils.Matrix
             if abs((from_axis - to_axis).Length) < epsilon:
                 if tracing:
                     print(f"{tracing}Aligned with +Z axis")
                 rotate_angle = 0.0
-                rotate_angle_mu = 0.0
                 rotate_axis = Vector(0.0, 0.0, 1.0)
-                rotate_axis_mu = mathutils.Vector((0.0, 0.0, 1.0))
-                rotate_matrix_mu = mathutils.Matrix()  # Identity matrix
             else:
                 if abs((from_axis + to_axis).Length) < epsilon:
                     if tracing:
                         print(f"{tracing}Aligned with -Z axis")
                     y_axis: Vector = Vector(0.0, 1.0, 0.0)
-                    y_axis_mu: Vector = mathutils.Vector((y_axis.x, y_axis.y, y_axis.z))
                     rotate_axis = y_axis
-                    rotate_axis_mu = y_axis_mu
                     rotate_angle = -math.pi  # 180 degrees
-                    rotate_angle_mu = -math.pi # 180 degrees
                 else:
                     rotate_axis = to_axis.cross(from_axis)
-                    rotate_axis_mu = to_axis_mu.cross(from_axis_mu)  # An orthogonal rotation axis
                     rotate_angle = to_axis.getAngle(from_axis)
-                    rotate_angle_mu = to_axis_mu.angle(from_axis_mu)
                     if tracing:
                         rotate_degrees: float = math.degrees(rotate_angle)
                         print(f"{tracing}{rotate_axis=} {rotate_degrees=}")
-                assert abs(rotate_angle_mu - rotate_angle) < epsilon, (
-                    rotate_angle_mu, rotate_angle, rotate_angle_mu - rotate_angle)
-                rotate_matrix_mu = mathutils.Matrix.Rotation(-rotate_angle_mu, 4, rotate_axis_mu)
-
             # Rotate the point:
-            assert abs(rotate_angle - rotate_angle_mu) < epsilon, (rotate_angle, rotate_angle_mu)
-            
-            rotate_matrix: Tuple[Tuple[float, ...], ...]
             rotated_point, rotate_matrix = FabPlane._rotate(point, rotate_axis, rotate_angle)
-            point_mu: mathutils.Vector = mathutils.Vector((point.x, point.y, point.z))
-            rotated_point_mu: mathutils.Vector = rotate_matrix_mu @ point_mu
-            xxx: Vector = Vector(rotated_point_mu.x, rotated_point_mu.y, rotated_point_mu.z)
-            error: float = abs((xxx - rotated_point).Length)
-            if error > epsilon:
-                print(f"{error=} {epsilon=} {(error > epsilon)}")
-                print(f"{rotate_matrix=}")
-                print(f"{rotate_matrix_mu=}")
-                print(f"{rotated_point=}")
-                print(f"{rotated_point_mu=}")
-                assert False
         else:
             assert False
         if tracing:

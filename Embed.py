@@ -244,7 +244,7 @@ from typing import Tuple
 def setup() -> Tuple[bool, bool]:
     # print(f"=>Embed.setup(): Before {sys.path=}")
     assert sys.version_info.major == 3  # Python 3.x
-    assert sys.version_info.minor == 8  # Python 3.8
+    assert sys.version_info.minor in (8, 9, 10)  # Python 3.8
 
     current_directory: str = os.getcwd()
     freecad_directory: str = str(Path(current_directory) / "squashfs-root" / "usr" / "lib")
