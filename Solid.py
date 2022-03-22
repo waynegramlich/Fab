@@ -1,33 +1,16 @@
 #!/usr/bin/env python3
-"""Solid: A module for constructing 3D solids."""
+"""Solid: A module for constructing 3D solids.
 
-# [Part2DObject](http://www.iesensor.com/FreeCADDoc/0.16-dev/d9/d57/classPart_1_1Part2DObject.html)
-# [App FeaturePython](https://wiki.freecadweb.org/App_FeaturePython)
-# [Vidos from "Part Design Scripting" Guy](https://www.youtube.com/c/mwganson/videos)
-# [Part Design Scripting](https://forum.freecadweb.org/viewtopic.php?t=62751)
-# [Scripted Objects](https://wiki.freecadweb.org/Scripted_objects)
-# [FilletArc]
-#     (https://github.com/FreeCAD/FreeCAD/blob/master/src/Mod/PartDesign/Scripts/FilletArc.py)
-# [Creating and Manipulating Geometry](https://yorikvanhavre.gitbooks.io/
-#    a-freecad-manual/content/python_scripting/creating_and_manipulating_geometry.html)
-# [Use LineSegment instead of Line](https://forum.freecadweb.org/viewtopic.php?p=330999)
-# [Topo Data Scripting](https://wiki.freecadweb.org/index.php?title=Topological_data_scripting)
-# [Part Scripting](https://wiki.freecadweb.org/Part_scripting)
+This module defines the following user facing classes:
+* FabSolid: A 3D solid part that corresponds to a STEP file.
+* FabMount: A CNC-like work plane on which other operations are performed.
 
-# [Draft SelectPlane](https://wiki.freecadweb.org/Draft_SelectPlane)
-# [Draft Workbench Scripting](https://wiki.freecadweb.org/Draft_Workbench#Scripting)
+There are internal classes that represent operations such as extrude, pocket, drill, etc.
+This internal classes are managed by FabMount methods.
 
-# [Combine Draft and Sketch to simplify Modeling.](https://www.youtube.com/watch?v=lfzGEk727eo)
-
-# Note this code uses nested dataclasses that are frozen.  Computed attributes are tricky.
-# See (Set frozen data class files in __post_init__)[https://stackoverflow.com/questions/53756788]
+"""
 
 import sys
-sys.path.append(".")
-import Embed
-USE_FREECAD: bool
-USE_CAD_QUERY: bool
-USE_FREECAD, USE_CAD_QUERY = Embed.setup()
 
 from collections import OrderedDict
 from dataclasses import dataclass, field
@@ -35,15 +18,8 @@ import hashlib
 from pathlib import Path
 from typing import Any, cast, Dict, Generator, IO, List, Optional, Sequence, Tuple, Union
 
-if USE_FREECAD:
-    import FreeCAD  # type: ignore
-    import Part  # type: ignore
-    import FreeCAD as App  # type: ignore
-    import FreeCADGui as Gui  # type: ignore
-    from FreeCAD import Placement, Rotation, Vector  # type: ignore
-elif USE_CAD_QUERY:
-    import cadquery as cq  # type: ignore
-    from cadquery import Vector  # type: ignore
+import cadquery as cq  # type: ignore
+from cadquery import Vector  # type: ignore
 
 # import Part  # type: ignore
 
@@ -140,53 +116,26 @@ class _Operation(object):
     def post_produce1(self, tracing: str = "") -> None:
         raise NotImplementedError(f"{type(self)}.post_produce1() is not implemented")
 
+    # TODO: Remove
     # _Operation.produce_shape_binder():
     def produce_shape_binder(self, part_geometries: Tuple[Any, ...],
-                             prefix: str, tracing: str = "") -> "Part.Feature":
+                             prefix: str, tracing: str = "") -> Any:
         """Produce the shape binder needed for the extrude, pocket, hole, ... operations."""
         if tracing:
-            print(f"{tracing}=>FabOperation.produce_shape_binder()")
-        mount: FabMount = self.Mount
-        body: Any = mount.Body
+            print(f"{tracing}<=>FabOperation.produce_shape_binder()")
+        assert False
+        return None
 
-        binder_placement: Placement = Placement()  # Do not move/reorient anything.
-        if tracing:
-            print(f"{tracing}{binder_placement.Rotation.Axis=}")
-
-        name: str = f"{mount.Name}_{self.Name}_Binder"
-        shape_binder: Part.Feature = body.newObject("PartDesign::SubShapeBinder", name)
-        assert isinstance(shape_binder, Part.Feature)
-        shape_binder.Placement = binder_placement
-        shape_binder.Support = (part_geometries)
-        # shape_binder.Support = (datum_plane, [""])
-        shape_binder.Visibility = False
-        if tracing:
-            print(f"{tracing}<=FabOperation.produce_shape_binder()=>*")
-        return shape_binder
-
+    # TODO: remove
     # _Operation._viewer_update():
-    def _viewer_update(self, body: Any, part_feature: "Part.Feature") -> None:
+    def _viewer_update(self, body: Any, part_feature: Any) -> None:
         """Update the view Body view provider."""
-        if App.GuiUp:  # pragma: no unit cover
-            visibility_set(part_feature, True)
-            view_object: Any = body.getLinkedObject(True).ViewObject
-            part_feature.ViewObject.LineColor = getattr(
-                view_object, "LineColor", part_feature.ViewObject.LineColor)
-            part_feature.ViewObject.ShapeColor = getattr(
-                view_object, "ShapeColor", part_feature.ViewObject.ShapeColor)
-            part_feature.ViewObject.PointColor = getattr(
-                view_object, "PointColor", part_feature.ViewObject.PointColor)
-            part_feature.ViewObject.Transparency = getattr(
-                view_object, "Transparency", part_feature.ViewObject.Transparency)
-            # The following code appears to disable edge highlighting:
-            # part_feature.ViewObject.DisplayMode = getattr(
-            #    view_object, "DisplayMode", part_feature.ViewObject.DisplayMode)
-
+        assert False
 
 # _Extrude:
 @dataclass(order=True)
 class _Extrude(_Operation):
-    """_Extrude: A FreeCAD PartDesign Extrude operation.
+    """_Extrude: Prepresents and extrude operation.
 
     Attributes:
     * *Name* (str): The operation name.
@@ -274,50 +223,12 @@ class _Extrude(_Operation):
         mount: FabMount = self.Mount
         geometry_prefix: str = f"{mount.Name}_{self.Name}"
         geometry_context: FabGeometryContext = mount._GeometryContext
-        if USE_FREECAD:
-            part_geometries: List[Any] = []
-            geometry_group: Any = mount._Solid._GeometryGroup
-            # assert isinstance(geometry_group, Any), geometry_group
-            geometry_context.set_geometry_group(geometry_group)
-
-            index: int
-            for index, geometry in enumerate(self._Geometries):
-                part_geometries.extend(
-                    geometry.produce(geometry_context, geometry_prefix, index))
-
-            binder_prefix: str = f"{mount.Name}_{self.Name}"
-            shape_binder: Part.Feature = self.produce_shape_binder(
-                tuple(part_geometries), binder_prefix, tracing=next_tracing)
-            assert isinstance(shape_binder, Part.Feature)
-            shape_binder.Visibility = False
-
-            # Perform The Extrude operation:
-            body: Any = mount.Body
-            mount_normal: Vector = mount.Normal
-            pad_name: str = f"{mount.Name}_{self.Name}_Extrude"
-            extrude: Part.Feature = body.newObject("PartDesign::Pad", pad_name)
-            assert isinstance(extrude, Part.Feature)
-            # Type must be one of ("Length", "TwoLengths", "UpToLast", "UpToFirst", "UpToFace")
-            extrude.Type = "Length"
-            extrude.Profile = shape_binder
-            extrude.Length = self.Depth
-            extrude.Length2 = 0  # Only for Type == "TwoLengths"
-            extrude.UseCustomVector = True
-            extrude.Direction = mount_normal  # This may be bogus
-            extrude.UpToFace = None
-            extrude.Reversed = True
-            extrude.Midplane = False
-            extrude.Offset = 0  # Only for Type in ("UpToLast", "UpToFirst", "UpToFace")
-
-            # For the GUI, update the view provider:
-            self._viewer_update(body, extrude)
-        elif USE_CAD_QUERY:
-            for index, geometry in enumerate(self._Geometries):
-                if tracing:
-                    print(f"{tracing}Geometry[{index}]:{geometry=}")
-                geometry.produce(geometry_context, geometry_prefix, index, tracing=next_tracing)
-            # geometry_context.WorkPlane.close(tracing=next_tracing)
-            geometry_context.WorkPlane.extrude(self.Depth, tracing=next_tracing)
+        for index, geometry in enumerate(self._Geometries):
+            if tracing:
+                print(f"{tracing}Geometry[{index}]:{geometry=}")
+            geometry.produce(geometry_context, geometry_prefix, index, tracing=next_tracing)
+        # geometry_context.WorkPlane.close(tracing=next_tracing)
+        geometry_context.WorkPlane.extrude(self.Depth, tracing=next_tracing)
 
         if tracing:
             print(f"{tracing}<=_Extrude.post_produce1('{self.Name}')")
@@ -326,7 +237,7 @@ class _Extrude(_Operation):
 # _Pocket:
 @dataclass(order=True)
 class _Pocket(_Operation):
-    """_Pocket: A FreeCAD PartDesign Pocket operation.
+    """_Pocket: Represents a pocketing opertaion.
 
     Attributes:
     * *Name* (str): The operation name.
@@ -412,50 +323,26 @@ class _Pocket(_Operation):
         geometry_context: FabGeometryContext = mount._GeometryContext
         geometry: FabGeometry
         index: int
-        if USE_FREECAD:
-            for index, geometry in enumerate(geometries):
-                part_geometries.extend(geometry.produce(geometry_context, prefix, index))
 
-            # Create the *shape_binder*:
-            shape_binder: Part.Feature = self.produce_shape_binder(tuple(part_geometries), prefix)
-            assert isinstance(shape_binder, Part.Feature)
-
-            # Create the *pocket* into *body*:
-            body: Any = mount.Body
-            pocket: Part.Feature = body.newObject("PartDesign::Pocket", f"{prefix}_Pocket")
-            assert isinstance(pocket, Part.Feature)
-            pocket.Profile = shape_binder
-            pocket.Length = self._Depth
-            pocket.Length2 = 10.0 * self._Depth
-            pocket.Type = 0
-            pocket.UpToFace = None
-            pocket.Reversed = 0
-            pocket.Midplane = 0
-            pocket.Offset = 0
-
-            # For the GUI, update the view provider:
-            self._viewer_update(body, pocket)
-        elif USE_CAD_QUERY:
-            pocket_context: FabGeometryContext = geometry_context.copy(tracing=next_tracing)
-            pocket_work_plane: FabWorkPlane = pocket_context.WorkPlane
-            if tracing:
-                pocket_work_plane.show("Pocket Context Before", tracing)
-            for index, geometry in enumerate(geometries):
-                geometry.produce(pocket_context, prefix, index, tracing=next_tracing)
-                if tracing:
-                    pocket_work_plane.show(f"Pocket Context after Geometry {index}", tracing)
-            pocket_work_plane.extrude(self._Depth, tracing=next_tracing)
-            if tracing:
-                pocket_work_plane.show("Pocket Context after Extrude:", tracing)
-
-            work_plane: Any = geometry_context.WorkPlane
-            assert isinstance(work_plane, FabWorkPlane), work_plane
-            if tracing:
-                work_plane.show("Pocket Main Before Subtract", tracing)
-            geometry_context.WorkPlane.subtract(pocket_work_plane, tracing=next_tracing)
-            if tracing:
-                work_plane.show("Pocket After Subtract", tracing)
+        pocket_context: FabGeometryContext = geometry_context.copy(tracing=next_tracing)
+        pocket_work_plane: FabWorkPlane = pocket_context.WorkPlane
         if tracing:
+            pocket_work_plane.show("Pocket Context Before", tracing)
+        for index, geometry in enumerate(geometries):
+            geometry.produce(pocket_context, prefix, index, tracing=next_tracing)
+            if tracing:
+                pocket_work_plane.show(f"Pocket Context after Geometry {index}", tracing)
+        pocket_work_plane.extrude(self._Depth, tracing=next_tracing)
+        if tracing:
+            pocket_work_plane.show("Pocket Context after Extrude:", tracing)
+
+        work_plane: Any = geometry_context.WorkPlane
+        assert isinstance(work_plane, FabWorkPlane), work_plane
+        if tracing:
+            work_plane.show("Pocket Main Before Subtract", tracing)
+        geometry_context.WorkPlane.subtract(pocket_work_plane, tracing=next_tracing)
+        if tracing:
+            work_plane.show("Pocket After Subtract", tracing)
             print(f"{tracing}<=_Pocket.post_produce1('{self.Name}')")
 
 
@@ -537,18 +424,6 @@ class _Hole(_Operation):
         geometry_prefix: str = name
 
         solid: FabSolid = mount.Solid
-        if USE_FREECAD:
-            body: Any = solid.Body
-            geometry_group: Any = solid._GeometryGroup
-            # assert isinstance(geometry_group, Any), geometry_group
-            geometry_context.set_geometry_group(geometry_group)
-
-            # TODO: Move *part_geometries* to into *USE_FREECAD*:
-            part_geometries: List[Any] = []
-            part_geometries.extend(circle.produce(
-                geometry_context, geometry_prefix, 0, tracing=next_tracing))
-        elif USE_CAD_QUERY:
-            pass
 
         # Sweep through *hole_groups* generating *part_geometries*:
         # group_index: int
@@ -570,58 +445,15 @@ class _Hole(_Operation):
         #             circle.produce(geometry_context,
         #                            geometry_prefix, tracing=next_tracing))
 
-        if USE_FREECAD:
-            # Now do the FreeCAD stuff:
-            # Create the *shape_binder*:
-            # suffix: str = "Holes" if len(hole_group) > 1 else "Hole"
+        if tracing:
+            print(f"{tracing}hole={self}:")
+        plane: FabPlane = geometry_context.Plane
+        projected_circle: FabCircle = circle.project_to_plane(plane, tracing=next_tracing)
+        projected_center: Vector = projected_circle.Center
+        rotated_center: Vector = plane.rotate_to_z_axis(projected_center, tracing=next_tracing)
 
-            # Create the *shape_binder*:
-            prefix: str = f"{self.Name}_{name}"
-            shape_binder: Part.Feature = self.produce_shape_binder(tuple(part_geometries), prefix)
-
-            # TODO: fill in actual values for Hole.
-            # Create the *hole* and upstate the view provider for GUI mode:
-            solid_name: str = f"{prefix}_Drill"
-            part_hole: Part.Feature = body.newObject("PartDesign::Hole", solid_name)
-            assert isinstance(part_hole, Part.Feature)
-            part_hole.Profile = shape_binder
-            part_hole.Diameter = diameter
-            part_hole.Depth = depth
-            part_hole.UpToFace = None
-            part_hole.Reversed = False
-            part_hole.Midplane = 0
-
-            # Fill in other fields for the top mount.
-            # if is_top:
-            #     assert False, "Fill in other fields."
-
-            # For the GUI, update the view provider:
-            # self._viewer_update(body, part_hole)
-
-            if App.GuiUp:  # pragma: no unit cover
-                visibility_set(part_hole, True)
-                view_object: Any = body.getLinkedObject(True).ViewObject
-                part_hole.ViewObject.LineColor = getattr(
-                    view_object, "LineColor", part_hole.ViewObject.LineColor)
-                part_hole.ViewObject.ShapeColor = getattr(
-                    view_object, "ShapeColor", part_hole.ViewObject.ShapeColor)
-                part_hole.ViewObject.PointColor = getattr(
-                    view_object, "PointColor", part_hole.ViewObject.PointColor)
-                part_hole.ViewObject.Transparency = getattr(
-                    view_object, "Transparency", part_hole.ViewObject.Transparency)
-                # The following code appears to disable edge highlighting:
-                # part_hole.ViewObject.DisplayMode = getattr(
-                #    view_object, "DisplayMode", part_hole.ViewObject.DisplayMode)
-        elif USE_CAD_QUERY:
-            if tracing:
-                print(f"{tracing}hole={self}:")
-            plane: FabPlane = geometry_context.Plane
-            projected_circle: FabCircle = circle.project_to_plane(plane, tracing=next_tracing)
-            projected_center: Vector = projected_circle.Center
-            rotated_center: Vector = plane.rotate_to_z_axis(projected_center, tracing=next_tracing)
-
-            geometry_context.WorkPlane.move_to(rotated_center, tracing=next_tracing)
-            geometry_context.WorkPlane.hole(diameter, depth, tracing=next_tracing)
+        geometry_context.WorkPlane.move_to(rotated_center, tracing=next_tracing)
+        geometry_context.WorkPlane.hole(diameter, depth, tracing=next_tracing)
 
         if tracing:
             print(f"{tracing}<=_Hole({self.Name}).post_produce1()")
@@ -659,8 +491,8 @@ class FabMount(object):
     _Copy: Vector = field(init=False, repr=False)  # Used for making private copies of Vector's
     _Tracing: str = field(init=False, repr=False)
     _GeometryContext: FabGeometryContext = field(init=False, repr=False)
-    _AppDatumPlane: Optional["Part.Geometry"] = field(init=False, repr=False)
-    _GuiDatumPlane: Any = field(init=False, repr=False)
+    _AppDatumPlane: Any = field(init=False, repr=False)  # TODO: Remove
+    _GuiDatumPlane: Any = field(init=False, repr=False)  # TODO: Remove
     _Plane: FabPlane = field(init=False, repr=False)
 
     # FabMount.__post_init__():
@@ -688,7 +520,7 @@ class FabMount(object):
         self._Contact = self._Contact + copy
         self._Normal = self._Normal + copy
         self._Operations = OrderedDict()
-        # FreeCAD Vector metheds like to modify Vector contents; force copies beforehand:
+        # Vector metheds like to modify Vector contents; force copies beforehand:
         self._Plane: FabPlane = FabPlane(self._Contact, self._Normal)  # , tracing=next_tracing)
         self._Orient = self._Plane.point_project(self._Orient)
         self._GeometryContext = FabGeometryContext(self._Plane, self._WorkPlane)
@@ -790,81 +622,25 @@ class FabMount(object):
         # If there are no *operations* there is nothing to do:
         operations: "OrderedDict[str, _Operation]" = self._Operations
         if operations:
-            # Create the FreeCAD DatumPlane used for the drawing support.
+            # Create the FabPlane used for the drawing support.
             plane: FabPlane = self.Plane
             assert isinstance(plane, FabPlane), plane
             contact: Vector = plane.Contact
             normal: Vector = plane.Normal
-            if USE_FREECAD:
-                z_axis: Vector = Vector(0.0, 0.0, 1.0)
-                origin: Vector = Vector()
-                # FreeCAD Vector methods like to modify Vector contents; force copies beforehand:
-                projected_origin: Vector = plane.point_project(contact)
-                rotation: Rotation = Rotation(z_axis, normal)
-                placement: Placement = Placement()
-                placement.Base = projected_origin
-                placement.Rotation = rotation
 
-                if tracing:
-                    print(f"{tracing}{contact=}")
-                    print(f"{tracing}{normal=}")
-                    print(f"{tracing}{origin=}")
-                    print(f"{tracing}{projected_origin=}")
-                    print(f"{tracing}{rotation=}")
-                    print(f"{tracing}{placement=}")
-                    print(f"{tracing}{rotation*z_axis=}")
-                    print(f"{tracing}{normal=}")
+            if tracing:
+                print(f"{tracing}Name={self._Name}")
+                print(f"{tracing}Solid={self._Solid.Label}")
+                print(f"{tracing}Contact={contact}")
+                print(f"{tracing}Normal={normal}")
+                print(f"{tracing}Orient={self._Orient}")
+                print(f"{tracing}Depth={self._Depth}")
+                print(f"{tracing}Contact={contact}")
+                print(f"{tracing}{plane=}")
 
-                # Create, save and return the *datum_plane*:
-                body: Any = self.Body
-                datum_plane_name: str = f"{self.Name}_Datum_Plane"
-                datum_plane: "Part.Geometry" = body.newObject("PartDesign::Plane", datum_plane_name)
-                # assert isinstance(datum_plane, Part.Geometry), datum_plane
-                self._AppDatumPlane = datum_plane
-
-                # visibility_set(datum_plane, False)
-                datum_plane.Visibility = False
-                # xy_plane: App.GeoGeometry = body.getObject("XY_Plane")
-                if tracing:
-                    print(f"{tracing}{placement=}")
-                datum_plane.Label = self._Name
-                datum_plane.AttachmentOffset = placement
-                datum_plane.Placement = placement
-                datum_plane.MapMode = "Translate"
-                datum_plane.MapPathParameter = 0.0
-                datum_plane.MapReversed = False
-                datum_plane.Support = None
-                datum_plane.recompute()
-
-                if App.GuiUp:  # pragma: no unit cover
-                    if tracing:
-                        print(f"{tracing}get_gui_document()")
-                    document_node: FabNode = self._Solid.get_parent_document(tracing=next_tracing)
-                    gui_document: Any = document_node._GuiObject
-                    if tracing:
-                        print(f"{tracing}{gui_document=}")
-                    assert hasattr(gui_document, "getObject")
-                    gui_datum_plane: Any = getattr(gui_document, datum_plane.Name)
-                    if tracing:
-                        print(f"{tracing}{gui_datum_plane=}")
-                    assert gui_datum_plane is not None
-                    assert hasattr(gui_datum_plane, "Visibility"), gui_datum_plane
-                    setattr(gui_datum_plane, "Visibility", False)
-                    self._GuiDatum_plane = gui_datum_plane
-            elif USE_CAD_QUERY:
-                if tracing:
-                    print(f"{tracing}Name={self._Name}")
-                    print(f"{tracing}Solid={self._Solid.Label}")
-                    print(f"{tracing}Contact={contact}")
-                    print(f"{tracing}Normal={normal}")
-                    print(f"{tracing}Orient={self._Orient}")
-                    print(f"{tracing}Depth={self._Depth}")
-                    print(f"{tracing}Contact={contact}")
-                    print(f"{tracing}{plane=}")
-
-                work_plane: Optional[FabWorkPlane] = self._Solid._WorkPlane
-                assert isinstance(work_plane, FabWorkPlane), work_plane
-                work_plane.copy_workplane(plane, tracing=next_tracing)
+            work_plane: Optional[FabWorkPlane] = self._Solid._WorkPlane
+            assert isinstance(work_plane, FabWorkPlane), work_plane
+            work_plane.copy_workplane(plane, tracing=next_tracing)
 
             # Process each *operation* in *operations*:
             operation_name: str
@@ -1024,7 +800,7 @@ class FabMount(object):
 # FabSolid:
 @dataclass
 class FabSolid(FabNode):
-    """Fab: Represents a single part constructed using FreeCAD Part Design paradigm.
+    """Fab: Represents a single 3D solid that is represented as a STEP file.
 
     Inherited Attributes:
     * *Name* (str): The model name.
@@ -1184,78 +960,22 @@ class FabSolid(FabNode):
         if tracing:
             print(f"{tracing}=>FabSolid.post_produce1('{self.Label}')")
 
-        if USE_FREECAD:
-            # Create the *geometry_group* that contains all of the 2D geometry (line, arc, circle.):
-            parent: FabNode = self.Up
-            parent_object: Any = parent.AppObject
-            geometry_group: Any
-            geometry_group_name: str = f"{self.Label}_Geometry"
-            # if parent.is_document():
-            # if isinstance(parent_object, App.Document):
-            if hasattr(parent_object, "FileName"):  # Only App.Document has a FileName.
-                if tracing:
-                    print(f"{tracing}=>FabSolid.post_produce1('{self.Label}'): {parent_object}")
-                geometry_group = parent_object.addObject(
-                    "App::DocumentObjectGroup", geometry_group_name)
-            else:
-                geometry_group = parent_object.newObject("App::DocumentObjectGroup")
-                geometry_group.Label = geometry_group_name
-            self._GeometryGroup = geometry_group
-            geometry_group.Visibility = False
-
-            # Create the *body*
-            body: Any
-            # if isinstance(parent_object, App.Document):
-            if hasattr(parent_object, "FileName"):  # Only App.Document has FileName.
-                body = parent_object.addObject("PartDesign::Body", self.Label)  # TODO: add hash
-            else:
-                body = parent_object.newObject("PartDesign::Body")
-            self.set_body(body)
-            body.Label = self.Label
-
-            # Copy "view" fields from *body* to *gui_body* (if we are in graphical mode):
-            if App.GuiUp:  # pragma: no cover
-                document: FabNode = self.get_parent_document()
-                gui_document: Any = document._GuiObject
-                assert gui_document, "No GUI document"
-                assert hasattr(gui_document, "getObject")
-                gui_body: Any = getattr(gui_document, body.Name)
-                assert gui_body, "No GUI body"
-                assert hasattr(gui_body, "ShapeColor"), "Something is wrong"
-                if hasattr(gui_body, "Proxy"):
-                    # This magical line seems to get a view provider object into the Proxy field:
-                    setattr(gui_body, "Proxy", 0)  # Must not be `None`
-                if hasattr(gui_body, "DisplayMode"):
-                    setattr(gui_body, "DisplayMode", "Shaded")
-                if hasattr(gui_body, "ShapeColor"):
-                    rgb = FabColor.svg_to_rgb(self.Color)
-                    setattr(gui_body, "ShapeColor", rgb)
-
-                # view_object: "ViewProviderDocumentObject"  = body.getLinkedObject(True).ViewObject
-                # assert isinstance(view_object, ViewProviderDocumentObject), type(view_object)
-                # model_file.ViewObject = view_object
-        elif USE_CAD_QUERY:
-            pass
-
         # Deterimine wether it is posible to *use_cached_step*:
         use_cached_step: bool = False
         step_path: Path = cast(Path, None)  # Force runtime error if used.
-        if USE_FREECAD:
-            pass
-        elif USE_CAD_QUERY:
-            # This was a shocker.  It turns out that __hash__() methods are not necessarily
-            # consistent between Python runs.  In other words  __hash__() is non-deterministic.
-            # Instead use one of the hashlib hash functions instead:
-            #     hash_tuple* => repr string => hashlib.sha256 => trim to 16 bytes
-            hash_tuple: Tuple[Any, ...] = self.get_hash()
-            hash_bytes: bytes = repr(hash_tuple).encode("utf-8")
-            hasher: Any = hashlib.new("sha256")
-            hasher.update(hash_bytes)
-            hash_text: str = hasher.hexdigest()[:16]
-            step_path = fab_steps.activate(self.Label, hash_text)
-            if step_path.exists():
-                use_cached_step = True
-            self._StepFile = step_path
+        # This was a shocker.  It turns out that __hash__() methods are not necessarily
+        # consistent between Python runs.  In other words  __hash__() is non-deterministic.
+        # Instead use one of the hashlib hash functions instead:
+        #     hash_tuple* => repr string => hashlib.sha256 => trim to 16 bytes
+        hash_tuple: Tuple[Any, ...] = self.get_hash()
+        hash_bytes: bytes = repr(hash_tuple).encode("utf-8")
+        hasher: Any = hashlib.new("sha256")
+        hasher.update(hash_bytes)
+        hash_text: str = hasher.hexdigest()[:16]
+        step_path = fab_steps.activate(self.Label, hash_text)
+        if step_path.exists():
+            use_cached_step = True
+        self._StepFile = step_path
 
         # Perform all of the mount operations if unable to *use_cached_step*:
         if not use_cached_step:
@@ -1269,97 +989,44 @@ class FabSolid(FabNode):
                     print(f"{tracing}[{mount_name}]: process")
                 mount.post_produce1(tracing=next_tracing)
 
-        if USE_FREECAD:
-            pass
-        elif USE_CAD_QUERY:
-            # CadQuery workplanes do not have a color, but Assemblies do.
-            rgb_color: Tuple[float, float, float] = FabColor.svg_to_rgb(self.Color)
-            # TODO: move this code into FabWorkPlane:
+        # CadQuery workplanes do not have a color, but Assemblies do.
+        rgb_color: Tuple[float, float, float] = FabColor.svg_to_rgb(self.Color)
+        # TODO: move this code into FabWorkPlane:
 
-            assembly: cq.Assembly
-            if use_cached_step:
-                # Read in step file here:
-                work_plane: cq.Workplane = cq.importers.importStep(str(step_path))
-                assembly = cq.Assembly(work_plane, name=self.Label, color=cq.Color(*rgb_color))
-                self._Color = rgb_color
-                if tracing:
-                    print(f"{tracing}Read file '{str(step_path)}' !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-            else:
-                assembly = cq.Assembly(
-                    self._WorkPlane.WorkPlane, name=self.Label, color=cq.Color(*rgb_color))
-                # This is really ugly.  The cq.Assembly.save() method spews out uninteresting
-                # "debug" information.  See the code comments of _suppress_stdout() for more
-                # information.
-                with _suppress_stdout():
-                    assembly.save(str(step_path), "STEP")
-                if tracing:
-                    print(f"{tracing}Wrote out {str(step_path)}")
-            self._Assembly = assembly
-            objects_table[self.Label] = assembly
+        assembly: cq.Assembly
+        if use_cached_step:
+            # Read in step file here:
+            work_plane: cq.Workplane = cq.importers.importStep(str(step_path))
+            assembly = cq.Assembly(work_plane, name=self.Label, color=cq.Color(*rgb_color))
+            self._Color = rgb_color
+            if tracing:
+                print(f"{tracing}Read file '{str(step_path)}' !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        else:
+            assembly = cq.Assembly(
+                self._WorkPlane.WorkPlane, name=self.Label, color=cq.Color(*rgb_color))
+            # This is really ugly.  The cq.Assembly.save() method spews out uninteresting
+            # "debug" information.  See the code comments of _suppress_stdout() for more
+            # information.
+            with _suppress_stdout():
+                assembly.save(str(step_path), "STEP")
+            if tracing:
+                print(f"{tracing}Wrote out {str(step_path)}")
+        self._Assembly = assembly
+        objects_table[self.Label] = assembly
 
         if tracing:
             print(f"{tracing}<=FabSolid.post_produce1('{self.Label}')")
 
 
-# TODO: Move this to FabNode class:
+# TODO: Remove
 def visibility_set(element: Any, new_value: bool = True, tracing: str = "") -> None:
-    """Set the visibility of an element.
-
-    Arguments:
-    * *element* (Any): Any FreeCAD element.<
-    * *new_value* (bool): The new visibility to use.  (Default True):
-
-    """
+    """Set the visibility of an element."""
     if tracing:
-        print(f"{tracing}=>visibility_set({element}, {new_value})")
-    if App.GuiUp:   # pragma: no unit cover
-        if tracing:
-            print(f"{tracing}App.GuiUp")
-        gui_document: Optional[Any] = (
-            Gui.ActiveDocument if hasattr(Gui, "ActiveDocument") else None)
-        if tracing:
-            print(f"{tracing}{gui_document=}")
-            print(f"{tracing}{dir(gui_document)=}")
-            print(f"{tracing}{hasattr(gui_document, 'Name')=})")
-        if gui_document and hasattr(gui_document, "Name"):
-            name: str = getattr(element, "Name")
-            if tracing:
-                print(f"{tracing}{name=}")
-            sub_element: Any = gui_document.getObject(name)
-            if sub_element is not None and hasattr(sub_element, "Visibility"):
-                if isinstance(getattr(sub_element, "Visibility"), bool):
-                    setattr(sub_element, "Visibility", new_value)
-    if tracing:
-        print(f"{tracing}<=visibility_set({element}, {new_value})")
-
-    if False:  # pragma: no unit cover
-        pass
-        # App.getDocument('Unnamed').getObject('Body').newObject('PartDesign::Plane', 'DatumPlane')
-        # App.getDocument('Unnamed').getObject('DatumPlane').Support = [
-        #     (App.getDocument('Unnamed').getObject('XY_Plane'), '')]
-        # App.getDocument('Unnamed').getObject('DatumPlane').MapMode = 'FlatFace'
-        # App.activeDocument().recompute()
-        # Gui.getDocument('Unnamed').setEdit(
-        #     App.getDocument('Unnamed').getObject('Body'), 0, 'DatumPlane.')
-        # Gui.Selection.clearSelection()
-
-    if False:  # pragma: no unit cover
-        # Click on [Plane face]
-        pass
-        # App.getDocument('Unnamed').getObject('DatumPlane').AttachmentOffset = (
-        #     App.Placement(App.Vector(0.0000000000, 0.0000000000, 0.0000000000),
-        #                   App.Rotation(0.0000000000, 0.0000000000, 0.0000000000)))
-        # App.getDocument('Unnamed').getObject('DatumPlane').MapReversed = False
-        # App.getDocument('Unnamed').getObject('DatumPlane').Support = [
-        #     (App.getDocument('Unnamed').getObject('XY_Plane'), '')]
-        # App.getDocument('Unnamed').getObject('DatumPlane').MapPathParameter = 0.000000
-        # App.getDocument('Unnamed').getObject('DatumPlane').MapMode = 'FlatFace'
-        # App.getDocument('Unnamed').getObject('DatumPlane').recompute()
-        # Gui.getDocument('Unnamed').resetEdit()
-        # _tv_DatumPlane.restore()
-        # del(_tv_DatumPlane)
+        print(f"{tracing}<=>visibility_set({element}, {new_value})")
+    assert False
 
 
+# TODO: Add unit tests.
 def main() -> None:
     pass
 

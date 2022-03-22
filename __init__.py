@@ -647,3 +647,28 @@ Do the following to install Fab:
 
 """
 
+<!--
+# Random links.
+
+# [Part2DObject](http://www.iesensor.com/FreeCADDoc/0.16-dev/d9/d57/classPart_1_1Part2DObject.html)
+# [App FeaturePython](https://wiki.freecadweb.org/App_FeaturePython)
+# [Vidos from "Part Design Scripting" Guy](https://www.youtube.com/c/mwganson/videos)
+# [Part Design Scripting](https://forum.freecadweb.org/viewtopic.php?t=62751)
+# [Scripted Objects](https://wiki.freecadweb.org/Scripted_objects)
+# [FilletArc]
+#     (https://github.com/FreeCAD/FreeCAD/blob/master/src/Mod/PartDesign/Scripts/FilletArc.py)
+# [Creating and Manipulating Geometry](https://yorikvanhavre.gitbooks.io/
+#    a-freecad-manual/content/python_scripting/creating_and_manipulating_geometry.html)
+# [Use LineSegment instead of Line](https://forum.freecadweb.org/viewtopic.php?p=330999)
+# [Topo Data Scripting](https://wiki.freecadweb.org/index.php?title=Topological_data_scripting)
+# [Part Scripting](https://wiki.freecadweb.org/Part_scripting)
+
+# [Draft SelectPlane](https://wiki.freecadweb.org/Draft_SelectPlane)
+# [Draft Workbench Scripting](https://wiki.freecadweb.org/Draft_Workbench#Scripting)
+
+# [Combine Draft and Sketch to simplify Modeling.](https://www.youtube.com/watch?v=lfzGEk727eo)
+
+# Note this code uses nested dataclasses that are frozen.  Computed attributes are tricky.
+# See (Set frozen data class files in __post_init__)[https://stackoverflow.com/questions/53756788]
+
+-->
