@@ -3,46 +3,16 @@
 
 # <--------------------------------------- 100 characters ---------------------------------------> #
 
-# [Part2DObject](http://www.iesensor.com/FreeCADDoc/0.16-dev/d9/d57/classPart_1_1Part2DObject.html)
-# [App FeaturePython](https://wiki.freecadweb.org/App_FeaturePython)
-# [Vidos from "Part Design Scripting" Guy](https://www.youtube.com/c/mwganson/videos)
-# [Part Design Scripting](https://forum.freecadweb.org/viewtopic.php?t=62751)
-# [Scripted Objects](https://wiki.freecadweb.org/Scripted_objects)
-# [FilletArc]
-#     (https://github.com/FreeCAD/FreeCAD/blob/master/src/Mod/PartDesign/Scripts/FilletArc.py)
-# [Creating and Manipulating Geometry](https://yorikvanhavre.gitbooks.io/
-#    a-freecad-manual/content/python_scripting/creating_and_manipulating_geometry.html)
-# [Use LineSegment instead of Line](https://forum.freecadweb.org/viewtopic.php?p=330999)
-# [Topo Data Scripting](https://wiki.freecadweb.org/index.php?title=Topological_data_scripting)
-# [Part Scripting](https://wiki.freecadweb.org/Part_scripting)
-
-# [Draft SelectPlane](https://wiki.freecadweb.org/Draft_SelectPlane)
-# [Draft Workbench Scripting](https://wiki.freecadweb.org/Draft_Workbench#Scripting)
-
 # Note this code uses nested dataclasses that are frozen.  Computed attributes are tricky.
 # See (Set frozen data class files in __post_init__)[https://stackoverflow.com/questions/53756788]
 
-import sys
-sys.path.append(".")
-import Embed
-USE_FREECAD: bool
-USE_CAD_QUERY: bool
-USE_FREECAD, USE_CAD_QUERY = Embed.setup()
-
 from dataclasses import dataclass, field
 import math
+import sys
 from typing import Any, cast, List, Optional, Tuple, Union
 
-if USE_FREECAD:
-    import FreeCAD  # type: ignore
-    import Draft  # type: ignore
-    import Part  # type: ignore
-    import FreeCAD as App  # type: ignore
-
-    from FreeCAD import Placement, Rotation, Vector
-elif USE_CAD_QUERY:
-    import cadquery as cq  # type: ignore
-    from cadquery import Matrix, Vector  # type: ignore
+import cadquery as cq  # type: ignore
+from cadquery import Matrix, Vector  # type: ignore
 from Node import FabBox
 
 # FabPlane:
@@ -124,19 +94,16 @@ class FabPlane(object):
         # *rotated_x_direction* with a unit +X axis vector added to it:
         rotated_x_direction: Vector = rotated_origin + Vector(1.0, 0.0, 0.0)
 
-        if USE_FREECAD:
-            self._Plane = "BOGUS"
-            self._XDirection = cast(Vector, "BOGUS")  # Force failure if accessed in FreeCAD mode.
-        elif USE_CAD_QUERY:
-            # *x_direction* is computed by rotating it back to align with the *normal* and
-            # offsetting against *origin*:
-            unrotated_x_direction: Vector = self.rotate_to_z_axis(
-                rotated_x_direction, reversed=True, tracing=next_tracing)
-            assert isinstance(unrotated_x_direction, Vector), unrotated_x_direction
-            x_direction: Vector = unrotated_x_direction - origin
-            self._XDirection = x_direction
-            # Now the Plane* can be created:
-            self._Plane = cq.Plane(origin=origin, normal=normal, xDir=x_direction)
+        # *x_direction* is computed by rotating it back to align with the *normal* and
+        # offsetting against *origin*:
+        unrotated_x_direction: Vector = self.rotate_to_z_axis(
+            rotated_x_direction, reversed=True, tracing=next_tracing)
+        assert isinstance(unrotated_x_direction, Vector), unrotated_x_direction
+        x_direction: Vector = unrotated_x_direction - origin
+        self._XDirection = x_direction
+        # Now the Plane* can be created:
+        self._Plane = cq.Plane(origin=origin, normal=normal, xDir=x_direction)
+
         if tracing:
             print(f"{tracing}{rotated_origin=} {rotated_x_direction=}")
             print(f"{tracing}{origin=} {unrotated_x_direction=}")
@@ -149,13 +116,9 @@ class FabPlane(object):
         """Project a point onto a plane."""
         assert isinstance(point, Vector), point
         projected_point: Vector = cast(Vector, None)
-        if USE_FREECAD:
-            copy: Vector = self._Copy
-            projected_point = ((point + copy).projectToPlane(self._Contact, self._Normal) + copy)
-        elif USE_CAD_QUERY:
-            plane: Any = self._Plane
-            assert isinstance(plane, cq.Plane)
-            projected_point = point.projectToPlane(plane)
+        plane: Any = self._Plane
+        assert isinstance(plane, cq.Plane)
+        projected_point = point.projectToPlane(plane)
         return projected_point
 
     # FabPlane.Contact():
@@ -181,11 +144,8 @@ class FabPlane(object):
     def CQPlane(self) -> Any:
         """Return the CadQuery plane name as a string."""
         plane: Any = "BOGUS"
-        if USE_FREECAD:
-            raise RuntimeError("FabPlane.CQPlane(): Not available in FreeCAD mode.")
-        elif USE_CAD_QUERY:
-            plane = self._Plane
-            assert isinstance(plane, cq.Plane), plane
+        plane = self._Plane
+        assert isinstance(plane, cq.Plane), plane
         return plane
 
     # FabPlne._rotate():
@@ -291,46 +251,43 @@ class FabPlane(object):
         if tracing:
             print(f"{tracing}=>FabPlane.rotate_to_z_axis({point})")
         rotated_point: Vector = cast(Vector, None)  # Force failure if something is broken.
-        if USE_FREECAD:
-            assert False, f"Not implemented for FreeCAD {USE_FREECAD=} {USE_CAD_QUERY=}"
-        elif USE_CAD_QUERY:
-            z_axis: Vector = Vector(0.0, 0.0, 1.)
-            plane_normal: Vector = self._Normal
-            plane_normal = plane_normal / plane_normal.Length
 
+        z_axis: Vector = Vector(0.0, 0.0, 1.)
+        plane_normal: Vector = self._Normal
+        plane_normal = plane_normal / plane_normal.Length
+
+        if tracing:
+            print(f"{tracing}{plane_normal=}")
+
+        to_axis: Vector = plane_normal if reversed else z_axis
+        from_axis: Vector = z_axis if reversed else plane_normal
+        if tracing:
+            print(f"{tracing}{to_axis=}{from_axis=}")
+
+        epsilon: float = 1.0e-5
+        rotate_axis: Vector
+        rotate_angle: float
+        if abs((from_axis - to_axis).Length) < epsilon:
             if tracing:
-                print(f"{tracing}{plane_normal=}")
-
-            to_axis: Vector = plane_normal if reversed else z_axis
-            from_axis: Vector = z_axis if reversed else plane_normal
-            if tracing:
-                print(f"{tracing}{to_axis=}{from_axis=}")
-
-            epsilon: float = 1.0e-5
-            rotate_axis: Vector
-            rotate_angle: float
-            if abs((from_axis - to_axis).Length) < epsilon:
-                if tracing:
-                    print(f"{tracing}Aligned with +Z axis")
-                rotate_angle = 0.0
-                rotate_axis = Vector(0.0, 0.0, 1.0)
-            else:
-                if abs((from_axis + to_axis).Length) < epsilon:
-                    if tracing:
-                        print(f"{tracing}Aligned with -Z axis")
-                    y_axis: Vector = Vector(0.0, 1.0, 0.0)
-                    rotate_axis = y_axis
-                    rotate_angle = -math.pi  # 180 degrees
-                else:
-                    rotate_axis = to_axis.cross(from_axis)
-                    rotate_angle = to_axis.getAngle(from_axis)
-                    if tracing:
-                        rotate_degrees: float = math.degrees(rotate_angle)
-                        print(f"{tracing}{rotate_axis=} {rotate_degrees=}")
-            # Rotate the point:
-            rotated_point, rotate_matrix = FabPlane._rotate(point, rotate_axis, rotate_angle)
+                print(f"{tracing}Aligned with +Z axis")
+            rotate_angle = 0.0
+            rotate_axis = Vector(0.0, 0.0, 1.0)
         else:
-            assert False
+            if abs((from_axis + to_axis).Length) < epsilon:
+                if tracing:
+                    print(f"{tracing}Aligned with -Z axis")
+                y_axis: Vector = Vector(0.0, 1.0, 0.0)
+                rotate_axis = y_axis
+                rotate_angle = -math.pi  # 180 degrees
+            else:
+                rotate_axis = to_axis.cross(from_axis)
+                rotate_angle = to_axis.getAngle(from_axis)
+                if tracing:
+                    rotate_degrees: float = math.degrees(rotate_angle)
+                    print(f"{tracing}{rotate_axis=} {rotate_degrees=}")
+        # Rotate the point:
+        rotated_point, rotate_matrix = FabPlane._rotate(point, rotate_axis, rotate_angle)
+
         if tracing:
             print(f"{tracing}<=FabPlane.rotate_to_z_axis({point})=>{rotated_point}")
         return rotated_point
@@ -381,16 +338,12 @@ class FabGeometryContext(object):
     @property
     def WorkPlane(self) -> Any:
         """Return the FabQuery Workplane."""
-        if not USE_CAD_QUERY:
-            raise RuntimeError("FabGeomtery.WorkPlane(): Only accessible in CadQuery mode.")
         return self._WorkPlane
 
     # FabGeometryContext.WorkPlane.setter():
     @WorkPlane.setter
     def WorkPlane(self, workplane: Any):
         """Set the FabQuery Workplane."""
-        if not USE_CAD_QUERY:
-            raise RuntimeError("FabGeomtery.WorkPlane(): Only accessible in CadQuery mode.")
         if not isinstance(workplane, cq.Workplane):
             raise RuntimeError(
                 f"FabGeomtery.WorkPlane(): Workplane {type(workplane)}, not workplane.")
@@ -472,105 +425,6 @@ class _Arc(_Geometry):
     # FinishAngle: float
     # DeltaAngle: float
 
-    # _Arc._make_arc_3points():
-    @staticmethod
-    def make_arc_3points(points: Tuple[Vector, ...], placement=None, face=False,
-                         support=None, map_mode="Deactivated",
-                         primitive=False) -> Any:
-        """Make arc using a copy of Draft.make_arc_3points without print statements."""
-        # _name = "make_arc_3points"
-        # utils.print_header(_name, "Arc by 3 points")
-
-        # try:
-        #     utils.type_check([(points, (list, tuple))], name=_name)
-        # except TypeError:
-        #     _err(translate("draft","Points: ") + "{}".format(points))
-        #     _err(translate("draft","Wrong input: must be list or tuple of three points exactly."))
-        #     return None
-
-        # if len(points) != 3:
-        #     _err(translate("draft","Points: ") + "{}".format(points))
-        #     _err(translate("draft","Wrong input: must be list or tuple of three points exactly."))
-        #     return None
-
-        # if placement is not None:
-        #     try:
-        #         utils.type_check([(placement, App.Placement)], name=_name)
-        #     except TypeError:
-        #         _err(translate("draft","Placement: ") + "{}".format(placement))
-        #         _err(translate("draft","Wrong input: incorrect type of placement."))
-        #         return None
-
-        p1, p2, p3 = points
-
-        # _msg("p1: {}".format(p1))
-        # _msg("p2: {}".format(p2))
-        # _msg("p3: {}".format(p3))
-
-        # try:
-        #     utils.type_check([(p1, App.Vector),
-        #                       (p2, App.Vector),
-        #                       (p3, App.Vector)], name=_name)
-        # except TypeError:
-        #     _err(translate("draft","Wrong input: incorrect type of points."))
-        #     return None
-
-        try:
-            _edge = Part.Arc(p1, p2, p3)
-        except Part.OCCError as error:
-            # _err(translate("draft","Cannot generate shape: ") + "{}".format(error))
-            _ = error
-            assert False
-            return None
-
-        edge = _edge.toShape()
-        radius = edge.Curve.Radius
-        center = edge.Curve.Center
-
-        # _msg(translate("draft","Radius:") + " " + "{}".format(radius))
-        # _msg(translate("draft","Center:") + " " + "{}".format(center))
-
-        if primitive:
-            # _msg(translate("draft","Create primitive object"))
-            obj = App.ActiveDocument.addObject("Part::Feature", "Arc")
-            obj.Shape = edge
-            return obj
-
-        rot = App.Rotation(edge.Curve.XAxis,
-                           edge.Curve.YAxis,
-                           edge.Curve.Axis, "ZXY")
-        _placement = App.Placement(center, rot)
-        start = edge.FirstParameter
-        end = math.degrees(edge.LastParameter)
-        obj = Draft.makeCircle(radius,
-                               placement=_placement, face=face,
-                               startangle=start, endangle=end,
-                               support=support)
-
-        # This codes seems to require the draft toolbar to be presnt to do anything.
-        # if App.GuiUp:
-        #     gui_utils.autogroup(obj)
-
-        original_placement = obj.Placement
-
-        if placement and not support:
-            obj.Placement.Base = placement.Base
-            # _msg(translate("draft","Final placement:") + " " + "{}".format(obj.Placement))
-        if face:
-            # _msg(translate("draft","Face: True"))
-            pass
-        if support:
-            # _msg(translate("draft","Support:") + " " + "{}".format(support))
-            # _msg(translate("draft","Map mode:") + " " + "{}".format(map_mode))
-            obj.MapMode = map_mode
-            if placement:
-                obj.AttachmentOffset.Base = placement.Base
-                obj.AttachmentOffset.Rotation = original_placement.Rotation
-                # msg(translate("draft","Attachment offset: {}".format(obj.AttachmentOffset)))
-            # _msg(translate("draft","Final placement:") + " " + "{}".format(obj.Placement))
-
-        return obj
-
     # _Arc.produce():
     def produce(self, geometry_context: FabGeometryContext, prefix: str,
                 index: int, tracing: str = "") -> Any:
@@ -578,44 +432,14 @@ class _Arc(_Geometry):
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>_Arc.produce(*, '{prefix}', {index})")
+
         part_arc: Any = None
-        if USE_FREECAD:
-            plane_contact: Vector = geometry_context.Plane.Contact
-            plane_normal: Vector = geometry_context.Plane.Normal
+        plane: FabPlane = geometry_context._Plane
+        rotated_middle: Vector = plane.rotate_to_z_axis(self.Middle, tracing=next_tracing)
+        rotated_finish: Vector = plane.rotate_to_z_axis(self.Finish, tracing=next_tracing)
+        geometry_context.WorkPlane.three_point_arc(
+            rotated_middle, rotated_finish, tracing=next_tracing)
 
-            # TODO: Simplify:
-            mount_placement: Any = Placement(plane_contact, plane_normal, 0.0)  # Base, Axis, Angle
-            assert isinstance(mount_placement, Placement), mount_placement
-            # Should be Placement(mount_count, mount_normal, 0.0)
-            placement: Placement = Placement()
-            placement.Rotation = mount_placement.Rotation  # Delete
-            placement.Base = self.Center
-
-            # Create and label *part_arc*:
-            # part_arc: Part.Any = Draft.makeCircle(
-            #     self.Radius, placement=placement, face=False,  # face=True,
-            #     startangle=math.degrees(self.StartAngle),
-            #     endangle=math.degrees(self.StartAngle + self.DeltaAngle),
-            #     support=None)
-            part_arc = _Arc.make_arc_3points(
-                (self.Start, self.Middle, self.Finish))
-            # part_arc: Any=Draft.make_arc_3points([self.Start, self.Middle, self.Finish])
-
-            label: str = f"{prefix}_Arc_{index:03d}"
-            # assert isinstance(part_arc, Any)
-            part_arc.Label = label
-            part_arc.Visibility = False
-
-            # Move *part_arc* into *geometry_group*:
-            geometry_group: App.DocumentObjectGroup = geometry_context.GeometryGroup
-            part_arc.adjustRelativeLinks(geometry_group)
-            geometry_group.addObject(part_arc)
-        elif USE_CAD_QUERY:
-            plane: FabPlane = geometry_context._Plane
-            rotated_middle: Vector = plane.rotate_to_z_axis(self.Middle, tracing=next_tracing)
-            rotated_finish: Vector = plane.rotate_to_z_axis(self.Finish, tracing=next_tracing)
-            geometry_context.WorkPlane.three_point_arc(
-                rotated_middle, rotated_finish, tracing=next_tracing)
         if tracing:
             print(f"{tracing}<=_Arc.produce(*, '{prefix}', {index})=>{part_arc}")
         return part_arc
@@ -644,38 +468,8 @@ class _Circle(_Geometry):
         plane: FabPlane = geometry_context.Plane
         center_on_plane: Vector = plane.point_project(self.Center)
         part_circle: Any = None
-        if USE_FREECAD:
-            # Extract mount plane *contact* and *normal* from *geometry_context* for 2D projection:
-            # plane_contact: Vector = plane.Contact
-            plane_normal: Vector = plane.Normal
-            # FreeCAD Vector metheds like to modify Vector contents; force copies beforehand:
-
-            label: str = f"{prefix}_Circle_{index:03d}"
-            z_axis: Vector = Vector(0.0, 0.0, 1.0)
-            rotation: Rotation = Rotation(z_axis, plane_normal)
-            placement: Placement = Placement()
-            placement.Rotation = rotation
-            placement.Base = center_on_plane
-            if tracing:
-                print(f"{tracing}{center_on_plane=} {plane_normal=}")
-                print(f"{tracing}{placement=}")
-                print(f"{tracing}{rotation * z_axis=}")
-
-            # Create and label *part_arc*:
-            part_circle = Draft.makeCircle(
-                self.Diameter / 2.0, placement=placement, face=True,
-                support=None)
-            # assert isinstance(part_circle, Any)
-            part_circle.Label = label
-            part_circle.Visibility = False
-
-            # Move *part_arc* into *geometry_group*:
-            geometry_group: App.DocumentObjectGroup = geometry_context.GeometryGroup
-            part_circle.adjustRelativeLinks(geometry_group)
-            geometry_group.addObject(part_circle)
-        elif USE_CAD_QUERY:
-            work_plane: FabWorkPlane = geometry_context.WorkPlane
-            work_plane.circle(center_on_plane, self.Diameter / 2, tracing=next_tracing)
+        work_plane: FabWorkPlane = geometry_context.WorkPlane
+        work_plane.circle(center_on_plane, self.Diameter / 2, tracing=next_tracing)
 
         if tracing:
             print(f"{tracing}<=_Circle.produce()")
@@ -708,35 +502,13 @@ class _Line(_Geometry):
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>_Line.produce()")
+
         line_segment: Any = None
-        if USE_FREECAD:
-            label: str = f"{prefix}_Line_{index:03d}"
-            placement: Placement = Placement()
-            placement.Rotation.Q = (0.0, 0.0, 0.0, 1.0)
-            placement.Base = self.Start
-
-            # Create and label *line_segment*:
-            points = [self.Start, self.Finish]
-            line_segment = Draft.makeWire(
-                points, placement=placement, closed=False, face=True, support=None)
-            # assert isinstance(line_segment, Any)
-            line_segment.Label = label
-
-            # Draft.autogroup(line_segment)
-            # app_document: App.Document = model_file.AppDocument
-            # app_document.recompute()
-
-            # Move *line_segment* into *geometry_group*:
-            geometry_group: App.DocumentObjectGroup = geometry_context.GeometryGroup
-            line_segment.adjustRelativeLinks(geometry_group)
-            line_segment.Visibility = False
-            geometry_group.addObject(line_segment)
-        elif USE_CAD_QUERY:
-            plane: FabPlane = geometry_context._Plane
-            rotated_finish: Vector = plane.rotate_to_z_axis(self.Finish, tracing=next_tracing)
-            if tracing:
-                print(f"{tracing}{self.Finish} ==> {rotated_finish}")
-            geometry_context.WorkPlane.line_to(rotated_finish, tracing=next_tracing)
+        plane: FabPlane = geometry_context._Plane
+        rotated_finish: Vector = plane.rotate_to_z_axis(self.Finish, tracing=next_tracing)
+        if tracing:
+            print(f"{tracing}{self.Finish} ==> {rotated_finish}")
+        geometry_context.WorkPlane.line_to(rotated_finish, tracing=next_tracing)
 
         if tracing:
             print(f"{tracing}<=_Line.produce()=>{line_segment}")
@@ -1386,23 +1158,18 @@ class FabPolygon(FabGeometry):
         geometries: Tuple[_Geometry, ...] = self.get_geometries(plane_contact, plane_normal)
         part_geometries: List[Any] = []
 
-        if USE_FREECAD:
-            geometry: _Geometry
-            for index, geometry in enumerate(geometries):
-                part_geometry = geometry.produce(geometry_context, prefix, index)
-                part_geometries.append(part_geometry)
-        elif USE_CAD_QUERY:
-            if not geometries:
-                raise RuntimeError("FabPolygon.produce(): empty geometries.")
-            geometry0: _Geometry = geometries[0]
-            start: Vector = geometry0.get_start()
-            rotated_start: Vector = geometry_context._Plane.rotate_to_z_axis(
-                start, tracing=next_tracing)
-            geometry_context.WorkPlane.move_to(rotated_start, tracing=next_tracing)
-            for index, geometry in enumerate(geometries):
-                part_geometry = geometry.produce(
-                    geometry_context, prefix, index, tracing=next_tracing)
-            geometry_context.WorkPlane.close(tracing=next_tracing)
+        if not geometries:
+            raise RuntimeError("FabPolygon.produce(): empty geometries.")
+        geometry0: _Geometry = geometries[0]
+        start: Vector = geometry0.get_start()
+        rotated_start: Vector = geometry_context._Plane.rotate_to_z_axis(
+            start, tracing=next_tracing)
+        geometry_context.WorkPlane.move_to(rotated_start, tracing=next_tracing)
+        for index, geometry in enumerate(geometries):
+            part_geometry = geometry.produce(
+                geometry_context, prefix, index, tracing=next_tracing)
+        geometry_context.WorkPlane.close(tracing=next_tracing)
+
         if tracing:
             print(f"{tracing}<=FabPolygon.produce(*, '{prefix}', {index})=>*")
         return tuple(part_geometries)
@@ -1447,9 +1214,8 @@ class FabWorkPlane(object):
         if not isinstance(self._Plane, FabPlane):
             raise RuntimeError(
                 f"FabWorkPlane.__post_init__(): Got {type(self._Plane)}, not FabPlane")
-        if USE_CAD_QUERY:
-            plane = cast(cq.Plane, self._Plane._Plane)
-            self._WorkPlane = cq.Workplane(plane)
+        plane = cast(cq.Plane, self._Plane._Plane)
+        self._WorkPlane = cq.Workplane(plane)
 
     # FabWorkPlane.Plane():
     @property
@@ -1462,117 +1228,107 @@ class FabWorkPlane(object):
     @property
     def WorkPlane(self) -> Any:
         """Return the Workplane associated from a FabWorkPlane."""
-        if not USE_CAD_QUERY:
-            raise RuntimeError("FabWorkPlane Not in cad queury mode.")
         return self._WorkPlane
 
     # FabWorkPlane.circle():
     def circle(self, center: Vector, radius: float,
                for_construction=False, tracing: str = "") -> None:
         """Draw a circle to a point."""
-        if USE_CAD_QUERY:
-            if tracing:
-                print(f"{tracing}<=>FabWorkPlane.circle({center}, {radius}, {for_construction})")
-            rotated_center: Vector = self._Plane.rotate_to_z_axis(center)
-            self._WorkPlane = (
-                cast(cq.Workplane, self._WorkPlane)
-                .moveTo(rotated_center.x, rotated_center.y)
-                .circle(radius, for_construction)
-            )
+        if tracing:
+            print(f"{tracing}<=>FabWorkPlane.circle({center}, {radius}, {for_construction})")
+        rotated_center: Vector = self._Plane.rotate_to_z_axis(center)
+        self._WorkPlane = (
+            cast(cq.Workplane, self._WorkPlane)
+            .moveTo(rotated_center.x, rotated_center.y)
+            .circle(radius, for_construction)
+        )
 
     # FabWorkPlane.close():
     def close(self, tracing: str = "") -> None:
         """Close a sequence of arcs and lines."""
-        if USE_CAD_QUERY:
-            if tracing:
-                print(f"{tracing}<=>FabWorkPlane.close()")
-            self._WorkPlane = (
-                cast(cq.Workplane, self._WorkPlane)
-                .close()
-            )
+        if tracing:
+            print(f"{tracing}<=>FabWorkPlane.close()")
+        self._WorkPlane = (
+            cast(cq.Workplane, self._WorkPlane)
+            .close()
+        )
 
     # FabWorkPlane.copy_workplane():
     def copy_workplane(self, plane: FabPlane, tracing: str = "") -> None:
         """Create a new CadQuery workplane and push it onto the stack."""
-        if USE_CAD_QUERY:
-            if tracing:
-                print(f"{tracing}=>FabWorkPlane.copy_workPlane({plane})")
-            if not isinstance(plane, FabPlane):
-                raise RuntimeError(
-                    f"FabWorkPlane.copy_workplane(): Got {type(plane)}, not FabPlane")
-            if tracing:
-                print(f"{tracing}{plane=}")
-            self._WorkPlane = (
-                cast(cq.Workplane, self._WorkPlane)
-                .copyWorkplane(cq.Workplane(plane.CQPlane))
-            )
-            if tracing:
-                print(f"{tracing}<=FabWorkPlane.copy_workPlane({plane})")
+        if tracing:
+            print(f"{tracing}=>FabWorkPlane.copy_workPlane({plane})")
+        if not isinstance(plane, FabPlane):
+            raise RuntimeError(
+                f"FabWorkPlane.copy_workplane(): Got {type(plane)}, not FabPlane")
+        if tracing:
+            print(f"{tracing}{plane=}")
+        self._WorkPlane = (
+            cast(cq.Workplane, self._WorkPlane)
+            .copyWorkplane(cq.Workplane(plane.CQPlane))
+        )
+        if tracing:
+            print(f"{tracing}<=FabWorkPlane.copy_workPlane({plane})")
 
     # FabWorkPlane.cut():
     def cut_blind(self, depth: float, tracing: str = "") -> None:
         """Use the current 2D object to cut a pocket to a known depth."""
-        if USE_CAD_QUERY:
-            if tracing:
-                print(f"{tracing}<=>FabWorkPlane.cut_blind({depth})")
-            self._WorkPlane = (
-                cast(cq.Workplane, self._WorkPlane)
-                .cutBlind(depth)
-            )
+        if tracing:
+            print(f"{tracing}<=>FabWorkPlane.cut_blind({depth})")
+        self._WorkPlane = (
+            cast(cq.Workplane, self._WorkPlane)
+            .cutBlind(depth)
+        )
 
     # FabWorkPlane.extrude():
     def extrude(self, depth: float, tracing: str = "") -> None:
         """Extrude current 2D object to a known depth."""
-        if USE_CAD_QUERY:
-            if tracing:
-                print(f"{tracing}<=>FabWorkPlane.extrude({depth})")
-            self._WorkPlane = (
-                cast(cq.Workplane, self._WorkPlane)
-                .extrude(-depth)
-            )
+        if tracing:
+            print(f"{tracing}<=>FabWorkPlane.extrude({depth})")
+        self._WorkPlane = (
+            cast(cq.Workplane, self._WorkPlane)
+            .extrude(-depth)
+        )
 
     # FabWorkPlane.hole():
     def hole(self, diameter: float, depth: float, tracing: str = "") -> None:
         """Drill a hole."""
-        if USE_CAD_QUERY:
-            if tracing:
-                print(f"{tracing}=>FabWorkPlane.hole({diameter}, {depth})")
-            self._WorkPlane = (
-                cast(cq.Workplane, self._WorkPlane)
-                .hole(diameter=diameter, depth=depth)
-            )
-            if tracing:
-                print(f"{tracing}<=FabWorkPlane.hole({diameter}, {depth})")
+        if tracing:
+            print(f"{tracing}=>FabWorkPlane.hole({diameter}, {depth})")
+        self._WorkPlane = (
+            cast(cq.Workplane, self._WorkPlane)
+            .hole(diameter=diameter, depth=depth)
+        )
+        if tracing:
+            print(f"{tracing}<=FabWorkPlane.hole({diameter}, {depth})")
 
     # FabWorkPlane.line_to():
     def line_to(self, end: Vector, for_construction=False, tracing: str = "") -> None:
         """Draw a line to a point."""
-        if USE_CAD_QUERY:
-            if tracing:
-                print(f"{tracing}=>FabWorkPlane.line_to({end}, {for_construction})")
-            end_tuple: Tuple[float, float] = (end.x, end.y)
-            self._WorkPlane = (
-                cast(cq.Workplane, self._WorkPlane)
-                .lineTo(end.x, end.y)
-            )
-            if tracing:
-                print(f"{tracing}{end_tuple=}")
-                print(f"{tracing}<=FabWorkPlane.line_to({end}, {for_construction})")
+        if tracing:
+            print(f"{tracing}=>FabWorkPlane.line_to({end}, {for_construction})")
+        end_tuple: Tuple[float, float] = (end.x, end.y)
+        self._WorkPlane = (
+            cast(cq.Workplane, self._WorkPlane)
+            .lineTo(end.x, end.y)
+        )
+        if tracing:
+            print(f"{tracing}{end_tuple=}")
+            print(f"{tracing}<=FabWorkPlane.line_to({end}, {for_construction})")
 
     # FabWorkPlane.move_to():
     def move_to(self, point: Vector, tracing: str = "") -> None:
         """Draw a line to a point."""
-        if USE_CAD_QUERY:
-            if tracing:
-                print(f"{tracing}=>FabWorkPlane.move_to({point})")
-                print(f"{tracing}{self._WorkPlane.plane=}")
-            assert isinstance(point, Vector), point
-            self._WorkPlane = (
-                cast(cq.Workplane, self._WorkPlane)
-                .moveTo(point.x, point.y)
-            )
-            if tracing:
-                print(f"{tracing}<=FabWorkPlane.move_to({point})")
+        if tracing:
+            print(f"{tracing}=>FabWorkPlane.move_to({point})")
+            print(f"{tracing}{self._WorkPlane.plane=}")
+        assert isinstance(point, Vector), point
+        self._WorkPlane = (
+            cast(cq.Workplane, self._WorkPlane)
+            .moveTo(point.x, point.y)
+        )
+        if tracing:
+            print(f"{tracing}<=FabWorkPlane.move_to({point})")
 
     # FabWorkPlane.show():
     def show(self, label: str, tracing: str = "") -> None:
@@ -1632,30 +1388,28 @@ class FabWorkPlane(object):
     # FabWorkPlane.subtract():
     def subtract(self, remove_solid: "FabWorkPlane", tracing: str = "") -> None:
         """Subtract one solid form a FabWorkPlane."""
-        if USE_CAD_QUERY:
-            if tracing:
-                print(f"{tracing}<=>FabWorkPlane.subtract()")
-            self._WorkPlane = (
-                cast(cq.Workplane, self._WorkPlane) -
-                remove_solid.WorkPlane
-            )
+        if tracing:
+            print(f"{tracing}<=>FabWorkPlane.subtract()")
+        self._WorkPlane = (
+            cast(cq.Workplane, self._WorkPlane) -
+            remove_solid.WorkPlane
+        )
 
     # FabWorkPlane.three_point_arc():
     def three_point_arc(self, middle: Vector, end: Vector,
                         for_construction: bool = False, tracing: str = "") -> None:
         """Draw a three point arc."""
-        if USE_CAD_QUERY:
-            if tracing:
-                print(f"{tracing}=>FabWorkPlane.three_point_arc({middle}), {end})")
-            middle_tuple: Tuple[float, float] = (middle.x, middle.y)
-            end_tuple: Tuple[float, float] = (end.x, end.y)
-            self._WorkPlane = (
-                cast(cq.Workplane, self._WorkPlane)
-                .threePointArc(middle_tuple, end_tuple)
-            )
-            if tracing:
-                print(f"{tracing}{middle_tuple=} {end_tuple=}")
-                print(f"{tracing}<=FabWorkPlane.three_point_arc({middle}), {end})")
+        if tracing:
+            print(f"{tracing}=>FabWorkPlane.three_point_arc({middle}), {end})")
+        middle_tuple: Tuple[float, float] = (middle.x, middle.y)
+        end_tuple: Tuple[float, float] = (end.x, end.y)
+        self._WorkPlane = (
+            cast(cq.Workplane, self._WorkPlane)
+            .threePointArc(middle_tuple, end_tuple)
+        )
+        if tracing:
+            print(f"{tracing}{middle_tuple=} {end_tuple=}")
+            print(f"{tracing}<=FabWorkPlane.three_point_arc({middle}), {end})")
 
 
 def main() -> None:
