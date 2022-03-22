@@ -635,55 +635,15 @@ Do the following to install Fab:
 
    ```
    git clone https://github.com/waynegramlich/Fab.git
-   # The Fab directory is ~1.9MB.
+   # The Fab directory is currently ~2MB.
    
    ```
 
 2. Install packages:
 
    ```
-   # sudo apt install -y cmark
-   conda install pip
-   # conda install mathutils
-   python3 -m pip install mathutils
-   sudo apt install -y python3-pip
+   # To Be Figured out
    ```
-
-<!--  Install failure on 20Mar2022
-conda install -c cadquery -c conda-forge cadquery=master
-Collecting package metadata (current_repodata.json): done
-Solving environment: - 
-The environment is inconsistent, please check the package plan carefully
-The following packages are causing the inconsistency:
-
-  - conda-forge/noarch::charset-normalizer==2.0.12=pyhd8ed1ab_0
-  - conda-forge/linux-64::python_abi==3.9=2_cp39
-  - conda-forge/linux-64::conda==4.11.0=py39hf3d152e_0
-  - conda-forge/linux-64::cryptography==36.0.1=py39h95dcef6_0
-  - conda-forge/noarch::wheel==0.37.1=pyhd8ed1ab_0
-  - conda-forge/noarch::urllib3==1.26.8=pyhd8ed1ab_1
-  - conda-forge/linux-64::ruamel_yaml==0.15.80=py39h3811e60_1006
-  - conda-forge/linux-64::conda-package-handling==1.7.3=py39h3811e60_1
-  - conda-forge/linux-64::brotlipy==0.7.0=py39h3811e60_1003
-  - conda-forge/linux-64::setuptools==60.9.3=py39hf3d152e_0
-  - conda-forge/linux-64::python==3.9.10=h85951f9_2_cpython
-  - conda-forge/noarch::requests==2.27.1=pyhd8ed1ab_0
-  - conda-forge/noarch::pycparser==2.21=pyhd8ed1ab_0
-  - conda-forge/noarch::tqdm==4.62.3=pyhd8ed1ab_0
-  - conda-forge/noarch::pyopenssl==22.0.0=pyhd8ed1ab_0
-  - conda-forge/noarch::six==1.16.0=pyh6c4a22f_0
-  - conda-forge/linux-64::cffi==1.15.0=py39h4bc2ebd_0
-  - conda-forge/noarch::pip==22.0.3=pyhd8ed1ab_0
-  - conda-forge/noarch::idna==3.3=pyhd8ed1ab_0
-  - conda-forge/noarch::colorama==0.4.4=pyh9f0ad1d_0
-  - conda-forge/linux-64::sqlite==3.37.0=h9cd32fc_0
-  - conda-forge/linux-64::certifi==2021.10.8=py39hf3d152e_1
-  - conda-forge/linux-64::pycosat==0.6.3=py39h3811e60_1009
-  - conda-forge/linux-64::pysocks==1.7.1=py39hf3d152e_4
-failed with initial frozen solve. Retrying with flexible solve.
-Solving environment: failed with repodata from current_repodata.json, will retry with next repodata source.
-Collecting package metadata (repodata.json): \ 
--->
 
 """
 

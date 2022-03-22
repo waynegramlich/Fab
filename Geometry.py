@@ -248,12 +248,15 @@ class FabPlane(object):
         # For some reason the Vector.transform method() always throws an exception:
         #   OCP.Standard.Standard_ConstructionError: gp_GTrsf::Trsf() - non-orthogonal GTrsf
         # on matrices that are clearly orthogonal (i.e. M * Mt = I, where Mt is the M transpose.)
+        # As a work around, skip cq.Vector and cq.Matrix, create the 3x3 rotation coefficients,
+        # and manually, do the point (1x3) by roatation matrix (3x3) and get the rotated
+        # point (1x3).
+        # 
         # matrix: cq.Matrix = cq.Matrix([
         #     [zf(nx * x_omc + c), zf(nx * y_omc - zs), zf(nx * z_omc + ys), 0.0],
         #     [zf(ny * x_omc + zs), zf(ny * y_omc + c), zf(ny * z_omc - xs), 0.0],
         #     [zf(nz * x_omc - ys), zf(nz * y_omc + xs), zf(nz * z_omc + c), 0.0],
         # ])
-        # As a work around, skip cq.Vector and cq.Matrix and do the multiplication manually:
         m00: float = zf(nx * x_omc + c)
         m01: float = zf(nx * y_omc - zs)
         m02: float = zf(nx * z_omc + ys)
@@ -291,17 +294,6 @@ class FabPlane(object):
         if USE_FREECAD:
             assert False, f"Not implemented for FreeCAD {USE_FREECAD=} {USE_CAD_QUERY=}"
         elif USE_CAD_QUERY:
-            # This code uses the `mathutils` package Vector/Matrix classes instead of CadQuery
-            # Vector/Matrix classes.  The reason for this is because CadQuery does not actually
-            # implement a completely generic Matrix class.  Instead it uses the OCD (OpenCascade)
-            # library which constrains matrices to be orthogonal.  An orthogonal matrix is one
-            # M * Mt = I, where M is the matrix, Mt is transpose of matrix M and I is the identity
-            # matrix.  For an orthogonal matrix, it turns out Mt is the inverse of M, so computing
-            # the inverse's are very computationally fast.  This speed comes at the cost of
-            # disallowing more general matrices.  The bottom line is that this function can not
-            # use CadQuery Matrices for this reason.  Hence, the handstands converting between
-            # the mathutils/CadQuery Vector/Matrix classes.
-
             z_axis: Vector = Vector(0.0, 0.0, 1.)
             plane_normal: Vector = self._Normal
             plane_normal = plane_normal / plane_normal.Length
