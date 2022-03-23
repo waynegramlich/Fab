@@ -29,22 +29,26 @@ Embed.setup()
 from dataclasses import dataclass
 from typing import Tuple
 
+
 # ApexDetail:
 class ApexDetail(object):
     """ApexDetail: More inromation about the object."""
     pass
+
 
 # ApexVendorDetail:
 class ApexVendorDetail(ApexDetail):
     """ApexVendorDetail: More Vendor information."""
     pass
 
+
 # ApexBom:
 @dataclass
 class ApexBOM(object):
     """ApexBOM: A Bill of Materials for a project."""
 
-    parts: Tuple[ApexDetail, ...]  # Information about the 
+    parts: Tuple[ApexDetail, ...]  # Information about the
+
 
 # ApexCollection:
 @dataclass
@@ -53,6 +57,7 @@ class ApexCollection(dict):
 
     # https://stackoverflow.com/questions/4014621/a-python-class-that-acts-like-dict
 
+
 # ApexFactory:
 @dataclass
 class ApexFactory:
@@ -60,7 +65,9 @@ class ApexFactory:
     name: str
     address: Tuple[str, ...]
 
+
 # ApexFactoryDetail
+
 
 # ApexVendor:
 class ApexVendor:
@@ -68,11 +75,13 @@ class ApexVendor:
     name: str
     address: Tuple[str, ...]
 
+
 # ApexVendorOrder:
 @dataclass
 class ApexVendorOrder:
     """ApexVendorOrder: An order for parts."""
     details: Tuple[ApexVendorDetail, ...]
+
 
 # ApexVendorDetail:
 @dataclass
@@ -84,4 +93,3 @@ class ApexVendorDetail:
     price: float  # The vendor price.
 
 # <--------------------------------------- 100 characters ---------------------------------------> #
-

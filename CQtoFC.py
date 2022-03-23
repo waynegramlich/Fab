@@ -176,12 +176,13 @@ class FabCQtoFC(object):
 def main() -> None:
     """The main program."""
     environ = cast(Dict[str, str], os.environ)
-    json_file_name: str = environ["JSON"] if "JSON" in environ else "/tmp/TestProject.json" 
+    json_file_name: str = environ["JSON"] if "JSON" in environ else "/tmp/TestProject.json"
     cnc: bool = "CNC" in environ
     json_reader: FabCQtoFC = FabCQtoFC(Path(json_file_name), cnc)
     json_reader.process(indent="", tracing="")
     if not App.GuiUp:  # type: ignore
         sys.exit()
+
 
 if __name__ == "__main__":
     main()

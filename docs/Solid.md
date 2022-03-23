@@ -1,4 +1,10 @@
 # Solid: Solid: A module for constructing 3D solids.
+This module defines the following user facing classes:
+* FabSolid: A 3D solid part that corresponds to a STEP file.
+* FabMount: A CNC-like work plane on which other operations are performed.
+
+There are internal classes that represent operations such as extrude, pocket, drill, etc.
+This internal classes are managed by FabMount methods.
 
 ## Table of Contents (alphabetical order):
 
@@ -82,7 +88,7 @@ Drill some FabJoin's into a FabMount.
 
 ## <a name="solid--fabsolid"></a>2 Class FabSolid:
 
-Fab: Represents a single part constructed using FreeCAD Part Design paradigm.
+Fab: Represents a single 3D solid that is represented as a STEP file.
 Inherited Attributes:
 * *Name* (str): The model name.
 * *Parent* (FabNode): The Parent FabNode.

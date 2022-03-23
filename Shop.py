@@ -40,9 +40,10 @@ sys.path.append("/home/wayne/public_html/projects/Fab")
 # Embed.setup()
 
 import json
-from typing import Any, cast, Dict, IO, List, Optional, Tuple, Union
+from typing import Any, cast, Dict, IO, List, Tuple, Union
 from dataclasses import dataclass, field
 from pathlib import Path as FilePath
+
 
 # FabTool:
 @dataclass(frozen=True)
@@ -66,23 +67,24 @@ class FabTool(object):
       The tool holder must be kept above the clearance height.
 
     """
-    
+
     Name: str
     FileName: FilePath
     Material: str = field(default="Carbide")
     OffsetLength: Union[None, float, str] = field(default=None)
     ToolHolderHeight: Union[None, float, str] = field(default=None)
     VendorName: str = field(default="")
-    VendorPartNumber: str =  field(default="")
+    VendorPartNumber: str = field(default="")
     _ParameterNames: Tuple[str, ...] = field(init=False, repr=False, default=())
     _AttributeNames: Tuple[str, ...] = field(init=False, repr=False, default=())
     Hash: str = field(init=False, repr=False, default="")
     ToolType: str = field(init=False, default="??")
-    
+
     # FabTool.__post_init__():
     def __post_init__(self) -> None:
         """Initialize the FabCNCTemplate."""
         name = cast(str, self._get_attribute("Name", (str,)))
+        _ = name
         file_name = cast(FilePath, self._get_attribute("FileName", (FilePath,)))
         material = cast(str, self._get_attribute("Material", (str,)))
         allowed_materials: Tuple[str, ...] = (
@@ -94,12 +96,12 @@ class FabTool(object):
         _ = self._get_attribute("ToolHolderHeight", (type(None), float, str))
         _ = self._get_attribute("VendorName", (str,))
         _ = self._get_attribute("VendorPartNumber", (str,))
-        
+
         if file_name.suffix != ".fcstd":
             raise RuntimeError(
                 "FabTool.__post_init__(): "
                 f"Filename '{file_name}' suffix is '{self.FileName.suffix}', not '.fcstd'")
-        
+
         sub_material: Any
         for sub_material in material:
             if not isinstance(sub_material, str):
@@ -177,7 +179,7 @@ class FabTool(object):
             ]
 
         # Output parameter/attribute tables :
-        prefix: str = ""    
+        prefix: str = ""
         tables: Dict[str, Tuple[str, ...]]
         if table_name:
             tables = {table_name: self._ParameterNames + self._AttributeNames}
@@ -261,7 +263,7 @@ class FabTool(object):
         json_file: IO[str]
         with open(file_path, 'w') as json_file:
             json_file.write(self.to_json())
-        
+
     # FabTool._example_tools():
     @staticmethod
     def _example_tools() -> Dict[str, "FabTool"]:
@@ -357,7 +359,7 @@ class FabTool(object):
             Teeth=80,
             Material="Carbide",
             ToolHolderHeight="30.0000 mm",
-        )        
+        )
         example_tools["slittingsaw"] = slitting_saw_tool
 
         thread_cutter_tool: FabThreadMill = FabThreadMill(
@@ -524,6 +526,7 @@ class FabBullNoseTool(FabTool):
         self._set_hash()
         self._set_tool_type("BullNose")
 
+
 # FabChamferTool:
 @dataclass(frozen=True)
 class FabChamferTool(FabTool):
@@ -575,6 +578,7 @@ class FabChamferTool(FabTool):
         self._set_hash()
         self._set_tool_type("ChamferMill")
 
+
 # FabDrillTool:
 @dataclass(frozen=True)
 class FabDrillTool(FabTool):
@@ -600,7 +604,6 @@ class FabDrillTool(FabTool):
     Flutes: int = 0
     FlutesLength: Union[str, float] = -1.0
     SplitPoint: bool = False
-
 
     # Attributes:
     # * Chipload: 0.0000 mm
@@ -793,6 +796,7 @@ class FabThreadMill(FabTool):
         self._set_hash()
         self._set_tool_type("ThreadCutter")
 
+
 # FabVBitTool:
 @dataclass(frozen=True)
 class FabVBitTool(FabTool):
@@ -888,7 +892,7 @@ class FabTools(object):
         if not isinstance(tool, FabTool):
             raise RuntimeError("FabTools.add_tool(): Tool {{tool} is {type(tool)}, not FabTool")
         self._Table[tool_number] = tool
-            
+
     # FabTools.add_tools():
     def add_tools(self, tools: Dict[int, FabTool]) -> None:
         """Add a some FabTool's to a FabTools."""
@@ -1000,13 +1004,16 @@ class FabTools(object):
         name = cast(str, contents["Name"] if "Name" in contents else "")
         description = cast(str, contents["Description"] if "Description" in contents else "")
         tools: FabTools = FabTools(name, description)
+        _ = tools
 
         tools_list = cast(List[Dict[str, Any]], contents["tools"])
+        numbered_tools: List[FabTool] = []
         tool_dict: Dict[str, Any]
         for tool_dict in tools_list:
-            tool_number = cast(int, tool["nr"])
-            path = cast(str, tool["path"])
-            hash = cast(str, tool["hash"] if "hash" in tool else "")
+            tool_number = cast(int, tool_dict["nr"])
+            path = cast(str, tool_dict["path"])
+            hash = cast(str, tool_dict["hash"] if "hash" in tool_dict else "")
+            _ = hash
 
             # Attempt to read in the tool JSON:
             bit_json: str
@@ -1033,9 +1040,13 @@ class FabTools(object):
         """Run FabTools unit tests."""
         tools_directory: FilePath = (
             FilePath(".") / "squashfs-root" / "usr" / "Mod" / "Path" / "Tools")
+        _ = tools_directory
         bit_directory: FilePath = tools_directory / "Bit"
+        _ = bit_directory
         library_directory: FilePath = tools_directory / "Library"
         shape_directory: FilePath = tools_directory / "Shape"
+        _ = shape_directory
+        # TODO: use *tools_directory*, *bit_directory*, and *shape_directory*.
 
         library_file_path: FilePath = library_directory / "Default.fctl"
         json_file: IO[str]
@@ -1059,10 +1070,12 @@ class FabTools(object):
             json_text = tools.combined_to_json("MyToolTable")
             json_file.write(json_text)
 
+
 # Main program:
 def main() -> None:
     FabTool._unit_tests()
     FabTools._unit_tests()
+
 
 if __name__ == "__main__":
     main()

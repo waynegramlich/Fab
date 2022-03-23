@@ -55,11 +55,8 @@ See the FabNode documentation for further attributes.
   * 3.11 [post_produce1()](#node----post-produce1): Do FabNode phase 1 post production.
   * 3.12 [post_produce2()](#node----post-produce2): Do FabNode phase 2 post production.
   * 3.13 [get_parent_document()](#node----get-parent-document): NO DOC STRING!
-  * 3.14 [set_app_object_only()](#node----set-app-object-only): Set FabNode AppObject only.
-  * 3.15 [set_gui_object_only()](#node----set-gui-object-only): Set FabNode GuiObject only.
-  * 3.16 [set_object()](#node----set-object): Set both AppObject and GuiObject in FabNode.
-  * 3.17 [set_tracing()](#node----set-tracing): Set the FabNode indentation tracing level.
-  * 3.18 [probe()](#node----probe): Perform a probe operation.
+  * 3.14 [set_tracing()](#node----set-tracing): Set the FabNode indentation tracing level.
+  * 3.15 [probe()](#node----probe): Perform a probe operation.
 * 4 Class: [FabSteps](#node--fabsteps):
   * 4.1 [scan()](#node----scan): Scan the associated directory for matching .step files.
   * 4.2 [activate()](#node----activate): Reserve a .step file name to be read/written.
@@ -150,7 +147,7 @@ Raises:
 
 ### <a name="node----reorient"></a>2.2 `FabBox.`reorient():
 
-FabBox.reorient(self, placement: 'Placement') -> 'FabBox':
+FabBox.reorient(self, placement: Any) -> 'FabBox':
 
 Reorient FabBox given a Placement.
 Note after the *placement* is applied, the resulting box is still rectilinear with the
@@ -267,25 +264,7 @@ FabNode.get_parent_document(self, tracing: str = '') -> 'FabNode':
 
 NO DOC STRING!
 
-### <a name="node----set-app-object-only"></a>3.14 `FabNode.`set_app_object_only():
-
-FabNode.set_app_object_only(self, app_object: Any) -> None:
-
-Set FabNode AppObject only.
-
-### <a name="node----set-gui-object-only"></a>3.15 `FabNode.`set_gui_object_only():
-
-FabNode.set_gui_object_only(self, gui_object: Any) -> None:
-
-Set FabNode GuiObject only.
-
-### <a name="node----set-object"></a>3.16 `FabNode.`set_object():
-
-FabNode.set_object(self, app_object: Any) -> None:
-
-Set both AppObject and GuiObject in FabNode.
-
-### <a name="node----set-tracing"></a>3.17 `FabNode.`set_tracing():
+### <a name="node----set-tracing"></a>3.14 `FabNode.`set_tracing():
 
 FabNode.set_tracing(self, tracing: str):
 
@@ -300,7 +279,7 @@ This typically done, by adding this call immediately after calling super().__pos
         self.set_tracing(" ")  # Set the tracing here.
         # All children nodes will that are added, will have tracing set as well.
 
-### <a name="node----probe"></a>3.18 `FabNode.`probe():
+### <a name="node----probe"></a>3.15 `FabNode.`probe():
 
 FabNode.probe(self, label: str) -> None:
 

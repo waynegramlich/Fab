@@ -647,7 +647,6 @@ Do the following to install Fab:
 
 """
 
-<!--
 # Random links.
 
 # [Part2DObject](http://www.iesensor.com/FreeCADDoc/0.16-dev/d9/d57/classPart_1_1Part2DObject.html)
@@ -686,6 +685,3 @@ Do the following to install Fab:
 
 # [Draft SelectPlane](https://wiki.freecadweb.org/Draft_SelectPlane)
 # [Draft Workbench Scripting](https://wiki.freecadweb.org/Draft_Workbench#Scripting)
-
-
--->

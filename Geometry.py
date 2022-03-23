@@ -8,12 +8,12 @@
 
 from dataclasses import dataclass, field
 import math
-import sys
 from typing import Any, cast, List, Optional, Tuple, Union
 
 import cadquery as cq  # type: ignore
-from cadquery import Matrix, Vector  # type: ignore
+from cadquery import Vector  # type: ignore
 from Node import FabBox
+
 
 # FabPlane:
 @dataclass
@@ -211,7 +211,7 @@ class FabPlane(object):
         # As a work around, skip cq.Vector and cq.Matrix, create the 3x3 rotation coefficients,
         # and manually, do the point (1x3) by roatation matrix (3x3) and get the rotated
         # point (1x3).
-        # 
+        #
         # matrix: cq.Matrix = cq.Matrix([
         #     [zf(nx * x_omc + c), zf(nx * y_omc - zs), zf(nx * z_omc + ys), 0.0],
         #     [zf(ny * x_omc + zs), zf(ny * y_omc + c), zf(ny * z_omc - xs), 0.0],
@@ -1165,9 +1165,11 @@ class FabPolygon(FabGeometry):
         rotated_start: Vector = geometry_context._Plane.rotate_to_z_axis(
             start, tracing=next_tracing)
         geometry_context.WorkPlane.move_to(rotated_start, tracing=next_tracing)
+        # TODO: Does this loop do anything anymore?
         for index, geometry in enumerate(geometries):
             part_geometry = geometry.produce(
                 geometry_context, prefix, index, tracing=next_tracing)
+            _ = part_geometry
         geometry_context.WorkPlane.close(tracing=next_tracing)
 
         if tracing:
