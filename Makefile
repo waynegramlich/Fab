@@ -18,11 +18,11 @@ MODULES := \
     Join \
     Node \
     Project \
-    Shop \
     Solid \
     TarSync \
     Test \
     Utilities
+#    Shop  needs work
 #    CQtoFC has Flake8 issues (probably mypy issues as well)
 
 # Various files lists derived from MODULES:
