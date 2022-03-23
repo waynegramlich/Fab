@@ -470,7 +470,7 @@ class FabBox(object):
     # FabBox.intersect():
     def intersect(self, segment_start: Vector, segment_end: Vector,
                   tracing: str = "") -> Tuple[bool, float, float]:
-        """Compute Line Segment intersection with a FabBox.
+        """Compute Line Segment intersection with a FabBox.a
 
         Arguments:
         * *segment_start* (Vector): Start point of the line segment.
@@ -623,12 +623,13 @@ class FabBox(object):
                 got_begin: Vector
                 got_end: Vector
                 got_intersect, got_begin, got_finish = box.intersect(want_start, want_end, tracing)
+
                 header: str = ""
                 if got_intersect != want_intersect:
                     header = "Intersect mismatch"  # pragma: no unit cover
-                elif want_intersect and abs(got_begin - want_begin).Length > EPSILON:
+                elif want_intersect and abs((got_begin - want_begin).Length) > EPSILON:
                     header = " Begin mismatch"  # pragma: no unit cover
-                elif want_intersect and abs(got_finish - want_finish).Length > EPSILON:
+                elif want_intersect and abs((got_finish - want_finish).Length) > EPSILON:
                     header = "Finish mismatch:"  # pragma: no unit cover
 
                 if header:  # pragma: no unit cover

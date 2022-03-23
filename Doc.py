@@ -463,6 +463,10 @@ def main() -> int:
     document_directory: Path
     markdown_program: str
 
+    arguments: List[str] = sys.argv
+    if "--unit-test" in arguments:
+        return 0  # TODO: add unit tests.
+
     try:
         module_names, document_directory, markdown_program = (
             process_arguments(tuple(sys.argv[1:])))
@@ -470,7 +474,7 @@ def main() -> int:
         print(runtime_error)
         return 1
 
-    # For each *mode_name*, import it, generate documentation, and write it out:
+    # For each *module_name*, import it, generate documentation, and write it out:
     modules: List[ModelModule] = []
     module_name: str
     for module_name in module_names:

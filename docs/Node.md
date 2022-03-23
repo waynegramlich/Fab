@@ -40,7 +40,7 @@ See the FabNode documentation for further attributes.
 * 2 Class: [FabBox](#node--fabbox):
   * 2.1 [enclose()](#node----enclose): Initialize a FabBox.
   * 2.2 [reorient()](#node----reorient): Reorient FabBox given a Placement.
-  * 2.3 [intersect()](#node----intersect): Compute Line Segment intersection with a FabBox.
+  * 2.3 [intersect()](#node----intersect): Compute Line Segment intersection with a FabBox.a
 * 3 Class: [FabNode](#node--fabnode):
   * 3.1 [get_errors()](#node----get-errors): Return FabNode errors list.
   * 3.2 [error()](#node----error): Record and error message with FabNode root.
@@ -160,7 +160,7 @@ Arguments:
 
 FabBox.intersect(self, segment_start: cadquery.occ_impl.geom.Vector, segment_end: cadquery.occ_impl.geom.Vector, tracing: str = '') -> Tuple[bool, float, float]:
 
-Compute Line Segment intersection with a FabBox.
+Compute Line Segment intersection with a FabBox.a
 Arguments:
 * *segment_start* (Vector): Start point of the line segment.
 * *segment_end* (Vector): End point of the line segment.
