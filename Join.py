@@ -60,7 +60,6 @@ hardware.
 
 # <--------------------------------------- 100 characters ---------------------------------------> #
 
-import sys
 from dataclasses import dataclass, field
 from typing import Any, cast, ClassVar, Dict, List, Tuple, Union
 

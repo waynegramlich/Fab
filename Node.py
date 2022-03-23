@@ -44,7 +44,6 @@ from collections import OrderedDict
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, cast, Dict, IO, List, Sequence, Set, Tuple, Union
-import sys
 
 from cadquery import Vector  # type: ignore
 
@@ -68,6 +67,7 @@ class _BoundBox(object):
             (self.YMin + self.YMax) / 2.0,
             (self.ZMin + self.ZMax) / 2.0
         )
+
 
 BoundBox = _BoundBox
 

@@ -12,13 +12,12 @@ The Utilitly classes are:
 
 # <--------------------------------------- 100 characters ---------------------------------------> #
 
-import sys
-
 # import colorsys  # Color conversion routines.
 from dataclasses import dataclass
 from typing import Any, cast, List, Dict, Sequence, Tuple, Union
 
 from cadquery import Vector  # type: ignore
+
 
 # FabCheck:
 @dataclass(frozen=True)

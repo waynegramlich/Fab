@@ -132,6 +132,7 @@ class _Operation(object):
         """Update the view Body view provider."""
         assert False
 
+
 # _Extrude:
 @dataclass(order=True)
 class _Extrude(_Operation):
@@ -319,7 +320,7 @@ class _Pocket(_Operation):
         geometries: Tuple[FabGeometry, ...] = self._Geometries
         mount: FabMount = self.Mount
         prefix: str = f"{mount.Name}_{self.Name}"
-        part_geometries: List[Any] = []
+        # part_geometries: List[Any] = []
         geometry_context: FabGeometryContext = mount._GeometryContext
         geometry: FabGeometry
         index: int
@@ -412,7 +413,7 @@ class _Hole(_Operation):
         # unique: int = self.Unique
         center: Vector = self.Center
         join: FabJoin = self.Join
-        name: str = self.Name
+        # name: str = self.Name
 
         # Unpack *mount* and *solid*:
         mount_normal: Vector = mount.Normal
@@ -421,9 +422,9 @@ class _Hole(_Operation):
         circle: FabCircle = FabCircle(center, mount_normal, diameter)
 
         geometry_context: FabGeometryContext = mount._GeometryContext
-        geometry_prefix: str = name
+        # geometry_prefix: str = name
 
-        solid: FabSolid = mount.Solid
+        # solid: FabSolid = mount.Solid
 
         # Sweep through *hole_groups* generating *part_geometries*:
         # group_index: int

@@ -35,7 +35,7 @@ import cadquery as cq  # type: ignore
 from cadquery import Vector  # type: ignore
 
 from Node import FabNode, FabSteps
-from Solid import FabSolid, visibility_set
+from Solid import FabSolid
 
 
 @dataclass
