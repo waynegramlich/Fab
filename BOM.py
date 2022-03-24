@@ -1,92 +1,86 @@
 #!/usr/bin/env python3
-"""ApexBOM: Bill of Materials (i.e. BOM) and ordering information.
+"""FabBOM: Bill of Materials (i.e. BOM) and ordering information.
 
 The general idea is that a project is assembled from both raw materials and manufactured parts
 that are created in factories.  These factory parts/materials are frequently redistributed to
 intermediate vendors that you can actual obtains the desired parts from.
 The overall concept is called a Bill Of Materials (i.e. BOM) and it is a surprisingly complex topic.
 Eventually, the FreeCAD community will decide what to do with about Bill of Materials management.
-Until then, the following place ApexBOM place holder classes are used.
+Until then, the following place FabBOM place holder classes are used.
 
 Classes:
-* ApexBOM: An actual specific bill of materials for given project.
-* oApexCollection: A collection (e.g. catalog) of parts from vendors/manufacturers.
-* ApexDetail: Information about a specific part.
-* ApexFactory: A factory (i.e. manufacturer) that constructs parts.
-* ApexFactoryDetail: Factory specific information about a specific part.
-* ApexVendor: A vendor that sells parts to end-users.
-* ApexVendorOrder: An order for parts from a Vendor.
-* ApexVendorDetail: Vendor specific information about a specific part.
+* FabBOM: An actual specific bill of materials for given project.
+* oFabCollection: A collection (e.g. catalog) of parts from vendors/manufacturers.
+* FabDetail: Information about a specific part.
+* FabFactory: A factory (i.e. manufacturer) that constructs parts.
+* FabFactoryDetail: Factory specific information about a specific part.
+* FabVendor: A vendor that sells parts to end-users.
+* FabVendorOrder: An order for parts from a Vendor.
+* FabVendorDetail: Vendor specific information about a specific part.
 
 """
-
-import sys
-sys.path.append(".")
-import Embed
-Embed.setup()
-
 
 from dataclasses import dataclass
 from typing import Tuple
 
 
-# ApexDetail:
-class ApexDetail(object):
-    """ApexDetail: More inromation about the object."""
+# FabDetail:
+class FabDetail(object):
+    """FabDetail: More inromation about the object."""
     pass
 
 
-# ApexVendorDetail:
-class ApexVendorDetail(ApexDetail):
-    """ApexVendorDetail: More Vendor information."""
+# FabVendorDetail:
+class FabVendorDetail(FabDetail):
+    """FabVendorDetail: More Vendor information."""
     pass
 
 
-# ApexBom:
+# FabBom:
 @dataclass
-class ApexBOM(object):
-    """ApexBOM: A Bill of Materials for a project."""
+class FabBOM(object):
+    """FabBOM: A Bill of Materials for a project."""
 
-    parts: Tuple[ApexDetail, ...]  # Information about the
+    parts: Tuple[FabDetail, ...]  # Information about the
 
 
-# ApexCollection:
+# FabCollection:
 @dataclass
-class ApexCollection(dict):
-    """ApexCollection: A collection (e.g. catalog) of parts."""
+class FabCollection(dict):
+    """FabCollection: A collection (e.g. catalog) of parts."""
 
     # https://stackoverflow.com/questions/4014621/a-python-class-that-acts-like-dict
 
 
-# ApexFactory:
+# FabFactory:
 @dataclass
-class ApexFactory:
+class FabFactory:
     """Information about a factory."""
     name: str
     address: Tuple[str, ...]
 
 
-# ApexFactoryDetail
+# FabFactoryDetail
 
 
-# ApexVendor:
-class ApexVendor:
+# FabVendor:
+class FabVendor:
     """Information about a vendor."""
     name: str
     address: Tuple[str, ...]
 
 
-# ApexVendorOrder:
+# FabVendorOrder:
 @dataclass
-class ApexVendorOrder:
-    """ApexVendorOrder: An order for parts."""
-    details: Tuple[ApexVendorDetail, ...]
+class FabVendorOrder:
+    """FabVendorOrder: An order for parts."""
+    details: Tuple[FabVendorDetail, ...]
 
 
-# ApexVendorDetail:
+# FabVendorDetail:
 @dataclass
-class ApexVendorDetail:
-    """ApexVendorDetail: A vendor item detail."""
+class FabVendorDetail:
+    """FabVendorDetail: A vendor item detail."""
     vendor_number: int  # The required number to order
     key: str  # The Vendor part number
     description: str  # The vendor part description

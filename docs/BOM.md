@@ -1,62 +1,62 @@
-# BOM: ApexBOM: Bill of Materials (i.e. BOM) and ordering information.
+# BOM: FabBOM: Bill of Materials (i.e. BOM) and ordering information.
 The general idea is that a project is assembled from both raw materials and manufactured parts
 that are created in factories.  These factory parts/materials are frequently redistributed to
 intermediate vendors that you can actual obtains the desired parts from.
 The overall concept is called a Bill Of Materials (i.e. BOM) and it is a surprisingly complex topic.
 Eventually, the FreeCAD community will decide what to do with about Bill of Materials management.
-Until then, the following place ApexBOM place holder classes are used.
+Until then, the following place FabBOM place holder classes are used.
 
 Classes:
-* ApexBOM: An actual specific bill of materials for given project.
-* oApexCollection: A collection (e.g. catalog) of parts from vendors/manufacturers.
-* ApexDetail: Information about a specific part.
-* ApexFactory: A factory (i.e. manufacturer) that constructs parts.
-* ApexFactoryDetail: Factory specific information about a specific part.
-* ApexVendor: A vendor that sells parts to end-users.
-* ApexVendorOrder: An order for parts from a Vendor.
-* ApexVendorDetail: Vendor specific information about a specific part.
+* FabBOM: An actual specific bill of materials for given project.
+* oFabCollection: A collection (e.g. catalog) of parts from vendors/manufacturers.
+* FabDetail: Information about a specific part.
+* FabFactory: A factory (i.e. manufacturer) that constructs parts.
+* FabFactoryDetail: Factory specific information about a specific part.
+* FabVendor: A vendor that sells parts to end-users.
+* FabVendorOrder: An order for parts from a Vendor.
+* FabVendorDetail: Vendor specific information about a specific part.
 
 ## Table of Contents (alphabetical order):
 
-* 1 Class: [ApexBOM](#bom--apexbom):
-* 2 Class: [ApexCollection](#bom--apexcollection):
-* 3 Class: [ApexDetail](#bom--apexdetail):
-* 4 Class: [ApexFactory](#bom--apexfactory):
-* 5 Class: [ApexVendor](#bom--apexvendor):
-* 6 Class: [ApexVendorDetail](#bom--apexvendordetail):
-* 7 Class: [ApexVendorOrder](#bom--apexvendororder):
+* 1 Class: [FabBOM](#bom--fabbom):
+* 2 Class: [FabCollection](#bom--fabcollection):
+* 3 Class: [FabDetail](#bom--fabdetail):
+* 4 Class: [FabFactory](#bom--fabfactory):
+* 5 Class: [FabVendor](#bom--fabvendor):
+* 6 Class: [FabVendorDetail](#bom--fabvendordetail):
+* 7 Class: [FabVendorOrder](#bom--fabvendororder):
 
-## <a name="bom--apexbom"></a>1 Class ApexBOM:
+## <a name="bom--fabbom"></a>1 Class FabBOM:
 
 A Bill of Materials for a project.
 
 
-## <a name="bom--apexcollection"></a>2 Class ApexCollection:
+## <a name="bom--fabcollection"></a>2 Class FabCollection:
 
 A collection (e.g. catalog) of parts.
 
 
-## <a name="bom--apexdetail"></a>3 Class ApexDetail:
+## <a name="bom--fabdetail"></a>3 Class FabDetail:
 
 More inromation about the object.
 
 
-## <a name="bom--apexfactory"></a>4 Class ApexFactory:
+## <a name="bom--fabfactory"></a>4 Class FabFactory:
 
 Information about a factory.
 
 
-## <a name="bom--apexvendor"></a>5 Class ApexVendor:
+## <a name="bom--fabvendor"></a>5 Class FabVendor:
 
 Information about a vendor.
 
 
-## <a name="bom--apexvendordetail"></a>6 Class ApexVendorDetail:
+## <a name="bom--fabvendordetail"></a>6 Class FabVendorDetail:
 
 A vendor item detail.
 
 
-## <a name="bom--apexvendororder"></a>7 Class ApexVendorOrder:
+## <a name="bom--fabvendororder"></a>7 Class FabVendorOrder:
 
 An order for parts.
 

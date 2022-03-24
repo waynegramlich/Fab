@@ -394,10 +394,8 @@ There are some additional miscellaneous Python modules:
 * [Doc](docs/Doc.md):
   A documentation extraction utility that reads the Python documentation strings and
   generates both markdown and HTML documentation files.
-* [Embedded FreeCAD](embedded_freecad.md):
-  This explains how the Fab modules can be run within or externally from FreeCAD.
-* [fcstd_tar_sync.py](fcstd_tar_sync.md)]:
-  A program that mirrors FreeCAD `.fcstd` files to `.tar` files that are more easily stored
+* [TarSync.py](TarSync.md)]:
+  A program that mirrors FreeCAD `.fcstd` files to `.tar` files that are more effectively stored
   under the `git` revision control system.
 * [Coding/Documentation/Testing](coding_documentation.md):
   The coding, documentation, and testing standards uses for code in

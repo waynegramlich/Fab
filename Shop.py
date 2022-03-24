@@ -34,11 +34,6 @@ with more than one FabShop without having edits to the actual design.
 # <--------------------------------------- 100 characters ---------------------------------------> #
 
 
-import sys
-sys.path.append("/home/wayne/public_html/projects/Fab")
-# import Embed
-# Embed.setup()
-
 import json
 from typing import Any, cast, Dict, IO, List, Tuple, Union
 from dataclasses import dataclass, field
