@@ -19,6 +19,8 @@ Classes:
 * FabVendorDetail: Vendor specific information about a specific part.
 
 """
+# <--------------------------------------- 100 characters ---------------------------------------> #
+
 
 from dataclasses import dataclass
 from typing import Tuple
@@ -27,12 +29,6 @@ from typing import Tuple
 # FabDetail:
 class FabDetail(object):
     """FabDetail: More inromation about the object."""
-    pass
-
-
-# FabVendorDetail:
-class FabVendorDetail(FabDetail):
-    """FabVendorDetail: More Vendor information."""
     pass
 
 
@@ -70,13 +66,6 @@ class FabVendor:
     address: Tuple[str, ...]
 
 
-# FabVendorOrder:
-@dataclass
-class FabVendorOrder:
-    """FabVendorOrder: An order for parts."""
-    details: Tuple[FabVendorDetail, ...]
-
-
 # FabVendorDetail:
 @dataclass
 class FabVendorDetail:
@@ -86,4 +75,25 @@ class FabVendorDetail:
     description: str  # The vendor part description
     price: float  # The vendor price.
 
-# <--------------------------------------- 100 characters ---------------------------------------> #
+
+# FabVendorOrder:
+@dataclass
+class FabVendorOrder:
+    """FabVendorOrder: An order for parts."""
+    details: Tuple[FabVendorDetail, ...]
+
+
+# _unit_tests():
+def _unit_tests() -> None:
+    """Unit tests."""
+    pass
+
+
+# main():
+def main() -> None:
+    """main program."""
+    _unit_tests()
+
+
+if __name__ == "__main__":
+    main()

@@ -4,6 +4,7 @@
 .#*
 .*.lint
 .coverage
+.mypy
 .tests
 .mypy_cache/
 FreeCAD_0.19*.AppImage

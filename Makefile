@@ -1,7 +1,7 @@
 # Gnu make directives:
 
 # Top level non-file targets:
-.PHONY: all documentation html flake8 clean tests 
+.PHONY: all clean documentation flake8 html mypy tests 
 
 # Simple declarations:
 PYTHON := python3
@@ -10,9 +10,8 @@ COVERAGE := $(PYTHON) -m coverage
 DOC_GEN := ./Doc.py  # Read Python doc strings, produces btoth Mardown (.md) and HTML (.html) files.
 
 # List all of the modules to be dealt with:
-MODULES := \
+SAFE_MODULES := \
     BOM \
-    CNC \
     Doc \
     Geometry \
     Join \
@@ -23,28 +22,36 @@ MODULES := \
     TarSync \
     Test \
     Utilities
-#    Shop  needs work
+NON_SAFE_MODULES := \
+    CNC
+MODULES := \
+    ${SAFE_MODULES} \
+    ${NON_SAFE_DOC_MODULES}
+
 #    CQtoFC has Flake8 issues (probably mypy issues as well)
 
 # Various files lists derived from MODULES:
 PY_FILES := ${MODULES:%=%.py}
 MD_FILES := \
     docs/Fab.md \
-    ${MODULES:%=docs/%.md}
+    ${SAFE_MODULES:%=docs/%.md}
 HTML_FILES := \
     docs/Fab.html \
-    ${MODULES:%=docs/%.html}
+    ${SAFE_MODULES:%=docs/%.html}
+TEST_FILES := ${SAFE_MODULES:%=%.py}
 FLAKE8_FILES := ${MODULES:%=/tmp/.%.flake8}
+MYPY_FILES := ${SAFE_MODULES:%=%.py}
 COVER_FILES := ${MODULES:%=%.py,cover}
 CLEAN_FILES := \
     ${FLAKE8_FILES} \
     ${MD_FILES} \
     ${HTML_FILES} \
     ${COVER_FILES} \
-   .tests
+    .mypy \
+    .tests
 
 # Top level ".PHONY" targets:
-all: flake8 documentation tests
+all: mypy flake8 documentation tests
 
 documentation: ${MD_FILES}
 
@@ -55,16 +62,23 @@ flake8: ${FLAKE8_FILES}
 clean:
 	rm -f ${CLEAN_FILES} .tests
 
+mypy: .mypy  # Use .mypyp to remember when tests were run
+
+.mypy: ${MYPY_FILES}
+	mypy ${MYPY_FILES}
+	touch $@
+
 tests: .tests  # Use .tests to remember that tests were run.
 
 # Use `cover.sh` to suppress output to stdout.  Output to stderr comes through.
-.tests: ${PYTHON_FILES}
+.tests: ${TEST_FILES}
 	echo "Running coverage"
+	echo "TEST_FILES=" ${TEST_FILES}
 	if [ ! "$$($(PIP) list | grep '^coverage')" ] ; then \
 	   $(PIP) install coverage ; \
 	fi
 	$(COVERAGE) erase  # Erase previous coverage runs.
-	for py_file in ${PY_FILES} ; do \
+	for py_file in ${TEST_FILES} ; do \
 	    echo Testing $$py_file ; \
 	    if ! ./cover.sh $$py_file ; then \
 	        echo "$$py_file >>>>>>>>>>>>>>>> failed" ; \

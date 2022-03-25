@@ -35,14 +35,20 @@ print("here 5")
 import FreeCADGui as Gui  # type: ignore
 print("here 6")
 from FreeCAD import Vector  # type: ignore
+print("here 7")
 import Part  # type: ignore
+print("here 8")
 # import Path  # type: ignore
 # import Draft  # type: ignore
 
+print("here 9")
 from PathScripts import PathJob  # type: ignore
+print("here 10")
 if App.GuiUp:
+    print("here 11")
     from PathScripts import PathJobGui  # type: ignore
 
+print("here 12")
 from PathScripts import PathProfile  # type: ignore
 
 # import PathScripts.PathDressupDogbone as PathDressupDogbone  # type: ignore
@@ -50,8 +56,11 @@ from PathScripts import PathProfile  # type: ignore
 # import PathScripts.PathDressupHoldingTags as PathDressupHoldingTags  # type: ignore
 
 # from PathScripts import PathGeom  # type: ignore
+print("here 13")
 from PathScripts import PathPostProcessor  # type: ignore
+print("here 14")
 from PathScripts import PathUtil  # type: ignore
+print("here 15")
 
 
 def get_document(name: str, tracing: str = "") -> "App.Document":

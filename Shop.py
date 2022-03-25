@@ -1005,8 +1005,9 @@ class FabTools(object):
         _ = tools
 
         tools_list = cast(List[Dict[str, Any]], contents["tools"])
-        numbered_tools: List[FabTool] = []
-        tool_dict: Dict[str, Any]
+        numbered_tools: List[Tuple[int, FabTool]] = []
+        tool_dict: Dict[str, Any] = {}
+        tools_dict: Dict[int, FabTool] = {}
         for tool_dict in tools_list:
             tool_number = cast(int, tool_dict["nr"])
             path = cast(str, tool_dict["path"])
@@ -1027,10 +1028,13 @@ class FabTools(object):
                 raise RuntimeError("FabToolTable.from_json(): "
                                    f"Could not find {path} in {bit_directories}")
 
-            bit: FabTool = FabTools.bit_from_json(bit_json)
-            numbered_tools.append((tool_number, bit))
+            tool: FabTool = FabTools.tool_from_json(bit_json)
+            tools_dict[tool_number] = tool
+            numbered_tools.append((tool_number, tool))
 
-        return FabTools(name, file_name, description, tuple(numbered_tools))
+        fab_tools: FabTools = FabTools(name, description)
+        fab_tools.add_tools(tools_dict)
+        return fab_tools
 
     # FabTools._unit_tests():
     @staticmethod

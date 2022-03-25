@@ -400,7 +400,7 @@ There are some additional miscellaneous Python modules:
   The coding, documentation, and testing standards uses for code in
 * [LICENSE.md](LICENSE.md): The Open Source license for the Model source files.
 
-## Installation <a name="installation"></a>
+## Installation
 
 These installation instructions are currently focused towards the Ubuntu 20.04 Linux distribution.
 
@@ -426,10 +426,10 @@ In the Linux space, there are multple distributions (e.g. Ubuntu, Red Hat, Arch,
 On top of that there various versions of all of these platforms.
 
 Since this code is currently only has one developer,
-these installtion instructions are focused on Ubuntu 20.04LTS.
+these installation instructions are focused on Ubuntu 20.04LTS.
 In late November of 2202, the plan is to update to Ubuntu 22.04LTS.
 
-The three installtions steps are:
+The installations steps are:
 
 1. [Install miniconda](#install-miniconda)
 
