@@ -26,7 +26,7 @@ NON_SAFE_MODULES := \
     CNC
 MODULES := \
     ${SAFE_MODULES} \
-    ${NON_SAFE_DOC_MODULES}
+    ${NON_SAFE_MODULES}
 
 #    CQtoFC has Flake8 issues (probably mypy issues as well)
 
@@ -40,7 +40,7 @@ HTML_FILES := \
     ${SAFE_MODULES:%=docs/%.html}
 TEST_FILES := ${SAFE_MODULES:%=%.py}
 FLAKE8_FILES := ${MODULES:%=/tmp/.%.flake8}
-MYPY_FILES := ${SAFE_MODULES:%=%.py}
+MYPY_FILES := ${MODULES:%=%.py}
 COVER_FILES := ${MODULES:%=%.py,cover}
 CLEAN_FILES := \
     ${FLAKE8_FILES} \
