@@ -229,7 +229,7 @@ class _Extrude(_Operation):
                 print(f"{tracing}Geometry[{index}]:{geometry=}")
             geometry.produce(geometry_context, geometry_prefix, index, tracing=next_tracing)
         # geometry_context.WorkPlane.close(tracing=next_tracing)
-        geometry_context.WorkPlane.extrude(self.Depth, tracing=next_tracing)
+        geometry_context.Query.extrude(self.Depth, tracing=next_tracing)
 
         if tracing:
             print(f"{tracing}<=_Extrude.post_produce1('{self.Name}')")
@@ -326,24 +326,24 @@ class _Pocket(_Operation):
         index: int
 
         pocket_context: FabGeometryContext = geometry_context.copy(tracing=next_tracing)
-        pocket_work_plane: FabQuery = pocket_context.WorkPlane
+        pocket_query: FabQuery = pocket_context.Query
         if tracing:
-            pocket_work_plane.show("Pocket Context Before", tracing)
+            pocket_query.show("Pocket Context Before", tracing)
         for index, geometry in enumerate(geometries):
             geometry.produce(pocket_context, prefix, index, tracing=next_tracing)
             if tracing:
-                pocket_work_plane.show(f"Pocket Context after Geometry {index}", tracing)
-        pocket_work_plane.extrude(self._Depth, tracing=next_tracing)
+                pocket_query.show(f"Pocket Context after Geometry {index}", tracing)
+        pocket_query.extrude(self._Depth, tracing=next_tracing)
         if tracing:
-            pocket_work_plane.show("Pocket Context after Extrude:", tracing)
+            pocket_query.show("Pocket Context after Extrude:", tracing)
 
-        work_plane: Any = geometry_context.WorkPlane
-        assert isinstance(work_plane, FabQuery), work_plane
+        query: Any = geometry_context.Query
+        assert isinstance(query, FabQuery), query
         if tracing:
-            work_plane.show("Pocket Main Before Subtract", tracing)
-        geometry_context.WorkPlane.subtract(pocket_work_plane, tracing=next_tracing)
+            query.show("Pocket Main Before Subtract", tracing)
+        query.subtract(pocket_query, tracing=next_tracing)
         if tracing:
-            work_plane.show("Pocket After Subtract", tracing)
+            query.show("Pocket After Subtract", tracing)
             print(f"{tracing}<=_Pocket.post_produce1('{self.Name}')")
 
 
@@ -453,8 +453,8 @@ class _Hole(_Operation):
         projected_center: Vector = projected_circle.Center
         rotated_center: Vector = plane.rotate_to_z_axis(projected_center, tracing=next_tracing)
 
-        geometry_context.WorkPlane.move_to(rotated_center, tracing=next_tracing)
-        geometry_context.WorkPlane.hole(diameter, depth, tracing=next_tracing)
+        geometry_context.Query.move_to(rotated_center, tracing=next_tracing)
+        geometry_context.Query.hole(diameter, depth, tracing=next_tracing)
 
         if tracing:
             print(f"{tracing}<=_Hole({self.Name}).post_produce1()")

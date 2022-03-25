@@ -41,7 +41,7 @@ Attributes:
   A vector that is projected onto the mount plane to specify orientation
   when mounted for CNC operations.
 * *Depth* (float): The maximum depth limit for all operations.
-* *WorkPlane* (FabWorkPlane): The CadQuery workplane wrapper class object.
+* *WorkPlane* (FabQuery): The CadQuery workplane wrapper class object.
 
 ### <a name="solid----get-hash"></a>1.1 `FabMount.`get_hash():
 

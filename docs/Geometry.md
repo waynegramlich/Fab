@@ -22,7 +22,7 @@
   * 5.2 [project_to_plane()](#geometry----project-to-plane): Return nre FabPolygon prejected onto a plane.
   * 5.3 [get_geometries()](#geometry----get-geometries): Return the FabPolygon lines and arcs.
   * 5.4 [produce()](#geometry----produce): Produce the FreeCAD objects needed for FabPolygon.
-* 6 Class: [FabWorkPlane](#geometry--fabworkplane):
+* 6 Class: [FabQuery](#geometry--fabquery):
   * 6.1 [circle()](#geometry----circle): Draw a circle to a point.
   * 6.2 [close()](#geometry----close): Close a sequence of arcs and lines.
   * 6.3 [copy_workplane()](#geometry----copy-workplane): Create a new CadQuery workplane and push it onto the stack.
@@ -31,8 +31,8 @@
   * 6.6 [hole()](#geometry----hole): Drill a hole.
   * 6.7 [line_to()](#geometry----line-to): Draw a line to a point.
   * 6.8 [move_to()](#geometry----move-to): Draw a line to a point.
-  * 6.9 [show()](#geometry----show): Print a detailed dump of a FabWorkPlane.
-  * 6.10 [subtract()](#geometry----subtract): Subtract one solid form a FabWorkPlane.
+  * 6.9 [show()](#geometry----show): Print a detailed dump of a FabQuery.
+  * 6.10 [subtract()](#geometry----subtract): Subtract one solid form a FabQuery.
   * 6.11 [three_point_arc()](#geometry----three-point-arc): Draw a three point arc.
 
 ## <a name="geometry--fabcircle"></a>1 Class FabCircle:
@@ -103,9 +103,9 @@ Return a new FabGeometry projected onto a plane.
 
 GeometryProduce: Context needed to produce FreeCAD geometry objects.
 Attributes:
-* *Plane* (Plane): Plane to use.
-* *WorkPlane* (FabWorkPlane): The CadQuery Workplane wrapper to use.
-* *GeometryGroup*: (App.DocumentObjectGroup):
+* *_Plane* (Plane): Plane to use.
+* *_WorkPlane* (FabQuery): The CadQuery Workplane wrapper to use.
+* *_GeometryGroup*: (App.DocumentObjectGroup):
   The FreeCAD group to store FreeCAD Geometry objects into.
   This field needs to be set prior to use with set_geometry_group() method.
 
@@ -200,7 +200,7 @@ FabPolygon.produce(self, geometry_context: Geometry.FabGeometryContext, prefix: 
 Produce the FreeCAD objects needed for FabPolygon.
 
 
-## <a name="geometry--fabworkplane"></a>6 Class FabWorkPlane:
+## <a name="geometry--fabquery"></a>6 Class FabQuery:
 
 A CadQuery Workplane wrapper.
 This class creates CadQuery Workplane provides a consistent head of the Workplane chain..
@@ -210,69 +210,69 @@ Attributes:
 * *Plane* (FabPlane): The plain to use for CadQuery initialization.
 * *WorkPlane: (cadquery.Workplane): The resulting CadQuery Workplane object.
 
-### <a name="geometry----circle"></a>6.1 `FabWorkPlane.`circle():
+### <a name="geometry----circle"></a>6.1 `FabQuery.`circle():
 
-FabWorkPlane.circle(self, center: cadquery.occ_impl.geom.Vector, radius: float, for_construction=False, tracing: str = '') -> None:
+FabQuery.circle(self, center: cadquery.occ_impl.geom.Vector, radius: float, for_construction=False, tracing: str = '') -> None:
 
 Draw a circle to a point.
 
-### <a name="geometry----close"></a>6.2 `FabWorkPlane.`close():
+### <a name="geometry----close"></a>6.2 `FabQuery.`close():
 
-FabWorkPlane.close(self, tracing: str = '') -> None:
+FabQuery.close(self, tracing: str = '') -> None:
 
 Close a sequence of arcs and lines.
 
-### <a name="geometry----copy-workplane"></a>6.3 `FabWorkPlane.`copy_workplane():
+### <a name="geometry----copy-workplane"></a>6.3 `FabQuery.`copy_workplane():
 
-FabWorkPlane.copy_workplane(self, plane: Geometry.FabPlane, tracing: str = '') -> None:
+FabQuery.copy_workplane(self, plane: Geometry.FabPlane, tracing: str = '') -> None:
 
 Create a new CadQuery workplane and push it onto the stack.
 
-### <a name="geometry----cut-blind"></a>6.4 `FabWorkPlane.`cut_blind():
+### <a name="geometry----cut-blind"></a>6.4 `FabQuery.`cut_blind():
 
-FabWorkPlane.cut_blind(self, depth: float, tracing: str = '') -> None:
+FabQuery.cut_blind(self, depth: float, tracing: str = '') -> None:
 
 Use the current 2D object to cut a pocket to a known depth.
 
-### <a name="geometry----extrude"></a>6.5 `FabWorkPlane.`extrude():
+### <a name="geometry----extrude"></a>6.5 `FabQuery.`extrude():
 
-FabWorkPlane.extrude(self, depth: float, tracing: str = '') -> None:
+FabQuery.extrude(self, depth: float, tracing: str = '') -> None:
 
 Extrude current 2D object to a known depth.
 
-### <a name="geometry----hole"></a>6.6 `FabWorkPlane.`hole():
+### <a name="geometry----hole"></a>6.6 `FabQuery.`hole():
 
-FabWorkPlane.hole(self, diameter: float, depth: float, tracing: str = '') -> None:
+FabQuery.hole(self, diameter: float, depth: float, tracing: str = '') -> None:
 
 Drill a hole.
 
-### <a name="geometry----line-to"></a>6.7 `FabWorkPlane.`line_to():
+### <a name="geometry----line-to"></a>6.7 `FabQuery.`line_to():
 
-FabWorkPlane.line_to(self, end: cadquery.occ_impl.geom.Vector, for_construction=False, tracing: str = '') -> None:
-
-Draw a line to a point.
-
-### <a name="geometry----move-to"></a>6.8 `FabWorkPlane.`move_to():
-
-FabWorkPlane.move_to(self, point: cadquery.occ_impl.geom.Vector, tracing: str = '') -> None:
+FabQuery.line_to(self, end: cadquery.occ_impl.geom.Vector, for_construction=False, tracing: str = '') -> None:
 
 Draw a line to a point.
 
-### <a name="geometry----show"></a>6.9 `FabWorkPlane.`show():
+### <a name="geometry----move-to"></a>6.8 `FabQuery.`move_to():
 
-FabWorkPlane.show(self, label: str, tracing: str = '') -> None:
+FabQuery.move_to(self, point: cadquery.occ_impl.geom.Vector, tracing: str = '') -> None:
 
-Print a detailed dump of a FabWorkPlane.
+Draw a line to a point.
 
-### <a name="geometry----subtract"></a>6.10 `FabWorkPlane.`subtract():
+### <a name="geometry----show"></a>6.9 `FabQuery.`show():
 
-FabWorkPlane.subtract(self, remove_solid: 'FabWorkPlane', tracing: str = '') -> None:
+FabQuery.show(self, label: str, tracing: str = '') -> None:
 
-Subtract one solid form a FabWorkPlane.
+Print a detailed dump of a FabQuery.
 
-### <a name="geometry----three-point-arc"></a>6.11 `FabWorkPlane.`three_point_arc():
+### <a name="geometry----subtract"></a>6.10 `FabQuery.`subtract():
 
-FabWorkPlane.three_point_arc(self, middle: cadquery.occ_impl.geom.Vector, end: cadquery.occ_impl.geom.Vector, for_construction: bool = False, tracing: str = '') -> None:
+FabQuery.subtract(self, remove_solid: 'FabQuery', tracing: str = '') -> None:
+
+Subtract one solid form a FabQuery.
+
+### <a name="geometry----three-point-arc"></a>6.11 `FabQuery.`three_point_arc():
+
+FabQuery.three_point_arc(self, middle: cadquery.occ_impl.geom.Vector, end: cadquery.occ_impl.geom.Vector, for_construction: bool = False, tracing: str = '') -> None:
 
 Draw a three point arc.
 

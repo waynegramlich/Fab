@@ -299,16 +299,16 @@ class FabGeometryContext(object):
     """GeometryProduce: Context needed to produce FreeCAD geometry objects.
 
     Attributes:
-    * *Plane* (Plane): Plane to use.
-    * *WorkPlane* (FabQuery): The CadQuery Workplane wrapper to use.
-    * *GeometryGroup*: (App.DocumentObjectGroup):
+    * *_Plane* (Plane): Plane to use.
+    * *_WorkPlane* (FabQuery): The CadQuery Workplane wrapper to use.
+    * *_GeometryGroup*: (App.DocumentObjectGroup):
       The FreeCAD group to store FreeCAD Geometry objects into.
       This field needs to be set prior to use with set_geometry_group() method.
 
     """
 
     _Plane: FabPlane
-    _WorkPlane: "FabQuery"
+    _Query: "FabQuery"
     _geometry_group: Optional[Any] = field(init=False, repr=False)
     _copy: Vector = field(init=False, repr=False)
 
@@ -319,10 +319,10 @@ class FabGeometryContext(object):
         if not isinstance(self._Plane, FabPlane):
             raise RuntimeError(
                 f"FabGeometryContext.__post_init__(): {type(self._Plane)} is not a FabPlane")
-        if not isinstance(self._WorkPlane, FabQuery):
+        if not isinstance(self._Query, FabQuery):
             raise RuntimeError(
                 "FabGeometryContext.__post_init__(): "
-                f"{type(self._WorkPlane)} is not a FabQuery")
+                f"{type(self._Query)} is not a FabQuery")
 
         copy: Vector = Vector()
         self._copy: Vector = copy
@@ -334,20 +334,21 @@ class FabGeometryContext(object):
         """Return the FabPlane."""
         return self._Plane
 
-    # FabGeometryContext.WorkPlane():
+    # FabGeometryContext.WorkQuery():
     @property
-    def WorkPlane(self) -> Any:
-        """Return the FabQuery Workplane."""
-        return self._WorkPlane
+    def Query(self) -> Any:
+        """Return the FabQuery.."""
+        return self._Query
 
-    # FabGeometryContext.WorkPlane.setter():
-    @WorkPlane.setter
-    def WorkPlane(self, workplane: Any):
-        """Set the FabQuery Workplane."""
-        if not isinstance(workplane, cq.Workplane):
+    # FabGeometryContext.Query.setter():
+    @Query.setter
+    def Query(self, query: Any):
+        """Set the FabQuery.."""
+        if not isinstance(query, FabQuery):
             raise RuntimeError(
-                f"FabGeomtery.WorkPlane(): Workplane {type(workplane)}, not workplane.")
-        self._WorkPlane = workplane
+                f"FabGeomtery.Query(): {type(query)}, not FabQuery.")
+        assert False, "Is this used?"
+        self._Query = query
 
     # FabGeometryContext.GeometryGroup():
     @property
@@ -437,7 +438,7 @@ class _Arc(_Geometry):
         plane: FabPlane = geometry_context._Plane
         rotated_middle: Vector = plane.rotate_to_z_axis(self.Middle, tracing=next_tracing)
         rotated_finish: Vector = plane.rotate_to_z_axis(self.Finish, tracing=next_tracing)
-        geometry_context.WorkPlane.three_point_arc(
+        geometry_context.Query.three_point_arc(
             rotated_middle, rotated_finish, tracing=next_tracing)
 
         if tracing:
@@ -468,8 +469,8 @@ class _Circle(_Geometry):
         plane: FabPlane = geometry_context.Plane
         center_on_plane: Vector = plane.point_project(self.Center)
         part_circle: Any = None
-        work_plane: FabQuery = geometry_context.WorkPlane
-        work_plane.circle(center_on_plane, self.Diameter / 2, tracing=next_tracing)
+        query: FabQuery = geometry_context.Query
+        query.circle(center_on_plane, self.Diameter / 2, tracing=next_tracing)
 
         if tracing:
             print(f"{tracing}<=_Circle.produce()")
@@ -508,7 +509,7 @@ class _Line(_Geometry):
         rotated_finish: Vector = plane.rotate_to_z_axis(self.Finish, tracing=next_tracing)
         if tracing:
             print(f"{tracing}{self.Finish} ==> {rotated_finish}")
-        geometry_context.WorkPlane.line_to(rotated_finish, tracing=next_tracing)
+        geometry_context.Query.line_to(rotated_finish, tracing=next_tracing)
 
         if tracing:
             print(f"{tracing}<=_Line.produce()=>{line_segment}")
@@ -1164,13 +1165,13 @@ class FabPolygon(FabGeometry):
         start: Vector = geometry0.get_start()
         rotated_start: Vector = geometry_context._Plane.rotate_to_z_axis(
             start, tracing=next_tracing)
-        geometry_context.WorkPlane.move_to(rotated_start, tracing=next_tracing)
+        geometry_context.Query.move_to(rotated_start, tracing=next_tracing)
         # TODO: Does this loop do anything anymore?
         for index, geometry in enumerate(geometries):
             part_geometry = geometry.produce(
                 geometry_context, prefix, index, tracing=next_tracing)
             _ = part_geometry
-        geometry_context.WorkPlane.close(tracing=next_tracing)
+        geometry_context.Query.close(tracing=next_tracing)
 
         if tracing:
             print(f"{tracing}<=FabPolygon.produce(*, '{prefix}', {index})=>*")
@@ -1212,7 +1213,7 @@ class FabQuery(object):
 
     # FabQuery.__post_init__():
     def __post_init__(self) -> None:
-        """Initialize FabPlane"""
+        """Initialize FabPlane."""
         if not isinstance(self._Plane, FabPlane):
             raise RuntimeError(
                 f"FabQuery.__post_init__(): Got {type(self._Plane)}, not FabPlane")
