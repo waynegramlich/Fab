@@ -433,11 +433,11 @@ The three installtions steps are:
 
 1. [Install miniconda](#install-miniconda)
 
-1. [Install CadQuery](#install-cadquery)
-
-2. [Install FreeCad](#install-freecad)
+2. [Install CadQuery](#install-cadquery)
 
 3. [Install Fab](#install-fab)
+
+4. [Install FreeCad](#install-freecad)
 
 ### Install miniconda
 
@@ -641,6 +641,23 @@ Do the following to install Fab:
    ```
    # To Be Figured out
    ```
+
+### Install FreeCAD
+
+The Fab Shop system uses some CNC tool files from the FreeCAD Path module.
+In the directory that parent directory of the Fab directory,
+install the entire source tree from FreeCAD.
+This is a huge download to get a small number of files,
+but these days both "disk space" and download bandwidth is pretty inexpensive.
+
+    ```
+    cd .. # Go to the parent directory of the Fab package
+    # One of the following:
+    git clone https://github.com/FreeCAD/FreeCAD.git  # If you do not have Git SSH keys insalled
+    git clone git@github.com:FreeCAD/FreeCAD.git  # If you do have Git SSH keys insalled
+    cd Fab  # Return to Fab Directory
+    ls -R ../FreeCAD/src/Mod/Path/Tools  # verify that the Tools directory exists
+    ```
 
 
 

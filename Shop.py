@@ -394,8 +394,11 @@ class FabTool(object):
         """Run FabTool unit tests."""
 
         example_tools: Dict[str, FabTool] = FabTool._example_tools()
+        this_directory: FilePath = FilePath(__file__).parent
+        # bit_directory: FilePath = (
+        #     this_directory / "squashfs-root" / "usr" / "Mod" / "Path" / "Tools" / "Bit")
         bit_directory: FilePath = (
-            FilePath(".") / "squashfs-root" / "usr" / "Mod" / "Path" / "Tools" / "Bit")
+            this_directory / ".." / "FreeCAD" / "src" / "Mod" / "Path" / "Tools" / "Bit")
         stem: str
         bit: FabTool
         for stem, bit in example_tools.items():
@@ -1033,11 +1036,13 @@ class FabTools(object):
     @staticmethod
     def _unit_tests() -> None:
         """Run FabTools unit tests."""
+        # tools_directory: FilePath = (
+        #     FilePath(".") / "squashfs-root" / "usr" / "Mod" / "Path" / "Tools")
+        # _ = tools_directory
+        this_directory: FilePath = FilePath(__file__).parent
         tools_directory: FilePath = (
-            FilePath(".") / "squashfs-root" / "usr" / "Mod" / "Path" / "Tools")
-        _ = tools_directory
-        bit_directory: FilePath = tools_directory / "Bit"
-        _ = bit_directory
+            this_directory / ".." / "FreeCAD" / "src" / "Mod" / "Path" / "Tools")
+        # bit_directory: FilePath = tools_directory / "Bit"
         library_directory: FilePath = tools_directory / "Library"
         shape_directory: FilePath = tools_directory / "Shape"
         _ = shape_directory

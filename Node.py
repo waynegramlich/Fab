@@ -1080,16 +1080,17 @@ class FabNode(FabBox):
 class FabSteps(object):
     """FabSteps: Manage directory of .step files.
 
-    This class will scan a directory for step files of the format `Name__XXXXXXXXXXXXXXXX.stp`,
+    This class will scan a directory for STEP files of the format `Name__XXXXXXXXXXXXXXXX.stp`,
     where  `Name` is the human readable name of the file and `XXXXXXXXXXXXXXXX` is the 64-bit
-    has value associated with the .step file contents.  There are three opertations:
+    has value associated with the .step file contents.
 
+    There are three operations:
     * FabSteps(): This is the initalizer.
-    * activate(): This method is used to activate a .step file for reading and/or writing.
-    * flush_stales(): This method is used to previous .step files that are now longer used.
+    * activate(): This method is used to activate a .stp file for reading and/or writing.
+    * flush_stales(): This method is used to previous .stp files that are now longer used.
 
     """
-    StepsDirectory: Path
+    StepsDirectory: Path  # Directory containing STEP files.
     _scanned_steps: Dict[str, Path] = field(init=False, repr=False)
     _active_steps: Dict[str, Path] = field(init=False, repr=False)
 

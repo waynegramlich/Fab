@@ -290,13 +290,14 @@ This method can be overriden and called to perform debug probes.
 ## <a name="node--fabsteps"></a>4 Class FabSteps:
 
 Manage directory of .step files.
-This class will scan a directory for step files of the format `Name__XXXXXXXXXXXXXXXX.stp`,
+This class will scan a directory for STEP files of the format `Name__XXXXXXXXXXXXXXXX.stp`,
 where  `Name` is the human readable name of the file and `XXXXXXXXXXXXXXXX` is the 64-bit
-has value associated with the .step file contents.  There are three opertations:
+has value associated with the .step file contents.
 
+There are three operations:
 * FabSteps(): This is the initalizer.
-* activate(): This method is used to activate a .step file for reading and/or writing.
-* flush_stales(): This method is used to previous .step files that are now longer used.
+* activate(): This method is used to activate a .stp file for reading and/or writing.
+* flush_stales(): This method is used to previous .stp files that are now longer used.
 
 ### <a name="node----scan"></a>4.1 `FabSteps.`scan():
 

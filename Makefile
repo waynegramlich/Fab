@@ -18,6 +18,7 @@ MODULES := \
     Join \
     Node \
     Project \
+    Shop \
     Solid \
     TarSync \
     Test \
