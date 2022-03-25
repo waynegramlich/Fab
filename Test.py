@@ -12,7 +12,7 @@ from pathlib import Path
 from cadquery import Vector  # type: ignore
 
 # Fab library imports:
-from Geometry import FabCircle, FabPolygon, FabWorkPlane
+from Geometry import FabCircle, FabPolygon, FabQuery
 from Join import FabFasten, FabJoin
 from Node import FabNode  # This should not be needed see cast in BoxSide.produce()
 from Project import FabAssembly, FabDocument, FabProject
@@ -455,7 +455,7 @@ def main(key: str = "") -> Any:
     if key:
         if key in objects_table:
             result = objects_table[key]
-            if isinstance(result, FabWorkPlane):
+            if isinstance(result, FabQuery):
                 result = result.WorkPlane
         elif key:
             print(f"'{key}' is not one of {tuple(objects_table.keys())}")

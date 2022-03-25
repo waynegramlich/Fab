@@ -23,7 +23,7 @@ from cadquery import Vector  # type: ignore
 
 # import Part  # type: ignore
 
-from Geometry import FabCircle, FabGeometry, FabGeometryContext, FabPlane, FabWorkPlane
+from Geometry import FabCircle, FabGeometry, FabGeometryContext, FabPlane, FabQuery
 from Join import FabFasten, FabJoin
 from Node import FabBox, FabNode, FabSteps
 from Utilities import FabColor
@@ -326,7 +326,7 @@ class _Pocket(_Operation):
         index: int
 
         pocket_context: FabGeometryContext = geometry_context.copy(tracing=next_tracing)
-        pocket_work_plane: FabWorkPlane = pocket_context.WorkPlane
+        pocket_work_plane: FabQuery = pocket_context.WorkPlane
         if tracing:
             pocket_work_plane.show("Pocket Context Before", tracing)
         for index, geometry in enumerate(geometries):
@@ -338,7 +338,7 @@ class _Pocket(_Operation):
             pocket_work_plane.show("Pocket Context after Extrude:", tracing)
 
         work_plane: Any = geometry_context.WorkPlane
-        assert isinstance(work_plane, FabWorkPlane), work_plane
+        assert isinstance(work_plane, FabQuery), work_plane
         if tracing:
             work_plane.show("Pocket Main Before Subtract", tracing)
         geometry_context.WorkPlane.subtract(pocket_work_plane, tracing=next_tracing)
@@ -477,7 +477,7 @@ class FabMount(object):
       A vector that is projected onto the mount plane to specify orientation
       when mounted for CNC operations.
     * *Depth* (float): The maximum depth limit for all operations.
-    * *WorkPlane* (FabWorkPlane): The CadQuery workplane wrapper class object.
+    * *WorkPlane* (FabQuery): The CadQuery workplane wrapper class object.
 
     """
 
@@ -487,7 +487,7 @@ class FabMount(object):
     _Normal: Vector
     _Orient: Vector
     _Depth: float
-    _WorkPlane: FabWorkPlane
+    _WorkPlane: FabQuery
     _Operations: "OrderedDict[str, _Operation]" = field(init=False, repr=False)
     _Copy: Vector = field(init=False, repr=False)  # Used for making private copies of Vector's
     _Tracing: str = field(init=False, repr=False)
@@ -639,8 +639,8 @@ class FabMount(object):
                 print(f"{tracing}Contact={contact}")
                 print(f"{tracing}{plane=}")
 
-            work_plane: Optional[FabWorkPlane] = self._Solid._WorkPlane
-            assert isinstance(work_plane, FabWorkPlane), work_plane
+            work_plane: Optional[FabQuery] = self._Solid._WorkPlane
+            assert isinstance(work_plane, FabQuery), work_plane
             work_plane.copy_workplane(plane, tracing=next_tracing)
 
             # Process each *operation* in *operations*:
@@ -818,7 +818,7 @@ class FabSolid(FabNode):
     _Mounts: "OrderedDict[str, FabMount]" = field(init=False, repr=False)
     _GeometryGroup: Optional[Any] = field(init=False, repr=False)
     _Body: Optional[Any] = field(init=False, repr=False)
-    _WorkPlane: FabWorkPlane = field(init=False, repr=False)
+    _WorkPlane: FabQuery = field(init=False, repr=False)
     _Assembly: Any = field(init=False, repr=False)
     _StepFile: Optional[Path] = field(init=False, repr=False)
     _Color: Optional[Tuple[float, ...]] = field(init=False, repr=False)
@@ -840,7 +840,7 @@ class FabSolid(FabNode):
         self._Mounts = OrderedDict()
         self._GeometryGroup = None
         self._Body = None
-        self._WorkPlane = FabWorkPlane(initial_plane)
+        self._WorkPlane = FabQuery(initial_plane)
         self._Assembly = None
         self._StepFile = None
         self._Color = None
@@ -992,7 +992,7 @@ class FabSolid(FabNode):
 
         # CadQuery workplanes do not have a color, but Assemblies do.
         rgb_color: Tuple[float, float, float] = FabColor.svg_to_rgb(self.Color)
-        # TODO: move this code into FabWorkPlane:
+        # TODO: move this code into FabQuery:
 
         assembly: cq.Assembly
         if use_cached_step:
