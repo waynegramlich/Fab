@@ -8,39 +8,50 @@
 # [Some Code that might work](https://forum.freecadweb.org/viewtopic.php?f=15&t=64624)
 # [More code](https://forum.freecadweb.org/viewtopic.php?f=15&t=64624&p=554648
 
+print("here 1")
+import os
 import sys
 sys.path.append(".")
-import Embed
+from pathlib import Path
+# import Embed
 USE_FREECAD: bool
 USE_CAD_QUERY: bool
-USE_FREECAD, USE_CAD_QUERY = Embed.setup()
+print("here 2")
+
+current_directory: str = os.getcwd()
+freecad_directory: str = str(Path(current_directory) / "squashfs-root" / "usr" / "lib")
+sys.path.append(str(freecad_directory))
+
+# USE_FREECAD, USE_CAD_QUERY = Embed.setup()
+print("here 3")
+print(f"{sys.path=}")
 
 from typing import Any, List, Optional
 
 # import math
-if USE_FREECAD:
-    import FreeCAD as App  # type: ignore
-    import FreeCADGui as Gui  # type: ignore
-    from FreeCAD import Vector  # type: ignore
-    import Part  # type: ignore
-    # import Path  # type: ignore
-    # import Draft  # type: ignore
+print("here 4")
+import FreeCAD as App  # type: ignore
+print("here 5")
+import FreeCADGui as Gui  # type: ignore
+print("here 6")
+from FreeCAD import Vector  # type: ignore
+import Part  # type: ignore
+# import Path  # type: ignore
+# import Draft  # type: ignore
 
-    from PathScripts import PathJob  # type: ignore
-    if App.GuiUp:
-        from PathScripts import PathJobGui  # type: ignore
+from PathScripts import PathJob  # type: ignore
+if App.GuiUp:
+    from PathScripts import PathJobGui  # type: ignore
 
-    from PathScripts import PathProfile  # type: ignore
+from PathScripts import PathProfile  # type: ignore
 
-    # import PathScripts.PathDressupDogbone as PathDressupDogbone  # type: ignore
+# import PathScripts.PathDressupDogbone as PathDressupDogbone  # type: ignore
 
-    # import PathScripts.PathDressupHoldingTags as PathDressupHoldingTags  # type: ignore
+# import PathScripts.PathDressupHoldingTags as PathDressupHoldingTags  # type: ignore
 
-    # from PathScripts import PathGeom  # type: ignore
-    from PathScripts import PathPostProcessor  # type: ignore
-    from PathScripts import PathUtil  # type: ignore
-elif USE_CAD_QUERY:
-    from cadquery import Vector  # type: ignore
+# from PathScripts import PathGeom  # type: ignore
+from PathScripts import PathPostProcessor  # type: ignore
+from PathScripts import PathUtil  # type: ignore
 
 
 def get_document(name: str, tracing: str = "") -> "App.Document":
@@ -299,17 +310,17 @@ def model(document: "App.Document", tracing: str = "") -> None:
 
 def main(tracing: str = "") -> None:
     """Run the main program."""
-    # next_tracing: str = tracing + " " if tracing else ""
+    next_tracing: str = tracing + " " if tracing else ""
     if tracing:
         print(f"{tracing}=>main()")
     # Disable for now
-    # document_name: str = "JobTest"
-    # document: "App.Document" = get_document(document_name, tracing=next_tracing)
+    document_name: str = "JobTest"
+    document: "App.Document" = get_document(document_name, tracing=next_tracing)
 
-    # model(document, tracing=next_tracing)
+    model(document, tracing=next_tracing)
 
-    # document.recompute()
-    # document.saveAs("/tmp/bar.fcstd")
+    document.recompute()
+    document.saveAs("/tmp/bar.fcstd")
 
     # Disable for now
     # FabBitTemplate._unit_tests()
@@ -317,5 +328,8 @@ def main(tracing: str = "") -> None:
         print(f"{tracing}<=main()")
 
 
-if __name__ == "__main__":
+if True or __name__ == "__main__":
+    print("here 10")
     main(tracing=" ")
+    print("here 100")
+    sys.exit()
