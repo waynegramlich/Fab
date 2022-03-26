@@ -32,6 +32,8 @@ from Utilities import FabColor
 #   [I/O Redirect](https://stackoverflow.com/questions/4675728/redirect-stdout-to-a-file-in-python)
 # This code is used to suppress extraneous output from lower levels of cadquery.Assembly.save().
 
+# <--------------------------------------- 100 characters ---------------------------------------> #
+
 import os
 from contextlib import contextmanager
 
@@ -83,6 +85,12 @@ class _Operation(object):
         # TODO: Enable check:
         # if not self._Mount.is_mount():
         #   raise RuntimeError("_Operation.__post_init__(): {type(self._Mount)} is not FabMount")
+        pass
+
+    # _Operation.get_kind():
+    def get_kind(self) -> str:
+        """Return _Operation kind."""
+        raise RuntimeError(f"_Operation().get_kind() not implemented for {type(self)}")
 
     # _Operation.get_name():
     def get_name(self) -> str:
@@ -116,13 +124,22 @@ class _Operation(object):
     def post_produce1(self, tracing: str = "") -> None:
         raise NotImplementedError(f"{type(self)}.post_produce1() is not implemented")
 
+    # _Operation.to_json():
+    def to_json(self) -> Dict[str, Any]:
+        """Return a base JSON dictionary for an _Operation."""
+        json_dict: Dict[str, Any] = {
+            "Kind": self.get_kind(),
+            "Label": self.get_name(),
+        }
+        return json_dict
+
     # TODO: Remove
     # _Operation.produce_shape_binder():
     def produce_shape_binder(self, part_geometries: Tuple[Any, ...],
                              prefix: str, tracing: str = "") -> Any:
         """Produce the shape binder needed for the extrude, pocket, hole, ... operations."""
         if tracing:
-            print(f"{tracing}<=>FabOperation.produce_shape_binder()")
+            print(f"{tracing}<=>_Operation.produce_shape_binder()")
         assert False
         return None
 
@@ -197,6 +214,11 @@ class _Extrude(_Operation):
         """Return _Extrude name."""
         return self._Name
 
+    # _Extrude.get_kind():
+    def get_kind(self) -> str:
+        """Return _Extrude kind."""
+        return "Extrude"
+
     # _Extrude.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:
         """Return hash for _Extrude operation."""
@@ -233,6 +255,14 @@ class _Extrude(_Operation):
 
         if tracing:
             print(f"{tracing}<=_Extrude.post_produce1('{self.Name}')")
+
+    # _Extrude.to_json():
+    def to_json(self) -> Dict[str, Any]:
+        """Return JSON dictionary for _Extrude."""
+        json_dict: Dict[str, Any] = super().to_json()
+        json_dict["_Depth"] = self.Depth
+        json_dict["_Step"] = "_extrude.to_json():step"
+        return json_dict
 
 
 # _Pocket:
@@ -309,6 +339,11 @@ class _Pocket(_Operation):
         """Return _Pocket name."""
         return self._Name
 
+    # _Pocket.get_kind():
+    def get_kind(self) -> str:
+        """Return _Extrude kind."""
+        return "Pocket"
+
     # _Pocket.post_produce1():
     def post_produce1(self, tracing: str = "") -> None:
         """Produce the Pocket."""
@@ -346,6 +381,14 @@ class _Pocket(_Operation):
             query.show("Pocket After Subtract", tracing)
             print(f"{tracing}<=_Pocket.post_produce1('{self.Name}')")
 
+    # _Pocket.to_json():
+    def to_json(self) -> Dict[str, Any]:
+        """Return JSON dictionary for _Extrude."""
+        json_dict: Dict[str, Any] = super().to_json()
+        json_dict["_Depth"] = self._Depth
+        json_dict["_Step"] = "_Pocket.to_json():step"
+        return json_dict
+
 
 _HoleKey = Tuple[str, str, float, bool, int]
 
@@ -376,6 +419,11 @@ class _Hole(_Operation):
     def get_name(self) -> str:
         """Return _Hole name."""
         return self._Name
+
+    # _Hole.get_kind():
+    def get_kind(self) -> str:
+        """Return _Extrude kind."""
+        return "Hole"
 
     # _Hole.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:
@@ -458,6 +506,11 @@ class _Hole(_Operation):
 
         if tracing:
             print(f"{tracing}<=_Hole({self.Name}).post_produce1()")
+
+    # _Hole.to_json():
+    def to_json(self) -> Dict[str, Any]:
+        """"""
+        return {}  # TODO: This should not be called.
 
 
 # FabMount:
@@ -655,6 +708,30 @@ class FabMount(object):
         # to recursively performing the *operations*:
         if tracing:
             print(f"{tracing}<=FabMount.produce('{self.Name}')")
+
+    # FabMount.to_json():
+    def to_json(self) -> Dict[str, Any]:
+        """Return FabMount JSON structure."""
+        json_operations: List[Any] = []
+        operations: OrderedDict[str, _Operation] = self._Operations
+        name: str
+        operation: _Operation
+        for name, operation in operations.items():
+            if isinstance(operation, (_Extrude, _Pocket)):
+                json_operations.append(operation.to_json())
+
+        contact: Vector = self._Contact
+        normal: Vector = self._Normal
+        orient: Vector = self._Orient
+        json_dict: Dict[str, Any] = {
+            "Kind": "Mount",
+            "Label": self.Name,
+            "_Contact": [contact.x, contact.y, contact.z],
+            "_Normal": [normal.x, normal.y, normal.z],
+            "_Orient": [orient.x, orient.y, orient.z],
+            "children": json_operations,
+        }
+        return json_dict
 
     # FabMount.extrude():
     def extrude(self, name: str, shapes: Union[FabGeometry, Tuple[FabGeometry, ...]],
@@ -862,9 +939,17 @@ class FabSolid(FabNode):
         json: Dict[str, Any] = super().to_json()
         json["Kind"] = "Solid"
         if self._StepFile:
-            json["Step"] = str(self._StepFile)
+            json["_Step"] = str(self._StepFile)
         if self._Color:
-            json["Color"] = self._Color
+            json["_Color"] = self._Color
+        json_mounts: List[Any] = []
+        name: str
+        mount: FabMount
+        for mount in self._Mounts.values():
+            # Skip mount if it has no operations.
+            if mount._Operations:
+                json_mounts.append(mount.to_json())
+        json["children"] = json_mounts
         return json
 
     # FabSolid.set_body():

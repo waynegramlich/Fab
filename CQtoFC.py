@@ -73,13 +73,19 @@ class FabCQtoFC(object):
         json_text: str = ""
         if self.json_path.suffix != ".json":
             raise RuntimeError(f"JSON file must have `.json` suffix: '{str(self.json_path)}'")
+        if tracing:
+            print(f"{tracing}Loading {str(self.json_path)}")
         with open(self.json_path, "r") as json_file:
             json_text = json_file.read()
+        if tracing:
+            print(f"{tracing}Parsing {str(self.json_path)}")
         json_root = cast(Dict[str, Any], json.loads(json_text))
         assert isinstance(json_root, dict), json_root
 
         # Recursively walk the tree starting at *json_root*:
-        self.node_process(json_root, group=None, indent=indent, tracing=next_tracing)
+        if tracing:
+            print(f"{tracing}Processing {str(self.json_path)}")
+        self.node_process(("Root",), json_root, group=None, indent=indent, tracing=next_tracing)
 
         # Save *all_documents*:
         document: Any
@@ -99,24 +105,46 @@ class FabCQtoFC(object):
             print(f"{tracing}<=FabCQtFC.process({str(self.json_path), {self.cnc}})")
 
     # FabCQtoFC.node_process():
-    def node_process(self, json_dict: Dict[str, Any], group: Any,
+    def node_process(self, tree_path: Tuple[str, ...], json_dict: Dict[str, Any], group: Any,
                      indent: str = "", tracing: str = "") -> None:
         """Process one 'node' of JSON content."""
         # Set up *tracing* and pretty print *indent*:
         next_tracing: str = tracing + "  " if tracing else ""
         next_indent = indent + "  " if indent else ""
         if tracing:
-            print(f"{tracing}=>FabCQtoFC.child_process(*, '{indent}')")
+            print(f"{tracing}=>FabCQtoFC.child_process(*, {tree_path}, '{indent}')")
+            print(f"{tracing}{json_dict=}")
 
         # Do some sanity checking:
-        assert isinstance(json_dict, dict), json_dict
+        error_message: str
+        if not isinstance(json_dict, dict):
+            error_message = f"{tracing}{tree_path}: json_dict: Got {type(json_dict)} not dict"
+            print(error_message)
+            assert False, error_message
+        keys: Tuple[str, ...] = tuple(json_dict.keys())
+
+        if "Kind" not in json_dict:
+            error_message = f"{tracing}{tree_path}: 'Kind' not one of {keys}"
+            print(error_message)
+            assert False, error_message
         kind = cast(str, json_dict["Kind"])
+
+        if "Label" not in json_dict:
+            error_message = f"{tracing}{tree_path}: 'Label' not one of {keys}"
+            print(error_message)
+            assert False, error_message
         label = cast(str, json_dict["Label"])
-        assert isinstance(kind, str) and kind in ("Project", "Document", "Assembly", "Solid"), kind
-        assert isinstance(label, str), label
+
+        allowed_kinds: Tuple[str, ...] = ("Project", "Document", "Assembly", "Solid")
+        if not isinstance(kind, str) and kind in allowed_kinds:
+            error_message = f"{tracing}{tree_path}: Node kind '{kind}' not one of {allowed_kinds}"
+            print(error_message)
+            assert False, error_message
+
         if indent:
             print(f"{indent}{label}:")
             print(f"{indent} kind: {kind}")
+
         steps_document: Any = self.steps_document
         project_document: Any = self.project_document
 
@@ -134,7 +162,7 @@ class FabCQtoFC(object):
             else:
                 group = project_document.addObject("App::DocumentObjectGroup", label)
         elif kind == "Solid":
-            step: str = cast(str, json_dict["Step"])
+            step: str = cast(str, json_dict["_Step"])
             assert isinstance(step, str), step
             if indent:
                 print(f"{indent} step: '{step}'")
@@ -149,27 +177,48 @@ class FabCQtoFC(object):
             # Install *link* into *group*.  Complete the link later on using *pending_links*:
             link: Any = group.newObject("App::Link", label)
             self.pending_links.append((link, part))
+        elif kind == "Mount":
+            pass
         else:
-            assert False, kind
+            # assert False, kind
+            pass
+
         self.group = group
+        if tracing:
+            print(f"{tracing}here 103")
 
         if "children" in json_dict:
             children = cast(List[List[Any]], json_dict["children"])
+            if not isinstance(children, list):
+                error_message = f"{tracing}{tree_path}: children: Got {type(children)}, not dict"
+                print(error_message)
+                assert False, error_message
             if indent:
                 print(f"{indent} children ({len(children)}):")
-            assert isinstance(children, list), children
 
             child: Any
             for child in children:
-                assert isinstance(child, list), child
-                child_name = cast(str, child[0])
-                child_dict = cast(Dict[str, Any], child[1])
-                assert isinstance(child_name, str), child_name
-                assert isinstance(child_dict, dict), child_dict
-                self.node_process(child_dict, group, indent=next_indent, tracing=next_tracing)
+                child_dict = cast(Dict[str, Any], child)
+                if not isinstance(child_dict, dict):
+                    error_message = (
+                        f"{tracing}{tree_path}: child_dict: Got {type(child_dict)}, not dict")
+                    print(error_message)
+                    assert False, error_message
+
+                child_keys: Tuple[str, ...] = tuple(child_dict.keys())
+                if "Label" not in child_dict:
+                    error_message = (
+                        f"{tracing}{tree_path}: child: 'Label' not one of {child_keys}")
+                    print(error_message)
+                    assert False, error_message
+                child_name: str = child_dict["Label"]
+
+                child_tree_path: Tuple[str, ...] = tree_path + (child_name,)
+                self.node_process(child_tree_path, child_dict, group,
+                                  indent=next_indent, tracing=next_tracing)
 
         if tracing:
-            print(f"{tracing}<=FabCQtoFC.child_process(*, '{indent}')")
+            print(f"{tracing}<=FabCQtoFC.child_process({tree_path}, '{indent}')")
 
 
 # main():

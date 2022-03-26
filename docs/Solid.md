@@ -13,9 +13,10 @@ This internal classes are managed by FabMount methods.
   * 1.2 [record_operation()](#solid----record-operation): Record an operation to a FabMount.
   * 1.3 [set_geometry_group()](#solid----set-geometry-group): Set the FabMount GeometryGroup need for the FabGeometryContex.
   * 1.4 [post_produce1()](#solid----post-produce1): Perform FabMount phase 1 post procduction.
-  * 1.5 [extrude()](#solid----extrude): Perform a extrude operation.
-  * 1.6 [pocket()](#solid----pocket): Perform a pocket operation.
-  * 1.7 [drill_joins()](#solid----drill-joins): Drill some FabJoin's into a FabMount.
+  * 1.5 [to_json()](#solid----to-json): Return FabMount JSON structure.
+  * 1.6 [extrude()](#solid----extrude): Perform a extrude operation.
+  * 1.7 [pocket()](#solid----pocket): Perform a pocket operation.
+  * 1.8 [drill_joins()](#solid----drill-joins): Drill some FabJoin's into a FabMount.
 * 2 Class: [FabSolid](#solid--fabsolid):
   * 2.1 [to_json()](#solid----to-json): Return FabProject JSON structure.
   * 2.2 [set_body()](#solid----set-body): Set the BodyBase of a FabSolid.
@@ -67,19 +68,25 @@ FabMount.post_produce1(self, tracing: str = '') -> None:
 
 Perform FabMount phase 1 post procduction.
 
-### <a name="solid----extrude"></a>1.5 `FabMount.`extrude():
+### <a name="solid----to-json"></a>1.5 `FabMount.`to_json():
+
+FabMount.to_json(self) -> Dict[str, Any]:
+
+Return FabMount JSON structure.
+
+### <a name="solid----extrude"></a>1.6 `FabMount.`extrude():
 
 FabMount.extrude(self, name: str, shapes: Union[Geometry.FabGeometry, Tuple[Geometry.FabGeometry, ...]], depth: float, tracing: str = '') -> None:
 
 Perform a extrude operation.
 
-### <a name="solid----pocket"></a>1.6 `FabMount.`pocket():
+### <a name="solid----pocket"></a>1.7 `FabMount.`pocket():
 
 FabMount.pocket(self, name: str, shapes: Union[Geometry.FabGeometry, Tuple[Geometry.FabGeometry, ...]], depth: float, tracing: str = '') -> None:
 
 Perform a pocket operation.
 
-### <a name="solid----drill-joins"></a>1.7 `FabMount.`drill_joins():
+### <a name="solid----drill-joins"></a>1.8 `FabMount.`drill_joins():
 
 FabMount.drill_joins(self, joins_name: str, joins: Union[Join.FabJoin, Sequence[Join.FabJoin]], tracing: str = '') -> None:
 

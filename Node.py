@@ -982,12 +982,11 @@ class FabNode(FabBox):
     def to_json(self) -> Dict[str, Any]:
         """Return a dictionary for JSON output."""
         children_json: List[Any] = []
-        child_name: str
         child_node: FabNode
-        for child_name, child_node in self._Children.items():
+        for child_node in self._Children.values():
             child_json: Dict[str, Any] = child_node.to_json()
             if child_json:
-                children_json.append((child_name, child_json))
+                children_json.append(child_json)
 
         node_json: Dict[str, Any] = {"Label": self.Label}
         if children_json:
