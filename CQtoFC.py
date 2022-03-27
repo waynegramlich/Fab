@@ -59,6 +59,8 @@ class FabCQtoFC(object):
     project_document: Any = field(init=False, repr=False)
     all_documents: List[Any] = field(init=False, repr=False)
     pending_links: List[Tuple[Any, Any]] = field(init=False, repr=False)
+    current_part: Any = None
+    current_link: Any = None
 
     # FabCQtoFC.__post_init__():
     def __post_init__(self) -> None:
@@ -204,6 +206,7 @@ class FabCQtoFC(object):
             part.Label = f"{label}_Step"
             step_object: Any = document.RootObjects[before_size]
             step_object.Label = label
+            self.current_part = part
 
             # When the STEP files are colocated with the assemblies and such, the visibiliy
             # of the associated *gui_step_object* needs to be disabled.
@@ -215,6 +218,7 @@ class FabCQtoFC(object):
             # Install *link* into *group*.  Complete the link later on using *pending_links*:
             link: Any = group.newObject("App::Link", label)
             self.pending_links.append((link, part))
+            self.current_link = link
         elif kind == "Mount":
             contact_list: List[float] = cast(
                 list, key_verify("_Contact", json_dict, list, tree_path, "Solid._Contact"))
@@ -229,6 +233,27 @@ class FabCQtoFC(object):
                 print(f"{indent} _Contact: {contact}")
                 print(f"{indent} _Normal: {normal}")
                 print(f"{indent} _Orient: {orient}")
+            job = PathJob.Create('Job', [self.current_part], None)
+            job_name: str = f"{self.current_part.Label}_{label}"
+            gcode_path: str = f"/tmp/{job_name}.ngc"
+            job.PostProcessorOutputFile = gcode_path
+            job.PostProcessor = 'grbl'
+            job.PostProcessorArgs = '--no-show-editor'
+            job.Label = job_name
+
+            if App.GuiUp:  # type: ignore
+                proxy: Any = PathJobGui.ViewProvider(job.ViewObject)
+                # The statement below causes a bunch of rearrangement of the FreeCAD
+                # object tree to push all off the Path related object to be under the
+                # FreeCAD Path Job object.  This is really nice because it provides
+                # the ability toggle the path trace visibility in one place.  The lovely
+                # line below triggers a call to  PathJob.ObjectJob.__set__state__() method.
+                # Which appears to do the rearrangement.  Unfortunately, this rearrangement
+                # does not occur in embedded mode, so the resulting object trees look
+                # quite different.  This is the FreeCAD way.
+                job.ViewObject.Proxy = proxy  # This assignment rearranges the Job.
+                job.Label = job_name
+
         elif kind == "Extrude":
             depth = cast(float, key_verify("_Depth", json_dict, float, tree_path, "Extrude._Depth"))
             step = cast(str, key_verify("_Step", json_dict, str, tree_path, "Extrude._Step"))
