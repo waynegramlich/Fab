@@ -32,7 +32,7 @@ _ = PathProfile  # TODO: Remove
 _ = PathPostProcessor  # TODO: Remove
 _ = PathUtil  # TODO: Remove
 
-# This causes out flake8 to think App is defined.
+# This causes out flake8 to think App are defined.
 # It is actually present in the FreeCAD Python exectution envriorment.
 if False:
     App = None
@@ -40,6 +40,7 @@ if False:
 # Freecad has two different importers depending upon whether it is GUI mode or not.
 from FreeCAD import Vector  # type: ignore
 if App.GuiUp:  # type: ignore
+    import FreeCADGui as Gui  # type: ignore
     from FreeCAD import ImportGui as FCImport  # type: ignore
     from PathScripts import PathJobGui  # type: ignore
     _ = PathJobGui  # TODO: Remove
@@ -191,13 +192,25 @@ class FabCQtoFC(object):
             step: str = cast(str, key_verify("_Step", json_dict, str, tree_path, "Solid._step"))
             if indent:
                 print(f"{indent} _Step: {step}")
-            before_size: int = len(steps_document.RootObjects)
-            FCImport.insert(step, steps_document.Label)
-            after_size: int = len(steps_document.RootObjects)
+            # This code currently trys to work with object in a seperate *steps_document* and
+            # the main *project_document*.  Change the conditional to switch between.
+            use_project_document: bool = True
+            document: Any = project_document if use_project_document else steps_document
+            before_size: int = len(document.RootObjects)
+            FCImport.insert(step, document.Label)
+            after_size: int = len(document.RootObjects)
             assert before_size + 1 == after_size, (before_size, after_size)
-            part: Any = steps_document.getObject(label)
+            part: Any = document.getObject(label)
             part.Label = f"{label}_Step"
-            steps_document.RootObjects[before_size].Label = label
+            step_object: Any = document.RootObjects[before_size]
+            step_object.Label = label
+
+            # When the STEP files are colocated with the assemblies and such, the visibiliy
+            # of the associated *gui_step_object* needs to be disabled.
+            if use_project_document and App.GuiUp:  # type: ignore
+                gui_document: Any = Gui.getDocument(document.Label)  # type: ignore
+                gui_step_object: Any = gui_document.getObject(label)
+                gui_step_object.Visibility = False
 
             # Install *link* into *group*.  Complete the link later on using *pending_links*:
             link: Any = group.newObject("App::Link", label)
