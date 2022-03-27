@@ -1155,7 +1155,7 @@ class FabPolygon(FabGeometry):
         self._compute_arcs()
         self._compute_lines()
 
-        # Extract the geometries using *contact* and *normal* to specify the projecton plane:
+        # Extract the geometries using *contact* and *normal* to specify the projection plane:
         geometries: Tuple[_Geometry, ...] = self.get_geometries(plane_contact, plane_normal)
         part_geometries: List[Any] = []
 

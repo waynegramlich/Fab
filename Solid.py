@@ -11,6 +11,7 @@ This internal classes are managed by FabMount methods.
 """
 
 import sys
+import math
 
 from collections import OrderedDict
 from dataclasses import dataclass, field
@@ -64,6 +65,100 @@ def _suppress_stdout() -> Generator:
                 # os.close(copied_std_fd)
                 # Logical the statement immediately above should be called to close the file
                 # descriptor.  In fact, it is automagically closed.  It is unclear why this happens.
+
+
+
+# FabStock:
+@dataclass
+class FabStock(object):
+    """FabStock: Represents the stock matereial for machine a part from.
+
+    Attributes:
+    * *Name* (str): The FabStock Name.
+    * *StockIncrements* (Vector):
+      The increments that the stock cuboid comes in  X, Y, and Z.
+      The StockThicknesses attribute will override Z if possible.
+    * *StockThicknesses* (Tuple[float ...]):
+      The standard increments of stock thickness to use.
+    * *StockMinimumCut* (float):
+      The minimum amount that contour operation must remove in X and Y.
+    """
+
+    Name: str
+    StockIncrements: Vector
+    StockThicknesses: Tuple[float, ...]
+    StockMinimumCut: float
+
+    # FabStock.__post_init__():
+    def __post__init__(self) -> None:
+        """Finish initializing."""
+        copy: Vector = Vector()
+        self.StockIncrements += copy
+        self.StockThicknesses = tuple(sorted(self.StockThicknesses))
+
+    # FabStock.enclose():
+    def enclose(self, box: FabBox) -> Tuple[Vector, Vector]:
+        """Wrap some stock material around a FabBox."""
+        # An internal function:
+        def adjust(value: float, increment: float) -> float:
+            """Adjust a value up to the nearest multiple of an increment."""
+            count: int  = math.floor(value / increment)
+            while count * increment < value:
+                count += 1
+            return count * increment
+
+        # Unpack:
+        stock_increments: Vector = self.StockIncrements
+        stock_thicknesses: Tuple[float, ...] = self.StockThicknesses
+        stock_minimum_cut: float = self.StockMinimumCut
+        x_increment: float = stock_increments.x
+        y_increment: float = stock_increments.y
+        z_increment: float = stock_increments.z
+
+        stock_dx: float = adjust(box.DX + 2.0 * stock_minimum_cut, x_increment)
+        stock_dy: float = adjust(box.DY + 2.0 * stock_minimum_cut, y_increment)
+        stock_dz: float = -1.0
+        box_dz: float = box.DZ
+        thickness: float
+        for thickness in stock_thicknesses:
+            if thickness >= box_dz:
+                stock_dz = thickness
+                break
+        if stock_dz < 0.0:
+            stock_dz = adjust(box_dz, z_increment)
+
+        offset: Vector = Vector(stock_dx / 2.0, stock_dy / 2.0, stock_dz / 2.0)
+        center: Vector = box.C
+        stock_bsw: Vector = center - offset
+        stock_tne: Vector = center + offset
+        return (stock_bsw, stock_tne)
+
+    # FabStock._unit_tests():
+    @staticmethod
+    def _unit_tests() -> None:
+        """FabStock unit tests."""
+        inch: float = 2.54
+        quarter_inch = inch / 4.0
+        eight_inch = inch / 8.0
+        stock: FabStock = FabStock(
+            "Name",
+            Vector(quarter_inch, quarter_inch, quarter_inch),
+            (
+                inch / 16.0,
+                eight_inch,
+                quarter_inch,
+                3 * eight_inch,
+                inch / 3.0,
+                3 * quarter_inch, inch
+            ),
+            inch / 8.0
+        )
+        box: FabBox = FabBox()
+        box.enclose([Vector(0, 0, 0), Vector(inch, inch, quarter_inch)])
+        print(f"{box.BSW=} {box.TNE=}")
+        results: Tuple[Vector, Vector] = stock.enclose(box)
+        print(f"{results=}")
+        _ = results
 
 
 # _Operation:
@@ -148,6 +243,25 @@ class _Operation(object):
     def _viewer_update(self, body: Any, part_feature: Any) -> None:
         """Update the view Body view provider."""
         assert False
+
+
+# _Contour:
+@dataclass(order=True)
+class _Contour(_Operation):
+    """_Contour: Contours the preceding extrusion.
+
+    Attributes:
+    * *Name* (str): The contour name.
+    * *Stock* (Tuple[Vector, Vector]):
+      The two diagonally opposite corners of the stock.
+    """
+
+    StockIncrements: Optional[Vector] = None
+
+    # _Contour.__post_init__():
+    def __post_init__(self) -> None:
+        """Finish initialize"""
+        super().__post_init__()
 
 
 # _Extrude:
@@ -1114,6 +1228,7 @@ def visibility_set(element: Any, new_value: bool = True, tracing: str = "") -> N
 
 # TODO: Add unit tests.
 def main() -> None:
+    FabStock._unit_tests()
     pass
 
 
