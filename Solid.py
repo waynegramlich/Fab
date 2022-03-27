@@ -936,21 +936,21 @@ class FabSolid(FabNode):
     # FabSolid.to_json():
     def to_json(self) -> Dict[str, Any]:
         """Return FabProject JSON structure."""
-        json: Dict[str, Any] = super().to_json()
-        json["Kind"] = "Solid"
+        json_dict: Dict[str, Any] = super().to_json()
+        json_dict["Kind"] = "Solid"
         if self._StepFile:
-            json["_Step"] = str(self._StepFile)
+            json_dict["_Step"] = str(self._StepFile)
         if self._Color:
-            json["_Color"] = self._Color
+            json_dict["_Color"] = self._Color
         json_mounts: List[Any] = []
         name: str
         mount: FabMount
         for mount in self._Mounts.values():
             # Skip mount if it has no operations.
-            if mount._Operations:
+            if len(mount._Operations) > 0:
                 json_mounts.append(mount.to_json())
-        json["children"] = json_mounts
-        return json
+        json_dict["children"] = json_mounts
+        return json_dict
 
     # FabSolid.set_body():
     def set_body(self, body: Any) -> None:

@@ -212,6 +212,7 @@ class FabDocument(FabNode):
         """Return FabProject JSON structure."""
         json: Dict[str, Any] = super().to_json()
         json["Kind"] = "Document"
+        json["_FilePath"] = str(self.FilePath)
         return json
 
     # FabDocument.post_produce1():

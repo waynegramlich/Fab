@@ -27,6 +27,7 @@ import sys
 from typing import Any, cast, List, Dict, IO, Tuple
 
 # Freecad has two different importers depending upon whether it is GUI mode or not.
+from FreeCAD import Vector  # type: ignore
 if App.GuiUp:  # type: ignore
     from FreeCAD import ImportGui as FCImport  # type: ignore
 else:
@@ -108,6 +109,26 @@ class FabCQtoFC(object):
     def node_process(self, tree_path: Tuple[str, ...], json_dict: Dict[str, Any], group: Any,
                      indent: str = "", tracing: str = "") -> None:
         """Process one 'node' of JSON content."""
+
+        def type_verify(value: Any, value_type: type,
+                        tree_path: Tuple[str, ...], tag: str) -> None:
+            """Verify JSON type."""
+            if not isinstance(value, value_type):
+                message: str = f"{tree_path}: {tag}: Got {type(value)}, not {value_type}"
+                print(message)
+                assert False, message
+
+        def key_verify(key: str, table: Dict[str, Any], key_type: type,
+                       tree_path: Tuple[str, ...], tag: str) -> Any:
+            """Verify key is in dictionary and has correct type."""
+            if key not in table:
+                message: str = f"{tree_path}: {tag}: 'key' is not one of {tuple(table.keys())}'"
+                print(message)
+                assert False, message
+            value: Any = table[key]
+            type_verify(value, key_type, tree_path, tag)
+            return value
+
         # Set up *tracing* and pretty print *indent*:
         next_tracing: str = tracing + "  " if tracing else ""
         next_indent = indent + "  " if indent else ""
@@ -117,33 +138,21 @@ class FabCQtoFC(object):
 
         # Do some sanity checking:
         error_message: str
-        if not isinstance(json_dict, dict):
-            error_message = f"{tracing}{tree_path}: json_dict: Got {type(json_dict)} not dict"
-            print(error_message)
-            assert False, error_message
-        keys: Tuple[str, ...] = tuple(json_dict.keys())
-
-        if "Kind" not in json_dict:
-            error_message = f"{tracing}{tree_path}: 'Kind' not one of {keys}"
-            print(error_message)
-            assert False, error_message
-        kind = cast(str, json_dict["Kind"])
-
-        if "Label" not in json_dict:
-            error_message = f"{tracing}{tree_path}: 'Label' not one of {keys}"
-            print(error_message)
-            assert False, error_message
-        label = cast(str, json_dict["Label"])
-
-        allowed_kinds: Tuple[str, ...] = ("Project", "Document", "Assembly", "Solid")
-        if not isinstance(kind, str) and kind in allowed_kinds:
-            error_message = f"{tracing}{tree_path}: Node kind '{kind}' not one of {allowed_kinds}"
-            print(error_message)
-            assert False, error_message
-
+        type_verify(json_dict, dict, tree_path, "json_dict")
+        kind = cast(str, key_verify("Kind", json_dict, str, tree_path, "Kind"))
+        label = cast(str, key_verify("Label", json_dict, str, tree_path, "Label"))
         if indent:
             print(f"{indent}{label}:")
-            print(f"{indent} kind: {kind}")
+            print(f"{indent} Kind: {kind}")
+
+        # Verify that that *kind* is one of the *allowed_kinds*:
+        allowed_kinds: Tuple[str, ...] = (
+            "Project", "Document", "Assembly", "Solid", "Mount",
+            "Extrude", "Pocket", "Drill")
+        if kind not in allowed_kinds:
+            error_message = f"{tree_path}: Node kind '{kind}' not one of {allowed_kinds}"
+            print(error_message)
+            assert False, error_message
 
         steps_document: Any = self.steps_document
         project_document: Any = self.project_document
@@ -154,6 +163,10 @@ class FabCQtoFC(object):
         elif kind == "Document":
             project_document = App.newDocument(label)  # type: ignore
             project_document.Label = label
+            file_path: str = cast(str, key_verify(
+                "_FilePath", json_dict, str, tree_path, "Document._File_Path"))
+            if indent:
+                print(f"{indent} _FilePath: {file_path}")
             self.project_document = project_document
             self.all_documents.append(project_document)
         elif kind == "Assembly":
@@ -162,10 +175,9 @@ class FabCQtoFC(object):
             else:
                 group = project_document.addObject("App::DocumentObjectGroup", label)
         elif kind == "Solid":
-            step: str = cast(str, json_dict["_Step"])
-            assert isinstance(step, str), step
+            step: str = cast(str, key_verify("_Step", json_dict, str, tree_path, "Solid._step"))
             if indent:
-                print(f"{indent} step: '{step}'")
+                print(f"{indent} _Step: {step}")
             before_size: int = len(steps_document.RootObjects)
             FCImport.insert(step, steps_document.Label)
             after_size: int = len(steps_document.RootObjects)
@@ -178,41 +190,48 @@ class FabCQtoFC(object):
             link: Any = group.newObject("App::Link", label)
             self.pending_links.append((link, part))
         elif kind == "Mount":
-            pass
+            contact_list: List[float] = cast(
+                list, key_verify("_Contact", json_dict, list, tree_path, "Solid._Contact"))
+            normal_list: List[float] = cast(
+                list, key_verify("_Normal", json_dict, list, tree_path, "Solid._Normal"))
+            orient_list: List[float] = cast(
+                list, key_verify("_Orient", json_dict, list, tree_path, "Solid._Orient"))
+            contact: Vector = Vector(contact_list)
+            normal: Vector = Vector(normal_list)
+            orient: Vector = Vector(orient_list)
+            if indent:
+                print(f"{indent} _Contact: {contact}")
+                print(f"{indent} _Normal: {normal}")
+                print(f"{indent} _Orient: {orient}")
+        elif kind == "Extrude":
+            depth = cast(float, key_verify("_Depth", json_dict, float, tree_path, "Extrude._Depth"))
+            step = cast(str, key_verify("_Step", json_dict, str, tree_path, "Extrude._Step"))
+            if indent:
+                print(f"{indent} _Depth: {depth}")
+                print(f"{indent} _Step: {step}")
+        elif kind == "Pocket":
+            depth = cast(float, key_verify("_Depth", json_dict, float, tree_path, "Extrude._Depth"))
+            step = cast(str, key_verify("_Step", json_dict, str, tree_path, "Pocket._Step"))
+            if indent:
+                print(f"{indent} _Depth: {depth}")
+                print(f"{indent} _Step: {step}")
         else:
-            # assert False, kind
-            pass
+            message = f"{kind} not one of {allowed_kinds}"
+            print(message)
+            assert False, message
 
         self.group = group
-        if tracing:
-            print(f"{tracing}here 103")
 
         if "children" in json_dict:
-            children = cast(List[List[Any]], json_dict["children"])
-            if not isinstance(children, list):
-                error_message = f"{tracing}{tree_path}: children: Got {type(children)}, not dict"
-                print(error_message)
-                assert False, error_message
+            children = cast(List[Dict[str, Any]],
+                            key_verify("children", json_dict, list, tree_path, "Children"))
             if indent:
                 print(f"{indent} children ({len(children)}):")
 
-            child: Any
-            for child in children:
-                child_dict = cast(Dict[str, Any], child)
-                if not isinstance(child_dict, dict):
-                    error_message = (
-                        f"{tracing}{tree_path}: child_dict: Got {type(child_dict)}, not dict")
-                    print(error_message)
-                    assert False, error_message
-
-                child_keys: Tuple[str, ...] = tuple(child_dict.keys())
-                if "Label" not in child_dict:
-                    error_message = (
-                        f"{tracing}{tree_path}: child: 'Label' not one of {child_keys}")
-                    print(error_message)
-                    assert False, error_message
-                child_name: str = child_dict["Label"]
-
+            child_dict: Dict[str, Any]
+            for child_dict in children:
+                type_verify(child_dict, dict, tree_path, "Child")
+                child_name = cast(str, key_verify("Label", child_dict, str, tree_path, "Label"))
                 child_tree_path: Tuple[str, ...] = tree_path + (child_name,)
                 self.node_process(child_tree_path, child_dict, group,
                                   indent=next_indent, tracing=next_tracing)
@@ -228,7 +247,7 @@ def main() -> None:
     json_file_name: str = environ["JSON"] if "JSON" in environ else "/tmp/TestProject.json"
     cnc: bool = "CNC" in environ
     json_reader: FabCQtoFC = FabCQtoFC(Path(json_file_name), cnc)
-    json_reader.process(indent="", tracing="")
+    json_reader.process(indent="  ", tracing="")
     if not App.GuiUp:  # type: ignore
         sys.exit()
 
