@@ -67,7 +67,6 @@ def _suppress_stdout() -> Generator:
                 # descriptor.  In fact, it is automagically closed.  It is unclear why this happens.
 
 
-
 # FabStock:
 @dataclass
 class FabStock(object):
@@ -102,7 +101,7 @@ class FabStock(object):
         # An internal function:
         def adjust(value: float, increment: float) -> float:
             """Adjust a value up to the nearest multiple of an increment."""
-            count: int  = math.floor(value / increment)
+            count: int = math.floor(value / increment)
             while count * increment < value:
                 count += 1
             return count * increment

@@ -26,12 +26,25 @@ from pathlib import Path
 import sys
 from typing import Any, cast, List, Dict, IO, Tuple
 
+from PathScripts import PathJob, PathProfile, PathPostProcessor, PathUtil  # type: ignore
+_ = PathJob  # TODO: Remove
+_ = PathProfile  # TODO: Remove
+_ = PathPostProcessor  # TODO: Remove
+_ = PathUtil  # TODO: Remove
+
+# This causes out flake8 to think App is defined.
+# It is actually present in the FreeCAD Python exectution envriorment.
+if False:
+    App = None
+
 # Freecad has two different importers depending upon whether it is GUI mode or not.
 from FreeCAD import Vector  # type: ignore
 if App.GuiUp:  # type: ignore
     from FreeCAD import ImportGui as FCImport  # type: ignore
+    from PathScripts import PathJobGui  # type: ignore
+    _ = PathJobGui  # TODO: Remove
 else:
-    from FreeCAD import Import as FCImport  # type ignore
+    from FreeCAD import Import as FCImport  # type: ignore
 
 
 # FabCQtoFC:

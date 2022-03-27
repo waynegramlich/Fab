@@ -26,6 +26,8 @@ This internal classes are managed by FabMount methods.
   * 2.6 [mount()](#solid----mount): Return a new FabMount.
   * 2.7 [drill_joins()](#solid----drill-joins): Apply drill FabJoin holes for a FabSolid.
   * 2.8 [post_produce1()](#solid----post-produce1): Perform FabSolid Phase1 post production.
+* 3 Class: [FabStock](#solid--fabstock):
+  * 3.1 [enclose()](#solid----enclose): Wrap some stock material around a FabBox.
 
 ## <a name="solid--fabmount"></a>1 Class FabMount:
 
@@ -166,6 +168,26 @@ For now, please call this method after all FabMount's are created.
 FabSolid.post_produce1(self, objects_table: Dict[str, Any], fab_steps: Node.FabSteps) -> None:
 
 Perform FabSolid Phase1 post production.
+
+
+## <a name="solid--fabstock"></a>3 Class FabStock:
+
+Represents the stock matereial for machine a part from.
+Attributes:
+* *Name* (str): The FabStock Name.
+* *StockIncrements* (Vector):
+  The increments that the stock cuboid comes in  X, Y, and Z.
+  The StockThicknesses attribute will override Z if possible.
+* *StockThicknesses* (Tuple[float ...]):
+  The standard increments of stock thickness to use.
+* *StockMinimumCut* (float):
+  The minimum amount that contour operation must remove in X and Y.
+
+### <a name="solid----enclose"></a>3.1 `FabStock.`enclose():
+
+FabStock.enclose(self, box: Node.FabBox) -> Tuple[cadquery.occ_impl.geom.Vector, cadquery.occ_impl.geom.Vector]:
+
+Wrap some stock material around a FabBox.
 
 
 

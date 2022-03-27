@@ -39,8 +39,12 @@ HTML_FILES := \
     docs/Fab.html \
     ${SAFE_MODULES:%=docs/%.html}
 TEST_FILES := ${SAFE_MODULES:%=%.py}
-FLAKE8_FILES := ${MODULES:%=/tmp/.%.flake8}
-MYPY_FILES := ${MODULES:%=%.py}
+FLAKE8_FILES := \
+    ${MODULES:%=/tmp/.%.flake8} \
+    /tmp/.CQtoFC.flake8
+MYPY_FILES := \
+    ${MODULES:%=%.py} \
+    CQtoFC.py
 COVER_FILES := ${MODULES:%=%.py,cover}
 CLEAN_FILES := \
     ${FLAKE8_FILES} \
@@ -73,7 +77,6 @@ tests: .tests  # Use .tests to remember that tests were run.
 # Use `cover.sh` to suppress output to stdout.  Output to stderr comes through.
 .tests: ${TEST_FILES}
 	echo "Running coverage"
-	echo "TEST_FILES=" ${TEST_FILES}
 	if [ ! "$$($(PIP) list | grep '^coverage')" ] ; then \
 	   $(PIP) install coverage ; \
 	fi
