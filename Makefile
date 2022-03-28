@@ -1,14 +1,14 @@
 # Gnu make directives:
 
 # Top level non-file targets:
-.PHONY: all clean documentation flake8 html mypy tests 
+.PHONY: all clean documentation flake8 html mypy tests tools
 
 # Simple declarations:
 PYTHON := python3
 PIP := $(PYTHON) -m pip
 COVERAGE := $(PYTHON) -m coverage
 DOC_GEN := ./Doc.py  # Read Python doc strings, produces btoth Mardown (.md) and HTML (.html) files.
-
+TOOLS_ROOT := FreeCADRoot/Mod/Path/Tools
 # List all of the modules to be dealt with:
 SAFE_MODULES := \
     BOM \
@@ -45,6 +45,10 @@ FLAKE8_FILES := \
 MYPY_FILES := \
     ${MODULES:%=%.py} \
     CQtoFC.py
+TOOLS_DIRS := \
+    $(TOOLS_DIR)/Bit \
+    $(TOOLS_DIR)/Library \
+    $(TOOLS_DIR)/Shape
 COVER_FILES := ${MODULES:%=%.py,cover}
 CLEAN_FILES := \
     ${FLAKE8_FILES} \
@@ -52,7 +56,8 @@ CLEAN_FILES := \
     ${HTML_FILES} \
     ${COVER_FILES} \
     .mypy \
-    .tests
+    .tests \
+    .tools
 
 # Top level ".PHONY" targets:
 all: mypy flake8 documentation tests
@@ -70,6 +75,13 @@ mypy: .mypy  # Use .mypyp to remember when tests were run
 
 .mypy: ${MYPY_FILES}
 	mypy ${MYPY_FILES}
+	touch $@
+
+tools: .tools
+
+.tools:
+	mkdir -p Tools
+	( cd $(TOOLS_ROOT) ; tar cf - . ) | (cd Tools ; tar xf -)  # Copy without deleting extras
 	touch $@
 
 tests: .tests  # Use .tests to remember that tests were run.
