@@ -96,7 +96,7 @@ class BoxSide(FabSolid):
         )
 
         polygon: FabPolygon = FabPolygon(corners)
-        mount.extrude(f"{name}Extrude", polygon, depth)
+        mount.extrude(f"{name}Extrude", polygon, depth, contour=False)
 
         # Create all of the *screws*:
         del screws[:]
@@ -308,6 +308,7 @@ class TestSolid(FabSolid):
         # Create *top_mount*:
         depth: float = 10.0
         depth2: float = depth / 2.0
+        _ = depth2
         top_origin: Vector = Vector(0.0, 0.0, 55.0)
         normal: Vector = Vector(0, 0, 1)
         top_mount: FabMount = self.mount(
@@ -319,7 +320,8 @@ class TestSolid(FabSolid):
 
         # Perform the first Extrude:
         z_offset: float = top_origin.z
-        extrude_fillet_radius: float = 10.0
+        # extrude_fillet_radius: float = 10.0
+        extrude_fillet_radius: float = 0.0
         extrude_polygon: FabPolygon = FabPolygon((
             (Vector(wx, sy, z_offset), extrude_fillet_radius),  # SW
             (Vector(ex, sy, z_offset), extrude_fillet_radius),  # SE
@@ -336,6 +338,7 @@ class TestSolid(FabSolid):
             (Vector(-10, 10, z_offset), pocket_fillet_radius),  # NE
             (Vector(-30, 10, z_offset), pocket_fillet_radius),  # NW
         ))
+        _ = left_polygon
         top_mount.pocket("LeftPocket", left_polygon, depth)
 
         right_pocket: FabPolygon = FabPolygon((
@@ -344,12 +347,15 @@ class TestSolid(FabSolid):
             (Vector(30, 10, z_offset), pocket_fillet_radius),  # NE
             (Vector(10, 10, z_offset), pocket_fillet_radius),  # NW
         ))
+        _ = right_pocket
         top_mount.pocket("RightPocket", right_pocket, depth2)
 
         right_circle: FabCircle = FabCircle(Vector(20, 0, z_offset), normal, 10)
+        _ = right_circle
         top_mount.pocket("RightCircle", right_circle, depth)
 
         center_circle: FabCircle = FabCircle(Vector(0, 0, z_offset), normal, 10)
+        _ = center_circle
         top_mount.pocket("CenterCircle", center_circle, depth2)
 
         screw_start: Vector = Vector(0.0, -10.0, z_offset)

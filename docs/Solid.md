@@ -78,7 +78,7 @@ Return FabMount JSON structure.
 
 ### <a name="solid----extrude"></a>1.6 `FabMount.`extrude():
 
-FabMount.extrude(self, name: str, shapes: Union[Geometry.FabGeometry, Tuple[Geometry.FabGeometry, ...]], depth: float, tracing: str = '') -> None:
+FabMount.extrude(self, name: str, shapes: Union[Geometry.FabGeometry, Tuple[Geometry.FabGeometry, ...]], depth: float, contour: bool = True, tracing: str = '') -> None:
 
 Perform a extrude operation.
 

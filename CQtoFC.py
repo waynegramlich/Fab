@@ -61,6 +61,7 @@ class FabCQtoFC(object):
     pending_links: List[Tuple[Any, Any]] = field(init=False, repr=False)
     current_part: Any = None
     current_link: Any = None
+    current_job: Any = None
 
     # FabCQtoFC.__post_init__():
     def __post_init__(self) -> None:
@@ -110,6 +111,7 @@ class FabCQtoFC(object):
             save_path: Path = json_directory / f"{document.Label}.FCStd"
             if save_path.exists():
                 save_path.unlink()
+            document.recompute()
             document.saveAs(str(save_path))
 
         # Install all of the *pending_links*:
@@ -138,7 +140,7 @@ class FabCQtoFC(object):
                        tree_path: Tuple[str, ...], tag: str) -> Any:
             """Verify key is in dictionary and has correct type."""
             if key not in table:
-                message: str = f"{tree_path}: {tag}: 'key' is not one of {tuple(table.keys())}'"
+                message: str = f"{tree_path}: {tag}: '{key}' is not one of {tuple(table.keys())}'"
                 print(message)
                 assert False, message
             value: Any = table[key]
@@ -172,6 +174,8 @@ class FabCQtoFC(object):
 
         steps_document: Any = self.steps_document
         project_document: Any = self.project_document
+        job: Any = None
+        normal: Any = None
 
         # Dispatch on *kind*:
         if kind == "Project":
@@ -191,22 +195,22 @@ class FabCQtoFC(object):
             else:
                 group = project_document.addObject("App::DocumentObjectGroup", label)
         elif kind == "Solid":
-            step: str = cast(str, key_verify("_Step", json_dict, str, tree_path, "Solid._step"))
+            step_file: str = cast(str,
+                                  key_verify("_Step", json_dict, str, tree_path, "Solid._step"))
             if indent:
-                print(f"{indent} _Step: {step}")
+                print(f"{indent} _Step: {step_file}")
             # This code currently trys to work with object in a seperate *steps_document* and
             # the main *project_document*.  Change the conditional to switch between.
             use_project_document: bool = True
             document: Any = project_document if use_project_document else steps_document
             before_size: int = len(document.RootObjects)
-            FCImport.insert(step, document.Label)
+            FCImport.insert(step_file, document.Label)
             after_size: int = len(document.RootObjects)
             assert before_size + 1 == after_size, (before_size, after_size)
             part: Any = document.getObject(label)
             part.Label = f"{label}_Step"
             step_object: Any = document.RootObjects[before_size]
             step_object.Label = label
-            self.current_part = part
 
             # When the STEP files are colocated with the assemblies and such, the visibiliy
             # of the associated *gui_step_object* needs to be disabled.
@@ -218,7 +222,11 @@ class FabCQtoFC(object):
             # Install *link* into *group*.  Complete the link later on using *pending_links*:
             link: Any = group.newObject("App::Link", label)
             self.pending_links.append((link, part))
+
+            self.current_part = part
             self.current_link = link
+            self.current_job = None
+            self.current_normal = None
         elif kind == "Mount":
             contact_list: List[float] = cast(
                 list, key_verify("_Contact", json_dict, list, tree_path, "Solid._Contact"))
@@ -227,12 +235,13 @@ class FabCQtoFC(object):
             orient_list: List[float] = cast(
                 list, key_verify("_Orient", json_dict, list, tree_path, "Solid._Orient"))
             contact: Vector = Vector(contact_list)
-            normal: Vector = Vector(normal_list)
+            normal = Vector(normal_list)
             orient: Vector = Vector(orient_list)
             if indent:
                 print(f"{indent} _Contact: {contact}")
                 print(f"{indent} _Normal: {normal}")
                 print(f"{indent} _Orient: {orient}")
+
             job = PathJob.Create('Job', [self.current_part], None)
             job_name: str = f"{self.current_part.Label}_{label}"
             gcode_path: str = f"/tmp/{job_name}.ngc"
@@ -240,6 +249,8 @@ class FabCQtoFC(object):
             job.PostProcessor = 'grbl'
             job.PostProcessorArgs = '--no-show-editor'
             job.Label = job_name
+            self.current_job = job
+            self.current_normal = normal
 
             if App.GuiUp:  # type: ignore
                 proxy: Any = PathJobGui.ViewProvider(job.ViewObject)
@@ -252,20 +263,88 @@ class FabCQtoFC(object):
                 # does not occur in embedded mode, so the resulting object trees look
                 # quite different.  This is the FreeCAD way.
                 job.ViewObject.Proxy = proxy  # This assignment rearranges the Job.
-                job.Label = job_name
 
         elif kind == "Extrude":
-            depth = cast(float, key_verify("_Depth", json_dict, float, tree_path, "Extrude._Depth"))
-            step = cast(str, key_verify("_Step", json_dict, str, tree_path, "Extrude._Step"))
+            contour = cast(bool, key_verify("_Contour", json_dict, bool, tree_path,
+                                            "Extrude._Contour"))
+            depth = cast(float, key_verify("_Depth", json_dict, float, tree_path,
+                                           "Extrude._Depth"))
+            final_depth = cast(float, key_verify("_FinalDepth", json_dict, float, tree_path,
+                                                 "Extrude._FinalDepth"))
+            step_down = cast(float, key_verify("_StepDown", json_dict, float, tree_path,
+                                               "Extrude._StepDown"))
+            step_file = cast(str, key_verify("_StepFile", json_dict, str, tree_path,
+                                             "Extrude._StepFile"))
+            start_depth = cast(float, key_verify("_StartDepth", json_dict, float, tree_path,
+                                                 "Extrude._StartDepth"))
             if indent:
+                print(f"{indent} _Contour: {bool}")
                 print(f"{indent} _Depth: {depth}")
-                print(f"{indent} _Step: {step}")
+                print(f"{indent} _FinalDepth: {final_depth}")
+                print(f"{indent} _StartDepth: {start_depth}")
+                print(f"{indent} _StepDown: {step_down}")
+                print(f"{indent} _StepFile: {step_file}")
+
+            def top_faces(obj: Any, normal: Vector, tracing: str = "") -> List[str]:
+                """Return top faces."""
+                if tracing:
+                    print(f"{tracing}=>top_faces({obj}, {normal})")
+                assert hasattr(obj, "Shape")
+                shape = obj.Shape
+                top_face_names: List[str] = []
+                face_index: int
+                epsilon: float = 1.0e-8
+                for face_index in range(len(shape.Faces)):
+                    face_name: str = f"Face{face_index+1}"
+                    face: Any = shape.getElement(face_name)
+                    # if face.Surface.Axis == Vector(0, 0, 1) and face.Orientation == 'Forward':
+                    normal_error: float = abs((face.Surface.Axis - normal).Length)
+                    if normal_error < epsilon and face.Orientation == 'Forward':
+                        top_face_names.append(face_name)
+                if tracing:
+                    print(f"{tracing}<=top_faces({obj}, {normal})=>{top_face_names}")
+                return top_face_names
+
+            def do_contour(obj: Any, name: str, job: Any, normal: Vector,
+                           start_depth: float, step: float, final_depth: float,
+                           tracing: str = "") -> Any:
+                """Create an exterior contour."""
+                next_tracing: str = tracing + " " if tracing else ""
+                if tracing:
+                    print(f"{tracing}=>contour({obj=}, {name=}, {job=}, {normal=})")
+                top_face_names: List[str] = top_faces(obj, normal, tracing=next_tracing)
+                if top_face_names:
+                    profile = PathProfile.Create(name)
+                    profile.Base = (obj, top_face_names[0])
+                    profile.setExpression('StepDown', None)
+                    profile.StepDown = step_down
+                    profile.setExpression('StartDepth', None)
+                    profile.StartDepth = start_depth
+                    profile.setExpression('FinalDepth', None)
+                    profile.FinalDepth = final_depth
+                    profile.processHoles = False
+                    profile.processPerimeter = True
+
+                    profile.recompute()
+                if tracing:
+                    print(f"{tracing}<=contour()=>{profile}")
+                return profile
+
+            job = self.current_job
+            normal = self.current_normal
+            assert job is not None, "No job present"
+
+            if contour:
+                profile: Any = do_contour(self.current_part, f"{job.Label}_profile", job, normal,
+                                          start_depth, step_down, final_depth, tracing=indent)
+                _ = profile
+
         elif kind == "Pocket":
             depth = cast(float, key_verify("_Depth", json_dict, float, tree_path, "Extrude._Depth"))
-            step = cast(str, key_verify("_Step", json_dict, str, tree_path, "Pocket._Step"))
+            step_file = cast(str, key_verify("_Step", json_dict, str, tree_path, "Pocket._Step"))
             if indent:
                 print(f"{indent} _Depth: {depth}")
-                print(f"{indent} _Step: {step}")
+                print(f"{indent} _Step: {step_file}")
         else:
             message = f"{kind} not one of {allowed_kinds}"
             print(message)

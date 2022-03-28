@@ -275,14 +275,20 @@ class _Extrude(_Operation):
       When the tuple is used, the largest FabGeometry (which is traditionally the first one)
       is the outside of the extrusion, and the rest are "pockets".  This is useful for tubes.
     * *Depth* (float): The depth to extrude to in millimeters.
+    * *Contour* (bool): The contour flag.
 
     """
 
     _Name: str
     _Geometry: Union[FabGeometry, Tuple[FabGeometry, ...]] = field(compare=False)
     _Depth: float
+    _Contour: bool
     # TODO: Make _Geometries be comparable.
     _Geometries: Tuple[FabGeometry, ...] = field(init=False, repr=False, compare=False)
+    _StepFile: str = field(init=False)
+    _StartDepth: float = field(init=False)
+    _StepDown: float = field(init=False)
+    _FinalDepth: float = field(init=False)
 
     # _Extrude.__post_init__():
     def __post_init__(self) -> None:
@@ -309,6 +315,10 @@ class _Extrude(_Operation):
         if self.Depth <= 0.0:
             raise RuntimeError(f"_Extrude.__post_init__({self.Name}):"
                                f"Depth ({self.Depth}) is not positive.")
+        self._StepFile = "_Extrude.__post_init_()"
+        self._StartDepth = 0.0
+        self._StepDown = 3.0
+        self._FinalDepth = -self.Depth
 
     # _Extrude.Geometry():
     @property
@@ -366,6 +376,23 @@ class _Extrude(_Operation):
         # geometry_context.WorkPlane.close(tracing=next_tracing)
         geometry_context.Query.extrude(self.Depth, tracing=next_tracing)
 
+        # Do Contour computations:
+        plane: FabPlane = geometry_context.Plane
+        normal: Vector = plane.Normal
+        origin: Vector = plane.Origin
+        distance: float = origin.Length
+        positive_origin: Vector = distance * normal
+        negative_origin: Vector = -distance * normal
+        # TODO: the computation below looks wrong.
+        start_depth: float = (
+            distance
+            if (origin - positive_origin).Length < (origin - negative_origin).Length
+            else -distance
+        )
+        self._StartDepth = start_depth
+        self._StepDown = 3.0
+        self._FinalDepth = start_depth - self.Depth
+
         if tracing:
             print(f"{tracing}<=_Extrude.post_produce1('{self.Name}')")
 
@@ -373,15 +400,19 @@ class _Extrude(_Operation):
     def to_json(self) -> Dict[str, Any]:
         """Return JSON dictionary for _Extrude."""
         json_dict: Dict[str, Any] = super().to_json()
-        json_dict["_Depth"] = self.Depth
-        json_dict["_Step"] = "_extrude.to_json():step"
+        json_dict["_Contour"] = self._Contour
+        json_dict["_Depth"] = self._Depth
+        json_dict["_FinalDepth"] = self._FinalDepth
+        json_dict["_StartDepth"] = self._StartDepth
+        json_dict["_StepDown"] = self._StepDown
+        json_dict["_StepFile"] = "_Extrude.to_json:_StepFile"
         return json_dict
 
 
 # _Pocket:
 @dataclass(order=True)
 class _Pocket(_Operation):
-    """_Pocket: Represents a pocketing opertaion.
+    """_Pocket: Represents a pocketing operation.
 
     Attributes:
     * *Name* (str): The operation name.
@@ -848,7 +879,7 @@ class FabMount(object):
 
     # FabMount.extrude():
     def extrude(self, name: str, shapes: Union[FabGeometry, Tuple[FabGeometry, ...]],
-                depth: float, tracing: str = "") -> None:
+                depth: float, contour: bool = True, tracing: str = "") -> None:
         """Perform a extrude operation."""
         tracing = self._Solid.Tracing
         if tracing:
@@ -879,7 +910,7 @@ class FabMount(object):
         self._Solid.enclose(boxes)
 
         # Create and record the *extrude*:
-        extrude: _Extrude = _Extrude(self, name, shapes, depth)
+        extrude: _Extrude = _Extrude(self, name, shapes, depth, contour)
         self.record_operation(extrude)
 
         if tracing:
