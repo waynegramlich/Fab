@@ -35,11 +35,24 @@ import cadquery as cq  # type: ignore
 from cadquery import Vector  # type: ignore
 
 from Node import FabNode, FabSteps
-from Solid import FabSolid
+from Solid import FabSolid, FabTools
+_ = FabTools  # TODO: Remove
 
 
+# _ProduceState:
 @dataclass
+class _ProduceState(object):
+    """_ProduceState: Shared state across the produce methods."""
+    ObjectsTable: Dict[str, Any] = field(init=False)
+
+    # _ProduceState.__post_init__():
+    def __post_init__(self) -> None:
+        """Finish initializing _ProduceState."""
+        self.ObjectsTable = {}
+
+
 # FabGroup:
+@dataclass
 class FabGroup(FabNode):
     """FabGroup: A named group of FabNode's.
 

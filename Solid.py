@@ -160,6 +160,67 @@ class FabStock(object):
         _ = results
 
 
+# FabToolContoller:
+@dataclass
+class FabToolController:
+    """FabToolController: Speeds/Feeds information.
+
+    Attributes:
+    * *BitName* (str): The name Bit file name in `.../Tools/Bit/*.fctb` where `*` is BitName.
+    * *ControllerNumber*: (int) A number to use reference this FabToolController.
+    * *Flood* (bool): The state of flood cooling, where True means flood cooling is on.
+    * *HorizontalFeed* (float): The material horizontal feed rate in mm/sec.
+    * *HorizontalRapid* (float): The horizontal rapid feed rate in mm/sec.
+    * *SpindleDirection* (bool): The spindle direction where True means clockwise.
+    * *SpindleSpeed* (float): The spindle rotation speed in rotations per second.
+    * *ToolNumber* (int): The tool number to use.
+    * *VerticalFeed* (float): The material vertical free rate in mm/sec.
+    * *VerticalRapid* (float): The vertical rapid feed rate in mm/sec.
+
+    """
+
+    BitName: str
+    ControllerNumber: int = field(compare=False)
+    Flood: bool
+    HorizontalFeed: float
+    HorizontalRapid: float
+    SpindleDirection: bool
+    SpindleSpeed: float
+    ToolNumber: int
+    VerticalFeed: float
+    VerticalRapid: float
+
+    # FabToolController.to_dict():
+    def to_dict(self) -> Dict[str, Union[bool, float, int, str]]:
+        """Return a dictionary containing the controller information."""
+        return {
+            "BitName": self.BitName,
+            "ControllerNumber": self.ControllerNumber,
+            "Flood": self.Flood,
+            "HorizontalFeed": self.HorizontalFeed,
+            "HorizontalRapid": self.HorizontalRapid,
+            "SpindleDirection": self.SpindleDirection,
+            "SpindleSpeed": self.SpindleSpeed,
+            "ToolNumber": self.ToolNumber,
+            "VerticalFeed": self.VerticalFeed,
+            "VerticalRapid": self.VerticalRapid,
+        }
+
+
+# FabTools:
+@dataclass
+class FabTools:
+    """FabTools: A table of tool bits and controllers."""
+
+    Tools: Dict[int, str]
+    Controllers: Dict[int, FabToolController]
+
+    # FabTools.__post_init__():
+    def __post_init__(self) -> None:
+        """Finish intializing FabTools."""
+        pass
+
+
 # _Operation:
 @dataclass(order=True)
 class _Operation(object):
@@ -180,6 +241,11 @@ class _Operation(object):
         # if not self._Mount.is_mount():
         #   raise RuntimeError("_Operation.__post_init__(): {type(self._Mount)} is not FabMount")
         pass
+
+    # _Operation.get_controller():
+    def get_controller(self) -> FabToolController:
+        """Return the _Operation tool controller"""
+        raise RuntimeError(f"_Operation().get_controller() not implemented for {type(self)}")
 
     # _Operation.get_kind():
     def get_kind(self) -> str:
@@ -242,25 +308,6 @@ class _Operation(object):
     def _viewer_update(self, body: Any, part_feature: Any) -> None:
         """Update the view Body view provider."""
         assert False
-
-
-# _Contour:
-@dataclass(order=True)
-class _Contour(_Operation):
-    """_Contour: Contours the preceding extrusion.
-
-    Attributes:
-    * *Name* (str): The contour name.
-    * *Stock* (Tuple[Vector, Vector]):
-      The two diagonally opposite corners of the stock.
-    """
-
-    StockIncrements: Optional[Vector] = None
-
-    # _Contour.__post_init__():
-    def __post_init__(self) -> None:
-        """Finish initialize"""
-        super().__post_init__()
 
 
 # _Extrude:
@@ -331,6 +378,23 @@ class _Extrude(_Operation):
     def Depth(self) -> float:
         """Return the Depth."""
         return self._Depth
+
+    # _Extrude.get_controller():
+    def get_controller(self) -> FabToolController:
+        """Return the _Operation tool controller"""
+        controller: FabToolController = FabToolController(
+            BitName="",
+            ControllerNumber=1,
+            Flood=False,
+            HorizontalFeed=2.0,
+            HorizontalRapid=20.0,
+            SpindleDirection=True,
+            SpindleSpeed=5000.0,
+            ToolNumber=1,
+            VerticalFeed=1.0,
+            VerticalRapid=20.0
+        )
+        return controller
 
     # _Extrude.get_name():
     def get_name(self) -> str:

@@ -229,10 +229,6 @@ class FabTool(object):
     # FabTool.kwargs_json():
     @staticmethod
     def kwargs_from_json(json_text: str) -> Tuple[str, Dict[str, Any]]:
-        # Kludge to fix up `45degree_chamfer.fctb` bug in 0.19:
-        # ShankDiameter and TipDiameter lines should be swapped:
-        json_text = json_text.replace('"6.3500 mm"\n', '"6.3500 mm",\n')
-        json_text = json_text.replace(",\n  }", "\n  }")
         contents: Any = json.loads(json_text)
         if not isinstance(contents, dict):
             raise RuntimeError("FabTool.from_json(): Bad Json?")
@@ -395,10 +391,7 @@ class FabTool(object):
 
         example_tools: Dict[str, FabTool] = FabTool._example_tools()
         this_directory: FilePath = FilePath(__file__).parent
-        # bit_directory: FilePath = (
-        #     this_directory / "squashfs-root" / "usr" / "Mod" / "Path" / "Tools" / "Bit")
-        bit_directory: FilePath = (
-            this_directory / ".." / "FreeCAD" / "src" / "Mod" / "Path" / "Tools" / "Bit")
+        bit_directory: FilePath = this_directory / "Tools" / "Bit"
         stem: str
         bit: FabTool
         for stem, bit in example_tools.items():
@@ -859,7 +852,7 @@ class FabTools(object):
     In FreeCAD there is currently two very related concepts.  There is a tool table
     and a tool library.  A tool table is the JSON file that FreeCAD Path GUI can import
     and export.  This file has all of the information for each tool embedded inside.
-    The new tool library JSON file that just has a number and a reference to a "bit" JSON file.
+    The new tool library is JSON file that just has a number and a reference to a "bit" JSON file.
     This class can deal with both.
 
     """
@@ -1040,13 +1033,10 @@ class FabTools(object):
     @staticmethod
     def _unit_tests() -> None:
         """Run FabTools unit tests."""
-        # tools_directory: FilePath = (
-        #     FilePath(".") / "squashfs-root" / "usr" / "Mod" / "Path" / "Tools")
-        # _ = tools_directory
         this_directory: FilePath = FilePath(__file__).parent
-        tools_directory: FilePath = (
-            this_directory / ".." / "FreeCAD" / "src" / "Mod" / "Path" / "Tools")
-        # bit_directory: FilePath = tools_directory / "Bit"
+        tools_directory: FilePath = this_directory / "Tools"
+        bit_directory: FilePath = tools_directory / "Bit"
+        _ = bit_directory
         library_directory: FilePath = tools_directory / "Library"
         shape_directory: FilePath = tools_directory / "Shape"
         _ = shape_directory

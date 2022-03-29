@@ -334,6 +334,13 @@ def model(document: "App.Document", tracing: str = "") -> None:
     #                           'material': 'HighSpeedSteel', 'diameter': 5.0,
     #                           'lengthOffset': 0.0, 'flatRadius': 0.0, 'cornerRadius': 0.0,
     #                           'cuttingEdgeAngle': 180.0, 'cuttingEdgeHeight': 15.0}
+    #
+    # Fields missing from ToolBit:
+    #     SurfaceFinish: Literal["BlackOxide", ...]
+    #     ClearanceHeight: The Distance from tool tip to Tooling (or probe base.)
+    #
+    # Fields missing from ToolContoller:
+    #     Cooling: Literal["Off", "Flood", "Mist", "Air"]
 
     # Create *post_list* which is a list of tool controllers and *operations*:
     post_list: List[Any] = []
