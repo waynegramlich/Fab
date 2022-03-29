@@ -82,6 +82,7 @@ tools: .tools
 .tools:
 	mkdir -p Tools
 	( cd $(TOOLS_ROOT) ; tar cf - . ) | (cd Tools ; tar xf -)  # Copy without deleting extras
+	rm -f Tools/README.md Tools/toolbit-attributes.py
 	touch $@
 
 tests: .tests  # Use .tests to remember that tests were run.

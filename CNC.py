@@ -263,6 +263,7 @@ def model(document: "App.Document", tracing: str = "") -> None:
     #         'Diameter': diameter},
     #     'attribute': []
     # }
+    #
     #     return PathToolBit.Factory.CreateFromAttrs(attrs, name)
 
     # Defined in `.../Path/PathScripts/PathToolController.py`:216:
@@ -271,6 +272,68 @@ def model(document: "App.Document", tracing: str = "") -> None:
     #         name: str, tool: "Tool", toolNumber: int, assignViewProvider: bool = True,
     #         assignTool=True) -> None
     # )
+
+    # This reads in a tool bit:
+    #     import PathToolBit from PathScripts
+    #     probe_tool_bit = PathToolBit("Tools/Bit/probe.fctb")
+    # reads in:
+    #     probe_tool_bit = {
+    #         'version': 2,
+    #         'name': 'Probe',
+    #         'shape': 'probe.fcstd',
+    #         'parameter': {
+    #              'Diameter': '6.0000 mm',
+    #              'Length': '50.0000 mm',
+    #              'ShaftDiameter': '4.0000 mm'
+    #         },
+    #         'attribute': {}
+    #     }
+
+    # This creates a tool controller:
+    #     # Besure there is an active document.
+    #     import PathScripts.PathToolController as PathToolController
+    #     tc1 = PathToolController.Create(name="LabelName")
+    # All of the controller fields are need to be set (see below):
+    # There is a comment in the "Path Scripting Thread" on Tue Jan 05, 2021 12:11 pm that says:
+    #
+    #     tc0.setExpression('HorizRapid', None)
+    #     tc0.HorizRapid = "15 mm/s"
+    #     tc0.setExpression('VertRapid', None)
+    #     tc0.VertRapid = "2 mm/s"
+    #
+    # It is necessary to zero out any previous expressions before the value will take.
+    # HorizRapid an VertRapid are typically an expression from the "spreadsheet".
+
+    # Grab the Tool from the tool controller:
+    #
+    #     tool = tc0.Tool
+    #
+    # Now assign into the fields of tool
+    #
+    #     tool.Content = '<Tool name="Default Tool" diameter="5" length="0" ' + \
+    #        'flat="0" corner="0" angle="180" height="15" type="EndMill" mat="HighSpeedSteel" />\n'
+    #     tool.CornerRadius = 0.0
+    #     tool.CuttingEdgeAngle = 180.0   # Probably a point angle.
+    #     tool.CuttingEdgeHeight = 15.0
+    #     tool.Diameter = 5.0
+    #     tool.FlatRadius = 0.0
+    #     tool.LengthOffset = 0.0
+    #     tool.Material = "HighSpeedSteel"
+    #     tool.MemSize = 0  # Unsure what this is; leave it alone
+    #     tool.Module = "Path"  # Leave this alone
+    #     tool.Name = "Default Tool"  # This can be changed
+    #     tool.ToolType = "EndMill"  # This can be changed
+    #     tool.TypeId = "Path::Tool"  # Leave this alone
+    #
+    #     tool.getToolTypes() => ['EndMill', 'Drill', 'CenterDrill', 'CounterSink', 'CounterBore',
+    #                             'FlyCutter', 'Reamer', 'Tap', 'SlotCutter', 'BallEndMill',
+    #                             'ChamferMill', 'CornerRound', 'Engraver']
+    #     tool.getToolMaterials() => ['Carbide', 'HighSpeedSteel', 'HighCarbonToolSteel',
+    #                                 'CastAlloy', 'Ceramics', 'Diamond', 'Sialon']
+    #     t.templateAttrs() => {'version': 1, 'name': 'Default Tool', 'tooltype': 'EndMill',
+    #                           'material': 'HighSpeedSteel', 'diameter': 5.0,
+    #                           'lengthOffset': 0.0, 'flatRadius': 0.0, 'cornerRadius': 0.0,
+    #                           'cuttingEdgeAngle': 180.0, 'cuttingEdgeHeight': 15.0}
 
     # Create *post_list* which is a list of tool controllers and *operations*:
     post_list: List[Any] = []
