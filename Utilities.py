@@ -647,8 +647,8 @@ class FabToolController(object):
     VerticalFeed: float
     VerticalRapid: float
 
-    # FabToolController.to_dict():
-    def to_dict(self) -> Dict[str, Union[bool, float, int, str]]:
+    # FabToolController.to_json():
+    def to_json(self) -> Dict[str, Any]:
         """Return a dictionary containing the controller information."""
         return {
             "BitName": self.BitName,
@@ -701,8 +701,7 @@ class FabToolController(object):
         )
         assert tool_controller1a == tool_controller1b, "FabToolController.__eq__() failed"
         assert tool_controller1a != tool_controller2, "FabToolController.__eq__() failed"
-        desired_dict: Dict[str, Union[int, float, str]]
-        desired_dict = {
+        desired_json: Dict[str, Any] = {
             "BitName": "5mm_Endmill",
             "Cooling": "Flood",
             "HorizontalFeed": 1.0,
@@ -713,8 +712,8 @@ class FabToolController(object):
             "VerticalFeed": 1.0,
             "VerticalRapid": 250.0,
         }
-        actual_dict: Dict[str, Union[int, float, str]] = tool_controller1b.to_dict()
-        assert desired_dict == actual_dict, ("Dict mismatch", desired_dict, actual_dict)
+        actual_json: Dict[str, Any] = tool_controller1b.to_json()
+        assert desired_json == actual_json, ("Dict mismatch", desired_json, actual_json)
         tool_controller_table: Dict[FabToolController, int] = {}
 
         tool_controller_table[tool_controller1a] = 1

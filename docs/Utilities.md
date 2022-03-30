@@ -12,7 +12,7 @@ The Utilitly classes are:
 * 2 Class: [FabColor](#utilities--fabcolor):
 * 3 Class: [FabMaterial](#utilities--fabmaterial):
 * 4 Class: [FabToolController](#utilities--fabtoolcontroller):
-  * 4.1 [to_dict()](#utilities----to-dict): Return a dictionary containing the controller information.
+  * 4.1 [to_json()](#utilities----to-json): Return a dictionary containing the controller information.
 
 ## <a name="utilities--fabcheck"></a>1 Class FabCheck:
 
@@ -94,9 +94,9 @@ Attributes:
 * *VerticalFeed* (float): The material vertical free rate in mm/sec.
 * *VerticalRapid* (float): The vertical rapid feed rate in mm/sec.
 
-### <a name="utilities----to-dict"></a>4.1 `FabToolController.`to_dict():
+### <a name="utilities----to-json"></a>4.1 `FabToolController.`to_json():
 
-FabToolController.to_dict(self) -> Dict[str, Union[bool, float, int, str]]:
+FabToolController.to_json(self) -> Dict[str, Any]:
 
 Return a dictionary containing the controller information.
 

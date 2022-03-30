@@ -166,12 +166,18 @@ class _Operation(object):
     """_Operation: An base class for FabMount operations -- _Extrude, _Pocket, FabHole, etc.
 
     Attributes:
-    * *Name* (str): Unique operation name for given mount.
-    * *Mount* (FabMount): The FabMount to use for performing operations.
+    * *Mount* (FabMount):
+      The FabMount to use for performing operations.
+    * *ToolController* (Optional[FabToolController]):
+      The tool controller (i.e. speeds, feeds, etc.) to use. (Default: None)
+    * *ToolControllerIndex* (int):
+      The tool controller index associated with the tool controller.  (Default: -1)
 
     """
 
     _Mount: "FabMount" = field(repr=False, compare=False)
+    _ToolController: Optional[FabToolController] = field(init=False, repr=False)
+    _ToolControllerIndex: int = field(init=False)
 
     # _Operation.__post_init__():
     def __post_init__(self) -> None:
@@ -179,12 +185,28 @@ class _Operation(object):
         # TODO: Enable check:
         # if not self._Mount.is_mount():
         #   raise RuntimeError("_Operation.__post_init__(): {type(self._Mount)} is not FabMount")
-        pass
+        self._ToolController = None
+        self._ToolControllerIndex = -1  # Unassigned.
 
-    # _Operation.get_controller():
-    def get_controller(self) -> FabToolController:
+    # _Operation.get_tool_controller():
+    def get_tool_controller(self) -> FabToolController:
         """Return the _Operation tool controller"""
-        raise RuntimeError(f"_Operation().get_controller() not implemented for {type(self)}")
+        if not self._ToolController:
+            raise RuntimeError("_Operation().get_tool_controller(): ToolController not set yet.")
+        return self._ToolController
+
+    # _Operation.set_tool_controller():
+    def set_tool_controller(self, tool_controller_index: int,
+                            tool_controller: Optional[FabToolController]) -> None:
+        """Set the _Operation tool controller and associated index."""
+        if self._ToolControllerIndex >= 0:
+            raise RuntimeError(
+                "_Operation().set_tool_controller(): ToolControllerIndex is already set.")
+        if self._ToolController:
+            raise RuntimeError(
+                "_Operation().set_tool_controller(): ToolController is already set.")
+        self._ToolController = tool_controller
+        self._ToolControllerIndex = tool_controller_index
 
     # _Operation.get_kind():
     def get_kind(self) -> str:
@@ -230,6 +252,11 @@ class _Operation(object):
             "Kind": self.get_kind(),
             "Label": self.get_name(),
         }
+        if self._ToolControllerIndex >= 0:
+            json_dict["ToolControllerIndex"] = self._ToolControllerIndex
+        if self._ToolController:
+            tool_controller_json: Dict[str, Any] = self._ToolController.to_json()
+            json_dict["ToolController"] = tool_controller_json
         return json_dict
 
     # TODO: Remove
@@ -306,6 +333,19 @@ class _Extrude(_Operation):
         self._StepDown = 3.0
         self._FinalDepth = -self.Depth
 
+        tool_controller: FabToolController = FabToolController(
+            BitName="",
+            Cooling="Flood",
+            HorizontalFeed=2.0,
+            HorizontalRapid=20.0,
+            SpindleDirection=True,
+            SpindleSpeed=5000.0,
+            ToolNumber=1,
+            VerticalFeed=1.0,
+            VerticalRapid=20.0
+        )
+        self.set_tool_controller(0, tool_controller)
+
     # _Extrude.Geometry():
     @property
     def Geometry(self) -> Union[FabGeometry, Tuple[FabGeometry, ...]]:
@@ -317,22 +357,6 @@ class _Extrude(_Operation):
     def Depth(self) -> float:
         """Return the Depth."""
         return self._Depth
-
-    # _Extrude.get_controller():
-    def get_controller(self) -> FabToolController:
-        """Return the _Operation tool controller"""
-        controller: FabToolController = FabToolController(
-            BitName="",
-            Cooling="Flood",
-            HorizontalFeed=2.0,
-            HorizontalRapid=20.0,
-            SpindleDirection=True,
-            SpindleSpeed=5000.0,
-            ToolNumber=1,
-            VerticalFeed=1.0,
-            VerticalRapid=20.0
-        )
-        return controller
 
     # _Extrude.get_name():
     def get_name(self) -> str:
