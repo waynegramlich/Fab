@@ -196,16 +196,17 @@ class _Operation(object):
         return self._ToolController
 
     # _Operation.set_tool_controller():
-    def set_tool_controller(self, tool_controller_index: int,
-                            tool_controller: Optional[FabToolController]) -> None:
+    def set_tool_controller(self, tool_controller: FabToolController,
+                            tool_controllers_table: Dict[FabToolController, int]) -> None:
         """Set the _Operation tool controller and associated index."""
-        if self._ToolControllerIndex >= 0:
-            raise RuntimeError(
-                "_Operation().set_tool_controller(): ToolControllerIndex is already set.")
-        if self._ToolController:
-            raise RuntimeError(
-                "_Operation().set_tool_controller(): ToolController is already set.")
-        self._ToolController = tool_controller
+        tool_controller_index: int
+        if tool_controller in tool_controllers_table:
+            tool_controller_index = tool_controllers_table[tool_controller]
+            self._ToolController = None
+        else:
+            tool_controller_index = len(tool_controllers_table)
+            tool_controllers_table[tool_controller] = tool_controller_index
+            self._ToolController = tool_controller
         self._ToolControllerIndex = tool_controller_index
 
     # _Operation.get_kind():
@@ -333,19 +334,6 @@ class _Extrude(_Operation):
         self._StepDown = 3.0
         self._FinalDepth = -self.Depth
 
-        tool_controller: FabToolController = FabToolController(
-            BitName="",
-            Cooling="Flood",
-            HorizontalFeed=2.0,
-            HorizontalRapid=20.0,
-            SpindleDirection=True,
-            SpindleSpeed=5000.0,
-            ToolNumber=1,
-            VerticalFeed=1.0,
-            VerticalRapid=20.0
-        )
-        self.set_tool_controller(0, tool_controller)
-
     # _Extrude.Geometry():
     @property
     def Geometry(self) -> Union[FabGeometry, Tuple[FabGeometry, ...]]:
@@ -418,6 +406,19 @@ class _Extrude(_Operation):
         self._StartDepth = start_depth
         self._StepDown = 3.0
         self._FinalDepth = start_depth - self.Depth
+
+        tool_controller: FabToolController = FabToolController(
+            BitName="",
+            Cooling="Flood",
+            HorizontalFeed=2.0,
+            HorizontalRapid=20.0,
+            SpindleDirection=True,
+            SpindleSpeed=5000.0,
+            ToolNumber=1,
+            VerticalFeed=1.0,
+            VerticalRapid=20.0
+        )
+        self.set_tool_controller(tool_controller, produce_state.ToolControllersTable)
 
         if tracing:
             print(f"{tracing}<=_Extrude.post_produce1('{self.Name}')")

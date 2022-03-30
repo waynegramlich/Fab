@@ -971,14 +971,14 @@ class _NodeProduceState(object):
     StepsDirectory: Path
     Steps: FabSteps = field(init=False)
     ObjectsTable: Dict[str, Any] = field(init=False)
-    ToolContollersTable: Dict[FabToolController, int] = field(init=False)
+    ToolControllersTable: Dict[FabToolController, int] = field(init=False)
 
     # _NodeProduceState.__post_init__():
     def __post_init__(self) -> None:
         """Finish initializing _ProduceState."""
         self.ObjectsTable = {}
         self.Steps = FabSteps(self.StepsDirectory)
-        self.ToolContollersTable = {}
+        self.ToolControllersTable = {}
 
 
 # FabNode:
