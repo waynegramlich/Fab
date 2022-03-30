@@ -47,6 +47,8 @@ from typing import Any, cast, Dict, IO, List, Sequence, Set, Tuple, Union
 
 from cadquery import Vector  # type: ignore
 
+from Utilities import FabToolController
+
 
 # TODO: Why is the class still in existence?
 @dataclass
@@ -69,7 +71,7 @@ class _BoundBox(object):
         )
 
 
-BoundBox = _BoundBox
+BoundBox = _BoundBox  # TODO: is this used any longer?
 
 
 # FabBox:
@@ -960,6 +962,8 @@ class _NodeProduceState(object):
       The step file directory managment object.
     * *ObjectsTable* (Dict[str, Any]):
       A table of objects that can be accessed via a debugger.
+    * *ToolControllersTable*: (Dict[FabToolController, int]):
+      A lookup to make common FabToolControllers to a single integer.
 
     This class is for interal use only:
     """
@@ -967,12 +971,14 @@ class _NodeProduceState(object):
     StepsDirectory: Path
     Steps: FabSteps = field(init=False)
     ObjectsTable: Dict[str, Any] = field(init=False)
+    ToolContollersTable: Dict[FabToolController, int] = field(init=False)
 
-    # _ProduceState.__post_init__():
+    # _NodeProduceState.__post_init__():
     def __post_init__(self) -> None:
         """Finish initializing _ProduceState."""
         self.ObjectsTable = {}
         self.Steps = FabSteps(self.StepsDirectory)
+        self.ToolContollersTable = {}
 
 
 # FabNode:

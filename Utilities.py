@@ -882,6 +882,7 @@ def _unit_tests() -> None:
     FabCheck._unit_tests()
     FabColor._unit_tests()
     FabMaterial._unit_tests()
+    FabToolController._unit_tests()
 
 
 if __name__ == "__main__":

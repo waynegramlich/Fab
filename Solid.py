@@ -1274,7 +1274,6 @@ def visibility_set(element: Any, new_value: bool = True, tracing: str = "") -> N
 
 # TODO: Add unit tests.
 def main() -> None:
-    FabToolController._unit_tests()
     FabStock._unit_tests()
     pass
 
