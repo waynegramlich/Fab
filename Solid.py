@@ -26,7 +26,7 @@ from cadquery import Vector  # type: ignore
 
 from Geometry import FabCircle, FabGeometry, FabGeometryContext, FabPlane, FabQuery
 from Join import FabFasten, FabJoin
-from Node import FabBox, FabNode, FabSteps
+from Node import FabBox, FabNode, _NodeProduceState
 from Utilities import FabColor
 
 # The *_suppress_stdout* function is based on code from:
@@ -1171,7 +1171,7 @@ class FabSolid(FabNode):
         return True  # All other FabNode's return False.
 
     # FabSolid.pre_produce():
-    def pre_produce(self) -> None:
+    def pre_produce(self, produce_state: _NodeProduceState) -> None:
         """Perform FabSolid pre production."""
         tracing: str = self.Tracing
         if tracing:
@@ -1247,7 +1247,7 @@ class FabSolid(FabNode):
             print(f"{tracing}<=FabSolid({self.Label}).drill_joins('{name}', *)")
 
     # FabSolid.post_produce1():
-    def post_produce1(self, objects_table: Dict[str, Any], fab_steps: FabSteps) -> None:
+    def post_produce1(self, produce_state: _NodeProduceState) -> None:
         """Perform FabSolid Phase1 post production."""
         tracing: str = self.Tracing
         next_tracing: str = tracing + " " if tracing else ""
@@ -1266,7 +1266,7 @@ class FabSolid(FabNode):
         hasher: Any = hashlib.new("sha256")
         hasher.update(hash_bytes)
         hash_text: str = hasher.hexdigest()[:16]
-        step_path = fab_steps.activate(self.Label, hash_text)
+        step_path = produce_state.Steps.activate(self.Label, hash_text)
         if step_path.exists():
             use_cached_step = True
         self._StepFile = step_path
@@ -1306,7 +1306,7 @@ class FabSolid(FabNode):
             if tracing:
                 print(f"{tracing}Wrote out {str(step_path)}")
         self._Assembly = assembly
-        objects_table[self.Label] = assembly
+        produce_state.ObjectsTable[self.Label] = assembly
 
         if tracing:
             print(f"{tracing}<=FabSolid.post_produce1('{self.Label}')")

@@ -41,13 +41,13 @@ Return FabProject JSON structure.
 
 ### <a name="project----post-produce1"></a>1.3 `FabAssembly.`post_produce1():
 
-FabAssembly.post_produce1(self, objects_table: Dict[str, Any], fab_steps: Node.FabSteps) -> None:
+FabAssembly.post_produce1(self, produce_state: Node._NodeProduceState) -> None:
 
 Preform FabAssembly phase1 post production.
 
 ### <a name="project----post-produce2"></a>1.4 `FabAssembly.`post_produce2():
 
-FabAssembly.post_produce2(self, objects_table: Dict[str, Any]) -> None:
+FabAssembly.post_produce2(self, produce_state: Node._NodeProduceState) -> None:
 
 Perform FabAssembly phase 2 post production.
 
@@ -73,13 +73,13 @@ Return FabProject JSON structure.
 
 ### <a name="project----post-produce1"></a>2.2 `FabDocument.`post_produce1():
 
-FabDocument.post_produce1(self, objects_table: Dict[str, Any], fab_steps: Node.FabSteps) -> None:
+FabDocument.post_produce1(self, produce_state: Node._NodeProduceState) -> None:
 
 Perform FabDocument phase 1 post production.
 
 ### <a name="project----post-produce2"></a>2.3 `FabDocument.`post_produce2():
 
-FabDocument.post_produce2(self, objects_table: Dict[str, Any]) -> None:
+FabDocument.post_produce2(self, produce_state: Node._NodeProduceState) -> None:
 
 Close the FabDocument.
 
@@ -106,7 +106,7 @@ Inherited Attributes:
 
 ### <a name="project----post-produce1"></a>3.1 `FabGroup.`post_produce1():
 
-FabGroup.post_produce1(self, objects_table: Dict[str, Any], fab_steps: Node.FabSteps) -> None:
+FabGroup.post_produce1(self, produce_state: Node._NodeProduceState) -> None:
 
 Perform FabGroup phase 1 post production.
 
@@ -147,7 +147,7 @@ Return FabProject JSON structure.
 
 ### <a name="project----run"></a>4.4 `FabProject.`run():
 
-FabProject.run(self, objects_table: Union[Dict[str, Any], NoneType] = None, step_directory: Union[pathlib.Path, NoneType] = None) -> None:
+FabProject.run(self, step_directory: Union[pathlib.Path, NoneType] = None) -> None:
 
 NO DOC STRING!
 

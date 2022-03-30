@@ -34,21 +34,9 @@ from pathlib import Path
 import cadquery as cq  # type: ignore
 from cadquery import Vector  # type: ignore
 
-from Node import FabNode, FabSteps
+from Node import FabNode, FabSteps, _NodeProduceState
 from Solid import FabSolid, FabTools
 _ = FabTools  # TODO: Remove
-
-
-# _ProduceState:
-@dataclass
-class _ProduceState(object):
-    """_ProduceState: Shared state across the produce methods."""
-    ObjectsTable: Dict[str, Any] = field(init=False)
-
-    # _ProduceState.__post_init__():
-    def __post_init__(self) -> None:
-        """Finish initializing _ProduceState."""
-        self.ObjectsTable = {}
 
 
 # FabGroup:
@@ -71,7 +59,7 @@ class FabGroup(FabNode):
         super().__post_init__()
 
     # FabGroup.post_produce1():
-    def post_produce1(self, objects_table: Dict[str, Any], fab_steps: FabSteps) -> None:
+    def post_produce1(self, produce_state: _NodeProduceState) -> None:
         """Perform FabGroup phase 1 post production."""
         tracing: str = self.Tracing
         if tracing:
@@ -124,17 +112,17 @@ class FabAssembly(FabGroup):
         return json
 
     # FabAssembly.post_produce1():
-    def post_produce1(self, objects_table: Dict[str, Any], fab_steps: FabSteps) -> None:
+    def post_produce1(self, produce_state: _NodeProduceState) -> None:
         """Preform FabAssembly phase1 post production."""
         tracing: str = self.Tracing
         if tracing:
             print(f"{tracing}=>FabAssembly({self.Label}).post_produce1(*, *)")
-        super().post_produce1(objects_table, fab_steps)
+        super().post_produce1(produce_state)
         if tracing:
             print(f"{tracing}<=FabAssembly({self.Label}).post_produce1(*, *)")
 
     # FabAssembly.post_produce2():
-    def post_produce2(self, objects_table: Dict[str, Any]) -> None:
+    def post_produce2(self, produce_state: _NodeProduceState) -> None:
         """Perform FabAssembly phase 2 post production."""
         tracing: str = self.Tracing
         if tracing:
@@ -159,7 +147,7 @@ class FabAssembly(FabGroup):
                     f"FabAssembly.post_produce2({self.Label}):"
                     f"{sub_assembly} is {type(sub_assembly)}, not cq.Assembly")
             assembly.add(sub_assembly, name=child_node.Label)
-        objects_table[self.Label] = assembly
+        produce_state.ObjectsTable[self.Label] = assembly
         self._Assembly = assembly
 
         if tracing:
@@ -229,14 +217,14 @@ class FabDocument(FabNode):
         return json
 
     # FabDocument.post_produce1():
-    def post_produce1(self, objects_table: Dict[str, Any], fab_steps: FabSteps) -> None:
+    def post_produce1(self, produce_state: _NodeProduceState) -> None:
         """Perform FabDocument phase 1 post production."""
         tracing: str = self.Tracing
         if tracing:
             print(f"{tracing}<=>FabDocument({self.Label}).post_produce1(*, *)")
 
     # FabDocument.post_produce2():
-    def post_produce2(self, objects_table: Dict[str, Any]) -> None:
+    def post_produce2(self, produce_state: _NodeProduceState) -> None:
         """Close the FabDocument."""
         tracing: str = self.Tracing
         if tracing:
@@ -302,24 +290,24 @@ class FabProject(FabNode):
         return json
 
     # FabProject.run():
-    def run(self, objects_table: Optional[Dict[str, Any]] = None,
-            step_directory: Optional[Path] = None) -> None:
+    def run(self, step_directory: Optional[Path] = None) -> None:
         # Shared variables:
         tracing: str = self.Tracing
         if tracing:
             print(f"{tracing}=>Project({self.Label}).run()")
+
+        # Phase 1: Iterate over tree in constraint mode:
+        if tracing:
+            print("")
+            print(f"{tracing}Project({self.Label}).run(): Phase 1: Constraint Propagation")
+
         error: str
         index: int
         name: str
         node: FabNode
         errors: List[str] = self._Errors
 
-        # Phase 1: Iterate over tree in constraint mode:
-        if tracing:
-            print("")
-            print(f"{tracing}Project({self.Label}).run(): Phase 1: Constraint Propagation")
-        if objects_table is None:
-            objects_table = {}
+        produce_state: _NodeProduceState = _NodeProduceState(Path("/tmp"))
         if step_directory is None:
             step_directory = Path("/tmp")
         previous_constraints: Set[str] = set()
@@ -335,7 +323,7 @@ class FabProject(FabNode):
                 node.enclose(tuple(self._Children.values()))
             # Call *produce* in top-down order first.
             for node in all_nodes:
-                node.pre_produce()
+                node.pre_produce(produce_state)
                 node.produce()
                 attribute: Any
                 for name, attribute in node.__dict__.items():
@@ -375,13 +363,13 @@ class FabProject(FabNode):
                 print(f"{tracing}Phase 2A: post_produce1(*, '{step_directory}'):")
             del errors[:]  # Clear *errors*
             for node in all_nodes:
-                node.post_produce1(objects_table, fab_steps)
+                node.post_produce1(produce_state)
             fab_steps.flush_inactives()
 
             if tracing:
                 print(f"{tracing}Phase 2b: post_produce2():")
             for node in reversed(all_nodes):
-                node.post_produce2(objects_table)
+                node.post_produce2(produce_state)
 
         top_json: Dict[str, Any] = self.to_json()
         json_file: IO[str]

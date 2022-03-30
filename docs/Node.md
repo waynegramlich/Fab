@@ -236,7 +236,7 @@ Return a dictionary for JSON output.
 
 ### <a name="node----pre-produce"></a>3.9 `FabNode.`pre_produce():
 
-FabNode.pre_produce(self) -> None:
+FabNode.pre_produce(self, produce_state: Node._NodeProduceState) -> None:
 
 Perform FabNode pre produce operations.
 
@@ -248,13 +248,13 @@ Empty FabNode produce method to be over-ridden.
 
 ### <a name="node----post-produce1"></a>3.11 `FabNode.`post_produce1():
 
-FabNode.post_produce1(self, objects_table: Dict[str, Any], fab_steps: 'FabSteps') -> None:
+FabNode.post_produce1(self, produce_state: Node._NodeProduceState) -> None:
 
 Do FabNode phase 1 post production.
 
 ### <a name="node----post-produce2"></a>3.12 `FabNode.`post_produce2():
 
-FabNode.post_produce2(self, objects_table: Dict[str, Any]) -> None:
+FabNode.post_produce2(self, produce_state: Node._NodeProduceState) -> None:
 
 Do FabNode phase 2 post production.
 

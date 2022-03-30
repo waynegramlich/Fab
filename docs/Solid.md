@@ -129,7 +129,7 @@ FabSolid.is_solid(self) -> bool:
 
 ### <a name="solid----pre-produce"></a>2.4 `FabSolid.`pre_produce():
 
-FabSolid.pre_produce(self) -> None:
+FabSolid.pre_produce(self, produce_state: Node._NodeProduceState) -> None:
 
 Perform FabSolid pre production.
 
@@ -168,7 +168,7 @@ For now, please call this method after all FabMount's are created.
 
 ### <a name="solid----post-produce1"></a>2.8 `FabSolid.`post_produce1():
 
-FabSolid.post_produce1(self, objects_table: Dict[str, Any], fab_steps: Node.FabSteps) -> None:
+FabSolid.post_produce1(self, produce_state: Node._NodeProduceState) -> None:
 
 Perform FabSolid Phase1 post production.
 

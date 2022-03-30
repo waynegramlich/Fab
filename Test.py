@@ -455,7 +455,7 @@ def main(key: str = "") -> Any:
     """Run main program."""
     objects_table: Dict[str, Any] = {}
     test_project: TestProject = TestProject.new("TestProject")
-    test_project.run(objects_table)
+    test_project.run()
 
     result: Any = 0
     if key:
