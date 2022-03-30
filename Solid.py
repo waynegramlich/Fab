@@ -160,15 +160,14 @@ class FabStock(object):
         _ = results
 
 
-# FabToolContoller:
-@dataclass
-class FabToolController:
+# FabToolController:
+@dataclass(frozen=True)
+class FabToolController(object):
     """FabToolController: Speeds/Feeds information.
 
     Attributes:
     * *BitName* (str): The name Bit file name in `.../Tools/Bit/*.fctb` where `*` is BitName.
-    * *ControllerNumber*: (int) A number to use reference this FabToolController.
-    * *Flood* (bool): The state of flood cooling, where True means flood cooling is on.
+    * *Cooling* (str): The cooling to use which is one of "Off", "Flood", "Mist", or "Air".
     * *HorizontalFeed* (float): The material horizontal feed rate in mm/sec.
     * *HorizontalRapid* (float): The horizontal rapid feed rate in mm/sec.
     * *SpindleDirection* (bool): The spindle direction where True means clockwise.
@@ -180,8 +179,7 @@ class FabToolController:
     """
 
     BitName: str
-    ControllerNumber: int = field(compare=False)
-    Flood: bool
+    Cooling: str
     HorizontalFeed: float
     HorizontalRapid: float
     SpindleDirection: bool
@@ -195,8 +193,7 @@ class FabToolController:
         """Return a dictionary containing the controller information."""
         return {
             "BitName": self.BitName,
-            "ControllerNumber": self.ControllerNumber,
-            "Flood": self.Flood,
+            "Cooling": self.Cooling,
             "HorizontalFeed": self.HorizontalFeed,
             "HorizontalRapid": self.HorizontalRapid,
             "SpindleDirection": self.SpindleDirection,
@@ -205,6 +202,74 @@ class FabToolController:
             "VerticalFeed": self.VerticalFeed,
             "VerticalRapid": self.VerticalRapid,
         }
+
+    # FabController._unit_tests()
+    @staticmethod
+    def _unit_tests() -> None:
+        """Perform Unit tests."""
+        tool_controller1a: FabToolController = FabToolController(
+            BitName="5mm_Endmill",
+            Cooling="Flood",
+            HorizontalFeed=1.0,
+            HorizontalRapid=250.0,
+            SpindleDirection=True,
+            SpindleSpeed=5000.0,
+            ToolNumber=1,
+            VerticalFeed=1.0,
+            VerticalRapid=250.0
+        )
+        tool_controller1b: FabToolController = FabToolController(
+            BitName="5mm_Endmill",
+            Cooling="Flood",
+            HorizontalFeed=1.0,
+            HorizontalRapid=250.0,
+            SpindleDirection=True,
+            SpindleSpeed=5000.0,
+            ToolNumber=1,
+            VerticalFeed=1.0,
+            VerticalRapid=250.0
+        )
+        tool_controller2: FabToolController = FabToolController(
+            BitName="5mm_Drill",
+            Cooling="Flood",
+            HorizontalFeed=1.0,
+            HorizontalRapid=250.0,
+            SpindleDirection=True,
+            SpindleSpeed=5000.0,
+            ToolNumber=2,
+            VerticalFeed=1.0,
+            VerticalRapid=250.0
+        )
+        assert tool_controller1a == tool_controller1b, "FabToolController.__eq__() failed"
+        assert tool_controller1a != tool_controller2, "FabToolController.__eq__() failed"
+        desired_dict: Dict[str, Union[int, float, str]]
+        desired_dict = {
+            "BitName": "5mm_Endmill",
+            "Cooling": "Flood",
+            "HorizontalFeed": 1.0,
+            "HorizontalRapid": 250.0,
+            "SpindleDirection": True,
+            "SpindleSpeed": 5000.0,
+            "ToolNumber": 1,
+            "VerticalFeed": 1.0,
+            "VerticalRapid": 250.0,
+        }
+        actual_dict: Dict[str, Union[int, float, str]] = tool_controller1b.to_dict()
+        assert desired_dict == actual_dict, ("Dict mismatch", desired_dict, actual_dict)
+        tool_controller_table: Dict[FabToolController, int] = {}
+
+        tool_controller_table[tool_controller1a] = 1
+        assert tool_controller1a in tool_controller_table, "Insert 1a failed"
+        assert tool_controller1b in tool_controller_table, "Insert 1b failed"
+        assert tool_controller_table[tool_controller1a] == 1, "Lookup 1a failed"
+        assert tool_controller_table[tool_controller1b] == 1, "Lookup 1b failed"
+        assert len(tool_controller_table) == 1, "Table is wrong size"
+
+        assert tool_controller2 not in tool_controller_table, "Already in table?"
+        tool_controller_table[tool_controller2] = 2
+        assert tool_controller_table[tool_controller2] == 2, "Lookup failed"
+        assert tool_controller2 in tool_controller_table, "Insert failed"
+        assert len(tool_controller_table) == 2, "Table is wrong size"
 
 
 # FabTools:
@@ -384,8 +449,7 @@ class _Extrude(_Operation):
         """Return the _Operation tool controller"""
         controller: FabToolController = FabToolController(
             BitName="",
-            ControllerNumber=1,
-            Flood=False,
+            Cooling="Flood",
             HorizontalFeed=2.0,
             HorizontalRapid=20.0,
             SpindleDirection=True,
@@ -1322,6 +1386,7 @@ def visibility_set(element: Any, new_value: bool = True, tracing: str = "") -> N
 
 # TODO: Add unit tests.
 def main() -> None:
+    FabToolController._unit_tests()
     FabStock._unit_tests()
     pass
 
