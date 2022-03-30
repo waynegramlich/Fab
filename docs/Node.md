@@ -248,7 +248,7 @@ Empty FabNode produce method to be over-ridden.
 
 ### <a name="node----post-produce1"></a>3.11 `FabNode.`post_produce1():
 
-FabNode.post_produce1(self, produce_state: Node._NodeProduceState) -> None:
+FabNode.post_produce1(self, produce_state: Node._NodeProduceState, tracing: str = '') -> None:
 
 Do FabNode phase 1 post production.
 

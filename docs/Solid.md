@@ -28,7 +28,6 @@ This internal classes are managed by FabMount methods.
   * 2.8 [post_produce1()](#solid----post-produce1): Perform FabSolid Phase1 post production.
 * 3 Class: [FabStock](#solid--fabstock):
   * 3.1 [enclose()](#solid----enclose): Wrap some stock material around a FabBox.
-* 4 Class: [FabTools](#solid--fabtools):
 
 ## <a name="solid--fabmount"></a>1 Class FabMount:
 
@@ -67,7 +66,7 @@ Set the FabMount GeometryGroup need for the FabGeometryContex.
 
 ### <a name="solid----post-produce1"></a>1.4 `FabMount.`post_produce1():
 
-FabMount.post_produce1(self, tracing: str = '') -> None:
+FabMount.post_produce1(self, produce_state: Node._NodeProduceState, tracing: str = '') -> None:
 
 Perform FabMount phase 1 post procduction.
 
@@ -166,7 +165,7 @@ For now, please call this method after all FabMount's are created.
 
 ### <a name="solid----post-produce1"></a>2.8 `FabSolid.`post_produce1():
 
-FabSolid.post_produce1(self, produce_state: Node._NodeProduceState) -> None:
+FabSolid.post_produce1(self, produce_state: Node._NodeProduceState, tracing: str = '') -> None:
 
 Perform FabSolid Phase1 post production.
 
@@ -189,11 +188,6 @@ Attributes:
 FabStock.enclose(self, box: Node.FabBox) -> Tuple[cadquery.occ_impl.geom.Vector, cadquery.occ_impl.geom.Vector]:
 
 Wrap some stock material around a FabBox.
-
-
-## <a name="solid--fabtools"></a>4 Class FabTools:
-
-A table of tool bits and controllers.
 
 
 

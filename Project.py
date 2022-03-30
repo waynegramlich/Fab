@@ -35,8 +35,7 @@ import cadquery as cq  # type: ignore
 from cadquery import Vector  # type: ignore
 
 from Node import FabNode, FabSteps, _NodeProduceState
-from Solid import FabSolid, FabTools
-_ = FabTools  # TODO: Remove
+from Solid import FabSolid
 
 
 # FabGroup:
@@ -59,9 +58,9 @@ class FabGroup(FabNode):
         super().__post_init__()
 
     # FabGroup.post_produce1():
-    def post_produce1(self, produce_state: _NodeProduceState) -> None:
+    def post_produce1(self, produce_state: _NodeProduceState, tracing: str = "") -> None:
         """Perform FabGroup phase 1 post production."""
-        tracing: str = self.Tracing
+        tracing = self.Tracing  # Ignore *tracing* argument.
         if tracing:
             print(f"{tracing}<=>FabGroup({self.Label}).post_produce1(*, *)")
 
@@ -112,9 +111,9 @@ class FabAssembly(FabGroup):
         return json
 
     # FabAssembly.post_produce1():
-    def post_produce1(self, produce_state: _NodeProduceState) -> None:
+    def post_produce1(self, produce_state: _NodeProduceState, tracing: str = "") -> None:
         """Preform FabAssembly phase1 post production."""
-        tracing: str = self.Tracing
+        tracing = self.Tracing  # Ignore *tracing* argument.
         if tracing:
             print(f"{tracing}=>FabAssembly({self.Label}).post_produce1(*, *)")
         super().post_produce1(produce_state)
@@ -217,9 +216,9 @@ class FabDocument(FabNode):
         return json
 
     # FabDocument.post_produce1():
-    def post_produce1(self, produce_state: _NodeProduceState) -> None:
+    def post_produce1(self, produce_state: _NodeProduceState, tracing: str = "") -> None:
         """Perform FabDocument phase 1 post production."""
-        tracing: str = self.Tracing
+        tracing = self.Tracing  # Ignore *tracing* argument.
         if tracing:
             print(f"{tracing}<=>FabDocument({self.Label}).post_produce1(*, *)")
 

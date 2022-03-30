@@ -160,20 +160,6 @@ class FabStock(object):
         _ = results
 
 
-# FabTools:
-@dataclass
-class FabTools:
-    """FabTools: A table of tool bits and controllers."""
-
-    Tools: Dict[int, str]
-    Controllers: Dict[int, FabToolController]
-
-    # FabTools.__post_init__():
-    def __post_init__(self) -> None:
-        """Finish intializing FabTools."""
-        pass
-
-
 # _Operation:
 @dataclass(order=True)
 class _Operation(object):
@@ -234,7 +220,7 @@ class _Operation(object):
         return ()
 
     # _Operation.post_produce1():
-    def post_produce1(self, tracing: str = "") -> None:
+    def post_produce1(self, produce_state: _NodeProduceState, tracing: str = "") -> None:
         raise NotImplementedError(f"{type(self)}.post_produce1() is not implemented")
 
     # _Operation.to_json():
@@ -375,7 +361,7 @@ class _Extrude(_Operation):
         return tuple(hashes)
 
     # _Extrude.post_produce1():
-    def post_produce1(self, tracing: str = "") -> None:
+    def post_produce1(self, produce_state: _NodeProduceState, tracing: str = "") -> None:
         """Produce the Extrude."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
@@ -505,7 +491,7 @@ class _Pocket(_Operation):
         return "Pocket"
 
     # _Pocket.post_produce1():
-    def post_produce1(self, tracing: str = "") -> None:
+    def post_produce1(self, produce_state: _NodeProduceState, tracing: str = "") -> None:
         """Produce the Pocket."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
@@ -605,7 +591,7 @@ class _Hole(_Operation):
         return hashes
 
     # _Hole.post_produce1():
-    def post_produce1(self, tracing: str = "") -> None:
+    def post_produce1(self, produce_state: _NodeProduceState, tracing: str = "") -> None:
         """Perform _Hole phase 1 post production."""
 
         next_tracing: str = tracing + " " if tracing else ""
@@ -827,7 +813,7 @@ class FabMount(object):
         self._GeometryContext.set_geometry_group(geometry_group)
 
     # FabMount.post_produce1():
-    def post_produce1(self, tracing: str = "") -> None:
+    def post_produce1(self, produce_state: _NodeProduceState, tracing: str = "") -> None:
         """Perform FabMount phase 1 post procduction."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
@@ -862,7 +848,7 @@ class FabMount(object):
             for operation_name, operation in operations.items():
                 if tracing:
                     print(f"{tracing}Operation[{operation_name}]:")
-                operation.post_produce1(tracing=next_tracing)
+                operation.post_produce1(produce_state, tracing=next_tracing)
 
         # Install the FabMount (i.e. *self*) and *datum_plane* into *model_file* prior
         # to recursively performing the *operations*:
@@ -1199,9 +1185,9 @@ class FabSolid(FabNode):
             print(f"{tracing}<=FabSolid({self.Label}).drill_joins('{name}', *)")
 
     # FabSolid.post_produce1():
-    def post_produce1(self, produce_state: _NodeProduceState) -> None:
+    def post_produce1(self, produce_state: _NodeProduceState, tracing: str = "") -> None:
         """Perform FabSolid Phase1 post production."""
-        tracing: str = self.Tracing
+        tracing = self.Tracing  # Ignore *tracing* argument.
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabSolid.post_produce1('{self.Label}')")
@@ -1233,7 +1219,7 @@ class FabSolid(FabNode):
             for mount_name, mount in mounts.items():
                 if tracing:
                     print(f"{tracing}[{mount_name}]: process")
-                mount.post_produce1(tracing=next_tracing)
+                mount.post_produce1(produce_state, tracing=next_tracing)
 
         # CadQuery workplanes do not have a color, but Assemblies do.
         rgb_color: Tuple[float, float, float] = FabColor.svg_to_rgb(self.Color)

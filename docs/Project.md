@@ -41,7 +41,7 @@ Return FabProject JSON structure.
 
 ### <a name="project----post-produce1"></a>1.3 `FabAssembly.`post_produce1():
 
-FabAssembly.post_produce1(self, produce_state: Node._NodeProduceState) -> None:
+FabAssembly.post_produce1(self, produce_state: Node._NodeProduceState, tracing: str = '') -> None:
 
 Preform FabAssembly phase1 post production.
 
@@ -73,7 +73,7 @@ Return FabProject JSON structure.
 
 ### <a name="project----post-produce1"></a>2.2 `FabDocument.`post_produce1():
 
-FabDocument.post_produce1(self, produce_state: Node._NodeProduceState) -> None:
+FabDocument.post_produce1(self, produce_state: Node._NodeProduceState, tracing: str = '') -> None:
 
 Perform FabDocument phase 1 post production.
 
@@ -106,7 +106,7 @@ Inherited Attributes:
 
 ### <a name="project----post-produce1"></a>3.1 `FabGroup.`post_produce1():
 
-FabGroup.post_produce1(self, produce_state: Node._NodeProduceState) -> None:
+FabGroup.post_produce1(self, produce_state: Node._NodeProduceState, tracing: str = '') -> None:
 
 Perform FabGroup phase 1 post production.
 
