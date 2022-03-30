@@ -11,6 +11,8 @@ The Utilitly classes are:
 * 1 Class: [FabCheck](#utilities--fabcheck):
 * 2 Class: [FabColor](#utilities--fabcolor):
 * 3 Class: [FabMaterial](#utilities--fabmaterial):
+* 4 Class: [FabToolController](#utilities--fabtoolcontroller):
+  * 4.1 [to_dict()](#utilities----to-dict): Return a dictionary containing the controller information.
 
 ## <a name="utilities--fabcheck"></a>1 Class FabCheck:
 
@@ -76,6 +78,27 @@ Other properties to be added later (e.g. transparency, shine, machining properti
 Attributes:
 * *Name* (Tuple[str, ...]): A list of material names from generict to specific.
 * *Color* (str): The color name to use.
+
+
+## <a name="utilities--fabtoolcontroller"></a>4 Class FabToolController:
+
+Speeds/Feeds information.
+Attributes:
+* *BitName* (str): The name Bit file name in `.../Tools/Bit/*.fctb` where `*` is BitName.
+* *Cooling* (str): The cooling to use which is one of "Off", "Flood", "Mist", or "Air".
+* *HorizontalFeed* (float): The material horizontal feed rate in mm/sec.
+* *HorizontalRapid* (float): The horizontal rapid feed rate in mm/sec.
+* *SpindleDirection* (bool): The spindle direction where True means clockwise.
+* *SpindleSpeed* (float): The spindle rotation speed in rotations per second.
+* *ToolNumber* (int): The tool number to use.
+* *VerticalFeed* (float): The material vertical free rate in mm/sec.
+* *VerticalRapid* (float): The vertical rapid feed rate in mm/sec.
+
+### <a name="utilities----to-dict"></a>4.1 `FabToolController.`to_dict():
+
+FabToolController.to_dict(self) -> Dict[str, Union[bool, float, int, str]]:
+
+Return a dictionary containing the controller information.
 
 
 

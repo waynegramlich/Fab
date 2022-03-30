@@ -28,9 +28,7 @@ This internal classes are managed by FabMount methods.
   * 2.8 [post_produce1()](#solid----post-produce1): Perform FabSolid Phase1 post production.
 * 3 Class: [FabStock](#solid--fabstock):
   * 3.1 [enclose()](#solid----enclose): Wrap some stock material around a FabBox.
-* 4 Class: [FabToolController](#solid--fabtoolcontroller):
-  * 4.1 [to_dict()](#solid----to-dict): Return a dictionary containing the controller information.
-* 5 Class: [FabTools](#solid--fabtools):
+* 4 Class: [FabTools](#solid--fabtools):
 
 ## <a name="solid--fabmount"></a>1 Class FabMount:
 
@@ -193,29 +191,7 @@ FabStock.enclose(self, box: Node.FabBox) -> Tuple[cadquery.occ_impl.geom.Vector,
 Wrap some stock material around a FabBox.
 
 
-## <a name="solid--fabtoolcontroller"></a>4 Class FabToolController:
-
-Speeds/Feeds information.
-Attributes:
-* *BitName* (str): The name Bit file name in `.../Tools/Bit/*.fctb` where `*` is BitName.
-* *ControllerNumber*: (int) A number to use reference this FabToolController.
-* *Flood* (bool): The state of flood cooling, where True means flood cooling is on.
-* *HorizontalFeed* (float): The material horizontal feed rate in mm/sec.
-* *HorizontalRapid* (float): The horizontal rapid feed rate in mm/sec.
-* *SpindleDirection* (bool): The spindle direction where True means clockwise.
-* *SpindleSpeed* (float): The spindle rotation speed in rotations per second.
-* *ToolNumber* (int): The tool number to use.
-* *VerticalFeed* (float): The material vertical free rate in mm/sec.
-* *VerticalRapid* (float): The vertical rapid feed rate in mm/sec.
-
-### <a name="solid----to-dict"></a>4.1 `FabToolController.`to_dict():
-
-FabToolController.to_dict(self) -> Dict[str, Union[bool, float, int, str]]:
-
-Return a dictionary containing the controller information.
-
-
-## <a name="solid--fabtools"></a>5 Class FabTools:
+## <a name="solid--fabtools"></a>4 Class FabTools:
 
 A table of tool bits and controllers.
 

@@ -27,7 +27,7 @@ from cadquery import Vector  # type: ignore
 from Geometry import FabCircle, FabGeometry, FabGeometryContext, FabPlane, FabQuery
 from Join import FabFasten, FabJoin
 from Node import FabBox, FabNode, _NodeProduceState
-from Utilities import FabColor
+from Utilities import FabColor, FabToolController
 
 # The *_suppress_stdout* function is based on code from:
 #   [I/O Redirect](https://stackoverflow.com/questions/4675728/redirect-stdout-to-a-file-in-python)
@@ -158,118 +158,6 @@ class FabStock(object):
         results: Tuple[Vector, Vector] = stock.enclose(box)
         print(f"{results=}")
         _ = results
-
-
-# FabToolController:
-@dataclass(frozen=True)
-class FabToolController(object):
-    """FabToolController: Speeds/Feeds information.
-
-    Attributes:
-    * *BitName* (str): The name Bit file name in `.../Tools/Bit/*.fctb` where `*` is BitName.
-    * *Cooling* (str): The cooling to use which is one of "Off", "Flood", "Mist", or "Air".
-    * *HorizontalFeed* (float): The material horizontal feed rate in mm/sec.
-    * *HorizontalRapid* (float): The horizontal rapid feed rate in mm/sec.
-    * *SpindleDirection* (bool): The spindle direction where True means clockwise.
-    * *SpindleSpeed* (float): The spindle rotation speed in rotations per second.
-    * *ToolNumber* (int): The tool number to use.
-    * *VerticalFeed* (float): The material vertical free rate in mm/sec.
-    * *VerticalRapid* (float): The vertical rapid feed rate in mm/sec.
-
-    """
-
-    BitName: str
-    Cooling: str
-    HorizontalFeed: float
-    HorizontalRapid: float
-    SpindleDirection: bool
-    SpindleSpeed: float
-    ToolNumber: int
-    VerticalFeed: float
-    VerticalRapid: float
-
-    # FabToolController.to_dict():
-    def to_dict(self) -> Dict[str, Union[bool, float, int, str]]:
-        """Return a dictionary containing the controller information."""
-        return {
-            "BitName": self.BitName,
-            "Cooling": self.Cooling,
-            "HorizontalFeed": self.HorizontalFeed,
-            "HorizontalRapid": self.HorizontalRapid,
-            "SpindleDirection": self.SpindleDirection,
-            "SpindleSpeed": self.SpindleSpeed,
-            "ToolNumber": self.ToolNumber,
-            "VerticalFeed": self.VerticalFeed,
-            "VerticalRapid": self.VerticalRapid,
-        }
-
-    # FabController._unit_tests()
-    @staticmethod
-    def _unit_tests() -> None:
-        """Perform Unit tests."""
-        tool_controller1a: FabToolController = FabToolController(
-            BitName="5mm_Endmill",
-            Cooling="Flood",
-            HorizontalFeed=1.0,
-            HorizontalRapid=250.0,
-            SpindleDirection=True,
-            SpindleSpeed=5000.0,
-            ToolNumber=1,
-            VerticalFeed=1.0,
-            VerticalRapid=250.0
-        )
-        tool_controller1b: FabToolController = FabToolController(
-            BitName="5mm_Endmill",
-            Cooling="Flood",
-            HorizontalFeed=1.0,
-            HorizontalRapid=250.0,
-            SpindleDirection=True,
-            SpindleSpeed=5000.0,
-            ToolNumber=1,
-            VerticalFeed=1.0,
-            VerticalRapid=250.0
-        )
-        tool_controller2: FabToolController = FabToolController(
-            BitName="5mm_Drill",
-            Cooling="Flood",
-            HorizontalFeed=1.0,
-            HorizontalRapid=250.0,
-            SpindleDirection=True,
-            SpindleSpeed=5000.0,
-            ToolNumber=2,
-            VerticalFeed=1.0,
-            VerticalRapid=250.0
-        )
-        assert tool_controller1a == tool_controller1b, "FabToolController.__eq__() failed"
-        assert tool_controller1a != tool_controller2, "FabToolController.__eq__() failed"
-        desired_dict: Dict[str, Union[int, float, str]]
-        desired_dict = {
-            "BitName": "5mm_Endmill",
-            "Cooling": "Flood",
-            "HorizontalFeed": 1.0,
-            "HorizontalRapid": 250.0,
-            "SpindleDirection": True,
-            "SpindleSpeed": 5000.0,
-            "ToolNumber": 1,
-            "VerticalFeed": 1.0,
-            "VerticalRapid": 250.0,
-        }
-        actual_dict: Dict[str, Union[int, float, str]] = tool_controller1b.to_dict()
-        assert desired_dict == actual_dict, ("Dict mismatch", desired_dict, actual_dict)
-        tool_controller_table: Dict[FabToolController, int] = {}
-
-        tool_controller_table[tool_controller1a] = 1
-        assert tool_controller1a in tool_controller_table, "Insert 1a failed"
-        assert tool_controller1b in tool_controller_table, "Insert 1b failed"
-        assert tool_controller_table[tool_controller1a] == 1, "Lookup 1a failed"
-        assert tool_controller_table[tool_controller1b] == 1, "Lookup 1b failed"
-        assert len(tool_controller_table) == 1, "Table is wrong size"
-
-        assert tool_controller2 not in tool_controller_table, "Already in table?"
-        tool_controller_table[tool_controller2] = 2
-        assert tool_controller_table[tool_controller2] == 2, "Lookup failed"
-        assert tool_controller2 in tool_controller_table, "Insert failed"
-        assert len(tool_controller_table) == 2, "Table is wrong size"
 
 
 # FabTools:
