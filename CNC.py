@@ -275,7 +275,8 @@ def model(document: "App.Document", tracing: str = "") -> None:
 
     # This reads in a tool bit:
     #     import PathToolBit from PathScripts
-    #     probe_tool_bit = PathToolBit("Tools/Bit/probe.fctb")
+    #     # probe_tool_bit = PathToolBit("Tools/Bit/probe.fctb")  # Does not work
+    #     probe_tool_bit = PathToolBit.findBit(""Tools/Bit/probe.fctb")
     # reads in:
     #     probe_tool_bit = {
     #         'version': 2,

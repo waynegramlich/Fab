@@ -408,7 +408,7 @@ class _Extrude(_Operation):
         self._FinalDepth = start_depth - self.Depth
 
         tool_controller: FabToolController = FabToolController(
-            BitName="",
+            BitName="probe",
             Cooling="Flood",
             HorizontalFeed=2.0,
             HorizontalRapid=20.0,

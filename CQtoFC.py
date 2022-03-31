@@ -24,7 +24,7 @@ import json
 import os
 from pathlib import Path
 import sys
-from typing import Any, cast, List, Dict, IO, Tuple
+from typing import Any, cast, List, Dict, IO, Optional, Tuple
 
 from PathScripts import PathJob, PathProfile, PathPostProcessor, PathUtil  # type: ignore
 _ = PathJob  # TODO: Remove
@@ -53,61 +53,61 @@ else:
 class FabCQtoFC(object):
     """FabCQtoFC: Import CadQuery .step files into FreeCAD."""
 
-    json_path: Path
-    cnc: bool
-    steps_document: Any = field(init=False, repr=False)
-    project_document: Any = field(init=False, repr=False)
-    all_documents: List[Any] = field(init=False, repr=False)
-    pending_links: List[Tuple[Any, Any]] = field(init=False, repr=False)
-    current_part: Any = None
-    current_link: Any = None
-    current_job: Any = None
+    JsonPath: Path
+    ToolsPath: Optional[Path]
+    StepsDocument: Any = field(init=False, repr=False)
+    ProjectDocument: Any = field(init=False, repr=False)
+    AllDocuments: List[Any] = field(init=False, repr=False)
+    PendingLinks: List[Tuple[Any, Any]] = field(init=False, repr=False)
+    CurrentPart: Any = None
+    CurrentLink: Any = None
+    CurrentJob: Any = None
 
     # FabCQtoFC.__post_init__():
     def __post_init__(self) -> None:
         """Initialize FabCQtoFC."""
-        assert isinstance(self.json_path, Path), self.json_path
-        self.steps_document = None
-        self.all_documents = []
-        self.pending_links = []
-        self.pending_links: List[Tuple[Any, Any]] = []
-        self.project_document = None
+        assert isinstance(self.JsonPath, Path), self.JsonPath
+        self.StepsDocument = None
+        self.AllDocuments = []
+        self.PendingLinks = []
+        self.PendingLinks: List[Tuple[Any, Any]] = []
+        self.ProjectDocument = None
 
     # FabCQtoFC.process():
     def process(self, indent: str = "", tracing: str = "") -> None:
         """Process a JSON file into a FreeCAD documents."""
         next_tracing: str = tracing + "  " if tracing else ""
         if tracing:
-            print(f"{tracing}=>FabCQtFC.process({str(self.json_path), {self.cnc}})")
+            print(f"{tracing}=>FabCQtFC.process({str(self.JsonPath), {self.ToolsPath}})")
 
         # Create the *steps_document*:
-        json_directory: Path = self.json_path.parent
+        json_directory: Path = self.JsonPath.parent
         steps_document: Any = App.newDocument("Step_Files")  # type: ignore
-        self.steps_document = steps_document
-        self.all_documents.append(steps_document)
+        self.StepsDocument = steps_document
+        self.AllDocuments.append(steps_document)
 
         # Read in *json_path*:
         json_file: IO[str]
         json_text: str = ""
-        if self.json_path.suffix != ".json":
-            raise RuntimeError(f"JSON file must have `.json` suffix: '{str(self.json_path)}'")
+        if self.JsonPath.suffix != ".json":
+            raise RuntimeError(f"JSON file must have `.json` suffix: '{str(self.JsonPath)}'")
         if tracing:
-            print(f"{tracing}Loading {str(self.json_path)}")
-        with open(self.json_path, "r") as json_file:
+            print(f"{tracing}Loading {str(self.JsonPath)}")
+        with open(self.JsonPath, "r") as json_file:
             json_text = json_file.read()
         if tracing:
-            print(f"{tracing}Parsing {str(self.json_path)}")
+            print(f"{tracing}Parsing {str(self.JsonPath)}")
         json_root = cast(Dict[str, Any], json.loads(json_text))
         assert isinstance(json_root, dict), json_root
 
         # Recursively walk the tree starting at *json_root*:
         if tracing:
-            print(f"{tracing}Processing {str(self.json_path)}")
+            print(f"{tracing}Processing {str(self.JsonPath)}")
         self.node_process(("Root",), json_root, group=None, indent=indent, tracing=next_tracing)
 
         # Save *all_documents*:
         document: Any
-        for document in self.all_documents:
+        for document in self.AllDocuments:
             save_path: Path = json_directory / f"{document.Label}.FCStd"
             if save_path.exists():
                 save_path.unlink()
@@ -118,10 +118,10 @@ class FabCQtoFC(object):
         pending_link: Tuple[Any, Any]
         link: Any
         part: Any
-        for link, part in self.pending_links:
+        for link, part in self.PendingLinks:
             link.setLink(part)
         if tracing:
-            print(f"{tracing}<=FabCQtFC.process({str(self.json_path), {self.cnc}})")
+            print(f"{tracing}<=FabCQtFC.process({str(self.JsonPath), {self.ToolsPath}})")
 
     # FabCQtoFC.node_process():
     def node_process(self, tree_path: Tuple[str, ...], json_dict: Dict[str, Any], group: Any,
@@ -172,8 +172,8 @@ class FabCQtoFC(object):
             print(error_message)
             assert False, error_message
 
-        steps_document: Any = self.steps_document
-        project_document: Any = self.project_document
+        steps_document: Any = self.StepsDocument
+        project_document: Any = self.ProjectDocument
         job: Any = None
         normal: Any = None
 
@@ -187,8 +187,8 @@ class FabCQtoFC(object):
                 "_FilePath", json_dict, str, tree_path, "Document._File_Path"))
             if indent:
                 print(f"{indent} _FilePath: {file_path}")
-            self.project_document = project_document
-            self.all_documents.append(project_document)
+            self.ProjectDocument = project_document
+            self.AllDocuments.append(project_document)
         elif kind == "Assembly":
             if group:
                 group = group.newObject("App::DocumentObjectGroup", label)
@@ -221,11 +221,11 @@ class FabCQtoFC(object):
 
             # Install *link* into *group*.  Complete the link later on using *pending_links*:
             link: Any = group.newObject("App::Link", label)
-            self.pending_links.append((link, part))
+            self.PendingLinks.append((link, part))
 
-            self.current_part = part
-            self.current_link = link
-            self.current_job = None
+            self.CurrentPart = part
+            self.CurrentLink = link
+            self.CurrentJob = None
             self.current_normal = None
         elif kind == "Mount":
             contact_list: List[float] = cast(
@@ -242,14 +242,14 @@ class FabCQtoFC(object):
                 print(f"{indent} _Normal: {normal}")
                 print(f"{indent} _Orient: {orient}")
 
-            job = PathJob.Create('Job', [self.current_part], None)
-            job_name: str = f"{self.current_part.Label}_{label}"
+            job = PathJob.Create('Job', [self.CurrentPart], None)
+            job_name: str = f"{self.CurrentPart.Label}_{label}"
             gcode_path: str = f"/tmp/{job_name}.ngc"
             job.PostProcessorOutputFile = gcode_path
             job.PostProcessor = 'grbl'
             job.PostProcessorArgs = '--no-show-editor'
             job.Label = job_name
-            self.current_job = job
+            self.CurrentJob = job
             self.current_normal = normal
 
             if App.GuiUp:  # type: ignore
@@ -330,12 +330,12 @@ class FabCQtoFC(object):
                     print(f"{tracing}<=contour()=>{profile}")
                 return profile
 
-            job = self.current_job
+            job = self.CurrentJob
             normal = self.current_normal
             assert job is not None, "No job present"
 
             if contour:
-                profile: Any = do_contour(self.current_part, f"{job.Label}_profile", job, normal,
+                profile: Any = do_contour(self.CurrentPart, f"{job.Label}_profile", job, normal,
                                           start_depth, step_down, final_depth, tracing=indent)
                 _ = profile
 
@@ -376,7 +376,8 @@ def main() -> None:
     environ = cast(Dict[str, str], os.environ)
     json_file_name: str = environ["JSON"] if "JSON" in environ else "/tmp/TestProject.json"
     cnc: bool = "CNC" in environ
-    json_reader: FabCQtoFC = FabCQtoFC(Path(json_file_name), cnc)
+    tools_path: Optional[Path] = Path(".") / "Tools" if cnc else None
+    json_reader: FabCQtoFC = FabCQtoFC(Path(json_file_name), tools_path)
     json_reader.process(indent="  ", tracing="")
     if not App.GuiUp:  # type: ignore
         sys.exit()
