@@ -183,7 +183,7 @@ class FabCQtoFC(object):
         if kind == "Project":
             pass
         elif kind == "Document":
-            self.process_document(json_dict, label, indent, tree_path)
+            self.process_document(json_dict, label, indent, tree_path, tracing=next_tracing)
         elif kind == "Assembly":
             if group:
                 group = group.newObject("App::DocumentObjectGroup", label)
@@ -223,42 +223,7 @@ class FabCQtoFC(object):
             self.CurrentJob = None
             self.current_normal = None
         elif kind == "Mount":
-            contact_list: List[float] = cast(
-                list, self.key_verify("_Contact", json_dict, list, tree_path, "Solid._Contact"))
-            normal_list: List[float] = cast(
-                list, self.key_verify("_Normal", json_dict, list, tree_path, "Solid._Normal"))
-            orient_list: List[float] = cast(
-                list, self.key_verify("_Orient", json_dict, list, tree_path, "Solid._Orient"))
-            contact: Vector = Vector(contact_list)
-            normal = Vector(normal_list)
-            orient: Vector = Vector(orient_list)
-            if indent:
-                print(f"{indent} _Contact: {contact}")
-                print(f"{indent} _Normal: {normal}")
-                print(f"{indent} _Orient: {orient}")
-
-            job = PathJob.Create('Job', [self.CurrentPart], None)
-            job_name: str = f"{self.CurrentPart.Label}_{label}"
-            gcode_path: str = f"/tmp/{job_name}.ngc"
-            job.PostProcessorOutputFile = gcode_path
-            job.PostProcessor = 'grbl'
-            job.PostProcessorArgs = '--no-show-editor'
-            job.Label = job_name
-            self.CurrentJob = job
-            self.current_normal = normal
-
-            if App.GuiUp:  # type: ignore
-                proxy: Any = PathJobGui.ViewProvider(job.ViewObject)
-                # The statement below causes a bunch of rearrangement of the FreeCAD
-                # object tree to push all off the Path related object to be under the
-                # FreeCAD Path Job object.  This is really nice because it provides
-                # the ability toggle the path trace visibility in one place.  The lovely
-                # line below triggers a call to  PathJob.ObjectJob.__set__state__() method.
-                # Which appears to do the rearrangement.  Unfortunately, this rearrangement
-                # does not occur in embedded mode, so the resulting object trees look
-                # quite different.  This is the FreeCAD way.
-                job.ViewObject.Proxy = proxy  # This assignment rearranges the Job.
-
+            self.process_mount(json_dict, label, indent, tree_path, tracing=next_tracing)
         elif kind == "Extrude":
             contour = cast(bool, self.key_verify("_Contour", json_dict, bool, tree_path,
                                                  "Extrude._Contour"))
@@ -382,6 +347,52 @@ class FabCQtoFC(object):
             self.AllDocuments.append(project_document)
         if tracing:
             print(f"{tracing}<=FabCQtoFC.process_document(*, '{label}', {tree_path})")
+
+    # FabCQtoFC.process_mount():
+    def process_mount(self, json_dict: Dict[str, Any], label: str,
+                      indent: str, tree_path: Tuple[str, ...], tracing: str = "") -> None:
+        """Process a Mount JSON node."""
+
+        if tracing:
+            print(f"{tracing}=>FabCQtotFC.process_mount(*, {label}, {tree_path})")
+        contact_list: List[float] = cast(
+            list, self.key_verify("_Contact", json_dict, list, tree_path, "Solid._Contact"))
+        normal_list: List[float] = cast(
+            list, self.key_verify("_Normal", json_dict, list, tree_path, "Solid._Normal"))
+        orient_list: List[float] = cast(
+            list, self.key_verify("_Orient", json_dict, list, tree_path, "Solid._Orient"))
+        contact: Vector = Vector(contact_list)
+        normal = Vector(normal_list)
+        orient: Vector = Vector(orient_list)
+        if indent:
+            print(f"{indent} _Contact: {contact}")
+            print(f"{indent} _Normal: {normal}")
+            print(f"{indent} _Orient: {orient}")
+
+        job = PathJob.Create('Job', [self.CurrentPart], None)
+        job_name: str = f"{self.CurrentPart.Label}_{label}"
+        gcode_path: str = f"/tmp/{job_name}.ngc"
+        job.PostProcessorOutputFile = gcode_path
+        job.PostProcessor = 'grbl'
+        job.PostProcessorArgs = '--no-show-editor'
+        job.Label = job_name
+        self.CurrentJob = job
+        self.current_normal = normal
+
+        if App.GuiUp:  # type: ignore
+            proxy: Any = PathJobGui.ViewProvider(job.ViewObject)
+            # The statement below causes a bunch of rearrangement of the FreeCAD
+            # object tree to push all off the Path related object to be under the
+            # FreeCAD Path Job object.  This is really nice because it provides
+            # the ability toggle the path trace visibility in one place.  The lovely
+            # line below triggers a call to  PathJob.ObjectJob.__set__state__() method.
+            # Which appears to do the rearrangement.  Unfortunately, this rearrangement
+            # does not occur in embedded mode, so the resulting object trees look
+            # quite different.  This is the FreeCAD way.
+            job.ViewObject.Proxy = proxy  # This assignment rearranges the Job.
+
+        if tracing:
+            print(f"{tracing}<=FabCQtotFC.process_mount(*, {label}, {tree_path})")
 
 
 # main():
