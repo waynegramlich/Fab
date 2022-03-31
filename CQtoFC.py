@@ -123,29 +123,31 @@ class FabCQtoFC(object):
         if tracing:
             print(f"{tracing}<=FabCQtFC.process({str(self.JsonPath), {self.ToolsPath}})")
 
+    # FabCQtoFC.type_verify():
+    def type_verify(self, value: Any, value_type: type,
+                    tree_path: Tuple[str, ...], tag: str) -> None:
+        """Verify JSON type."""
+        if not isinstance(value, value_type):
+            message: str = f"{tree_path}: {tag}: Got {type(value)}, not {value_type}"
+            print(message)
+            assert False, message
+
+    # FabCQtoFC.key_verify():
+    def key_verify(self, key: str, table: Dict[str, Any], key_type: type,
+                   tree_path: Tuple[str, ...], tag: str) -> Any:
+        """Verify key is in dictionary and has correct type."""
+        if key not in table:
+            message: str = f"{tree_path}: {tag}: '{key}' is not one of {tuple(table.keys())}'"
+            print(message)
+            assert False, message
+        value: Any = table[key]
+        self.type_verify(value, key_type, tree_path, tag)
+        return value
+
     # FabCQtoFC.node_process():
     def node_process(self, tree_path: Tuple[str, ...], json_dict: Dict[str, Any], group: Any,
                      indent: str = "", tracing: str = "") -> None:
         """Process one 'node' of JSON content."""
-
-        def type_verify(value: Any, value_type: type,
-                        tree_path: Tuple[str, ...], tag: str) -> None:
-            """Verify JSON type."""
-            if not isinstance(value, value_type):
-                message: str = f"{tree_path}: {tag}: Got {type(value)}, not {value_type}"
-                print(message)
-                assert False, message
-
-        def key_verify(key: str, table: Dict[str, Any], key_type: type,
-                       tree_path: Tuple[str, ...], tag: str) -> Any:
-            """Verify key is in dictionary and has correct type."""
-            if key not in table:
-                message: str = f"{tree_path}: {tag}: '{key}' is not one of {tuple(table.keys())}'"
-                print(message)
-                assert False, message
-            value: Any = table[key]
-            type_verify(value, key_type, tree_path, tag)
-            return value
 
         # Set up *tracing* and pretty print *indent*:
         next_tracing: str = tracing + "  " if tracing else ""
@@ -156,9 +158,9 @@ class FabCQtoFC(object):
 
         # Do some sanity checking:
         error_message: str
-        type_verify(json_dict, dict, tree_path, "json_dict")
-        kind = cast(str, key_verify("Kind", json_dict, str, tree_path, "Kind"))
-        label = cast(str, key_verify("Label", json_dict, str, tree_path, "Label"))
+        self.type_verify(json_dict, dict, tree_path, "json_dict")
+        kind = cast(str, self.key_verify("Kind", json_dict, str, tree_path, "Kind"))
+        label = cast(str, self.key_verify("Label", json_dict, str, tree_path, "Label"))
         if indent:
             print(f"{indent}{label}:")
             print(f"{indent} Kind: {kind}")
@@ -183,7 +185,7 @@ class FabCQtoFC(object):
         elif kind == "Document":
             project_document = App.newDocument(label)  # type: ignore
             project_document.Label = label
-            file_path: str = cast(str, key_verify(
+            file_path: str = cast(str, self.key_verify(
                 "_FilePath", json_dict, str, tree_path, "Document._File_Path"))
             if indent:
                 print(f"{indent} _FilePath: {file_path}")
@@ -195,8 +197,8 @@ class FabCQtoFC(object):
             else:
                 group = project_document.addObject("App::DocumentObjectGroup", label)
         elif kind == "Solid":
-            step_file: str = cast(str,
-                                  key_verify("_Step", json_dict, str, tree_path, "Solid._step"))
+            step_file: str = cast(str, self.key_verify("_Step",
+                                                       json_dict, str, tree_path, "Solid._step"))
             if indent:
                 print(f"{indent} _Step: {step_file}")
             # This code currently trys to work with object in a seperate *steps_document* and
@@ -229,11 +231,11 @@ class FabCQtoFC(object):
             self.current_normal = None
         elif kind == "Mount":
             contact_list: List[float] = cast(
-                list, key_verify("_Contact", json_dict, list, tree_path, "Solid._Contact"))
+                list, self.key_verify("_Contact", json_dict, list, tree_path, "Solid._Contact"))
             normal_list: List[float] = cast(
-                list, key_verify("_Normal", json_dict, list, tree_path, "Solid._Normal"))
+                list, self.key_verify("_Normal", json_dict, list, tree_path, "Solid._Normal"))
             orient_list: List[float] = cast(
-                list, key_verify("_Orient", json_dict, list, tree_path, "Solid._Orient"))
+                list, self.key_verify("_Orient", json_dict, list, tree_path, "Solid._Orient"))
             contact: Vector = Vector(contact_list)
             normal = Vector(normal_list)
             orient: Vector = Vector(orient_list)
@@ -265,18 +267,18 @@ class FabCQtoFC(object):
                 job.ViewObject.Proxy = proxy  # This assignment rearranges the Job.
 
         elif kind == "Extrude":
-            contour = cast(bool, key_verify("_Contour", json_dict, bool, tree_path,
-                                            "Extrude._Contour"))
-            depth = cast(float, key_verify("_Depth", json_dict, float, tree_path,
-                                           "Extrude._Depth"))
-            final_depth = cast(float, key_verify("_FinalDepth", json_dict, float, tree_path,
-                                                 "Extrude._FinalDepth"))
-            step_down = cast(float, key_verify("_StepDown", json_dict, float, tree_path,
-                                               "Extrude._StepDown"))
-            step_file = cast(str, key_verify("_StepFile", json_dict, str, tree_path,
-                                             "Extrude._StepFile"))
-            start_depth = cast(float, key_verify("_StartDepth", json_dict, float, tree_path,
-                                                 "Extrude._StartDepth"))
+            contour = cast(bool, self.key_verify("_Contour", json_dict, bool, tree_path,
+                                                 "Extrude._Contour"))
+            depth = cast(float, self.key_verify("_Depth", json_dict, float, tree_path,
+                                                "Extrude._Depth"))
+            final_depth = cast(float, self.key_verify("_FinalDepth", json_dict, float, tree_path,
+                                                      "Extrude._FinalDepth"))
+            step_down = cast(float, self. key_verify("_StepDown", json_dict, float, tree_path,
+                                                     "Extrude._StepDown"))
+            step_file = cast(str, self.key_verify("_StepFile", json_dict, str, tree_path,
+                                                  "Extrude._StepFile"))
+            start_depth = cast(float, self.key_verify("_StartDepth", json_dict, float, tree_path,
+                                                      "Extrude._StartDepth"))
             if indent:
                 print(f"{indent} _Contour: {bool}")
                 print(f"{indent} _Depth: {depth}")
@@ -340,8 +342,10 @@ class FabCQtoFC(object):
                 _ = profile
 
         elif kind == "Pocket":
-            depth = cast(float, key_verify("_Depth", json_dict, float, tree_path, "Extrude._Depth"))
-            step_file = cast(str, key_verify("_Step", json_dict, str, tree_path, "Pocket._Step"))
+            depth = cast(float,
+                         self.key_verify("_Depth", json_dict, float, tree_path, "Extrude._Depth"))
+            step_file = cast(str,
+                             self.key_verify("_Step", json_dict, str, tree_path, "Pocket._Step"))
             if indent:
                 print(f"{indent} _Depth: {depth}")
                 print(f"{indent} _Step: {step_file}")
@@ -354,14 +358,15 @@ class FabCQtoFC(object):
 
         if "children" in json_dict:
             children = cast(List[Dict[str, Any]],
-                            key_verify("children", json_dict, list, tree_path, "Children"))
+                            self.key_verify("children", json_dict, list, tree_path, "Children"))
             if indent:
                 print(f"{indent} children ({len(children)}):")
 
             child_dict: Dict[str, Any]
             for child_dict in children:
-                type_verify(child_dict, dict, tree_path, "Child")
-                child_name = cast(str, key_verify("Label", child_dict, str, tree_path, "Label"))
+                self.type_verify(child_dict, dict, tree_path, "Child")
+                child_name = cast(str,
+                                  self.key_verify("Label", child_dict, str, tree_path, "Label"))
                 child_tree_path: Tuple[str, ...] = tree_path + (child_name,)
                 self.node_process(child_tree_path, child_dict, group,
                                   indent=next_indent, tracing=next_tracing)
