@@ -183,14 +183,7 @@ class FabCQtoFC(object):
         if kind == "Project":
             pass
         elif kind == "Document":
-            project_document = App.newDocument(label)  # type: ignore
-            project_document.Label = label
-            file_path: str = cast(str, self.key_verify(
-                "_FilePath", json_dict, str, tree_path, "Document._File_Path"))
-            if indent:
-                print(f"{indent} _FilePath: {file_path}")
-            self.ProjectDocument = project_document
-            self.AllDocuments.append(project_document)
+            self.process_document(json_dict, label, indent, tree_path)
         elif kind == "Assembly":
             if group:
                 group = group.newObject("App::DocumentObjectGroup", label)
@@ -370,9 +363,25 @@ class FabCQtoFC(object):
                 child_tree_path: Tuple[str, ...] = tree_path + (child_name,)
                 self.node_process(child_tree_path, child_dict, group,
                                   indent=next_indent, tracing=next_tracing)
-
         if tracing:
             print(f"{tracing}<=FabCQtoFC.child_process({tree_path}, '{indent}')")
+
+    # FabCQtoFC.process_docuement():
+    def process_document(self, json_dict: Dict[str, Any], label: str,
+                         indent: str, tree_path: Tuple[str, ...], tracing: str = "") -> None:
+        """Process a Document JSON node."""
+        if tracing:
+            print(f"{tracing}=>FabCQtoFC.process_document(*, '{label}', {tree_path})")
+        file_path: str = cast(str, self.key_verify(
+            "_FilePath", json_dict, str, tree_path, "Document._File_Path"))
+        project_document = App.newDocument(label)  # type: ignore
+        project_document.Label = label
+        if indent:
+            print(f"{indent} _FilePath: {file_path}")
+            self.ProjectDocument = project_document
+            self.AllDocuments.append(project_document)
+        if tracing:
+            print(f"{tracing}<=FabCQtoFC.process_document(*, '{label}', {tree_path})")
 
 
 # main():
