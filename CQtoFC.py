@@ -175,8 +175,6 @@ class FabCQtoFC(object):
             print(error_message)
             assert False, error_message
 
-        steps_document: Any = self.StepsDocument
-        project_document: Any = self.ProjectDocument
         job: Any = None
         normal: Any = None
 
@@ -186,10 +184,7 @@ class FabCQtoFC(object):
         elif kind == "Document":
             self.process_document(json_dict, label, indent, tree_path, tracing=next_tracing)
         elif kind == "Assembly":
-            if self.CurrentGroup:
-                self.CurrentGroup = self.CurrentGroup.newObject("App::DocumentObjectGroup", label)
-            else:
-                self.CurrentGroup = project_document.addObject("App::DocumentObjectGroup", label)
+            self.process_assembly(json_dict, label, indent, tree_path, tracing=next_tracing)
         elif kind == "Solid":
             step_file: str = cast(str, self.key_verify("_Step",
                                                        json_dict, str, tree_path, "Solid._step"))
@@ -198,7 +193,7 @@ class FabCQtoFC(object):
             # This code currently trys to work with object in a seperate *steps_document* and
             # the main *project_document*.  Change the conditional to switch between.
             use_project_document: bool = True
-            document: Any = project_document if use_project_document else steps_document
+            document: Any = self.ProjectDocument if use_project_document else self.StepsDocument
             before_size: int = len(document.RootObjects)
             FCImport.insert(step_file, document.Label)
             after_size: int = len(document.RootObjects)
@@ -330,7 +325,19 @@ class FabCQtoFC(object):
         if tracing:
             print(f"{tracing}<=FabCQtoFC.child_process({tree_path}, '{indent}')")
 
-    # FabCQtoFC.process_docuement():
+    # FabCQtoFC.process_assembly():
+    def process_assembly(self, json_dict: Dict[str, Any], label: str,
+                         indent: str, tree_path: Tuple[str, ...], tracing: str = "") -> None:
+        if tracing:
+            print(f"{tracing}=>FabCQtoFC.process_assembly(*, '{label}', {tree_path})")
+        if self.CurrentGroup:
+            self.CurrentGroup = self.CurrentGroup.newObject("App::DocumentObjectGroup", label)
+        else:
+            self.CurrentGroup = self.ProjectDocument.addObject("App::DocumentObjectGroup", label)
+        if tracing:
+            print(f"{tracing}<=FabCQtoFC.process_assembly(*, '{label}', {tree_path})")
+
+    # FabCQtoFC.process_document():
     def process_document(self, json_dict: Dict[str, Any], label: str,
                          indent: str, tree_path: Tuple[str, ...], tracing: str = "") -> None:
         """Process a Document JSON node."""
