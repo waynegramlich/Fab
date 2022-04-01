@@ -62,6 +62,7 @@ class FabCQtoFC(object):
     CurrentPart: Any = None
     CurrentLink: Any = None
     CurrentJob: Any = None
+    CurrentGroup: Any = None
 
     # FabCQtoFC.__post_init__():
     def __post_init__(self) -> None:
@@ -103,7 +104,7 @@ class FabCQtoFC(object):
         # Recursively walk the tree starting at *json_root*:
         if tracing:
             print(f"{tracing}Processing {str(self.JsonPath)}")
-        self.node_process(("Root",), json_root, group=None, indent=indent, tracing=next_tracing)
+        self.node_process(("Root",), json_root, indent=indent, tracing=next_tracing)
 
         # Save *all_documents*:
         document: Any
@@ -145,7 +146,7 @@ class FabCQtoFC(object):
         return value
 
     # FabCQtoFC.node_process():
-    def node_process(self, tree_path: Tuple[str, ...], json_dict: Dict[str, Any], group: Any,
+    def node_process(self, tree_path: Tuple[str, ...], json_dict: Dict[str, Any],
                      indent: str = "", tracing: str = "") -> None:
         """Process one 'node' of JSON content."""
 
@@ -185,10 +186,10 @@ class FabCQtoFC(object):
         elif kind == "Document":
             self.process_document(json_dict, label, indent, tree_path, tracing=next_tracing)
         elif kind == "Assembly":
-            if group:
-                group = group.newObject("App::DocumentObjectGroup", label)
+            if self.CurrentGroup:
+                self.CurrentGroup = self.CurrentGroup.newObject("App::DocumentObjectGroup", label)
             else:
-                group = project_document.addObject("App::DocumentObjectGroup", label)
+                self.CurrentGroup = project_document.addObject("App::DocumentObjectGroup", label)
         elif kind == "Solid":
             step_file: str = cast(str, self.key_verify("_Step",
                                                        json_dict, str, tree_path, "Solid._step"))
@@ -215,7 +216,7 @@ class FabCQtoFC(object):
                 gui_step_object.Visibility = False
 
             # Install *link* into *group*.  Complete the link later on using *pending_links*:
-            link: Any = group.newObject("App::Link", label)
+            link: Any = self.CurrentGroup.newObject("App::Link", label)
             self.PendingLinks.append((link, part))
 
             self.CurrentPart = part
@@ -312,8 +313,6 @@ class FabCQtoFC(object):
             print(message)
             assert False, message
 
-        self.group = group
-
         if "children" in json_dict:
             children = cast(List[Dict[str, Any]],
                             self.key_verify("children", json_dict, list, tree_path, "Children"))
@@ -326,7 +325,7 @@ class FabCQtoFC(object):
                 child_name = cast(str,
                                   self.key_verify("Label", child_dict, str, tree_path, "Label"))
                 child_tree_path: Tuple[str, ...] = tree_path + (child_name,)
-                self.node_process(child_tree_path, child_dict, group,
+                self.node_process(child_tree_path, child_dict,
                                   indent=next_indent, tracing=next_tracing)
         if tracing:
             print(f"{tracing}<=FabCQtoFC.child_process({tree_path}, '{indent}')")
