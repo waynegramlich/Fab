@@ -63,6 +63,7 @@ class FabCQtoFC(object):
     CurrentLink: Any = None
     CurrentJob: Any = None
     CurrentGroup: Any = None
+    CurrentNormal: Any = None
 
     # FabCQtoFC.__post_init__():
     def __post_init__(self) -> None:
@@ -73,6 +74,7 @@ class FabCQtoFC(object):
         self.PendingLinks = []
         self.PendingLinks: List[Tuple[Any, Any]] = []
         self.ProjectDocument = None
+        self.CurrentNormal = None
 
     # FabCQtoFC.process():
     def process(self, indent: str = "", tracing: str = "") -> None:
@@ -186,38 +188,7 @@ class FabCQtoFC(object):
         elif kind == "Assembly":
             self.process_assembly(json_dict, label, indent, tree_path, tracing=next_tracing)
         elif kind == "Solid":
-            step_file: str = cast(str, self.key_verify("_Step",
-                                                       json_dict, str, tree_path, "Solid._step"))
-            if indent:
-                print(f"{indent} _Step: {step_file}")
-            # This code currently trys to work with object in a seperate *steps_document* and
-            # the main *project_document*.  Change the conditional to switch between.
-            use_project_document: bool = True
-            document: Any = self.ProjectDocument if use_project_document else self.StepsDocument
-            before_size: int = len(document.RootObjects)
-            FCImport.insert(step_file, document.Label)
-            after_size: int = len(document.RootObjects)
-            assert before_size + 1 == after_size, (before_size, after_size)
-            part: Any = document.getObject(label)
-            part.Label = f"{label}_Step"
-            step_object: Any = document.RootObjects[before_size]
-            step_object.Label = label
-
-            # When the STEP files are colocated with the assemblies and such, the visibiliy
-            # of the associated *gui_step_object* needs to be disabled.
-            if use_project_document and App.GuiUp:  # type: ignore
-                gui_document: Any = Gui.getDocument(document.Label)  # type: ignore
-                gui_step_object: Any = gui_document.getObject(label)
-                gui_step_object.Visibility = False
-
-            # Install *link* into *group*.  Complete the link later on using *pending_links*:
-            link: Any = self.CurrentGroup.newObject("App::Link", label)
-            self.PendingLinks.append((link, part))
-
-            self.CurrentPart = part
-            self.CurrentLink = link
-            self.CurrentJob = None
-            self.current_normal = None
+            self.process_solid(json_dict, label, indent, tree_path, tracing=next_tracing)
         elif kind == "Mount":
             self.process_mount(json_dict, label, indent, tree_path, tracing=next_tracing)
         elif kind == "Extrude":
@@ -287,7 +258,7 @@ class FabCQtoFC(object):
                 return profile
 
             job = self.CurrentJob
-            normal = self.current_normal
+            normal = self.CurrentNormal
             assert job is not None, "No job present"
 
             if contour:
@@ -383,7 +354,7 @@ class FabCQtoFC(object):
         job.PostProcessorArgs = '--no-show-editor'
         job.Label = job_name
         self.CurrentJob = job
-        self.current_normal = normal
+        self.CurrentNormal = normal
 
         if App.GuiUp:  # type: ignore
             proxy: Any = PathJobGui.ViewProvider(job.ViewObject)
@@ -399,6 +370,50 @@ class FabCQtoFC(object):
 
         if tracing:
             print(f"{tracing}<=FabCQtotFC.process_mount(*, {label}, {tree_path})")
+
+    # CQtoFC.process_solid():
+    def process_solid(self, json_dict: Dict[str, Any], label: str,
+                      indent: str, tree_path: Tuple[str, ...], tracing: str = "") -> None:
+        """Process a Solid JSON node."""
+        if tracing:
+            print(f"{tracing}=>FabCQtotFC.process_solid(*, {label}, {tree_path})")
+
+        step_file: str = cast(str, self.key_verify("_Step",
+                                                   json_dict, str, tree_path, "Solid._step"))
+        if indent:
+            print(f"{indent} _Step: {step_file}")
+
+        # This code currently trys to work with object in a seperate *steps_document* and
+        # the main *project_document*.  Change the conditional to switch between.
+        use_project_document: bool = True
+        document: Any = self.ProjectDocument if use_project_document else self.StepsDocument
+        before_size: int = len(document.RootObjects)
+        FCImport.insert(step_file, document.Label)
+        after_size: int = len(document.RootObjects)
+        assert before_size + 1 == after_size, (before_size, after_size)
+        part: Any = document.getObject(label)
+        part.Label = f"{label}_Step"
+        step_object: Any = document.RootObjects[before_size]
+        step_object.Label = label
+
+        # When the STEP files are colocated with the assemblies and such, the visibiliy
+        # of the associated *gui_step_object* needs to be disabled.
+        if use_project_document and App.GuiUp:  # type: ignore
+            gui_document: Any = Gui.getDocument(document.Label)  # type: ignore
+            gui_step_object: Any = gui_document.getObject(label)
+            gui_step_object.Visibility = False
+
+        # Install *link* into *group*.  Complete the link later on using *pending_links*:
+        link: Any = self.CurrentGroup.newObject("App::Link", label)
+        self.PendingLinks.append((link, part))
+
+        self.CurrentPart = part
+        self.CurrentLink = link
+        self.CurrentJob = None
+        self.CurrentNormal = None
+
+        if tracing:
+            print(f"{tracing}<=FabCQtotFC.process_solid(*, {label}, {tree_path})")
 
 
 # main():
