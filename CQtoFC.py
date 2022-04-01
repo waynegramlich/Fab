@@ -177,9 +177,6 @@ class FabCQtoFC(object):
             print(error_message)
             assert False, error_message
 
-        job: Any = None
-        normal: Any = None
-
         # Dispatch on *kind*:
         if kind == "Project":
             pass
@@ -192,80 +189,7 @@ class FabCQtoFC(object):
         elif kind == "Mount":
             self.process_mount(json_dict, label, indent, tree_path, tracing=next_tracing)
         elif kind == "Extrude":
-            contour = cast(bool, self.key_verify("_Contour", json_dict, bool, tree_path,
-                                                 "Extrude._Contour"))
-            depth = cast(float, self.key_verify("_Depth", json_dict, float, tree_path,
-                                                "Extrude._Depth"))
-            final_depth = cast(float, self.key_verify("_FinalDepth", json_dict, float, tree_path,
-                                                      "Extrude._FinalDepth"))
-            step_down = cast(float, self. key_verify("_StepDown", json_dict, float, tree_path,
-                                                     "Extrude._StepDown"))
-            step_file = cast(str, self.key_verify("_StepFile", json_dict, str, tree_path,
-                                                  "Extrude._StepFile"))
-            start_depth = cast(float, self.key_verify("_StartDepth", json_dict, float, tree_path,
-                                                      "Extrude._StartDepth"))
-            if indent:
-                print(f"{indent} _Contour: {bool}")
-                print(f"{indent} _Depth: {depth}")
-                print(f"{indent} _FinalDepth: {final_depth}")
-                print(f"{indent} _StartDepth: {start_depth}")
-                print(f"{indent} _StepDown: {step_down}")
-                print(f"{indent} _StepFile: {step_file}")
-
-            def top_faces(obj: Any, normal: Vector, tracing: str = "") -> List[str]:
-                """Return top faces."""
-                if tracing:
-                    print(f"{tracing}=>top_faces({obj}, {normal})")
-                assert hasattr(obj, "Shape")
-                shape = obj.Shape
-                top_face_names: List[str] = []
-                face_index: int
-                epsilon: float = 1.0e-8
-                for face_index in range(len(shape.Faces)):
-                    face_name: str = f"Face{face_index+1}"
-                    face: Any = shape.getElement(face_name)
-                    # if face.Surface.Axis == Vector(0, 0, 1) and face.Orientation == 'Forward':
-                    normal_error: float = abs((face.Surface.Axis - normal).Length)
-                    if normal_error < epsilon and face.Orientation == 'Forward':
-                        top_face_names.append(face_name)
-                if tracing:
-                    print(f"{tracing}<=top_faces({obj}, {normal})=>{top_face_names}")
-                return top_face_names
-
-            def do_contour(obj: Any, name: str, job: Any, normal: Vector,
-                           start_depth: float, step: float, final_depth: float,
-                           tracing: str = "") -> Any:
-                """Create an exterior contour."""
-                next_tracing: str = tracing + " " if tracing else ""
-                if tracing:
-                    print(f"{tracing}=>contour({obj=}, {name=}, {job=}, {normal=})")
-                top_face_names: List[str] = top_faces(obj, normal, tracing=next_tracing)
-                if top_face_names:
-                    profile = PathProfile.Create(name)
-                    profile.Base = (obj, top_face_names[0])
-                    profile.setExpression('StepDown', None)
-                    profile.StepDown = step_down
-                    profile.setExpression('StartDepth', None)
-                    profile.StartDepth = start_depth
-                    profile.setExpression('FinalDepth', None)
-                    profile.FinalDepth = final_depth
-                    profile.processHoles = False
-                    profile.processPerimeter = True
-
-                    profile.recompute()
-                if tracing:
-                    print(f"{tracing}<=contour()=>{profile}")
-                return profile
-
-            job = self.CurrentJob
-            normal = self.CurrentNormal
-            assert job is not None, "No job present"
-
-            if contour:
-                profile: Any = do_contour(self.CurrentPart, f"{job.Label}_profile", job, normal,
-                                          start_depth, step_down, final_depth, tracing=indent)
-                _ = profile
-
+            self.process_extrude(json_dict, label, indent, tree_path, tracing=next_tracing)
         elif kind == "Pocket":
             depth = cast(float,
                          self.key_verify("_Depth", json_dict, float, tree_path, "Extrude._Depth"))
@@ -279,6 +203,7 @@ class FabCQtoFC(object):
             print(message)
             assert False, message
 
+        # Recursively process any *chidren* JSON nodes:
         if "children" in json_dict:
             children = cast(List[Dict[str, Any]],
                             self.key_verify("children", json_dict, list, tree_path, "Children"))
@@ -324,6 +249,89 @@ class FabCQtoFC(object):
             self.AllDocuments.append(project_document)
         if tracing:
             print(f"{tracing}<=FabCQtoFC.process_document(*, '{label}', {tree_path})")
+
+    # FabCQtoFC.process_extrude():
+    def process_extrude(self, json_dict: Dict[str, Any], label: str,
+                        indent: str, tree_path: Tuple[str, ...], tracing: str = "") -> None:
+        """Process an Extrude JSON node."""
+        if tracing:
+            print(f"{tracing}=>FabCQtoFC.process_extrude(*, '{label}', {tree_path})")
+        contour = cast(bool, self.key_verify("_Contour", json_dict, bool, tree_path,
+                                             "Extrude._Contour"))
+        depth = cast(float, self.key_verify("_Depth", json_dict, float, tree_path,
+                                            "Extrude._Depth"))
+        final_depth = cast(float, self.key_verify("_FinalDepth", json_dict, float, tree_path,
+                                                  "Extrude._FinalDepth"))
+        step_down = cast(float, self. key_verify("_StepDown", json_dict, float, tree_path,
+                                                 "Extrude._StepDown"))
+        step_file = cast(str, self.key_verify("_StepFile", json_dict, str, tree_path,
+                                              "Extrude._StepFile"))
+        start_depth = cast(float, self.key_verify("_StartDepth", json_dict, float, tree_path,
+                                                  "Extrude._StartDepth"))
+        if indent:
+            print(f"{indent} _Contour: {bool}")
+            print(f"{indent} _Depth: {depth}")
+            print(f"{indent} _FinalDepth: {final_depth}")
+            print(f"{indent} _StartDepth: {start_depth}")
+            print(f"{indent} _StepDown: {step_down}")
+            print(f"{indent} _StepFile: {step_file}")
+
+        def top_faces(obj: Any, normal: Vector, tracing: str = "") -> List[str]:
+            """Return top faces."""
+            if tracing:
+                print(f"{tracing}=>top_faces({obj}, {normal})")
+            assert hasattr(obj, "Shape")
+            shape = obj.Shape
+            top_face_names: List[str] = []
+            face_index: int
+            epsilon: float = 1.0e-8
+            for face_index in range(len(shape.Faces)):
+                face_name: str = f"Face{face_index+1}"
+                face: Any = shape.getElement(face_name)
+                # if face.Surface.Axis == Vector(0, 0, 1) and face.Orientation == 'Forward':
+                normal_error: float = abs((face.Surface.Axis - normal).Length)
+                if normal_error < epsilon and face.Orientation == 'Forward':
+                    top_face_names.append(face_name)
+            if tracing:
+                print(f"{tracing}<=top_faces({obj}, {normal})=>{top_face_names}")
+            return top_face_names
+
+        def do_contour(obj: Any, name: str, job: Any, normal: Vector,
+                       start_depth: float, step: float, final_depth: float,
+                       tracing: str = "") -> Any:
+            """Create an exterior contour."""
+            next_tracing: str = tracing + " " if tracing else ""
+            if tracing:
+                print(f"{tracing}=>contour({obj=}, {name=}, {job=}, {normal=})")
+            top_face_names: List[str] = top_faces(obj, normal, tracing=next_tracing)
+            if top_face_names:
+                profile = PathProfile.Create(name)
+                profile.Base = (obj, top_face_names[0])
+                profile.setExpression('StepDown', None)
+                profile.StepDown = step_down
+                profile.setExpression('StartDepth', None)
+                profile.StartDepth = start_depth
+                profile.setExpression('FinalDepth', None)
+                profile.FinalDepth = final_depth
+                profile.processHoles = False
+                profile.processPerimeter = True
+
+                profile.recompute()
+            if tracing:
+                print(f"{tracing}<=contour()=>{profile}")
+            return profile
+
+        job = self.CurrentJob
+        normal = self.CurrentNormal
+        assert job is not None, "No job present"
+
+        if contour:
+            profile: Any = do_contour(self.CurrentPart, f"{job.Label}_profile", job, normal,
+                                      start_depth, step_down, final_depth, tracing=indent)
+            _ = profile
+
+        if tracing:
+            print(f"{tracing}<=FabCQtoFC.process_extrude(*, '{label}', {tree_path})")
 
     # FabCQtoFC.process_mount():
     def process_mount(self, json_dict: Dict[str, Any], label: str,
