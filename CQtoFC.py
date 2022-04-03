@@ -25,20 +25,22 @@ import os
 from pathlib import Path as FilePath  # The Path library uses `Path`.
 import sys
 import Path  # type: ignore
-from typing import Any, cast, List, Dict, IO, Optional, Set, Tuple
+from typing import Any, cast, List, Dict, IO, Optional, Set, Tuple, Union
 
 from PathScripts import PathJob, PathProfile, PathPostProcessor, PathUtil  # type: ignore
+from PathScripts import PathToolController  # type: ignore
 _ = PathJob  # TODO: Remove
 _ = PathProfile  # TODO: Remove
 _ = PathPostProcessor  # TODO: Remove
 _ = PathUtil  # TODO: Remove
+_ = PathToolController  # TODO: Removea
 
 # This causes out flake8 to think App are defined.
 # It is actually present in the FreeCAD Python exectution envriorment.
 if False:
     App = None
 
-# Freecad has two different importers depending upon whether it is GUI mode or not.
+# FreeCAD has two different importers depending upon whether it is GUI mode or not.
 from FreeCAD import Vector  # type: ignore
 if App.GuiUp:  # type: ignore
     import FreeCADGui as Gui  # type: ignore
@@ -65,6 +67,8 @@ class FabCQtoFC(object):
     PendingLinks: List[Tuple[Any, Any]] = field(init=False, repr=False)
     ProjectDocument: Any = field(init=False, repr=False)
     StepsDocument: Any = field(init=False, repr=False)
+    ToolControllersTable: Dict[int, Any] = field(init=False, repr=False)
+    ToolNumbersTable: Dict[int, Any] = field(init=False, repr=False)
     ToolsTable: Dict[str, Any] = field(init=False, repr=False)
 
     # FabCQtoFC.__post_init__():
@@ -79,6 +83,8 @@ class FabCQtoFC(object):
         self.PendingLinks = []
         self.ProjectDocument = None
         self.StepsDocument = None
+        self.ToolControllersTable = {}
+        self.ToolNumbersTable = {}
         self.ToolsTable = {}
 
     # FabCQtoFC.read_tools_table():
@@ -222,6 +228,110 @@ class FabCQtoFC(object):
 
         if tracing:
             print(f"{tracing}<=FabCQtoFC.read_tools_table()")
+
+    # FabCQtoFC.get_tool_and_controller():
+    def get_tool_and_controller(
+            self, json_dict: Dict[str, Any], label: str, indent: str, tree_path: Tuple[str, ...],
+            tracing: str = "") -> Tuple[Any, Any]:
+        """Extract tool controller and associated tool bit from a JSON node."""
+        if tracing:
+            print(f"{tracing}=>FabCQtotFC.get_tool_and_controller(*, {label}, {tree_path})")
+        tool_controller_index = cast(
+            int, self.key_verify("ToolControllerIndex", json_dict, int,
+                                 tree_path, "get_tool_and controller.ToolControllerIndex"))
+        tool_controllers_table: Dict[int, Any] = self.ToolControllersTable
+        tool_controller: Any
+        if tool_controller_index in tool_controllers_table:
+            tool_controller = tool_controllers_table[tool_controller_index]
+        else:
+            # Extract the *tool_controller_dict* from *json_dict*:
+            tool_controller_dict = cast(
+                Dict[str, Any], self.key_verify(
+                    "ToolController", json_dict, dict,
+                    tree_path, "get_tool_and controller.ToolController"))
+
+            # Extract the tool controller fields from *json_dict*:
+            bit_name = cast(
+                str, self.key_verify(
+                    "BitName", tool_controller_dict, str,
+                    tree_path, "get_tool_and controller.BitName"))
+            cooling = cast(
+                str, self.key_verify(
+                    "Cooling", tool_controller_dict, str,
+                    tree_path, "get_tool_and controller.Cooling"))
+            horizontal_feed = cast(
+                float, self.key_verify(
+                    "HorizontalFeed", tool_controller_dict, float,
+                    tree_path, "get_tool_and controller.HoriztontalFeed"))
+            horizontal_rapid = cast(
+                float, self.key_verify(
+                    "HorizontalRapid", tool_controller_dict, float,
+                    tree_path, "get_tool_and controller.HoriztontalRapid"))
+            spindle_direction = cast(
+                bool, self.key_verify(
+                    "SpindleDirection", tool_controller_dict, bool,
+                    tree_path, f"get_tool_and controller.SpindleDirection {tool_controller_dict}"))
+            spindle_speed = cast(
+                float, self.key_verify(
+                    "SpindleSpeed", tool_controller_dict, float,
+                    tree_path, "get_tool_and controller.SpindleSpeed"))
+            tool_number = cast(
+                int, self.key_verify(
+                    "ToolNumber", tool_controller_dict, int,
+                    tree_path, "get_tool_and controller.ToolNumber"))
+            vertical_feed = cast(
+                float, self.key_verify(
+                    "VerticalFeed", tool_controller_dict, float,
+                    tree_path, "get_tool_and controller.VerticalFeed"))
+            vertical_rapid = cast(
+                float, self.key_verify(
+                    "VerticalRapid", tool_controller_dict, float,
+                    tree_path, "get_tool_and controller.VerticalRapid"))
+            _ = cooling  # Extremely weird, tool controllers do not cooling.
+
+            # Create the *tool_controller*:
+            tool_controller = PathToolController.Create(name=label)
+
+            # Look up the *tool* using *tool_number* and/or *bit_name*:
+            tool: Any
+            if tool_number in self.ToolNumbersTable:
+                tool = self.ToolNumbersTable[tool_number]
+            else:
+                tools_table: Dict[str, Any] = self.ToolsTable
+                if bit_name not in tools_table:
+                    raise RuntimeError(
+                        "FabCQtoFC.get_tool_and_controller(): No Tool bit named '{bit_name}'")
+                tool = tools_table[bit_name]
+                self.ToolNumbersTable[tool_number] = tool
+            tool_controller.Tool = tool
+
+            # A helper method to fill in the *tool_controller* fields:
+            def tool_controller_set(tool_controller: Any, attribute_name: str,
+                                    value: Union[int, str, float]) -> None:
+                """Set a field value in the tool controller."""
+                if hasattr(tool_controller, attribute_name):
+                    # Make sure that there is no expression present for *attribute_name*.
+                    # If this is not done, the following value set does not "take".
+                    tool_controller.setExpression(attribute_name, None)
+                    setattr(tool_controller, attribute_name, value)
+                else:
+                    raise RuntimeError(f"ToolController does not have Attribute {attribute_name}")
+
+            # Load up the contents of *tool_controller*:
+            tool_controller_set(tool_controller, "HorizFeed", horizontal_feed)
+            tool_controller_set(tool_controller, "HorizRapid", horizontal_rapid)
+            tool_controller_set(tool_controller, "SpindleDir", spindle_direction)
+            tool_controller_set(tool_controller, "SpindleSpeed", spindle_speed)
+            tool_controller_set(tool_controller, "ToolNumber", tool_number)
+            tool_controller.Tool = tool
+            tool_controller_set(tool_controller, "VertFeed", vertical_feed)
+            tool_controller_set(tool_controller, "VertRapid", vertical_rapid)
+            # Weird! There is to coolant field in a tool controller yet.
+            tool_controllers_table[tool_controller_index] = tool_controller
+
+        if tracing:
+            print(f"{tracing}<=FabCQtotFC.get_tool_and_controller(*, {label}, {tree_path})")
+        return (tool, tool_controller)
 
     # FabCQtoFC.process():
     def process(self, indent: str = "", tracing: str = "") -> None:
@@ -447,7 +557,7 @@ class FabCQtoFC(object):
 
         def do_contour(obj: Any, name: str, job: Any, normal: Vector,
                        start_depth: float, step: float, final_depth: float,
-                       tracing: str = "") -> Any:
+                       tool_controller: Any, tracing: str = "") -> Any:
             """Create an exterior contour."""
             next_tracing: str = tracing + " " if tracing else ""
             if tracing:
@@ -464,8 +574,39 @@ class FabCQtoFC(object):
                 profile.FinalDepth = final_depth
                 profile.processHoles = False
                 profile.processPerimeter = True
-
+                profile.ToolController = tool_controller
                 profile.recompute()
+
+                # To generate a list of documented properties to "doc_file_name*:
+                if False:
+                    documented_properties: Tuple[str, ...] = (
+                        "Active", "AreaParams", "AttemptInverseAngle", "Base", "ClearanceHeight",
+                        "Comment", "CoolantMode", "CycleTime", "Direction", "EnableRotation",
+                        "ExpandProfile", "ExpandProfileStepOver", "ExpressionEngine", "FinalDepth",
+                        "HandleMultipleFeatures", "InverseAngle", "JoinType", "Label", "Label2",
+                        "LimitDepthToFace", "MiterLimit", "OffsetExtra", "OpFinalDepth",
+                        "OpStartDepth", "OpStockZMax", "OpStockZMin", "OpToolDiameter", "Path",
+                        "PathParams", "Placement", "Proxy", "ReverseDirection", "SafeHeight",
+                        "Side", "StartDepth", "StartPoint", "StepDown", "ToolController",
+                        "UseComp", "UseStartPoint", "UserLabel", "Visibility",
+                    )
+                    undocumented_properties: Tuple[str, ...] = (
+                        "Content", "Document", "FullName", "ID", "InList", "InListRecursive",
+                        "MemSize", "Module", "MustExecute", "Name", "NoTouch", "OldLabel",
+                        "OutList", "OutListRecursive", "Parents", "PropertiesList", "Removing",
+                        "State", "TypeId", "ViewObject",
+                    )
+                    _ = undocumented_properties
+
+                    doc_file_name: str = "/tmp/contour.md"
+                    doc_file: IO[str]
+                    with open(doc_file_name, "w") as doc_file:
+                        property: str
+                        doc_file.write("# Contour Properites\n\n")
+                        for property in documented_properties:
+                            doc_file.write(f"* {property} ({repr(getattr(profile, property))}): "
+                                           f"{profile.getDocumentationOfProperty(property)}\n")
+
             if tracing:
                 print(f"{tracing}<=contour()=>{profile}")
             return profile
@@ -475,9 +616,11 @@ class FabCQtoFC(object):
         assert job is not None, "No job present"
 
         if contour:
-            profile: Any = do_contour(self.CurrentPart, f"{job.Label}_profile", job, normal,
-                                      start_depth, step_down, final_depth, tracing=indent)
-            _ = profile
+            tool_controller: Any = None
+            _, tool_controller = self.get_tool_and_controller(
+                json_dict, label, indent, tree_path)
+            do_contour(self.CurrentPart, f"{job.Label}_profile", job, normal,
+                       start_depth, step_down, final_depth, tool_controller, tracing=indent)
 
         if tracing:
             print(f"{tracing}<=FabCQtoFC.process_extrude(*, '{label}', {tree_path})")

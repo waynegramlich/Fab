@@ -410,13 +410,13 @@ class _Extrude(_Operation):
         tool_controller: FabToolController = FabToolController(
             BitName="5mm_Endmill",
             Cooling="Flood",
-            HorizontalFeed=2.0,
-            HorizontalRapid=20.0,
+            HorizontalFeed=2.34,
+            HorizontalRapid=23.45,
             SpindleDirection=True,
-            SpindleSpeed=5000.0,
+            SpindleSpeed=5432.0,
             ToolNumber=1,
-            VerticalFeed=1.0,
-            VerticalRapid=20.0
+            VerticalFeed=1.23,
+            VerticalRapid=12.34
         )
         self.set_tool_controller(tool_controller, produce_state.ToolControllersTable)
 
