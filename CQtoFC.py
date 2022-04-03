@@ -61,6 +61,7 @@ class FabCQtoFC(object):
     AllDocuments: List[Any] = field(init=False, repr=False)
     CurrentGroup: Any = field(init=False, repr=False)
     CurrentJob: Any = field(init=False, repr=False)
+    CurrentJobName: Any = field(init=False, repr=False)
     CurrentLink: Any = field(init=False, repr=False)
     CurrentNormal: Any = field(init=False, repr=False)
     CurrentPart: Any = field(init=False, repr=False)
@@ -77,6 +78,8 @@ class FabCQtoFC(object):
         assert isinstance(self.JsonPath, FilePath), self.JsonPath
         self.AllDocuments = []
         self.CurrentGroup = None
+        self.CurrentJob = None
+        self.CurrentJobName = None
         self.CurrentLink = None
         self.CurrentNormal = None
         self.CurrentPart = None
@@ -333,6 +336,40 @@ class FabCQtoFC(object):
             print(f"{tracing}<=FabCQtotFC.get_tool_and_controller(*, {label}, {tree_path})")
         return (tool, tool_controller)
 
+    # FabCQtoFC.flush_job(self):
+    def flush_job(self, tracing: str = ""):
+        if tracing:
+            print("{tracing}=>FabCQtoFC.flush_job()")
+        job: Any = self.CurrentJob
+        job_name: Any = self.CurrentJobName
+        if job:
+            # Create *post_list* which is a list of tool controllers and *operations*:
+            post_list: List[Any] = []
+            current_tool_number: int = -99999999
+            for index, operation in enumerate(job.Operations.Group):
+                tool_controller: Any = PathUtil.toolControllerForOp(operation)
+                tool: Any = tool_controller.Tool
+                if tracing:
+                    print(f"{tracing}{tool=}")
+                    print(dir(tool))
+                    print("")
+
+                if tool_controller is not None:
+                    if tool_controller.ToolNumber != current_tool_number:
+                        post_list.append(tool_controller)
+                        current_tool_number = tool_controller.ToolNumber
+                post_list.append(operation)
+
+            # Generate the gcode and output it to *gcode_path*:
+            gcode_path = f"/tmp/{job_name}.ngc"
+            post: Any = PathPostProcessor.PostProcessor.load(job.PostProcessor)
+            post.export(post_list, gcode_path, job.PostProcessorArgs)
+
+        self.CurrentJob = None
+        self.CurrentJobName = None
+        if tracing:
+            print("{tracing}<=FabCQtoFC.flush_job()")
+
     # FabCQtoFC.process():
     def process(self, indent: str = "", tracing: str = "") -> None:
         """Process a JSON file into a FreeCAD documents."""
@@ -373,6 +410,7 @@ class FabCQtoFC(object):
                 save_path.unlink()
             document.recompute()
             document.saveAs(str(save_path))
+        self.flush_job()
 
         # Install all of the *pending_links*:
         pending_link: Tuple[Any, Any]
@@ -646,6 +684,7 @@ class FabCQtoFC(object):
             print(f"{indent} _Normal: {normal}")
             print(f"{indent} _Orient: {orient}")
 
+        self.flush_job()  # Force previous job to be done.
         job = PathJob.Create('Job', [self.CurrentPart], None)
         job_name: str = f"{self.CurrentPart.Label}_{label}"
         gcode_path: str = f"/tmp/{job_name}.ngc"
@@ -654,6 +693,7 @@ class FabCQtoFC(object):
         job.PostProcessorArgs = '--no-show-editor'
         job.Label = job_name
         self.CurrentJob = job
+        self.CurrentJobName = label
         self.CurrentNormal = normal
 
         if App.GuiUp:  # type: ignore
