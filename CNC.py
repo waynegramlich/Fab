@@ -292,49 +292,144 @@ def model(document: "App.Document", tracing: str = "") -> None:
 
     # This creates a tool controller:
     #     # Besure there is an active document.
+    #     doc = App.newDocument("foo")
     #     import PathScripts.PathToolController as PathToolController
     #     tc1 = PathToolController.Create(name="LabelName")
+    #     tool = tc0.Tool
+    #
+    # There are two tool formats, the version 1 and the version 2 Tool/{Bit,Library,Shape} stuff.
+    #
     # All of the controller fields are need to be set (see below):
     # There is a comment in the "Path Scripting Thread" on Tue Jan 05, 2021 12:11 pm that says:
     #
-    #     tc0.setExpression('HorizRapid', None)
-    #     tc0.HorizRapid = "15 mm/s"
-    #     tc0.setExpression('VertRapid', None)
-    #     tc0.VertRapid = "2 mm/s"
+    #     tc1.setExpression('HorizRapid', None)
+    #     tc1.HorizRapid = "15 mm/s"
+    #     tc1.setExpression('VertRapid', None)
+    #     tc1.VertRapid = "2 mm/s"
     #
-    # It is necessary to zero out any previous expressions before the value will take.
-    # HorizRapid an VertRapid are typically an expression from the "spreadsheet".
-
-    # Grab the Tool from the tool controller:
-    #
-    #     tool = tc0.Tool
-    #
-    # Now assign into the fields of tool
-    #
-    #     tool.Content = '<Tool name="Default Tool" diameter="5" length="0" ' + \
-    #        'flat="0" corner="0" angle="180" height="15" type="EndMill" mat="HighSpeedSteel" />\n'
-    #     tool.CornerRadius = 0.0
-    #     tool.CuttingEdgeAngle = 180.0   # Probably a point angle.
-    #     tool.CuttingEdgeHeight = 15.0
-    #     tool.Diameter = 5.0
-    #     tool.FlatRadius = 0.0
-    #     tool.LengthOffset = 0.0
-    #     tool.Material = "HighSpeedSteel"
-    #     tool.MemSize = 0  # Unsure what this is; leave it alone
-    #     tool.Module = "Path"  # Leave this alone
-    #     tool.Name = "Default Tool"  # This can be changed
-    #     tool.ToolType = "EndMill"  # This can be changed
-    #     tool.TypeId = "Path::Tool"  # Leave this alone
+    # The version 2 sutff seems to start with two
     #
     #     tool.getToolTypes() => ['EndMill', 'Drill', 'CenterDrill', 'CounterSink', 'CounterBore',
     #                             'FlyCutter', 'Reamer', 'Tap', 'SlotCutter', 'BallEndMill',
     #                             'ChamferMill', 'CornerRound', 'Engraver']
     #     tool.getToolMaterials() => ['Carbide', 'HighSpeedSteel', 'HighCarbonToolSteel',
-    #                                 'CastAlloy', 'Ceramics', 'Diamond', 'Sialon']
     #     t.templateAttrs() => {'version': 1, 'name': 'Default Tool', 'tooltype': 'EndMill',
     #                           'material': 'HighSpeedSteel', 'diameter': 5.0,
     #                           'lengthOffset': 0.0, 'flatRadius': 0.0, 'cornerRadius': 0.0,
     #                           'cuttingEdgeAngle': 180.0, 'cuttingEdgeHeight': 15.0}
+    #     # Note: the 'version' should be 2, not 1.
+    #
+    #     tool.Content: XML String (reformatted and it seems out of date):
+    #       '<Tool
+    #         name="Default Tool"
+    #         diameter="5"
+    #         length="0"
+    #         flat="0"
+    #         corner="0"
+    #         angle="180"
+    #         height="15"
+    #         type="EndMill"
+    #         mat="HighSpeedSteel"
+    #       >'
+    #     tool.CornerRadius = 0.0  # mm
+    #     tool.CuttingEdgeAngle = 180.0  # Probably point angle.
+    #     tool.CuttingEdgeHeight= 15.0  # mm
+    #     tool.Diameter = 5.0  # mm
+    #     tool.FlatRadius = 0.0  # mm
+    #     tool.LengthOffset = 0.0  # mm
+    #     tool.Material = "HighSpeedSteel"  # On of tool.getToolMaterials()
+    #     tool.MemSize = 0  # Ignore
+    #     tool.Module = "Path"  # Ignore
+    #     tool.Name = "Default Tool"  # Where is this from?
+    #     tool.ToolType = "EndMill"  # One of tool.getToolTypes()
+    #     tool.TypeId = "Path::Tool"
+
+    # HorizRapid an VertRapid are typically an expression from the "spreadsheet".
+    #
+    #     # This stuff seems to be old verstion 1 stuff
+
+    # The version 1 legacy tools stuff is:
+    #
+    #     tool.BitBody: Any
+    #     # XML:The parametrized body representing the tool bit
+    #     *tool.BitPropertyNames:  ['Chipload', 'CuttingEdgeHeight',
+    #                              'Diameter', 'Flutes', 'Length', 'Material', 'ShankDiameter']
+    #     # XML:List of all properties inherited from the bit"
+    #     tool.BitShape: '/usr/lib/freecad/Mod/Path/Tools/Shape/endmill.fcstd'
+    #     # XML:Shape for bit shape"
+    #     tool.Chipload: "0.0 mm"
+    #     # XML: Chipload per tooth.
+    #     tool.Content: "..." = Big long XML file string
+    #     tool.CuttingEdgeHeight: "30.0 mm"
+    #     # XML: Height of the tool bit's flutes."
+    #     tool.Diameter: "5.0 mm"
+    #     # XML: Diameter of the cutting edge.
+    #     tool.Docuemnt: Parent FreeCAD document
+    #     tool.ExprssionEngine: []
+    #     # XML: no doc string
+    #     tool.File: ""
+    #     # XML: The file of the tool
+    #     tool.Flutes: 0
+    #     # XML: The number of flutes
+    #     tool.FullName: "docname#ToolBit"
+    #     tool.ID: 4685  # Some sort of FreeCAD UID
+    #     tool.InList: ??  # Unclear
+    #     tool.InListRecursive: ??  # Unclear
+    #     tool.Label: "Endmill"
+    #     # XML: No doc string
+    #     tool.Label2: ""
+    #     # XML: No doc string
+    #     tool.Length: "50.0 mm"  # Probably OAL=OverAll Length
+    #     # XML: Total length of the tool bit.
+    #     tool.Material: "HSS"  # The XML document says this is the surface of the bit.
+    #     # XML: The material the tool bit is made of or coated with.
+    #     # XML: Only HSS and Carbide are specified
+    #     tool.Memsize: 9236  # probably byte size of object.
+    #     tool.Module: "Part"
+    #     tool.MustExcute: True
+    #     tool.Name: "ToolBit"
+    #     tool.NoTouch: False
+    #     tool.OldLabel: "ToolBit"
+    #     tool.OutList: []  # Unclear
+    #     tool.OutListRecursive: []  # Unclear
+    #     tool.Parents: []  # Unclear
+    #     tool.Placement: Placement [Pos=(0,0,0), Yaw-Pitch-Roll=(0,0,0)]  # Unclear what this does
+    #     # XML: No doc string
+    #     tool.PropertiesList: ['BitBody', 'BitPropertyNames', 'BitShape', 'Chipload',
+    #                           'CuttingEdgeHeight', 'Diameter', 'ExpressionEngine', 'File',
+    #                           'Flutes', 'Label', 'Label2', 'Length', 'Material', 'Placement',
+    #                           'Proxy', 'ShankDiameter', 'Shape', 'ShapeName', 'Visibility']
+    #     tool.Proxy: <PathScripts.PathToolBit.ToolBit object at 0x7fecf6dc28e0>
+    #     # XML: No doc string
+    #     tool.Removing: False  # Unclear
+    #     tool.ShankDiameter: "3.0 mm"
+    #     Tool.Shape: <Solid object at 0x55b0f0a981a0>  # Probably the generated tool Solid
+    #     # XML: Diameter of the tool bit's shank.
+    #     tool.ShapeName: "endmill"
+    #     # XML: The name of the shape file
+    #     tool.State: ["Touched"]  # Unclear
+    #     tool.TypeId: 'Part::FeaturePython'  # Probably an object
+    #     tool.ViewObject: None  # This was done in FreeCAD non GUI console
+    #     tool.Visibility: True  # Visibility flag
+    #     # XML: No doc string
+    #
+    # The new and improved tool format is as follows:
+    #
+
+    # Now assign into the fields of tool
+    #
+    #     # Make sure all of the "BitPropertyName get set:
+    #     tool.BitShape = "/usr/lib/freecad/Mod/Path/Tools/Shape/endmill.fcstd"
+    #     tool.ChipLoad = "0.000 mm"  # In BitPropertyNames
+    #     tool.CuttingEdgeHeight = "30.0 mm"  # In PropertyNames
+    #     tool.Diameter = "5.0 mm"  # In BitPropertyNames
+    #     tool.Flutes = 2  # In Property names
+    #     tool.Length = "50.mm"  # In BitPropertyNames
+    #     tool.Material = "HSS"  # In BitPropertyNames
+    #     tool.ShankDiameter = "3.0 mm"  # In BitPropertyNames
+    #     tool.ShapeName = "endmill"  # in Bit PropertyNames
+    #     tool.Visiblity = True  # In Bit PropertyNames
+    #
     #
     # Fields missing from ToolBit:
     #     SurfaceFinish: Literal["BlackOxide", ...]
