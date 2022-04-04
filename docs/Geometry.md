@@ -104,7 +104,7 @@ Return a new FabGeometry projected onto a plane.
 GeometryProduce: Context needed to produce FreeCAD geometry objects.
 Attributes:
 * *_Plane* (Plane): Plane to use.
-* *_WorkPlane* (FabQuery): The CadQuery Workplane wrapper to use.
+* *_Query* (FabQuery): The CadQuery Workplane wrapper to use.
 * *_GeometryGroup*: (App.DocumentObjectGroup):
   The FreeCAD group to store FreeCAD Geometry objects into.
   This field needs to be set prior to use with set_geometry_group() method.

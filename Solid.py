@@ -711,7 +711,7 @@ class FabMount(object):
     _Normal: Vector
     _Orient: Vector
     _Depth: float
-    _WorkPlane: FabQuery
+    _Query: FabQuery
     _Operations: "OrderedDict[str, _Operation]" = field(init=False, repr=False)
     _Copy: Vector = field(init=False, repr=False)  # Used for making private copies of Vector's
     _Tracing: str = field(init=False, repr=False)
@@ -748,7 +748,7 @@ class FabMount(object):
         # Vector metheds like to modify Vector contents; force copies beforehand:
         self._Plane: FabPlane = FabPlane(self._Contact, self._Normal)  # , tracing=next_tracing)
         self._Orient = self._Plane.point_project(self._Orient)
-        self._GeometryContext = FabGeometryContext(self._Plane, self._WorkPlane)
+        self._GeometryContext = FabGeometryContext(self._Plane, self._Query)
         self._AppDatumPlane = None
         self._GuiDatumPlane = None
 
@@ -863,7 +863,7 @@ class FabMount(object):
                 print(f"{tracing}Contact={contact}")
                 print(f"{tracing}{plane=}")
 
-            work_plane: Optional[FabQuery] = self._Solid._WorkPlane
+            work_plane: Optional[FabQuery] = self._Solid._Query
             assert isinstance(work_plane, FabQuery), work_plane
             work_plane.copy_workplane(plane, tracing=next_tracing)
 
@@ -1066,7 +1066,7 @@ class FabSolid(FabNode):
     _Mounts: "OrderedDict[str, FabMount]" = field(init=False, repr=False)
     _GeometryGroup: Optional[Any] = field(init=False, repr=False)
     _Body: Optional[Any] = field(init=False, repr=False)
-    _WorkPlane: FabQuery = field(init=False, repr=False)
+    _Query: FabQuery = field(init=False, repr=False)
     _Assembly: Any = field(init=False, repr=False)
     _StepFile: Optional[Path] = field(init=False, repr=False)
     _Color: Optional[Tuple[float, ...]] = field(init=False, repr=False)
@@ -1088,7 +1088,7 @@ class FabSolid(FabNode):
         self._Mounts = OrderedDict()
         self._GeometryGroup = None
         self._Body = None
-        self._WorkPlane = FabQuery(initial_plane)
+        self._Query = FabQuery(initial_plane)
         self._Assembly = None
         self._StepFile = None
         self._Color = None
@@ -1167,7 +1167,7 @@ class FabSolid(FabNode):
         mounts: "OrderedDict[str, FabMount]" = self._Mounts
         if name in mounts:
             raise RuntimeError(f"FabSolid({self._Label}).mount(): Mount {name} is not unique.")
-        fab_mount: FabMount = FabMount(name, self, contact, normal, orient, depth, self._WorkPlane)
+        fab_mount: FabMount = FabMount(name, self, contact, normal, orient, depth, self._Query)
         self._Mounts[name] = fab_mount
 
         if tracing:
@@ -1260,7 +1260,7 @@ class FabSolid(FabNode):
                 print(f"{tracing}Read file '{str(step_path)}' !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         else:
             assembly = cq.Assembly(
-                self._WorkPlane.WorkPlane, name=self.Label, color=cq.Color(*rgb_color))
+                self._Query.WorkPlane, name=self.Label, color=cq.Color(*rgb_color))
             # This is really ugly.  The cq.Assembly.save() method spews out uninteresting
             # "debug" information.  See the code comments of _suppress_stdout() for more
             # information.
