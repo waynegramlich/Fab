@@ -522,27 +522,30 @@ class _Pocket(_Operation):
         if tracing:
             print(f"{tracing}=>_Pocket.post_produce1('{self.Name}')")
 
-        # Extract the *part_geometries* from *geometries*:
-        geometries: Tuple[FabGeometry, ...] = self._Geometries
+        # Unpack some values from *mount*:
         mount: FabMount = self.Mount
-        prefix: str = f"{mount.Name}_{self.Name}"
-        # part_geometries: List[Any] = []
         geometry_context: FabGeometryContext = mount._GeometryContext
-        geometry: FabGeometry
-        index: int
-
+        geometries: Tuple[FabGeometry, ...] = self._Geometries
         pocket_context: FabGeometryContext = geometry_context.copy(tracing=next_tracing)
         pocket_query: FabQuery = pocket_context.Query
         if tracing:
             pocket_query.show("Pocket Context Before", tracing)
+
+        # Transfer *geometries* to *pocket_context* (which is a copy of *geometry_context*):
+        prefix: str = f"{mount.Name}_{self.Name}"
+        geometry: FabGeometry
+        index: int
         for index, geometry in enumerate(geometries):
             geometry.produce(pocket_context, prefix, index, tracing=next_tracing)
             if tracing:
                 pocket_query.show(f"Pocket Context after Geometry {index}", tracing)
+
+        # Extrude the pocket *pocket_query* volume to be removed.
         pocket_query.extrude(self._Depth, tracing=next_tracing)
         if tracing:
             pocket_query.show("Pocket Context after Extrude:", tracing)
 
+        # TODO: Use the CadQuery *cut* operation instead of *subtract*:
         query: Any = geometry_context.Query
         assert isinstance(query, FabQuery), query
         if tracing:
