@@ -320,8 +320,7 @@ class TestSolid(FabSolid):
 
         # Perform the first Extrude:
         z_offset: float = top_origin.z
-        # extrude_fillet_radius: float = 10.0
-        extrude_fillet_radius: float = 0.0
+        extrude_fillet_radius: float = 10.0
         extrude_polygon: FabPolygon = FabPolygon((
             (Vector(wx, sy, z_offset), extrude_fillet_radius),  # SW
             (Vector(ex, sy, z_offset), extrude_fillet_radius),  # SE

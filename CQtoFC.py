@@ -451,25 +451,30 @@ class FabCQtoFC(object):
             print(f"{indent} _StepDown: {step_down}")
             print(f"{indent} _StepFile: {step_file}")
 
-        def top_faces(obj: Any, normal: Vector, tracing: str = "") -> List[str]:
+        def get_aligned_face_name(obj: Any, normal: Vector, tracing: str = "") -> str:
             """Return top faces."""
             if tracing:
-                print(f"{tracing}=>top_faces({obj}, {normal})")
+                print(f"{tracing}=>get_aligned_face_name({obj}, {normal})")
             assert hasattr(obj, "Shape")
             shape = obj.Shape
-            top_face_names: List[str] = []
             face_index: int
             epsilon: float = 1.0e-8
+            largest_area: float = 0.0
+            largest_face_name: str = ""
             for face_index in range(len(shape.Faces)):
                 face_name: str = f"Face{face_index+1}"
                 face: Any = shape.getElement(face_name)
-                # if face.Surface.Axis == Vector(0, 0, 1) and face.Orientation == 'Forward':
-                normal_error: float = abs((face.Surface.Axis - normal).Length)
-                if normal_error < epsilon and face.Orientation == 'Forward':
-                    top_face_names.append(face_name)
+                if face.Orientation == 'Forward':
+                    delta: Vector = face.Surface.Axis - normal
+                    length: float = delta.Length
+                    if length < epsilon:
+                        area = face.Area
+                        if area > largest_area:
+                            largest_area = area
+                            largest_face_name = face_name
             if tracing:
-                print(f"{tracing}<=top_faces({obj}, {normal})=>{top_face_names}")
-            return top_face_names
+                print(f"{tracing}<=get_aligned_faces_name({obj}, {normal})=>{largest_face_name}")
+            return largest_face_name
 
         def do_contour(obj: Any, name: str, job: Any, normal: Vector,
                        start_depth: float, step: float, final_depth: float,
@@ -478,10 +483,10 @@ class FabCQtoFC(object):
             next_tracing: str = tracing + " " if tracing else ""
             if tracing:
                 print(f"{tracing}=>contour({obj=}, {name=}, {job=}, {normal=})")
-            top_face_names: List[str] = top_faces(obj, normal, tracing=next_tracing)
-            if top_face_names:
+            aligned_face_name: str = get_aligned_face_name(obj, normal, tracing=next_tracing)
+            if aligned_face_name:
                 profile = PathProfile.Create(name)
-                profile.Base = (obj, top_face_names[0])
+                profile.Base = (obj, aligned_face_name)
                 profile.setExpression('StepDown', None)
                 profile.StepDown = step_down
                 profile.setExpression('StartDepth', None)
