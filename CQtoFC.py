@@ -25,8 +25,9 @@ import os
 from pathlib import Path as FilePath  # The Path library uses `Path`.
 import sys
 import Path  # type: ignore
-from typing import Any, cast, List, Dict, IO, Optional, Set, Tuple, Union
+from typing import Any, cast, List, Dict, IO, Optional, Tuple, Union
 
+import PathScripts.PathToolBit as PathToolBit  # type: ignore
 from PathScripts import PathJob, PathProfile, PathPostProcessor, PathUtil  # type: ignore
 from PathScripts import PathToolController  # type: ignore
 _ = PathJob  # TODO: Remove
@@ -90,147 +91,29 @@ class FabCQtoFC(object):
         self.ToolNumbersTable = {}
         self.ToolsTable = {}
 
-    # FabCQtoFC.read_tools_table():
-    def read_tools_table(self, tracing: str = "") -> None:
-        """Read tool bit files and generate ToolTable."""
-        # Note this method can not be called until after an a document is active.
-        if tracing:
-            print(f"{tracing}=>FabCQtoFC.read_tools_table()")
-            print(f"{tracing}{self.ToolsPath=}")
-
-        def flatten(attributes: Any, flat_dict: Dict[str, str]) -> None:
-            """Flatten nested attributes into a single flat attribute dictionary."""
-            assert isinstance(attributes, dict), (
-                f"flatten(): attributes not a dictionary: {attributes=}")
-            key: Any
-            value: Any
-            for key, value in attributes.items():
-                assert isinstance(key, str), f"flatten(): attributes {key=} is not a string"
-                if isinstance(value, (int, str)):
-                    flat_dict[key] = str(value)
-                elif isinstance(value, dict):
-                    flatten(value, flat_dict)
-                else:
-                    assert False, f"flatten(): {key=} is not int/str/dict."
-
-        def length(length_text: str) -> float:
-            """Convert length string into a float."""
-            if not length_text.endswith(" mm"):
-                raise RuntimeError(f"length('{length_text}' does not end with ' mm'")
-            return float(length_text[:-3])
-
-        def degrees(degrees_text: str) -> float:
-            """Convert a degrees string into a float."""
-            # TODO: Support inches in additon to floats.
-            space_index: int = degrees_text.find(" ")
-            if space_index > 0:
-                degrees_text = degrees_text[:space_index]
-            return float(degrees_text)
-
-        # Extract *tool_types* and *tool_materials* from a *temporary_tool*:
-        temporary_tool: Any = Path.Tool()
-        # print(f"{dir(temporary_tool)=}")  # Useful for seeing tool attributes/methods.
-        tool_types: Set[str] = set(temporary_tool.getToolTypes())
-        _ = tool_types
-        tool_materials: Set[str] = set(temporary_tool.getToolMaterials())
-
-        # Uncomment the code below to see the predefined tool types and tool materials:
-        # print(f"{tuple(sorted(tool_types))=}")
-        # tool_types=('BallEndMill', 'CenterDrill', 'ChamferMill', 'CornerRound', 'CounterBore',
-        #             'CounterSink', 'Drill', 'EndMill', 'Engraver', 'FlyCutter', 'Reamer',
-        #             'SlotCutter', 'Tap')
-        # print(f"{tuple(sorted(tool_materials))=}")
-        # tool_materials={'Carbide', 'CastAlloy', 'Ceramics', 'Diamond', 'HighCarbonToolSteel',
-        #                 'HighSpeedSteel', 'Sialon'}
-
-        # *shape_to_type* is a table that converts a shape file (`.fcstd`) to a tool type.
-        shape_to_type: Dict[str, str] = {
-            "chamfer.fcstd": "ChamferMill",
-            "drill.fcstd": "Drill",
-            "endmill.fcstd": "EndMill",
-            "thread-mill.fcstd": "",
-            "v-bit.fcstd": "Engraver",
-            "ballend.fcstd": "BallEndMill",
-            "bullnose.fcstd": "CornerRound",
-            "probe.fcstd": "",
-            "slittingsaw.fcstd": "SlotCutter",
-        }
-
-        # *skip_attributes* list attributes that have not obvious locattion to be stored in a Tool.
-        skip_attributes: Set[str] = {
-            "version",
-            "BladeThickness",
-            "CapDiameter",
-            "CapHeight",
-            "Crest",
-            "NeckDiameter",
-            "NeckLength",
-            "ShaftDiameter",
-            "ShankDiameter",
-            "TipDiameter",
-        }
-
-        # Reach in each tool bit file (`.fctb`) the *bit_directory* and convert it to a *tool*:
-        assert isinstance(self.ToolsPath, FilePath)
-        bit_directory: FilePath = self.ToolsPath / "Bit"
+    # FabCQtoFC.fetch_tool():
+    def fetch_tool(self, bit_name: str) -> Any:
+        """Fetch a tool from the Tools/Bit and store into ToolsTable."""
         tools_table: Dict[str, Any] = self.ToolsTable
-        bit_path: FilePath
-        index: int
-        for index, bit_path in enumerate(bit_directory.glob("*.fctb")):
-            if tracing:
-                print(f"{tracing}ToolBit[{index}]:{bit_path=}")
-            # Read in the *bit_json* from *bit_path*:
-            bit_name: str = bit_path.stem
-            # print("")
+        if bit_name not in tools_table:
+            # Create the *bit_path* file name and verify that it exists:
+            assert isinstance(self.ToolsPath, FilePath), f"{type(self.ToolsPath)=}"
+            bit_directory: FilePath = self.ToolsPath / "Bit"
+            bit_path: FilePath = bit_directory / f"{bit_name}.fctb"
+            if not bit_path.exists():
+                raise RuntimeError(f"{str(bit_path)} file does not exist")
+
+            # Read *bit_path* contents in and convert into *bit_json*:
             bit_file: IO[str]
             with open(bit_path, "r") as bit_file:
                 bit_text: str = bit_file.read()
             bit_json: Any = json.loads(bit_text)
 
-            # Create the uninitialized *tool* and pre save it into *tool_table*:
-            tool: Any = Path.Tool()
+            # Convert *bit_json* into *tool* and save it:
+            tool: Any = PathToolBit.Factory.CreateFromAttrs(bit_json, bit_name)
+            tool.Visibility = False
             tools_table[bit_name] = tool
-
-            # Recursively fill in *flat_dict* from *bit_json*:
-            flat_dict: Dict[str, str] = {}
-            flatten(bit_json, flat_dict)
-
-            # Process each *attribute* in *flat_dict*:
-            attribute: str
-            value: str
-            for attribute, value in flat_dict.items():
-                if attribute == "CornerRadius":
-                    tool.CornerRadius = length(value)
-                elif attribute == "CuttingEdgeAngle":
-                    tool.CuttingEdgeAngle = degrees(value)
-                elif attribute == "TipAngle":
-                    tool.CuttingEdgeAngle = degrees(value)
-                elif attribute == "CuttingEdgeHeight":
-                    tool.CuttingEdgeHeight = length(value)
-                elif attribute == "Diameter":
-                    tool.Diameter = length(value)
-                elif attribute == "FlatRadius":
-                    tool.FlatRadius = length(value)
-                elif attribute == "Length":
-                    tool.LengthOffset = length(value)
-                elif attribute == "Material":
-                    assert value in tool_materials, (
-                        f"{value} is not a valid material {tool_materials}")
-                elif attribute == "name":
-                    tool.Name = value
-                elif attribute == "shape":
-                    assert value in shape_to_type, f"{value=} is not in {shape_to_type=}"
-                    tool_type: str = shape_to_type[value]
-                    if tool_type:
-                        tool.ToolType = tool_type
-                elif attribute in skip_attributes:
-                    pass
-                else:
-                    print(f">>>>>>>>>>>>>>>> {bit_name}: Skipping {attribute=}: {value=}")
-            # print(f"{tool.Content=}")
-
-        if tracing:
-            print(f"{tracing}<=FabCQtoFC.read_tools_table()")
+        return tools_table[bit_name]
 
     # FabCQtoFC.get_tool_and_controller():
     def get_tool_and_controller(
@@ -300,11 +183,7 @@ class FabCQtoFC(object):
             if tool_number in self.ToolNumbersTable:
                 tool = self.ToolNumbersTable[tool_number]
             else:
-                tools_table: Dict[str, Any] = self.ToolsTable
-                if bit_name not in tools_table:
-                    raise RuntimeError(
-                        "FabCQtoFC.get_tool_and_controller(): No Tool bit named '{bit_name}'")
-                tool = tools_table[bit_name]
+                tool = self.fetch_tool(bit_name)
                 self.ToolNumbersTable[tool_number] = tool
             tool_controller.Tool = tool
 
@@ -532,14 +411,13 @@ class FabCQtoFC(object):
     def process_document(self, json_dict: Dict[str, Any], label: str,
                          indent: str, tree_path: Tuple[str, ...], tracing: str = "") -> None:
         """Process a Document JSON node."""
-        next_tracing: str = tracing + " " if tracing else ""
+        # next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabCQtoFC.process_document(*, '{label}', {tree_path})")
         file_path: str = cast(str, self.key_verify(
             "_FilePath", json_dict, str, tree_path, "Document._File_Path"))
         project_document = App.newDocument(label)  # type: ignore
         project_document.Label = label
-        self.read_tools_table(tracing=next_tracing)  # Can only be called after document is created.
         if indent:
             print(f"{indent} _FilePath: {file_path}")
             self.ProjectDocument = project_document
@@ -658,7 +536,7 @@ class FabCQtoFC(object):
             _, tool_controller = self.get_tool_and_controller(
                 json_dict, label, indent, tree_path)
             do_contour(self.CurrentPart, f"{job.Label}_profile", job, normal,
-                       start_depth, step_down, final_depth, tool_controller, tracing=indent)
+                       start_depth, step_down, final_depth, tool_controller)
 
         if tracing:
             print(f"{tracing}<=FabCQtoFC.process_extrude(*, '{label}', {tree_path})")
@@ -765,7 +643,7 @@ def main() -> None:
     cnc = True
     tools_path: Optional[Path] = FilePath(".") / "Tools" if cnc else None
     json_reader: FabCQtoFC = FabCQtoFC(FilePath(json_file_name), tools_path)
-    json_reader.process(indent="  ", tracing="")
+    json_reader.process(indent="  ", tracing="  ")
     if not App.GuiUp:  # type: ignore
         sys.exit()
 

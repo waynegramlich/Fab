@@ -368,6 +368,7 @@ class TestSolid(FabSolid):
         north_end: Vector = self.C
         north_mount: FabMount = self.mount(
             "North", self.N, self.DN, self.DE, self.YMax - self.YMin, tracing=tracing)
+        _ = north_mount
         self.ScrewN: FabJoin = FabJoin("ScrewN", self.Fasten, north_start, north_end)
 
         north_mount.drill_joins("ScrewN", (self.ScrewN,), tracing=next_tracing)
