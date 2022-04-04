@@ -26,11 +26,13 @@ class FabPlane(object):
 
     _Contact: Vector
     _Normal: Vector
-    tracing: str = ""
-    _Copy: Vector = field(init=False)
+    tracing: str = ""  # TODO: Remove. For dataclass sub-classing, optional value are disallowed.)
+    _UnitNormal: Vector = field(init=False, repr=False)
+    _Distance: float = field(init=False, repr=False)
+    _Copy: Vector = field(init=False, repr=False)
     _Origin: Vector = field(init=False)
     _XDirection: Vector = field(init=False)
-    _Plane: Any = field(init=False)  # Used by CadQuery
+    _Plane: Any = field(init=False, repr=False)  # Used by CadQuery
 
     # FabPlane.__post_init__():
     def __post_init__(self) -> None:
@@ -38,7 +40,7 @@ class FabPlane(object):
         # Use [Wolfram MathWorld Plane](https://mathworld.wolfram.com/Plane.html) for reference.
         #
         # N is non-unit length vector (Nx, Ny, Nz)   #  Mathworld uses (a, b, c)
-        # C is contact point on plane (Cx, Cy, Cz)   #  Mathword uses X0 = (x0, y0, z0)
+        # C is contact point on plane (Cx, Cy, Cz)   #  Mathworld uses X0 = (x0, y0, z0)
         #
         # d is "magic" value:
         #
@@ -48,8 +50,8 @@ class FabPlane(object):
         #
         # (Note that a plane normal can actually be on either side of the of the plane.
         # Apparently, the Wolfram description appears to assume that the normal always
-        # point to the origin.  The code below assumes that the normal always points away
-        # from the origint.  Hence there is a sign change. Thus, d = N . D is used instead
+        # points to the origin.  The code below assumes that the normal always points away
+        # from the origin.  Hence there is a sign change. Thus, d = N . D is used instead
         # of d = -(N . D).
         #
         # D is the distance from the origin along the normal to the "projected" origin on the plane:
@@ -76,12 +78,12 @@ class FabPlane(object):
             print(f"{tracing}{contact=} {normal=}")
             print(f"{tracing}{distance=} {unit_normal=} {origin=}")
 
-        # TODO: This code should be moved inside the USE_CAD_QUERY block!!!
         # Computing the xDir argument to the Plane() constructor is a bit convoluted.
         # This requires taking a unit vector in the +X axis direction and reverse mapping it back
         # to original plane.  This requires the *reversed* option of the *rotate_to_z_axis*
         # method.  Thus, all fields except _Plane are filled in first so that that
         # *rotate_to_z_axis* method can be invoked (since it does not access the _Plane field.)
+        self._UnitNormal = unit_normal
         self._Contact = contact
         self._Normal = normal
         self._Copy = copy
@@ -133,18 +135,39 @@ class FabPlane(object):
         """Return FabPlane Normal."""
         return self._Normal + self._Copy
 
+    # FabPlane.UnitNormal():
+    @property
+    def UnitNormal(self) -> Vector:
+        """Return FabPlane Normal."""
+        return self._UnitNormal + self._Copy
+
+    # FabPlane.Distance():
+    @property
+    def Distance(self) -> float:
+        """Return FabPlane Normal."""
+        return self._Distance + self._Copy
+
     # FablPlane.Origin():
     @property
     def Origin(self) -> Vector:
         """Return FabPlane Origin in 3D space."""
         return self._Origin + self._Copy
 
+    # FabPlane.adjust():
+    def adjust(self, delta: float) -> "FabPlane":
+        """Return a new FabPlane that has been adjusted up/down the normal by a delta."""
+        origin: Vector = self.Origin
+        unit_normal: Vector = self.UnitNormal
+        new_origin: Vector = origin + delta * unit_normal
+        # Both the contact and the normal can be *new_origin*:
+        adjusted_plane: FabPlane = FabPlane(new_origin, new_origin)
+        return adjusted_plane
+
     # FabPlane.CQPlane():
     @property
     def CQPlane(self) -> Any:
-        """Return the CadQuery plane name as a string."""
-        plane: Any = "BOGUS"
-        plane = self._Plane
+        """Return the associated CadQuery Plane."""
+        plane: Any = self._Plane
         assert isinstance(plane, cq.Plane), plane
         return plane
 
@@ -285,6 +308,7 @@ class FabPlane(object):
                 if tracing:
                     rotate_degrees: float = math.degrees(rotate_angle)
                     print(f"{tracing}{rotate_axis=} {rotate_degrees=}")
+
         # Rotate the point:
         rotated_point, rotate_matrix = FabPlane._rotate(point, rotate_axis, rotate_angle)
 

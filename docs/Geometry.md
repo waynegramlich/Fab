@@ -16,7 +16,8 @@
   * 3.2 [set_geometry_group()](#geometry----set-geometry-group): Set the GeometryContext geometry group.
 * 4 Class: [FabPlane](#geometry--fabplane):
   * 4.1 [point_project()](#geometry----point-project): Project a point onto a plane.
-  * 4.2 [rotate_to_z_axis()](#geometry----rotate-to-z-axis): Rotate a point around the origin until the normal aligns with the +Z axis.
+  * 4.2 [adjust()](#geometry----adjust): Return a new FabPlane that has been adjusted up/down the normal by a delta.
+  * 4.3 [rotate_to_z_axis()](#geometry----rotate-to-z-axis): Rotate a point around the origin until the normal aligns with the +Z axis.
 * 5 Class: [FabPolygon](#geometry--fabpolygon):
   * 5.1 [get_hash()](#geometry----get-hash): Return the FabPolygon Hash.
   * 5.2 [project_to_plane()](#geometry----project-to-plane): Return nre FabPolygon prejected onto a plane.
@@ -134,7 +135,13 @@ FabPlane.point_project(self, point: cadquery.occ_impl.geom.Vector) -> cadquery.o
 
 Project a point onto a plane.
 
-### <a name="geometry----rotate-to-z-axis"></a>4.2 `FabPlane.`rotate_to_z_axis():
+### <a name="geometry----adjust"></a>4.2 `FabPlane.`adjust():
+
+FabPlane.adjust(self, delta: float) -> 'FabPlane':
+
+Return a new FabPlane that has been adjusted up/down the normal by a delta.
+
+### <a name="geometry----rotate-to-z-axis"></a>4.3 `FabPlane.`rotate_to_z_axis():
 
 FabPlane.rotate_to_z_axis(self, point: cadquery.occ_impl.geom.Vector, reversed: bool = False, tracing: str = '') -> cadquery.occ_impl.geom.Vector:
 
