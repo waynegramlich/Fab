@@ -15,7 +15,6 @@ import math
 
 from collections import OrderedDict
 from dataclasses import dataclass, field
-import hashlib
 from pathlib import Path
 from typing import Any, cast, Dict, Generator, IO, List, Optional, Sequence, Tuple, Union
 
@@ -236,6 +235,18 @@ class _Operation(object):
         """Return the operation name."""
         return self.get_name()
 
+    # _Operation.get_geometries_hash():
+    def get_geometries_hash(
+            self, geometries: Union[FabGeometry, Tuple[FabGeometry, ...]]) -> Tuple[Any, ...]:
+        """Return hash of FabGeometry's."""
+        hashes: List[Union[int, str, Tuple[Any, ...]]] = []
+        if isinstance(geometries, FabGeometry):
+            geometries = (geometries,)
+        geometry: FabGeometry
+        for geometry in geometries:
+            hashes.append(geometry.get_hash())
+        return tuple(hashes)
+
     # _Operation.produce():
     def produce(self, tracing: str = "") -> Tuple[str, ...]:
         """Return the operation sort key."""
@@ -359,18 +370,12 @@ class _Extrude(_Operation):
     # _Extrude.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:
         """Return hash for _Extrude operation."""
-        hashes: List[Union[int, str, Tuple[Any, ...]]] = [
+        return (
             "_Extrude",
             self._Name,
-            f"{self._Depth:.6f}"
-        ]
-        geometries: Union[FabGeometry, Tuple[FabGeometry, ...]] = self._Geometry
-        if isinstance(geometries, FabGeometry):
-            geometries = (geometries,)
-        geometry: FabGeometry
-        for geometry in geometries:
-            hashes.append(geometry.get_hash())
-        return tuple(hashes)
+            f"{self._Depth:.6f}",
+            self.get_geometries_hash(self._Geometries),
+        )
 
     # _Extrude.post_produce1():
     def post_produce1(self, produce_state: _NodeProduceState, tracing: str = "") -> None:
@@ -531,16 +536,28 @@ class _Pocket(_Operation):
         if tracing:
             pocket_query.show("Pocket Context Before", tracing)
 
+        # For now just duplicate *pocket_context*:  Eventually, it needs to be at a different level.
+        # bottom_context: FabGeometryContext = geometry_context.copy(tracing=next_tracing)
+
         # Transfer *geometries* to *pocket_context* (which is a copy of *geometry_context*):
         prefix: str = f"{mount.Name}_{self.Name}"
         geometry: FabGeometry
         index: int
         for index, geometry in enumerate(geometries):
             geometry.produce(pocket_context, prefix, index, tracing=next_tracing)
+            # geometry.produce(bottom_context, prefix, index, tracing=next_tracing)
             if tracing:
                 pocket_query.show(f"Pocket Context after Geometry {index}", tracing)
 
         # Extrude the pocket *pocket_query* volume to be removed.
+        # bottom_context.Query.extrude(0.000001, tracing=next_tracing)  # Make it very thin.
+        # bottom_name: str = ??
+        # bottom_assembly = cq.Assembly(
+        #     bottom_context.Query.Workplane, name=bottom_name, color=cq.Color(0.5, 0.5, 0.5, 0.5))
+        # Use FabSteps to manage duplicates.
+        # with _suppress_stdout():
+        #     bottom_assembly.save("/tmp/pocket.stp", "STEP")
+
         pocket_query.extrude(self._Depth, tracing=next_tracing)
         if tracing:
             pocket_query.show("Pocket Context after Extrude:", tracing)
@@ -1226,13 +1243,9 @@ class FabSolid(FabNode):
         # This was a shocker.  It turns out that __hash__() methods are not necessarily
         # consistent between Python runs.  In other words  __hash__() is non-deterministic.
         # Instead use one of the hashlib hash functions instead:
-        #     hash_tuple* => repr string => hashlib.sha256 => trim to 16 bytes
+        #     hash_tuple => repr string => hashlib.sha256 => trim to 16 bytes
         hash_tuple: Tuple[Any, ...] = self.get_hash()
-        hash_bytes: bytes = repr(hash_tuple).encode("utf-8")
-        hasher: Any = hashlib.new("sha256")
-        hasher.update(hash_bytes)
-        hash_text: str = hasher.hexdigest()[:16]
-        step_path = produce_state.Steps.activate(self.Label, hash_text)
+        step_path = produce_state.Steps.activate(self.Label, hash_tuple)
         if step_path.exists():
             use_cached_step = True
         self._StepFile = step_path

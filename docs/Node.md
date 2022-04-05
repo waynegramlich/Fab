@@ -297,7 +297,7 @@ has value associated with the .step file contents.
 There are three operations:
 * FabSteps(): This is the initalizer.
 * activate(): This method is used to activate a .stp file for reading and/or writing.
-* flush_stales(): This method is used to previous .stp files that are now longer used.
+* flush_stales(): This method is used to remove previous .stp files that are now longer used.
 
 ### <a name="node----scan"></a>4.1 `FabSteps.`scan():
 
@@ -307,14 +307,15 @@ Scan the associated directory for matching .step files.
 
 ### <a name="node----activate"></a>4.2 `FabSteps.`activate():
 
-FabSteps.activate(self, name: str, hash_text: str, tracing: str = '') -> pathlib.Path:
+FabSteps.activate(self, name: str, hash_tuple: Tuple[Any, ...], tracing: str = '') -> pathlib.Path:
 
 Reserve a .step file name to be read/written.
 This method reserves a .step file name to be read/written.
 
 Arguments:
 * name (str): The human readable name of the step file.
-* hash (int): An integer that is converted into 16 digit hex value.
+* hash_tuple (Tuple[Any]):
+  A tuple tree, where the leaf values are bool, int, float, or str values.
 
 Returns:
 * (Path): The full path to the .step file to be read/written.

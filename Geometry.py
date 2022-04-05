@@ -323,8 +323,8 @@ class FabGeometryContext(object):
     """GeometryProduce: Context needed to produce FreeCAD geometry objects.
 
     Attributes:
-    * *_Plane* (Plane): Plane to use.
-    * *_Query* (FabQuery): The CadQuery Workplane wrapper to use.
+    * *Plane* (FabPlane): Plane to use.
+    * *Query* (FabQuery): The CadQuery Workplane wrapper to use.
     * *_GeometryGroup*: (App.DocumentObjectGroup):
       The FreeCAD group to store FreeCAD Geometry objects into.
       This field needs to be set prior to use with set_geometry_group() method.
@@ -333,8 +333,8 @@ class FabGeometryContext(object):
 
     _Plane: FabPlane
     _Query: "FabQuery"
-    _geometry_group: Optional[Any] = field(init=False, repr=False)
-    _copy: Vector = field(init=False, repr=False)
+    _geometry_group: Optional[Any] = field(init=False, repr=False)  # TODO: Is this used any more?
+    _copy: Vector = field(init=False, repr=False)  # TODO: Is this used any more?
 
     # FabGeometryContext.__post_init__():
     def __post_init__(self) -> None:
@@ -358,7 +358,7 @@ class FabGeometryContext(object):
         """Return the FabPlane."""
         return self._Plane
 
-    # FabGeometryContext.WorkQuery():
+    # FabGeometryContext.Query():
     @property
     def Query(self) -> Any:
         """Return the FabQuery.."""

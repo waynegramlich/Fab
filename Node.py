@@ -42,6 +42,7 @@ See the FabNode documentation for further attributes.
 
 from collections import OrderedDict
 from dataclasses import dataclass, field
+import hashlib
 from pathlib import Path
 from typing import Any, cast, Dict, IO, List, Sequence, Set, Tuple, Union
 
@@ -820,7 +821,7 @@ class FabSteps(object):
     There are three operations:
     * FabSteps(): This is the initalizer.
     * activate(): This method is used to activate a .stp file for reading and/or writing.
-    * flush_stales(): This method is used to previous .stp files that are now longer used.
+    * flush_stales(): This method is used to remove previous .stp files that are now longer used.
 
     """
     StepsDirectory: Path  # Directory containing STEP files.
@@ -849,20 +850,31 @@ class FabSteps(object):
                   f"=>|{len(self._scanned_steps)}|")
 
     # FabSteps.activate():
-    def activate(self, name: str, hash_text: str, tracing: str = "") -> Path:
+    def activate(self, name: str, hash_tuple: Tuple[Any, ...], tracing: str = "") -> Path:
         """Reserve a .step file name to be read/written.
 
         This method reserves a .step file name to be read/written.
 
         Arguments:
         * name (str): The human readable name of the step file.
-        * hash (int): An integer that is converted into 16 digit hex value.
+        * hash_tuple (Tuple[Any]):
+          A tuple tree, where the leaf values are bool, int, float, or str values.
 
         Returns:
         * (Path): The full path to the .step file to be read/written.
         """
         if tracing:
             print(f"{tracing}=>FabSteps('{str(self.StepsDirectory)}').activate('{name}', {hash:x})")
+
+        # This was a shocker.  It turns out that __hash__() methods are not necessarily
+        # consistent between Python runs.  In other words  __hash__() is non-deterministic.
+        # Instead use one of the hashlib hash functions instead:
+        #     hash_tuple => repr string => hashlib.sha256 => trim to 16 bytes
+        hash_bytes: bytes = repr(hash_tuple).encode("utf-8")
+        hasher: Any = hashlib.new("sha256")
+        hasher.update(hash_bytes)
+        hash_text: str = hasher.hexdigest()[:16]
+
         active_step: Path = self.StepsDirectory / Path(f"{name}__{hash_text}.stp")
         self._active_steps[hash_text] = active_step
         if tracing:
@@ -920,7 +932,7 @@ class FabSteps(object):
             hash_text: str
             name: str
             for hash_text, name in steps.items():
-                step_path: Path = fab_steps.activate(name, hash_text)
+                step_path: Path = fab_steps.activate(name, (hash_text,))
                 step_file: IO[str]
                 with open(step_path, "w") as step_file:
                     step_file.write(f"{name} {hash_text}\n")
