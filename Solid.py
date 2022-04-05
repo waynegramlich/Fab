@@ -537,28 +537,35 @@ class _Pocket(_Operation):
             pocket_query.show("Pocket Context Before", tracing)
 
         # For now just duplicate *pocket_context*:  Eventually, it needs to be at a different level.
-        # bottom_context: FabGeometryContext = geometry_context.copy(tracing=next_tracing)
+        bottom_context: FabGeometryContext = geometry_context.copy(tracing=next_tracing)
 
         # Transfer *geometries* to *pocket_context* (which is a copy of *geometry_context*):
         prefix: str = f"{mount.Name}_{self.Name}"
+        bottom_prefix: str = f"{prefix}_bottom"
         geometry: FabGeometry
         index: int
         for index, geometry in enumerate(geometries):
             geometry.produce(pocket_context, prefix, index, tracing=next_tracing)
-            # geometry.produce(bottom_context, prefix, index, tracing=next_tracing)
+            geometry.produce(bottom_context, bottom_prefix, index, tracing=next_tracing)
             if tracing:
                 pocket_query.show(f"Pocket Context after Geometry {index}", tracing)
 
         # Extrude the pocket *pocket_query* volume to be removed.
-        # bottom_context.Query.extrude(0.000001, tracing=next_tracing)  # Make it very thin.
-        # bottom_name: str = ??
-        # bottom_assembly = cq.Assembly(
-        #     bottom_context.Query.Workplane, name=bottom_name, color=cq.Color(0.5, 0.5, 0.5, 0.5))
+        pocket_query.extrude(self._Depth, tracing=next_tracing)
+
+        bottom_context.Query.extrude(0.000001, tracing=next_tracing)  # Make it very thin.
+        bottom_name: str = f"{prefix}_pocket_bottom"
+        bottom_assembly = cq.Assembly(
+            bottom_context.Query.WorkPlane, name=bottom_name, color=cq.Color(0.5, 0.5, 0.5, 0.5))
+        bottom_path = produce_state.Steps.activate(bottom_name,
+                                                   self.get_geometries_hash(geometries))
+        _ = bottom_assembly
+        _ = bottom_path
+
         # Use FabSteps to manage duplicates.
         # with _suppress_stdout():
         #     bottom_assembly.save("/tmp/pocket.stp", "STEP")
 
-        pocket_query.extrude(self._Depth, tracing=next_tracing)
         if tracing:
             pocket_query.show("Pocket Context after Extrude:", tracing)
 
