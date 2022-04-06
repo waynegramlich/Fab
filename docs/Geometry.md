@@ -13,7 +13,8 @@
   * 2.3 [project_to_plane()](#geometry----project-to-plane): Return a new FabGeometry projected onto a plane.
 * 3 Class: [FabGeometryContext](#geometry--fabgeometrycontext):
   * 3.1 [copy()](#geometry----copy): Return a FabGeometryContext copy.
-  * 3.2 [set_geometry_group()](#geometry----set-geometry-group): Set the GeometryContext geometry group.
+  * 3.2 [copy_with_plane_adjust()](#geometry----copy-with-plane-adjust): Return a FabGeometryContext copy with the plane adjusted up/down.
+  * 3.3 [set_geometry_group()](#geometry----set-geometry-group): Set the GeometryContext geometry group.
 * 4 Class: [FabPlane](#geometry--fabplane):
   * 4.1 [point_project()](#geometry----point-project): Project a point onto a plane.
   * 4.2 [adjust()](#geometry----adjust): Return a new FabPlane that has been adjusted up/down the normal by a delta.
@@ -116,7 +117,13 @@ FabGeometryContext.copy(self, tracing: str = '') -> 'FabGeometryContext':
 
 Return a FabGeometryContext copy.
 
-### <a name="geometry----set-geometry-group"></a>3.2 `FabGeometryContext.`set_geometry_group():
+### <a name="geometry----copy-with-plane-adjust"></a>3.2 `FabGeometryContext.`copy_with_plane_adjust():
+
+FabGeometryContext.copy_with_plane_adjust(self, delta: float, tracing: str = '') -> 'FabGeometryContext':
+
+Return a FabGeometryContext copy with the plane adjusted up/down.
+
+### <a name="geometry----set-geometry-group"></a>3.3 `FabGeometryContext.`set_geometry_group():
 
 FabGeometryContext.set_geometry_group(self, geometry_group: Any) -> None:
 

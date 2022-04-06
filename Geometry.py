@@ -388,8 +388,18 @@ class FabGeometryContext(object):
         # next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}<=>FabGeometryContext.copy()")
-        new_work_plane: FabQuery = FabQuery(self._Plane)
-        return FabGeometryContext(self._Plane, new_work_plane)
+        new_query: FabQuery = FabQuery(self._Plane)
+        return FabGeometryContext(self._Plane, new_query)
+
+    # FabGeometryContext.copy_with_plane_adjust():
+    def copy_with_plane_adjust(self, delta: float, tracing: str = "") -> "FabGeometryContext":
+        """Return a FabGeometryContext copy with the plane adjusted up/down."""
+        # next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}<=>FabGeometryContext.copy()")
+        adjusted_plane: FabPlane = self._Plane.adjust(delta)
+        new_query: FabQuery = FabQuery(adjusted_plane)
+        return FabGeometryContext(adjusted_plane, new_query)
 
     # FabGeometryContext.set_geometry_Group():
     def set_geometry_group(self, geometry_group: Any) -> None:

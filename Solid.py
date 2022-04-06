@@ -540,7 +540,8 @@ class _Pocket(_Operation):
             pocket_query.show("Pocket Context Before", tracing)
 
         # For now just duplicate *pocket_context*:  Eventually, it needs to be at a different level.
-        bottom_context: FabGeometryContext = geometry_context.copy(tracing=next_tracing)
+        bottom_context: FabGeometryContext = geometry_context.copy_with_plane_adjust(
+            -self._Depth, tracing=next_tracing)
 
         # Transfer *geometries* to *pocket_context* (which is a copy of *geometry_context*):
         prefix: str = f"{mount.Name}_{self.Name}"
