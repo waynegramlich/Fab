@@ -553,18 +553,20 @@ class _Pocket(_Operation):
         # Extrude the pocket *pocket_query* volume to be removed.
         pocket_query.extrude(self._Depth, tracing=next_tracing)
 
-        bottom_context.Query.extrude(0.000001, tracing=next_tracing)  # Make it very thin.
-        bottom_name: str = f"{prefix}_pocket_bottom"
-        bottom_assembly = cq.Assembly(
-            bottom_context.Query.WorkPlane, name=bottom_name, color=cq.Color(0.5, 0.5, 0.5, 0.5))
+        bottom_name: str = f"{prefix}__pocket_bottom"
         bottom_path = produce_state.Steps.activate(bottom_name,
                                                    self.get_geometries_hash(geometries))
-        _ = bottom_assembly
-        _ = bottom_path
+        if not bottom_path.exists():
+            # Save it out here.
+            bottom_context.Query.extrude(0.000001, tracing=next_tracing)  # Make it very thin.
+            bottom_assembly = cq.Assembly(
+                bottom_context.Query.WorkPlane, name=bottom_name,
+                color=cq.Color(0.5, 0.5, 0.5, 0.5))
+            _ = bottom_assembly
 
-        # Use FabSteps to manage duplicates.
-        # with _suppress_stdout():
-        #     bottom_assembly.save("/tmp/pocket.stp", "STEP")
+            # Use FabSteps to manage duplicates.
+            with _suppress_stdout():
+                bottom_assembly.save(str(bottom_path), "STEP")
 
         if tracing:
             pocket_query.show("Pocket Context after Extrude:", tracing)
