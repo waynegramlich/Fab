@@ -34,7 +34,7 @@ _ = PathJob  # TODO: Remove
 _ = PathProfile  # TODO: Remove
 _ = PathPostProcessor  # TODO: Remove
 _ = PathUtil  # TODO: Remove
-_ = PathToolController  # TODO: Removea
+_ = PathToolController  # TODO: Remove
 
 # This causes out flake8 to think App are defined.
 # It is actually present in the FreeCAD Python exectution envriorment.
@@ -365,13 +365,7 @@ class FabCQtoFC(object):
         elif kind == "Extrude":
             self.process_extrude(json_dict, label, indent, tree_path, tracing=next_tracing)
         elif kind == "Pocket":
-            depth = cast(float,
-                         self.key_verify("_Depth", json_dict, float, tree_path, "Extrude._Depth"))
-            step_file = cast(str,
-                             self.key_verify("_Step", json_dict, str, tree_path, "Pocket._Step"))
-            if indent:
-                print(f"{indent} _Depth: {depth}")
-                print(f"{indent} _Step: {step_file}")
+            self.process_pocket(json_dict, label, indent, tree_path, tracing=next_tracing)
         else:
             message = f"{kind} not one of {allowed_kinds}"
             print(message)
@@ -545,6 +539,58 @@ class FabCQtoFC(object):
 
         if tracing:
             print(f"{tracing}<=FabCQtoFC.process_extrude(*, '{label}', {tree_path})")
+
+    # FabCQtoFC.process_pocket():
+    def process_pocket(self, json_dict: Dict[str, Any], label: str,
+                       indent: str, tree_path: Tuple[str, ...], tracing: str = "") -> None:
+        """Process a Pocket JSON node."""
+        if tracing:
+            print(f"{tracing}=>FabCQtoFC.process_pocket(*, '{label}', {tree_path})")
+
+        cut_mode = cast(str, self.key_verify("_CutMode", json_dict, str, tree_path,
+                                             "Pocket._CutMode"))
+        extra_offset = cast(float, self.key_verify("_ExtraOffset", json_dict, float, tree_path,
+                                                   "Pocket._ExtraOffset"))
+        keep_tool_down = cast(bool, self.key_verify("_KeepToolDown", json_dict, bool, tree_path,
+                                                    "Pocket._KeepToolDown"))
+        min_travel = cast(float, self. key_verify("_MinTravel", json_dict, float, tree_path,
+                                                  "Pocket._MinTravel"))
+        offset_pattern = cast(str, self.key_verify("_OffsetPattern", json_dict, str, tree_path,
+                                                   "Pocket._OffsetPattern"))
+        start_at = cast(str, self.key_verify("_StartAt", json_dict, str, tree_path,
+                                             "Pocket._StartAt"))
+        step = cast(str, self.key_verify("_Step", json_dict, str, tree_path,
+                                         "Pocket._Step"))
+        step_over = cast(float, self.key_verify("_StepOver", json_dict, float, tree_path,
+                                                "Pocket._StepOver"))
+        zig_zag_angle = cast(float, self.key_verify("_ZigZagAngle", json_dict, float, tree_path,
+                                                    "Pocket._ZigZagAngle"))
+        cut_modes: Tuple[str, ...] = ("CW", "CCW")
+        if cut_mode not in cut_modes:
+            raise RuntimeError("Pocket._CutMode is '{cut_mode}', not one of {cut_modes}")
+        offset_patterns: Tuple[str, ...] = (
+            "ZigZag", "Offset", "Spiral", "ZigZagOffset", "Line", "Grid", "Triangle")
+        if offset_pattern not in offset_patterns:
+            raise RuntimeError(
+                "Pocket._OffsetPattern is '{offset_pattern}', not one of {offset_patterns}")
+        start_ats: Tuple[str, ...] = ("Center", "Edge")
+        if start_at not in start_ats:
+            raise RuntimeError(
+                "Pocket._StartAt is '{start_at}', not one of {start_ats}")
+
+        if indent:
+            print(f"{indent} _CutMode: '{cut_mode}'")
+            print(f"{indent} _ExtraOffset: {extra_offset}")
+            print(f"{indent} _KeepToolDown: {keep_tool_down}")
+            print(f"{indent} _MinTravel: {min_travel}")
+            print(f"{indent} _OffsetPattern: '{offset_pattern}'")
+            print(f"{indent} _StartAt: {start_at}")
+            print(f"{indent} _Step: '{step}'")
+            print(f"{indent} _StepOver: {step_over}")
+            print(f"{indent} _ZigZagAngle: {zig_zag_angle}")
+
+        if tracing:
+            print(f"{tracing}<=FabCQtoFC.process_pocket(*, '{label}', {tree_path})")
 
     # FabCQtoFC.process_mount():
     def process_mount(self, json_dict: Dict[str, Any], label: str,

@@ -452,6 +452,7 @@ class _Pocket(_Operation):
        The Polygon or Circle to pocket.  If a tuple is given, the smaller FabGeometry's
        specify "islands" to not pocket.
     * *Depth* (float): The pocket depth in millimeters.
+    * *Bottom_Path* (str): The the path to the generated Pocket bottom STEP file.
 
     """
 
@@ -460,6 +461,7 @@ class _Pocket(_Operation):
     _Depth: float
     # TODO: Make _Geometries be comparable.
     _Geometries: Tuple[FabGeometry, ...] = field(init=False, repr=False, compare=False)
+    _BottomPath: Optional[Path] = field(init=False)
 
     # _Pocket__post_init__():
     def __post_init__(self) -> None:
@@ -486,6 +488,7 @@ class _Pocket(_Operation):
         if self._Depth <= 0.0:
             raise RuntimeError(f"_Extrude.__post_init__({self.Name}):"
                                f"Depth ({self.Depth}) is not positive.")
+        self._BottomPath = None
 
     # _Pocket.Geometry():
     def Geometry(self) -> Union[FabGeometry, Tuple[FabGeometry, ...]]:
@@ -558,6 +561,7 @@ class _Pocket(_Operation):
                                                    self.get_geometries_hash(geometries))
         if not bottom_path.exists():
             # Save it out here.
+            self._BottomPath = bottom_path
             bottom_context.Query.extrude(0.000001, tracing=next_tracing)  # Make it very thin.
             bottom_assembly = cq.Assembly(
                 bottom_context.Query.WorkPlane, name=bottom_name,
@@ -567,6 +571,19 @@ class _Pocket(_Operation):
             # Use FabSteps to manage duplicates.
             with _suppress_stdout():
                 bottom_assembly.save(str(bottom_path), "STEP")
+
+        tool_controller: FabToolController = FabToolController(
+            BitName="5mm_Endmill",
+            Cooling="Flood",
+            HorizontalFeed=2.34,
+            HorizontalRapid=23.45,
+            SpindleDirection=True,
+            SpindleSpeed=5432.0,
+            ToolNumber=1,
+            VerticalFeed=1.23,
+            VerticalRapid=12.34
+        )
+        self.set_tool_controller(tool_controller, produce_state.ToolControllersTable)
 
         if tracing:
             pocket_query.show("Pocket Context after Extrude:", tracing)
@@ -584,9 +601,21 @@ class _Pocket(_Operation):
     # _Pocket.to_json():
     def to_json(self) -> Dict[str, Any]:
         """Return JSON dictionary for _Extrude."""
+        bottom_path: Optional[Path] = self._BottomPath
+        if bottom_path is None:
+            raise RuntimeError("_Pocket.to_json(): no bottom path is set yet.")
         json_dict: Dict[str, Any] = super().to_json()
-        json_dict["_Depth"] = self._Depth
-        json_dict["_Step"] = "_Pocket.to_json():step"
+        json_dict["_CutMode"] = ("CW", "CCW")[0]
+        json_dict["_ExtraOffset"] = 0.0
+        json_dict["_KeepToolDown"] = True
+        json_dict["_MinTravel"] = 1.0
+        json_dict["_OffsetPattern"] = (
+            "ZigZag", "Offset", "Spiral", "ZigZagOffset", "Line", "Grid", "Triangle")[2]
+        json_dict["_StartAt"] = ("Center", "Edge")[0]
+        json_dict["_Step"] = str(bottom_path)
+        json_dict["_StepOver"] = 1.0
+        json_dict["_ZigZagAngle"] = 0.0  # Angle in degrees
+
         return json_dict
 
 
