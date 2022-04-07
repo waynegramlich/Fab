@@ -331,46 +331,45 @@ class TestSolid(FabSolid):
 
         # Perform a pocket:
         pocket_fillet_radius: float = 2.5
-        left_polygon: FabPolygon = FabPolygon((
-            (Vector(-30, -10, z_offset), pocket_fillet_radius),  # SW
-            (Vector(-10, -10, z_offset), pocket_fillet_radius),  # SE
-            (Vector(-10, 10, z_offset), pocket_fillet_radius),  # NE
-            (Vector(-30, 10, z_offset), pocket_fillet_radius),  # NW
-        ))
-        _ = left_polygon
-        top_mount.pocket("LeftPocket", left_polygon, depth)
+        features: Tuple[str, ...] = ("LPP", "RPP", "RCP", "CCP", "DSH")  # Enable all *features*
+        # features = ("RPP",)  # Down select to specific *features*
+        if "LPP" in features:  # Left Polygon Pocket
+            left_polygon: FabPolygon = FabPolygon((
+                (Vector(-30, -10, z_offset), pocket_fillet_radius),  # SW
+                (Vector(-10, -10, z_offset), pocket_fillet_radius),  # SE
+                (Vector(-10, 10, z_offset), pocket_fillet_radius),  # NE
+                (Vector(-30, 10, z_offset), pocket_fillet_radius),  # NW
+            ))
+            top_mount.pocket("LeftPocket", left_polygon, depth)
 
-        right_pocket: FabPolygon = FabPolygon((
-            (Vector(10, -10, z_offset), pocket_fillet_radius),  # SW
-            (Vector(30, -10, z_offset), pocket_fillet_radius),  # SE
-            (Vector(30, 10, z_offset), pocket_fillet_radius),  # NE
-            (Vector(10, 10, z_offset), pocket_fillet_radius),  # NW
-        ))
-        _ = right_pocket
-        top_mount.pocket("RightPocket", right_pocket, depth2)
+        if "RPP" in features:  # Right Polygon Pocket
+            right_pocket: FabPolygon = FabPolygon((
+                (Vector(10, -10, z_offset), pocket_fillet_radius),  # SW
+                (Vector(30, -10, z_offset), pocket_fillet_radius),  # SE
+                (Vector(30, 10, z_offset), pocket_fillet_radius),  # NE
+                (Vector(10, 10, z_offset), pocket_fillet_radius),  # NW
+            ))
+            top_mount.pocket("RightPocket", right_pocket, depth2)
 
-        right_circle: FabCircle = FabCircle(Vector(20, 0, z_offset), normal, 10)
-        _ = right_circle
-        top_mount.pocket("RightCircle", right_circle, depth)
+        if "RCP" in features:  # Right Circle Pocket
+            right_circle: FabCircle = FabCircle(Vector(20, 0, z_offset), normal, 10)
+            top_mount.pocket("RightCircle", right_circle, depth)
 
-        center_circle: FabCircle = FabCircle(Vector(0, 0, z_offset), normal, 10)
-        _ = center_circle
-        top_mount.pocket("CenterCircle", center_circle, depth2)
+        if "CCP" in features:  # Center Circle Pocket
+            center_circle: FabCircle = FabCircle(Vector(0, 0, z_offset), normal, 10)
+            top_mount.pocket("CenterCircle", center_circle, depth2)
+            screw_start: Vector = Vector(0.0, -10.0, z_offset)
+            screw_end: Vector = Vector(0.0, -10.0, z_offset - depth)
+            self.Screw1: FabJoin = FabJoin("Screw1", self.Fasten, screw_start, screw_end)
+            top_mount.drill_joins("Screw1", (self.Screw1,), tracing=next_tracing)
 
-        screw_start: Vector = Vector(0.0, -10.0, z_offset)
-        screw_end: Vector = Vector(0.0, -10.0, z_offset - depth)
-        self.Screw1: FabJoin = FabJoin("Screw1", self.Fasten, screw_start, screw_end)
-
-        top_mount.drill_joins("Screw1", (self.Screw1,), tracing=next_tracing)
-
-        north_start: Vector = self.N
-        north_end: Vector = self.C
-        north_mount: FabMount = self.mount(
-            "North", self.N, self.DN, self.DE, self.YMax - self.YMin, tracing=tracing)
-        _ = north_mount
-        self.ScrewN: FabJoin = FabJoin("ScrewN", self.Fasten, north_start, north_end)
-
-        north_mount.drill_joins("ScrewN", (self.ScrewN,), tracing=next_tracing)
+        if "DSH" in features:  # Drill Screw Hole:
+            north_start: Vector = self.N
+            north_end: Vector = self.C
+            north_mount: FabMount = self.mount(
+                "North", self.N, self.DN, self.DE, self.YMax - self.YMin, tracing=tracing)
+            self.ScrewN: FabJoin = FabJoin("ScrewN", self.Fasten, north_start, north_end)
+            north_mount.drill_joins("ScrewN", (self.ScrewN,), tracing=next_tracing)
 
         if tracing:
             print(f"{tracing}<=TestSolid({self.Label}).produce()")
