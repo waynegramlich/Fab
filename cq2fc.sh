@@ -89,8 +89,10 @@ if [[ "${VISUAL}" == "" ]]; then
     # In this modeFreeCAD prints out lines containing "..." and "Reading Step file......"
     # for each STEP file read in.  These annoying messages are suppressed:
     echo "Non visual mode"
+    # echo FLAGS="${FLAGS}" JSON="${JSON}" \
+    #    "${FREECAD}" -M "${SCRIPT_DIR}" -c "${SCRIPT_DIR}/CQtoFC.py"
     FLAGS="${FLAGS}" JSON="${JSON}" \
-       "${FREECAD}" -M "${SCRIPT_DIR}" -c "${SCRIPT_DIR}/CQtoFC.py" | grep -F -v "..."
+       "${FREECAD}" -M "${SCRIPT_DIR}" -c "${SCRIPT_DIR}/CQtoFC.py"
 else
     # Visual_mode:
     echo "Visual mode"

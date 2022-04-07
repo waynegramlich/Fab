@@ -18,6 +18,7 @@ CNC: If this is present, CNC G code (.nc) files are generated.
 """
 
 # <--------------------------------------- 100 characters ---------------------------------------> #
+print("Entered CQtoFC.py")
 
 from dataclasses import dataclass, field
 import json
@@ -59,6 +60,7 @@ class FabCQtoFC(object):
 
     JsonPath: FilePath
     ToolsPath: Optional[FilePath]
+    CNC: bool
     AllDocuments: List[Any] = field(init=False, repr=False)
     CurrentGroup: Any = field(init=False, repr=False)
     CurrentJob: Any = field(init=False, repr=False)
@@ -423,6 +425,7 @@ class FabCQtoFC(object):
     def process_extrude(self, json_dict: Dict[str, Any], label: str,
                         indent: str, tree_path: Tuple[str, ...], tracing: str = "") -> None:
         """Process an Extrude JSON node."""
+        next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabCQtoFC.process_extrude(*, '{label}', {tree_path})")
         contour = cast(bool, self.key_verify("_Contour", json_dict, bool, tree_path,
@@ -479,7 +482,13 @@ class FabCQtoFC(object):
                 print(f"{tracing}=>contour({obj=}, {name=}, {job=}, {normal=})")
             aligned_face_name: str = get_aligned_face_name(obj, normal, tracing=next_tracing)
             if aligned_face_name:
+                if tracing:
+                    print(f"{tracing}Create profile")
+                # This prints:
+                # PathSetupSheet.INFO: SetupSheet has no support for TestSolid_Step_Top_profile
                 profile = PathProfile.Create(name)
+                if tracing:
+                    print(f"{tracing}profile created")
                 profile.Base = (obj, aligned_face_name)
                 profile.setExpression('StepDown', None)
                 profile.StepDown = step_down
@@ -526,6 +535,8 @@ class FabCQtoFC(object):
                 print(f"{tracing}<=contour()=>{profile}")
             return profile
 
+        if tracing:
+            print(f"{tracing}Creating job")
         job = self.CurrentJob
         normal = self.CurrentNormal
         assert job is not None, "No job present"
@@ -533,9 +544,9 @@ class FabCQtoFC(object):
         if contour:
             tool_controller: Any = None
             _, tool_controller = self.get_tool_and_controller(
-                json_dict, label, indent, tree_path)
+                json_dict, label, indent, tree_path, tracing=next_tracing)
             do_contour(self.CurrentPart, f"{job.Label}_profile", job, normal,
-                       start_depth, step_down, final_depth, tool_controller)
+                       start_depth, step_down, final_depth, tool_controller, tracing=next_tracing)
 
         if tracing:
             print(f"{tracing}<=FabCQtoFC.process_extrude(*, '{label}', {tree_path})")
@@ -589,6 +600,27 @@ class FabCQtoFC(object):
             print(f"{indent} _StepOver: {step_over}")
             print(f"{indent} _ZigZagAngle: {zig_zag_angle}")
 
+        # project_document: Any = self.ProjectDocument
+        # step_file: FilePath = FilePath(step)
+        # if not step_file.exists():
+        #     raise RuntimeError(f"{step_file} does not exits.")
+        # foo: Any = FCImport(step, project_document.Label)  #
+        # print(f"{dir(foo)=}")
+        # pocket_part: Any = project_document.getObject(pocket_label)
+        # _ = pocket_part
+        # assert False
+
+        # Now create a PathPocket object:
+        # pocket_label: str = "label"
+        # assert project_document.Label == "TestDocument"  # TODO: Remove
+        # App.ActiveDocument = project_document  # TODO: This should not be necessary
+        # FCImport.insert(step, project_document.Label)
+        # pocket_part: Any = project_document.getObject(pocket_label)
+        # _ = pocket_part
+
+        # obj = PathPocket.Create() => "Path::FeaturePython".
+        # obj.Proxy == ObjectPyhon(obj, name)  # obj is the imported step file?
+
         if tracing:
             print(f"{tracing}<=FabCQtoFC.process_pocket(*, '{label}', {tree_path})")
 
@@ -614,7 +646,13 @@ class FabCQtoFC(object):
             print(f"{indent} _Orient: {orient}")
 
         self.flush_job()  # Force previous job to be done.
+
+        # Create the new job:
         job = PathJob.Create('Job', [self.CurrentPart], None)
+
+        # TODO: Create a setupsheet and install it into the job.
+        # setup_sheet: PathSetupSheet.SetupSheet = PathSetupSheet.Create()
+        # job.SetupSheet = setup_sheet
         job_name: str = f"{self.CurrentPart.Label}_{label}"
         gcode_path: str = f"/tmp/{job_name}.ngc"
         job.PostProcessorOutputFile = gcode_path
@@ -686,18 +724,28 @@ class FabCQtoFC(object):
 
 
 # main():
-def main() -> None:
+def main(tracing: str = "") -> None:
     """The main program."""
+    next_tracing: str = tracing + " " if tracing else ""
+    if tracing:
+        print(f"{tracing}=>main()")
     environ = cast(Dict[str, str], os.environ)
     json_file_name: str = environ["JSON"] if "JSON" in environ else "/tmp/TestProject.json"
-    cnc: bool = "CNC" in environ
-    cnc = True
+    flags: str = environ["FLAGS"] if "FLAGS" in environ else ""
+    cnc: bool = "c" in flags
+    visual: bool = "v" in flags
     tools_path: Optional[Path] = FilePath(".") / "Tools" if cnc else None
-    json_reader: FabCQtoFC = FabCQtoFC(FilePath(json_file_name), tools_path)
-    json_reader.process(indent="  ", tracing="  ")
+    if tracing:
+        print(f"{tracing}{json_file_name=} {tools_path=} {flags=} {cnc=} {visual=}")
+    json_reader: FabCQtoFC = FabCQtoFC(FilePath(json_file_name), tools_path, cnc)
+    json_reader.process(indent="  ", tracing=next_tracing)
     if not App.GuiUp:  # type: ignore
-        sys.exit()
+        if tracing:
+            print(f"{tracing}calling sys.exit()")
+        sys.exit(0)
+    if tracing:
+        print(f"{tracing}<=main()")
 
 
 if __name__ == "__main__":
-    main()
+    main(tracing=" ")
