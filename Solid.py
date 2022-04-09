@@ -544,7 +544,7 @@ class _Pocket(_Operation):
             -self._Depth, tracing=next_tracing)
 
         # Transfer *geometries* to *pocket_context* (which is a copy of *geometry_context*):
-        prefix: str = f"{mount.Name}_{self.Name}"
+        prefix: str = f"{mount.Solid.Label}__{mount.Name}__{self.Name}"
         bottom_prefix: str = f"{prefix}_bottom"
         geometry: FabGeometry
         index: int
