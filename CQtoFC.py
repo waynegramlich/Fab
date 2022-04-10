@@ -685,8 +685,50 @@ class FabCQtoFC(object):
         normal: Vector = Vector(0.0, 0.0, 1.0)
         aligned_face_name: str = self.get_aligned_face_name(
             pocket_bottom, normal, tracing=next_tracing)
-        # print(f"{pocket=} {dir(pocket)=} {aligned_face_name=}")
+        # print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+        # property_name: str
+        # index: int
+        # for index, property_name in enumerate(pocket.PropertiesList):
+        #     print(f"[{index}]: {property_name}: "
+        #           f"{pocket.getDocumentationOfProperty(property_name)}")
+
+        # [How to find Pockets in FreeCAD using Python Script?]
+        #   (https://forum.freecad.org/viewtopic.php?f=22&p=579798)
+
         pocket.Base = (pocket_bottom, aligned_face_name)
+        # print("set clearance_height")
+        pocket.ClearanceHeight = ""  # Clear out any preceding expression
+        pocket.ClearanceHeight = clearance_height
+        # print("set coolant_mode")
+        pocket.CoolantMode = coolant_mode
+        # print("set cut_mode")
+        pocket.CutMode = cut_mode
+        # print("set final_depth")
+        pocket.FinalDepth = final_depth
+        # print("set finish_depth")
+        pocket.FinishDepth = finish_depth
+        # print("set keep_tool_down")
+        pocket.KeepToolDown = keep_tool_down
+        # print("set min_travel")
+        pocket.MinTravel = min_travel
+        # print("set offset_pattern")
+        pocket.OffsetPattern = offset_pattern
+        # print("set safe_height")
+        pocket.SafeHeight = ""  # Clear out any preceding expression
+        pocket.SafeHeight = safe_height
+        # print("set start_at")
+        pocket.StartAt = start_at
+        # print("set start_depth")
+        pocket.StartDepth = start_depth
+        # print("set step_down")
+        pocket.StepDown = step_down
+        # print("set step_over")
+        pocket.StepOver = step_over
+        # print("set zig_zag_angle")
+        pocket.ZigZagAngle = zig_zag_angle
+        # print("set tool_controller")
+        pocket.ToolController = tool_controller
+        pocket.recompute()
 
         if tracing:
             print(f"{tracing}<=FabCQtoFC.process_pocket(*, '{label}', {tree_path})")
