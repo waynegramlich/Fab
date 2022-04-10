@@ -462,6 +462,10 @@ class _Pocket(_Operation):
     # TODO: Make _Geometries be comparable.
     _Geometries: Tuple[FabGeometry, ...] = field(init=False, repr=False, compare=False)
     _BottomPath: Optional[Path] = field(init=False)
+    _FinalDepth: float = field(init=False, repr=False)
+    _TopDepth: float = field(init=False, repr=False)
+    _StartDepth: float = field(init=False, repr=False)
+    _StepDepth: float = field(init=False, repr=False)
 
     # _Pocket__post_init__():
     def __post_init__(self) -> None:
@@ -489,6 +493,26 @@ class _Pocket(_Operation):
             raise RuntimeError(f"_Extrude.__post_init__({self.Name}):"
                                f"Depth ({self.Depth}) is not positive.")
         self._BottomPath = None
+
+        # Unpack some values from *mount*:
+        mount: FabMount = self.Mount
+        geometry_context: FabGeometryContext = mount._GeometryContext
+        plane: FabPlane = geometry_context.Plane
+        top_depth: float = plane.Distance
+        final_depth: float = top_depth - self._Depth
+        delta_depth: float = top_depth - final_depth
+        tool_edge_height: float = 30.00  # TODO: Fix
+        if delta_depth > tool_edge_height:
+            raise RuntimeError("FIXME")
+
+        tool_diameter: float = 5.00  # TODO: Fix
+        step_depth: float = tool_diameter / 2.0
+        steps: int = int(math.ceil(delta_depth / step_depth))
+        step_down = delta_depth / float(steps)
+        self._TopDepth = top_depth
+        self._StartDepth = max(top_depth - step_depth, final_depth)
+        self._StepDown = step_down
+        self._FinalDepth = final_depth
 
     # _Pocket.Geometry():
     def Geometry(self) -> Union[FabGeometry, Tuple[FabGeometry, ...]]:
