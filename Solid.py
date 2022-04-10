@@ -554,7 +554,6 @@ class _Pocket(_Operation):
         if tracing:
             print(f"{tracing}=>_Pocket.post_produce1('{self.Name}')")
 
-        # Unpack some values from *mount*:
         mount: FabMount = self.Mount
         geometry_context: FabGeometryContext = mount._GeometryContext
         geometries: Tuple[FabGeometry, ...] = self._Geometries
@@ -627,18 +626,33 @@ class _Pocket(_Operation):
     def to_json(self) -> Dict[str, Any]:
         """Return JSON dictionary for _Extrude."""
         bottom_path: Optional[Path] = self._BottomPath
+        cut_modes: Tuple[str, ...] = ("Climb", "Conventional")
+        coolant_modes: Tuple[str, ...] = ("None", "Flood", "Mist")
+        offset_patterns: Tuple[str, ...] = (
+            "ZigZag", "Offset", "Spiral", "ZigZagOffset", "Line", "Grid", "Triangle")
+        start_ats: Tuple[str, ...] = ("Center", "Edge")
         if bottom_path is None:
             raise RuntimeError("_Pocket.to_json(): no bottom path is set yet.")
+
+        start_depth: float = self._StartDepth
+        step_down: float = self._StepDown
+        final_depth: float = self._FinalDepth
+
         json_dict: Dict[str, Any] = super().to_json()
-        json_dict["_CutMode"] = ("CW", "CCW")[0]
-        json_dict["_ExtraOffset"] = 0.0
-        json_dict["_KeepToolDown"] = True
-        json_dict["_MinTravel"] = 1.0
-        json_dict["_OffsetPattern"] = (
-            "ZigZag", "Offset", "Spiral", "ZigZagOffset", "Line", "Grid", "Triangle")[2]
-        json_dict["_StartAt"] = ("Center", "Edge")[0]
-        json_dict["_Step"] = str(bottom_path)
-        json_dict["_StepOver"] = 1.0
+        json_dict["_ClearanceHeight"] = start_depth + 10.0  # TODO: Fix
+        json_dict["_CoolantMode"] = coolant_modes[1]  # TODO: Fix
+        json_dict["_CutMode"] = cut_modes[0]  # TODO: Fix
+        json_dict["_FinalDepth"] = final_depth  # TODO: Fix  (Lowest Z depth in pocket)
+        json_dict["_FinishDepth"] = 0.0  # TODO: Fix (Maximum material removed on final pass)
+        json_dict["_KeepToolDown"] = False
+        json_dict["_MinTravel"] = False
+        json_dict["_OffsetPattern"] = offset_patterns[0]
+        json_dict["_SafeHeight"] = start_depth + 5.0  # TODO: Fix
+        json_dict["_StartAt"] = start_ats[0]
+        json_dict["_StartDepth"] = 0.0  # TODO: Starting depth of first cut (pocket_top - delta)
+        json_dict["_StepDown"] = step_down  # TODO: Incremental Step Down of Tool
+        json_dict["_Step"] = str(bottom_path)  # File name!
+        json_dict["_StepOver"] = 90  # Percent of cutter diameter to step over on each pass
         json_dict["_ZigZagAngle"] = 0.0  # Angle in degrees
 
         return json_dict
