@@ -69,7 +69,7 @@ class FabPlane(object):
         copy: Vector = Vector(0.0, 0.0, 0.0)
         contact: Vector = self._Contact + copy  # C
         normal: Vector = self._Normal + copy   # N
-        d: Vector = normal.dot(contact)  # d = N . C
+        d: float = normal.dot(contact)  # d = N . C
         normal_length: float = normal.Length  # ||N||
         distance: float = d / normal_length   # D = d / ||N||
         unit_normal: Vector = normal / normal_length  # <<N>>
@@ -85,6 +85,7 @@ class FabPlane(object):
         # *rotate_to_z_axis* method can be invoked (since it does not access the _Plane field.)
         self._UnitNormal = unit_normal
         self._Contact = contact
+        self._Distance = distance
         self._Normal = normal
         self._Copy = copy
         self._Origin = origin
@@ -144,8 +145,8 @@ class FabPlane(object):
     # FabPlane.Distance():
     @property
     def Distance(self) -> float:
-        """Return FabPlane Normal."""
-        return self._Distance + self._Copy
+        """Return FabPlane distance along the normal."""
+        return self._Distance
 
     # FablPlane.Origin():
     @property
