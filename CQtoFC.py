@@ -583,24 +583,6 @@ class FabCQtoFC(object):
             print(f"{tracing}=>FabCQtoFC.process_extrude(*, '{label}', {tree_path})")
         contour = cast(bool, self.key_verify("_Contour", json_dict, bool, tree_path,
                                              "Extrude._Contour"))
-        depth = cast(float, self.key_verify("_Depth", json_dict, float, tree_path,
-                                            "Extrude._Depth"))
-        final_depth = cast(float, self.key_verify("_FinalDepth", json_dict, float, tree_path,
-                                                  "Extrude._FinalDepth"))
-        step_down = cast(float, self. key_verify("_StepDown", json_dict, float, tree_path,
-                                                 "Extrude._StepDown"))
-        step_file = cast(str, self.key_verify("_StepFile", json_dict, str, tree_path,
-                                              "Extrude._StepFile"))
-        start_depth = cast(float, self.key_verify("_StartDepth", json_dict, float, tree_path,
-                                                  "Extrude._StartDepth"))
-        if indent:
-            print(f"{indent} _Contour: {bool}")
-            print(f"{indent} _Depth: {depth}")
-            print(f"{indent} _FinalDepth: {final_depth}")
-            print(f"{indent} _StartDepth: {start_depth}")
-            print(f"{indent} _StepDown: {step_down}")
-            print(f"{indent} _StepFile: {step_file}")
-
         if tracing:
             print(f"{tracing}Creating job")
         job = self.CurrentJob
@@ -608,6 +590,24 @@ class FabCQtoFC(object):
         assert job is not None, "No job present"
 
         if contour:
+            depth = cast(float, self.key_verify(
+                "_Depth", json_dict, float, tree_path, "Extrude._Depth"))
+            final_depth = cast(float, self.key_verify(
+                "_FinalDepth", json_dict, float, tree_path, "Extrude._FinalDepth"))
+            step_down = cast(float, self. key_verify(
+                "_StepDown", json_dict, float, tree_path, "Extrude._StepDown"))
+            step_file = cast(str, self.key_verify(
+                "_StepFile", json_dict, str, tree_path, "Extrude._StepFile"))
+            start_depth = cast(float, self.key_verify(
+                "_StartDepth", json_dict, float, tree_path, "Extrude._StartDepth"))
+            if indent:
+                print(f"{indent} _Contour: {bool}")
+                print(f"{indent} _Depth: {depth}")
+                print(f"{indent} _FinalDepth: {final_depth}")
+                print(f"{indent} _StartDepth: {start_depth}")
+                print(f"{indent} _StepDown: {step_down}")
+                print(f"{indent} _StepFile: {step_file}")
+
             tool, tool_controller = self.get_tool_and_controller(
                 json_dict, label, indent, tree_path, tracing=next_tracing)
 
@@ -623,15 +623,19 @@ class FabCQtoFC(object):
                 if tracing:
                     print(f"{tracing}profile created")
                 profile.Base = (obj, aligned_face_name)
-                profile.setExpression('StepDown', None)
-                profile.StepDown = step_down
-                profile.setExpression('StartDepth', None)
-                profile.StartDepth = start_depth
-                profile.setExpression('FinalDepth', None)
-                profile.FinalDepth = final_depth
-                profile.processHoles = False
-                profile.processPerimeter = True
-                profile.ToolController = tool_controller
+                if True:
+                    profile.setExpression('StepDown', None)
+                    profile.StepDown = step_down
+                    profile.setExpression('StartDepth', None)
+                    profile.StartDepth = start_depth
+                    profile.setExpression('FinalDepth', None)
+                    profile.FinalDepth = final_depth
+                    profile.processHoles = False
+                    profile.processPerimeter = True
+                    profile.ToolController = tool_controller
+                else:
+                    pass
+
                 profile.recompute()
 
                 # To generate a list of documented properties to "doc_file_name*:
