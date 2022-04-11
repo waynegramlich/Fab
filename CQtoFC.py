@@ -601,13 +601,18 @@ class FabCQtoFC(object):
             print(f"{indent} _StepDown: {step_down}")
             print(f"{indent} _StepFile: {step_file}")
 
-        def do_contour(obj: Any, name: str, job: Any, normal: Vector,
-                       start_depth: float, step: float, final_depth: float,
-                       tool_controller: Any, tracing: str = "") -> Any:
-            """Create an exterior contour."""
-            next_tracing: str = tracing + " " if tracing else ""
-            if tracing:
-                print(f"{tracing}=>contour({obj=}, {name=}, {job=}, {normal=})")
+        if tracing:
+            print(f"{tracing}Creating job")
+        job = self.CurrentJob
+        normal = self.CurrentNormal
+        assert job is not None, "No job present"
+
+        if contour:
+            tool, tool_controller = self.get_tool_and_controller(
+                json_dict, label, indent, tree_path, tracing=next_tracing)
+
+            obj: Any = self.CurrentPart
+            name: str = f"{job.Label}_profile"
             aligned_face_name: str = self.get_aligned_face_name(obj, normal, tracing=next_tracing)
             if aligned_face_name:
                 if tracing:
@@ -658,22 +663,6 @@ class FabCQtoFC(object):
                         for property in documented_properties:
                             doc_file.write(f"* {property} ({repr(getattr(profile, property))}): "
                                            f"{profile.getDocumentationOfProperty(property)}\n")
-
-            if tracing:
-                print(f"{tracing}<=contour()=>{profile}")
-            return profile
-
-        if tracing:
-            print(f"{tracing}Creating job")
-        job = self.CurrentJob
-        normal = self.CurrentNormal
-        assert job is not None, "No job present"
-
-        if contour:
-            tool, tool_controller = self.get_tool_and_controller(
-                json_dict, label, indent, tree_path, tracing=next_tracing)
-            do_contour(self.CurrentPart, f"{job.Label}_profile", job, normal,
-                       start_depth, step_down, final_depth, tool_controller, tracing=next_tracing)
 
         if tracing:
             print(f"{tracing}<=FabCQtoFC.process_extrude(*, '{label}', {tree_path})")
