@@ -590,24 +590,6 @@ class FabCQtoFC(object):
         assert job is not None, "No job present"
 
         if contour:
-            depth = cast(float, self.key_verify(
-                "_Depth", json_dict, float, tree_path, "Extrude._Depth"))
-            final_depth = cast(float, self.key_verify(
-                "_FinalDepth", json_dict, float, tree_path, "Extrude._FinalDepth"))
-            step_down = cast(float, self. key_verify(
-                "_StepDown", json_dict, float, tree_path, "Extrude._StepDown"))
-            step_file = cast(str, self.key_verify(
-                "_StepFile", json_dict, str, tree_path, "Extrude._StepFile"))
-            start_depth = cast(float, self.key_verify(
-                "_StartDepth", json_dict, float, tree_path, "Extrude._StartDepth"))
-            if indent:
-                print(f"{indent} _Contour: {bool}")
-                print(f"{indent} _Depth: {depth}")
-                print(f"{indent} _FinalDepth: {final_depth}")
-                print(f"{indent} _StartDepth: {start_depth}")
-                print(f"{indent} _StepDown: {step_down}")
-                print(f"{indent} _StepFile: {step_file}")
-
             tool, tool_controller = self.get_tool_and_controller(
                 json_dict, label, indent, tree_path, tracing=next_tracing)
 
@@ -624,17 +606,36 @@ class FabCQtoFC(object):
                     print(f"{tracing}profile created")
                 profile.Base = (obj, aligned_face_name)
                 if True:
+                    depth = cast(float, self.key_verify(
+                        "_Depth", json_dict, float, tree_path, "Extrude._Depth"))
+                    final_depth = cast(float, self.key_verify(
+                        "_FinalDepth", json_dict, float, tree_path, "Extrude._FinalDepth"))
+                    step_down = cast(float, self. key_verify(
+                        "_StepDown", json_dict, float, tree_path, "Extrude._StepDown"))
+                    step_file = cast(str, self.key_verify(
+                        "_StepFile", json_dict, str, tree_path, "Extrude._StepFile"))
+                    start_depth = cast(float, self.key_verify(
+                        "_StartDepth", json_dict, float, tree_path, "Extrude._StartDepth"))
+                    if indent:
+                        print(f"{indent} _Contour: {bool}")
+                        print(f"{indent} _Depth: {depth}")
+                        print(f"{indent} _FinalDepth: {final_depth}")
+                        print(f"{indent} _StartDepth: {start_depth}")
+                        print(f"{indent} _StepDown: {step_down}")
+                        print(f"{indent} _StepFile: {step_file}")
+
                     profile.setExpression('StepDown', None)
                     profile.StepDown = step_down
                     profile.setExpression('StartDepth', None)
                     profile.StartDepth = start_depth
                     profile.setExpression('FinalDepth', None)
                     profile.FinalDepth = final_depth
-                    profile.processHoles = False
-                    profile.processPerimeter = True
-                    profile.ToolController = tool_controller
                 else:
-                    pass
+                    pass  # Do process_json() here.
+
+                profile.processHoles = False
+                profile.processPerimeter = True
+                profile.ToolController = tool_controller
 
                 profile.recompute()
 
@@ -675,6 +676,57 @@ class FabCQtoFC(object):
     def get_common_properties(self) -> Dict[str, Any]:
         """Return some common properties to ignore."""
         return {}
+
+    # FabCQtFC.get_extrude_properties():
+    def get_extrude_properties(self) -> Dict[str, Any]:
+        """Return the pocket properties."""
+        pocket_properties: Dict[str, Any] = {
+            "Active": {"ignore": None},
+            "AdaptivePocketFinish": {"ignore": None},
+            "AdaptivePocketStart": {"ignore": None},
+            "AreaParams": {"ignore": None},
+            "Base": {"ignore": None},
+            "ClearanceHeight": {"type": float},
+            "Comment": {"ignore": None},
+            "CoolantMode": {},
+            "CutMode": {},
+            "CycleTime": {"ignore": None},
+            "EnableRotation": {"ignore": None},
+            "ExpressionEngine": {"ignore": None},
+            "ExtraOffset": {"ignore": None},
+            "FinalDepth": {"type": float},
+            "FinishDepth": {"type": float},
+            "HandleMultipleFeatures": {"ignore": None},
+            "KeepToolDown": {},
+            "Label": {"ignore": None},
+            "Label2": {"ignore": None},
+            "MinTravel": {},
+            "OffsetPattern": {},
+            "OpFinalDepth": {"ignore": None},
+            "OpStartDepth": {"ignore": None},
+            "OpStockZMax": {"ignore": None},
+            "OpStockZMin": {"ignore": None},
+            "OpToolDiameter": {"ignore": None},
+            "Path": {"ignore": None},
+            "PathParams": {"ignore": None},
+            "Placement": {"ignore": None},
+            "ProcessStockArea": {"ignore": None},
+            "Proxy": {"ignore": None},
+            "SafeHeight": {"type": float},
+            "StartAt": {},
+            "StartDepth": {"type": float},
+            "StartPoint": {"ignore": None},
+            "Step": {"extra": None},
+            "StepDown": {"type": float},
+            "StepOver": {},
+            "ToolController": {"ignore": None},
+            "UseStartPoint": {"ignore": None},
+            "UserLabel": {"ignore": None},
+            "Visibility": {"ignore": None},
+            "ZigZagAngle": {},
+            "removalshape": {"ignore": None},
+        }
+        return pocket_properties
 
     # FabCQtFC.get_pocket_properties():
     def get_pocket_properties(self) -> Dict[str, Any]:
