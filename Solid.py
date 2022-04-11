@@ -561,8 +561,6 @@ class _Pocket(_Operation):
         pocket_query: FabQuery = pocket_context.Query
         if tracing:
             pocket_query.show("Pocket Context Before", tracing)
-
-        # For now just duplicate *pocket_context*:  Eventually, it needs to be at a different level.
         bottom_context: FabGeometryContext = geometry_context.copy_with_plane_adjust(
             -self._Depth, tracing=next_tracing)
 
@@ -629,7 +627,7 @@ class _Pocket(_Operation):
         cut_modes: Tuple[str, ...] = ("Climb", "Conventional")
         coolant_modes: Tuple[str, ...] = ("None", "Flood", "Mist")
         offset_patterns: Tuple[str, ...] = (
-            "ZigZag", "Offset", "Spiral", "ZigZagOffset", "Line", "Grid", "Triangle")
+            "Grid", "Line", "Offset", "Spiral", "Triangle", "ZigZag", "ZigZagOffset")
         start_ats: Tuple[str, ...] = ("Center", "Edge")
         if bottom_path is None:
             raise RuntimeError("_Pocket.to_json(): no bottom path is set yet.")
@@ -646,14 +644,14 @@ class _Pocket(_Operation):
         json_dict["_FinishDepth"] = 0.0  # TODO: Fix (Maximum material removed on final pass)
         json_dict["_KeepToolDown"] = False
         json_dict["_MinTravel"] = False
-        json_dict["_OffsetPattern"] = offset_patterns[0]
+        json_dict["_OffsetPattern"] = offset_patterns[5]
         json_dict["_SafeHeight"] = start_depth + 5.0  # TODO: Fix
         json_dict["_StartAt"] = start_ats[0]
         json_dict["_StartDepth"] = 0.0  # TODO: Starting depth of first cut (pocket_top - delta)
         json_dict["_StepDown"] = step_down  # TODO: Incremental Step Down of Tool
         json_dict["_Step"] = str(bottom_path)  # File name!
         json_dict["_StepOver"] = 90  # Percent of cutter diameter to step over on each pass
-        json_dict["_ZigZagAngle"] = 0.0  # Angle in degrees
+        json_dict["_ZigZagAngle"] = 45.0  # Angle in degrees
 
         return json_dict
 

@@ -51,7 +51,7 @@ from dataclasses import dataclass, field
 import json
 import os
 from pathlib import Path as FilePath  # The Path library uses `Path`, hence `FilePath`
-from typing import Any, cast, List, Dict, IO, Optional, Tuple, Union
+from typing import Any, cast, List, Dict, IO, Optional, Set, Tuple, Union
 
 # Generic FreeCAD imports:
 import FreeCAD  # type: ignore
@@ -366,6 +366,116 @@ class FabCQtoFC(object):
         self.type_verify(value, key_type, tree_path, tag)
         return value
 
+    # FabCQtoFC.process_json():
+    def process_json(
+            self, json_dict: Dict[str, Any], obj: Any,
+            info: Dict[str, Dict[str, Any]], tracing: str = ""
+    ) -> None:
+        """Transfer JSON values into Path operation object.
+
+        Arguments:
+        * *json_dict* (Dict[str, Any]):
+          A dictionary from a JSON file that contains the object values:
+        * *obj* (Any):
+          A Path opertation object (e.g. contour, pocket, drill, etc.) that has properties
+          to be set.  This object must have a `PropertiesList` attribute.
+        * *info* (Dict[str, Dict[str, Any]]):
+          This a dictionary of dictionaries.  The top level dictionary keys must be 1-to-1
+          with the keys returned by the `PropertiesList` attribute.  The sub-dictionary for
+          each property specifies additional information:
+          * "doc": (str):
+            The documentation string associated with the property.  When present, it must
+            exactly match corresponding object documentation line returned by the
+            `getDocumentationProperty()` method.  This helps document what each property
+            does in the code.
+          * "allowed": (Set[str]):
+            When present, the property must be match one of the values in the set.
+          * "ignore: (None):
+            When present, this property is ignored.
+        """
+        if tracing:
+            print(f"{tracing}=>FabCQtoFC.process_json(*, *, *)")
+            print(f"{dir(obj)=}")
+
+        # Verify that required methods a present:
+        if not hasattr(obj, "PropertiesList"):
+            raise RuntimeError(
+                "FabCQtoFC.process_json(): No getProperties() method present")
+        if not hasattr(obj, "getDocumentationOfProperty"):
+            raise RuntimeError(
+                "FabCQtoFC.process_json(): No getDocumentationOfProperty() method present")
+
+        # Extract *info_properties*, *ignore_properteries* and *extra_properties* from *info*:
+        property_name: str
+        property_info: Dict[str, Any]
+        ignore_properties: Set[str] = {  # Only ones which are tagged with "ignore".
+            property_name
+            for property_name, property_info in info.items()
+            if "ignore" in property_info
+        }
+        extra_properties: Set[str] = {  # Only ones which are tagged with "extra".
+            property_name
+            for property_name, property_info in info.items()
+            if "extra" in property_info
+        }
+
+        # Extra *actual_properties* from *obj*:
+        actual_properties: Set[str] = set(obj.PropertiesList)
+
+        # The incoming JSON entries have a preceding "_" that needs to be stripped off.
+        # FYI, the "_" ensures that required entries like "Label" and "Kind" get sorted first
+        # when the JSON is pretty printed.  Any following "children" list always sorts last.
+        json_key: str
+        json_properties: Set[str] = set([
+            json_key[1:] for json_key in json_dict.keys()
+            if json_key.startswith("_")
+        ])
+
+        desired_jsons: Set[str] = json_properties - extra_properties
+        desired_actuals: Set[str] = actual_properties - ignore_properties
+        if desired_jsons != desired_actuals:
+            raise RuntimeError(
+                "FabCQtoFC.process_json(): Property mismatch:\n"
+                f"{sorted(desired_jsons - desired_actuals)=}\n"
+                f"{sorted(desired_actuals - desired_jsons)=}\n"
+            )
+
+        # Sweep through *properties*:
+        if tracing:
+            print(f"{tracing}{json_properties=}")
+        for property_name, property_info in info.items():
+            info_key: str
+            info_value: Any
+            if "doc" in property_info:
+                actual_documentation: str = obj.getDocumenationProperty()
+                assert isinstance(property_info, str), property_info
+                if actual_documentation != property_info:
+                    raise RuntimeError(
+                        "FabCQtoFC.process_json(): documentation mismatch:\n"
+                        f"Actual: '{actual_documentation}'\n"
+                        f"Wanted: '{property_info}'")
+            if "ignore" not in property_info and "extra" not in property_info:
+                property_value: Any = getattr(obj, property_name)
+                property_type: type = type(property_value)
+                json_value: Any = json_dict[f"_{property_name}"]  # JSON keys have "_" key prefix.
+                json_type: type = type(json_value)
+                if "type" in property_info:
+                    property_type = property_info["type"]
+                if isinstance(json_type, str):
+                    enumeration_values: List[str] = obj.getEnumererationsOfProperty(property_name)
+                    if json_value not in enumeration_values:
+                        raise RuntimeError(
+                            f"FabCQtoFC.process_json(): {property_name=} has "
+                            f"{property_value=} which is not one of {sorted(enumeration_values)}")
+                if property_type != json_type:
+                    raise RuntimeError(
+                        "FabCQtoFC.process_json(): "
+                        f"{property_name=}: {property_type=} != {json_type=}")
+                setattr(obj, property_name, json_value)
+
+        if tracing:
+            print(f"{tracing}<=FabCQtoFC.process_json(*, *, *)")
+
     # FabCQtoFC.node_process():
     def node_process(self, tree_path: Tuple[str, ...], json_dict: Dict[str, Any],
                      indent: str = "", tracing: str = "") -> None:
@@ -568,6 +678,62 @@ class FabCQtoFC(object):
         if tracing:
             print(f"{tracing}<=FabCQtoFC.process_extrude(*, '{label}', {tree_path})")
 
+    # FabCQtFC.get_common_properties():
+    def get_common_properties(self) -> Dict[str, Any]:
+        """Return some common properties to ignore."""
+        return {}
+
+    # FabCQtFC.get_pocket_properties():
+    def get_pocket_properties(self) -> Dict[str, Any]:
+        """Return the pocket properties."""
+        pocket_properties: Dict[str, Any] = {
+            "Active": {"ignore": None},
+            "AdaptivePocketFinish": {"ignore": None},
+            "AdaptivePocketStart": {"ignore": None},
+            "AreaParams": {"ignore": None},
+            "Base": {"ignore": None},
+            "ClearanceHeight": {"type": float},
+            "Comment": {"ignore": None},
+            "CoolantMode": {},
+            "CutMode": {},
+            "CycleTime": {"ignore": None},
+            "EnableRotation": {"ignore": None},
+            "ExpressionEngine": {"ignore": None},
+            "ExtraOffset": {"ignore": None},
+            "FinalDepth": {"type": float},
+            "FinishDepth": {"type": float},
+            "HandleMultipleFeatures": {"ignore": None},
+            "KeepToolDown": {},
+            "Label": {"ignore": None},
+            "Label2": {"ignore": None},
+            "MinTravel": {},
+            "OffsetPattern": {},
+            "OpFinalDepth": {"ignore": None},
+            "OpStartDepth": {"ignore": None},
+            "OpStockZMax": {"ignore": None},
+            "OpStockZMin": {"ignore": None},
+            "OpToolDiameter": {"ignore": None},
+            "Path": {"ignore": None},
+            "PathParams": {"ignore": None},
+            "Placement": {"ignore": None},
+            "ProcessStockArea": {"ignore": None},
+            "Proxy": {"ignore": None},
+            "SafeHeight": {"type": float},
+            "StartAt": {},
+            "StartDepth": {"type": float},
+            "StartPoint": {"ignore": None},
+            "Step": {"extra": None},
+            "StepDown": {"type": float},
+            "StepOver": {},
+            "ToolController": {"ignore": None},
+            "UseStartPoint": {"ignore": None},
+            "UserLabel": {"ignore": None},
+            "Visibility": {"ignore": None},
+            "ZigZagAngle": {},
+            "removalshape": {"ignore": None},
+        }
+        return pocket_properties
+
     # FabCQtoFC.process_pocket():
     def process_pocket(self, json_dict: Dict[str, Any], label: str,
                        indent: str, tree_path: Tuple[str, ...], tracing: str = "") -> None:
@@ -682,6 +848,7 @@ class FabCQtoFC(object):
 
         # Now create a PathPocket object:
         pocket: Any = PathPocket.Create(pocket_label)  # => "Path::FeaturePython".
+
         normal: Vector = Vector(0.0, 0.0, 1.0)
         aligned_face_name: str = self.get_aligned_face_name(
             pocket_bottom, normal, tracing=next_tracing)
@@ -689,45 +856,53 @@ class FabCQtoFC(object):
         # property_name: str
         # index: int
         # for index, property_name in enumerate(pocket.PropertiesList):
+        #     enumerations: Optional[List[str]]
+        #     enumerations = pocket.getEnumerationsOfProperty(property_name)
+        #     if isinstance(enumerations, list):
+        #         enumerations = tuple(sorted(enumerations))
         #     print(f"[{index}]: {property_name}: "
-        #           f"{pocket.getDocumentationOfProperty(property_name)}")
+        #           f"{pocket.getDocumentationOfProperty(property_name)}:: {enumerations}")
 
         # [How to find Pockets in FreeCAD using Python Script?]
         #   (https://forum.freecad.org/viewtopic.php?f=22&p=579798)
 
         pocket.Base = (pocket_bottom, aligned_face_name)
-        # print("set clearance_height")
-        pocket.ClearanceHeight = ""  # Clear out any preceding expression
-        pocket.ClearanceHeight = clearance_height
-        # print("set coolant_mode")
-        pocket.CoolantMode = coolant_mode
-        # print("set cut_mode")
-        pocket.CutMode = cut_mode
-        # print("set final_depth")
-        pocket.FinalDepth = final_depth
-        # print("set finish_depth")
-        pocket.FinishDepth = finish_depth
-        # print("set keep_tool_down")
-        pocket.KeepToolDown = keep_tool_down
-        # print("set min_travel")
-        pocket.MinTravel = min_travel
-        # print("set offset_pattern")
-        pocket.OffsetPattern = offset_pattern
-        # print("set safe_height")
-        pocket.SafeHeight = ""  # Clear out any preceding expression
-        pocket.SafeHeight = safe_height
-        # print("set start_at")
-        pocket.StartAt = start_at
-        # print("set start_depth")
-        pocket.StartDepth = start_depth
-        # print("set step_down")
-        pocket.StepDown = step_down
-        # print("set step_over")
-        pocket.StepOver = step_over
-        # print("set zig_zag_angle")
-        pocket.ZigZagAngle = zig_zag_angle
-        # print("set tool_controller")
-        pocket.ToolController = tool_controller
+        if True:
+            pocket_properties: Dict[str, Any] = self.get_pocket_properties()
+            self.process_json(json_dict, pocket, pocket_properties, tracing=next_tracing)
+        else:
+            # print("set clearance_height")
+            pocket.ClearanceHeight = ""  # Clear out any preceding expression
+            pocket.ClearanceHeight = clearance_height
+            # print("set coolant_mode")
+            pocket.CoolantMode = coolant_mode
+            # print("set cut_mode")
+            pocket.CutMode = cut_mode
+            # print("set final_depth")
+            pocket.FinalDepth = final_depth
+            # print("set finish_depth")
+            pocket.FinishDepth = finish_depth
+            # print("set keep_tool_down")
+            pocket.KeepToolDown = keep_tool_down
+            # print("set min_travel")
+            pocket.MinTravel = min_travel
+            # print("set offset_pattern")
+            pocket.OffsetPattern = offset_pattern
+            # print("set safe_height")
+            pocket.SafeHeight = ""  # Clear out any preceding expression
+            pocket.SafeHeight = safe_height
+            # print("set start_at")
+            pocket.StartAt = start_at
+            # print("set start_depth")
+            pocket.StartDepth = start_depth
+            # print("set step_down")
+            pocket.StepDown = step_down
+            # print("set step_over")
+            pocket.StepOver = step_over
+            # print("set zig_zag_angle")
+            pocket.ZigZagAngle = zig_zag_angle
+            # print("set tool_controller")
+            pocket.ToolController = tool_controller
         pocket.recompute()
 
         if tracing:
