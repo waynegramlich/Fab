@@ -742,88 +742,12 @@ class FabCQtoFC(object):
         if tracing:
             print(f"{tracing}=>FabCQtoFC.process_pocket(*, '{label}', {tree_path})")
 
-        print("here 0")
-        print(f"{tuple(sorted(json_dict.keys()))=}")
-        print("here clearance_height")
-        clearance_height = cast(float, self.key_verify(
-            "_ClearanceHeight", json_dict, float, tree_path, "Pocket._ClearancHeight"))
-        print("here coolant_mode")
-        coolant_mode = cast(str, self.key_verify(
-            "_CoolantMode", json_dict, str, tree_path, "Pocket._CoolantMode"))
-        print("here cut_mode")
-        cut_mode = cast(str, self.key_verify(
-            "_CutMode", json_dict, str, tree_path, "Pocket._CutMode"))
-        print("here final_depth")
-        final_depth = cast(str, self.key_verify(
-            "_FinalDepth", json_dict, float, tree_path, "Pocket._FinalDepth"))
-        print("here finish_depth")
-        finish_depth = cast(str, self.key_verify(
-            "_FinishDepth", json_dict, float, tree_path, "Pocket._FinishlDepth"))
-        print("here keep_tool_down")
-        keep_tool_down = cast(bool, self.key_verify(
-            "_KeepToolDown", json_dict, bool, tree_path, "Pocket._KeepToolDown"))
-        print("here min_travel")
-        min_travel = cast(bool, self. key_verify(
-            "_MinTravel", json_dict, bool, tree_path, "Pocket._MinTravel"))
-        print("here offset_pattern")
-        offset_pattern = cast(str, self.key_verify(
-            "_OffsetPattern", json_dict, str, tree_path, "Pocket._OffsetPattern"))
-        print("here safe_height")
-        safe_height = cast(float, self.key_verify(
-            "_SafeHeight", json_dict, float, tree_path, "Pocket._SafeHeight"))
-        print("here start_at")
-        start_at = cast(str, self.key_verify(
-            "_StartAt", json_dict, str, tree_path, "Pocket._StartAt"))
-        print("here start_depth")
-        start_depth = cast(float, self.key_verify(
-            "_StartDepth", json_dict, float, tree_path, "Pocket._StartDepth"))
-        print("here step")
-        step = cast(str, self.key_verify(
-            "_Step", json_dict, str, tree_path, "Pocket._Step"))
-        print("here step_down")
-        step_down = cast(float, self.key_verify(
-            "_StepDown", json_dict, float, tree_path, "Pocket._StepDown"))
-        print("here step_over")
-        step_over = cast(int, self.key_verify(
-            "_StepOver", json_dict, int, tree_path, "Pocket._StepOver"))
-        print("here zig_zag_angle")
-        zig_zag_angle = cast(float, self.key_verify(
-            "_ZigZagAngle", json_dict, float, tree_path, "Pocket._ZigZagAngle"))
-
-        cut_modes: Tuple[str, ...] = ("Climb", "Conventinal")
-        if cut_mode not in cut_modes:
-            raise RuntimeError("Pocket._CutMode is '{cut_mode}', not one of {cut_modes}")
-        offset_patterns: Tuple[str, ...] = (
-            "ZigZag", "Offset", "Spiral", "ZigZagOffset", "Line", "Grid", "Triangle")
-        if offset_pattern not in offset_patterns:
-            raise RuntimeError(
-                "Pocket._OffsetPattern is '{offset_pattern}', not one of {offset_patterns}")
-        start_ats: Tuple[str, ...] = ("Center", "Edge")
-        if start_at not in start_ats:
-            raise RuntimeError(
-                "Pocket._StartAt is '{start_at}', not one of {start_ats}")
-
-        if indent:
-            print(f"{indent} _ClearanceHeight: {clearance_height}")
-            print(f"{indent} _CoolantMode: '{coolant_mode}'")
-            print(f"{indent} _CutMode: '{cut_mode}'")
-            print(f"{indent} _FinalDepth: {final_depth}")
-            print(f"{indent} _FinishDepth: {finish_depth}")
-            print(f"{indent} _KeepToolDown: {keep_tool_down}")
-            print(f"{indent} _MinTravel: {min_travel}")
-            print(f"{indent} _OffsetPattern: '{offset_pattern}'")
-            print(f"{indent} _SafeHeight: {safe_height}")
-            print(f"{indent} _StartAt: {start_at}")
-            print(f"{indent} _StartDepth: {start_depth}")
-            print(f"{indent} _Step: '{step}'")
-            print(f"{indent} _StepDown: '{step_down}'")
-            print(f"{indent} _StepOver: {step_over}")
-            print(f"{indent} _ZigZagAngle: {zig_zag_angle}")
-
         # Grab *pocket_bottom* from STEP file and insert into *project_document*:
         project_document: Any = self.ProjectDocument
         if tracing:
             print(f"{tracing}{project_document=} {project_document.Label=}")
+        step = cast(str, self.key_verify(
+            "_Step", json_dict, str, tree_path, "Pocket._Step"))
         step_file: FilePath = FilePath(step)
         if tracing:
             print(f"{tracing}{step_file=}")
@@ -867,42 +791,8 @@ class FabCQtoFC(object):
         #   (https://forum.freecad.org/viewtopic.php?f=22&p=579798)
 
         pocket.Base = (pocket_bottom, aligned_face_name)
-        if True:
-            pocket_properties: Dict[str, Any] = self.get_pocket_properties()
-            self.process_json(json_dict, pocket, pocket_properties, tracing=next_tracing)
-        else:
-            # print("set clearance_height")
-            pocket.ClearanceHeight = ""  # Clear out any preceding expression
-            pocket.ClearanceHeight = clearance_height
-            # print("set coolant_mode")
-            pocket.CoolantMode = coolant_mode
-            # print("set cut_mode")
-            pocket.CutMode = cut_mode
-            # print("set final_depth")
-            pocket.FinalDepth = final_depth
-            # print("set finish_depth")
-            pocket.FinishDepth = finish_depth
-            # print("set keep_tool_down")
-            pocket.KeepToolDown = keep_tool_down
-            # print("set min_travel")
-            pocket.MinTravel = min_travel
-            # print("set offset_pattern")
-            pocket.OffsetPattern = offset_pattern
-            # print("set safe_height")
-            pocket.SafeHeight = ""  # Clear out any preceding expression
-            pocket.SafeHeight = safe_height
-            # print("set start_at")
-            pocket.StartAt = start_at
-            # print("set start_depth")
-            pocket.StartDepth = start_depth
-            # print("set step_down")
-            pocket.StepDown = step_down
-            # print("set step_over")
-            pocket.StepOver = step_over
-            # print("set zig_zag_angle")
-            pocket.ZigZagAngle = zig_zag_angle
-            # print("set tool_controller")
-            pocket.ToolController = tool_controller
+        pocket_properties: Dict[str, Any] = self.get_pocket_properties()
+        self.process_json(json_dict, pocket, pocket_properties, tracing=next_tracing)
         pocket.recompute()
 
         if tracing:
