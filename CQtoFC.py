@@ -305,7 +305,7 @@ class FabCQtoFC(object):
         def match(label: str, properties: Set[str], infos: Set[str]) -> None:
             """Match a properties with information set."""
             if properties != infos:
-                print(f"CQtoPy.verify_properties.match('{label}]):")
+                print(f"CQtoPy.verify_properties.match('{label}') <<<<<<<<<<<<<<<<:")
                 # print(f"{sorted(properties)=}")
                 # print(f"{sorted(infos)=}")
                 # print()
@@ -326,12 +326,12 @@ class FabCQtoFC(object):
             commons: Set[str] = profiles & pockets
 
             common_infos: Set[str] = set(self.merge_common_infos({}))
-            # extrude_infos: Set[str] = set(self.get_extrude_infos().keys())
+            extrude_infos: Set[str] = set(self.get_extrude_infos().keys())
             pocket_infos: Set[str] = set(self.get_pocket_infos().keys())
 
             match("commmon", commons, common_infos)
-            # match("profile", profiles, extrude_infos)
             match("pocket", pockets, pocket_infos)
+            match("profile", profiles, extrude_infos)
         if tracing:
             print(f"{tracing}<=CQtoPy.verify_properties()")
 
@@ -756,26 +756,33 @@ class FabCQtoFC(object):
         """Return the pocket properties."""
         extrude_infos: Dict[str, Any] = {
             # "Active": {"ignore": None},
-            "AdaptivePocketFinish": {"ignore": None},
-            "AdaptivePocketStart": {"ignore": None},
+            # "AdaptivePocketFinish": {"ignore": None},
+            # "AdaptivePocketStart": {"ignore": None},
+            "AttemptInverseAngle": {"ignore": None},
             # "AreaParams": {"ignore": None},
             # "Base": {"ignore": None},
             # "ClearanceHeight": {"type": float},
             # "Comment": {"ignore": None},
             # "CoolantMode": {},
-            "CutMode": {},
+            # "CutMode": {},
             # "CycleTime": {"ignore": None},
+            "Direction": {},
             # "EnableRotation": {"ignore": None},
             # "ExpressionEngine": {"ignore": None},
-            "ExtraOffset": {"ignore": None},
+            # "ExtraOffset": {"ignore": None},
             # "FinalDepth": {"type": float},
-            "FinishDepth": {"type": float},
+            # "FinishDepth": {"type": float},
             # "HandleMultipleFeatures": {"ignore": None},
-            "KeepToolDown": {},
+            "InverseAngle": {"ignore": None},
+            # "KeepToolDown": {"ignore": None},
+            "JoinType": {"ignore": None},
             # "Label": {"ignore": None},
             # "Label2": {"ignore": None},
-            "MinTravel": {},
-            "OffsetPattern": {},
+            "LimitDepthToFace": {"ignore": None},
+            # "MinTravel": {},
+            "MiterLimit": {"ignore": None},
+            "OffsetExtra": {"ignore": None},
+            # "OffsetPattern": {"ignore": None},
             # "OpFinalDepth": {"ignore": None},
             # "OpStartDepth": {"ignore": None},
             # "OpStockZMax": {"ignore": None},
@@ -784,21 +791,27 @@ class FabCQtoFC(object):
             # "Path": {"ignore": None},
             # "PathParams": {"ignore": None},
             # "Placement": {"ignore": None},
-            "ProcessStockArea": {"ignore": None},
+            # "ProcessStockArea": {"ignore": None},
             # "Proxy": {"ignore": None},
+            "ReverseDirection": {"ignore": None},
             # "SafeHeight": {"type": float},
-            "StartAt": {},
+            # "StartAt": {},
             # "StartDepth": {"type": float},
             # "StartPoint": {"ignore": None},
-            # # "Step": {"extra": None},
+            # "Step": {"extra": None},
             # "StepDown": {"type": float},
-            "StepOver": {},
+            # "StepOver": {},
+            "Side": {"extra": None},
             # "ToolController": {"ignore": None},
             # "UseStartPoint": {"ignore": None},
             # "UserLabel": {"ignore": None},
+            "UseComp": {"ignore": None},
             # "Visibility": {"ignore": None},
-            "ZigZagAngle": {},
+            # "ZigZagAngle": {},
             # "removalshape": {"ignore": None},
+            "processCircles": {"ignore": None},
+            "processHoles": {"ignore": None},
+            "processPerimeter": {"ignore": None},
         }
         return self.merge_common_infos(extrude_infos)
 
