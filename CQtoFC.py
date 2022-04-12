@@ -305,15 +305,15 @@ class FabCQtoFC(object):
         def match(label: str, properties: Set[str], infos: Set[str]) -> None:
             """Match a properties with information set."""
             if properties != infos:
-                print(f"CQtoPy.verify_properties.match('{label}', *, *):")
-                print(f"{sorted(properties)=}")
-                print(f"{sorted(infos)=}")
-                print()
+                print(f"CQtoPy.verify_properties.match('{label}]):")
+                # print(f"{sorted(properties)=}")
+                # print(f"{sorted(infos)=}")
+                # print()
                 print(f"{sorted(properties - infos)=}")
                 print(f"{sorted(infos - properties)=}")
                 assert False
 
-        if not self.ProperitiesVerified:
+        if not self.ProperitiesVerified and False:  # TODO: remove `and False`
             self.ProperitiesVerified = True
 
             profile: Any = PathProfile.Create("IgnoreThisProfile")
@@ -326,9 +326,9 @@ class FabCQtoFC(object):
             extrude_infos: Set[str] = set(self.get_extrude_infos().keys())
             pocket_infos: Set[str] = set(self.get_pocket_infos().keys())
 
-            match("profile", profiles, extrude_infos)
-            match("pocket", pockets, pocket_infos)
             match("commmon", commons, common_infos)
+            # match("profile", profiles, extrude_infos)
+            match("pocket", pockets, pocket_infos)
         if tracing:
             print(f"{tracing}<=CQtoPy.verify_properties()")
 
@@ -631,6 +631,7 @@ class FabCQtoFC(object):
             tool, tool_controller = self.get_tool_and_controller(
                 json_dict, label, indent, tree_path, tracing=next_tracing)
 
+            self.verify_properties(tracing=next_tracing)
             obj: Any = self.CurrentPart
             name: str = f"{job.Label}_profile"
             aligned_face_name: str = self.get_aligned_face_name(obj, normal, tracing=next_tracing)
@@ -713,56 +714,88 @@ class FabCQtoFC(object):
     # FabCQtFC.merge_common_infos():
     def merge_common_infos(self, infos: Dict[str, Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
         """Return some common properties to ignore."""
+        infos["Active"] = {"ignore": None}
+        infos["AreaParams"] = {"ignore": None}
+        infos["Base"] = {"ignore": None}
+        infos["ClearanceHeight"] =  {"type": float}
+        infos["Comment"] = {"ignore": None}
+        infos["CoolantMode"] = {},
+        infos["CycleTime"] = {"ignore": None}
+        infos["EnableRotation"] = {"ignore": None}
+        infos["ExpressionEngine"] = {"ignore": None}
+        infos["FinalDepth"] = {"type": float}
+        infos["HandleMultipleFeatures"] = {"ignore": None}
+        infos["Label"] = {"ignore": None}
+        infos["Label2"] = {"ignore": None}
+        infos["OpFinalDepth"] = {"ignore": None}
+        infos["OpStartDepth"] = {"ignore": None}
+        infos["OpStockZMax"] = {"ignore": None}
+        infos["OpStockZMin"] = {"ignore": None}
+        infos["OpToolDiameter"] = {"ignore": None}
+        infos["Path"] = {"ignore": None}
+        infos["PathParams"] = {"ignore": None}
+        infos["Placement"] = {"ignore": None}
+        infos["Proxy"] = {"ignore": None}
+        infos["SafeHeight"] = {"type": float}
+        infos["StartDepth"] = {"type": float}
+        infos["StartPoint"] = {"ignore": None}
+        infos["StepDown"] = {"type": float}
+        infos["ToolController"] = {"ignore": None}
+        infos["UseStartPoint"] = {"ignore": None}
+        infos["UserLabel"] = {"ignore": None}
+        infos["Visibility"] = {"ignore": None}
+        infos["removalshape"] = {"ignore": None}
+
         return infos
 
     # FabCQtFC.get_extrude_infos():
     def get_extrude_infos(self) -> Dict[str, Any]:
         """Return the pocket properties."""
         extrude_infos: Dict[str, Any] = {
-            "Active": {"ignore": None},
+            # "Active": {"ignore": None},
             "AdaptivePocketFinish": {"ignore": None},
             "AdaptivePocketStart": {"ignore": None},
-            "AreaParams": {"ignore": None},
-            "Base": {"ignore": None},
-            "ClearanceHeight": {"type": float},
-            "Comment": {"ignore": None},
-            "CoolantMode": {},
+            # "AreaParams": {"ignore": None},
+            # "Base": {"ignore": None},
+            # "ClearanceHeight": {"type": float},
+            # "Comment": {"ignore": None},
+            # "CoolantMode": {},
             "CutMode": {},
-            "CycleTime": {"ignore": None},
-            "EnableRotation": {"ignore": None},
-            "ExpressionEngine": {"ignore": None},
+            # "CycleTime": {"ignore": None},
+            # "EnableRotation": {"ignore": None},
+            # "ExpressionEngine": {"ignore": None},
             "ExtraOffset": {"ignore": None},
-            "FinalDepth": {"type": float},
+            # "FinalDepth": {"type": float},
             "FinishDepth": {"type": float},
-            "HandleMultipleFeatures": {"ignore": None},
+            # "HandleMultipleFeatures": {"ignore": None},
             "KeepToolDown": {},
-            "Label": {"ignore": None},
-            "Label2": {"ignore": None},
+            # "Label": {"ignore": None},
+            # "Label2": {"ignore": None},
             "MinTravel": {},
             "OffsetPattern": {},
-            "OpFinalDepth": {"ignore": None},
-            "OpStartDepth": {"ignore": None},
-            "OpStockZMax": {"ignore": None},
-            "OpStockZMin": {"ignore": None},
-            "OpToolDiameter": {"ignore": None},
-            "Path": {"ignore": None},
-            "PathParams": {"ignore": None},
-            "Placement": {"ignore": None},
+            # "OpFinalDepth": {"ignore": None},
+            # "OpStartDepth": {"ignore": None},
+            # "OpStockZMax": {"ignore": None},
+            # "OpStockZMin": {"ignore": None},
+            # "OpToolDiameter": {"ignore": None},
+            # "Path": {"ignore": None},
+            # "PathParams": {"ignore": None},
+            # "Placement": {"ignore": None},
             "ProcessStockArea": {"ignore": None},
-            "Proxy": {"ignore": None},
-            "SafeHeight": {"type": float},
+            # "Proxy": {"ignore": None},
+            # "SafeHeight": {"type": float},
             "StartAt": {},
-            "StartDepth": {"type": float},
-            "StartPoint": {"ignore": None},
-            "Step": {"extra": None},
-            "StepDown": {"type": float},
+            #"StartDepth": {"type": float},
+            # "StartPoint": {"ignore": None},
+            # # "Step": {"extra": None},
+            # "StepDown": {"type": float},
             "StepOver": {},
-            "ToolController": {"ignore": None},
-            "UseStartPoint": {"ignore": None},
-            "UserLabel": {"ignore": None},
-            "Visibility": {"ignore": None},
+            # "ToolController": {"ignore": None},
+            # "UseStartPoint": {"ignore": None},
+            # "UserLabel": {"ignore": None},
+            # "Visibility": {"ignore": None},
             "ZigZagAngle": {},
-            "removalshape": {"ignore": None},
+            # "removalshape": {"ignore": None},
         }
         return self.merge_common_infos(extrude_infos)
 
@@ -770,50 +803,50 @@ class FabCQtoFC(object):
     def get_pocket_infos(self) -> Dict[str, Any]:
         """Return the pocket properties."""
         extrude_infos: Dict[str, Any] = {
-            "Active": {"ignore": None},
+            # "Active": {"ignore": None},
             "AdaptivePocketFinish": {"ignore": None},
             "AdaptivePocketStart": {"ignore": None},
-            "AreaParams": {"ignore": None},
-            "Base": {"ignore": None},
-            "ClearanceHeight": {"type": float},
-            "Comment": {"ignore": None},
-            "CoolantMode": {},
+            # "AreaParams": {"ignore": None},
+            # "Base": {"ignore": None},
+            # "ClearanceHeight": {"type": float},
+            # "Comment": {"ignore": None},
+            # "CoolantMode": {},
             "CutMode": {},
-            "CycleTime": {"ignore": None},
-            "EnableRotation": {"ignore": None},
-            "ExpressionEngine": {"ignore": None},
+            # "CycleTime": {"ignore": None},
+            # "EnableRotation": {"ignore": None},
+            # "ExpressionEngine": {"ignore": None},
             "ExtraOffset": {"ignore": None},
-            "FinalDepth": {"type": float},
+            # "FinalDepth": {"type": float},
             "FinishDepth": {"type": float},
-            "HandleMultipleFeatures": {"ignore": None},
+            # "HandleMultipleFeatures": {"ignore": None},
             "KeepToolDown": {},
-            "Label": {"ignore": None},
-            "Label2": {"ignore": None},
+            # "Label": {"ignore": None},
+            # "Label2": {"ignore": None},
             "MinTravel": {},
             "OffsetPattern": {},
-            "OpFinalDepth": {"ignore": None},
-            "OpStartDepth": {"ignore": None},
-            "OpStockZMax": {"ignore": None},
-            "OpStockZMin": {"ignore": None},
-            "OpToolDiameter": {"ignore": None},
-            "Path": {"ignore": None},
-            "PathParams": {"ignore": None},
+            # "OpFinalDepth": {"ignore": None},
+            # "OpStartDepth": {"ignore": None},
+            # "OpStockZMax": {"ignore": None},
+            # "OpStockZMin": {"ignore": None},
+            # "OpToolDiameter": {"ignore": None},
+            # "Path": {"ignore": None},
+            # "PathParams": {"ignore": None},
             "Placement": {"ignore": None},
             "ProcessStockArea": {"ignore": None},
-            "Proxy": {"ignore": None},
-            "SafeHeight": {"type": float},
+            # "Proxy": {"ignore": None},
+            # "SafeHeight": {"type": float},
             "StartAt": {},
-            "StartDepth": {"type": float},
-            "StartPoint": {"ignore": None},
-            "Step": {"extra": None},
-            "StepDown": {"type": float},
+            # "StartDepth": {"type": float},
+            # "StartPoint": {"ignore": None},
+            # "Step": {"extra": None},
+            # "StepDown": {"type": float},
             "StepOver": {},
-            "ToolController": {"ignore": None},
-            "UseStartPoint": {"ignore": None},
-            "UserLabel": {"ignore": None},
-            "Visibility": {"ignore": None},
+            # "ToolController": {"ignore": None},
+            # "UseStartPoint": {"ignore": None},
+            # "UserLabel": {"ignore": None},
+            # "Visibility": {"ignore": None},
             "ZigZagAngle": {},
-            "removalshape": {"ignore": None},
+            # "removalshape": {"ignore": None},
         }
         self.merge_common_infos(extrude_infos)
         return extrude_infos
@@ -827,6 +860,7 @@ class FabCQtoFC(object):
             print(f"{tracing}=>FabCQtoFC.process_pocket(*, '{label}', {tree_path})")
 
         # Grab *pocket_bottom* from STEP file and insert into *project_document*:
+        self.verify_properties(tracing=next_tracing)
         project_document: Any = self.ProjectDocument
         if tracing:
             print(f"{tracing}{project_document=} {project_document.Label=}")
