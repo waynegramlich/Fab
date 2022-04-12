@@ -313,22 +313,25 @@ class FabCQtoFC(object):
                 print(f"{sorted(infos - properties)=}")
                 assert False
 
-        if not self.ProperitiesVerified and False:  # TODO: remove `and False`
+        if not self.ProperitiesVerified:
             self.ProperitiesVerified = True
 
+            project_document: Any = self.ProjectDocument
             profile: Any = PathProfile.Create("IgnoreThisProfile")
             profiles: Set[str] = set(profile.PropertiesList)
+            project_document.removeObject("IgnoreThisProfile")
             pocket: Any = PathPocket.Create("IgnoreThisPocket")  # => "Path::FeaturePython".
             pockets: Set[str] = set(pocket.PropertiesList)
+            project_document.removeObject("IgnoreThisPocket")
             commons: Set[str] = profiles & pockets
 
             common_infos: Set[str] = set(self.merge_common_infos({}))
-            extrude_infos: Set[str] = set(self.get_extrude_infos().keys())
-            pocket_infos: Set[str] = set(self.get_pocket_infos().keys())
+            # extrude_infos: Set[str] = set(self.get_extrude_infos().keys())
+            # pocket_infos: Set[str] = set(self.get_pocket_infos().keys())
 
             match("commmon", commons, common_infos)
             # match("profile", profiles, extrude_infos)
-            match("pocket", pockets, pocket_infos)
+            # match("pocket", pockets, pocket_infos)
         if tracing:
             print(f"{tracing}<=CQtoPy.verify_properties()")
 
@@ -717,9 +720,9 @@ class FabCQtoFC(object):
         infos["Active"] = {"ignore": None}
         infos["AreaParams"] = {"ignore": None}
         infos["Base"] = {"ignore": None}
-        infos["ClearanceHeight"] =  {"type": float}
+        infos["ClearanceHeight"] = {"type": float}
         infos["Comment"] = {"ignore": None}
-        infos["CoolantMode"] = {},
+        infos["CoolantMode"] = {}
         infos["CycleTime"] = {"ignore": None}
         infos["EnableRotation"] = {"ignore": None}
         infos["ExpressionEngine"] = {"ignore": None}
@@ -785,7 +788,7 @@ class FabCQtoFC(object):
             # "Proxy": {"ignore": None},
             # "SafeHeight": {"type": float},
             "StartAt": {},
-            #"StartDepth": {"type": float},
+            # "StartDepth": {"type": float},
             # "StartPoint": {"ignore": None},
             # # "Step": {"extra": None},
             # "StepDown": {"type": float},
