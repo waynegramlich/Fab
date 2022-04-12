@@ -606,23 +606,23 @@ class FabCQtoFC(object):
                     print(f"{tracing}profile created")
                 profile.Base = (obj, aligned_face_name)
                 if True:
+                    step_file = cast(str, self.key_verify(
+                        "StepFile", json_dict, str, tree_path, "Extrude._StepFile"))
                     depth = cast(float, self.key_verify(
                         "_Depth", json_dict, float, tree_path, "Extrude._Depth"))
                     final_depth = cast(float, self.key_verify(
                         "_FinalDepth", json_dict, float, tree_path, "Extrude._FinalDepth"))
                     step_down = cast(float, self. key_verify(
                         "_StepDown", json_dict, float, tree_path, "Extrude._StepDown"))
-                    step_file = cast(str, self.key_verify(
-                        "_StepFile", json_dict, str, tree_path, "Extrude._StepFile"))
                     start_depth = cast(float, self.key_verify(
                         "_StartDepth", json_dict, float, tree_path, "Extrude._StartDepth"))
                     if indent:
+                        print(f"{indent} StepFile: {step_file}")
                         print(f"{indent} _Contour: {bool}")
                         print(f"{indent} _Depth: {depth}")
                         print(f"{indent} _FinalDepth: {final_depth}")
                         print(f"{indent} _StartDepth: {start_depth}")
                         print(f"{indent} _StepDown: {step_down}")
-                        print(f"{indent} _StepFile: {step_file}")
 
                     profile.setExpression('StepDown', None)
                     profile.StepDown = step_down
@@ -792,7 +792,7 @@ class FabCQtoFC(object):
         if tracing:
             print(f"{tracing}{project_document=} {project_document.Label=}")
         step = cast(str, self.key_verify(
-            "_Step", json_dict, str, tree_path, "Pocket._Step"))
+            "StepFile", json_dict, str, tree_path, "Pocket.StepFile"))
         step_file: FilePath = FilePath(step)
         if tracing:
             print(f"{tracing}{step_file=}")
@@ -904,10 +904,10 @@ class FabCQtoFC(object):
         if tracing:
             print(f"{tracing}=>FabCQtotFC.process_solid(*, {label}, {tree_path})")
 
-        step_file: str = cast(str, self.key_verify("_Step",
-                                                   json_dict, str, tree_path, "Solid._step"))
+        step_file: str = cast(str, self.key_verify("StepFile",
+                                                   json_dict, str, tree_path, "Solid.StepFile"))
         if indent:
-            print(f"{indent} _Step: {step_file}")
+            print(f"{indent} StepFile: {step_file}")
 
         # This code currently trys to work with object in a seperate *steps_document* and
         # the main *project_document*.  Change the conditional to switch between.

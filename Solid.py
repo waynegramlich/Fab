@@ -432,12 +432,12 @@ class _Extrude(_Operation):
     def to_json(self) -> Dict[str, Any]:
         """Return JSON dictionary for _Extrude."""
         json_dict: Dict[str, Any] = super().to_json()
+        json_dict["StepFile"] = "_Extrude.to_json:_StepFile"
         json_dict["_Contour"] = self._Contour
         json_dict["_Depth"] = self._Depth
         json_dict["_FinalDepth"] = self._FinalDepth
         json_dict["_StartDepth"] = self._StartDepth
         json_dict["_StepDown"] = self._StepDown
-        json_dict["_StepFile"] = "_Extrude.to_json:_StepFile"
         return json_dict
 
 
@@ -637,6 +637,7 @@ class _Pocket(_Operation):
         final_depth: float = self._FinalDepth
 
         json_dict: Dict[str, Any] = super().to_json()
+        json_dict["StepFile"] = str(bottom_path)  # Step file
         json_dict["_ClearanceHeight"] = start_depth + 10.0  # TODO: Fix
         json_dict["_CoolantMode"] = coolant_modes[1]  # TODO: Fix
         json_dict["_CutMode"] = cut_modes[0]  # TODO: Fix
@@ -649,7 +650,6 @@ class _Pocket(_Operation):
         json_dict["_StartAt"] = start_ats[0]
         json_dict["_StartDepth"] = 0.0  # TODO: Starting depth of first cut (pocket_top - delta)
         json_dict["_StepDown"] = step_down  # TODO: Incremental Step Down of Tool
-        json_dict["_Step"] = str(bottom_path)  # File name!
         json_dict["_StepOver"] = 90  # Percent of cutter diameter to step over on each pass
         json_dict["_ZigZagAngle"] = 45.0  # Angle in degrees
 
@@ -1205,7 +1205,7 @@ class FabSolid(FabNode):
         json_dict: Dict[str, Any] = super().to_json()
         json_dict["Kind"] = "Solid"
         if self._StepFile:
-            json_dict["_Step"] = str(self._StepFile)
+            json_dict["StepFile"] = str(self._StepFile)
         if self._Color:
             json_dict["_Color"] = self._Color
         json_mounts: List[Any] = []
