@@ -7,8 +7,8 @@ generates CNC G code (`.ngc`) files.
 
 This program is meant to be run by the FreeCAD Python interpreter.  Since there is no easy
 way to pass command line arguments the interpreter, there is a shell file called `cq2fc.sh`
-sets everything up to run in FreeCAD.  It passes arguments/optons in via Environment variables.
-(This very is a very crude but effective workaround to the problem.)  If you want to manully
+sets everything up to run in FreeCAD.  It passes arguments/options in via Environment variables.
+(This very is a very crude but effective workaround to the problem.)  If you want to manually
 run this from the command line, the following syntax should work:
 ```
 FLAGS="c" JSON="/tmp/TestProject.json" ./freecad19 -c ./CQtoFC.py
@@ -128,6 +128,7 @@ class FabCQtoFC(object):
         self.CurrentPart = None
         self.PendingLinks = []
         self.ProjectDocument = None
+        self.ProperitiesVerified = False
         self.StepsDocument = None
         self.ToolControllersTable = {}
         self.ToolNumbersTable = {}
@@ -293,6 +294,43 @@ class FabCQtoFC(object):
         self.CurrentJobName = None
         if tracing:
             print("{tracing}<=FabCQtoFC.flush_job()")
+
+    # CQtoPy.verify_properties():
+    def verify_properties(self, tracing: str = "") -> None:
+        """Verify that all of the properties match their associated 'info' dictionaries."""
+        # This method must be called after a document has been created.
+        if tracing:
+            print(f"{tracing}=>CQtoPy.verify_properties()")
+
+        def match(label: str, properties: Set[str], infos: Set[str]) -> None:
+            """Match a properties with information set."""
+            if properties != infos:
+                print(f"CQtoPy.verify_properties.match('{label}', *, *):")
+                print(f"{sorted(properties)=}")
+                print(f"{sorted(infos)=}")
+                print()
+                print(f"{sorted(properties - infos)=}")
+                print(f"{sorted(infos - properties)=}")
+                assert False
+
+        if not self.ProperitiesVerified:
+            self.ProperitiesVerified = True
+
+            profile: Any = PathProfile.Create("IgnoreThisProfile")
+            profiles: Set[str] = set(profile.PropertiesList)
+            pocket: Any = PathPocket.Create("IgnoreThisPocket")  # => "Path::FeaturePython".
+            pockets: Set[str] = set(pocket.PropertiesList)
+            commons: Set[str] = profiles & pockets
+
+            common_infos: Set[str] = set(self.get_common_properties().keys())
+            extrude_infos: Set[str] = set(self.get_extrude_properties().keys())
+            pocket_infos: Set[str] = set(self.get_pocket_properties().keys())
+
+            match("profile", profiles, extrude_infos)
+            match("pocket", pockets, pocket_infos)
+            match("commmon", commons, common_infos)
+        if tracing:
+            print(f"{tracing}<=CQtoPy.verify_properties()")
 
     # FabCQtoFC.process():
     def process(self, indent: str = "", tracing: str = "") -> None:
