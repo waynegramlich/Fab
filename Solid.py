@@ -307,7 +307,7 @@ class _Extrude(_Operation):
     _Name: str
     _Geometry: Union[FabGeometry, Tuple[FabGeometry, ...]] = field(compare=False)
     _Depth: float
-    _Contour: bool
+    _Active: bool
     # TODO: Make _Geometries be comparable.
     _Geometries: Tuple[FabGeometry, ...] = field(init=False, repr=False, compare=False)
     _StepFile: str = field(init=False)
@@ -433,7 +433,7 @@ class _Extrude(_Operation):
         """Return JSON dictionary for _Extrude."""
         json_dict: Dict[str, Any] = super().to_json()
         json_dict["StepFile"] = "_Extrude.to_json:_StepFile"
-        json_dict["_Contour"] = self._Contour
+        json_dict["_Active"] = self._Active
         json_dict["_Depth"] = self._Depth
         json_dict["_FinalDepth"] = self._FinalDepth
         json_dict["_StartDepth"] = self._StartDepth
@@ -1005,7 +1005,7 @@ class FabMount(object):
         """Perform a extrude operation."""
         tracing = self._Solid.Tracing
         if tracing:
-            print(f"{tracing}=>FabMount({self.Name}).extrude('{name}', *, {depth})")
+            print(f"{tracing}=>FabMount({self.Name}).extrude('{name}', *, {depth}, {contour})")
 
         # Figure out the contact
         top_contact: Vector = self._Contact
@@ -1036,7 +1036,7 @@ class FabMount(object):
         self.record_operation(extrude)
 
         if tracing:
-            print(f"{tracing}<=FabMount({self.Name}).extrude('{name}', *, {depth})")
+            print(f"{tracing}<=FabMount({self.Name}).extrude('{name}', *, {depth}, {contour})")
 
     # FabMount.pocket():
     def pocket(self, name: str, shapes: Union[FabGeometry, Tuple[FabGeometry, ...]],

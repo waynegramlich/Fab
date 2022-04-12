@@ -581,15 +581,15 @@ class FabCQtoFC(object):
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabCQtoFC.process_extrude(*, '{label}', {tree_path})")
-        contour = cast(bool, self.key_verify("_Contour", json_dict, bool, tree_path,
-                                             "Extrude._Contour"))
+        active = cast(bool, self.key_verify("_Active", json_dict, bool, tree_path,
+                                            "Extrude._Active"))
         if tracing:
             print(f"{tracing}Creating job")
         job = self.CurrentJob
         normal = self.CurrentNormal
         assert job is not None, "No job present"
 
-        if contour:
+        if active:
             tool, tool_controller = self.get_tool_and_controller(
                 json_dict, label, indent, tree_path, tracing=next_tracing)
 
