@@ -327,11 +327,11 @@ class FabCQtoFC(object):
 
             common_infos: Set[str] = set(self.merge_common_infos({}))
             # extrude_infos: Set[str] = set(self.get_extrude_infos().keys())
-            # pocket_infos: Set[str] = set(self.get_pocket_infos().keys())
+            pocket_infos: Set[str] = set(self.get_pocket_infos().keys())
 
             match("commmon", commons, common_infos)
             # match("profile", profiles, extrude_infos)
-            # match("pocket", pockets, pocket_infos)
+            match("pocket", pockets, pocket_infos)
         if tracing:
             print(f"{tracing}<=CQtoPy.verify_properties()")
 
