@@ -322,9 +322,9 @@ class FabCQtoFC(object):
             pockets: Set[str] = set(pocket.PropertiesList)
             commons: Set[str] = profiles & pockets
 
-            common_infos: Set[str] = set(self.get_common_properties().keys())
-            extrude_infos: Set[str] = set(self.get_extrude_properties().keys())
-            pocket_infos: Set[str] = set(self.get_pocket_properties().keys())
+            common_infos: Set[str] = set(self.merge_common_infos({}))
+            extrude_infos: Set[str] = set(self.get_extrude_infos().keys())
+            pocket_infos: Set[str] = set(self.get_pocket_infos().keys())
 
             match("profile", profiles, extrude_infos)
             match("pocket", pockets, pocket_infos)
@@ -710,15 +710,15 @@ class FabCQtoFC(object):
         if tracing:
             print(f"{tracing}<=FabCQtoFC.process_extrude(*, '{label}', {tree_path})")
 
-    # FabCQtFC.get_common_properties():
-    def get_common_properties(self) -> Dict[str, Any]:
+    # FabCQtFC.merge_common_infos():
+    def merge_common_infos(self, infos: Dict[str, Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
         """Return some common properties to ignore."""
-        return {}
+        return infos
 
-    # FabCQtFC.get_extrude_properties():
-    def get_extrude_properties(self) -> Dict[str, Any]:
+    # FabCQtFC.get_extrude_infos():
+    def get_extrude_infos(self) -> Dict[str, Any]:
         """Return the pocket properties."""
-        pocket_properties: Dict[str, Any] = {
+        extrude_infos: Dict[str, Any] = {
             "Active": {"ignore": None},
             "AdaptivePocketFinish": {"ignore": None},
             "AdaptivePocketStart": {"ignore": None},
@@ -764,12 +764,12 @@ class FabCQtoFC(object):
             "ZigZagAngle": {},
             "removalshape": {"ignore": None},
         }
-        return pocket_properties
+        return self.merge_common_infos(extrude_infos)
 
-    # FabCQtFC.get_pocket_properties():
-    def get_pocket_properties(self) -> Dict[str, Any]:
+    # FabCQtFC.get_pocket_infos():
+    def get_pocket_infos(self) -> Dict[str, Any]:
         """Return the pocket properties."""
-        pocket_properties: Dict[str, Any] = {
+        extrude_infos: Dict[str, Any] = {
             "Active": {"ignore": None},
             "AdaptivePocketFinish": {"ignore": None},
             "AdaptivePocketStart": {"ignore": None},
@@ -815,7 +815,8 @@ class FabCQtoFC(object):
             "ZigZagAngle": {},
             "removalshape": {"ignore": None},
         }
-        return pocket_properties
+        self.merge_common_infos(extrude_infos)
+        return extrude_infos
 
     # FabCQtoFC.process_pocket():
     def process_pocket(self, json_dict: Dict[str, Any], label: str,
@@ -874,7 +875,7 @@ class FabCQtoFC(object):
         #   (https://forum.freecad.org/viewtopic.php?f=22&p=579798)
 
         pocket.Base = (pocket_bottom, aligned_face_name)
-        pocket_properties: Dict[str, Any] = self.get_pocket_properties()
+        pocket_properties: Dict[str, Any] = self.get_pocket_infos()
         self.process_json(json_dict, pocket, pocket_properties, tracing=next_tracing)
         pocket.recompute()
 
