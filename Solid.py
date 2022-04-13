@@ -677,10 +677,14 @@ class _HoleKey(object):
     IsTop: bool
     Group: int
 
-    # _HoleKey.__post_init__():
+    # _HoleKey.__post__init__():
     def __post_init__(self) -> None:
-        """Finish initializing the _HoleKey."""
-        pass
+        """Perform checks on _HoleKey."""
+        thread_name: str = self.ThreadName
+        assert thread_name.startswith("M") or thread_name.startswith("#") or (
+            thread_name.find("/") > 0), thread_name
+        assert self.Kind in ("thread", "close", "standard")
+        assert self.Depth > 0.0
 
 
 # _Hole:
@@ -688,13 +692,7 @@ class _HoleKey(object):
 class _Hole(_Operation):
     """_Hole: FabDrill helper class that represents a hole."""
 
-    # Size: str  # Essentially the diameter
-    # Profile: str  # Essentially the fastener thread pitch
-    ThreadName: str  # Thread name
-    Kind: str  # "thread", "close", or "standard"
-    Depth: float  # The depth of the drill hole
-    IsTop: bool  # Is the top of the fastener
-    Group: int  # Non-zero to force otherwise common holes into separate operations.
+    _Key: _HoleKey
     Center: Vector = field(compare=False)  # The Center (start point) of the drill
     Join: FabJoin = field(compare=False, repr=False)  # The associated FabJoin
     _Name: str  # Hole name
@@ -703,7 +701,7 @@ class _Hole(_Operation):
     @property
     def Key(self) -> _HoleKey:
         """Return a Hole key."""
-        return _HoleKey(self.ThreadName, self.Kind, self.Depth, self.IsTop, self.Group)
+        return self._Key
 
     # _Hole.get_name()
     def get_name(self) -> str:
@@ -722,11 +720,11 @@ class _Hole(_Operation):
         hashes: Tuple[Any, ...] = (
             "_Hole",
             self._Name,
-            self.ThreadName,
-            self.Kind,
-            self.IsTop,
-            self.Group,
-            f"{self.Depth:.6f}",
+            self._Key.ThreadName,
+            self._Key.Kind,
+            self._Key.IsTop,
+            self._Key.Group,
+            f"{self._Key.Depth:.6f}",
             f"{center.x:.6f}",
             f"{center.y:.6f}",
             f"{center.z:.6f}",
@@ -745,12 +743,13 @@ class _Hole(_Operation):
         # Unpack the _Hole (i.e. *self*):
         mount: FabMount = self.Mount
         # thread_name: str = self.ThreadName
-        kind: str = self.Kind
-        depth: float = self.Depth
+        key: _HoleKey = self._Key
+        kind: str = key.Kind
+        join: FabJoin = self.Join
+        depth: float = key.Depth
         # is_top: bool = self.IsTop
         # group: int = self.group
         center: Vector = self.Center
-        join: FabJoin = self.Join
         # name: str = self.Name
 
         # Unpack *mount* and *solid*:
@@ -1130,7 +1129,8 @@ class FabMount(object):
                     is_top: bool = close(join_start, trimmed_start)
                     # TODO: figure out *kind*:
                     kind: str = "close"  # or "thread", or "loose"
-                    # This is extremley ugly for now.  If the *mount_normal* equals the
+                    # TODO: This is True for FreeCAD holes, but is probably False for CadQuery.
+                    # This is extremely ugly for now.  If the *mount_normal* equals the
                     # +Z axis, multiple holes with the same characterisics can be drilled
                     # with one hole operation.  Otherwise, one drill operation per hole
                     # is requrired.  This is done by setting *unique* to *join_index*.
@@ -1140,8 +1140,9 @@ class FabMount(object):
                     # unique: int = -1 if mount_z_aligned else join_index
                     unique: int = join_index
                     hole_name: str = f"{joins_name}_{join_index}"
-                    hole: _Hole = _Hole(self, fasten.ThreadName, kind, trimmed_depth, is_top,
-                                        unique, mount_start, join, hole_name)
+                    hole_key: _HoleKey = _HoleKey(
+                        fasten.ThreadName, kind, trimmed_depth, is_top, unique)
+                    hole: _Hole = _Hole(self, hole_key, mount_start, join, hole_name)
                     if tracing:
                         print(f"{tracing}Append {hole=}")
                     holes.append(hole)
