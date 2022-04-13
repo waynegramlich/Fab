@@ -63,7 +63,7 @@ _ = FreeCADGui
 import Path  # type: ignore
 import PathScripts  # type: ignore
 _ = PathScripts
-from PathScripts import PathToolBit  # type: ignore
+from PathScripts import PathToolBit, PathDrilling  # type: ignore
 from PathScripts import PathJob, PathProfile, PathPostProcessor, PathUtil  # type: ignore
 from PathScripts import PathToolController, PathPocket  # type: ignore
 _ = PathToolBit  # TODO: remove
@@ -316,7 +316,7 @@ class FabCQtoFC(object):
         def append_documentation(obj: Any, out_file: IO[str], label: str) -> None:
             """Output object documentation to an opened file."""
             name: str
-            lines: List[str] = [f"## {label}:"]
+            lines: List[str] = [f"\n## {label}:"]
             for name in sorted(obj.PropertiesList):
                 value: Any = getattr(obj, name)
                 documentation = cast(str, obj.getDocumentationOfProperty(name))
@@ -345,24 +345,28 @@ class FabCQtoFC(object):
         if not self.ProperitiesVerified:
             self.ProperitiesVerified = True
 
-            # Temporarily instantiate one of each operation:
+            # Create a temporary operation object to extract properties from:
             profile: Any = PathProfile.Create("IgnoreThisProfile")
             profiles: Set[str] = set(profile.PropertiesList)
             pocket: Any = PathPocket.Create("IgnoreThisPocket")  # => "Path::FeaturePython".
             pockets: Set[str] = set(pocket.PropertiesList)
-            commons: Set[str] = profiles & pockets
+            drilling: Any = PathDrilling.Create("IgnoreThisDrilling")
+            drillings: Set[str] = set(drilling.PropertiesList)
+            commons: Set[str] = profiles & pockets & drillings
 
             # Write out property documentation:
             out_file: IO[str]
             with open("/tmp/objects.md", "w") as out_file:
-                out_file.write("# Object Docuementation\n\n")
+                out_file.write("# Object Docuementation\n")
                 append_documentation(profile, out_file, "Profile")
                 append_documentation(pocket, out_file, "Pocket")
+                append_documentation(drilling, out_file, "Drilling")
 
-            # Remove the temporary objects:
+            # Remove the temporary opration objects:
             project_document: Any = self.ProjectDocument
             project_document.removeObject("IgnoreThisProfile")
             project_document.removeObject("IgnoreThisPocket")
+            project_document.removeObject("IgnoreThisDrilling")
 
             # Extract the information dictionary keys as sets:
             common_infos: Set[str] = set(self.merge_common_infos({}))
@@ -700,7 +704,6 @@ class FabCQtoFC(object):
     def merge_common_infos(self, infos: Dict[str, Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
         """Return some common properties to ignore."""
         infos["Active"] = {"ignore": None}
-        infos["AreaParams"] = {"ignore": None}
         infos["Base"] = {"ignore": None}
         infos["ClearanceHeight"] = {"type": float}
         infos["Comment"] = {"ignore": None}
@@ -709,7 +712,6 @@ class FabCQtoFC(object):
         infos["EnableRotation"] = {"ignore": None}
         infos["ExpressionEngine"] = {"ignore": None}
         infos["FinalDepth"] = {"type": float}
-        infos["HandleMultipleFeatures"] = {"ignore": None}
         infos["Label"] = {"ignore": None}
         infos["Label2"] = {"ignore": None}
         infos["OpFinalDepth"] = {"ignore": None}
@@ -718,18 +720,13 @@ class FabCQtoFC(object):
         infos["OpStockZMin"] = {"ignore": None}
         infos["OpToolDiameter"] = {"ignore": None}
         infos["Path"] = {"ignore": None}
-        infos["PathParams"] = {"ignore": None}
         infos["Placement"] = {"ignore": None}
         infos["Proxy"] = {"ignore": None}
         infos["SafeHeight"] = {"type": float}
         infos["StartDepth"] = {"type": float}
-        infos["StartPoint"] = {"ignore": None}
-        infos["StepDown"] = {"type": float}
         infos["ToolController"] = {"ignore": None}
-        infos["UseStartPoint"] = {"ignore": None}
         infos["UserLabel"] = {"ignore": None}
         infos["Visibility"] = {"ignore": None}
-        infos["removalshape"] = {"ignore": None}
 
         return infos
 
@@ -737,19 +734,26 @@ class FabCQtoFC(object):
     def get_extrude_infos(self) -> Dict[str, Any]:
         """Return the pocket properties."""
         extrude_infos: Dict[str, Any] = {
+            "AreaParams": {"ignore": None},
             "AttemptInverseAngle": {"ignore": None},
             "Direction": {},
+            "HandleMultipleFeatures": {"ignore": None},
             "InverseAngle": {"ignore": None},
             "JoinType": {"ignore": None},
             "LimitDepthToFace": {"ignore": None},
             "MiterLimit": {"ignore": None},
             "OffsetExtra": {"ignore": None},
+            "PathParams": {"ignore": None},
             "ReverseDirection": {"ignore": None},
             "Side": {"extra": None},
+            "StartPoint": {"ignore": None},
+            "StepDown": {"type": float},
             "UseComp": {"ignore": None},
+            "UseStartPoint": {"ignore": None},
             "processCircles": {"ignore": None},
             "processHoles": {"ignore": None},
             "processPerimeter": {"ignore": None},
+            "removalshape": {"ignore": None},
         }
         return self.merge_common_infos(extrude_infos)
 
@@ -759,17 +763,24 @@ class FabCQtoFC(object):
         extrude_infos: Dict[str, Any] = {
             "AdaptivePocketFinish": {"ignore": None},
             "AdaptivePocketStart": {"ignore": None},
+            "AreaParams": {"ignore": None},
             "CutMode": {},
             "ExtraOffset": {"ignore": None},
             "FinishDepth": {"type": float},
+            "HandleMultipleFeatures": {"ignore": None},
             "KeepToolDown": {},
             "MinTravel": {},
             "OffsetPattern": {},
+            "PathParams": {"ignore": None},
             "Placement": {"ignore": None},
             "ProcessStockArea": {"ignore": None},
             "StartAt": {},
+            "StartPoint": {"ignore": None},
+            "StepDown": {"type": float},
             "StepOver": {},
+            "UseStartPoint": {"ignore": None},
             "ZigZagAngle": {},
+            "removalshape": {"ignore": None},
         }
         self.merge_common_infos(extrude_infos)
         return extrude_infos
