@@ -410,7 +410,7 @@ class FabCQtoFC(object):
     # FabCQtoFC.process_json():
     def process_json(
             self, json_dict: Dict[str, Any], obj: Any,
-            info: Dict[str, Dict[str, Any]], tracing: str = ""
+            infos: Dict[str, Dict[str, Any]], tracing: str = ""
     ) -> None:
         """Transfer JSON values into Path operation object.
 
@@ -418,27 +418,19 @@ class FabCQtoFC(object):
         * *json_dict* (Dict[str, Any]):
           A dictionary from a JSON file that contains the object values:
         * *obj* (Any):
-          A Path opertation object (e.g. contour, pocket, drill, etc.) that has properties
+          A Path operation object (e.g. contour, pocket, drill, etc.) that has properties
           to be set.  This object must have a `PropertiesList` attribute.
-        * *info* (Dict[str, Dict[str, Any]]):
+        * *infos* (Dict[str, Dict[str, Any]]):
           This a dictionary of dictionaries.  The top level dictionary keys must be 1-to-1
           with the keys returned by the `PropertiesList` attribute.  The sub-dictionary for
           each property specifies additional information:
-          * "doc": (str):
-            The documentation string associated with the property.  When present, it must
-            exactly match corresponding object documentation line returned by the
-            `getDocumentationProperty()` method.  This helps document what each property
-            does in the code.
-          * "allowed": (Set[str]):
-            When present, the property must be match one of the values in the set.
-          * "ignore: (None):
-            When present, this property is ignored.
+          * "type": (type): When present, the property must match this type.
+          * "ignore: (None): When present, this property is ignored.
         """
         if tracing:
             print(f"{tracing}=>FabCQtoFC.process_json(*, *, *)")
-            print(f"{dir(obj)=}")
 
-        # Verify that required methods a present:
+        # Verify that required methods are present:  # TODO: Move to verify_properties:
         if not hasattr(obj, "PropertiesList"):
             raise RuntimeError(
                 "FabCQtoFC.process_json(): No getProperties() method present")
@@ -446,34 +438,21 @@ class FabCQtoFC(object):
             raise RuntimeError(
                 "FabCQtoFC.process_json(): No getDocumentationOfProperty() method present")
 
-        # Extract *info_properties*, *ignore_properteries* and *extra_properties* from *info*:
-        property_name: str
-        property_info: Dict[str, Any]
-        ignore_properties: Set[str] = {  # Only ones which are tagged with "ignore".
-            property_name
-            for property_name, property_info in info.items()
-            if "ignore" in property_info
-        }
-        extra_properties: Set[str] = {  # Only ones which are tagged with "extra".
-            property_name
-            for property_name, property_info in info.items()
-            if "extra" in property_info
-        }
-
-        # Extra *actual_properties* from *obj*:
-        actual_properties: Set[str] = set(obj.PropertiesList)
+        # Extract *ignores* (fields not expected in JSON) from *info*:
+        name: str
+        info: Dict[str, Any]
+        ignores: Set[str] = {  # Set comprehension
+            name for name, info in infos.items() if "ignore" in info}
+        actuals: Set[str] = set(obj.PropertiesList)
 
         # The incoming JSON entries have a preceding "_" that needs to be stripped off.
         # FYI, the "_" ensures that required entries like "Label" and "Kind" get sorted first
         # when the JSON is pretty printed.  Any following "children" list always sorts last.
-        json_key: str
-        json_properties: Set[str] = set([
-            json_key[1:] for json_key in json_dict.keys()
-            if json_key.startswith("_")
-        ])
+        jsons: Set[str] = set([
+            name[1:] for name in json_dict.keys() if name.startswith("_")])
 
-        desired_jsons: Set[str] = json_properties - extra_properties
-        desired_actuals: Set[str] = actual_properties - ignore_properties
+        desired_jsons: Set[str] = jsons
+        desired_actuals: Set[str] = actuals - ignores
         if desired_jsons != desired_actuals:
             raise RuntimeError(
                 "FabCQtoFC.process_json(): Property mismatch:\n"
@@ -483,36 +462,29 @@ class FabCQtoFC(object):
 
         # Sweep through *properties*:
         if tracing:
-            print(f"{tracing}{json_properties=}")
-        for property_name, property_info in info.items():
+            print(f"{tracing}{jsons=}")
+        for name, info in infos.items():
             info_key: str
             info_value: Any
-            if "doc" in property_info:
-                actual_documentation: str = obj.getDocumenationProperty()
-                assert isinstance(property_info, str), property_info
-                if actual_documentation != property_info:
-                    raise RuntimeError(
-                        "FabCQtoFC.process_json(): documentation mismatch:\n"
-                        f"Actual: '{actual_documentation}'\n"
-                        f"Wanted: '{property_info}'")
-            if "ignore" not in property_info and "extra" not in property_info:
-                property_value: Any = getattr(obj, property_name)
-                property_type: type = type(property_value)
-                json_value: Any = json_dict[f"_{property_name}"]  # JSON keys have "_" key prefix.
+            if "ignore" not in info:
+                target_value: Any = getattr(obj, name)
+                target_type: type = type(target_value)
+                json_value: Any = json_dict[f"_{name}"]  # JSON keys have "_" key prefix.
                 json_type: type = type(json_value)
-                if "type" in property_info:
-                    property_type = property_info["type"]
+                if "type" in info:
+                    target_type = info["type"]
+                # TODO: Should not assume that all strings are enumerations:
                 if isinstance(json_type, str):
-                    enumeration_values: List[str] = obj.getEnumererationsOfProperty(property_name)
-                    if json_value not in enumeration_values:
+                    enumerations: List[str] = obj.getEnumererationsOfProperty(name)
+                    if json_value not in enumerations:
                         raise RuntimeError(
-                            f"FabCQtoFC.process_json(): {property_name=} has "
-                            f"{property_value=} which is not one of {sorted(enumeration_values)}")
-                if property_type != json_type:
+                            f"FabCQtoFC.process_json(): {name=} has "
+                            f"{target_value=} which is not one of {sorted(enumerations)}")
+                if target_type != json_type:
                     raise RuntimeError(
                         "FabCQtoFC.process_json(): "
-                        f"{property_name=}: {property_type=} != {json_type=}")
-                setattr(obj, property_name, json_value)
+                        f"{name=}: {target_type=} != {json_type=}")
+                setattr(obj, name, json_value)
 
         if tracing:
             print(f"{tracing}<=FabCQtoFC.process_json(*, *, *)")
