@@ -657,7 +657,7 @@ class _Pocket(_Operation):
 
 
 # _HoleKey:
-@dataclass(frozen=True, order=True)
+@dataclass(frozen=True)
 class _HoleKey(object):
     """_HoleKey: Represents a group of holes that can be grouped together.
 
@@ -704,15 +704,18 @@ class _Hole(_Operation):
     """_Hole: FabDrill helper class that represents a hole."""
 
     _Key: _HoleKey
-    Center: Vector = field(compare=False)  # The Center (start point) of the drill
-    Join: FabJoin = field(compare=False, repr=False)  # The associated FabJoin
+    Centers: Tuple[Vector, ...]  # The Center (start point) of the drils
+    Join: FabJoin = field(repr=False)  # The associated FabJoin
     _Name: str  # Hole name
 
     # _Hole.__post_produce__():
     def __post_produce__(self) -> None:
         """Perform final initialization of _Hole"""
-        copy: Vector = ()
-        self.Join += copy
+
+        assert isinstance(self._Key, _HoleKey), self._Key
+        assert isinstance(self.Centers, tuple), self.Centers
+        assert isinstance(self.Join, FabJoin), self.Join
+        assert isinstance(self._Name, str), self._Name
 
     # _Hole.Key():
     @property
@@ -733,16 +736,17 @@ class _Hole(_Operation):
     # _Hole.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:
         """Return _Hole hash."""
-        center: Vector = self.Center
-        hashes: Tuple[Any, ...] = (
+        hashes: List[Any] = [
             "_Hole",
             self._Key.get_hash(),
-            f"{center.x:.6f}",
-            f"{center.y:.6f}",
-            f"{center.z:.6f}",
             self.Join.get_hash(),
-        )
-        return hashes
+        ]
+        center: Vector
+        for center in self.Centers:
+            hashes.append(f"{center.x:.6f}")
+            hashes.append(f"{center.y:.6f}")
+            hashes.append(f"{center.z:.6f}")
+        return tuple(hashes)
 
     # _Hole.post_produce1():
     def post_produce1(self, produce_state: _NodeProduceState, tracing: str = "") -> None:
@@ -761,14 +765,12 @@ class _Hole(_Operation):
         depth: float = key.Depth
         # is_top: bool = self.IsTop
         # group: int = self.group
-        center: Vector = self.Center
         # name: str = self.Name
 
         # Unpack *mount* and *solid*:
         mount_normal: Vector = mount.Normal
         fasten: FabFasten = join.Fasten
         diameter: Vector = fasten.get_diameter(kind)
-        circle: FabCircle = FabCircle(center, mount_normal, diameter)
 
         geometry_context: FabGeometryContext = mount._GeometryContext
         # geometry_prefix: str = name
@@ -798,12 +800,15 @@ class _Hole(_Operation):
         if tracing:
             print(f"{tracing}hole={self}:")
         plane: FabPlane = geometry_context.Plane
-        projected_circle: FabCircle = circle.project_to_plane(plane, tracing=next_tracing)
-        projected_center: Vector = projected_circle.Center
-        rotated_center: Vector = plane.rotate_to_z_axis(projected_center, tracing=next_tracing)
+        center: Vector
+        for center in self.Centers:
+            circle: FabCircle = FabCircle(center, mount_normal, diameter)
+            projected_circle: FabCircle = circle.project_to_plane(plane, tracing=next_tracing)
+            projected_center: Vector = projected_circle.Center
+            rotated_center: Vector = plane.rotate_to_z_axis(projected_center, tracing=next_tracing)
 
-        geometry_context.Query.move_to(rotated_center, tracing=next_tracing)
-        geometry_context.Query.hole(diameter, depth, tracing=next_tracing)
+            geometry_context.Query.move_to(rotated_center, tracing=next_tracing)
+            geometry_context.Query.hole(diameter, depth, tracing=next_tracing)
 
         if tracing:
             print(f"{tracing}<=_Hole({self.Name}).post_produce1()")
@@ -1154,7 +1159,7 @@ class FabMount(object):
                     hole_name: str = f"{joins_name}_{join_index}"
                     hole_key: _HoleKey = _HoleKey(
                         fasten.ThreadName, kind, trimmed_depth, is_top, unique)
-                    hole: _Hole = _Hole(self, hole_key, mount_start, join, hole_name)
+                    hole: _Hole = _Hole(self, hole_key, (mount_start,), join, hole_name)
                     if tracing:
                         print(f"{tracing}Append {hole=}")
                     holes.append(hole)
