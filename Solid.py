@@ -656,7 +656,31 @@ class _Pocket(_Operation):
         return json_dict
 
 
-_HoleKey = Tuple[str, str, float, bool, int]
+# _HoleKey:
+@dataclass(frozen=True, order=True)
+class _HoleKey(object):
+    """_HoleKey: Represents a group of holes that can be grouped together.
+
+    Attributes:
+    * *ThreadName* (str): The name of the thread class for the hole.
+    * *Kind* (str): The kind of thread hole (one of "thread", "close", or "standard".)
+    * *Depth* (float): The hole depth.
+    * *IsTop* (bool): True when hole is the top of the fastener for countersink and counterboring.
+    * *Group* (int):
+      All _HoleKey's with the same group will be done together.
+      All the other attributes, must match.
+
+    """
+    ThreadName: str
+    Kind: str
+    Depth: float
+    IsTop: bool
+    Group: int
+
+    # _HoleKey.__post_init__():
+    def __post_init__(self) -> None:
+        """Finish initializing the _HoleKey."""
+        pass
 
 
 # _Hole:
@@ -670,7 +694,7 @@ class _Hole(_Operation):
     Kind: str  # "thread", "close", or "standard"
     Depth: float  # The depth of the drill hole
     IsTop: bool  # Is the top of the fastener
-    Unique: int  # Non-zero to force otherwise common holes into separate operations.
+    Group: int  # Non-zero to force otherwise common holes into separate operations.
     Center: Vector = field(compare=False)  # The Center (start point) of the drill
     Join: FabJoin = field(compare=False, repr=False)  # The associated FabJoin
     _Name: str  # Hole name
@@ -679,7 +703,7 @@ class _Hole(_Operation):
     @property
     def Key(self) -> _HoleKey:
         """Return a Hole key."""
-        return (self.ThreadName, self.Kind, self.Depth, self.IsTop, self.Unique)
+        return _HoleKey(self.ThreadName, self.Kind, self.Depth, self.IsTop, self.Group)
 
     # _Hole.get_name()
     def get_name(self) -> str:
@@ -701,7 +725,7 @@ class _Hole(_Operation):
             self.ThreadName,
             self.Kind,
             self.IsTop,
-            self.Unique,
+            self.Group,
             f"{self.Depth:.6f}",
             f"{center.x:.6f}",
             f"{center.y:.6f}",
@@ -724,7 +748,7 @@ class _Hole(_Operation):
         kind: str = self.Kind
         depth: float = self.Depth
         # is_top: bool = self.IsTop
-        # unique: int = self.Unique
+        # group: int = self.group
         center: Vector = self.Center
         join: FabJoin = self.Join
         # name: str = self.Name
