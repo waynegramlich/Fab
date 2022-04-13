@@ -313,18 +313,58 @@ class FabCQtoFC(object):
                 print(f"{sorted(infos - properties)=}")
                 assert False
 
+        def append_documentation(obj: Any, out_file: IO[str], label: str) -> None:
+            """Output object documentation to an opened file."""
+            name: str
+            lines: List[str] = [f"## {label}:"]
+            for name in sorted(obj.PropertiesList):
+                value: Any = getattr(obj, name)
+                documentation = cast(str, obj.getDocumentationOfProperty(name))
+
+                # Create a realatively clean *type_name*:
+                type_name: str = str(type(value))
+                if type_name.startswith("<class '") and type_name.endswith("'>"):
+                    type_name = type_name[8:-2]
+                if type_name == "Base.Quantity":
+                    type_name = "float"
+                elif type_name == "Base.Vector":
+                    type_name = "Vector"
+
+                # Convert *enumerations* into a more readable *enumerations_text*:
+                enumerations: Optional[List[str]] = None
+                enumerations_text: str = ""
+                enumerations = obj.getEnumerationsOfProperty(name)
+                if enumerations:
+                    enumeration: str
+                    enumerations = [f"'{enumeration}'" for enumeration in enumerations]
+                    enumerations_text = f" {{ {', '.join(sorted(enumerations))} }}"
+                lines.append(f"* {name} ({type_name}): {documentation}{enumerations_text}")
+            lines.append("")
+            out_file.write("\n".join(lines))
+
         if not self.ProperitiesVerified:
             self.ProperitiesVerified = True
 
-            project_document: Any = self.ProjectDocument
+            # Temporarily instantiate one of each operation:
             profile: Any = PathProfile.Create("IgnoreThisProfile")
             profiles: Set[str] = set(profile.PropertiesList)
-            project_document.removeObject("IgnoreThisProfile")
             pocket: Any = PathPocket.Create("IgnoreThisPocket")  # => "Path::FeaturePython".
             pockets: Set[str] = set(pocket.PropertiesList)
-            project_document.removeObject("IgnoreThisPocket")
             commons: Set[str] = profiles & pockets
 
+            # Write out property documentation:
+            out_file: IO[str]
+            with open("/tmp/objects.md", "w") as out_file:
+                out_file.write("# Object Docuementation\n\n")
+                append_documentation(profile, out_file, "Profile")
+                append_documentation(pocket, out_file, "Pocket")
+
+            # Remove the temporary objects:
+            project_document: Any = self.ProjectDocument
+            project_document.removeObject("IgnoreThisProfile")
+            project_document.removeObject("IgnoreThisPocket")
+
+            # Extract the information dictionary keys as sets:
             common_infos: Set[str] = set(self.merge_common_infos({}))
             extrude_infos: Set[str] = set(self.get_extrude_infos().keys())
             pocket_infos: Set[str] = set(self.get_pocket_infos().keys())
@@ -652,36 +692,6 @@ class FabCQtoFC(object):
                 profile.ToolController = tool_controller
 
                 profile.recompute()
-
-                # To generate a list of documented properties to "doc_file_name*:
-                if False:
-                    documented_properties: Tuple[str, ...] = (
-                        "Active", "AreaParams", "AttemptInverseAngle", "Base", "ClearanceHeight",
-                        "Comment", "CoolantMode", "CycleTime", "Direction", "EnableRotation",
-                        "ExpandProfile", "ExpandProfileStepOver", "ExpressionEngine", "FinalDepth",
-                        "HandleMultipleFeatures", "InverseAngle", "JoinType", "Label", "Label2",
-                        "LimitDepthToFace", "MiterLimit", "OffsetExtra", "OpFinalDepth",
-                        "OpStartDepth", "OpStockZMax", "OpStockZMin", "OpToolDiameter", "Path",
-                        "PathParams", "Placement", "Proxy", "ReverseDirection", "SafeHeight",
-                        "Side", "StartDepth", "StartPoint", "StepDown", "ToolController",
-                        "UseComp", "UseStartPoint", "UserLabel", "Visibility",
-                    )
-                    undocumented_properties: Tuple[str, ...] = (
-                        "Content", "Document", "FullName", "ID", "InList", "InListRecursive",
-                        "MemSize", "Module", "MustExecute", "Name", "NoTouch", "OldLabel",
-                        "OutList", "OutListRecursive", "Parents", "PropertiesList", "Removing",
-                        "State", "TypeId", "ViewObject",
-                    )
-                    _ = undocumented_properties
-
-                    doc_file_name: str = "/tmp/contour.md"
-                    doc_file: IO[str]
-                    with open(doc_file_name, "w") as doc_file:
-                        property: str
-                        doc_file.write("# Contour Properites\n\n")
-                        for property in documented_properties:
-                            doc_file.write(f"* {property} ({repr(getattr(profile, property))}): "
-                                           f"{profile.getDocumentationOfProperty(property)}\n")
 
         if tracing:
             print(f"{tracing}<=FabCQtoFC.process_extrude(*, '{label}', {tree_path})")
