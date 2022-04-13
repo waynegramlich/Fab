@@ -686,9 +686,20 @@ class _HoleKey(object):
         assert self.Kind in ("thread", "close", "standard")
         assert self.Depth > 0.0
 
+    # _HoleKey.get_hash():
+    def get_hash(self) -> Tuple[Any, ...]:
+        """Return a hash tuple for a _HoleKey."""
+        return (
+            self.ThreadName,
+            self.Kind,
+            f"{self.Depth:.6f}",
+            self.IsTop,
+            self.Group
+        )
+
 
 # _Hole:
-@dataclass(order=True)
+@dataclass
 class _Hole(_Operation):
     """_Hole: FabDrill helper class that represents a hole."""
 
@@ -696,6 +707,12 @@ class _Hole(_Operation):
     Center: Vector = field(compare=False)  # The Center (start point) of the drill
     Join: FabJoin = field(compare=False, repr=False)  # The associated FabJoin
     _Name: str  # Hole name
+
+    # _Hole.__post_produce__():
+    def __post_produce__(self) -> None:
+        """Perform final initialization of _Hole"""
+        copy: Vector = ()
+        self.Join += copy
 
     # _Hole.Key():
     @property
@@ -719,12 +736,7 @@ class _Hole(_Operation):
         center: Vector = self.Center
         hashes: Tuple[Any, ...] = (
             "_Hole",
-            self._Name,
-            self._Key.ThreadName,
-            self._Key.Kind,
-            self._Key.IsTop,
-            self._Key.Group,
-            f"{self._Key.Depth:.6f}",
+            self._Key.get_hash(),
             f"{center.x:.6f}",
             f"{center.y:.6f}",
             f"{center.z:.6f}",
