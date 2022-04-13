@@ -372,10 +372,12 @@ class FabCQtoFC(object):
             common_infos: Set[str] = set(self.merge_common_infos({}))
             extrude_infos: Set[str] = set(self.get_extrude_infos().keys())
             pocket_infos: Set[str] = set(self.get_pocket_infos().keys())
+            drilling_infos: Set[str] = set(self.get_drilling_infos().keys())
 
             match("commmon", commons, common_infos)
             match("pocket", pockets, pocket_infos)
             match("profile", profiles, extrude_infos)
+            match("drilling", drillings, drilling_infos)
         if tracing:
             print(f"{tracing}<=CQtoPy.verify_properties()")
 
@@ -730,6 +732,27 @@ class FabCQtoFC(object):
 
         return infos
 
+    # FabCQtFC.get_drilling_infos():
+    def get_drilling_infos(self) -> Dict[str, Any]:
+        """Return the pocket properties."""
+        drilling_infos: Dict[str, Any] = {
+            "AddTipLength": {"ignore": None},
+            "AttemptInverseAngle": {"ignore": None},
+            "Disabled": {"ignore": None},
+            "DwellEnabled": {"ignore": None},
+            "DwellTime": {"ignore": None},
+            "ExtraOffset": {"ignore": None},
+            "InverseAngle": {"ignore": None},
+            "Locations": {"ignore": None},
+            "PeckDepth": {"ignore": None},
+            "PeckEnabled": {"ignore": None},
+            "RetractHeight": {"ignore": None},
+            "ReturnLevel": {"ignore": None},
+            "ReverseDirection": {"ignore": None},
+        }
+        self.merge_common_infos(drilling_infos)
+        return drilling_infos
+
     # FabCQtFC.get_extrude_infos():
     def get_extrude_infos(self) -> Dict[str, Any]:
         """Return the pocket properties."""
@@ -760,7 +783,7 @@ class FabCQtoFC(object):
     # FabCQtFC.get_pocket_infos():
     def get_pocket_infos(self) -> Dict[str, Any]:
         """Return the pocket properties."""
-        extrude_infos: Dict[str, Any] = {
+        pocket_infos: Dict[str, Any] = {
             "AdaptivePocketFinish": {"ignore": None},
             "AdaptivePocketStart": {"ignore": None},
             "AreaParams": {"ignore": None},
@@ -782,8 +805,8 @@ class FabCQtoFC(object):
             "ZigZagAngle": {},
             "removalshape": {"ignore": None},
         }
-        self.merge_common_infos(extrude_infos)
-        return extrude_infos
+        self.merge_common_infos(pocket_infos)
+        return pocket_infos
 
     # FabCQtoFC.process_pocket():
     def process_pocket(self, json_dict: Dict[str, Any], label: str,
