@@ -1164,17 +1164,31 @@ class FabMount(object):
                         print(f"{tracing}Append {hole=}")
                     holes.append(hole)
 
-        # Group *holes* into *hole_groups* that can be done with one PartDesign hole:
-        # key: _HoleKey
-        # hole_groups: Dict[_HoleKey, List[_Hole]] = {}
-        # for hole in holes:
-        #     key = hole.Key
-        #     if key not in hole_groups:
-        #         hole_groups[key] = []
-        #     hole_groups[key].append(hole)
+        # Group *holes* into *hole_groups* base on their *key*:
+        key: _HoleKey
+        hole_groups: Dict[_HoleKey, List[_Hole]] = {}
+        for hole in holes:
+            key = hole.Key
+            if key not in hole_groups:
+                hole_groups[key] = []
+            hole_groups[key].append(hole)
+
+        # Create *grouped_holes* where each *group_hole* has the same *key*.
+        grouped_holes: List[_Hole] = []
+        group_holes: List[_Hole]
+        for group_holes in hole_groups.values():
+            group_hole: _Hole
+            group_centers: List[Vector] = []
+            for group_hole in group_holes:
+                group_centers.extend(group_hole.Centers)
+            grouped_hole: _Hole = _Hole(
+                group_hole.Mount, group_hole._Key, tuple(group_centers),
+                group_hole.Join, f"{group_hole.Name}_"
+            )
+            grouped_holes.append(grouped_hole)
 
         hole_index: int
-        for hole_index, hole in enumerate(holes):
+        for hole_index, hole in enumerate(grouped_holes):
             if tracing:
                 print(f"{tracing}Hole[{hole_index}]: record_operation({hole})")
             self.record_operation(hole)
