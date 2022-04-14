@@ -756,59 +756,47 @@ class _Hole(_Operation):
         if tracing:
             print(f"{tracing}=>_Hole({self.Name}).post_produce1()")
 
-        # Unpack the _Hole (i.e. *self*):
+        # Unpack the *mount* and associated *geometry_context*:
         mount: FabMount = self.Mount
-        # thread_name: str = self.ThreadName
+        geometry_context: FabGeometryContext = mount._GeometryContext
+        mount_normal: Vector = mount.Normal
+        plane: FabPlane = geometry_context.Plane
+        query: FabQuery = geometry_context.Query
+
         key: _HoleKey = self._Key
         kind: str = key.Kind
         join: FabJoin = self.Join
         depth: float = key.Depth
-        # is_top: bool = self.IsTop
-        # group: int = self.group
-        # name: str = self.Name
-
-        # Unpack *mount* and *solid*:
-        mount_normal: Vector = mount.Normal
         fasten: FabFasten = join.Fasten
         diameter: Vector = fasten.get_diameter(kind)
 
-        geometry_context: FabGeometryContext = mount._GeometryContext
-        # geometry_prefix: str = name
-
-        # solid: FabSolid = mount.Solid
-
-        # Sweep through *hole_groups* generating *part_geometries*:
-        # group_index: int
-        # for group_index, key in enumerate(sorted(hole_groups.keys())):
-        #     # Unpack *key*:
-        #     thread_name: str
-        #     thread_name, kind, depth, is_top, unique = key
-        #     diameter: float = fasten.get_diameter(kind)
-
-        #     # Construct the *part_geometries* for each *hole*:
-        #     part_geometries: List[Any] = []
-        #     hole_group: List[_Hole] = hole_groups[key]
-        #     for hole_index, hole in enumerate(hole_group):
-        #         center: Vector = hole.Center
-        #         circle: FabCircle = FabCircle(center, mount_normal, diameter)
-        #         geometry_prefix: str = (
-        #             f"{self.Name}_{name}{group_index:03d}")
-        #         part_geometries.extend(
-        #             circle.produce(geometry_context,
-        #                            geometry_prefix, tracing=next_tracing))
-
-        if tracing:
-            print(f"{tracing}hole={self}:")
-        plane: FabPlane = geometry_context.Plane
+        # Drill the holes in the in the rotated solid:
+        # Collect the min/max x/y of the each *rotated_center* and drill the holes :
+        max_x: float = 0.0
+        max_y: float = 0.0
+        min_x: float = 0.0
+        min_y: float = 0.0
+        rotated_centers: List[Vector] = []
+        index: int
         center: Vector
-        for center in self.Centers:
+        for index, center in enumerate(self.Centers):
             circle: FabCircle = FabCircle(center, mount_normal, diameter)
             projected_circle: FabCircle = circle.project_to_plane(plane, tracing=next_tracing)
             projected_center: Vector = projected_circle.Center
             rotated_center: Vector = plane.rotate_to_z_axis(projected_center, tracing=next_tracing)
+            rotated_centers.append(rotated_center)
+            x: float = projected_center.x
+            y: float = projected_center.y
+            max_x = x if index == 0 else max(max_x, x)
+            min_x = x if index == 0 else min(min_x, x)
+            max_y = y if index == 0 else max(max_y, y)
+            min_y = y if index == 0 else min(min_y, y)
 
-            geometry_context.Query.move_to(rotated_center, tracing=next_tracing)
-            geometry_context.Query.hole(diameter, depth, tracing=next_tracing)
+            # Perform the *query* drill operation.
+            query.move_to(rotated_center, tracing=next_tracing)
+            query.hole(diameter, depth, tracing=next_tracing)
+
+        # radius: float = diameter.x / 2.0
 
         if tracing:
             print(f"{tracing}<=_Hole({self.Name}).post_produce1()")

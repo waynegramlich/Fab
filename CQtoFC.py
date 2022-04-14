@@ -1025,3 +1025,7 @@ def main(tracing: str = "") -> None:
 
 if __name__ == "__main__":
     main(tracing=" ")
+
+# Miscellaneous links:
+# [Add: New waterline algorithm](https://forum.freecad.org/viewtopic.php?f=15&t=65718)
+# Post by sliptonic 02Feb2022@3:17PM describes the Path vs FreeCAD global coordinate systems.
