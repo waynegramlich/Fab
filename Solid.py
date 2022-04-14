@@ -800,7 +800,7 @@ class _Hole(_Operation):
             query.hole(diameter, depth, tracing=next_tracing)
 
         # Create a new solid that encloses all of the holes:
-        if False:
+        if True:
             extra: float = diameter / 2.0 + 1.0  # Extra.
             height: float = 0.0
             enclose_ne: Vector = Vector(max_x + extra, max_y + extra, height)
@@ -810,18 +810,20 @@ class _Hole(_Operation):
 
             holes_contact: Vector = Vector(0.0, 0.0, 55.0)  # TODO: Fixe
             z_axis: Vector = Vector(0.0, 0.0, 1.0)
+        if True:
             holes_plane: FabPlane = FabPlane(holes_contact, z_axis)
-            query.copy_workplane(holes_plane, tracing=next_tracing)
-            query.move_to(enclose_ne)
-            query.line_to(enclose_nw)
-            query.line_to(enclose_sw)
-            query.line_to(enclose_se)
-            query.line_to(enclose_ne)
-            query.close()
-            query.extrude(-depth)
+            holes_query: FabQuery = FabQuery(holes_plane)
+            holes_query.copy_workplane(holes_plane, tracing=next_tracing)
+            holes_query.move_to(enclose_ne)
+            holes_query.line_to(enclose_nw)
+            holes_query.line_to(enclose_sw)
+            holes_query.line_to(enclose_se)
+            holes_query.line_to(enclose_ne)
+            holes_query.close()
+            holes_query.extrude(-depth)
             assembly: cq.Assembly = cq.Assembly(
-                query.WorkPlane, name="some_name", color=cq.Color(0.5, 0.5, 0.5, 1.0))
-            if (plane.UnitNormal - Vector(0.0, 0.0, 1.0)).Length < 1.0e-8:
+                holes_query.WorkPlane, name="some_name", color=cq.Color(0.5, 0.5, 0.5, 1.0))
+            if (holes_plane.UnitNormal - Vector(0.0, 0.0, 1.0)).Length < 1.0e-8:
                 operation_index: int = produce_state.OperationIndex
                 step_base_name: str = (
                     f"{mount.Solid.Label}__{mount.Name}__{operation_index:03d}__{self.Name}_Holes")
