@@ -578,7 +578,10 @@ class _Pocket(_Operation):
         # Extrude the pocket *pocket_query* volume to be removed.
         pocket_query.extrude(self._Depth, tracing=next_tracing)
 
-        bottom_name: str = f"{prefix}__pocket_bottom"
+        bottom_name: str = (
+            f"{mount.Solid.Label}__{mount.Name}__{produce_state.OperationIndex:03d}__"
+            f"{self.Name}__pocket_bottom"
+        )
         bottom_path = produce_state.Steps.activate(bottom_name,
                                                    self.get_geometries_hash(geometries))
         if not bottom_path.exists():
@@ -796,7 +799,37 @@ class _Hole(_Operation):
             query.move_to(rotated_center, tracing=next_tracing)
             query.hole(diameter, depth, tracing=next_tracing)
 
-        # radius: float = diameter.x / 2.0
+        # Create a new solid that encloses all of the holes:
+        if False:
+            extra: float = diameter / 2.0 + 1.0  # Extra.
+            height: float = 0.0
+            enclose_ne: Vector = Vector(max_x + extra, max_y + extra, height)
+            enclose_nw: Vector = Vector(min_x - extra, max_y + extra, height)
+            enclose_sw: Vector = Vector(min_x - extra, min_y - extra, height)
+            enclose_se: Vector = Vector(max_x + extra, min_y - extra, height)
+
+            holes_contact: Vector = Vector(0.0, 0.0, 55.0)  # TODO: Fixe
+            z_axis: Vector = Vector(0.0, 0.0, 1.0)
+            holes_plane: FabPlane = FabPlane(holes_contact, z_axis)
+            query.copy_workplane(holes_plane, tracing=next_tracing)
+            query.move_to(enclose_ne)
+            query.line_to(enclose_nw)
+            query.line_to(enclose_sw)
+            query.line_to(enclose_se)
+            query.line_to(enclose_ne)
+            query.close()
+            query.extrude(-depth)
+            assembly: cq.Assembly = cq.Assembly(
+                query.WorkPlane, name="some_name", color=cq.Color(0.5, 0.5, 0.5, 1.0))
+            if (plane.UnitNormal - Vector(0.0, 0.0, 1.0)).Length < 1.0e-8:
+                operation_index: int = produce_state.OperationIndex
+                step_base_name: str = (
+                    f"{mount.Solid.Label}__{mount.Name}__{operation_index:03d}__{self.Name}_Holes")
+                holes_path: Path = produce_state.Steps.activate(step_base_name, self.get_hash())
+
+                if not holes_path.exists():
+                    with _suppress_stdout():
+                        assembly.save(str(holes_path), "STEP")
 
         if tracing:
             print(f"{tracing}<=_Hole({self.Name}).post_produce1()")
@@ -986,17 +1019,20 @@ class FabMount(object):
                 print(f"{tracing}Contact={contact}")
                 print(f"{tracing}{plane=}")
 
-            work_plane: Optional[FabQuery] = self._Solid._Query
-            assert isinstance(work_plane, FabQuery), work_plane
-            work_plane.copy_workplane(plane, tracing=next_tracing)
+            query: Optional[FabQuery] = self._Solid._Query
+            assert isinstance(query, FabQuery), query
+            query.copy_workplane(plane, tracing=next_tracing)
 
             # Process each *operation* in *operations*:
+            operation_index: int = 0
             operation_name: str
             operation: _Operation
             for operation_name, operation in operations.items():
                 if tracing:
                     print(f"{tracing}Operation[{operation_name}]:")
+                produce_state.OperationIndex = operation_index
                 operation.post_produce1(produce_state, tracing=next_tracing)
+                operation_index += 1
 
         # Install the FabMount (i.e. *self*) and *datum_plane* into *model_file* prior
         # to recursively performing the *operations*:
