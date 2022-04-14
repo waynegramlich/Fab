@@ -976,14 +976,17 @@ class _NodeProduceState(object):
       A table of objects that can be accessed via a debugger.
     * *ToolControllersTable*: (Dict[FabToolController, int]):
       A lookup to make common FabToolControllers to a single integer.
+    * *OperationIndex* (int):
+      An index for the current operation being performed for a mount.
 
     This class is for interal use only:
     """
 
     StepsDirectory: Path
-    Steps: FabSteps = field(init=False)
-    ObjectsTable: Dict[str, Any] = field(init=False)
-    ToolControllersTable: Dict[FabToolController, int] = field(init=False)
+    Steps: FabSteps = field(init=False, repr=False)
+    ObjectsTable: Dict[str, Any] = field(init=False, repr=False)
+    ToolControllersTable: Dict[FabToolController, int] = field(init=False, repr=False)
+    OperationIndex: int = field(init=False, repr=False)
 
     # _NodeProduceState.__post_init__():
     def __post_init__(self) -> None:
@@ -991,6 +994,7 @@ class _NodeProduceState(object):
         self.ObjectsTable = {}
         self.Steps = FabSteps(self.StepsDirectory)
         self.ToolControllersTable = {}
+        self.OperationsIndex = 0
 
 
 # FabNode:
