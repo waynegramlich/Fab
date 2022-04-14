@@ -826,11 +826,11 @@ class FabCQtoFC(object):
         step_file: FilePath = FilePath(step)
         if tracing:
             print(f"{tracing}{step_file=}")
+            print(f"{tracing}{step_file.stem=}")
         if not step_file.exists():
             raise RuntimeError(f"{step_file} does not exits.")
         FCImport.insert(step, project_document.Label)
-        pocket_label: str = (
-            f"{self.CurrentSolidName}__{self.CurrentJobName}__{label}__pocket_bottom")
+        pocket_label: str = step_file.stem[:-18]  # strip off '__XXXXXXXXXXXXXXXX'
         if tracing:
             print(f"{tracing}{pocket_label=}")
         pocket_bottom: Any = project_document.getObject(pocket_label)
