@@ -669,16 +669,12 @@ class _HoleKey(object):
     * *Kind* (str): The kind of thread hole (one of "thread", "close", or "standard".)
     * *Depth* (float): The hole depth.
     * *IsTop* (bool): True when hole is the top of the fastener for countersink and counterboring.
-    * *Group* (int):
-      All _HoleKey's with the same group will be done together.
-      All the other attributes, must match.
 
     """
     ThreadName: str
     Kind: str
     Depth: float
     IsTop: bool
-    Group: int
 
     # _HoleKey.__post__init__():
     def __post_init__(self) -> None:
@@ -686,8 +682,9 @@ class _HoleKey(object):
         thread_name: str = self.ThreadName
         assert thread_name.startswith("M") or thread_name.startswith("#") or (
             thread_name.find("/") > 0), thread_name
-        assert self.Kind in ("thread", "close", "standard")
-        assert self.Depth > 0.0
+        assert self.Kind in ("thread", "close", "standard"), self.Kind
+        assert self.Depth > 0.0, self.Depth
+        assert isinstance(self.IsTop, bool), self.IsTop
 
     # _HoleKey.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:
@@ -697,7 +694,6 @@ class _HoleKey(object):
             self.Kind,
             f"{self.Depth:.6f}",
             self.IsTop,
-            self.Group
         )
 
 
@@ -800,28 +796,43 @@ class _Hole(_Operation):
             query.hole(diameter, depth, tracing=next_tracing)
 
         # Create a new solid that encloses all of the holes:
-        extra: float = diameter / 2.0 + 1.0  # Extra.
-        height: float = 0.0
-        enclose_ne: Vector = Vector(max_x + extra, max_y + extra, height)
-        enclose_nw: Vector = Vector(min_x - extra, max_y + extra, height)
-        enclose_sw: Vector = Vector(min_x - extra, min_y - extra, height)
-        enclose_se: Vector = Vector(max_x + extra, min_y - extra, height)
-
-        holes_contact: Vector = Vector(0.0, 0.0, 55.0)  # TODO: Fixe
         z_axis: Vector = Vector(0.0, 0.0, 1.0)
-        holes_plane: FabPlane = FabPlane(holes_contact, z_axis)
-        holes_query: FabQuery = FabQuery(holes_plane)
-        holes_query.copy_workplane(holes_plane, tracing=next_tracing)
-        holes_query.move_to(enclose_ne)
-        holes_query.line_to(enclose_nw)
-        holes_query.line_to(enclose_sw)
-        holes_query.line_to(enclose_se)
-        holes_query.line_to(enclose_ne)
-        holes_query.close()
-        holes_query.extrude(-depth)
-        assembly: cq.Assembly = cq.Assembly(
-            holes_query.WorkPlane, name="some_name", color=cq.Color(0.5, 0.5, 0.5, 1.0))
-        if (holes_plane.UnitNormal - Vector(0.0, 0.0, 1.0)).Length < 1.0e-8:
+        if (plane.UnitNormal - z_axis).Length < 1.0e-8:
+            # Start with a new *holes_plane* and *holes_query*:
+            holes_contact: Vector = Vector(0.0, 0.0, plane.Distance)
+            holes_plane: FabPlane = FabPlane(holes_contact, z_axis)
+            holes_query: FabQuery = FabQuery(holes_plane)
+
+            # Compute the closing solid corners.  The enclose face area must be greater the
+            # drill face area so that the JSON reader code and distinguish between faces.
+            # Thus, we make extend it by *diameter* in +/- X/Y.
+            extra: float = diameter
+            z: float = 0.0  # *z* is ignored.
+            enclose_ne: Vector = Vector(max_x + extra, max_y + extra, z)
+            enclose_nw: Vector = Vector(min_x - extra, max_y + extra, z)
+            enclose_sw: Vector = Vector(min_x - extra, min_y - extra, z)
+            enclose_se: Vector = Vector(max_x + extra, min_y - extra, z)
+
+            # Create the enclosing extrusion:
+            holes_query.copy_workplane(holes_plane, tracing=next_tracing)
+            holes_query.move_to(enclose_ne)
+            holes_query.line_to(enclose_nw)
+            holes_query.line_to(enclose_sw)
+            holes_query.line_to(enclose_se)
+            holes_query.line_to(enclose_ne)
+            holes_query.close()
+            # The + 1.0mm ensures that there is always a bottom face at the hole bottom.
+            # Thus there are no through holes in the final drilled extrusion.
+            holes_query.extrude(depth + 1.0)
+
+            # Drill the holes:
+            for center in self.Centers:
+                holes_query.move_to(center)  # TODO: Assume +Z axis for now.
+                holes_query.hole(diameter, depth)
+
+            assembly: cq.Assembly = cq.Assembly(
+                holes_query.WorkPlane, name="some_name", color=cq.Color(0.5, 0.5, 0.5, 1.0))
+
             operation_index: int = produce_state.OperationIndex
             step_base_name: str = (
                 f"{mount.Solid.Label}__{mount.Name}__{operation_index:03d}__{self.Name}_Holes")
@@ -1170,19 +1181,12 @@ class FabMount(object):
                     is_top: bool = close(join_start, trimmed_start)
                     # TODO: figure out *kind*:
                     kind: str = "close"  # or "thread", or "loose"
-                    # TODO: This is True for FreeCAD holes, but is probably False for CadQuery.
-                    # This is extremely ugly for now.  If the *mount_normal* equals the
-                    # +Z axis, multiple holes with the same characterisics can be drilled
-                    # with one hole operation.  Otherwise, one drill operation per hole
-                    # is requrired.  This is done by setting *unique* to *join_index*.
                     if tracing:
                         print(f"{tracing}{mount_depth=} {trimmed_depth=}")
                     assert trimmed_depth > 0.0, trimmed_depth
                     # unique: int = -1 if mount_z_aligned else join_index
-                    unique: int = join_index
                     hole_name: str = f"{joins_name}_{join_index}"
-                    hole_key: _HoleKey = _HoleKey(
-                        fasten.ThreadName, kind, trimmed_depth, is_top, unique)
+                    hole_key: _HoleKey = _HoleKey(fasten.ThreadName, kind, trimmed_depth, is_top)
                     hole: _Hole = _Hole(self, hole_key, (mount_start,), join, hole_name)
                     if tracing:
                         print(f"{tracing}Append {hole=}")
