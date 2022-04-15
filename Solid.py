@@ -800,38 +800,36 @@ class _Hole(_Operation):
             query.hole(diameter, depth, tracing=next_tracing)
 
         # Create a new solid that encloses all of the holes:
-        if True:
-            extra: float = diameter / 2.0 + 1.0  # Extra.
-            height: float = 0.0
-            enclose_ne: Vector = Vector(max_x + extra, max_y + extra, height)
-            enclose_nw: Vector = Vector(min_x - extra, max_y + extra, height)
-            enclose_sw: Vector = Vector(min_x - extra, min_y - extra, height)
-            enclose_se: Vector = Vector(max_x + extra, min_y - extra, height)
+        extra: float = diameter / 2.0 + 1.0  # Extra.
+        height: float = 0.0
+        enclose_ne: Vector = Vector(max_x + extra, max_y + extra, height)
+        enclose_nw: Vector = Vector(min_x - extra, max_y + extra, height)
+        enclose_sw: Vector = Vector(min_x - extra, min_y - extra, height)
+        enclose_se: Vector = Vector(max_x + extra, min_y - extra, height)
 
-            holes_contact: Vector = Vector(0.0, 0.0, 55.0)  # TODO: Fixe
-            z_axis: Vector = Vector(0.0, 0.0, 1.0)
-        if True:
-            holes_plane: FabPlane = FabPlane(holes_contact, z_axis)
-            holes_query: FabQuery = FabQuery(holes_plane)
-            holes_query.copy_workplane(holes_plane, tracing=next_tracing)
-            holes_query.move_to(enclose_ne)
-            holes_query.line_to(enclose_nw)
-            holes_query.line_to(enclose_sw)
-            holes_query.line_to(enclose_se)
-            holes_query.line_to(enclose_ne)
-            holes_query.close()
-            holes_query.extrude(-depth)
-            assembly: cq.Assembly = cq.Assembly(
-                holes_query.WorkPlane, name="some_name", color=cq.Color(0.5, 0.5, 0.5, 1.0))
-            if (holes_plane.UnitNormal - Vector(0.0, 0.0, 1.0)).Length < 1.0e-8:
-                operation_index: int = produce_state.OperationIndex
-                step_base_name: str = (
-                    f"{mount.Solid.Label}__{mount.Name}__{operation_index:03d}__{self.Name}_Holes")
-                holes_path: Path = produce_state.Steps.activate(step_base_name, self.get_hash())
+        holes_contact: Vector = Vector(0.0, 0.0, 55.0)  # TODO: Fixe
+        z_axis: Vector = Vector(0.0, 0.0, 1.0)
+        holes_plane: FabPlane = FabPlane(holes_contact, z_axis)
+        holes_query: FabQuery = FabQuery(holes_plane)
+        holes_query.copy_workplane(holes_plane, tracing=next_tracing)
+        holes_query.move_to(enclose_ne)
+        holes_query.line_to(enclose_nw)
+        holes_query.line_to(enclose_sw)
+        holes_query.line_to(enclose_se)
+        holes_query.line_to(enclose_ne)
+        holes_query.close()
+        holes_query.extrude(-depth)
+        assembly: cq.Assembly = cq.Assembly(
+            holes_query.WorkPlane, name="some_name", color=cq.Color(0.5, 0.5, 0.5, 1.0))
+        if (holes_plane.UnitNormal - Vector(0.0, 0.0, 1.0)).Length < 1.0e-8:
+            operation_index: int = produce_state.OperationIndex
+            step_base_name: str = (
+                f"{mount.Solid.Label}__{mount.Name}__{operation_index:03d}__{self.Name}_Holes")
+            holes_path: Path = produce_state.Steps.activate(step_base_name, self.get_hash())
 
-                if not holes_path.exists():
-                    with _suppress_stdout():
-                        assembly.save(str(holes_path), "STEP")
+            if not holes_path.exists():
+                with _suppress_stdout():
+                    assembly.save(str(holes_path), "STEP")
 
         if tracing:
             print(f"{tracing}<=_Hole({self.Name}).post_produce1()")
