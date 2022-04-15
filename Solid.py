@@ -706,15 +706,24 @@ class _Hole(_Operation):
     Centers: Tuple[Vector, ...]  # The Center (start point) of the drils
     Join: FabJoin = field(repr=False)  # The associated FabJoin
     _Name: str  # Hole name
+    Depth: float  # Hole depth
+    HolesCount: int = field(init=False)  # Number of holes in this opertation
+    StartDepth: float = field(init=False)
+    StepFile: str = field(init=False)
 
-    # _Hole.__post_produce__():
-    def __post_produce__(self) -> None:
+    # _Hole.__post_init__():
+    def __post_init__(self) -> None:
         """Perform final initialization of _Hole"""
 
+        super().__post_init__()
         assert isinstance(self._Key, _HoleKey), self._Key
         assert isinstance(self.Centers, tuple), self.Centers
         assert isinstance(self.Join, FabJoin), self.Join
         assert isinstance(self._Name, str), self._Name
+        self.Depth = 0.0
+        self.HolesCount = 0
+        self.StartDepth = 0.0
+        self.StepFile = ""
 
     # _Hole.Key():
     @property
@@ -730,7 +739,7 @@ class _Hole(_Operation):
     # _Hole.get_kind():
     def get_kind(self) -> str:
         """Return _Extrude kind."""
-        return "Hole"
+        return "Drill"
 
     # _Hole.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:
@@ -768,6 +777,7 @@ class _Hole(_Operation):
         depth: float = key.Depth
         fasten: FabFasten = join.Fasten
         diameter: Vector = fasten.get_diameter(kind)
+        self.Depth = depth
 
         # Drill the holes in the in the rotated solid:
         # Collect the min/max x/y of the each *rotated_center* and drill the holes :
@@ -799,9 +809,11 @@ class _Hole(_Operation):
         z_axis: Vector = Vector(0.0, 0.0, 1.0)
         if (plane.UnitNormal - z_axis).Length < 1.0e-8:
             # Start with a new *holes_plane* and *holes_query*:
-            holes_contact: Vector = Vector(0.0, 0.0, plane.Distance)
+            self.StartDepth = plane.Distance
+            holes_contact: Vector = Vector(0.0, 0.0, self.StartDepth)
             holes_plane: FabPlane = FabPlane(holes_contact, z_axis)
             holes_query: FabQuery = FabQuery(holes_plane)
+            self.StartDepth = plane.Distance
 
             # Compute the closing solid corners.  The enclose face area must be greater the
             # drill face area so that the JSON reader code and distinguish between faces.
@@ -829,6 +841,7 @@ class _Hole(_Operation):
             for center in self.Centers:
                 holes_query.move_to(center)  # TODO: Assume +Z axis for now.
                 holes_query.hole(diameter, depth)
+            self.HolesCount = len(self.Centers)
 
             assembly: cq.Assembly = cq.Assembly(
                 holes_query.WorkPlane, name="some_name", color=cq.Color(0.5, 0.5, 0.5, 1.0))
@@ -837,10 +850,11 @@ class _Hole(_Operation):
             step_base_name: str = (
                 f"{mount.Solid.Label}__{mount.Name}__{operation_index:03d}__{self.Name}_Holes")
             holes_path: Path = produce_state.Steps.activate(step_base_name, self.get_hash())
+            self.StepFile: str = str(holes_path)
 
             if not holes_path.exists():
                 with _suppress_stdout():
-                    assembly.save(str(holes_path), "STEP")
+                    assembly.save(self.StepFile, "STEP")
 
         if tracing:
             print(f"{tracing}<=_Hole({self.Name}).post_produce1()")
@@ -848,7 +862,20 @@ class _Hole(_Operation):
     # _Hole.to_json():
     def to_json(self) -> Dict[str, Any]:
         """"""
-        return {}  # TODO: This should not be called.
+        start_depth: float = self.StartDepth
+        json_dict: Dict[str, Any] = super().to_json()
+        json_dict["HolesCount"] = self.HolesCount
+        json_dict["StepFile"] = self.StepFile
+        json_dict["_Active"] = True
+        json_dict["_ClearanceHeight"] = self.StartDepth + 1.0  # TODO: Fix
+        json_dict["_CoolantMode"] = "Flood"  # TODO: Fix
+        json_dict["_FinalDepth"] = self.StartDepth - self.Depth
+        json_dict["_PeckEnabled"] = False
+        json_dict["_SafeHeight"] = start_depth + 5.0  # TODO: Fix
+        json_dict["_StartDepth"] = start_depth
+        json_dict["_ToolControllerIndex"] = 0  # TODO Fix
+
+        return json_dict
 
 
 # FabMount:
@@ -1058,7 +1085,7 @@ class FabMount(object):
         name: str
         operation: _Operation
         for name, operation in operations.items():
-            if isinstance(operation, (_Extrude, _Pocket)):
+            if isinstance(operation, (_Extrude, _Pocket, _Hole)):
                 json_operations.append(operation.to_json())
 
         contact: Vector = self._Contact
@@ -1187,7 +1214,8 @@ class FabMount(object):
                     # unique: int = -1 if mount_z_aligned else join_index
                     hole_name: str = f"{joins_name}_{join_index}"
                     hole_key: _HoleKey = _HoleKey(fasten.ThreadName, kind, trimmed_depth, is_top)
-                    hole: _Hole = _Hole(self, hole_key, (mount_start,), join, hole_name)
+                    hole: _Hole = _Hole(
+                        self, hole_key, (mount_start,), join, hole_name, trimmed_start)
                     if tracing:
                         print(f"{tracing}Append {hole=}")
                     holes.append(hole)
@@ -1211,7 +1239,7 @@ class FabMount(object):
                 group_centers.extend(group_hole.Centers)
             grouped_hole: _Hole = _Hole(
                 group_hole.Mount, group_hole._Key, tuple(group_centers),
-                group_hole.Join, f"{group_hole.Name}_"
+                group_hole.Join, f"{group_hole.Name}_", trimmed_start
             )
             grouped_holes.append(grouped_hole)
 
