@@ -559,7 +559,7 @@ class FabCQtoFC(object):
         # Verify that that *kind* is one of the *allowed_kinds*:
         allowed_kinds: Tuple[str, ...] = (
             "Project", "Document", "Assembly", "Solid", "Mount",  # No operations
-            "Extrude", "Pocket", "Drill")  # Operations
+            "Extrude", "Pocket", "Drilling")  # Operations
         if kind not in allowed_kinds:
             error_message = f"{tree_path}: Node kind '{kind}' not one of {allowed_kinds}"
             print(error_message)
@@ -580,8 +580,8 @@ class FabCQtoFC(object):
             self.process_extrude(json_dict, label, indent, tree_path, tracing=next_tracing)
         elif kind == "Pocket":
             self.process_pocket(json_dict, label, indent, tree_path, tracing=next_tracing)
-        elif kind == "Drill":
-            # self.process_drill(json_dict, label, indent, tree_path, tracing=next_tracing)
+        elif kind == "Drilling":
+            # self.process_drilling(json_dict, label, indent, tree_path, tracing=next_tracing)
             pass
         else:
             message = f"'{kind}' not one of {allowed_kinds}"

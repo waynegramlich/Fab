@@ -757,7 +757,7 @@ class _Hole(_Operation):
     # _Hole.get_kind():
     def get_kind(self) -> str:
         """Return _Extrude kind."""
-        return "Drill"
+        return "Drilling"
 
     # _Hole.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:
