@@ -863,12 +863,12 @@ class _Hole(_Operation):
                 holes_query.hole(diameter, depth)
             self.HolesCount = len(self.Centers)
 
-            assembly: cq.Assembly = cq.Assembly(
-                holes_query.WorkPlane, name="some_name", color=cq.Color(0.5, 0.5, 0.5, 1.0))
-
             operation_index: int = produce_state.OperationIndex
             step_base_name: str = (
                 f"{mount.Solid.Label}__{mount.Name}__{operation_index:03d}__{self.Name}_Holes")
+            assembly: cq.Assembly = cq.Assembly(
+                holes_query.WorkPlane, name=step_base_name, color=cq.Color(0.5, 0.5, 0.5, 1.0))
+
             holes_path: Path = produce_state.Steps.activate(step_base_name, self.get_hash())
             self.StepFile: str = str(holes_path)
 
