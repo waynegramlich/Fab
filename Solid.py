@@ -171,12 +171,15 @@ class _Operation(object):
       The tool controller (i.e. speeds, feeds, etc.) to use. (Default: None)
     * *ToolControllerIndex* (int):
       The tool controller index associated with the tool controller.  (Default: -1)
+    * *JsonEnabled* (bool_):
+      Enables the generation of JSON if True, otherwise suppresses it.  (Default: True)
 
     """
 
     _Mount: "FabMount" = field(repr=False, compare=False)
     _ToolController: Optional[FabToolController] = field(init=False, repr=False)
     _ToolControllerIndex: int = field(init=False)
+    _JsonEnabled: bool = field(init=False)
 
     # _Operation.__post_init__():
     def __post_init__(self) -> None:
@@ -186,6 +189,7 @@ class _Operation(object):
         #   raise RuntimeError("_Operation.__post_init__(): {type(self._Mount)} is not FabMount")
         self._ToolController = None
         self._ToolControllerIndex = -1  # Unassigned.
+        self._JsonEnabled = True
 
     # _Operation.get_tool_controller():
     def get_tool_controller(self) -> FabToolController:
@@ -234,6 +238,12 @@ class _Operation(object):
     def Name(self) -> str:
         """Return the operation name."""
         return self.get_name()
+
+    # _Operation.Name():
+    @property
+    def JsonEnabled(self) -> bool:
+        """Return the operation name."""
+        return self._JsonEnabled
 
     # _Operation.get_geometries_hash():
     def get_geometries_hash(
@@ -807,7 +817,9 @@ class _Hole(_Operation):
 
         # Create a new solid that encloses all of the holes:
         z_axis: Vector = Vector(0.0, 0.0, 1.0)
-        if (plane.UnitNormal - z_axis).Length < 1.0e-8:
+        if (plane.UnitNormal - z_axis).Length > 1.0e-8:
+            self._JsonEnabled = False
+        else:
             # Start with a new *holes_plane* and *holes_query*:
             self.StartDepth = plane.Distance
             holes_contact: Vector = Vector(0.0, 0.0, self.StartDepth)
@@ -1086,7 +1098,8 @@ class FabMount(object):
         operation: _Operation
         for name, operation in operations.items():
             if isinstance(operation, (_Extrude, _Pocket, _Hole)):
-                json_operations.append(operation.to_json())
+                if operation.JsonEnabled:
+                    json_operations.append(operation.to_json())
 
         contact: Vector = self._Contact
         normal: Vector = self._Normal
