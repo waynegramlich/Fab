@@ -876,6 +876,19 @@ class _Hole(_Operation):
                 with _suppress_stdout():
                     assembly.save(self.StepFile, "STEP")
 
+            tool_controller: FabToolController = FabToolController(
+                BitName="5mm_Drill",
+                Cooling="Flood",
+                HorizontalFeed=2.34,
+                HorizontalRapid=23.45,
+                SpindleDirection=True,
+                SpindleSpeed=5432.0,
+                ToolNumber=2,
+                VerticalFeed=1.23,
+                VerticalRapid=12.34
+            )
+            self.set_tool_controller(tool_controller, produce_state.ToolControllersTable)
+
         if tracing:
             print(f"{tracing}<=_Hole({self.Name}).post_produce1()")
 
