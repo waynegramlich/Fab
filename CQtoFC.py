@@ -876,6 +876,60 @@ class FabCQtoFC(object):
         if tracing:
             print(f"{tracing}<=FabCQtoFC.process_pocket(*, '{label}', {tree_path})")
 
+    # FabCQtoFC.process_drilling():
+    def process_drilling(self, json_dict: Dict[str, Any], label: str,
+                         indent: str, tree_path: Tuple[str, ...], tracing: str = "") -> None:
+        """Process a Drill JSON node."""
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabCQtoFC.process_drilling(*, '{label}', {tree_path})")
+
+        # Grab *drill_solid* from STEP file and insert into *project_document*:
+        self.verify_properties(tracing=next_tracing)
+        project_document: Any = self.ProjectDocument
+        if tracing:
+            print(f"{tracing}{project_document=} {project_document.Label=}")
+        # TODO: refactor Step file extraction():
+        step = cast(str, self.key_verify(
+            "StepFile", json_dict, str, tree_path, "Pocket.StepFile"))
+        step_file: FilePath = FilePath(step)
+        if tracing:
+            print(f"{tracing}{step_file=}")
+            print(f"{tracing}{step_file.stem=}")
+        if not step_file.exists():
+            raise RuntimeError(f"{step_file} does not exits.")
+        FCImport.insert(step, project_document.Label)
+        drilling_label: str = step_file.stem[:-18]  # strip off '__XXXXXXXXXXXXXXXX'
+        if tracing:
+            print(f"{tracing}{step_file=}")
+            print(f"{tracing}{drilling_label=}")
+        drilling_solid: Any = project_document.getObject(drilling_label)
+        if tracing:
+            print(f"{tracing}{drilling_solid=}")
+
+        tool: Any = None
+        tool_controller: Any = None
+        tool, tool_controller = self.get_tool_and_controller(
+            json_dict, label, indent, tree_path, tracing=next_tracing)
+        App.ActiveDocument = project_document  # TODO: This should not be necessary
+        if tracing:
+            print(f"{tracing}{tool=} {tool_controller=}")
+
+        # Now create a PathDrilling object:
+        drilling: Any = PathDrilling.Create(drilling_label)  # => "Path::FeaturePython".
+
+        # normal: Vector = Vector(0.0, 0.0, 1.0)
+        # aligned_face_name: str = self.get_aligned_face_name(
+        #     drilling_solid, normal, tracing=next_tracing)
+        # _ = aligned_face_name
+        # drilling.Base = (drilling_solid, aligned_face_name)
+        drilling_infos: Dict[str, Any] = self.get_drilling_infos()
+        self.process_json(json_dict, drilling, drilling_infos, tracing=next_tracing)
+        drilling.recompute()
+
+        if tracing:
+            print(f"{tracing}<=FabCQtoFC.process_drilling(*, '{label}', {tree_path})")
+
     # FabCQtoFC.process_mount():
     def process_mount(self, json_dict: Dict[str, Any], label: str,
                       indent: str, tree_path: Tuple[str, ...], tracing: str = "") -> None:
