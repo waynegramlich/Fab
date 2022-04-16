@@ -171,8 +171,11 @@ class _Operation(object):
       The tool controller (i.e. speeds, feeds, etc.) to use. (Default: None)
     * *ToolControllerIndex* (int):
       The tool controller index associated with the tool controller.  (Default: -1)
-    * *JsonEnabled* (bool_):
+    * *JsonEnabled* (bool):
       Enables the generation of JSON if True, otherwise suppresses it.  (Default: True)
+    * *Active* (bool):
+      If True, the resulting operation is performed.  About the only time this is set to False
+      is for an extrude of stock material like a C channel, I beam, etc.  (Default: True)
 
     """
 
@@ -180,6 +183,7 @@ class _Operation(object):
     _ToolController: Optional[FabToolController] = field(init=False, repr=False)
     _ToolControllerIndex: int = field(init=False)
     _JsonEnabled: bool = field(init=False)
+    _Active: bool = field(init=False)
 
     # _Operation.__post_init__():
     def __post_init__(self) -> None:
@@ -190,6 +194,7 @@ class _Operation(object):
         self._ToolController = None
         self._ToolControllerIndex = -1  # Unassigned.
         self._JsonEnabled = True
+        self._Active = True
 
     # _Operation.get_tool_controller():
     def get_tool_controller(self) -> FabToolController:
@@ -273,6 +278,7 @@ class _Operation(object):
         json_dict: Dict[str, Any] = {
             "Kind": self.get_kind(),
             "Label": self.get_name(),
+            "_Active": self._Active,
         }
         if self._ToolControllerIndex >= 0:
             json_dict["ToolControllerIndex"] = self._ToolControllerIndex
@@ -310,14 +316,15 @@ class _Extrude(_Operation):
       When the tuple is used, the largest FabGeometry (which is traditionally the first one)
       is the outside of the extrusion, and the rest are "pockets".  This is useful for tubes.
     * *Depth* (float): The depth to extrude to in millimeters.
-    * *Contour* (bool): The contour flag.
+    * *Contour* (bool): If True and profile CNC contour path is performed; otherwise, no profile
+      is performed.
 
     """
 
     _Name: str
     _Geometry: Union[FabGeometry, Tuple[FabGeometry, ...]] = field(compare=False)
     _Depth: float
-    _Active: bool
+    _Contour: bool
     # TODO: Make _Geometries be comparable.
     _Geometries: Tuple[FabGeometry, ...] = field(init=False, repr=False, compare=False)
     _StepFile: str = field(init=False)
@@ -354,6 +361,7 @@ class _Extrude(_Operation):
         self._StartDepth = 0.0
         self._StepDown = 3.0
         self._FinalDepth = -self.Depth
+        self._Active = self._Contour
 
     # _Extrude.Geometry():
     @property

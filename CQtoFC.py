@@ -708,7 +708,7 @@ class FabCQtoFC(object):
     # FabCQtFC.merge_common_infos():
     def merge_common_infos(self, infos: Dict[str, Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
         """Return some common properties to ignore."""
-        infos["Active"] = {"ignore": None}
+        infos["Active"] = {}
         infos["Base"] = {"ignore": None}
         infos["ClearanceHeight"] = {"type": float}
         infos["Comment"] = {"ignore": None}
