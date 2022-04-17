@@ -103,10 +103,10 @@ class FabCQtoFC(object):
     CurrentGroup: Any = field(init=False, repr=False)
     CurrentJob: Any = field(init=False, repr=False)
     CurrentJobName: Any = field(init=False, repr=False)
+    CurrentSolid: Any = field(init=False, repr=False)
     CurrentSolidName: Any = field(init=False, repr=False)
     CurrentLink: Any = field(init=False, repr=False)
     CurrentNormal: Any = field(init=False, repr=False)
-    CurrentPart: Any = field(init=False, repr=False)  # TODO => CurrentSolid
     PendingLinks: List[Tuple[Any, Any]] = field(init=False, repr=False)
     ProjectDocument: Any = field(init=False, repr=False)
     StepsDocument: Any = field(init=False, repr=False)
@@ -124,8 +124,8 @@ class FabCQtoFC(object):
         self.CurrentJobName = None
         self.CurrentLink = None
         self.CurrentNormal = None
+        self.CurrentSolid = None
         self.CurrentSolidName = None
-        self.CurrentPart = None
         self.PendingLinks = []
         self.ProjectDocument = None
         self.ProperitiesVerified = False
@@ -654,19 +654,19 @@ class FabCQtoFC(object):
                 json_dict, label, indent, tree_path, tracing=next_tracing)
 
             self.verify_properties(tracing=next_tracing)
-            profile_part: Any = self.CurrentPart
+            profile_solid: Any = self.CurrentSolid
             profile_name: str = f"{job.Label}_profile"
             aligned_face_name: str = self.get_aligned_face_name(
-                profile_part, normal, tracing=next_tracing)
+                profile_solid, normal, tracing=next_tracing)
             if aligned_face_name:
                 if tracing:
                     print(f"{tracing}Create profile")
                 # This prints:
                 # PathSetupSheet.INFO: SetupSheet has no support for TestSolid_Step_Top_profile
-                profile = PathProfile.Create(profile_name)  # TODO: Add `: PathProfile`
+                profile: Any = PathProfile.Create(profile_name)  # TODO: Any => PathProfile
                 if tracing:
                     print(f"{tracing}profile created")
-                profile.Base = (profile_part, aligned_face_name)
+                profile.Base = (profile_solid, aligned_face_name)
                 if True:
                     step_file = cast(str, self.key_verify(
                         "StepFile", json_dict, str, tree_path, "Extrude._StepFile"))
@@ -747,7 +747,7 @@ class FabCQtoFC(object):
             "InverseAngle": {"ignore": None},
             "Locations": {"ignore": None},
             "PeckDepth": {},
-            "PeckEnabled": {"ignore": None},
+            "PeckEnabled": {},
             "RetractHeight": {"ignore": None},
             "ReturnLevel": {"ignore": None},
             "ReverseDirection": {"ignore": None},
@@ -835,7 +835,7 @@ class FabCQtoFC(object):
         pocket_label: str = step_file.stem[:-18]  # strip off '__XXXXXXXXXXXXXXXX'
         if tracing:
             print(f"{tracing}{pocket_label=}")
-        
+
         # *pocket_solid* is a rectangular block with (currently) 1 pocket cut into it:
         pocket_solid: Any = project_document.getObject(pocket_label)
         if tracing:
@@ -857,23 +857,14 @@ class FabCQtoFC(object):
         normal: Vector = Vector(0.0, 0.0, 1.0)
         aligned_face_name: str = self.get_aligned_face_name(
             pocket_solid, normal, tracing=next_tracing)
-        # print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-        # property_name: str
-        # index: int
-        # for index, property_name in enumerate(pocket.PropertiesList):
-        #     enumerations: Optional[List[str]]
-        #     enumerations = pocket.getEnumerationsOfProperty(property_name)
-        #     if isinstance(enumerations, list):
-        #         enumerations = tuple(sorted(enumerations))
-        #     print(f"[{index}]: {property_name}: "
-        #           f"{pocket.getDocumentationOfProperty(property_name)}:: {enumerations}")
 
         # [How to find Pockets in FreeCAD using Python Script?]
         #   (https://forum.freecad.org/viewtopic.php?f=22&p=579798)
 
         pocket.Base = (pocket_solid, aligned_face_name)
-        pocket_properties: Dict[str, Any] = self.get_pocket_infos()
-        self.process_json(json_dict, pocket, pocket_properties, tracing=next_tracing)
+        pocket_infos: Dict[str, Any] = self.get_pocket_infos()
+        _ = pocket_infos  # TODO: remove
+        # self.process_json(json_dict, pocket, pocket_infos, tracing=next_tracing)
         pocket.recompute()
 
         if tracing:
@@ -921,9 +912,9 @@ class FabCQtoFC(object):
         # Now create a PathDrilling object:
         drilling: Any = PathDrilling.Create(drilling_label)  # => "Path::FeaturePython".
 
-        # normal: Vector = Vector(0.0, 0.0, 1.0)
+        # z_axis: Vector = Vector(0.0, 0.0, 1.0)
         # aligned_face_name: str = self.get_aligned_face_name(
-        #     drilling_solid, normal, tracing=next_tracing)
+        #     drilling_solid, z_axis, tracing=next_tracing)
         # _ = aligned_face_name
         # drilling.Base = (drilling_solid, aligned_face_name)
         drilling_infos: Dict[str, Any] = self.get_drilling_infos()
@@ -937,7 +928,7 @@ class FabCQtoFC(object):
     def process_mount(self, json_dict: Dict[str, Any], label: str,
                       indent: str, tree_path: Tuple[str, ...], tracing: str = "") -> None:
         """Process a Mount JSON node."""
-
+        next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabCQtotFC.process_mount(*, {label}, {tree_path})")
         contact_list: List[float] = cast(
@@ -954,22 +945,45 @@ class FabCQtoFC(object):
             print(f"{indent} _Normal: {normal}")
             print(f"{indent} _Orient: {orient}")
 
-        self.flush_job()  # Force previous job to be done.
+        self.flush_job(tracing=next_tracing)  # Force previous job to be done.
+
+        # # Delete any previous jobs:
+        # if tracing:
+        #     print(f"{tracing}>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+        #     print(f"{tracing}Before: {PathJob.Instances()=}")
+        # job: Any
+        # for job in PathJob.Instances():
+        #     print(f"{tracing}Deleting Job '{job.Label}'")
+        #     self.ProjectDocument.removeObject(job.Label)
 
         # Create the new job:
-        job = PathJob.Create('Job', [self.CurrentPart], None)
+        job_name: str = f"{self.CurrentSolid.Label}_{label}"
+        # if tracing:
+        #     print(f"{tracing}Middle: {PathJob.Instances()=}")
+        #     print(f"{tracing}Creating job {job_name}...")
+        # job = PathJob.Create(job_name, [self.CurrentPart], None)
+        # if tracing:
+        #     instances: List[Any] = PathJob.Instances()
+        #     print(f"{tracing}After: {job=} {instances=}")
+        #     assert len(instances) == 1 and instances[0], "Not good"
+        #     print(f"{tracing}{id(job)=} {id(instances[0])=}")
+        #     assert len(instances) == 1 and instances[0], "Not good"
+        job = PathJob.Create('Job', [self.CurrentSolid], None)
+
+        # drilling_name: str = f"{job_name}_Drilling"
+        # assert PathDrilling.Create(drilling_name) is not None
+        # self.ProjectDocument.removeObject(drilling_name)
 
         # TODO: Create a setupsheet and install it into the job.
         # setup_sheet: PathSetupSheet.SetupSheet = PathSetupSheet.Create()
         # job.SetupSheet = setup_sheet
-        job_name: str = f"{self.CurrentPart.Label}_{label}"
         gcode_path: str = f"/tmp/{job_name}.ngc"
         job.PostProcessorOutputFile = gcode_path
         job.PostProcessor = 'grbl'
         job.PostProcessorArgs = '--no-show-editor'
         job.Label = job_name
         self.CurrentJob = job
-        self.CurrentJobName = label
+        self.CurrentJobName = job_name
         self.CurrentNormal = normal
 
         if App.GuiUp:  # type: ignore
@@ -1007,8 +1021,8 @@ class FabCQtoFC(object):
         FCImport.insert(step_file, document.Label)
         after_size: int = len(document.RootObjects)
         assert before_size + 1 == after_size, (before_size, after_size)
-        part: Any = document.getObject(label)
-        part.Label = f"{label}_Step"
+        solid: Any = document.getObject(label)
+        solid.Label = f"{label}_Step"
         step_object: Any = document.RootObjects[before_size]
         step_object.Label = label
 
@@ -1021,10 +1035,10 @@ class FabCQtoFC(object):
 
         # Install *link* into *group*.  Complete the link later on using *pending_links*:
         link: Any = self.CurrentGroup.newObject("App::Link", label)
-        self.PendingLinks.append((link, part))
+        self.PendingLinks.append((link, solid))
 
+        self.CurrentSolid = solid
         self.CurrentSolidName = label
-        self.CurrentPart = part
         self.CurrentLink = link
         self.CurrentJob = None
         self.CurrentNormal = None
