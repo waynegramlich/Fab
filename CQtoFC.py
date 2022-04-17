@@ -106,7 +106,7 @@ class FabCQtoFC(object):
     CurrentSolidName: Any = field(init=False, repr=False)
     CurrentLink: Any = field(init=False, repr=False)
     CurrentNormal: Any = field(init=False, repr=False)
-    CurrentPart: Any = field(init=False, repr=False)
+    CurrentPart: Any = field(init=False, repr=False)  # TODO => CurrentSolid
     PendingLinks: List[Tuple[Any, Any]] = field(init=False, repr=False)
     ProjectDocument: Any = field(init=False, repr=False)
     StepsDocument: Any = field(init=False, repr=False)
@@ -264,7 +264,7 @@ class FabCQtoFC(object):
     # FabCQtoFC.flush_job(self):
     def flush_job(self, tracing: str = ""):
         if tracing:
-            print("{tracing}=>FabCQtoFC.flush_job()")
+            print(f"{tracing}=>FabCQtoFC.flush_job()")
         job: Any = self.CurrentJob
         job_name: Any = self.CurrentJobName
         if job:
@@ -276,8 +276,6 @@ class FabCQtoFC(object):
                 tool: Any = tool_controller.Tool
                 if tracing:
                     print(f"{tracing}{tool=}")
-                    print(dir(tool))
-                    print("")
 
                 if tool_controller is not None:
                     if tool_controller.ToolNumber != current_tool_number:
@@ -293,7 +291,7 @@ class FabCQtoFC(object):
         self.CurrentJob = None
         self.CurrentJobName = None
         if tracing:
-            print("{tracing}<=FabCQtoFC.flush_job()")
+            print(f"{tracing}<=FabCQtoFC.flush_job()")
 
     # CQtoPy.verify_properties():
     def verify_properties(self, tracing: str = "") -> None:
@@ -656,18 +654,19 @@ class FabCQtoFC(object):
                 json_dict, label, indent, tree_path, tracing=next_tracing)
 
             self.verify_properties(tracing=next_tracing)
-            obj: Any = self.CurrentPart
-            name: str = f"{job.Label}_profile"
-            aligned_face_name: str = self.get_aligned_face_name(obj, normal, tracing=next_tracing)
+            profile_part: Any = self.CurrentPart
+            profile_name: str = f"{job.Label}_profile"
+            aligned_face_name: str = self.get_aligned_face_name(
+                profile_part, normal, tracing=next_tracing)
             if aligned_face_name:
                 if tracing:
                     print(f"{tracing}Create profile")
                 # This prints:
                 # PathSetupSheet.INFO: SetupSheet has no support for TestSolid_Step_Top_profile
-                profile = PathProfile.Create(name)
+                profile = PathProfile.Create(profile_name)  # TODO: Add `: PathProfile`
                 if tracing:
                     print(f"{tracing}profile created")
-                profile.Base = (obj, aligned_face_name)
+                profile.Base = (profile_part, aligned_face_name)
                 if True:
                     step_file = cast(str, self.key_verify(
                         "StepFile", json_dict, str, tree_path, "Extrude._StepFile"))
@@ -744,10 +743,10 @@ class FabCQtoFC(object):
             "Disabled": {"ignore": None},
             "DwellEnabled": {"ignore": None},
             "DwellTime": {"ignore": None},
-            "ExtraOffset": {"ignore": None},
+            "ExtraOffset": {},
             "InverseAngle": {"ignore": None},
             "Locations": {"ignore": None},
-            "PeckDepth": {"ignore": None},
+            "PeckDepth": {},
             "PeckEnabled": {"ignore": None},
             "RetractHeight": {"ignore": None},
             "ReturnLevel": {"ignore": None},
@@ -836,9 +835,11 @@ class FabCQtoFC(object):
         pocket_label: str = step_file.stem[:-18]  # strip off '__XXXXXXXXXXXXXXXX'
         if tracing:
             print(f"{tracing}{pocket_label=}")
-        pocket_bottom: Any = project_document.getObject(pocket_label)
+        
+        # *pocket_solid* is a rectangular block with (currently) 1 pocket cut into it:
+        pocket_solid: Any = project_document.getObject(pocket_label)
         if tracing:
-            print(f"{tracing}{pocket_bottom=}")
+            print(f"{tracing}{pocket_solid=}")
 
         tool: Any = None
         tool_controller: Any = None
@@ -848,12 +849,14 @@ class FabCQtoFC(object):
         if tracing:
             print(f"{tracing}{tool=} {tool_controller=}")
 
-        # Now create a PathPocket object:
+        # Now create the *pocket* object.  In this version of the Path library it finds
+        # the one and only *job* object and attachtes to it.  The next version allows
+        # the *job* object to be explicitly specified:
         pocket: Any = PathPocket.Create(pocket_label)  # => "Path::FeaturePython".
 
         normal: Vector = Vector(0.0, 0.0, 1.0)
         aligned_face_name: str = self.get_aligned_face_name(
-            pocket_bottom, normal, tracing=next_tracing)
+            pocket_solid, normal, tracing=next_tracing)
         # print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
         # property_name: str
         # index: int
@@ -868,7 +871,7 @@ class FabCQtoFC(object):
         # [How to find Pockets in FreeCAD using Python Script?]
         #   (https://forum.freecad.org/viewtopic.php?f=22&p=579798)
 
-        pocket.Base = (pocket_bottom, aligned_face_name)
+        pocket.Base = (pocket_solid, aligned_face_name)
         pocket_properties: Dict[str, Any] = self.get_pocket_infos()
         self.process_json(json_dict, pocket, pocket_properties, tracing=next_tracing)
         pocket.recompute()
