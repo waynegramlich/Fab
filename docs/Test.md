@@ -63,12 +63,22 @@ Inherited Constructor Attributes:
 * *Color* (str): The color to use.
 
 Additional Constructor Attributes:
-* *Contact* (Vector): The center "top" of the side.
-* *Normal* (Vector): The normal of the side (away from box center).
-* *Orient* (Vector): The orientation vector.
-* *HalfLength* (Vector): A vector of half the length in the length direction
-* *HalfWidth* (Vector): A vector of half the width in the width direction.
-* *Depth* float: Depth of side (opposite direction of *normal*.
+* *Contact* (Vector):
+   The center "top" of the side.  (Default: (0, 0, 0))
+* *Normal* (Vector):
+  The normal of the side (away from box center). (Default: (0, 0, 1))
+* *Orient* (Vector):
+  The orientation vector.  (Default: (0, 1, 0))
+* *HalfLength* (Vector):
+  A vector of half the length in the length direction. (Default: (1, 0, 0))
+* *HalfWidth* (Vector):
+  A vector of half the width in the width direction.  (Default: (0, 1, 0))
+* *Depth* (float):
+  Depth of side (opposite direction of *normal*.  (Default: 5.0)
+* *Contour* (bool):
+  Force the side contour to be milled out. (Default: False)
+* *Drill* (bool):
+  Force holes to be drilled. (Defalut: True)
 
 ### <a name="test----produce"></a>2.1 `BoxSide.`produce():
 

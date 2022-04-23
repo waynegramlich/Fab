@@ -31,12 +31,22 @@ class BoxSide(FabSolid):
     * *Color* (str): The color to use.
 
     Additional Constructor Attributes:
-    * *Contact* (Vector): The center "top" of the side.
-    * *Normal* (Vector): The normal of the side (away from box center).
-    * *Orient* (Vector): The orientation vector.
-    * *HalfLength* (Vector): A vector of half the length in the length direction
-    * *HalfWidth* (Vector): A vector of half the width in the width direction.
-    * *Depth* float: Depth of side (opposite direction of *normal*.
+    * *Contact* (Vector):
+       The center "top" of the side.  (Default: (0, 0, 0))
+    * *Normal* (Vector):
+      The normal of the side (away from box center). (Default: (0, 0, 1))
+    * *Orient* (Vector):
+      The orientation vector.  (Default: (0, 1, 0))
+    * *HalfLength* (Vector):
+      A vector of half the length in the length direction. (Default: (1, 0, 0))
+    * *HalfWidth* (Vector):
+      A vector of half the width in the width direction.  (Default: (0, 1, 0))
+    * *Depth* (float):
+      Depth of side (opposite direction of *normal*.  (Default: 5.0)
+    * *Contour* (bool):
+      Force the side contour to be milled out. (Default: False)
+    * *Drill* (bool):
+      Force holes to be drilled. (Defalut: True)
 
     """
 
@@ -47,6 +57,8 @@ class BoxSide(FabSolid):
     HalfWidth: Vector = Vector(0, 1, 0)
     Depth: float = 5.0
     Screws: List[FabJoin] = field(init=False, repr=False)
+    Contour: bool = False
+    Drill: bool = True
 
     # BoxSide.__post_init__():
     def __post_init__(self) -> None:
@@ -96,7 +108,7 @@ class BoxSide(FabSolid):
         )
 
         polygon: FabPolygon = FabPolygon(corners)
-        mount.extrude(f"{name}Extrude", polygon, depth, contour=False)
+        mount.extrude(f"{name}Extrude", polygon, depth, contour=self.Contour)
 
         # Create all of the *screws*:
         del screws[:]
@@ -125,7 +137,8 @@ class BoxSide(FabSolid):
                 edge_normal, random_orient, depth)
             edge_mounts.append(edge_mount)
             edge_index += 1
-        self.drill_joins("Screws", all_screws)
+        if self.Drill:
+            self.drill_joins("Screws", all_screws)
 
         if tracing:
             print(f"{tracing}<=BoxSide({self.Label}).produce()")
@@ -190,7 +203,7 @@ class Box(FabAssembly):
         y_axis: Vector = Vector(0, 1, 0)
         z_axis: Vector = Vector(0, 0, 1)
         self.Top = BoxSide("Top", self, Normal=z_axis, Orient=y_axis,
-                           Depth=depth, Material=material, Color="lime")
+                           Depth=depth, Material=material, Color="lime", Contour=True)
         self.Bottom = BoxSide("Bottom", self, Normal=-z_axis, Orient=y_axis,
                               Depth=depth, Material=material, Color="green")
         self.North = BoxSide("North", self, Normal=y_axis, Orient=-z_axis,
