@@ -990,7 +990,7 @@ class FabCQtoFC(object):
         # job.SetupSheet = setup_sheet
         gcode_path: str = f"/tmp/{job_name}.ngc"
         job.PostProcessorOutputFile = gcode_path
-        job.PostProcessor = 'grbl'
+        job.PostProcessor = 'linuxcnc'
         job.PostProcessorArgs = '--no-show-editor'
         job.Label = job_name
         self.CurrentJob = job
