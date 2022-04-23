@@ -449,11 +449,18 @@ class _Extrude(_Operation):
     # _Extrude.to_json():
     def to_json(self) -> Dict[str, Any]:
         """Return JSON dictionary for _Extrude."""
+        coolant_modes: Tuple[str, ...] = ("None", "Flood", "Mist")
+        direction_modes: Tuple[str, ...] = ("CCW", "CW")
+        side_modes: Tuple[str, ...] = ("Inside", "Outside")
         json_dict: Dict[str, Any] = super().to_json()
         json_dict["StepFile"] = "_Extrude.to_json:_StepFile"
         json_dict["_Active"] = self._Active
-        json_dict["_Depth"] = self._Depth
+        json_dict["_ClearanceHeight"] = self._StartDepth + 10.0  # TODO: Fix
+        json_dict["_CoolantMode"] = coolant_modes[1]  # TODO: Fix
+        json_dict["_Direction"] = direction_modes[0]
         json_dict["_FinalDepth"] = self._FinalDepth
+        json_dict["_SafeHeight"] = self._StartDepth + 5.0  # TODO: Fix
+        json_dict["_Side"] = side_modes[1]
         json_dict["_StartDepth"] = self._StartDepth
         json_dict["_StepDown"] = self._StepDown
         return json_dict

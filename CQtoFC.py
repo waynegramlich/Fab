@@ -676,33 +676,8 @@ class FabCQtoFC(object):
                 if tracing:
                     print(f"{tracing}profile created")
                 profile.Base = (profile_solid, aligned_face_name)
-                if True:
-                    step_file = cast(str, self.key_verify(
-                        "StepFile", json_dict, str, tree_path, "Extrude._StepFile"))
-                    depth = cast(float, self.key_verify(
-                        "_Depth", json_dict, float, tree_path, "Extrude._Depth"))
-                    final_depth = cast(float, self.key_verify(
-                        "_FinalDepth", json_dict, float, tree_path, "Extrude._FinalDepth"))
-                    step_down = cast(float, self. key_verify(
-                        "_StepDown", json_dict, float, tree_path, "Extrude._StepDown"))
-                    start_depth = cast(float, self.key_verify(
-                        "_StartDepth", json_dict, float, tree_path, "Extrude._StartDepth"))
-                    if indent:
-                        print(f"{indent} StepFile: {step_file}")
-                        print(f"{indent} _Contour: {bool}")
-                        print(f"{indent} _Depth: {depth}")
-                        print(f"{indent} _FinalDepth: {final_depth}")
-                        print(f"{indent} _StartDepth: {start_depth}")
-                        print(f"{indent} _StepDown: {step_down}")
-
-                    profile.setExpression('StepDown', None)
-                    profile.StepDown = step_down
-                    profile.setExpression('StartDepth', None)
-                    profile.StartDepth = start_depth
-                    profile.setExpression('FinalDepth', None)
-                    profile.FinalDepth = final_depth
-                else:
-                    pass  # Do process_json() here.
+                profile_infos: Dict[str, Any] = self.get_extrude_infos()
+                self.process_json(json_dict, profile, profile_infos, tracing=next_tracing)
 
                 profile.processHoles = False
                 profile.processPerimeter = True
