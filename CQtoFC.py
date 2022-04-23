@@ -1016,8 +1016,11 @@ class FabCQtoFC(object):
     def process_solid(self, json_dict: Dict[str, Any], label: str,
                       indent: str, tree_path: Tuple[str, ...], tracing: str = "") -> None:
         """Process a Solid JSON node."""
+        next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabCQtotFC.process_solid(*, {label}, {tree_path})")
+
+        self.flush_job(tracing=next_tracing)
 
         step_file: str = cast(str, self.key_verify("StepFile",
                                                    json_dict, str, tree_path, "Solid.StepFile"))
