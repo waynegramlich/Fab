@@ -28,11 +28,11 @@ environment variable for just one execution of the freecad19 python interpreter 
 # python3 -m pip install pudb  # Only needs to be done once.  It lands in `~/.local/lib/...`
 # rm -rf squashfs  # Remove any previously unpacked AppImage files.
 # ./freecad19 --appimage-extract  # Extract new AppImage files.
-# # Manually copy `pudb` into the `squashfs1 tree:
+# # Manually copy `pudb` into the `squashfs1 tree (unclear that this is necessary):
 # cp -r ~/.local/lib/python3.8/site-packages/pudb ./squashfs-root/usr/lib/python3.8/site-packages/
 # ```
 # To enable `pudb`, uncomment `import pudb` and `pudb.start()`:
-# TODO: Replace `/home/wayne`:
+# TODO: Replace `/home/wayne` imediately below and in the first line of this file.
 SHARP_EXEC_PATH = "/home/wayne/public_html/projects/Fab/squashfs-root/usr/bin/python"
 import sys
 if sys.executable == SHARP_EXEC_PATH:
@@ -42,30 +42,35 @@ if sys.executable == SHARP_EXEC_PATH:
         "/home/wayne/public_html/projects/Fab/squashfs-root/usr/bin",
         "/home/wayne/.local/lib/python3.8/site-packages",
     ]
+
+from typing import Any, cast, List, Dict, IO, Optional, Set, Tuple, Union
+from pathlib import Path as FilePath  # The Path library uses `Path`, hence `FilePath`
+
 # Uncomment these lines to fire up the debugger:
-# import pudb  # Import the debugger
+# import pudb  # type: ignore
 # pudb.start()  # Start it right now:
 
 # Standard Python library imports:
 from dataclasses import dataclass, field
 import json
 import os
-from pathlib import Path as FilePath  # The Path library uses `Path`, hence `FilePath`
-from typing import Any, cast, List, Dict, IO, Optional, Set, Tuple, Union
+# from pathlib import Path as PathFile
 
-# Generic FreeCAD imports:
+# Generic FreeCAD imports.  Note these imports add a long list of Python packages to `sys.path`.
 import FreeCAD  # type: ignore
 import FreeCADGui  # type: ignore
 _ = FreeCAD
 _ = FreeCADGui
 
-# Path library imports:
-import Path  # type: ignore
-import PathScripts  # type: ignore
-_ = PathScripts
+# import Path  # type: ignore
+# import PathScripts  # type: ignore
+from PathScripts import PathOp, PathUtils  # type: ignore
 from PathScripts import PathToolBit, PathDrilling  # type: ignore
 from PathScripts import PathJob, PathProfile, PathPostProcessor, PathUtil  # type: ignore
 from PathScripts import PathToolController, PathPocket  # type: ignore
+import Path  # type: ignore
+_ = PathOp  # TODO: remove
+_ = PathUtils  # TODO: remove
 _ = PathToolBit  # TODO: remove
 _ = PathJob  # TODO: remove
 _ = PathProfile  # TODO: remove
@@ -73,6 +78,7 @@ _ = PathPostProcessor  # TODO: remove
 _ = PathUtil  # TODO: remove
 _ = PathToolController  # TODO: remove
 _ = PathPocket  # TODO: remove
+
 
 # This causes out flake8 to think App are defined.
 # It is actually present in the FreeCAD Python exectution envriorment.
@@ -340,6 +346,7 @@ class FabCQtoFC(object):
             lines.append("")
             out_file.write("\n".join(lines))
 
+        self.ProperitiesVerified = True
         if not self.ProperitiesVerified:
             self.ProperitiesVerified = True
 
@@ -663,7 +670,9 @@ class FabCQtoFC(object):
                     print(f"{tracing}Create profile")
                 # This prints:
                 # PathSetupSheet.INFO: SetupSheet has no support for TestSolid_Step_Top_profile
-                profile: Any = PathProfile.Create(profile_name)  # TODO: Any => PathProfile
+                # Modify PathProfile:1460 and 1464 to Job.
+                # TODO: Any => PathProfile
+                profile: Any = PathProfile.Create(profile_name, parentJob=job)
                 if tracing:
                     print(f"{tracing}profile created")
                 profile.Base = (profile_solid, aligned_face_name)
@@ -852,7 +861,8 @@ class FabCQtoFC(object):
         # Now create the *pocket* object.  In this version of the Path library it finds
         # the one and only *job* object and attachtes to it.  The next version allows
         # the *job* object to be explicitly specified:
-        pocket: Any = PathPocket.Create(pocket_label)  # => "Path::FeaturePython".
+        job: Any = self.CurrentJob
+        pocket: Any = PathPocket.Create(pocket_label, parentJob=job)  # => "Path::FeaturePython".
 
         normal: Vector = Vector(0.0, 0.0, 1.0)
         aligned_face_name: str = self.get_aligned_face_name(
@@ -910,7 +920,8 @@ class FabCQtoFC(object):
             print(f"{tracing}{tool=} {tool_controller=}")
 
         # Now create a PathDrilling object:
-        drilling: Any = PathDrilling.Create(drilling_label)  # => "Path::FeaturePython".
+        job: Any = self.CurrentJob
+        drilling: Any = PathDrilling.Create(drilling_label, parentJob=job)
 
         # z_axis: Vector = Vector(0.0, 0.0, 1.0)
         # aligned_face_name: str = self.get_aligned_face_name(
@@ -968,7 +979,7 @@ class FabCQtoFC(object):
         #     assert len(instances) == 1 and instances[0], "Not good"
         #     print(f"{tracing}{id(job)=} {id(instances[0])=}")
         #     assert len(instances) == 1 and instances[0], "Not good"
-        job = PathJob.Create('Job', [self.CurrentSolid], None)
+        job = PathJob.Create(job_name, [self.CurrentSolid], None)
 
         # drilling_name: str = f"{job_name}_Drilling"
         # assert PathDrilling.Create(drilling_name) is not None
