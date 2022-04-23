@@ -233,6 +233,48 @@ When the python version changes the followning packages need to be intalled:
 `git pull` to get latest
 `git push -u origin main` to push
 
+## Patch FreeCAD
+
+Sometimes it is necessary to patch the FreeCAD AppImage.  This is done by first unpacking into
+a `squashfs` directory, patching the contents, and repacking it.  Do the following steps:
+
+1. Extract the preexisting FreeCAD:
+
+   ```
+   freecad19 --appimage-extract
+   ```
+
+   There should be a `squashfs-root` directory.
+
+2. Patch the contents of the `squashfs-root` directory.
+
+3. Download `appimagetool`::
+
+   ```
+   wget https://github.com/AppImage/AppImageKit/releases/download/13/appimagetool-x86_64.AppImage \
+      -o appimagetool
+   chmod +x appimagetool
+   ```
+
+4. Use `appimagetool` to repackage everything:
+
+   ```
+   ./appimagetool squashf-root
+   chmod +x ./FreeCAD_Conda-x86_64.AppImage
+   ```
+
+   The resulting output is `FreeCAD_Conda-x86_64.AppImage` which can be renamed:
+
+   ```
+   mv FreeCAD_Conda-x86_64.AppImage freecad19
+   ```
+
+5. Test it:
+
+   ```
+   freecad19
+   ```
+
 """
 
 import os
@@ -267,3 +309,4 @@ def setup() -> Tuple[bool, bool]:
     use_cad_query: bool = "CONDA_PROMPT_MODIFIER" in os.environ
     use_freecad: bool = not use_cad_query
     return use_freecad, use_cad_query
+
