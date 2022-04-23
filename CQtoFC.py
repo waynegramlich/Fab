@@ -873,8 +873,7 @@ class FabCQtoFC(object):
 
         pocket.Base = (pocket_solid, aligned_face_name)
         pocket_infos: Dict[str, Any] = self.get_pocket_infos()
-        _ = pocket_infos  # TODO: remove
-        # self.process_json(json_dict, pocket, pocket_infos, tracing=next_tracing)
+        self.process_json(json_dict, pocket, pocket_infos, tracing=next_tracing)
         pocket.recompute()
 
         if tracing:
