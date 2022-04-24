@@ -662,9 +662,9 @@ class FabCQtoFC(object):
             self.verify_properties(tracing=next_tracing)
             profile_solid: Any = self.CurrentSolid
             profile_name: str = f"{job.Label}_profile"
-            aligned_face_name: str = self.get_aligned_face_name(
+            aligned_face_names: Tuple[str, ...] = self.get_aligned_face_names(
                 profile_solid, normal, tracing=next_tracing)
-            if aligned_face_name:
+            if aligned_face_names:
                 if tracing:
                     print(f"{tracing}Create profile")
                 # This prints:
@@ -674,7 +674,7 @@ class FabCQtoFC(object):
                 profile: Any = PathProfile.Create(profile_name, parentJob=job)
                 if tracing:
                     print(f"{tracing}profile created")
-                profile.Base = (profile_solid, aligned_face_name)
+                profile.Base = (profile_solid, aligned_face_names[0])
                 profile_infos: Dict[str, Any] = self.get_extrude_infos()
                 self.process_json(json_dict, profile, profile_infos, tracing=next_tracing)
 
@@ -832,23 +832,24 @@ class FabCQtoFC(object):
         if tracing:
             print(f"{tracing}{tool=} {tool_controller=}")
 
-        # Now create the *pocket* object.  In this version of the Path library it finds
-        # the one and only *job* object and attachtes to it.  The next version allows
-        # the *job* object to be explicitly specified:
-        job: Any = self.CurrentJob
-        pocket: Any = PathPocket.Create(pocket_label, parentJob=job)  # => "Path::FeaturePython".
-
         normal: Vector = Vector(0.0, 0.0, 1.0)
-        aligned_face_name: str = self.get_aligned_face_name(
+        aligned_face_names: Tuple[str, ...] = self.get_aligned_face_names(
             pocket_solid, normal, tracing=next_tracing)
 
-        # [How to find Pockets in FreeCAD using Python Script?]
-        #   (https://forum.freecad.org/viewtopic.php?f=22&p=579798)
+        if aligned_face_names:
+            # Now create the *pocket* object.  In this version of the Path library it finds
+            # the one and only *job* object and attachtes to it.  The next version allows
+            # the *job* object to be explicitly specified:
+            job: Any = self.CurrentJob
+            pocket: Any = PathPocket.Create(pocket_label, parentJob=job)
 
-        pocket.Base = (pocket_solid, aligned_face_name)
-        pocket_infos: Dict[str, Any] = self.get_pocket_infos()
-        self.process_json(json_dict, pocket, pocket_infos, tracing=next_tracing)
-        pocket.recompute()
+            # [How to find Pockets in FreeCAD using Python Script?]
+            #   (https://forum.freecad.org/viewtopic.php?f=22&p=579798)
+
+            pocket.Base = (pocket_solid, aligned_face_names[0])
+            pocket_infos: Dict[str, Any] = self.get_pocket_infos()
+            self.process_json(json_dict, pocket, pocket_infos, tracing=next_tracing)
+            pocket.recompute()
 
         if tracing:
             print(f"{tracing}<=FabCQtoFC.process_pocket(*, '{label}', {tree_path})")
@@ -1033,8 +1034,9 @@ class FabCQtoFC(object):
         if tracing:
             print(f"{tracing}<=FabCQtotFC.process_solid(*, {label}, {tree_path})")
 
-    # CQtoFC.get_aligned_face_name():
-    def get_aligned_face_name(self, obj: Any, normal: Vector, tracing: str = "") -> str:
+    # CQtoFC.get_aligned_face_names():
+    def get_aligned_face_names(self, obj:
+                               Any, normal: Vector, tracing: str = "") -> Tuple[str, ...]:
         """Return top faces."""
         if tracing:
             print(f"{tracing}=>get_aligned_face_name({obj}, {normal})")
@@ -1057,7 +1059,7 @@ class FabCQtoFC(object):
                         largest_face_name = face_name
         if tracing:
             print(f"{tracing}<=get_aligned_faces_name({obj}, {normal})=>{largest_face_name}")
-        return largest_face_name
+        return (largest_face_name,)
 
 
 # main():
