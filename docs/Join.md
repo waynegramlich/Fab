@@ -137,7 +137,7 @@ Attributes:
 * *Detail* (str): Short FabHead description.
 * *Material* (FabMaterial): The FabHead fastener material.
 * *Shape* (str): The FabHead shape.
-* *Drive* (str): The FabH drive .
+* *Drive* (str): The FabHead drive.
 
 
 ## <a name="join--fabjoin"></a>6 Class FabJoin:

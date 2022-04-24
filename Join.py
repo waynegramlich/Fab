@@ -239,6 +239,23 @@ class _IDrillTap(object):
     StandardName: str
     StandardInch: float
 
+    # _IDrillTap.__post_init__():
+    def __post_init__(self) -> None:
+        """Finish initializing _IDrillTap."""
+        check_type("_IDrillTap.Size", self.Size, str)
+        check_type("_IDrillTap.MajorDiameter", self.MajorDiameter, float)
+        check_type("_IDrillTap.ThreadsPerInch", self.ThreadsPerInch, int)
+        check_type("_IDrillTap.Series", self.Series, str)
+        check_type("_IDrillTap.MinorDiameter", self.MinorDiameter, float)
+        check_type("_IDrillTap.Thread75Name", self.Thread75Name, str)
+        check_type("_IDrillTap.Thread75Inch", self.Thread75Inch, float)
+        check_type("_IDrillTap.Thread50Name", self.Thread50Name, str)
+        check_type("_IDrillTap.Thread50Inch", self.Thread50Inch, float)
+        check_type("_IDrillTap.CloseName", self.CloseName, str)
+        check_type("_IDrillTap.CloseInch", self.CloseInch, float)
+        check_type("_IDrillTap.StandardName", self.StandardName, str)
+        check_type("_IDrillTap.StandardInch", self.StandardInch, float)
+
 
 # _Fastener:
 @dataclass
@@ -246,15 +263,15 @@ class _Fastener(object):
     """_Fastener: Imperial/Metric fastener information.
 
     Attributes:
-    * *Name* (str):
-    * *Thread50Diameter* (float):
-    * *Thread50Drill* (str):
-    * *Thread75Diameter* (float):
-    * *Thread750Drill* (str):
-    * *CloseDiameter* (float):
-    * *CloseDrill* (str):
-    * *StandardDiameter* (float):
-    * *StandardDiameter* (str):
+    * *Name* (str): The Fastener name.
+    * *Thread50Diameter* (float): The 50% thread drill diameter.
+    * *Thread50Drill* (str): The 50% thread drill name.
+    * *Thread75Diameter* (float): The 75% thread drill diameter.
+    * *Thread75Drill* (str): The 75% thread drill name.
+    * *CloseDiameter* (float): The close fit hole diameter.
+    * *CloseDrill* (str): The close fit drill name.
+    * *StandardDiameter* (float): The standard fit hole diameter.
+    * *StandardDrill* (str): The standard fit drill name.
 
     """
 
@@ -267,6 +284,19 @@ class _Fastener(object):
     CloseDrill: str
     StandardDiameter: float
     StandardDrill: str
+
+    # _Fastener.__post_init__():
+    def __post_init__(self) -> None:
+        """Finish initializing a _Fastener."""
+        check_type("_Fastener.Name", self.Name, str)
+        check_type("_Fastener.Thread50Diameter", self.Thread50Diameter, float)
+        check_type("_Fastener.Thread50Drill", self.Thread50Drill, str)
+        check_type("_Fastener.Thread75Diameter", self.Thread75Diameter, float)
+        check_type("_Fastener.Thread750Drill", self.Thread750Drill, str)
+        check_type("_Fastener.CloseDiameter", self.CloseDiameter, float)
+        check_type("_Fastener.CloseDrill", self.CloseDrill, str)
+        check_type("_Fastener.StandardDiameter", self.StandardDiameter, float)
+        check_type("_Fastener.StandardDrill", self.StandardDrill, str)
 
 
 # FabFastenTables:
@@ -728,18 +758,11 @@ class FabOption(object):
     Name: str  # FabOption name
     Detail: str  # FabOption description.
 
-    POST_INIT_CHECKS = (
-        FabCheck("Name", ("+", str)),
-        FabCheck("Detail", ("+", str)),
-    )
-
     # FabOption.__post_init__():
     def __post_init__(self) -> None:
-        """Ensure values are reasonable."""
-        arguments = (self.Name, self.Detail)
-        value_error: str = FabCheck.check(arguments, FabOption.POST_INIT_CHECKS)
-        if value_error:
-            raise ValueError(value_error)
+        """Finish initializing a FabOption."""
+        check_type("FabOption.Name", self.Name, str)
+        check_type("FabOption.Detail", self.Detail, str)
 
     # FabOption.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:
@@ -755,32 +778,6 @@ class FabOption(object):
         option: FabOption = FabOption(name, detail)
         assert option.Name == name
         assert option.Detail == detail
-        assert f"{option}" == "FabOption(Name='name', Detail='detail')", f"{option}"
-
-        # Error tests:
-        # Non string for Name.
-        try:
-            FabOption(cast(str, 1), detail)
-        except ValueError as value_error:
-            assert str(value_error) == "[0]: Argument 'Name' has no length", str(value_error)
-
-        # Empty string for Name:
-        try:
-            FabOption("", detail)
-        except ValueError as value_error:
-            assert str(value_error) == "[0]: Argument 'Name' has no length", str(value_error)
-
-        # Non string for Detail.
-        try:
-            FabOption(name, cast(str, 2))
-        except ValueError as value_error:
-            assert str(value_error) == "[1]: Argument 'Detail' has no length", str(value_error)
-
-        # Empty string for Detail:
-        try:
-            FabOption(name, "")
-        except ValueError as value_error:
-            assert str(value_error) == "[1]: Argument 'Detail' has no length", str(value_error)
 
 
 # FabHead:
@@ -793,13 +790,13 @@ class FabHead(FabOption):
     * *Detail* (str): Short FabHead description.
     * *Material* (FabMaterial): The FabHead fastener material.
     * *Shape* (str): The FabHead shape.
-    * *Drive* (str): The FabH drive .
+    * *Drive* (str): The FabHead drive.
 
     """
 
-    Material: FabMaterial  # FabHead material
-    Shape: str  # FabHead shape
-    Drive: str  # FabHead drive
+    Material: FabMaterial
+    Shape: str
+    Drive: str
 
     # Screw Heads:
     CHEESE_HEAD = "Cheese"
@@ -820,34 +817,17 @@ class FabHead(FabOption):
     HEADS = (CHEESE_HEAD, FILLISTER_HEAD, FLAT_HEAD, HEX_HEAD, OVAL_HEAD, PAN_HEAD, ROUND_HEAD)
     DRIVES = (CARRIAGE, HEX_DRIVE, PHILIPS_DRIVE, SLOT_DRIVE, TORX_DRIVE)
 
-    INIT_CHECKS = (
-        FabCheck("Name", ("+", str,)),
-        FabCheck("Detail", ("+", str,)),
-        FabCheck("Material", (FabMaterial,)),
-        FabCheck("Shape", (str,)),
-        FabCheck("Drive", (str,)),
-    )
-
+    # FabHead.__post_init__():
     def __post_init__(self) -> None:
-        """Verify FabHead."""
-        arguments = (self.Name, self.Detail, self.Material, self.Shape, self.Drive)
-        value_error: str = FabCheck.check(arguments, FabHead.INIT_CHECKS)
-        if value_error:
-            raise ValueError(value_error)
-        if self.Shape not in FabHead.HEADS:
-            raise ValueError(f"Shape (='{self.Shape}') is not in {FabHead.HEADS}")
-        if self.Drive not in FabHead.DRIVES:
-            raise ValueError(f"Head (='{self.Drive}') is not in {FabHead.DRIVES}")
+        """Finish initializing FabHead."""
+        super().__post_init__()
+        check_type("FabHead.Material", self.Material, FabMaterial)
+        check_type("FabHead.Shape", self.Shape, str)
+        check_type("FabHead.Drive", self.Drive, str)
+        assert self.Shape in FabHead.HEADS, "f{self.Shape} is not one of {FabHead.HEADS}"
+        assert self.Drive in FabHead.DRIVES, "f{self.Drive} is not one of {FabHead.DRIVES}"
 
-    def __repr__(self) -> str:
-        """Return FabHead as a string."""
-        return self.__str__()
-
-    def __str__(self) -> str:
-        """Return FabHead as a string."""
-        return (f"FabHead('{self.Name}', '{self.Detail}', "
-                f"{self.Material}, '{self.Shape}', {self.Drive})")
-
+    # FabHead._unit_tests():
     @staticmethod
     def _unit_tests() -> None:
         """Run FabHead unit tests."""
@@ -858,54 +838,10 @@ class FabHead(FabOption):
         drive: str = FabHead.PHILIPS_DRIVE
         apex_head: FabHead = FabHead(name, detail, material, shape, drive)
 
-        # Verify __repr__() and attributes work:
-        assert f"{apex_head}" == (
-            "FabHead('PH', 'Brass Philips Pan Head', FabMaterial(('Brass',), 'orange'), "
-            "'Pan', Philips)"), f"{apex_head}"
-        assert apex_head.__repr__() == (
-            "FabHead('PH', 'Brass Philips Pan Head', FabMaterial(('Brass',), 'orange'), "
-            "'Pan', Philips)"), f"{apex_head}"
         assert apex_head.Name == name, apex_head.Name
         assert apex_head.Material is material, apex_head.Material
         assert apex_head.Shape == shape, apex_head.Shape
         assert apex_head.Drive == drive, apex_head.Drive
-
-        # Empty Name Test:
-        try:
-            FabHead("", detail, material, shape, drive)
-            assert False
-        except ValueError as value_error:
-            assert str(value_error) == "[0]: Argument 'Name' has no length", str(value_error)
-
-        # Bad Detail:
-        try:
-            FabHead(name, "", cast(FabMaterial, 0), shape, drive)
-        except ValueError as value_error:
-            assert str(value_error) == "[1]: Argument 'Detail' has no length", str(value_error)
-
-        # Bad Material:
-        try:
-            FabHead(name, detail, cast(FabMaterial, 0), shape, drive)
-        except ValueError as value_error:
-            assert str(value_error) == (
-                "Argument 'Material' is int which is not one of ['FabMaterial']"
-            ), str(value_error)
-
-        # Bad Shape:
-        try:
-            FabHead(name, detail, material, "", drive)
-            assert False
-        except ValueError as value_error:
-            assert str(value_error) == ("Shape (='') is not in ('Cheese', 'Fillister', "
-                                        "'Flat', 'Hex', 'Oval', 'Pan', 'Round')"), str(value_error)
-
-        # Bad Drive:
-        try:
-            FabHead(name, detail, material, shape, "")
-        except ValueError as value_error:
-            got: str = str(value_error)
-            assert got == (
-                "Head (='') is not in ('Carriage', 'Hex', 'Philips', 'Slot', 'Torx')"), got
 
 
 # FabNut:
