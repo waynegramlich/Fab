@@ -13,8 +13,8 @@ TOOLS_ROOT := FreeCADRoot/Mod/Path/Tools
 SAFE_MODULES := \
     BOM \
     Doc \
+    FabJoiner \
     Geometry \
-    Join \
     Node \
     Project \
     Shop \

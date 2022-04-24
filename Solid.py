@@ -24,7 +24,7 @@ from cadquery import Vector  # type: ignore
 # import Part  # type: ignore
 
 from Geometry import FabCircle, FabGeometry, FabGeometryContext, FabPlane, FabQuery
-from Join import FabFasten, FabJoin
+from FabJoiner import FabFasten, FabJoin
 from Node import FabBox, FabNode, _NodeProduceState
 from Utilities import FabColor, FabToolController
 

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Join: A package for managing fasteners in the Fab system.
+"""FabJoiner: Fab fastener management system.
 
 While the most common fasteners are screws and bolts, there are others like rivets, set screws,
 cotter pins, etc.  This package centralizes all of the issues associated with fasteners
 so that changing a fastener does not become a nightmare of having to individually find
 each fastener and make manual changes to each one.  The change is made in once place and
-it propagates to all associated fasteners.
+it propagates to all locations where the fastener is used.
 
-The Join module deals with the following issues:
+The FabJoiner module deals with the following issues:
 * Hole Drilling/Milling:
   Getting a hole of the of the correct size and depth at the correct location on a part.
 * Threading:
@@ -26,22 +26,26 @@ The Join module deals with the following issues:
   Collecting all of the fasteners into a bill of materials.
 * Assembly View:
   When assembly views are supported, all of the fasteners are exploded out with a dashed
-  line to connect them all.  (Not done implemented.)
+  line to connect them all.  (Not even remotely started yet.)
 * Fastener WorkBench:
-  The FreeCAD Fasteners workbench is used wherever possible.
+  The FreeCAD Fasteners workbench is used wherever possible.  (This may not happen.)
 
 The basic class hierarchy is:
 
-* FabJoiner: A profile for a set of related hardware for using a fastener.
-* FabJoinerOption: A base class for the sub-classes immediately below:
+* FabFasten: A profile for a set of related hardware for using a fastener.
+* FabOption: A base class for the sub-classes immediately below:
   * FabHead: The fastener head definition along with counter sink/bore information.
   * FabWasher: washer that is attached on the fastener.
   * FabNut: A nut that threads onto the fastener.
 * FabJoin: A specific instance of fastener that has a start and end point.
 
-A FabJoiner basically lists a thread profile (i.e. #4-4, M3x0.5, etc), the driver head,
+I addition the "public" classes listed immediately above.  There are a number of "private" classes
+of the form `Fab_` that are used to implement everything.  The interfaces to the classes are
+not stable and can be changed at will by the developers; thus, they should not be depended upon.
+
+A FabFasten basically lists a thread profile (i.e. #4-4, M3x0.5, etc), the driver head,
 associated lock washers, regular washers, nuts, etc.  These are specified as a list
-of FabJoinerOption's (i.e. FabHead, FabWasher, FabNut, etc.)
+of FabOption's (i.e. FabHead, FabWasher, FabNut, etc.)
 
 A FabJoin specifies a FabJoiner, a start point and an end point.  The first end point is
 the specifies a point just under the screw/bolt head and any regular/lock washers just below
@@ -69,10 +73,10 @@ from cadquery import Vector  # type: ignore
 from Utilities import FabMaterial
 
 
-# _MDrillTap
+# Fab_MDrillTap:
 @dataclass
-class _MDrillTap(object):
-    """_MDrillTap: Metric drill/tap information.
+class Fab_MDrillTap(object):
+    """Fab_MDrillTap: Metric drill/tap information.
 
     Attributes:
     * *MName* (str): The Metric major diameter name starting with "M" (e.g. M1)
@@ -99,25 +103,25 @@ class _MDrillTap(object):
     MStandard: float
     IStandard: str
 
-    # _MDrillTap.__post_init__():
+    # Fab_MDrillTap.__post_init__():
     def __post_init__(self) -> None:
-        """Finish initalizign _MDrillTap."""
-        check_type("_MDrillTap.MName", self.MName, str)
-        check_type("_MDrillTap.MPitch", self.MPitch, float)
-        check_type("_MDrillTap.M75", self.M75, float)
-        check_type("_MDrillTap.I75", self.I75, str)
-        check_type("_MDrillTap.M50", self.M50, float)
-        check_type("_MDrillTap.I50", self.I50, str)
-        check_type("_MDrillTap.MClose", self.MClose, float)
-        check_type("_MDrillTap.IClose", self.IClose, str)
-        check_type("_MDrillTap.MStandard", self.MStandard, float)
-        check_type("_MDrillTap.IStandard", self.IStandard, str)
+        """Finish initalizign Fab_MDrillTap."""
+        check_type("Fab_MDrillTap.MName", self.MName, str)
+        check_type("Fab_MDrillTap.MPitch", self.MPitch, float)
+        check_type("Fab_MDrillTap.M75", self.M75, float)
+        check_type("Fab_MDrillTap.I75", self.I75, str)
+        check_type("Fab_MDrillTap.M50", self.M50, float)
+        check_type("Fab_MDrillTap.I50", self.I50, str)
+        check_type("Fab_MDrillTap.MClose", self.MClose, float)
+        check_type("Fab_MDrillTap.IClose", self.IClose, str)
+        check_type("Fab_MDrillTap.MStandard", self.MStandard, float)
+        check_type("Fab_MDrillTap.IStandard", self.IStandard, str)
 
 
-# FabDrillChoice:
+# Fab_DrillChoice:
 @dataclass
-class FabDrillChoice(object):
-    """FabDrillChoice: Preferred Metric and Imperial drill sizes.
+class Fab_DrillChoice(object):
+    """Fab_DrillChoice: Preferred Metric and Imperial drill sizes.
 
     The final choice of hole sizes typically depends upon the available hardware.  In North
     America, the non metric size drills (fractional, letter, number) are readily available.
@@ -142,9 +146,9 @@ class FabDrillChoice(object):
     ImperialName: str
     ImperialDiameter: float
 
-    # FabDrillChoice.__post_init__():
+    # Fab_DrillChoice.__post_init__():
     def __post_init__(self) -> None:
-        """Finish initializing FabDrillChoice."""
+        """Finish initializing Fab_DrillChoice."""
         check_type("FabDrillCheck.MetricName", self.MetricName, str)
         check_type("FabDrillCheck.MetricDiameter", self.MetricDiameter, float)
         check_type("FabDrillCheck.ImperialName", self.ImperialName, str)
@@ -158,25 +162,25 @@ class FabDrillTap(object):
 
     Attributes:
     * *Name* (str): Name of drill/tap selections.
-    * *Thead75* (FabDrillChoice):  The drill choice for 75% thread operations.
-    * *Thead50* (FabDrillChoice):  The drill choice for 50% thread operations.
-    * *Close* (FabDrillChoice):  The drill choice for a close fit hole.
-    * *Standard* (FabDrillChoice):  The drill choice for a standard fit hole.
+    * *Thead75* (Fab_DrillChoice):  The drill choice for 75% thread operations.
+    * *Thead50* (Fab_DrillChoice):  The drill choice for 50% thread operations.
+    * *Close* (Fab_DrillChoice):  The drill choice for a close fit hole.
+    * *Standard* (Fab_DrillChoice):  The drill choice for a standard fit hole.
     """
 
     Name: str
-    Thread75: FabDrillChoice
-    Thread50: FabDrillChoice
-    Close: FabDrillChoice
-    Standard: FabDrillChoice
+    Thread75: Fab_DrillChoice
+    Thread50: Fab_DrillChoice
+    Close: Fab_DrillChoice
+    Standard: Fab_DrillChoice
 
     # FabDrillTap.__post_init__():
     def __post_init__(self) -> None:
-        """Finish initializing FabDrillChoice."""
-        check_type("FabDrillCheck.Thread75", self.Thread75, FabDrillChoice)
-        check_type("FabDrillCheck.Thread50", self.Thread50, FabDrillChoice)
-        check_type("FabDrillCheck.ThreadClose", self.Close, FabDrillChoice)
-        check_type("FabDrillCheck.ThreadStandard", self.Standard, FabDrillChoice)
+        """Finish initializing Fab_DrillChoice."""
+        check_type("FabDrillCheck.Thread75", self.Thread75, Fab_DrillChoice)
+        check_type("FabDrillCheck.Thread50", self.Thread50, Fab_DrillChoice)
+        check_type("FabDrillCheck.ThreadClose", self.Close, Fab_DrillChoice)
+        check_type("FabDrillCheck.ThreadStandard", self.Standard, Fab_DrillChoice)
 
 
 # _IDrillTap:
@@ -307,53 +311,53 @@ class FabFastenTables(object):
 
     # [Metric Tap & Clearance Drill Sizes]
     #   (https://littlemachineshop.com/images/gallery/PDF/TapDrillSizes.pdf)
-    METRIC_DRILL_TAPS: ClassVar[Tuple[_MDrillTap, ...]] = (
-        _MDrillTap("M1.5", 0.35, 1.15, "N56", 1.25, "N55", 1.60, "1/16", 1.65, "N52"),
-        _MDrillTap("M1.6", 0.35, 1.25, "N55", 1.35, "N54", 1.70, "N51", 1.75, "N50"),
-        _MDrillTap("M1.8", 0.35, 1.45, "N53", 1.55, "1/16", 1.90, "N49", 2.00, "5/64"),
-        _MDrillTap("M2", 0.45, 1.55, "1/16", 1.70, "N51", 2.10, "N45", 2.20, "N44"),
-        _MDrillTap("M2", 0.40, 1.60, "N52", 1.75, "N50", 2.10, "N45", 2.20, "N44"),
-        _MDrillTap("M2.2", 0.45, 1.75, "N50", 1.90, "N48", 2.30, "3/32", 2.40, "N41"),
-        _MDrillTap("M2.5", 0.45, 2.05, "N46", 2.20, "N44", 2.65, "N37", 2.75, "7/64"),
-        _MDrillTap("M3", 0.60, 2.40, "N41", 2.60, "N37", 3.15, "1/8", 3.30, "N30"),
-        _MDrillTap("M3", 0.50, 2.50, "N39", 2.70, "N36", 3.15, "1/8", 3.30, "N30"),
-        _MDrillTap("M3.5", 0.60, 2.90, "N32", 3.10, "N31", 3.70, "N27", 3.85, "N24"),
-        _MDrillTap("M4", 0.75, 3.25, "N30", 3.50, "N28", 4.20, "N19", 4.40, "N17"),
-        _MDrillTap("M4", 0.70, 3.30, "N30", 3.50, "N28", 4.20, "N19", 4.40, "N17"),
-        _MDrillTap("M4.5", 0.75, 3.75, "N25", 4.00, "N22", 4.75, "N13", 5.00, "N9"),
-        _MDrillTap("M5", 1.00, 4.00, "N21", 4.40, "11/64", 5.25, "N5", 5.50, "7/32"),
-        _MDrillTap("M5", 0.90, 4.10, "N20", 4.40, "N17", 5.25, "N5", 5.50, "7/32"),
-        _MDrillTap("M5", 0.80, 4.20, "N19", 4.50, "N16", 5.25, "N5", 5.50, "7/32"),
-        _MDrillTap("M5.5", 0.90, 4.60, "N14", 4.90, "N10", 5.80, "N1", 6.10, "B"),
-        _MDrillTap("M6", 1.00, 5.00, "N8", 5.40, "N4", 6.30, "E", 6.60, "G"),
-        _MDrillTap("M6", 0.75, 5.25, "N4", 5.50, "7/32", 6.30, "E", 6.60, "G"),
-        _MDrillTap("M7", 1.00, 6.00, "B", 6.40, "E", 7.40, "L", 7.70, "N"),
-        _MDrillTap("M7", 0.75, 6.25, "D", 6.50, "F", 7.40, "L", 7.70, "N"),
-        _MDrillTap("M8", 1.25, 6.80, "H", 7.20, "J", 8.40, "Q", 8.80, "S"),
-        _MDrillTap("M8", 1.00, 7.00, "J", 7.40, "L", 8.40, "Q", 8.80, "S"),
-        _MDrillTap("M9", 1.25, 7.80, "N", 8.20, "P", 9.50, "3/8", 9.90, "25/64"),
-        _MDrillTap("M9", 1.00, 8.00, "O", 8.40, "21/64", 9.50, "3/8", 9.90, "25/64"),
-        _MDrillTap("M10", 1.50, 8.50, "R", 9.00, "T", 10.50, "Z", 11.00, "7/16"),
-        _MDrillTap("M10", 1.25, 8.80, "11/32", 9.20, "23/64", 10.50, "Z", 11.00, "7/16"),
-        _MDrillTap("M10", 1.00, 9.00, "T", 9.40, "U", 10.50, "Z", 11.00, "7/16"),
-        _MDrillTap("M11", 1.50, 9.50, "3/8", 10.00, "X", 11.60, "29/64", 12.10, "15/32"),
-        _MDrillTap("M12", 1.75, 10.30, "13/32", 10.90, "27/64", 12.60, "1/2", 13.20, "33/64"),
-        _MDrillTap("M12", 1.50, 10.50, "Z", 11.00, "7/16", 12.60, "1/2", 13.20, "33/64"),
-        _MDrillTap("M12", 1.25, 10.80, "27/64", 11.20, "7/16", 12.60, "1/2", 13.20, "33/64"),
-        _MDrillTap("M14", 2.00, 12.10, "15/32", 12.70, "1/2", 14.75, "37/64", 15.50, "39/64"),
-        _MDrillTap("M14", 1.50, 12.50, "1/2", 13.00, "33/64", 14.75, "37/64", 15.50, "39/64"),
-        _MDrillTap("M14", 1.25, 12.80, "1/2", 13.20, "33/64", 14.75, "37/64", 15.50, "39/64"),
-        _MDrillTap("M15", 1.50, 13.50, "17/32", 14.00, "35/64", 15.75, "5/8", 16.50, "21/32"),
-        _MDrillTap("M16", 2.00, 14.00, "35/64", 14.75, "37/64", 16.75, "21/32", 17.50, "11/16"),
-        _MDrillTap("M16", 1.50, 14.50, "37/64", 15.00, "19/32", 16.75, "21/32", 17.50, "11/16"),
-        _MDrillTap("M17", 1.50, 15.50, "39/64", 16.00, "5/8", 18.00, "45/64", 18.50, "47/64"),
-        _MDrillTap("M18", 2.50, 15.50, "39/64", 16.50, "41/64", 19.00, "3/4", 20.00, "25/32"),
-        _MDrillTap("M18", 2.00, 16.00, "5/8", 16.75, "21/32", 19.00, "3/4", 20.00, "25/32"),
-        _MDrillTap("M18", 1.50, 16.50, "21/32", 17.00, "43/64", 19.00, "3/4", 20.00, "25/32"),
-        _MDrillTap("M19", 2.50, 16.50, "21/32", 17.50, "11/16", 20.00, "25/32", 21.00, "53/64"),
-        _MDrillTap("M20", 2.50, 17.50, "11/16", 18.50, "23/32", 21.00, "53/64", 22.00, "55/64"),
-        _MDrillTap("M20", 2.00, 18.00, "45/64", 18.50, "47/64", 21.00, "53/64", 22.00, "55/64"),
-        _MDrillTap("M20", 1.50, 18.50, "47/64", 19.00, "3/4", 21.00, "53/64", 22.00, "55/64"),
+    METRIC_DRILL_TAPS: ClassVar[Tuple[Fab_MDrillTap, ...]] = (
+        Fab_MDrillTap("M1.5", 0.35, 1.15, "N56", 1.25, "N55", 1.60, "1/16", 1.65, "N52"),
+        Fab_MDrillTap("M1.6", 0.35, 1.25, "N55", 1.35, "N54", 1.70, "N51", 1.75, "N50"),
+        Fab_MDrillTap("M1.8", 0.35, 1.45, "N53", 1.55, "1/16", 1.90, "N49", 2.00, "5/64"),
+        Fab_MDrillTap("M2", 0.45, 1.55, "1/16", 1.70, "N51", 2.10, "N45", 2.20, "N44"),
+        Fab_MDrillTap("M2", 0.40, 1.60, "N52", 1.75, "N50", 2.10, "N45", 2.20, "N44"),
+        Fab_MDrillTap("M2.2", 0.45, 1.75, "N50", 1.90, "N48", 2.30, "3/32", 2.40, "N41"),
+        Fab_MDrillTap("M2.5", 0.45, 2.05, "N46", 2.20, "N44", 2.65, "N37", 2.75, "7/64"),
+        Fab_MDrillTap("M3", 0.60, 2.40, "N41", 2.60, "N37", 3.15, "1/8", 3.30, "N30"),
+        Fab_MDrillTap("M3", 0.50, 2.50, "N39", 2.70, "N36", 3.15, "1/8", 3.30, "N30"),
+        Fab_MDrillTap("M3.5", 0.60, 2.90, "N32", 3.10, "N31", 3.70, "N27", 3.85, "N24"),
+        Fab_MDrillTap("M4", 0.75, 3.25, "N30", 3.50, "N28", 4.20, "N19", 4.40, "N17"),
+        Fab_MDrillTap("M4", 0.70, 3.30, "N30", 3.50, "N28", 4.20, "N19", 4.40, "N17"),
+        Fab_MDrillTap("M4.5", 0.75, 3.75, "N25", 4.00, "N22", 4.75, "N13", 5.00, "N9"),
+        Fab_MDrillTap("M5", 1.00, 4.00, "N21", 4.40, "11/64", 5.25, "N5", 5.50, "7/32"),
+        Fab_MDrillTap("M5", 0.90, 4.10, "N20", 4.40, "N17", 5.25, "N5", 5.50, "7/32"),
+        Fab_MDrillTap("M5", 0.80, 4.20, "N19", 4.50, "N16", 5.25, "N5", 5.50, "7/32"),
+        Fab_MDrillTap("M5.5", 0.90, 4.60, "N14", 4.90, "N10", 5.80, "N1", 6.10, "B"),
+        Fab_MDrillTap("M6", 1.00, 5.00, "N8", 5.40, "N4", 6.30, "E", 6.60, "G"),
+        Fab_MDrillTap("M6", 0.75, 5.25, "N4", 5.50, "7/32", 6.30, "E", 6.60, "G"),
+        Fab_MDrillTap("M7", 1.00, 6.00, "B", 6.40, "E", 7.40, "L", 7.70, "N"),
+        Fab_MDrillTap("M7", 0.75, 6.25, "D", 6.50, "F", 7.40, "L", 7.70, "N"),
+        Fab_MDrillTap("M8", 1.25, 6.80, "H", 7.20, "J", 8.40, "Q", 8.80, "S"),
+        Fab_MDrillTap("M8", 1.00, 7.00, "J", 7.40, "L", 8.40, "Q", 8.80, "S"),
+        Fab_MDrillTap("M9", 1.25, 7.80, "N", 8.20, "P", 9.50, "3/8", 9.90, "25/64"),
+        Fab_MDrillTap("M9", 1.00, 8.00, "O", 8.40, "21/64", 9.50, "3/8", 9.90, "25/64"),
+        Fab_MDrillTap("M10", 1.50, 8.50, "R", 9.00, "T", 10.50, "Z", 11.00, "7/16"),
+        Fab_MDrillTap("M10", 1.25, 8.80, "11/32", 9.20, "23/64", 10.50, "Z", 11.00, "7/16"),
+        Fab_MDrillTap("M10", 1.00, 9.00, "T", 9.40, "U", 10.50, "Z", 11.00, "7/16"),
+        Fab_MDrillTap("M11", 1.50, 9.50, "3/8", 10.00, "X", 11.60, "29/64", 12.10, "15/32"),
+        Fab_MDrillTap("M12", 1.75, 10.30, "13/32", 10.90, "27/64", 12.60, "1/2", 13.20, "33/64"),
+        Fab_MDrillTap("M12", 1.50, 10.50, "Z", 11.00, "7/16", 12.60, "1/2", 13.20, "33/64"),
+        Fab_MDrillTap("M12", 1.25, 10.80, "27/64", 11.20, "7/16", 12.60, "1/2", 13.20, "33/64"),
+        Fab_MDrillTap("M14", 2.00, 12.10, "15/32", 12.70, "1/2", 14.75, "37/64", 15.50, "39/64"),
+        Fab_MDrillTap("M14", 1.50, 12.50, "1/2", 13.00, "33/64", 14.75, "37/64", 15.50, "39/64"),
+        Fab_MDrillTap("M14", 1.25, 12.80, "1/2", 13.20, "33/64", 14.75, "37/64", 15.50, "39/64"),
+        Fab_MDrillTap("M15", 1.50, 13.50, "17/32", 14.00, "35/64", 15.75, "5/8", 16.50, "21/32"),
+        Fab_MDrillTap("M16", 2.00, 14.00, "35/64", 14.75, "37/64", 16.75, "21/32", 17.50, "11/16"),
+        Fab_MDrillTap("M16", 1.50, 14.50, "37/64", 15.00, "19/32", 16.75, "21/32", 17.50, "11/16"),
+        Fab_MDrillTap("M17", 1.50, 15.50, "39/64", 16.00, "5/8", 18.00, "45/64", 18.50, "47/64"),
+        Fab_MDrillTap("M18", 2.50, 15.50, "39/64", 16.50, "41/64", 19.00, "3/4", 20.00, "25/32"),
+        Fab_MDrillTap("M18", 2.00, 16.00, "5/8", 16.75, "21/32", 19.00, "3/4", 20.00, "25/32"),
+        Fab_MDrillTap("M18", 1.50, 16.50, "21/32", 17.00, "43/64", 19.00, "3/4", 20.00, "25/32"),
+        Fab_MDrillTap("M19", 2.50, 16.50, "21/32", 17.50, "11/16", 20.00, "25/32", 21.00, "53/64"),
+        Fab_MDrillTap("M20", 2.50, 17.50, "11/16", 18.50, "23/32", 21.00, "53/64", 22.00, "55/64"),
+        Fab_MDrillTap("M20", 2.00, 18.00, "45/64", 18.50, "47/64", 21.00, "53/64", 22.00, "55/64"),
+        Fab_MDrillTap("M20", 1.50, 18.50, "47/64", 19.00, "3/4", 21.00, "53/64", 22.00, "55/64"),
     )
 
     # [Imperial Tap Chart](https://www.armstrongmetalcrafts.com/Reference/ImperialTapChart.aspx)
@@ -708,16 +712,16 @@ class FabFastenTables(object):
     def table_initialize(cls) -> None:
         drill_tap: FabDrillTap
         name: str
-        mtap: _MDrillTap
+        mtap: Fab_MDrillTap
         for mtap in cls.METRIC_DRILL_TAPS:
             name = f"{mtap.MName}x{mtap.MPitch}".replace("x0", "x")  # "M??x0.PP" => "M??x.PP"
             drill_tap = FabDrillTap(
                 name,
-                FabDrillChoice(str(mtap.M75), mtap.M75, mtap.I75, cls.to_mm(mtap.I75)),
-                FabDrillChoice(str(mtap.M50), mtap.M50, mtap.I50, cls.to_mm(mtap.I50)),
-                FabDrillChoice(str(mtap.MClose), mtap.MClose, mtap.IClose, cls.to_mm(mtap.IClose)),
-                FabDrillChoice(str(mtap.MStandard), mtap.MStandard,
-                               mtap.IStandard, cls.to_mm(mtap.IStandard))
+                Fab_DrillChoice(str(mtap.M75), mtap.M75, mtap.I75, cls.to_mm(mtap.I75)),
+                Fab_DrillChoice(str(mtap.M50), mtap.M50, mtap.I50, cls.to_mm(mtap.I50)),
+                Fab_DrillChoice(str(mtap.MClose), mtap.MClose, mtap.IClose, cls.to_mm(mtap.IClose)),
+                Fab_DrillChoice(str(mtap.MStandard), mtap.MStandard,
+                                mtap.IStandard, cls.to_mm(mtap.IStandard))
             )
             cls.FastenerTable[name] = drill_tap
 
@@ -726,10 +730,10 @@ class FabFastenTables(object):
             name = f"{itap.Size}-{itap.ThreadsPerInch}"
             drill_tap = FabDrillTap(
                 name,
-                FabDrillChoice("", 0.0, itap.Thread75Name, itap.Thread75Inch * 25.4),
-                FabDrillChoice("", 0.0, itap.Thread50Name, itap.Thread50Inch * 25.4),
-                FabDrillChoice("", 0.0, itap.CloseName, itap.CloseInch * 25.4),
-                FabDrillChoice("", 0.0, itap.StandardName, itap.StandardInch * 25.4)
+                Fab_DrillChoice("", 0.0, itap.Thread75Name, itap.Thread75Inch * 25.4),
+                Fab_DrillChoice("", 0.0, itap.Thread50Name, itap.Thread50Inch * 25.4),
+                Fab_DrillChoice("", 0.0, itap.CloseName, itap.CloseInch * 25.4),
+                Fab_DrillChoice("", 0.0, itap.StandardName, itap.StandardInch * 25.4)
             )
             cls.FastenerTable[name] = drill_tap
 
@@ -1205,7 +1209,7 @@ class FabFasten(object):
     def get_diameter(self, kind: str) -> float:
         """Return actual diameter based on request hole kind."""
         drill_tap: FabDrillTap = FabFastenTables.lookup(self.ThreadName)
-        drill_choice: FabDrillChoice
+        drill_choice: Fab_DrillChoice
         if kind == "thread":
             drill_choice = drill_tap.Thread75
         elif kind == "close":

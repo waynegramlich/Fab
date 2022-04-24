@@ -1,11 +1,11 @@
-# Join: Join: A package for managing fasteners in the Fab system.
+# FabJoiner: FabJoiner: Fab fastener management system.
 While the most common fasteners are screws and bolts, there are others like rivets, set screws,
 cotter pins, etc.  This package centralizes all of the issues associated with fasteners
 so that changing a fastener does not become a nightmare of having to individually find
 each fastener and make manual changes to each one.  The change is made in once place and
-it propagates to all associated fasteners.
+it propagates to all locations where the fastener is used.
 
-The Join module deals with the following issues:
+The FabJoiner module deals with the following issues:
 * Hole Drilling/Milling:
   Getting a hole of the of the correct size and depth at the correct location on a part.
 * Threading:
@@ -24,22 +24,26 @@ The Join module deals with the following issues:
   Collecting all of the fasteners into a bill of materials.
 * Assembly View:
   When assembly views are supported, all of the fasteners are exploded out with a dashed
-  line to connect them all.  (Not done implemented.)
+  line to connect them all.  (Not even remotely started yet.)
 * Fastener WorkBench:
-  The FreeCAD Fasteners workbench is used wherever possible.
+  The FreeCAD Fasteners workbench is used wherever possible.  (This may not happen.)
 
 The basic class hierarchy is:
 
-* FabJoiner: A profile for a set of related hardware for using a fastener.
-* FabJoinerOption: A base class for the sub-classes immediately below:
+* FabFasten: A profile for a set of related hardware for using a fastener.
+* FabOption: A base class for the sub-classes immediately below:
   * FabHead: The fastener head definition along with counter sink/bore information.
   * FabWasher: washer that is attached on the fastener.
   * FabNut: A nut that threads onto the fastener.
 * FabJoin: A specific instance of fastener that has a start and end point.
 
-A FabJoiner basically lists a thread profile (i.e. #4-4, M3x0.5, etc), the driver head,
+I addition the "public" classes listed immediately above.  There are a number of "private" classes
+of the form `Fab_` that are used to implement everything.  The interfaces to the classes are
+not stable and can be changed at will by the developers; thus, they should not be depended upon.
+
+A FabFasten basically lists a thread profile (i.e. #4-4, M3x0.5, etc), the driver head,
 associated lock washers, regular washers, nuts, etc.  These are specified as a list
-of FabJoinerOption's (i.e. FabHead, FabWasher, FabNut, etc.)
+of FabOption's (i.e. FabHead, FabWasher, FabNut, etc.)
 
 A FabJoin specifies a FabJoiner, a start point and an end point.  The first end point is
 the specifies a point just under the screw/bolt head and any regular/lock washers just below
@@ -56,22 +60,139 @@ hardware.
 
 ## Table of Contents (alphabetical order):
 
-* 1 Class: [FabDrillChoice](#join--fabdrillchoice):
-* 2 Class: [FabDrillTap](#join--fabdrilltap):
-* 3 Class: [FabFasten](#join--fabfasten):
-  * 3.1 [get_hash()](#join----get-hash): Return FabFasten hash.
-  * 3.2 [get_diameter()](#join----get-diameter): Return actual diameter based on request hole kind.
-* 4 Class: [FabFastenTables](#join--fabfastentables):
-* 5 Class: [FabHead](#join--fabhead):
-* 6 Class: [FabJoin](#join--fabjoin):
-  * 6.1 [get_hash()](#join----get-hash): Return FabJoin hash.
-  * 6.2 [normal_aligned()](#join----normal-aligned): Return whether the normal is aligned with the FabJoin.
-* 7 Class: [FabNut](#join--fabnut):
-* 8 Class: [FabOption](#join--faboption):
-  * 8.1 [get_hash()](#join----get-hash): Return FabOption hash.
-* 9 Class: [FabWasher](#join--fabwasher):
+* 1 Class: [FabDrillTap](#fabjoiner--fabdrilltap):
+* 2 Class: [FabFasten](#fabjoiner--fabfasten):
+  * 2.1 [get_hash()](#fabjoiner----get-hash): Return FabFasten hash.
+  * 2.2 [get_diameter()](#fabjoiner----get-diameter): Return actual diameter based on request hole kind.
+* 3 Class: [FabFastenTables](#fabjoiner--fabfastentables):
+* 4 Class: [FabHead](#fabjoiner--fabhead):
+* 5 Class: [FabJoin](#fabjoiner--fabjoin):
+  * 5.1 [get_hash()](#fabjoiner----get-hash): Return FabJoin hash.
+  * 5.2 [normal_aligned()](#fabjoiner----normal-aligned): Return whether the normal is aligned with the FabJoin.
+* 6 Class: [FabNut](#fabjoiner--fabnut):
+* 7 Class: [FabOption](#fabjoiner--faboption):
+  * 7.1 [get_hash()](#fabjoiner----get-hash): Return FabOption hash.
+* 8 Class: [FabWasher](#fabjoiner--fabwasher):
+* 9 Class: [Fab_DrillChoice](#fabjoiner--fab-drillchoice):
+* 10 Class: [Fab_MDrillTap](#fabjoiner--fab-mdrilltap):
 
-## <a name="join--fabdrillchoice"></a>1 Class FabDrillChoice:
+## <a name="fabjoiner--fabdrilltap"></a>1 Class FabDrillTap:
+
+Drill/Tap diameters and drill selections.
+Attributes:
+* *Name* (str): Name of drill/tap selections.
+* *Thead75* (Fab_DrillChoice):  The drill choice for 75% thread operations.
+* *Thead50* (Fab_DrillChoice):  The drill choice for 50% thread operations.
+* *Close* (Fab_DrillChoice):  The drill choice for a close fit hole.
+* *Standard* (Fab_DrillChoice):  The drill choice for a standard fit hole.
+
+
+## <a name="fabjoiner--fabfasten"></a>2 Class FabFasten:
+
+The class of Fastener to use.
+Attributes:
+* Name (str): FabFasten Name.
+* ThreadName (str): A thread selection (e.g. "M3x.5", "#4-40", "1/4-20")
+* Options (Tuple[FabOption, ...]): Various Head/Tail options for fastener stack
+
+### <a name="fabjoiner----get-hash"></a>2.1 `FabFasten.`get_hash():
+
+FabFasten.get_hash(self) -> Tuple[Any, ...]:
+
+Return FabFasten hash.
+
+### <a name="fabjoiner----get-diameter"></a>2.2 `FabFasten.`get_diameter():
+
+FabFasten.get_diameter(self, kind: str) -> float:
+
+Return actual diameter based on request hole kind.
+
+
+## <a name="fabjoiner--fabfastentables"></a>3 Class FabFastenTables:
+
+Tables of metric/imperial screws and bolts.
+
+
+## <a name="fabjoiner--fabhead"></a>4 Class FabHead:
+
+Represents the Head of the FabFastener.
+Attributes:
+* *Name* (str): The name for this head.
+* *Detail* (str): Short FabHead description.
+* *Material* (FabMaterial): The FabHead fastener material.
+* *Shape* (str): The FabHead shape.
+* *Drive* (str): The FabHead drive.
+
+
+## <a name="fabjoiner--fabjoin"></a>5 Class FabJoin:
+
+Specifies a single fastener instance.
+Attributes:
+* Name (str): A name used for error reporting.
+* Fasten (FabFasten): FabFasten object to use for basic dimensions.
+* Start (Vector): Start point for FabJoin.
+* End (Vector): End point for FabJoin.
+
+### <a name="fabjoiner----get-hash"></a>5.1 `FabJoin.`get_hash():
+
+FabJoin.get_hash(self) -> Tuple[Any, ...]:
+
+Return FabJoin hash.
+
+### <a name="fabjoiner----normal-aligned"></a>5.2 `FabJoin.`normal_aligned():
+
+FabJoin.normal_aligned(self, test_normal: cadquery.occ_impl.geom.Vector) -> bool:
+
+Return whether the normal is aligned with the FabJoin.
+
+
+## <a name="fabjoiner--fabnut"></a>6 Class FabNut:
+
+A class the represents a fastener nut.
+Attributes:
+* Name (str): Nut name.
+* Detail (str): More nut detail.
+* Sides (int): The number of nut sides (either 4 or 6.)
+* Width (float): The Nut width between 2 opposite faces.
+* Thickness (float): The nut thickness in millimeters.
+* Material (FabMaterial): The nut material
+
+
+## <a name="fabjoiner--faboption"></a>7 Class FabOption:
+
+Base class for FabFasten options (e.g. washers, nuts, etc...).
+Attributes:
+* *Name* (str): The option name.
+* *Detail* (str): More detailed information about the option.
+
+### <a name="fabjoiner----get-hash"></a>7.1 `FabOption.`get_hash():
+
+FabOption.get_hash(self) -> Tuple[Any, ...]:
+
+Return FabOption hash.
+
+
+## <a name="fabjoiner--fabwasher"></a>8 Class FabWasher:
+
+Represents a washer.
+Constants:
+* PLAIN: Plain washer.
+* INTERNAL_LOCK: Internal tooth lock washer.
+* EXTERNAL_LOCK: External tooth lock washer.
+* SPLIT_LOCK: Split ring lock washer.
+
+Attributes:
+* *Name* (str): The washer name.
+* *Detail* (str): More detail about the FabWasher.
+* *Inner* (float): The Inner diameter in millimeters.
+* *Outer* (float): The Outer diameter in millimeters.
+* *Thickness* (float): The thickness in millimeters.
+* *Material* (FabMaterial): The Material the washer is made out of.
+* *Kind* (str): The washer kind -- one of following FabWasher constants --
+  `PLAIN`, `INTERNAL_LOCK`, `EXTERNAL_LOCK`, or `SPLIT_LOCK`.
+
+
+## <a name="fabjoiner--fab-drillchoice"></a>9 Class Fab_DrillChoice:
 
 Preferred Metric and Imperial drill sizes.
 The final choice of hole sizes typically depends upon the available hardware.  In North
@@ -92,120 +213,20 @@ Attributes:
    This is 0.0 if no metric drill is specified.
 
 
-## <a name="join--fabdrilltap"></a>2 Class FabDrillTap:
+## <a name="fabjoiner--fab-mdrilltap"></a>10 Class Fab_MDrillTap:
 
-Drill/Tap diameters and drill selections.
+Metric drill/tap information.
 Attributes:
-* *Name* (str): Name of drill/tap selections.
-* *Thead75* (FabDrillChoice):  The drill choice for 75% thread operations.
-* *Thead50* (FabDrillChoice):  The drill choice for 50% thread operations.
-* *Close* (FabDrillChoice):  The drill choice for a close fit hole.
-* *Standard* (FabDrillChoice):  The drill choice for a standard fit hole.
-
-
-## <a name="join--fabfasten"></a>3 Class FabFasten:
-
-The class of Fastener to use.
-Attributes:
-* Name (str): FabFasten Name.
-* ThreadName (str): A thread selection (e.g. "M3x.5", "#4-40", "1/4-20")
-* Options (Tuple[FabOption, ...]): Various Head/Tail options for fastener stack
-
-### <a name="join----get-hash"></a>3.1 `FabFasten.`get_hash():
-
-FabFasten.get_hash(self) -> Tuple[Any, ...]:
-
-Return FabFasten hash.
-
-### <a name="join----get-diameter"></a>3.2 `FabFasten.`get_diameter():
-
-FabFasten.get_diameter(self, kind: str) -> float:
-
-Return actual diameter based on request hole kind.
-
-
-## <a name="join--fabfastentables"></a>4 Class FabFastenTables:
-
-Tables of metric/imperial screws and bolts.
-
-
-## <a name="join--fabhead"></a>5 Class FabHead:
-
-Represents the Head of the FabFastener.
-Attributes:
-* *Name* (str): The name for this head.
-* *Detail* (str): Short FabHead description.
-* *Material* (FabMaterial): The FabHead fastener material.
-* *Shape* (str): The FabHead shape.
-* *Drive* (str): The FabHead drive.
-
-
-## <a name="join--fabjoin"></a>6 Class FabJoin:
-
-Specifies a single fastener instance.
-Attributes:
-* Name (str): A name used for error reporting.
-* Fasten (FabFasten): FabFasten object to use for basic dimensions.
-* Start (Vector): Start point for FabJoin.
-* End (Vector): End point for FabJoin.
-
-### <a name="join----get-hash"></a>6.1 `FabJoin.`get_hash():
-
-FabJoin.get_hash(self) -> Tuple[Any, ...]:
-
-Return FabJoin hash.
-
-### <a name="join----normal-aligned"></a>6.2 `FabJoin.`normal_aligned():
-
-FabJoin.normal_aligned(self, test_normal: cadquery.occ_impl.geom.Vector) -> bool:
-
-Return whether the normal is aligned with the FabJoin.
-
-
-## <a name="join--fabnut"></a>7 Class FabNut:
-
-A class the represents a fastener nut.
-Attributes:
-* Name (str): Nut name.
-* Detail (str): More nut detail.
-* Sides (int): The number of nut sides (either 4 or 6.)
-* Width (float): The Nut width between 2 opposite faces.
-* Thickness (float): The nut thickness in millimeters.
-* Material (FabMaterial): The nut material
-
-
-## <a name="join--faboption"></a>8 Class FabOption:
-
-Base class for FabFasten options (e.g. washers, nuts, etc...).
-Attributes:
-* *Name* (str): The option name.
-* *Detail* (str): More detailed information about the option.
-
-### <a name="join----get-hash"></a>8.1 `FabOption.`get_hash():
-
-FabOption.get_hash(self) -> Tuple[Any, ...]:
-
-Return FabOption hash.
-
-
-## <a name="join--fabwasher"></a>9 Class FabWasher:
-
-Represents a washer.
-Constants:
-* PLAIN: Plain washer.
-* INTERNAL_LOCK: Internal tooth lock washer.
-* EXTERNAL_LOCK: External tooth lock washer.
-* SPLIT_LOCK: Split ring lock washer.
-
-Attributes:
-* *Name* (str): The washer name.
-* *Detail* (str): More detail about the FabWasher.
-* *Inner* (float): The Inner diameter in millimeters.
-* *Outer* (float): The Outer diameter in millimeters.
-* *Thickness* (float): The thickness in millimeters.
-* *Material* (FabMaterial): The Material the washer is made out of.
-* *Kind* (str): The washer kind -- one of following FabWasher constants --
-  `PLAIN`, `INTERNAL_LOCK`, `EXTERNAL_LOCK`, or `SPLIT_LOCK`.
+* *MName* (str): The Metric major diameter name starting with "M" (e.g. M1)
+* *MPitch* (float): The threads per millimeter.
+* *M75* (float): The preferred metric drill for 75% thread.
+* *I75* (str): The preferred imperial drill for 75% thread.
+* *M50* (float): The preferred metric drill for 50% thread.
+* *I50* (str): The preferred imperial drill for 70% thread.
+* *MClose* (float): The preferred metric drill for a close fit.
+* *IClose* (str): The preferred imperial drill for a close fit.
+* *MStandard* (float): The preferred metric drill for a standard fit.
+* *IStandard* (str): The preferred imperial drill for a standard fit.
 
 
 
