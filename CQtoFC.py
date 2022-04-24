@@ -1037,15 +1037,14 @@ class FabCQtoFC(object):
     # CQtoFC.get_aligned_face_names():
     def get_aligned_face_names(self, obj:
                                Any, normal: Vector, tracing: str = "") -> Tuple[str, ...]:
-        """Return top faces."""
+        """Return normal aligned faces from largest to smallest."""
         if tracing:
             print(f"{tracing}=>get_aligned_face_name({obj}, {normal})")
         assert hasattr(obj, "Shape")
         shape = obj.Shape
         face_index: int
         epsilon: float = 1.0e-8
-        largest_area: float = 0.0
-        largest_face_name: str = ""
+        aligned_area_names: List[Tuple[float, str]] = []
         for face_index in range(len(shape.Faces)):
             face_name: str = f"Face{face_index+1}"
             face: Any = shape.getElement(face_name)
@@ -1054,12 +1053,14 @@ class FabCQtoFC(object):
                 length: float = delta.Length
                 if length < epsilon:
                     area = face.Area
-                    if area > largest_area:
-                        largest_area = area
-                        largest_face_name = face_name
+                    aligned_area_names.append((area, face_name))
+        aligned_area_names.sort(reverse=True)
+        sorted_face_names: Tuple[str, ...] = tuple(
+            [face_name for area, face_name in aligned_area_names])
+
         if tracing:
-            print(f"{tracing}<=get_aligned_faces_name({obj}, {normal})=>{largest_face_name}")
-        return (largest_face_name,)
+            print(f"{tracing}<=get_aligned_faces_name({obj}, {normal})=>{sorted_face_names}")
+        return sorted_face_names
 
 
 # main():
