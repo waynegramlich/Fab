@@ -86,6 +86,9 @@ Attributes:
 * ThreadName (str): A thread selection (e.g. "M3x.5", "#4-40", "1/4-20")
 * Options (Tuple[FabOption, ...]): Various Head/Tail options for fastener stack
 
+Constructor:
+* FabFasten(Name, ThreadName, Options)
+
 ### <a name="fabjoiner----get-hash"></a>1.1 `FabFasten.`get_hash():
 
 FabFasten.get_hash(self) -> Tuple[Any, ...]:
@@ -109,6 +112,9 @@ Attributes:
 * *Shape* (str): The FabHead shape.
 * *Drive* (str): The FabHead drive.
 
+Constructor:
+* FabHead(Name, Detail, Material, Shape, Drive)
+
 
 ## <a name="fabjoiner--fabjoin"></a>3 Class FabJoin:
 
@@ -118,6 +124,9 @@ Attributes:
 * Fasten (FabFasten): FabFasten object to use for basic dimensions.
 * Start (Vector): Start point for FabJoin.
 * End (Vector): End point for FabJoin.
+
+Constructor:
+* FabJoin(Name, Fasten, Start, End)
 
 ### <a name="fabjoiner----get-hash"></a>3.1 `FabJoin.`get_hash():
 
@@ -143,6 +152,9 @@ Attributes:
 * Thickness (float): The nut thickness in millimeters.
 * Material (FabMaterial): The nut material
 
+Constructor:
+* FabNut(Name, Detail, Sides, Width, Thickness, Material)
+
 
 ## <a name="fabjoiner--faboption"></a>5 Class FabOption:
 
@@ -150,6 +162,9 @@ Base class for FabFasten options (e.g. washers, nuts, etc...).
 Attributes:
 * *Name* (str): The option name.
 * *Detail* (str): More detailed information about the option.
+
+Constructor:
+* This is meant to be sub-classed, so this class should never be constructed manually.
 
 ### <a name="fabjoiner----get-hash"></a>5.1 `FabOption.`get_hash():
 
@@ -177,6 +192,9 @@ Attributes:
 * *Kind* (str): The washer kind -- one of following FabWasher constants --
   `PLAIN`, `INTERNAL_LOCK`, `EXTERNAL_LOCK`, or `SPLIT_LOCK`.
 
+Constructor:
+* FabNut(Name, Detail, Inner, Outer, Thickness, Material, Kind)
+
 
 ## <a name="fabjoiner--fab-drillchoice"></a>7 Class Fab_DrillChoice:
 
@@ -198,21 +216,28 @@ Attributes:
 * *ImperialDiameter (float): This is the drill diameter in millimeters.
    This is 0.0 if no metric drill is specified.
 
+Constructor:
+* Fab_DrillChoice(MetricName, MetricDiameter, ImperialName, ImperialDiameter)
+
 
 ## <a name="fabjoiner--fab-drilltap"></a>8 Class Fab_DrillTap:
 
 Drill/Tap diameters and drill selections.
 Attributes:
 * *Name* (str): Name of drill/tap selections.
-* *Thead75* (Fab_DrillChoice):  The drill choice for 75% thread operations.
-* *Thead50* (Fab_DrillChoice):  The drill choice for 50% thread operations.
+* *Thread75* (Fab_DrillChoice):  The drill choice for 75% thread operations.
+* *Thread50* (Fab_DrillChoice):  The drill choice for 50% thread operations.
 * *Close* (Fab_DrillChoice):  The drill choice for a close fit hole.
 * *Standard* (Fab_DrillChoice):  The drill choice for a standard fit hole.
+
+Constructor:
+* Fab_DrillTap(Name, Thread75, Thread50, Close, Standard)
 
 
 ## <a name="fabjoiner--fab-fastentables"></a>9 Class Fab_FastenTables:
 
 Tables of metric/imperial screws and bolts.
+This is a class only object, so no constructor is ever used.
 
 
 ## <a name="fabjoiner--fab-fastener"></a>10 Class Fab_Fastener:
@@ -228,6 +253,10 @@ Attributes:
 * *CloseDrill* (str): The close fit drill name.
 * *StandardDiameter* (float): The standard fit hole diameter.
 * *StandardDrill* (str): The standard fit drill name.
+
+Constructor:
+* FabFastener(Name, Thread50Diameter, Thread50Drill, Thread75Diameter, Thread75Drill,
+  CloseDiameter, CloseDrill, StandardDiameter, StandardDrill)
 
 
 ## <a name="fabjoiner--fab-idrilltap"></a>11 Class Fab_IDrillTap:
@@ -272,6 +301,10 @@ Attributes:
 * *StandardName (str): The drill name to use for looser hole.
 * *StandardInch (float): The *StandardName* drill diameter in inches.
 
+Constructor:
+* Fab_IDrillTap(Size, MajorDiameter, ThreadsPerInch, Series, MinorDiameter, Thread75Name,
+  Thread75Inch, Thread50Name, Thread50Inch, CloseName, CloseInch, StandardName, StandardInch)
+
 
 ## <a name="fabjoiner--fab-mdrilltap"></a>12 Class Fab_MDrillTap:
 
@@ -287,6 +320,9 @@ Attributes:
 * *IClose* (str): The preferred imperial drill for a close fit.
 * *MStandard* (float): The preferred metric drill for a standard fit.
 * *IStandard* (str): The preferred imperial drill for a standard fit.
+
+Constructor:
+* Fab_MDrillTap(MName, MPitch, M75, M50, MClose, IClose, MStandard, IStandard)
 
 
 

@@ -90,6 +90,9 @@ class Fab_MDrillTap(object):
     * *MStandard* (float): The preferred metric drill for a standard fit.
     * *IStandard* (str): The preferred imperial drill for a standard fit.
 
+    Constructor:
+    * Fab_MDrillTap(MName, MPitch, M75, M50, MClose, IClose, MStandard, IStandard)
+
     """
 
     MName: str
@@ -140,6 +143,9 @@ class Fab_DrillChoice(object):
     * *ImperialDiameter (float): This is the drill diameter in millimeters.
        This is 0.0 if no metric drill is specified.
 
+    Constructor:
+    * Fab_DrillChoice(MetricName, MetricDiameter, ImperialName, ImperialDiameter)
+
     """
     MetricName: str
     MetricDiameter: float
@@ -162,10 +168,14 @@ class Fab_DrillTap(object):
 
     Attributes:
     * *Name* (str): Name of drill/tap selections.
-    * *Thead75* (Fab_DrillChoice):  The drill choice for 75% thread operations.
-    * *Thead50* (Fab_DrillChoice):  The drill choice for 50% thread operations.
+    * *Thread75* (Fab_DrillChoice):  The drill choice for 75% thread operations.
+    * *Thread50* (Fab_DrillChoice):  The drill choice for 50% thread operations.
     * *Close* (Fab_DrillChoice):  The drill choice for a close fit hole.
     * *Standard* (Fab_DrillChoice):  The drill choice for a standard fit hole.
+
+    Constructor:
+    * Fab_DrillTap(Name, Thread75, Thread50, Close, Standard)
+
     """
 
     Name: str
@@ -227,6 +237,10 @@ class Fab_IDrillTap(object):
     * *StandardName (str): The drill name to use for looser hole.
     * *StandardInch (float): The *StandardName* drill diameter in inches.
 
+    Constructor:
+    * Fab_IDrillTap(Size, MajorDiameter, ThreadsPerInch, Series, MinorDiameter, Thread75Name,
+      Thread75Inch, Thread50Name, Thread50Inch, CloseName, CloseInch, StandardName, StandardInch)
+
     """
 
     Size: str
@@ -277,6 +291,10 @@ class Fab_Fastener(object):
     * *StandardDiameter* (float): The standard fit hole diameter.
     * *StandardDrill* (str): The standard fit drill name.
 
+    Constructor:
+    * FabFastener(Name, Thread50Diameter, Thread50Drill, Thread75Diameter, Thread75Drill,
+      CloseDiameter, CloseDrill, StandardDiameter, StandardDrill)
+
     """
 
     Name: str
@@ -307,6 +325,7 @@ class Fab_Fastener(object):
 class Fab_FastenTables(object):
     """Fab_FastenTables: Tables of metric/imperial screws and bolts.
 
+    This is a class only object, so no constructor is ever used.
     """
 
     # [Metric Tap & Clearance Drill Sizes]
@@ -757,6 +776,8 @@ class FabOption(object):
     * *Name* (str): The option name.
     * *Detail* (str): More detailed information about the option.
 
+    Constructor:
+    * This is meant to be sub-classed, so this class should never be constructed manually.
     """
 
     Name: str  # FabOption name
@@ -795,6 +816,9 @@ class FabHead(FabOption):
     * *Material* (FabMaterial): The FabHead fastener material.
     * *Shape* (str): The FabHead shape.
     * *Drive* (str): The FabHead drive.
+
+    Constructor:
+    * FabHead(Name, Detail, Material, Shape, Drive)
 
     """
 
@@ -861,6 +885,9 @@ class FabNut(FabOption):
     * Thickness (float): The nut thickness in millimeters.
     * Material (FabMaterial): The nut material
 
+    Constructor:
+    * FabNut(Name, Detail, Sides, Width, Thickness, Material)
+
     """
 
     Sides: int  # The Nut sides (either, 4 or 6).
@@ -922,6 +949,9 @@ class FabWasher(FabOption):
     * *Material* (FabMaterial): The Material the washer is made out of.
     * *Kind* (str): The washer kind -- one of following FabWasher constants --
       `PLAIN`, `INTERNAL_LOCK`, `EXTERNAL_LOCK`, or `SPLIT_LOCK`.
+
+    Constructor:
+    * FabNut(Name, Detail, Inner, Outer, Thickness, Material, Kind)
 
     """
 
@@ -986,6 +1016,9 @@ class FabFasten(object):
     * Name (str): FabFasten Name.
     * ThreadName (str): A thread selection (e.g. "M3x.5", "#4-40", "1/4-20")
     * Options (Tuple[FabOption, ...]): Various Head/Tail options for fastener stack
+
+    Constructor:
+    * FabFasten(Name, ThreadName, Options)
 
     """
 
@@ -1246,6 +1279,9 @@ class FabJoin(object):
     * Fasten (FabFasten): FabFasten object to use for basic dimensions.
     * Start (Vector): Start point for FabJoin.
     * End (Vector): End point for FabJoin.
+
+    Constructor:
+    * FabJoin(Name, Fasten, Start, End)
 
     """
 
