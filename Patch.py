@@ -150,6 +150,14 @@ def main() -> None:
             "    if jobname is not None:",
         )
     })
+    patch(path_scripts_directory, "PathDrilling", {
+        "def Create(name, obj=None, parentJob=None):": (
+            "def Create(name, obj=None, parentJob=None, findAllHoles=True):",
+        ),
+        "    if obj.Proxy:": (
+            "    if obj.Proxy and findAllHoles:",
+        ),
+    })
     print(f"{modified} modifications made.")
 
 

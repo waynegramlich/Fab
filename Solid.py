@@ -903,17 +903,20 @@ class _Hole(_Operation):
     def to_json(self) -> Dict[str, Any]:
         """"""
         start_depth: float = self.StartDepth
+        extra_offset_modes: Tuple[str, ...] = ("2x Drill Tip", "Drill Tip", "None")
         json_dict: Dict[str, Any] = super().to_json()
         json_dict["HolesCount"] = self.HolesCount
         json_dict["StepFile"] = self.StepFile
+        json_dict["ToolControllerIndex"] = 1  # TODO Fix
         json_dict["_Active"] = True
         json_dict["_ClearanceHeight"] = self.StartDepth + 1.0  # TODO: Fix
         json_dict["_CoolantMode"] = "Flood"  # TODO: Fix
+        json_dict["_ExtraOffset"] = extra_offset_modes[2]
         json_dict["_FinalDepth"] = self.StartDepth - self.Depth
+        json_dict["_PeckDepth"] = 2.0  # TODO: Fix
         json_dict["_PeckEnabled"] = False
         json_dict["_SafeHeight"] = start_depth + 5.0  # TODO: Fix
         json_dict["_StartDepth"] = start_depth
-        json_dict["_ToolControllerIndex"] = 0  # TODO Fix
 
         return json_dict
 

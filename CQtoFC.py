@@ -355,7 +355,7 @@ class FabCQtoFC(object):
             profiles: Set[str] = set(profile.PropertiesList)
             pocket: Any = PathPocket.Create("IgnoreThisPocket")  # => "Path::FeaturePython".
             pockets: Set[str] = set(pocket.PropertiesList)
-            drilling: Any = PathDrilling.Create("IgnoreThisDrilling")
+            drilling: Any = PathDrilling.Create("IgnoreThisDrilling", findAllHoles=False)
             drillings: Set[str] = set(drilling.PropertiesList)
             commons: Set[str] = profiles & pockets & drillings
 
@@ -586,8 +586,7 @@ class FabCQtoFC(object):
         elif kind == "Pocket":
             self.process_pocket(json_dict, label, indent, tree_path, tracing=next_tracing)
         elif kind == "Drilling":
-            # self.process_drilling(json_dict, label, indent, tree_path, tracing=next_tracing)
-            pass
+            self.process_drilling(json_dict, label, indent, tree_path, tracing=next_tracing)
         else:
             message = f"'{kind}' not one of {allowed_kinds}"
             print(message)
@@ -730,7 +729,7 @@ class FabCQtoFC(object):
             "ExtraOffset": {},
             "InverseAngle": {"ignore": None},
             "Locations": {"ignore": None},
-            "PeckDepth": {},
+            "PeckDepth": {"type": float},
             "PeckEnabled": {},
             "RetractHeight": {"ignore": None},
             "ReturnLevel": {"ignore": None},
@@ -895,7 +894,7 @@ class FabCQtoFC(object):
 
         # Now create a PathDrilling object:
         job: Any = self.CurrentJob
-        drilling: Any = PathDrilling.Create(drilling_label, parentJob=job)
+        drilling: Any = PathDrilling.Create(drilling_label, parentJob=job, findAllHoles=False)
 
         # z_axis: Vector = Vector(0.0, 0.0, 1.0)
         # aligned_face_name: str = self.get_aligned_face_name(
