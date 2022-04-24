@@ -62,7 +62,7 @@ hardware.
 
 from dataclasses import dataclass, field
 from typeguard import check_type
-from typing import Any, cast, ClassVar, Dict, List, Tuple, Union
+from typing import Any, ClassVar, Dict, List, Tuple, Union
 
 from cadquery import Vector  # type: ignore
 
@@ -900,7 +900,7 @@ class FabNut(FabOption):
 # FabWasher:
 @dataclass(frozen=True)
 class FabWasher(FabOption):
-    """FabWahser: Represents a washer.
+    """FabWasher: Represents a washer.
 
     Constants:
     * PLAIN: Plain washer.
@@ -931,51 +931,22 @@ class FabWasher(FabOption):
     INTERNAL_LOCK = "INTERNAL_LOCK"
     EXTERNAL_LOCK = "EXTERNAL_LOCK"
     SPLIT_LOCK = "SPLIT_LOCK"
-
-    INIT_CHECKS = (
-        FabCheck("Name", ("+", str)),
-        FabCheck("Detail", ("+", str)),
-        FabCheck("Inner", (float,)),
-        FabCheck("Outer", (float,)),
-        FabCheck("Thickness", (float,)),
-        FabCheck("Material", (FabMaterial,)),
-        FabCheck("Kind", ("+", str,)),
-    )
+    KINDS = (PLAIN, INTERNAL_LOCK, EXTERNAL_LOCK, SPLIT_LOCK)
 
     # FabWasher:
     def __post_init__(self):
-        """Post process FabWasher looking for errors."""
-        # Check the arguments and do any requested *tracing*:
-        arguments = (self.Name, self.Detail, self.Inner, self.Outer, self.Thickness,
-                     self.Material, self.Kind)
-        value_error: str = FabCheck.check(arguments, FabWasher.INIT_CHECKS)
-        if value_error:
-            raise ValueError(value_error)
-        if self.Inner <= 0.0:
-            raise ValueError(f"Inner (={self.Inner}) is not positive")
-        if self.Outer <= 0.0:
-            raise ValueError(f"Outer (={self.Outer}) is not positive")
-        if self.Inner >= self.Outer:
-            raise ValueError(f"Inner (={self.Inner}) >= Outer (={self.Outer})")
-        if self.Thickness <= 0.0:
-            raise ValueError(f"Thickness (={self.Thickness}) is not positive")
-        kinds: Tuple[str, ...] = (
-            FabWasher.PLAIN,
-            FabWasher.INTERNAL_LOCK,
-            FabWasher.EXTERNAL_LOCK,
-            FabWasher.SPLIT_LOCK,
-        )
-        if self.Kind not in kinds:
-            raise ValueError(f"Kind (='{self.Kind}') is not one of {kinds}")
+        """Finish initialializing FabWasher."""
+        super().__post_init__()
+        check_type("FlatWasher.Inner", self.Inner, float)
+        check_type("FlatWasher.Outer", self.Outer, float)
+        check_type("FlatWasher.Thickness", self.Thickness, float)
+        check_type("FlatWasher.Material", self.Material, FabMaterial)
+        check_type("FlatWasher.Kind", self.Kind, str)
 
-    def __repr__(self) -> str:
-        """Return string representation of FabWasher."""
-        return self.__str__()
-
-    def __str__(self) -> str:
-        """Return string representation of FabWasher."""
-        return (f"FabWasher('{self.Name}', '{self.Detail}', {self.Inner}, {self.Outer}, "
-                f"{self.Thickness}, {self.Material}, '{self.Kind}')")
+        assert self.Inner > 0.0, f"Inner({self.Inner}) is not positive"
+        assert self.Outer > 0.0, f"Outer({self.Outer}) is not positive"
+        assert self.Inner < self.Outer, f"Inner({self.Inner}) not less that Outer({self.Outer})"
+        assert self.Kind in FabWasher.KINDS, f"Kind({self.Kind}) is not one of {FabWasher.KINDS}"
 
     @staticmethod
     def _unit_tests() -> None:
@@ -990,13 +961,6 @@ class FabWasher(FabOption):
         kind: str = FabWasher.PLAIN
         washer: FabWasher = FabWasher(name, detail, inner, outer, thickness, material, kind)
 
-        # Ensure that the __str__() method works:
-        washer_text: str = (f"FabWasher('{name}', '{detail}', "
-                            f"{inner}, {outer}, {thickness}, {material}, '{kind}')")
-        assert f"{washer}" == washer_text, (f"{washer}", washer_text)
-        assert str(washer) == washer_text
-        assert washer.__repr__() == washer_text
-
         # Access all of the attributes:
         assert washer.Name == name, washer.Name
         assert washer.Detail == detail, washer.Detail
@@ -1006,64 +970,10 @@ class FabWasher(FabOption):
         assert washer.Material is material, washer.Material
         assert washer.Kind == kind, washer.Kind
 
-        # Do argument checks:
-        try:
-            # Empty name error:
-            FabWasher("", detail, inner, outer, thickness, material, kind)
-        except ValueError as value_error:
-            assert str(value_error) == "[0]: Argument 'Name' has no length", str(value_error)
-
-        try:
-            # Empty detail errora:
-            FabWasher(name, "", inner, outer, thickness, material, kind)
-        except ValueError as value_error:
-            assert str(value_error) == "[1]: Argument 'Detail' has no length", str(value_error)
-
-        try:
-            # Bad Inner:
-            washer = FabWasher(name, detail, 0.0, outer, thickness, material, kind)
-        except ValueError as value_error:
-            assert str(value_error) == "Inner (=0.0) is not positive", str(value_error)
-
-        try:
-            # Bad Outer:
-            FabWasher(name, detail, inner, 0.0, thickness, material, kind)
-        except ValueError as value_error:
-            assert str(value_error) == "Outer (=0.0) is not positive", str(value_error)
-
-        try:
-            # Inner >= Outer:
-            FabWasher(name, detail, 10.0, 5.0, 0.0, material, kind)
-        except ValueError as value_error:
-            assert str(value_error) == "Inner (=10.0) >= Outer (=5.0)", str(value_error)
-
-        try:
-            # Bad Thickness:
-            FabWasher(name, detail, inner, outer, 0.0, material, kind)
-        except ValueError as value_error:
-            assert str(value_error) == "Thickness (=0.0) is not positive", str(value_error)
-
-        try:
-            # Bad Material:
-            FabWasher(name, detail, inner, outer, thickness, cast(FabMaterial, 0), kind)
-        except ValueError as value_error:
-            assert str(value_error) == (
-                "Argument 'Material' is int which is not one of ['FabMaterial']"
-            ), str(value_error)
-
-        try:
-            # Bad kind:
-            FabWasher(name, detail, inner, outer, thickness, material, "BOGUS")
-        except ValueError as value_error:
-            assert str(value_error) == (
-                "Kind (='BOGUS') is not one of "
-                "('PLAIN', 'INTERNAL_LOCK', 'EXTERNAL_LOCK', 'SPLIT_LOCK')"
-            ), str(value_error)
-
 
 # FabFasten:
 @dataclass(frozen=True)
-class FabFasten:
+class FabFasten(object):
     """FabFastner: The class of Fastener to use.
 
     Attributes:

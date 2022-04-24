@@ -190,7 +190,7 @@ Return FabOption hash.
 
 ## <a name="join--fabwasher"></a>9 Class FabWasher:
 
-FabWahser: Represents a washer.
+Represents a washer.
 Constants:
 * PLAIN: Plain washer.
 * INTERNAL_LOCK: Internal tooth lock washer.
