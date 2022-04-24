@@ -261,10 +261,10 @@ class Fab_IDrillTap(object):
         check_type("Fab_IDrillTap.StandardInch", self.StandardInch, float)
 
 
-# _Fastener:
+# Fab_Fastener:
 @dataclass
-class _Fastener(object):
-    """_Fastener: Imperial/Metric fastener information.
+class Fab_Fastener(object):
+    """Fab_Fastener: Imperial/Metric fastener information.
 
     Attributes:
     * *Name* (str): The Fastener name.
@@ -289,23 +289,23 @@ class _Fastener(object):
     StandardDiameter: float
     StandardDrill: str
 
-    # _Fastener.__post_init__():
+    # Fab_Fastener.__post_init__():
     def __post_init__(self) -> None:
-        """Finish initializing a _Fastener."""
-        check_type("_Fastener.Name", self.Name, str)
-        check_type("_Fastener.Thread50Diameter", self.Thread50Diameter, float)
-        check_type("_Fastener.Thread50Drill", self.Thread50Drill, str)
-        check_type("_Fastener.Thread75Diameter", self.Thread75Diameter, float)
-        check_type("_Fastener.Thread750Drill", self.Thread750Drill, str)
-        check_type("_Fastener.CloseDiameter", self.CloseDiameter, float)
-        check_type("_Fastener.CloseDrill", self.CloseDrill, str)
-        check_type("_Fastener.StandardDiameter", self.StandardDiameter, float)
-        check_type("_Fastener.StandardDrill", self.StandardDrill, str)
+        """Finish initializing a Fab_Fastener."""
+        check_type("Fab_Fastener.Name", self.Name, str)
+        check_type("Fab_Fastener.Thread50Diameter", self.Thread50Diameter, float)
+        check_type("Fab_Fastener.Thread50Drill", self.Thread50Drill, str)
+        check_type("Fab_Fastener.Thread75Diameter", self.Thread75Diameter, float)
+        check_type("Fab_Fastener.Thread750Drill", self.Thread750Drill, str)
+        check_type("Fab_Fastener.CloseDiameter", self.CloseDiameter, float)
+        check_type("Fab_Fastener.CloseDrill", self.CloseDrill, str)
+        check_type("Fab_Fastener.StandardDiameter", self.StandardDiameter, float)
+        check_type("Fab_Fastener.StandardDrill", self.StandardDrill, str)
 
 
-# FabFastenTables:
-class FabFastenTables(object):
-    """FabFastenTables: Tables of metric/imperial screws and bolts.
+# Fab_FastenTables:
+class Fab_FastenTables(object):
+    """Fab_FastenTables: Tables of metric/imperial screws and bolts.
 
     """
 
@@ -1208,7 +1208,7 @@ class FabFasten(object):
     # FabFasten.get_diameter():
     def get_diameter(self, kind: str) -> float:
         """Return actual diameter based on request hole kind."""
-        drill_tap: Fab_DrillTap = FabFastenTables.lookup(self.ThreadName)
+        drill_tap: Fab_DrillTap = Fab_FastenTables.lookup(self.ThreadName)
         drill_choice: Fab_DrillChoice
         if kind == "thread":
             drill_choice = drill_tap.Thread75
