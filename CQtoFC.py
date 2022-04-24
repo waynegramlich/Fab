@@ -64,6 +64,7 @@ _ = FreeCADGui
 
 # import Path  # type: ignore
 # import PathScripts  # type: ignore
+from FreeCAD import Part  # type: ignore
 from PathScripts import PathOp, PathUtils  # type: ignore
 from PathScripts import PathToolBit, PathDrilling  # type: ignore
 from PathScripts import PathJob, PathProfile, PathPostProcessor, PathUtil  # type: ignore
@@ -869,17 +870,19 @@ class FabCQtoFC(object):
             print(f"{tracing}{project_document=} {project_document.Label=}")
         # TODO: refactor Step file extraction():
         step = cast(str, self.key_verify(
-            "StepFile", json_dict, str, tree_path, "Pocket.StepFile"))
-        step_file: FilePath = FilePath(step)
+            "StepFile", json_dict, str, tree_path, "Drilling.StepFile"))
+        holes_count = cast(int, self.key_verify(
+            "HolesCount", json_dict, int, tree_path, "Drilling.HolesCount"))
+        step_file_path: FilePath = FilePath(step)
         if tracing:
-            print(f"{tracing}{step_file=}")
-            print(f"{tracing}{step_file.stem=}")
-        if not step_file.exists():
-            raise RuntimeError(f"{step_file} does not exits.")
+            print(f"{tracing}{step_file_path=}")
+            print(f"{tracing}{step_file_path.stem=}")
+        if not step_file_path.exists():
+            raise RuntimeError(f"{step_file_path} does not exits.")
         FCImport.insert(step, project_document.Label)
-        drilling_label: str = step_file.stem[:-18]  # strip off '__XXXXXXXXXXXXXXXX'
+        drilling_label: str = step_file_path.stem[:-18]  # strip off '__XXXXXXXXXXXXXXXX'
         if tracing:
-            print(f"{tracing}{step_file=}")
+            print(f"{tracing}{step_file_path=}")
             print(f"{tracing}{drilling_label=}")
         drilling_solid: Any = project_document.getObject(drilling_label)
         if tracing:
@@ -897,11 +900,37 @@ class FabCQtoFC(object):
         job: Any = self.CurrentJob
         drilling: Any = PathDrilling.Create(drilling_label, parentJob=job, findAllHoles=False)
 
+        # This code was adapted from PathCircularHoleBase.holePosition():
+        # Iterate through each *face_shape* in *drilling_solid*:
+        hole_face_names: List[str] = []
+        solid_shape: Any = drilling_solid.Shape
+        for face_index in range(len(solid_shape.Faces)):
+            face_name: str = f"Face{face_index+1}"
+            face_shape: Any = solid_shape.getElement(face_name)
+
+            # Dispatch on *shape_type*:
+            shape_type: str = face_shape.ShapeType
+            if shape_type == "Vertex":
+                hole_face_names.append(face_name)
+            elif shape_type == "Edge" and hasattr(face_shape.Curve, "Center"):
+                hole_face_names.append(face_name)
+            elif shape_type == "Face":
+                if hasattr(face_shape.Surface, "Center"):
+                    hole_face_names.append(face_name)
+                # elif (len(face_shape.Edges) == 1 and
+                #       type(face_shape.Edges[0].Curve) == Part.Circle):
+                #     hole_face_names.append(face_name)
+        if len(hole_face_names) != holes_count:
+            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            print(f"{len(hole_face_names)=} != {holes_count=}")
         # z_axis: Vector = Vector(0.0, 0.0, 1.0)
-        # aligned_face_name: str = self.get_aligned_face_name(
+        # aligned_face_names: Tuple[str, ...] = self.get_aligned_face_names(
         #     drilling_solid, z_axis, tracing=next_tracing)
-        # _ = aligned_face_name
-        # drilling.Base = (drilling_solid, aligned_face_name)
+        # if tracing:
+        #     print(f"{tracing}################################################################")
+        #     print(f"{tracing}Drilling: {aligned_face_names=}")
+
+        drilling.Base = (drilling_solid, hole_face_names)
         drilling_infos: Dict[str, Any] = self.get_drilling_infos()
         self.process_json(json_dict, drilling, drilling_infos, tracing=next_tracing)
         drilling.recompute()
@@ -1040,20 +1069,33 @@ class FabCQtoFC(object):
         """Return normal aligned faces from largest to smallest."""
         if tracing:
             print(f"{tracing}=>get_aligned_face_name({obj}, {normal})")
+        epsilon: float = 1.0e-8
+        if abs(normal.Length - 1.0) > epsilon:
+            normal = normal / normal.Length
+        reversed_normal: Vector = -normal
+
         assert hasattr(obj, "Shape")
         shape = obj.Shape
         face_index: int
-        epsilon: float = 1.0e-8
         aligned_area_names: List[Tuple[float, str]] = []
-        for face_index in range(len(shape.Faces)):
-            face_name: str = f"Face{face_index+1}"
-            face: Any = shape.getElement(face_name)
-            if face.Orientation == 'Forward':
-                delta: Vector = face.Surface.Axis - normal
-                length: float = delta.Length
-                if length < epsilon:
-                    area = face.Area
-                    aligned_area_names.append((area, face_name))
+        face_file: IO[str]
+        with open(f"/tmp/{obj.Label}_faces.txt", "w") as face_file:
+            for face_index in range(len(shape.Faces)):
+                face_name: str = f"Face{face_index+1}"
+                face: Any = shape.getElement(face_name)
+                face_file.write(
+                    f"face[{face_index}]: {face.Orientation=} {face.Surface.Axis=} {face.Area=}\n")
+                test_normal: Vector
+                orientation: str = face.Orientation
+                if orientation == "Forward":
+                    test_normal = normal
+                elif orientation == "Reversed":
+                    test_normal = reversed_normal
+                else:
+                    raise RuntimeError(f"{orientation} is neither 'Forward' or 'Reversed'")
+                surface_normal: Vector = face.Surface.Axis
+                if abs((surface_normal - test_normal).Length) < epsilon:
+                    aligned_area_names.append((face.Area, face_name))
         aligned_area_names.sort(reverse=True)
         sorted_face_names: Tuple[str, ...] = tuple(
             [face_name for area, face_name in aligned_area_names])
