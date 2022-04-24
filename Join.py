@@ -66,7 +66,7 @@ from typing import Any, ClassVar, Dict, List, Tuple, Union
 
 from cadquery import Vector  # type: ignore
 
-from Utilities import FabCheck, FabMaterial
+from Utilities import FabMaterial
 
 
 # _MDrillTap
@@ -876,6 +876,7 @@ class FabNut(FabOption):
         assert self.Width > 0.0, f"Width ({self.Width}) is not positive"
         assert self.Thickness > 0.0, f"Thickness ({self}) is not positive"
 
+    # FabNut._unit_tests():
     @staticmethod
     def _unit_tests() -> None:
         """Run FabNut unit tests."""
@@ -933,7 +934,7 @@ class FabWasher(FabOption):
     SPLIT_LOCK = "SPLIT_LOCK"
     KINDS = (PLAIN, INTERNAL_LOCK, EXTERNAL_LOCK, SPLIT_LOCK)
 
-    # FabWasher:
+    # FabWasher.__post_init__():
     def __post_init__(self):
         """Finish initialializing FabWasher."""
         super().__post_init__()
@@ -948,6 +949,7 @@ class FabWasher(FabOption):
         assert self.Inner < self.Outer, f"Inner({self.Inner}) not less that Outer({self.Outer})"
         assert self.Kind in FabWasher.KINDS, f"Kind({self.Kind}) is not one of {FabWasher.KINDS}"
 
+    # FabWasher._unit_tests():
     @staticmethod
     def _unit_tests() -> None:
         """Perform FabWasher unit tests."""
@@ -974,7 +976,7 @@ class FabWasher(FabOption):
 # FabFasten:
 @dataclass(frozen=True)
 class FabFasten(object):
-    """FabFastner: The class of Fastener to use.
+    """FabFasten: The class of Fastener to use.
 
     Attributes:
     * Name (str): FabFasten Name.
@@ -1151,12 +1153,6 @@ class FabFasten(object):
     #  Tapered (angle)
     #  Reversed bool
 
-    INIT_CHECKS = (
-        FabCheck("Name", (str,)),
-        FabCheck("Profile", (str,)),
-        FabCheck("Size", (str,)),
-        FabCheck("Options", ("T", FabOption)),
-    )
     PROFILES = (
         ISO_COARSE,
         ISO_FINE,
@@ -1171,25 +1167,9 @@ class FabFasten(object):
         M20, M22, M24, M27, M30, M36, M42, M48, M56, M68,
     )
 
-    # def __repr__(self) -> str:
-    #     """Return a string representation of an FabFasten."""
-    #     return self.__str__()
-
-    # def __str__(self) -> str:
-    #     """Return a string representation of an FabFasten."""
-    #     return f"FabFasten('{self.Name}', '{self.Profile}', '{self.Size}')"
-
-    POST_INIT_CHECKS = (
-        FabCheck("Name", ("+", str)),
-        # FabCheck("Profile", ("+", str)),
-        # FabCheck("Size", ("+", str)),
-        FabCheck("ThreadName", ("+", str)),
-        FabCheck("Options", ("T", FabOption)),
-    )
-
     # FabFasten.__post_init__():
     def __post_init__(self):
-        """Verify that FabFasten is properly initialized.
+        """Finish initializing FabFasten.
 
         Arguments:
         * Profile (str): Profile to use.  Select from the following predefined FabFasten
@@ -1204,22 +1184,9 @@ class FabFasten(object):
           `M4`, `M5`, `M6`, `M8`, `M10`, `M12`, `M14`, `M16`, `M18`, `M20`, `M22`, `M24`, `M27`,
           `M30`, `M36`, `M42`, `M48`, `M56`, `M68`.
         """
-        arguments = (self.Name, self.ThreadName, self.Options)
-        value_error: str = FabCheck.check(arguments, FabFasten.POST_INIT_CHECKS)
-        if value_error:
-            raise ValueError(value_error)
-        # if self.Profile not in FabFasten.PROFILES:
-        #     raise ValueError(f"'{self.Profile}' is not one of {FabFasten.PROFILES}")
-        # if self.Size not in FabFasten.SIZES:
-        #     raise ValueError(f"'{self.Size}' is not a valid size")
-
-        # Ensure that Options is a tuple and only contains FabOptions:
-        if not isinstance(self.Options, tuple):
-            raise ValueError("Options is not a tuple")
-        option: FabOption
-        for option in self.Options:
-            if not isinstance(option, FabOption):
-                raise ValueError(f"{option} is not an FabOption")
+        check_type("FabFasten.Name", self.Name, str)
+        check_type("FabFasten.ThreadName", self.ThreadName, str)
+        check_type("FabFasten.Options", self.Options, Tuple[FabOption, ...])
 
     # FabFasten.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:
@@ -1258,21 +1225,11 @@ class FabFasten(object):
     def _unit_tests() -> None:
         """Run FabFasten unit tests."""
         name: str = "#4-40"
-        # profile: str = FabFasten.UTS_FINE
-        # size: str = FabFasten.UTS_N4
         fasten: FabFasten = FabFasten(name, "#4-40", ())
 
-        # Verify __repr__() works:
-        assert f"{fasten}" == "FabFasten(Name='#4-40', ThreadName='#4-40')", f"{fasten}"
-
-        # Empty profile:
-        # try:
-        #     FabFasten(name, "bad", ())
-        # except ValueError as value_error:
-        #     got: str = str(value_error)
-        #     want: str = ("'bad' is not one of ('ISO Metric Coarse', 'ISO Metric FINE', "
-        #                  "'UTS Coarse', 'UTS Fine', 'UTS Extra Fine')")
-        #     assert want == got, (want, got)
+        assert fasten.Name == name
+        assert fasten.ThreadName == name
+        assert fasten.Options == ()
 
 
 # FabJoin:
@@ -1292,12 +1249,6 @@ class FabJoin(object):
     _Fasten: FabFasten  # Parent FabFasten
     _Start: Vector  # Start point (near screw/bolt head)
     _End: Vector  # End point (ene screw/bolt tip)
-
-    POST_INIT_CHECKS = (
-        FabCheck("Fasten", (FabFasten,)),
-        FabCheck("Start", (Vector,)),
-        FabCheck("End", (Vector,)),
-    )
 
     # FabJoin.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:

@@ -105,7 +105,7 @@ Attributes:
 
 ## <a name="join--fabfasten"></a>3 Class FabFasten:
 
-FabFastner: The class of Fastener to use.
+The class of Fastener to use.
 Attributes:
 * Name (str): FabFasten Name.
 * ThreadName (str): A thread selection (e.g. "M3x.5", "#4-40", "1/4-20")
