@@ -121,7 +121,6 @@ Attributes:
   * TS (Vector): Center of Top South edge.
   * TW (Vector): Center of Top West edge.
 * The other attributes:
-  * BB (BoundBox): The FreeCAD BoundBox object.
   * C (Vector): Center point.
   * DB (Vector): Bottom direction (i.e. B - C)
   * DE (Vector): East direction (i.e. E - C)

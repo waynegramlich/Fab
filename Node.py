@@ -131,7 +131,6 @@ class FabBox(object):
       * TS (Vector): Center of Top South edge.
       * TW (Vector): Center of Top West edge.
     * The other attributes:
-      * BB (BoundBox): The FreeCAD BoundBox object.
       * C (Vector): Center point.
       * DB (Vector): Bottom direction (i.e. B - C)
       * DE (Vector): East direction (i.e. E - C)
@@ -393,11 +392,6 @@ class FabBox(object):
         return Vector((self._XMin + self._XMax) / 2.0, self._YMin, self._ZMax)
 
     # Miscellaneous attributes:
-
-    @property
-    def BB(self) -> "BoundBox":
-        """Return a corresponding FreeCAD BoundBox."""
-        return BoundBox(self._XMin, self._YMin, self._ZMin, self._XMax, self._YMax, self._ZMax)
 
     @property
     def C(self) -> Vector:
@@ -705,12 +699,6 @@ class FabBox(object):
         # FreeCAD.BoundBox.__eq__() appears to only compare ids for equality.
         # Thus, it is necessary to test that each value is equal by hand.
         box.enclose((bound_box,))
-        assert box.BB.XMin == bound_box.XMin
-        assert box.BB.YMin == bound_box.YMin
-        assert box.BB.ZMin == bound_box.ZMin
-        assert box.BB.XMax == bound_box.XMax
-        assert box.BB.YMax == bound_box.YMax
-        assert box.BB.ZMax == bound_box.ZMax
 
         assert box.XMin == bound_box.XMin
         assert box.YMin == bound_box.YMin
@@ -759,9 +747,6 @@ class FabBox(object):
 
         # Do the miscellaneous attributes:
         assert check(box.C, 0, 0, 0), "C"
-        assert isinstance(box.BB, BoundBox), "BB error"
-        assert check(box.BB.Center, 0, 0, 0), "BB"
-        assert box.C == box.BB.Center, "C != Center"
         assert box.DX == 2.0, "DX"
         assert box.DY == 4.0, "DY"
         assert box.DZ == 6.0, "DZ"
@@ -777,7 +762,6 @@ class FabBox(object):
         bsw: Vector = Vector(-1, -2, -3)
         new_box: FabBox = FabBox()
         new_box.enclose((tne, bsw))
-        assert f"{new_box.BB}" == f"{box.BB}"
         next_box: FabBox = FabBox()
         next_box.enclose((bound_box, new_box))
         assert next_box.TNE == tne and next_box.BSW == bsw
