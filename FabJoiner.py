@@ -70,7 +70,7 @@ from typing import Any, ClassVar, Dict, List, Tuple, Union
 
 from cadquery import Vector  # type: ignore
 
-from Utilities import FabMaterial
+from FabUtilities import FabMaterial
 
 
 # Fab_MDrillTap:

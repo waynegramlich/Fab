@@ -26,7 +26,7 @@ from cadquery import Vector  # type: ignore
 from Geometry import FabCircle, FabGeometry, FabGeometryContext, FabPlane, FabQuery
 from FabJoiner import FabFasten, FabJoin
 from Node import FabBox, FabNode, _NodeProduceState
-from Utilities import FabColor, FabToolController
+from FabUtilities import FabColor, FabToolController
 
 # The *_suppress_stdout* function is based on code from:
 #   [I/O Redirect](https://stackoverflow.com/questions/4675728/redirect-stdout-to-a-file-in-python)

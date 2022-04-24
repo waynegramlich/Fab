@@ -14,14 +14,14 @@ SAFE_MODULES := \
     BOM \
     Doc \
     FabJoiner \
+    FabUtilities \
     Geometry \
     Node \
     Project \
     Shop \
     Solid \
     TarSync \
-    Test \
-    Utilities
+    Test
 NON_SAFE_MODULES := \
     CNC
 MODULES := \

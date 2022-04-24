@@ -48,7 +48,7 @@ from typing import Any, cast, Dict, IO, List, Sequence, Set, Tuple, Union
 
 from cadquery import Vector  # type: ignore
 
-from Utilities import FabToolController
+from FabUtilities import FabToolController
 
 
 # TODO: Why is the class still in existence?

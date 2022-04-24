@@ -202,7 +202,7 @@ The basic work flow is done in phases:
 
 ## Python Modules <a name="python-modules"></a>
 
-TODO: (Reconcile Commonly USed Fab Classes with this section.)
+TODO: (Reconcile Commonly Used Fab Classes with this section.)
 
 The (current) main Python modules are:
 
@@ -218,7 +218,7 @@ The (current) main Python modules are:
 * [Node](docs/Node.md):
   The base FabNode class and associated FabBox class for describing bounding boxes.
 
-* [Utilities](doc/Utilities.md):
+* [FabUtilities](doc/FabUtilities.md):
   This contains some utility classes like FabColor and FabMaterial.
 
 Additional Python modules are:
