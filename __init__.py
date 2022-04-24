@@ -229,7 +229,7 @@ Additional Python modules are:
 * [CNC](docs/CNC.md):
   Classes for accessing the FreeCad Path CNC G-code generation library.
 
-* [Join](docs/Join.md):
+* [FabJoiner](docs/FabJoiner.md):
   Classes for defining fastener stacks of screws, bolts, washers, nuts, etc.
 
 * [Doc](docs/Doc.md):
@@ -242,7 +242,7 @@ Additional Python modules are:
 
 The Fab project is implemented using both Python type hints and Python data classes.
 This section briefly discusses Python type hints and
-then goes into significantly more detail on using Python data classes and some of there "quirks".
+then goes into significantly more detail on using Python data classes and some of their "quirks".
 This discussion is in preparation for a simple Fab example in the following section.
 
 In short, Python type hints are based on importing the Python `typing` module and
