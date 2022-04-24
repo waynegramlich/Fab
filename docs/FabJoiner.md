@@ -60,34 +60,24 @@ hardware.
 
 ## Table of Contents (alphabetical order):
 
-* 1 Class: [FabDrillTap](#fabjoiner--fabdrilltap):
-* 2 Class: [FabFasten](#fabjoiner--fabfasten):
-  * 2.1 [get_hash()](#fabjoiner----get-hash): Return FabFasten hash.
-  * 2.2 [get_diameter()](#fabjoiner----get-diameter): Return actual diameter based on request hole kind.
-* 3 Class: [FabFastenTables](#fabjoiner--fabfastentables):
-* 4 Class: [FabHead](#fabjoiner--fabhead):
-* 5 Class: [FabJoin](#fabjoiner--fabjoin):
-  * 5.1 [get_hash()](#fabjoiner----get-hash): Return FabJoin hash.
-  * 5.2 [normal_aligned()](#fabjoiner----normal-aligned): Return whether the normal is aligned with the FabJoin.
-* 6 Class: [FabNut](#fabjoiner--fabnut):
-* 7 Class: [FabOption](#fabjoiner--faboption):
-  * 7.1 [get_hash()](#fabjoiner----get-hash): Return FabOption hash.
-* 8 Class: [FabWasher](#fabjoiner--fabwasher):
-* 9 Class: [Fab_DrillChoice](#fabjoiner--fab-drillchoice):
-* 10 Class: [Fab_MDrillTap](#fabjoiner--fab-mdrilltap):
+* 1 Class: [FabFasten](#fabjoiner--fabfasten):
+  * 1.1 [get_hash()](#fabjoiner----get-hash): Return FabFasten hash.
+  * 1.2 [get_diameter()](#fabjoiner----get-diameter): Return actual diameter based on request hole kind.
+* 2 Class: [FabFastenTables](#fabjoiner--fabfastentables):
+* 3 Class: [FabHead](#fabjoiner--fabhead):
+* 4 Class: [FabJoin](#fabjoiner--fabjoin):
+  * 4.1 [get_hash()](#fabjoiner----get-hash): Return FabJoin hash.
+  * 4.2 [normal_aligned()](#fabjoiner----normal-aligned): Return whether the normal is aligned with the FabJoin.
+* 5 Class: [FabNut](#fabjoiner--fabnut):
+* 6 Class: [FabOption](#fabjoiner--faboption):
+  * 6.1 [get_hash()](#fabjoiner----get-hash): Return FabOption hash.
+* 7 Class: [FabWasher](#fabjoiner--fabwasher):
+* 8 Class: [Fab_DrillChoice](#fabjoiner--fab-drillchoice):
+* 9 Class: [Fab_DrillTap](#fabjoiner--fab-drilltap):
+* 10 Class: [Fab_IDrillTap](#fabjoiner--fab-idrilltap):
+* 11 Class: [Fab_MDrillTap](#fabjoiner--fab-mdrilltap):
 
-## <a name="fabjoiner--fabdrilltap"></a>1 Class FabDrillTap:
-
-Drill/Tap diameters and drill selections.
-Attributes:
-* *Name* (str): Name of drill/tap selections.
-* *Thead75* (Fab_DrillChoice):  The drill choice for 75% thread operations.
-* *Thead50* (Fab_DrillChoice):  The drill choice for 50% thread operations.
-* *Close* (Fab_DrillChoice):  The drill choice for a close fit hole.
-* *Standard* (Fab_DrillChoice):  The drill choice for a standard fit hole.
-
-
-## <a name="fabjoiner--fabfasten"></a>2 Class FabFasten:
+## <a name="fabjoiner--fabfasten"></a>1 Class FabFasten:
 
 The class of Fastener to use.
 Attributes:
@@ -95,25 +85,25 @@ Attributes:
 * ThreadName (str): A thread selection (e.g. "M3x.5", "#4-40", "1/4-20")
 * Options (Tuple[FabOption, ...]): Various Head/Tail options for fastener stack
 
-### <a name="fabjoiner----get-hash"></a>2.1 `FabFasten.`get_hash():
+### <a name="fabjoiner----get-hash"></a>1.1 `FabFasten.`get_hash():
 
 FabFasten.get_hash(self) -> Tuple[Any, ...]:
 
 Return FabFasten hash.
 
-### <a name="fabjoiner----get-diameter"></a>2.2 `FabFasten.`get_diameter():
+### <a name="fabjoiner----get-diameter"></a>1.2 `FabFasten.`get_diameter():
 
 FabFasten.get_diameter(self, kind: str) -> float:
 
 Return actual diameter based on request hole kind.
 
 
-## <a name="fabjoiner--fabfastentables"></a>3 Class FabFastenTables:
+## <a name="fabjoiner--fabfastentables"></a>2 Class FabFastenTables:
 
 Tables of metric/imperial screws and bolts.
 
 
-## <a name="fabjoiner--fabhead"></a>4 Class FabHead:
+## <a name="fabjoiner--fabhead"></a>3 Class FabHead:
 
 Represents the Head of the FabFastener.
 Attributes:
@@ -124,7 +114,7 @@ Attributes:
 * *Drive* (str): The FabHead drive.
 
 
-## <a name="fabjoiner--fabjoin"></a>5 Class FabJoin:
+## <a name="fabjoiner--fabjoin"></a>4 Class FabJoin:
 
 Specifies a single fastener instance.
 Attributes:
@@ -133,20 +123,20 @@ Attributes:
 * Start (Vector): Start point for FabJoin.
 * End (Vector): End point for FabJoin.
 
-### <a name="fabjoiner----get-hash"></a>5.1 `FabJoin.`get_hash():
+### <a name="fabjoiner----get-hash"></a>4.1 `FabJoin.`get_hash():
 
 FabJoin.get_hash(self) -> Tuple[Any, ...]:
 
 Return FabJoin hash.
 
-### <a name="fabjoiner----normal-aligned"></a>5.2 `FabJoin.`normal_aligned():
+### <a name="fabjoiner----normal-aligned"></a>4.2 `FabJoin.`normal_aligned():
 
 FabJoin.normal_aligned(self, test_normal: cadquery.occ_impl.geom.Vector) -> bool:
 
 Return whether the normal is aligned with the FabJoin.
 
 
-## <a name="fabjoiner--fabnut"></a>6 Class FabNut:
+## <a name="fabjoiner--fabnut"></a>5 Class FabNut:
 
 A class the represents a fastener nut.
 Attributes:
@@ -158,21 +148,21 @@ Attributes:
 * Material (FabMaterial): The nut material
 
 
-## <a name="fabjoiner--faboption"></a>7 Class FabOption:
+## <a name="fabjoiner--faboption"></a>6 Class FabOption:
 
 Base class for FabFasten options (e.g. washers, nuts, etc...).
 Attributes:
 * *Name* (str): The option name.
 * *Detail* (str): More detailed information about the option.
 
-### <a name="fabjoiner----get-hash"></a>7.1 `FabOption.`get_hash():
+### <a name="fabjoiner----get-hash"></a>6.1 `FabOption.`get_hash():
 
 FabOption.get_hash(self) -> Tuple[Any, ...]:
 
 Return FabOption hash.
 
 
-## <a name="fabjoiner--fabwasher"></a>8 Class FabWasher:
+## <a name="fabjoiner--fabwasher"></a>7 Class FabWasher:
 
 Represents a washer.
 Constants:
@@ -192,7 +182,7 @@ Attributes:
   `PLAIN`, `INTERNAL_LOCK`, `EXTERNAL_LOCK`, or `SPLIT_LOCK`.
 
 
-## <a name="fabjoiner--fab-drillchoice"></a>9 Class Fab_DrillChoice:
+## <a name="fabjoiner--fab-drillchoice"></a>8 Class Fab_DrillChoice:
 
 Preferred Metric and Imperial drill sizes.
 The final choice of hole sizes typically depends upon the available hardware.  In North
@@ -213,7 +203,61 @@ Attributes:
    This is 0.0 if no metric drill is specified.
 
 
-## <a name="fabjoiner--fab-mdrilltap"></a>10 Class Fab_MDrillTap:
+## <a name="fabjoiner--fab-drilltap"></a>9 Class Fab_DrillTap:
+
+Drill/Tap diameters and drill selections.
+Attributes:
+* *Name* (str): Name of drill/tap selections.
+* *Thead75* (Fab_DrillChoice):  The drill choice for 75% thread operations.
+* *Thead50* (Fab_DrillChoice):  The drill choice for 50% thread operations.
+* *Close* (Fab_DrillChoice):  The drill choice for a close fit hole.
+* *Standard* (Fab_DrillChoice):  The drill choice for a standard fit hole.
+
+
+## <a name="fabjoiner--fab-idrilltap"></a>10 Class Fab_IDrillTap:
+
+Imperial Screw/Bolt Drill Selection.
+The standard imperial screw/bolt major shaft diameters are measured in inches.
+The three primary characteristics are:
+* Major shaft diameter:
+  The major shaft diameters that are less than 0.25in are given "number" names "000", "00", "0",
+  "1", "2", through "12".  There is no "7", "9", or "11".  After 0.25in, sizes are specified
+  as fraction inches -- "1/4", "5/16", "3/8", ..., "1-3/4".
+* Threads Pitch:
+  The thread pitch is measured in threads per inch and is always an integer.
+* Pitch Series:
+  The three imperial pitch series that specify the threads per inch for a screw/bolt.
+  The three series are course (NC), fine (NF), extremely fine (NEF).  There are also
+  some pitch values that are non standard (NS), but still available.
+  While screw/bolts are available in all three series, most are restricted to only one or
+  two of the thread series.
+
+Imperial drill sizes are number drills (1-80), letter drills (A-Z), and fractional drills
+(3/64 - 1-3/4.)  The drill diameters of these series all overlap.  Many Imperial drill sets
+come with selections of all three drill series.
+
+Attributes:
+* *Size* (str):
+  This is the "number" or "fractional" shaft size (e.g. "000", "0", "1/4", "1-1/4".)
+* *MajorDiameter* (float):
+   This is the major shaft diameter in inches.
+* *ThreadsPerInch* (int):
+  This is the threads pitch in thread per inch.  It is always an integer.
+* *Series* (str):
+   This the pitch series -- "NF", "NS", "NC" or "NS".
+   There are a few "standard" pitches are non-standard that are marked as "-".
+* *MinorDiameter* (float): This is the inner thread diameter in inches.
+* *Thread75Name* (str): The drill name to use for 75% threading in soft materials.
+* *Thread75Inch* (float): The *Thread75Name* drill diameter in inches.
+* *Thread50Name* (str): The drill name to use for 50% threading in hard materials.
+* *Thread50Inch* (float): The *Thread50Name* drill diameter in inches.
+* *CloseName* (str): The drill name to use for a close hole clearance.
+* *CloseInch (float): The *CloseName* drill diameter in inches.
+* *StandardName (str): The drill name to use for looser hole.
+* *StandardInch (float): The *StandardName* drill diameter in inches.
+
+
+## <a name="fabjoiner--fab-mdrilltap"></a>11 Class Fab_MDrillTap:
 
 Metric drill/tap information.
 Attributes:
