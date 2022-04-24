@@ -864,40 +864,17 @@ class FabNut(FabOption):
     Thickness: float  # The Nut thickness in millimeters.
     Material: FabMaterial  # The Nut material.
 
-    INIT_CHECKS = (
-        FabCheck("Name", (str,)),
-        FabCheck("Detail", (str,)),
-        FabCheck("Sides", (int,)),
-        FabCheck("Width", (float,)),
-        FabCheck("Thickness", (float,)),
-        FabCheck("Material", (FabMaterial,)),
-    )
-
+    # FabNut.__post_init__():
     def __post_init__(self) -> None:
-        """Verify everything is reasonable."""
-        arguments = (self.Name, self.Detail, self.Sides, self.Width, self.Thickness, self.Material)
-        value_error: str = FabCheck.check(arguments, FabNut.INIT_CHECKS)
-        if value_error:
-            raise ValueError(value_error)
-        if not self.Name:
-            raise ValueError("Name is empty")
-        if not self.Detail:
-            raise ValueError("Detail is empty")
-        if self.Sides not in (4, 6):
-            raise ValueError(f"Sides (={self.Sides}) is neither 4 nor 6")
-        if self.Width <= 0.0:
-            raise ValueError(f"Width (={self.Width}) is not positive")
-        if self.Thickness <= 0.0:
-            raise ValueError(f"Thickness (={self.Thickness}) is not positive")
-
-    def __repr__(self) -> str:
-        """Return FabNut string representation."""
-        return self.__str__()
-
-    def __str__(self) -> str:
-        """Return FabNut string representation."""
-        return (f"FabNut('{self.Name}', '{self.Detail}', {self.Sides}, {self.Width}, "
-                f"{self.Thickness}, {self.Material})")
+        """Finish initializing FabNut."""
+        super().__post_init__()
+        check_type("FabNut.Sides", self.Sides, int)
+        check_type("FabNut.Width", self.Width, float)
+        check_type("FabNut.Thickness", self.Thickness, float)
+        check_type("FabNut.Material", self.Material, FabMaterial)
+        assert self.Sides in (4, 6), f"Sides ({self.Sides}) is not one of (4, 6)"
+        assert self.Width > 0.0, f"Width ({self.Width}) is not positive"
+        assert self.Thickness > 0.0, f"Thickness ({self}) is not positive"
 
     @staticmethod
     def _unit_tests() -> None:
@@ -911,13 +888,6 @@ class FabNut(FabOption):
         material: FabMaterial = FabMaterial(("brass",), "orange")
         nut: FabNut = FabNut(name, detail, sides, width, thickness, material)
 
-        # Verify that __repr__() and __str__() work.
-        want: str = ("FabNut('M3Nut', 'Brass M3 Hex Nut', 6, 6.2, 2.0, "
-                     "FabMaterial(('brass',), 'orange'))")
-        assert f"{nut}" == want, f"{nut}"
-        assert nut.__repr__() == want
-        assert str(nut) == want
-
         # Verify attributes:
         assert nut.Name == name, nut.Name
         assert nut.Detail == detail, nut.Detail
@@ -925,46 +895,6 @@ class FabNut(FabOption):
         assert nut.Width == width, nut.Width
         assert nut.Thickness == thickness, nut.Thickness
         assert nut.Material == material, nut.Material
-
-        # Verify __repr__() and __str__():
-        nut_text: str = (
-            f"FabNut('{name}', '{detail}', {sides}, {width}, {thickness}, {material})")
-        assert f"{nut}" == nut_text, (f"{nut}", nut_text)
-
-        # Do argument checking:
-        try:
-            # Empty name:
-            FabNut("", detail, sides, width, thickness, material)
-        except ValueError as value_error:
-            assert str(value_error) == "Name is empty", str(value_error)
-
-        try:
-            # Empty detail:
-            FabNut(name, "", sides, width, thickness, material)
-        except ValueError as value_error:
-            assert str(value_error) == "Detail is empty", str(value_error)
-
-        try:  # Bad sides:
-            FabNut(name, detail, 5, width, thickness, material)
-        except ValueError as value_error:
-            assert str(value_error) == "Sides (=5) is neither 4 nor 6", str(value_error)
-
-        try:  # Bad width:
-            FabNut(name, detail, sides, 0.0, thickness, material)
-        except ValueError as value_error:
-            assert str(value_error) == "Width (=0.0) is not positive", str(value_error)
-
-        try:  # Bad thickness:
-            FabNut(name, detail, sides, width, 0.0, material)
-        except ValueError as value_error:
-            assert str(value_error) == "Thickness (=0.0) is not positive", str(value_error)
-
-        try:  # Bad Material:
-            FabNut(name, detail, sides, width, thickness, cast(FabMaterial, 0))
-        except ValueError as value_error:
-            assert str(value_error) == (
-                "Argument 'Material' is int which is not one of ['FabMaterial']"
-            ), str(value_error)
 
 
 # FabWasher:
