@@ -74,10 +74,9 @@ hardware.
 ## <a name="join--fabdrillchoice"></a>1 Class FabDrillChoice:
 
 Preferred Metric and Imperial drill sizes.
-The final choice of hole sizes typically depends upon the available hardware.
-In North America, these the pre-metric size drills (fractional, letter, number) are
-readily available.  Pretty much everywhere else, these are the metric drill sizes
-are more readily available.
+The final choice of hole sizes typically depends upon the available hardware.  In North
+America, the non metric size drills (fractional, letter, number) are readily available.
+Pretty much everywhere else, the metric drill sizes are more readily available.
 
 Attributes:
 * *MetricName* (str):
@@ -96,6 +95,12 @@ Attributes:
 ## <a name="join--fabdrilltap"></a>2 Class FabDrillTap:
 
 Drill/Tap diameters and drill selections.
+Attributes:
+* *Name* (str): Name of drill/tap selections.
+* *Thead75* (FabDrillChoice):  The drill choice for 75% thread operations.
+* *Thead50* (FabDrillChoice):  The drill choice for 50% thread operations.
+* *Close* (FabDrillChoice):  The drill choice for a close fit hole.
+* *Standard* (FabDrillChoice):  The drill choice for a standard fit hole.
 
 
 ## <a name="join--fabfasten"></a>3 Class FabFasten:

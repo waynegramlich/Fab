@@ -61,6 +61,7 @@ hardware.
 # <--------------------------------------- 100 characters ---------------------------------------> #
 
 from dataclasses import dataclass, field
+from typeguard import check_type
 from typing import Any, cast, ClassVar, Dict, List, Tuple, Union
 
 from cadquery import Vector  # type: ignore
@@ -98,16 +99,29 @@ class _MDrillTap(object):
     MStandard: float
     IStandard: str
 
+    # _MDrillTap.__post_init__():
+    def __post_init__(self) -> None:
+        """Finish initalizign _MDrillTap."""
+        check_type("_MDrillTap.MName", self.MName, str)
+        check_type("_MDrillTap.MPitch", self.MPitch, float)
+        check_type("_MDrillTap.M75", self.M75, float)
+        check_type("_MDrillTap.I75", self.I75, str)
+        check_type("_MDrillTap.M50", self.M50, float)
+        check_type("_MDrillTap.I50", self.I50, str)
+        check_type("_MDrillTap.MClose", self.MClose, float)
+        check_type("_MDrillTap.IClose", self.IClose, str)
+        check_type("_MDrillTap.MStandard", self.MStandard, float)
+        check_type("_MDrillTap.IStandard", self.IStandard, str)
+
 
 # FabDrillChoice:
 @dataclass
-class FabDrillChoice:
+class FabDrillChoice(object):
     """FabDrillChoice: Preferred Metric and Imperial drill sizes.
 
-    The final choice of hole sizes typically depends upon the available hardware.
-    In North America, these the pre-metric size drills (fractional, letter, number) are
-    readily available.  Pretty much everywhere else, these are the metric drill sizes
-    are more readily available.
+    The final choice of hole sizes typically depends upon the available hardware.  In North
+    America, the non metric size drills (fractional, letter, number) are readily available.
+    Pretty much everywhere else, the metric drill sizes are more readily available.
 
     Attributes:
     * *MetricName* (str):
@@ -128,17 +142,41 @@ class FabDrillChoice:
     ImperialName: str
     ImperialDiameter: float
 
+    # FabDrillChoice.__post_init__():
+    def __post_init__(self) -> None:
+        """Finish initializing FabDrillChoice."""
+        check_type("FabDrillCheck.MetricName", self.MetricName, str)
+        check_type("FabDrillCheck.MetricDiameter", self.MetricDiameter, float)
+        check_type("FabDrillCheck.ImperialName", self.ImperialName, str)
+        check_type("FabDrillCheck.ImperialDiameter", self.ImperialDiameter, float)
 
-# FabDrillTap:
+
+# FabDrillTap(object):
 @dataclass
-class FabDrillTap:
-    """FabDrillTap: Drill/Tap diameters and drill selections."""
+class FabDrillTap(object):
+    """FabDrillTap: Drill/Tap diameters and drill selections.
+
+    Attributes:
+    * *Name* (str): Name of drill/tap selections.
+    * *Thead75* (FabDrillChoice):  The drill choice for 75% thread operations.
+    * *Thead50* (FabDrillChoice):  The drill choice for 50% thread operations.
+    * *Close* (FabDrillChoice):  The drill choice for a close fit hole.
+    * *Standard* (FabDrillChoice):  The drill choice for a standard fit hole.
+    """
 
     Name: str
     Thread75: FabDrillChoice
     Thread50: FabDrillChoice
     Close: FabDrillChoice
     Standard: FabDrillChoice
+
+    # FabDrillTap.__post_init__():
+    def __post_init__(self) -> None:
+        """Finish initializing FabDrillChoice."""
+        check_type("FabDrillCheck.Thread75", self.Thread75, FabDrillChoice)
+        check_type("FabDrillCheck.Thread50", self.Thread50, FabDrillChoice)
+        check_type("FabDrillCheck.ThreadClose", self.Close, FabDrillChoice)
+        check_type("FabDrillCheck.ThreadStandard", self.Standard, FabDrillChoice)
 
 
 # _IDrillTap:
@@ -183,7 +221,7 @@ class _IDrillTap(object):
     * *CloseName* (str): The drill name to use for a close hole clearance.
     * *CloseInch (float): The *CloseName* drill diameter in inches.
     * *StandardName (str): The drill name to use for looser hole.
-    * *StandardInch (float): The *SandardName* drill diameter in inches.
+    * *StandardInch (float): The *StandardName* drill diameter in inches.
 
     """
 
