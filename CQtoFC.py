@@ -64,7 +64,6 @@ _ = FreeCADGui
 
 # import Path  # type: ignore
 # import PathScripts  # type: ignore
-from FreeCAD import Part  # type: ignore
 from PathScripts import PathOp, PathUtils  # type: ignore
 from PathScripts import PathToolBit, PathDrilling  # type: ignore
 from PathScripts import PathJob, PathProfile, PathPostProcessor, PathUtil  # type: ignore
