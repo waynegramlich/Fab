@@ -16,10 +16,10 @@ SAFE_MODULES := \
     FabGeometries \
     FabJoiner \
     FabNodes \
+    FabSolids \
     FabUtilities \
     Project \
     Shop \
-    Solid \
     TarSync \
     Test
 NON_SAFE_MODULES := \

@@ -207,7 +207,7 @@ The (current) main Python modules are:
 * [Project](docs/Project.md):
   The top level FabNode sub-classes of FabProject, FabDocument, and FabAssembly.
 
-* [Solid](docs/Solid.md):
+* [FabSolids](docs/FabSolids.md):
   The Solid creation class of FabSolid and FabMount.
 
 * [FabNodes](docs/FabNodes.md):

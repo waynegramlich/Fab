@@ -35,7 +35,7 @@ import cadquery as cq  # type: ignore
 from cadquery import Vector  # type: ignore
 
 from FabNodes import FabNode, Fab_Steps, Fab_ProduceState
-from Solid import FabSolid
+from FabSolids import FabSolid
 
 
 # FabGroup:

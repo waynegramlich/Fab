@@ -16,7 +16,7 @@ from FabGeometries import FabCircle, FabPolygon
 from FabJoiner import FabFasten, FabJoin
 from FabNodes import FabNode  # This should not be needed see cast in BoxSide.produce()
 from Project import FabAssembly, FabDocument, FabProject
-from Solid import FabSolid, FabMount
+from FabSolids import FabSolid, FabMount
 
 
 # BoxSide:
