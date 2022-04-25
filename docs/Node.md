@@ -56,10 +56,11 @@ See the FabNode documentation for further attributes.
   * 2.13 [get_parent_document()](#node----get-parent-document): NO DOC STRING!
   * 2.14 [set_tracing()](#node----set-tracing): Set the FabNode indentation tracing level.
   * 2.15 [probe()](#node----probe): Perform a probe operation.
-* 3 Class: [Fab_Steps](#node--fab-steps):
-  * 3.1 [scan()](#node----scan): Scan the associated directory for matching .step files.
-  * 3.2 [activate()](#node----activate): Reserve a .step file name to be read/written.
-  * 3.3 [flush_inactives()](#node----flush-inactives): Delete inactive .step files.
+* 3 Class: [Fab_ProduceState](#node--fab-producestate):
+* 4 Class: [Fab_Steps](#node--fab-steps):
+  * 4.1 [scan()](#node----scan): Scan the associated directory for matching .step files.
+  * 4.2 [activate()](#node----activate): Reserve a .step file name to be read/written.
+  * 4.3 [flush_inactives()](#node----flush-inactives): Delete inactive .step files.
 
 ## <a name="node--fabbox"></a>1 Class FabBox:
 
@@ -229,7 +230,7 @@ Return a dictionary for JSON output.
 
 ### <a name="node----pre-produce"></a>2.9 `FabNode.`pre_produce():
 
-FabNode.pre_produce(self, produce_state: Node._NodeProduceState) -> None:
+FabNode.pre_produce(self, produce_state: Node.Fab_ProduceState) -> None:
 
 Perform FabNode pre produce operations.
 
@@ -241,13 +242,13 @@ Empty FabNode produce method to be over-ridden.
 
 ### <a name="node----post-produce1"></a>2.11 `FabNode.`post_produce1():
 
-FabNode.post_produce1(self, produce_state: Node._NodeProduceState, tracing: str = '') -> None:
+FabNode.post_produce1(self, produce_state: Node.Fab_ProduceState, tracing: str = '') -> None:
 
 Do FabNode phase 1 post production.
 
 ### <a name="node----post-produce2"></a>2.12 `FabNode.`post_produce2():
 
-FabNode.post_produce2(self, produce_state: Node._NodeProduceState) -> None:
+FabNode.post_produce2(self, produce_state: Node.Fab_ProduceState) -> None:
 
 Do FabNode phase 2 post production.
 
@@ -280,7 +281,25 @@ Perform a probe operation.
 This method can be overriden and called to perform debug probes.
 
 
-## <a name="node--fab-steps"></a>3 Class Fab_Steps:
+## <a name="node--fab-producestate"></a>3 Class Fab_ProduceState:
+
+Shared produce state for FabNode's.
+Attributes:
+* *StepsDirectory* (Path):
+  The path to the directory to store STEP (`.stp`) files into.
+* *Steps* (Fab_Steps):
+  The step file directory managment object.
+* *ObjectsTable* (Dict[str, Any]):
+  A table of objects that can be accessed via a debugger.
+* *ToolControllersTable*: (Dict[FabToolController, int]):
+  A lookup to make common FabToolControllers to a single integer.
+* *OperationIndex* (int):
+  An index for the current operation being performed for a mount.
+
+This class is for interal use only:
+
+
+## <a name="node--fab-steps"></a>4 Class Fab_Steps:
 
 Manage directory of .step files.
 This class will scan a directory for STEP files of the format `Name__XXXXXXXXXXXXXXXX.stp`,
@@ -292,13 +311,13 @@ There are three operations:
 * activate(): This method is used to activate a .stp file for reading and/or writing.
 * flush_stales(): This method is used to remove previous .stp files that are now longer used.
 
-### <a name="node----scan"></a>3.1 `Fab_Steps.`scan():
+### <a name="node----scan"></a>4.1 `Fab_Steps.`scan():
 
 Fab_Steps.scan(self, tracing: str = '') -> None:
 
 Scan the associated directory for matching .step files.
 
-### <a name="node----activate"></a>3.2 `Fab_Steps.`activate():
+### <a name="node----activate"></a>4.2 `Fab_Steps.`activate():
 
 Fab_Steps.activate(self, name: str, hash_tuple: Tuple[Any, ...], tracing: str = '') -> pathlib.Path:
 
@@ -313,7 +332,7 @@ Arguments:
 Returns:
 * (Path): The full path to the .step file to be read/written.
 
-### <a name="node----flush-inactives"></a>3.3 `Fab_Steps.`flush_inactives():
+### <a name="node----flush-inactives"></a>4.3 `Fab_Steps.`flush_inactives():
 
 Fab_Steps.flush_inactives(self, tracing: str = '') -> None:
 

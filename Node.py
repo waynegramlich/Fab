@@ -889,10 +889,10 @@ class Fab_Steps(object):
             print(f"{tracing}<=Fab_Steps._unit_tests()")
 
 
-# _NodeProduceState:
+# Fab_ProduceState:
 @dataclass
-class _NodeProduceState(object):
-    """_NodeProduceState: Shared produce state for FabNode's.
+class Fab_ProduceState(object):
+    """Fab_ProduceState: Shared produce state for FabNode's.
 
     Attributes:
     * *StepsDirectory* (Path):
@@ -915,7 +915,7 @@ class _NodeProduceState(object):
     ToolControllersTable: Dict[FabToolController, int] = field(init=False, repr=False)
     OperationIndex: int = field(init=False, repr=False)
 
-    # _NodeProduceState.__post_init__():
+    # Fab_ProduceState.__post_init__():
     def __post_init__(self) -> None:
         """Finish initializing _ProduceState."""
         self.ObjectsTable = {}
@@ -1112,7 +1112,7 @@ class FabNode(FabBox):
         return node_json
 
     # FabNode.pre_produce():
-    def pre_produce(self, produce_state: _NodeProduceState) -> None:
+    def pre_produce(self, produce_state: Fab_ProduceState) -> None:
         """Perform FabNode pre produce operations."""
         tracing: str = self.Tracing
         if tracing:
@@ -1126,14 +1126,14 @@ class FabNode(FabBox):
             print(f"{tracing}<=>FabNode({self._Label}).produce()=>()")
 
     # FabNode.post_produce1():
-    def post_produce1(self, produce_state: _NodeProduceState, tracing: str = "") -> None:
+    def post_produce1(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
         """Do FabNode phase 1 post production."""
         tracing = self.Tracing  # Ignore *tracing* argument.
         if tracing:
             print(f"{tracing}<=>FabNode({self._Label}).post_produce1(*, *)=>()")
 
     # FabNode.post_produce2():
-    def post_produce2(self, produce_state: _NodeProduceState) -> None:
+    def post_produce2(self, produce_state: Fab_ProduceState) -> None:
         """Do FabNode phase 2 post production."""
         tracing: str = self.Tracing
         if tracing:

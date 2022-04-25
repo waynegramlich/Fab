@@ -34,7 +34,7 @@ from pathlib import Path
 import cadquery as cq  # type: ignore
 from cadquery import Vector  # type: ignore
 
-from Node import FabNode, Fab_Steps, _NodeProduceState
+from Node import FabNode, Fab_Steps, Fab_ProduceState
 from Solid import FabSolid
 
 
@@ -58,7 +58,7 @@ class FabGroup(FabNode):
         super().__post_init__()
 
     # FabGroup.post_produce1():
-    def post_produce1(self, produce_state: _NodeProduceState, tracing: str = "") -> None:
+    def post_produce1(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
         """Perform FabGroup phase 1 post production."""
         tracing = self.Tracing  # Ignore *tracing* argument.
         if tracing:
@@ -111,7 +111,7 @@ class FabAssembly(FabGroup):
         return json
 
     # FabAssembly.post_produce1():
-    def post_produce1(self, produce_state: _NodeProduceState, tracing: str = "") -> None:
+    def post_produce1(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
         """Preform FabAssembly phase1 post production."""
         tracing = self.Tracing  # Ignore *tracing* argument.
         if tracing:
@@ -121,7 +121,7 @@ class FabAssembly(FabGroup):
             print(f"{tracing}<=FabAssembly({self.Label}).post_produce1(*, *)")
 
     # FabAssembly.post_produce2():
-    def post_produce2(self, produce_state: _NodeProduceState) -> None:
+    def post_produce2(self, produce_state: Fab_ProduceState) -> None:
         """Perform FabAssembly phase 2 post production."""
         tracing: str = self.Tracing
         if tracing:
@@ -216,14 +216,14 @@ class FabDocument(FabNode):
         return json
 
     # FabDocument.post_produce1():
-    def post_produce1(self, produce_state: _NodeProduceState, tracing: str = "") -> None:
+    def post_produce1(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
         """Perform FabDocument phase 1 post production."""
         tracing = self.Tracing  # Ignore *tracing* argument.
         if tracing:
             print(f"{tracing}<=>FabDocument({self.Label}).post_produce1(*, *)")
 
     # FabDocument.post_produce2():
-    def post_produce2(self, produce_state: _NodeProduceState) -> None:
+    def post_produce2(self, produce_state: Fab_ProduceState) -> None:
         """Close the FabDocument."""
         tracing: str = self.Tracing
         if tracing:
@@ -306,7 +306,7 @@ class FabProject(FabNode):
         node: FabNode
         errors: List[str] = self._Errors
 
-        produce_state: _NodeProduceState = _NodeProduceState(Path("/tmp"))
+        produce_state: Fab_ProduceState = Fab_ProduceState(Path("/tmp"))
         if step_directory is None:
             step_directory = Path("/tmp")
         previous_constraints: Set[str] = set()

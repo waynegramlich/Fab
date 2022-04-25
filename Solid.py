@@ -25,7 +25,7 @@ from cadquery import Vector  # type: ignore
 
 from Geometry import FabCircle, FabGeometry, FabGeometryContext, FabPlane, FabQuery
 from FabJoiner import FabFasten, FabJoin
-from Node import FabBox, FabNode, _NodeProduceState
+from Node import FabBox, FabNode, Fab_ProduceState
 from FabUtilities import FabColor, FabToolController
 
 # The *_suppress_stdout* function is based on code from:
@@ -269,7 +269,7 @@ class _Operation(object):
         return ()
 
     # _Operation.post_produce1():
-    def post_produce1(self, produce_state: _NodeProduceState, tracing: str = "") -> None:
+    def post_produce1(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
         raise NotImplementedError(f"{type(self)}.post_produce1() is not implemented")
 
     # _Operation.to_json():
@@ -396,7 +396,7 @@ class _Extrude(_Operation):
         )
 
     # _Extrude.post_produce1():
-    def post_produce1(self, produce_state: _NodeProduceState, tracing: str = "") -> None:
+    def post_produce1(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
         """Produce the Extrude."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
@@ -573,7 +573,7 @@ class _Pocket(_Operation):
         return "Pocket"
 
     # _Pocket.post_produce1():
-    def post_produce1(self, produce_state: _NodeProduceState, tracing: str = "") -> None:
+    def post_produce1(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
         """Produce the Pocket."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
@@ -782,7 +782,7 @@ class _Hole(_Operation):
         return tuple(hashes)
 
     # _Hole.post_produce1():
-    def post_produce1(self, produce_state: _NodeProduceState, tracing: str = "") -> None:
+    def post_produce1(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
         """Perform _Hole phase 1 post production."""
 
         next_tracing: str = tracing + " " if tracing else ""
@@ -1075,7 +1075,7 @@ class FabMount(object):
         self._GeometryContext.set_geometry_group(geometry_group)
 
     # FabMount.post_produce1():
-    def post_produce1(self, produce_state: _NodeProduceState, tracing: str = "") -> None:
+    def post_produce1(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
         """Perform FabMount phase 1 post procduction."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
@@ -1385,7 +1385,7 @@ class FabSolid(FabNode):
         return True  # All other FabNode's return False.
 
     # FabSolid.pre_produce():
-    def pre_produce(self, produce_state: _NodeProduceState) -> None:
+    def pre_produce(self, produce_state: Fab_ProduceState) -> None:
         """Perform FabSolid pre production."""
         tracing: str = self.Tracing
         if tracing:
@@ -1461,7 +1461,7 @@ class FabSolid(FabNode):
             print(f"{tracing}<=FabSolid({self.Label}).drill_joins('{name}', *)")
 
     # FabSolid.post_produce1():
-    def post_produce1(self, produce_state: _NodeProduceState, tracing: str = "") -> None:
+    def post_produce1(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
         """Perform FabSolid Phase1 post production."""
         tracing = self.Tracing  # Ignore *tracing* argument.
         next_tracing: str = tracing + " " if tracing else ""
