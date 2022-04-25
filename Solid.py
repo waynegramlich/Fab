@@ -949,7 +949,7 @@ class FabMount(object):
     _Orient: Vector
     _Depth: float
     _Query: Fab_Query
-    _Operations: "OrderedDict[str, _Operation]" = field(init=False, repr=False)
+    _OrderedOperations: "OrderedDict[str, _Operation]" = field(init=False, repr=False)
     _Copy: Vector = field(init=False, repr=False)  # Used for making private copies of Vector's
     _Tracing: str = field(init=False, repr=False)
     _GeometryContext: Fab_GeometryContext = field(init=False, repr=False)
@@ -981,7 +981,7 @@ class FabMount(object):
         self._Copy = copy
         self._Contact = self._Contact + copy
         self._Normal = self._Normal + copy
-        self._Operations = OrderedDict()
+        self._OrderedOperations = OrderedDict()
         # Vector metheds like to modify Vector contents; force copies beforehand:
         self._Plane: Fab_Plane = Fab_Plane(self._Contact, self._Normal)  # , tracing=next_tracing)
         self._Orient = self._Plane.point_project(self._Orient)
@@ -1057,7 +1057,7 @@ class FabMount(object):
             f"{self._Depth:.6f}",
         ]
         operation: _Operation
-        for operation in self._Operations.values():
+        for operation in self._OrderedOperations.values():
             hashes.append(operation.get_hash())
         return tuple(hashes)
 
@@ -1067,7 +1067,7 @@ class FabMount(object):
         if not isinstance(operation, _Operation):
             raise RuntimeError(
                 "FabMount.add_operation({self._Name}).{type(operation)} is not an _Operation")
-        self._Operations[operation.Name] = operation
+        self._OrderedOperations[operation.Name] = operation
 
     # FabMount.set_geometry_group():
     def set_geometry_group(self, geometry_group: Any) -> None:
@@ -1082,7 +1082,7 @@ class FabMount(object):
             print(f"{tracing}=>FabMount.post_produce1('{self.Name}')")
 
         # If there are no *operations* there is nothing to do:
-        operations: "OrderedDict[str, _Operation]" = self._Operations
+        operations: "OrderedDict[str, _Operation]" = self._OrderedOperations
         if operations:
             # Create the Fab_Plane used for the drawing support.
             plane: Fab_Plane = self.Plane
@@ -1124,7 +1124,7 @@ class FabMount(object):
     def to_json(self) -> Dict[str, Any]:
         """Return FabMount JSON structure."""
         json_operations: List[Any] = []
-        operations: OrderedDict[str, _Operation] = self._Operations
+        operations: OrderedDict[str, _Operation] = self._OrderedOperations
         name: str
         operation: _Operation
         for name, operation in operations.items():
@@ -1369,7 +1369,7 @@ class FabSolid(FabNode):
         mount: FabMount
         for mount in self._Mounts.values():
             # Skip mount if it has no operations.
-            if len(mount._Operations) > 0:
+            if len(mount._OrderedOperations) > 0:
                 json_mounts.append(mount.to_json())
         json_dict["children"] = json_mounts
         return json_dict
