@@ -5,14 +5,14 @@
 
 # Python library imports:
 from dataclasses import dataclass, field
-from typing import Any, cast, Dict, List, Tuple
+from typing import Any, cast, List, Tuple
 from pathlib import Path
 
 # CadQuery library imports:
 from cadquery import Vector  # type: ignore
 
 # Fab library imports:
-from Geometry import FabCircle, FabPolygon, FabQuery
+from Geometry import FabCircle, FabPolygon
 from FabJoiner import FabFasten, FabJoin
 from FabNodes import FabNode  # This should not be needed see cast in BoxSide.produce()
 from Project import FabAssembly, FabDocument, FabProject
@@ -465,19 +465,9 @@ class TestProject(FabProject):
 
 def main(key: str = "") -> Any:
     """Run main program."""
-    objects_table: Dict[str, Any] = {}
     test_project: TestProject = TestProject.new("TestProject")
     test_project.run()
-
-    result: Any = 0
-    if key:
-        if key in objects_table:
-            result = objects_table[key]
-            if isinstance(result, FabQuery):
-                result = result.WorkPlane
-        elif key:
-            print(f"'{key}' is not one of {tuple(objects_table.keys())}")
-    return result
+    return 0
 
 
 if __name__ == "__main__":
