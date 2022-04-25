@@ -3,7 +3,7 @@
 ## Table of Contents (alphabetical order):
 
 * 1 Class: [FabAssembly](#project--fabassembly):
-  * 1.1 [is_assembly()](#project----is-assembly):  Return True if FabNode is a FabGroup.
+  * 1.1 [is_assembly()](#project----is-assembly):  Return True if FabNode is a Fab_Group.
   * 1.2 [to_json()](#project----to-json): Return FabProject JSON structure.
   * 1.3 [post_produce1()](#project----post-produce1): Preform FabAssembly phase1 post production.
   * 1.4 [post_produce2()](#project----post-produce2): Perform FabAssembly phase 2 post production.
@@ -11,17 +11,17 @@
   * 2.1 [to_json()](#project----to-json): Return FabProject JSON structure.
   * 2.2 [post_produce1()](#project----post-produce1): Perform FabDocument phase 1 post production.
   * 2.3 [post_produce2()](#project----post-produce2): Close the FabDocument.
-  * 2.4 [is_document()](#project----is-document):  Return True if FabNode is a FabGroup.
+  * 2.4 [is_document()](#project----is-document):  Return True if FabNode is a Fab_Group.
   * 2.5 [produce()](#project----produce): Produce FabDocument.
-* 3 Class: [FabGroup](#project--fabgroup):
-  * 3.1 [post_produce1()](#project----post-produce1): Perform FabGroup phase 1 post production.
-  * 3.2 [produce()](#project----produce): Create the FreeCAD group object.
-  * 3.3 [is_group()](#project----is-group):  Return True if FabNode is a FabGroup.
-* 4 Class: [FabProject](#project--fabproject):
-  * 4.1 [get_errors()](#project----get-errors): Return the FabProject errors list.
-  * 4.2 [is_project()](#project----is-project):  Return True if FabNode is a FabGroup.
-  * 4.3 [to_json()](#project----to-json): Return FabProject JSON structure.
-  * 4.4 [run()](#project----run): NO DOC STRING!
+* 3 Class: [FabProject](#project--fabproject):
+  * 3.1 [get_errors()](#project----get-errors): Return the FabProject errors list.
+  * 3.2 [is_project()](#project----is-project):  Return True if FabNode is a Fab_Group.
+  * 3.3 [to_json()](#project----to-json): Return FabProject JSON structure.
+  * 3.4 [run()](#project----run): NO DOC STRING!
+* 4 Class: [Fab_Group](#project--fab-group):
+  * 4.1 [post_produce1()](#project----post-produce1): Perform Fab_Group phase 1 post production.
+  * 4.2 [produce()](#project----produce): Create the FreeCAD group object.
+  * 4.3 [is_group()](#project----is-group):  Return True if FabNode is a Fab_Group.
 
 ## <a name="project--fabassembly"></a>1 Class FabAssembly:
 
@@ -31,7 +31,7 @@ A group FabSolid's and sub-FabAssembly's.
 
 FabAssembly.is_assembly(self) -> bool:
 
- Return True if FabNode is a FabGroup.
+ Return True if FabNode is a Fab_Group.
 
 ### <a name="project----to-json"></a>1.2 `FabAssembly.`to_json():
 
@@ -87,7 +87,7 @@ Close the FabDocument.
 
 FabDocument.is_document(self) -> bool:
 
- Return True if FabNode is a FabGroup.
+ Return True if FabNode is a Fab_Group.
 
 ### <a name="project----produce"></a>2.5 `FabDocument.`produce():
 
@@ -96,7 +96,36 @@ FabDocument.produce(self) -> None:
 Produce FabDocument.
 
 
-## <a name="project--fabgroup"></a>3 Class FabGroup:
+## <a name="project--fabproject"></a>3 Class FabProject:
+
+The Root mode a FabNode tree.
+
+### <a name="project----get-errors"></a>3.1 `FabProject.`get_errors():
+
+FabProject.get_errors(self) -> List[str]:
+
+Return the FabProject errors list.
+
+### <a name="project----is-project"></a>3.2 `FabProject.`is_project():
+
+FabProject.is_project(self) -> bool:
+
+ Return True if FabNode is a Fab_Group.
+
+### <a name="project----to-json"></a>3.3 `FabProject.`to_json():
+
+FabProject.to_json(self) -> Dict[str, Any]:
+
+Return FabProject JSON structure.
+
+### <a name="project----run"></a>3.4 `FabProject.`run():
+
+FabProject.run(self, step_directory: Union[pathlib.Path, NoneType] = None) -> None:
+
+NO DOC STRING!
+
+
+## <a name="project--fab-group"></a>4 Class Fab_Group:
 
 A named group of FabNode's.
 Inherited Attributes:
@@ -104,52 +133,23 @@ Inherited Attributes:
 * *Parent* (FabNode)
 * *Children* (Tuple[FabNode, ...)
 
-### <a name="project----post-produce1"></a>3.1 `FabGroup.`post_produce1():
+### <a name="project----post-produce1"></a>4.1 `Fab_Group.`post_produce1():
 
-FabGroup.post_produce1(self, produce_state: FabNodes.Fab_ProduceState, tracing: str = '') -> None:
+Fab_Group.post_produce1(self, produce_state: FabNodes.Fab_ProduceState, tracing: str = '') -> None:
 
-Perform FabGroup phase 1 post production.
+Perform Fab_Group phase 1 post production.
 
-### <a name="project----produce"></a>3.2 `FabGroup.`produce():
+### <a name="project----produce"></a>4.2 `Fab_Group.`produce():
 
-FabGroup.produce(self) -> None:
+Fab_Group.produce(self) -> None:
 
 Create the FreeCAD group object.
 
-### <a name="project----is-group"></a>3.3 `FabGroup.`is_group():
+### <a name="project----is-group"></a>4.3 `Fab_Group.`is_group():
 
-FabGroup.is_group(self) -> bool:
+Fab_Group.is_group(self) -> bool:
 
- Return True if FabNode is a FabGroup.
-
-
-## <a name="project--fabproject"></a>4 Class FabProject:
-
-The Root mode a FabNode tree.
-
-### <a name="project----get-errors"></a>4.1 `FabProject.`get_errors():
-
-FabProject.get_errors(self) -> List[str]:
-
-Return the FabProject errors list.
-
-### <a name="project----is-project"></a>4.2 `FabProject.`is_project():
-
-FabProject.is_project(self) -> bool:
-
- Return True if FabNode is a FabGroup.
-
-### <a name="project----to-json"></a>4.3 `FabProject.`to_json():
-
-FabProject.to_json(self) -> Dict[str, Any]:
-
-Return FabProject JSON structure.
-
-### <a name="project----run"></a>4.4 `FabProject.`run():
-
-FabProject.run(self, step_directory: Union[pathlib.Path, NoneType] = None) -> None:
-
-NO DOC STRING!
+ Return True if FabNode is a Fab_Group.
 
 
 

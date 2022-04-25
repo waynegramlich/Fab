@@ -38,10 +38,10 @@ from FabNodes import FabNode, Fab_Steps, Fab_ProduceState
 from FabSolids import FabSolid
 
 
-# FabGroup:
+# Fab_Group:
 @dataclass
-class FabGroup(FabNode):
-    """FabGroup: A named group of FabNode's.
+class Fab_Group(FabNode):
+    """Fab_Group: A named group of FabNode's.
 
     Inherited Attributes:
     * *Name* (str)
@@ -52,31 +52,31 @@ class FabGroup(FabNode):
 
     Group: Any = field(init=False, repr=False, default=None)
 
-    # FabGroup.__post_init__():
+    # Fab_Group.__post_init__():
     def __post_init__(self):
-        """Initialize FabGroup."""
+        """Initialize Fab_Group."""
         super().__post_init__()
 
-    # FabGroup.post_produce1():
+    # Fab_Group.post_produce1():
     def post_produce1(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
-        """Perform FabGroup phase 1 post production."""
+        """Perform Fab_Group phase 1 post production."""
         tracing = self.Tracing  # Ignore *tracing* argument.
         if tracing:
-            print(f"{tracing}<=>FabGroup({self.Label}).post_produce1(*, *)")
+            print(f"{tracing}<=>Fab_Group({self.Label}).post_produce1(*, *)")
 
-    # FabGroup.produce():
+    # Fab_Group.produce():
     def produce(self) -> None:
         """Create the FreeCAD group object."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}<=>FabGroup({self.Label}).produce()")
+            print(f"{tracing}<=>Fab_Group({self.Label}).produce()")
 
-    # FabGroup.is_group():
+    # Fab_Group.is_group():
     def is_group(self) -> bool:
-        """ Return True if FabNode is a FabGroup."""
+        """ Return True if FabNode is a Fab_Group."""
         return True  # All other FabNode's return False.
 
-    # FabGroup._unit_tests()
+    # Fab_Group._unit_tests()
     @staticmethod
     def _unit_tests() -> None:
         pass
@@ -84,7 +84,7 @@ class FabGroup(FabNode):
 
 # FabAssembly:
 @dataclass
-class FabAssembly(FabGroup):
+class FabAssembly(Fab_Group):
     """FabAssembly: A group FabSolid's and sub-FabAssembly's."""
 
     _Assembly: Any = field(init=False, repr=False)
@@ -100,7 +100,7 @@ class FabAssembly(FabGroup):
 
     # FabAssembly.is_assembly():
     def is_assembly(self) -> bool:
-        """ Return True if FabNode is a FabGroup."""
+        """ Return True if FabNode is a Fab_Group."""
         return True  # All other FabNode's return False.
 
     # FabAssembly.to_json():
@@ -202,10 +202,10 @@ class FabDocument(FabNode):
         children: Tuple[FabNode, ...] = self.Children
         child: FabNode
         for child in children:
-            if not isinstance(child, (FabAssembly, FabGroup, FabSolid)):
+            if not isinstance(child, (FabAssembly, Fab_Group, FabSolid)):
                 raise RuntimeError(
                     f"{self.FullPath}: {child.FullPath} is not a {type(child)}, "
-                    "not FabAssembly/FabGroup/FabSolid")
+                    "not FabAssembly/Fab_Group/FabSolid")
 
     # FabDocument.to_json():
     def to_json(self) -> Dict[str, Any]:
@@ -231,7 +231,7 @@ class FabDocument(FabNode):
 
     # FabDocument.is_document():
     def is_document(self) -> bool:
-        """ Return True if FabNode is a FabGroup."""
+        """ Return True if FabNode is a Fab_Group."""
         return True  # All other FabNode's return False.
 
     # FabDocument.produce():
@@ -269,7 +269,7 @@ class FabProject(FabNode):
 
     # FabProject.is_project():
     def is_project(self) -> bool:
-        """ Return True if FabNode is a FabGroup."""
+        """ Return True if FabNode is a Fab_Group."""
         return True  # All other FabNode's return False.
 
     # FabProject.new():
@@ -395,7 +395,7 @@ class FabProject(FabNode):
 # main():
 def main() -> None:
     """Run Project unit tests."""
-    FabGroup._unit_tests()
+    Fab_Group._unit_tests()
     FabProject._unit_tests()
     FabDocument._unit_tests()
     FabAssembly._unit_tests()
