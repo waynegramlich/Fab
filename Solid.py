@@ -684,10 +684,10 @@ class Fab_Pocket(Fab_Operation):
         return json_dict
 
 
-# _HoleKey:
+# Fab_HoleKey:
 @dataclass(frozen=True)
-class _HoleKey(object):
-    """_HoleKey: Represents a group of holes that can be grouped together.
+class Fab_HoleKey(object):
+    """Fab_HoleKey: Represents a group of holes that can be grouped together.
 
     Attributes:
     * *ThreadName* (str): The name of the thread class for the hole.
@@ -701,9 +701,9 @@ class _HoleKey(object):
     Depth: float
     IsTop: bool
 
-    # _HoleKey.__post__init__():
+    # Fab_HoleKey.__post__init__():
     def __post_init__(self) -> None:
-        """Perform checks on _HoleKey."""
+        """Perform checks on Fab_HoleKey."""
         thread_name: str = self.ThreadName
         assert thread_name.startswith("M") or thread_name.startswith("#") or (
             thread_name.find("/") > 0), thread_name
@@ -711,9 +711,9 @@ class _HoleKey(object):
         assert self.Depth > 0.0, self.Depth
         assert isinstance(self.IsTop, bool), self.IsTop
 
-    # _HoleKey.get_hash():
+    # Fab_HoleKey.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:
-        """Return a hash tuple for a _HoleKey."""
+        """Return a hash tuple for a Fab_HoleKey."""
         return (
             self.ThreadName,
             self.Kind,
@@ -727,7 +727,7 @@ class _HoleKey(object):
 class _Hole(Fab_Operation):
     """_Hole: FabDrill helper class that represents a hole."""
 
-    _Key: _HoleKey
+    _Key: Fab_HoleKey
     Centers: Tuple[Vector, ...]  # The Center (start point) of the drils
     Join: FabJoin = field(repr=False)  # The associated FabJoin
     _Name: str  # Hole name
@@ -741,7 +741,7 @@ class _Hole(Fab_Operation):
         """Perform final initialization of _Hole"""
 
         super().__post_init__()
-        assert isinstance(self._Key, _HoleKey), self._Key
+        assert isinstance(self._Key, Fab_HoleKey), self._Key
         assert isinstance(self.Centers, tuple), self.Centers
         assert isinstance(self.Join, FabJoin), self.Join
         assert isinstance(self._Name, str), self._Name
@@ -752,7 +752,7 @@ class _Hole(Fab_Operation):
 
     # _Hole.Key():
     @property
-    def Key(self) -> _HoleKey:
+    def Key(self) -> Fab_HoleKey:
         """Return a Hole key."""
         return self._Key
 
@@ -796,7 +796,7 @@ class _Hole(Fab_Operation):
         plane: Fab_Plane = geometry_context.Plane
         query: Fab_Query = geometry_context.Query
 
-        key: _HoleKey = self._Key
+        key: Fab_HoleKey = self._Key
         kind: str = key.Kind
         join: FabJoin = self.Join
         depth: float = key.Depth
@@ -1257,7 +1257,8 @@ class FabMount(object):
                     assert trimmed_depth > 0.0, trimmed_depth
                     # unique: int = -1 if mount_z_aligned else join_index
                     hole_name: str = f"{joins_name}_{join_index}"
-                    hole_key: _HoleKey = _HoleKey(fasten.ThreadName, kind, trimmed_depth, is_top)
+                    hole_key: Fab_HoleKey = Fab_HoleKey(
+                        fasten.ThreadName, kind, trimmed_depth, is_top)
                     hole: _Hole = _Hole(
                         self, hole_key, (mount_start,), join, hole_name, trimmed_start)
                     if tracing:
@@ -1265,8 +1266,8 @@ class FabMount(object):
                     holes.append(hole)
 
         # Group *holes* into *hole_groups* base on their *key*:
-        key: _HoleKey
-        hole_groups: Dict[_HoleKey, List[_Hole]] = {}
+        key: Fab_HoleKey
+        hole_groups: Dict[Fab_HoleKey, List[_Hole]] = {}
         for hole in holes:
             key = hole.Key
             if key not in hole_groups:
