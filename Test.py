@@ -14,7 +14,7 @@ from cadquery import Vector  # type: ignore
 # Fab library imports:
 from Geometry import FabCircle, FabPolygon, FabQuery
 from FabJoiner import FabFasten, FabJoin
-from Node import FabNode  # This should not be needed see cast in BoxSide.produce()
+from FabNodes import FabNode  # This should not be needed see cast in BoxSide.produce()
 from Project import FabAssembly, FabDocument, FabProject
 from Solid import FabSolid, FabMount
 

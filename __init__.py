@@ -215,7 +215,7 @@ The (current) main Python modules are:
 * [Geometry](docs/Geometry.md):
   The FabPolygon, FabCircle sub-classes of FabGeometry.
 
-* [Node](docs/Node.md):
+* [FabNodes](docs/FabNodes.md):
   The base FabNode class and associated FabBox class for describing bounding boxes.
 
 * [FabUtilities](doc/FabUtilities.md):

@@ -34,7 +34,7 @@ from pathlib import Path
 import cadquery as cq  # type: ignore
 from cadquery import Vector  # type: ignore
 
-from Node import FabNode, Fab_Steps, Fab_ProduceState
+from FabNodes import FabNode, Fab_Steps, Fab_ProduceState
 from Solid import FabSolid
 
 

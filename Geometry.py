@@ -12,7 +12,7 @@ from typing import Any, cast, List, Optional, Tuple, Union
 
 import cadquery as cq  # type: ignore
 from cadquery import Vector  # type: ignore
-from Node import FabBox
+from FabNodes import FabBox
 
 
 # FabPlane:

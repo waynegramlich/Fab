@@ -14,9 +14,9 @@ SAFE_MODULES := \
     BOM \
     Doc \
     FabJoiner \
+    FabNodes \
     FabUtilities \
     Geometry \
-    Node \
     Project \
     Shop \
     Solid \
