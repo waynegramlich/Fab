@@ -159,10 +159,10 @@ class FabStock(object):
         _ = results
 
 
-# _Operation:
+# Fab_Operation:
 @dataclass(order=True)
-class _Operation(object):
-    """_Operation: An base class for FabMount operations -- _Extrude, _Pocket, FabHole, etc.
+class Fab_Operation(object):
+    """Fab_Operation: An base class for FabMount operations -- _Extrude, _Pocket, FabHole, etc.
 
     Attributes:
     * *Mount* (FabMount):
@@ -185,28 +185,28 @@ class _Operation(object):
     _JsonEnabled: bool = field(init=False)
     _Active: bool = field(init=False)
 
-    # _Operation.__post_init__():
+    # Fab_Operation.__post_init__():
     def __post_init__(self) -> None:
-        """Initialize _Operation."""
+        """Initialize Fab_Operation."""
         # TODO: Enable check:
         # if not self._Mount.is_mount():
-        #   raise RuntimeError("_Operation.__post_init__(): {type(self._Mount)} is not FabMount")
+        #   raise RuntimeError("Fab_Operation.__post_init__(): {type(self._Mount)} is not FabMount")
         self._ToolController = None
         self._ToolControllerIndex = -1  # Unassigned.
         self._JsonEnabled = True
         self._Active = True
 
-    # _Operation.get_tool_controller():
+    # Fab_Operation.get_tool_controller():
     def get_tool_controller(self) -> FabToolController:
-        """Return the _Operation tool controller"""
+        """Return the Fab_Operation tool controller"""
         if not self._ToolController:
-            raise RuntimeError("_Operation().get_tool_controller(): ToolController not set yet.")
+            raise RuntimeError("Fab_Operation().get_tool_controller(): ToolController not set yet.")
         return self._ToolController
 
-    # _Operation.set_tool_controller():
+    # Fab_Operation.set_tool_controller():
     def set_tool_controller(self, tool_controller: FabToolController,
                             tool_controllers_table: Dict[FabToolController, int]) -> None:
-        """Set the _Operation tool controller and associated index."""
+        """Set the Fab_Operation tool controller and associated index."""
         tool_controller_index: int
         if tool_controller in tool_controllers_table:
             tool_controller_index = tool_controllers_table[tool_controller]
@@ -217,40 +217,40 @@ class _Operation(object):
             self._ToolController = tool_controller
         self._ToolControllerIndex = tool_controller_index
 
-    # _Operation.get_kind():
+    # Fab_Operation.get_kind():
     def get_kind(self) -> str:
-        """Return _Operation kind."""
-        raise RuntimeError(f"_Operation().get_kind() not implemented for {type(self)}")
+        """Return Fab_Operation kind."""
+        raise RuntimeError(f"Fab_Operation().get_kind() not implemented for {type(self)}")
 
-    # _Operation.get_name():
+    # Fab_Operation.get_name():
     def get_name(self) -> str:
-        """Return _Operation name."""
-        raise RuntimeError(f"_Operation().get_name() not implemented for {type(self)}")
+        """Return Fab_Operation name."""
+        raise RuntimeError(f"Fab_Operation().get_name() not implemented for {type(self)}")
 
-    # _Operation.get_hash():
+    # Fab_Operation.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:
-        """Return _Operation hash."""
-        raise RuntimeError(f"_Operation().get_hash() not implemented for {type(self)}")
+        """Return Fab_Operation hash."""
+        raise RuntimeError(f"Fab_Operation().get_hash() not implemented for {type(self)}")
 
-    # _Operation.Mount():
+    # Fab_Operation.Mount():
     @property
     def Mount(self) -> "FabMount":
-        """Return _Operation FabMount."""
+        """Return Fab_Operation FabMount."""
         return self._Mount
 
-    # _Operation.Name():
+    # Fab_Operation.Name():
     @property
     def Name(self) -> str:
         """Return the operation name."""
         return self.get_name()
 
-    # _Operation.Name():
+    # Fab_Operation.Name():
     @property
     def JsonEnabled(self) -> bool:
         """Return the operation name."""
         return self._JsonEnabled
 
-    # _Operation.get_geometries_hash():
+    # Fab_Operation.get_geometries_hash():
     def get_geometries_hash(
             self, geometries: Union[FabGeometry, Tuple[FabGeometry, ...]]) -> Tuple[Any, ...]:
         """Return hash of FabGeometry's."""
@@ -262,19 +262,19 @@ class _Operation(object):
             hashes.append(geometry.get_hash())
         return tuple(hashes)
 
-    # _Operation.produce():
+    # Fab_Operation.produce():
     def produce(self, tracing: str = "") -> Tuple[str, ...]:
         """Return the operation sort key."""
         raise NotImplementedError(f"{type(self)}.produce() is not implemented")
         return ()
 
-    # _Operation.post_produce1():
+    # Fab_Operation.post_produce1():
     def post_produce1(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
         raise NotImplementedError(f"{type(self)}.post_produce1() is not implemented")
 
-    # _Operation.to_json():
+    # Fab_Operation.to_json():
     def to_json(self) -> Dict[str, Any]:
-        """Return a base JSON dictionary for an _Operation."""
+        """Return a base JSON dictionary for an Fab_Operation."""
         json_dict: Dict[str, Any] = {
             "Kind": self.get_kind(),
             "Label": self.get_name(),
@@ -288,17 +288,17 @@ class _Operation(object):
         return json_dict
 
     # TODO: Remove
-    # _Operation.produce_shape_binder():
+    # Fab_Operation.produce_shape_binder():
     def produce_shape_binder(self, part_geometries: Tuple[Any, ...],
                              prefix: str, tracing: str = "") -> Any:
         """Produce the shape binder needed for the extrude, pocket, hole, ... operations."""
         if tracing:
-            print(f"{tracing}<=>_Operation.produce_shape_binder()")
+            print(f"{tracing}<=>Fab_Operation.produce_shape_binder()")
         assert False
         return None
 
     # TODO: remove
-    # _Operation._viewer_update():
+    # Fab_Operation._viewer_update():
     def _viewer_update(self, body: Any, part_feature: Any) -> None:
         """Update the view Body view provider."""
         assert False
@@ -306,7 +306,7 @@ class _Operation(object):
 
 # _Extrude:
 @dataclass(order=True)
-class _Extrude(_Operation):
+class _Extrude(Fab_Operation):
     """_Extrude: Prepresents and extrude operation.
 
     Attributes:
@@ -468,7 +468,7 @@ class _Extrude(_Operation):
 
 # _Pocket:
 @dataclass(order=True)
-class _Pocket(_Operation):
+class _Pocket(Fab_Operation):
     """_Pocket: Represents a pocketing operation.
 
     Attributes:
@@ -724,7 +724,7 @@ class _HoleKey(object):
 
 # _Hole:
 @dataclass
-class _Hole(_Operation):
+class _Hole(Fab_Operation):
     """_Hole: FabDrill helper class that represents a hole."""
 
     _Key: _HoleKey
@@ -949,7 +949,7 @@ class FabMount(object):
     _Orient: Vector
     _Depth: float
     _Query: Fab_Query
-    _OrderedOperations: "OrderedDict[str, _Operation]" = field(init=False, repr=False)
+    _OrderedOperations: "OrderedDict[str, Fab_Operation]" = field(init=False, repr=False)
     _Copy: Vector = field(init=False, repr=False)  # Used for making private copies of Vector's
     _Tracing: str = field(init=False, repr=False)
     _GeometryContext: Fab_GeometryContext = field(init=False, repr=False)
@@ -1056,17 +1056,17 @@ class FabMount(object):
             f"{self._Normal.z:.6f}",
             f"{self._Depth:.6f}",
         ]
-        operation: _Operation
+        operation: Fab_Operation
         for operation in self._OrderedOperations.values():
             hashes.append(operation.get_hash())
         return tuple(hashes)
 
     # FabMount.record_operation():
-    def record_operation(self, operation: _Operation) -> None:
+    def record_operation(self, operation: Fab_Operation) -> None:
         """Record an operation to a FabMount."""
-        if not isinstance(operation, _Operation):
+        if not isinstance(operation, Fab_Operation):
             raise RuntimeError(
-                "FabMount.add_operation({self._Name}).{type(operation)} is not an _Operation")
+                "FabMount.add_operation({self._Name}).{type(operation)} is not an Fab_Operation")
         self._OrderedOperations[operation.Name] = operation
 
     # FabMount.set_geometry_group():
@@ -1082,7 +1082,7 @@ class FabMount(object):
             print(f"{tracing}=>FabMount.post_produce1('{self.Name}')")
 
         # If there are no *operations* there is nothing to do:
-        operations: "OrderedDict[str, _Operation]" = self._OrderedOperations
+        operations: "OrderedDict[str, Fab_Operation]" = self._OrderedOperations
         if operations:
             # Create the Fab_Plane used for the drawing support.
             plane: Fab_Plane = self.Plane
@@ -1107,7 +1107,7 @@ class FabMount(object):
             # Process each *operation* in *operations*:
             operation_index: int = 0
             operation_name: str
-            operation: _Operation
+            operation: Fab_Operation
             for operation_name, operation in operations.items():
                 if tracing:
                     print(f"{tracing}Operation[{operation_name}]:")
@@ -1124,9 +1124,9 @@ class FabMount(object):
     def to_json(self) -> Dict[str, Any]:
         """Return FabMount JSON structure."""
         json_operations: List[Any] = []
-        operations: OrderedDict[str, _Operation] = self._OrderedOperations
+        operations: OrderedDict[str, Fab_Operation] = self._OrderedOperations
         name: str
-        operation: _Operation
+        operation: Fab_Operation
         for name, operation in operations.items():
             if isinstance(operation, (_Extrude, _Pocket, _Hole)):
                 if operation.JsonEnabled:
