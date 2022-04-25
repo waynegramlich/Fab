@@ -411,20 +411,20 @@ class FabGeometryContext(object):
         self._GeometryGroup = geometry_group
 
 
-# _Geometry:
+# Fab_Geometry:
 @dataclass(frozen=True)
-class _Geometry(object):
-    """_Geometry: An Internal base class for _Arc, _Circle, and _Line.
+class Fab_Geometry(object):
+    """Fab_Geometry: An Internal base class for _Arc, _Circle, and _Line.
 
-    All _Geometry classes are immutable (i.e. frozen.)
+    All Fab_Geometry classes are immutable (i.e. frozen.)
     """
 
-    # _Geometry.produce():
+    # Fab_Geometry.produce():
     def produce(self, geometry_context: FabGeometryContext, prefix: str,
                 index: int, tracing: str = "") -> Any:
         raise NotImplementedError(f"{type(self)}.produce() is not implemented yet")
 
-    # _Geometry.Start():
+    # Fab_Geometry.Start():
     def get_start(self) -> Vector:
         """Return start point of geometry."""
         raise NotImplementedError(f"{type(self)}.get_start() is not implemented yet")
@@ -432,7 +432,7 @@ class _Geometry(object):
 
 # _Arc:
 @dataclass(frozen=True)
-class _Arc(_Geometry):
+class _Arc(Fab_Geometry):
     """_Arc: An internal representation an arc geometry.
 
     Attributes:
@@ -482,7 +482,7 @@ class _Arc(_Geometry):
 
 
 @dataclass(frozen=True)
-class _Circle(_Geometry):
+class _Circle(Fab_Geometry):
     """_Circle: An internal representation of a circle geometry.
 
     Attributes:
@@ -514,7 +514,7 @@ class _Circle(_Geometry):
 
 # _Line:
 @dataclass(frozen=True)
-class _Line(_Geometry):
+class _Line(Fab_Geometry):
     """_Line: An internal representation of a line segment geometry.
 
     Attributes:
@@ -728,8 +728,8 @@ class _Fillet(object):
         self.Apex = plane.point_project(self.Apex)
 
     # _Fillet.get_geometries():
-    def get_geometries(self) -> Tuple[_Geometry, ...]:
-        geometries: List[_Geometry] = []
+    def get_geometries(self) -> Tuple[Fab_Geometry, ...]:
+        geometries: List[Fab_Geometry] = []
         if self.Line:
             geometries.append(self.Line)
         if self.Arc:
@@ -904,8 +904,8 @@ class FabCircle(FabGeometry):
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabCircle.produce()")
-        geometries: Tuple[_Geometry, ...] = self.get_geometries()
-        geometry: _Geometry
+        geometries: Tuple[Fab_Geometry, ...] = self.get_geometries()
+        geometry: Fab_Geometry
         part_geometries: List[Any] = []
         for index, geometry in enumerate(geometries):
             part_geometry: Any = geometry.produce(
@@ -917,7 +917,7 @@ class FabCircle(FabGeometry):
         return tuple(part_geometries)
 
     # FabCircle.get_geometries():
-    def get_geometries(self) -> Tuple[_Geometry, ...]:
+    def get_geometries(self) -> Tuple[Fab_Geometry, ...]:
         """Return the FabPolygon lines and arcs."""
         return (_Circle(self.Center, self.Diameter),)
 
@@ -1141,9 +1141,9 @@ class FabPolygon(FabGeometry):
                 fillet.Line = _Line(start, finish)
 
     # FabPolygon.get_geometries():
-    def get_geometries(self, contact: Vector, Normal: Vector) -> Tuple[_Geometry, ...]:
+    def get_geometries(self, contact: Vector, Normal: Vector) -> Tuple[Fab_Geometry, ...]:
         """Return the FabPolygon lines and arcs."""
-        geometries: List[_Geometry] = []
+        geometries: List[Fab_Geometry] = []
         fillet: _Fillet
         for fillet in self._Fillets:
             geometries.extend(fillet.get_geometries())
@@ -1191,12 +1191,12 @@ class FabPolygon(FabGeometry):
         self._compute_lines()
 
         # Extract the geometries using *contact* and *normal* to specify the projection plane:
-        geometries: Tuple[_Geometry, ...] = self.get_geometries(plane_contact, plane_normal)
+        geometries: Tuple[Fab_Geometry, ...] = self.get_geometries(plane_contact, plane_normal)
         part_geometries: List[Any] = []
 
         if not geometries:
             raise RuntimeError("FabPolygon.produce(): empty geometries.")
-        geometry0: _Geometry = geometries[0]
+        geometry0: Fab_Geometry = geometries[0]
         start: Vector = geometry0.get_start()
         rotated_start: Vector = geometry_context._Plane.rotate_to_z_axis(
             start, tracing=next_tracing)
@@ -1223,9 +1223,9 @@ class FabPolygon(FabGeometry):
         polygon: FabPolygon = FabPolygon((v1, v2, (v3, 10), v4))
         _ = polygon
 
-        # geometries: Tuple[_Geometry, ...] = polygon.get_geometries()
+        # geometries: Tuple[Fab_Geometry, ...] = polygon.get_geometries()
         # index: int
-        # geometry: _Geometry
+        # geometry: Fab_Geometry
         # for index, geometry in enumerate(geometries):
         #     print(f"Geometry[{index}]: {geometry}")
 

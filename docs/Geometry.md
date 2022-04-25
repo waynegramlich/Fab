@@ -36,6 +36,9 @@
   * 6.9 [show()](#geometry----show): Print a detailed dump of a FabQuery.
   * 6.10 [subtract()](#geometry----subtract): Subtract one solid form a FabQuery.
   * 6.11 [three_point_arc()](#geometry----three-point-arc): Draw a three point arc.
+* 7 Class: [Fab_Geometry](#geometry--fab-geometry):
+  * 7.1 [produce()](#geometry----produce): NO DOC STRING!
+  * 7.2 [get_start()](#geometry----get-start): Return start point of geometry.
 
 ## <a name="geometry--fabcircle"></a>1 Class FabCircle:
 
@@ -73,7 +76,7 @@ Produce the FreeCAD objects needed for FabPolygon.
 
 ### <a name="geometry----get-geometries"></a>1.4 `FabCircle.`get_geometries():
 
-FabCircle.get_geometries(self) -> Tuple[Geometry._Geometry, ...]:
+FabCircle.get_geometries(self) -> Tuple[Geometry.Fab_Geometry, ...]:
 
 Return the FabPolygon lines and arcs.
 
@@ -203,7 +206,7 @@ Returns:
 
 ### <a name="geometry----get-geometries"></a>5.3 `FabPolygon.`get_geometries():
 
-FabPolygon.get_geometries(self, contact: cadquery.occ_impl.geom.Vector, Normal: cadquery.occ_impl.geom.Vector) -> Tuple[Geometry._Geometry, ...]:
+FabPolygon.get_geometries(self, contact: cadquery.occ_impl.geom.Vector, Normal: cadquery.occ_impl.geom.Vector) -> Tuple[Geometry.Fab_Geometry, ...]:
 
 Return the FabPolygon lines and arcs.
 
@@ -289,6 +292,24 @@ Subtract one solid form a FabQuery.
 FabQuery.three_point_arc(self, middle: cadquery.occ_impl.geom.Vector, end: cadquery.occ_impl.geom.Vector, for_construction: bool = False, tracing: str = '') -> None:
 
 Draw a three point arc.
+
+
+## <a name="geometry--fab-geometry"></a>7 Class Fab_Geometry:
+
+An Internal base class for _Arc, _Circle, and _Line.
+All Fab_Geometry classes are immutable (i.e. frozen.)
+
+### <a name="geometry----produce"></a>7.1 `Fab_Geometry.`produce():
+
+Fab_Geometry.produce(self, geometry_context: Geometry.FabGeometryContext, prefix: str, index: int, tracing: str = '') -> Any:
+
+NO DOC STRING!
+
+### <a name="geometry----get-start"></a>7.2 `Fab_Geometry.`get_start():
+
+Fab_Geometry.get_start(self) -> cadquery.occ_impl.geom.Vector:
+
+Return start point of geometry.
 
 
 
