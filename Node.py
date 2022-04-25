@@ -44,41 +44,17 @@ from collections import OrderedDict
 from dataclasses import dataclass, field
 import hashlib
 from pathlib import Path
-from typing import Any, cast, Dict, IO, List, Sequence, Set, Tuple, Union
+from typing import Any, Dict, IO, List, Sequence, Set, Tuple, Union
 
 from cadquery import Vector  # type: ignore
 
 from FabUtilities import FabToolController
 
 
-# TODO: Why is the class still in existence?
-@dataclass
-class _BoundBox(object):
-    """Fake BoundBox class."""
-
-    XMin: float
-    YMin: float
-    ZMin: float
-    XMax: float
-    YMax: float
-    ZMax: float
-
-    @property
-    def Center(self) -> Vector:
-        return Vector(
-            (self.XMin + self.XMax) / 2.0,
-            (self.YMin + self.YMax) / 2.0,
-            (self.ZMin + self.ZMax) / 2.0
-        )
-
-
-BoundBox = _BoundBox  # TODO: is this used any longer?
-
-
 # FabBox:
 @dataclass
 class FabBox(object):
-    """FabBox: X/Y/Z Axis Aligned Cubiod.
+    """FabBox: X/Y/Z Axis Aligned Cuboid.
 
     An FabBox is represents a cuboid (i.e. a rectangular parallelpiped, or right prism) where
     the edges are aligned with the X, Y, and Z axes.  This is basically equivalent to the FreeCAD
@@ -96,7 +72,7 @@ class FabBox(object):
     Attributes:
     * Minimums/Maximums:
       * XMax (float): The maximum X (East).
-      * XMin (float): The minumum X (West).
+      * XMin (float): The minimum X (West).
       * YMax (float): The maximum Y (North).
       * YMin (float): The minimum Y (South).
       * ZMax (float): The maximum Z (Top).
@@ -162,11 +138,11 @@ class FabBox(object):
         self._ZMax = 1.0
 
     # FabBox.enclose():
-    def enclose(self, bounds: Sequence[Union[Vector, "BoundBox", "FabBox"]]) -> None:
+    def enclose(self, bounds: Sequence[Union[Vector, "FabBox"]]) -> None:
         """Initialize a FabBox.
 
         Arguments:
-          * *bounds* (Sequence[Union[Vector, BoundBox, FabBox]]):
+          * *bounds* (Sequence[Union[Vector, FabBox]]):
             A sequence of points or boxes to enclose.
 
         Raises:
@@ -179,20 +155,17 @@ class FabBox(object):
             raise RuntimeError("Bounds sequence is empty")
 
         # Convert *corners* into *vectors*:
-        bound: Union[Vector, BoundBox, FabBox]
+        bound: Union[Vector, FabBox]
         vectors: List[Vector] = []
         for bound in bounds:
             if isinstance(bound, Vector):
                 vectors.append(bound)
-            elif isinstance(bound, _BoundBox):
-                vectors.append(Vector(bound.XMin, bound.YMin, bound.ZMin))
-                vectors.append(Vector(bound.XMax, bound.YMax, bound.ZMax))
             elif isinstance(bound, FabBox):
                 vectors.append(bound.TNE)
                 vectors.append(bound.BSW)
             else:
                 raise RuntimeError(
-                    f"{bound} is {str(type(bound))}, not Vector/BoundBox/FabBox")
+                    f"{bound} is {str(type(bound))}, not Vector/FabBox")
 
         # Initialize with from the first vector:
         vector0: Vector = vectors[0]
@@ -691,21 +664,7 @@ class FabBox(object):
         # Initial tests:
         box: FabBox = FabBox()
         assert isinstance(box, FabBox)
-        bound_box: BoundBox = BoundBox(-1.0, -2.0, -3.0, 1.0, 2.0, 3.0)
-        assert isinstance(bound_box, BoundBox)
-
-        # FabNode._intersect_unit_tests()
-
-        # FreeCAD.BoundBox.__eq__() appears to only compare ids for equality.
-        # Thus, it is necessary to test that each value is equal by hand.
-        box.enclose((bound_box,))
-
-        assert box.XMin == bound_box.XMin
-        assert box.YMin == bound_box.YMin
-        assert box.ZMin == bound_box.ZMin
-        assert box.XMax == bound_box.XMax
-        assert box.YMax == bound_box.YMax
-        assert box.ZMax == bound_box.ZMax
+        box.enclose((Vector(-1.0, -2.0, -3.0), Vector(1.0, 2.0, 3.0)))
 
         def check(vector: Vector, x: float, y: float, z: float) -> bool:
             assert vector.x == x, f"{vector.x} != {x}"
@@ -762,9 +721,6 @@ class FabBox(object):
         bsw: Vector = Vector(-1, -2, -3)
         new_box: FabBox = FabBox()
         new_box.enclose((tne, bsw))
-        next_box: FabBox = FabBox()
-        next_box.enclose((bound_box, new_box))
-        assert next_box.TNE == tne and next_box.BSW == bsw
 
         # Do some error checking:
         try:
@@ -774,20 +730,6 @@ class FabBox(object):
         except RuntimeError as runtime_error:
             want1 = "Bounds sequence is empty"
             assert str(runtime_error) == want1, str(runtime_error)
-        try:
-            box2 = FabBox()
-            box2.enclose(cast(List, 123))  # Force invalid argument type.
-            assert False
-        except RuntimeError as runtime_error:
-            want2 = "123 is <class 'int'>, not List/Tuple"
-            assert str(runtime_error) == want2, str(runtime_error)
-        try:
-            box3 = FabBox()
-            box3.enclose([cast(Vector, 123)],)  # Force invalid corner type
-            assert False
-        except RuntimeError as runtime_error:
-            want3 = "123 is <class 'int'>, not Vector/BoundBox/FabBox"
-            assert str(runtime_error) == want3, str(runtime_error)
 
         # Do the intersect unit tests:
         FabBox._intersect_unit_tests()

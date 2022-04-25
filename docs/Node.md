@@ -36,40 +36,34 @@ See the FabNode documentation for further attributes.
 
 ## Table of Contents (alphabetical order):
 
-* 1 Class: [_BoundBox](#node---boundbox):
-* 2 Class: [FabBox](#node--fabbox):
-  * 2.1 [enclose()](#node----enclose): Initialize a FabBox.
-  * 2.2 [reorient()](#node----reorient): Reorient FabBox given a Placement.
-  * 2.3 [intersect()](#node----intersect): Compute Line Segment intersection with a FabBox.a
-* 3 Class: [FabNode](#node--fabnode):
-  * 3.1 [get_errors()](#node----get-errors): Return FabNode errors list.
-  * 3.2 [error()](#node----error): Record and error message with FabNode root.
-  * 3.3 [is_project()](#node----is-project): Return True if FabNode is a FabProject.
-  * 3.4 [is_document()](#node----is-document): Return True if FabNode is a FabProject.
-  * 3.5 [is_group()](#node----is-group): Return True if FabNode is a FabGroup.
-  * 3.6 [is_assembly()](#node----is-assembly): Return True if FabNode is a FabAssembly.
-  * 3.7 [is_solid()](#node----is-solid): Return True if FabNode is a FabAssembly.
-  * 3.8 [to_json()](#node----to-json): Return a dictionary for JSON output.
-  * 3.9 [pre_produce()](#node----pre-produce): Perform FabNode pre produce operations.
-  * 3.10 [produce()](#node----produce): Empty FabNode produce method to be over-ridden.
-  * 3.11 [post_produce1()](#node----post-produce1): Do FabNode phase 1 post production.
-  * 3.12 [post_produce2()](#node----post-produce2): Do FabNode phase 2 post production.
-  * 3.13 [get_parent_document()](#node----get-parent-document): NO DOC STRING!
-  * 3.14 [set_tracing()](#node----set-tracing): Set the FabNode indentation tracing level.
-  * 3.15 [probe()](#node----probe): Perform a probe operation.
-* 4 Class: [FabSteps](#node--fabsteps):
-  * 4.1 [scan()](#node----scan): Scan the associated directory for matching .step files.
-  * 4.2 [activate()](#node----activate): Reserve a .step file name to be read/written.
-  * 4.3 [flush_inactives()](#node----flush-inactives): Delete inactive .step files.
+* 1 Class: [FabBox](#node--fabbox):
+  * 1.1 [enclose()](#node----enclose): Initialize a FabBox.
+  * 1.2 [reorient()](#node----reorient): Reorient FabBox given a Placement.
+  * 1.3 [intersect()](#node----intersect): Compute Line Segment intersection with a FabBox.a
+* 2 Class: [FabNode](#node--fabnode):
+  * 2.1 [get_errors()](#node----get-errors): Return FabNode errors list.
+  * 2.2 [error()](#node----error): Record and error message with FabNode root.
+  * 2.3 [is_project()](#node----is-project): Return True if FabNode is a FabProject.
+  * 2.4 [is_document()](#node----is-document): Return True if FabNode is a FabProject.
+  * 2.5 [is_group()](#node----is-group): Return True if FabNode is a FabGroup.
+  * 2.6 [is_assembly()](#node----is-assembly): Return True if FabNode is a FabAssembly.
+  * 2.7 [is_solid()](#node----is-solid): Return True if FabNode is a FabAssembly.
+  * 2.8 [to_json()](#node----to-json): Return a dictionary for JSON output.
+  * 2.9 [pre_produce()](#node----pre-produce): Perform FabNode pre produce operations.
+  * 2.10 [produce()](#node----produce): Empty FabNode produce method to be over-ridden.
+  * 2.11 [post_produce1()](#node----post-produce1): Do FabNode phase 1 post production.
+  * 2.12 [post_produce2()](#node----post-produce2): Do FabNode phase 2 post production.
+  * 2.13 [get_parent_document()](#node----get-parent-document): NO DOC STRING!
+  * 2.14 [set_tracing()](#node----set-tracing): Set the FabNode indentation tracing level.
+  * 2.15 [probe()](#node----probe): Perform a probe operation.
+* 3 Class: [FabSteps](#node--fabsteps):
+  * 3.1 [scan()](#node----scan): Scan the associated directory for matching .step files.
+  * 3.2 [activate()](#node----activate): Reserve a .step file name to be read/written.
+  * 3.3 [flush_inactives()](#node----flush-inactives): Delete inactive .step files.
 
-## <a name="node---boundbox"></a>1 Class _BoundBox:
+## <a name="node--fabbox"></a>1 Class FabBox:
 
-Fake BoundBox class.
-
-
-## <a name="node--fabbox"></a>2 Class FabBox:
-
-X/Y/Z Axis Aligned Cubiod.
+X/Y/Z Axis Aligned Cuboid.
 An FabBox is represents a cuboid (i.e. a rectangular parallelpiped, or right prism) where
 the edges are aligned with the X, Y, and Z axes.  This is basically equivalent to the FreeCAD
 BoundBox object, but with way more attributes to access various points on the cuboid surface.
@@ -86,7 +80,7 @@ Thus:
 Attributes:
 * Minimums/Maximums:
   * XMax (float): The maximum X (East).
-  * XMin (float): The minumum X (West).
+  * XMin (float): The minimum X (West).
   * YMax (float): The maximum Y (North).
   * YMin (float): The minimum Y (South).
   * ZMax (float): The maximum Z (Top).
@@ -132,19 +126,19 @@ Attributes:
   * DY (float): Y box length (i.e. (N - S).Length)
   * DZ (float): Z box length (i.e. (T - B).Length)
 
-### <a name="node----enclose"></a>2.1 `FabBox.`enclose():
+### <a name="node----enclose"></a>1.1 `FabBox.`enclose():
 
-FabBox.enclose(self, bounds: Sequence[Union[cadquery.occ_impl.geom.Vector, ForwardRef('BoundBox'), ForwardRef('FabBox')]]) -> None:
+FabBox.enclose(self, bounds: Sequence[Union[cadquery.occ_impl.geom.Vector, ForwardRef('FabBox')]]) -> None:
 
 Initialize a FabBox.
 Arguments:
-  * *bounds* (Sequence[Union[Vector, BoundBox, FabBox]]):
+  * *bounds* (Sequence[Union[Vector, FabBox]]):
     A sequence of points or boxes to enclose.
 
 Raises:
   * ValueError: For bad or empty corners.
 
-### <a name="node----reorient"></a>2.2 `FabBox.`reorient():
+### <a name="node----reorient"></a>1.2 `FabBox.`reorient():
 
 FabBox.reorient(self, placement: Any) -> 'FabBox':
 
@@ -155,7 +149,7 @@ X/Y/Z axes.  In particular, box volume is *not* conserved.
 Arguments:
 * *placement* (Placement): The placement of the box corners.
 
-### <a name="node----intersect"></a>2.3 `FabBox.`intersect():
+### <a name="node----intersect"></a>1.3 `FabBox.`intersect():
 
 FabBox.intersect(self, segment_start: cadquery.occ_impl.geom.Vector, segment_end: cadquery.occ_impl.geom.Vector, tracing: str = '') -> Tuple[bool, float, float]:
 
@@ -170,7 +164,7 @@ Returns:
 * (Vector): When True, the possibly truncated line segment point near *segment_end*.
 
 
-## <a name="node--fabnode"></a>3 Class FabNode:
+## <a name="node--fabnode"></a>2 Class FabNode:
 
 Represents one node in the FabNode tree.
 Inherited Attributes:
@@ -184,86 +178,86 @@ Attributes:
   A non-empty indentation string when tracing is enabled.
   This field is recursively set when *set_tracing*() is explicitly set.
 
-### <a name="node----get-errors"></a>3.1 `FabNode.`get_errors():
+### <a name="node----get-errors"></a>2.1 `FabNode.`get_errors():
 
 FabNode.get_errors(self) -> List[str]:
 
 Return FabNode errors list.
 This method is only implemented by the FabProject class.
 
-### <a name="node----error"></a>3.2 `FabNode.`error():
+### <a name="node----error"></a>2.2 `FabNode.`error():
 
 FabNode.error(self, error_message: str) -> None:
 
 Record and error message with FabNode root.
 
-### <a name="node----is-project"></a>3.3 `FabNode.`is_project():
+### <a name="node----is-project"></a>2.3 `FabNode.`is_project():
 
 FabNode.is_project(self) -> bool:
 
 Return True if FabNode is a FabProject.
 
-### <a name="node----is-document"></a>3.4 `FabNode.`is_document():
+### <a name="node----is-document"></a>2.4 `FabNode.`is_document():
 
 FabNode.is_document(self) -> bool:
 
 Return True if FabNode is a FabProject.
 
-### <a name="node----is-group"></a>3.5 `FabNode.`is_group():
+### <a name="node----is-group"></a>2.5 `FabNode.`is_group():
 
 FabNode.is_group(self) -> bool:
 
 Return True if FabNode is a FabGroup.
 
-### <a name="node----is-assembly"></a>3.6 `FabNode.`is_assembly():
+### <a name="node----is-assembly"></a>2.6 `FabNode.`is_assembly():
 
 FabNode.is_assembly(self) -> bool:
 
 Return True if FabNode is a FabAssembly.
 
-### <a name="node----is-solid"></a>3.7 `FabNode.`is_solid():
+### <a name="node----is-solid"></a>2.7 `FabNode.`is_solid():
 
 FabNode.is_solid(self) -> bool:
 
 Return True if FabNode is a FabAssembly.
 
-### <a name="node----to-json"></a>3.8 `FabNode.`to_json():
+### <a name="node----to-json"></a>2.8 `FabNode.`to_json():
 
 FabNode.to_json(self) -> Dict[str, Any]:
 
 Return a dictionary for JSON output.
 
-### <a name="node----pre-produce"></a>3.9 `FabNode.`pre_produce():
+### <a name="node----pre-produce"></a>2.9 `FabNode.`pre_produce():
 
 FabNode.pre_produce(self, produce_state: Node._NodeProduceState) -> None:
 
 Perform FabNode pre produce operations.
 
-### <a name="node----produce"></a>3.10 `FabNode.`produce():
+### <a name="node----produce"></a>2.10 `FabNode.`produce():
 
 FabNode.produce(self) -> None:
 
 Empty FabNode produce method to be over-ridden.
 
-### <a name="node----post-produce1"></a>3.11 `FabNode.`post_produce1():
+### <a name="node----post-produce1"></a>2.11 `FabNode.`post_produce1():
 
 FabNode.post_produce1(self, produce_state: Node._NodeProduceState, tracing: str = '') -> None:
 
 Do FabNode phase 1 post production.
 
-### <a name="node----post-produce2"></a>3.12 `FabNode.`post_produce2():
+### <a name="node----post-produce2"></a>2.12 `FabNode.`post_produce2():
 
 FabNode.post_produce2(self, produce_state: Node._NodeProduceState) -> None:
 
 Do FabNode phase 2 post production.
 
-### <a name="node----get-parent-document"></a>3.13 `FabNode.`get_parent_document():
+### <a name="node----get-parent-document"></a>2.13 `FabNode.`get_parent_document():
 
 FabNode.get_parent_document(self, tracing: str = '') -> 'FabNode':
 
 NO DOC STRING!
 
-### <a name="node----set-tracing"></a>3.14 `FabNode.`set_tracing():
+### <a name="node----set-tracing"></a>2.14 `FabNode.`set_tracing():
 
 FabNode.set_tracing(self, tracing: str):
 
@@ -278,7 +272,7 @@ This typically done, by adding this call immediately after calling super().__pos
         self.set_tracing(" ")  # Set the tracing here.
         # All children nodes will that are added, will have tracing set as well.
 
-### <a name="node----probe"></a>3.15 `FabNode.`probe():
+### <a name="node----probe"></a>2.15 `FabNode.`probe():
 
 FabNode.probe(self, label: str) -> None:
 
@@ -286,7 +280,7 @@ Perform a probe operation.
 This method can be overriden and called to perform debug probes.
 
 
-## <a name="node--fabsteps"></a>4 Class FabSteps:
+## <a name="node--fabsteps"></a>3 Class FabSteps:
 
 Manage directory of .step files.
 This class will scan a directory for STEP files of the format `Name__XXXXXXXXXXXXXXXX.stp`,
@@ -298,13 +292,13 @@ There are three operations:
 * activate(): This method is used to activate a .stp file for reading and/or writing.
 * flush_stales(): This method is used to remove previous .stp files that are now longer used.
 
-### <a name="node----scan"></a>4.1 `FabSteps.`scan():
+### <a name="node----scan"></a>3.1 `FabSteps.`scan():
 
 FabSteps.scan(self, tracing: str = '') -> None:
 
 Scan the associated directory for matching .step files.
 
-### <a name="node----activate"></a>4.2 `FabSteps.`activate():
+### <a name="node----activate"></a>3.2 `FabSteps.`activate():
 
 FabSteps.activate(self, name: str, hash_tuple: Tuple[Any, ...], tracing: str = '') -> pathlib.Path:
 
@@ -319,7 +313,7 @@ Arguments:
 Returns:
 * (Path): The full path to the .step file to be read/written.
 
-### <a name="node----flush-inactives"></a>4.3 `FabSteps.`flush_inactives():
+### <a name="node----flush-inactives"></a>3.3 `FabSteps.`flush_inactives():
 
 FabSteps.flush_inactives(self, tracing: str = '') -> None:
 
