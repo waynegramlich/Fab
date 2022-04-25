@@ -7,9 +7,16 @@
 .mypy
 .tests
 .mypy_cache/
+2do.md
 FreeCAD_0.19*.AppImage
 PathScripts
 PathTests
+Tools/
 __pycache__/
+appimagetool
+freecad
 freecad19
+misc/
 squashfs-root
+test_cq/
+test_freecad/

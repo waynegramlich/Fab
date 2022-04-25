@@ -22,8 +22,7 @@ SAFE_MODULES := \
     Shop \
     TarSync \
     Test
-NON_SAFE_MODULES := \
-    CNC
+NON_SAFE_MODULES :=
 MODULES := \
     ${SAFE_MODULES} \
     ${NON_SAFE_MODULES}
