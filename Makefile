@@ -14,7 +14,7 @@ SAFE_MODULES := \
     Doc \
     FabBOM \
     FabGeometries \
-    FabJoiner \
+    FabJoins \
     FabNodes \
     FabProjects \
     FabSolids \

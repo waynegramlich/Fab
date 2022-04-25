@@ -123,7 +123,7 @@ Perform a pocket operation.
 
 ### <a name="fabsolids----drill-joins"></a>1.8 `FabMount.`drill_joins():
 
-FabMount.drill_joins(self, joins_name: str, joins: Union[FabJoiner.FabJoin, Sequence[FabJoiner.FabJoin]], tracing: str = '') -> None:
+FabMount.drill_joins(self, joins_name: str, joins: Union[FabJoins.FabJoin, Sequence[FabJoins.FabJoin]], tracing: str = '') -> None:
 
 Drill some FabJoin's into a FabMount.
 
@@ -177,7 +177,7 @@ Return a new FabMount.
 
 ### <a name="fabsolids----drill-joins"></a>2.7 `FabSolid.`drill_joins():
 
-FabSolid.drill_joins(self, name: str, joins: Sequence[FabJoiner.FabJoin], mounts: Union[Sequence[FabSolids.FabMount], NoneType] = None) -> None:
+FabSolid.drill_joins(self, name: str, joins: Sequence[FabJoins.FabJoin], mounts: Union[Sequence[FabSolids.FabMount], NoneType] = None) -> None:
 
 Apply drill FabJoin holes for a FabSolid.
 Iterate pairwise through a sequence of FabJoin's and FabMount's and for each pair

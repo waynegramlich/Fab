@@ -223,7 +223,7 @@ Additional Python modules are:
 * [FabShop](docs/FabShop.md):
   Classes for defining Shop machines and tooling.
 
-* [FabJoiner](docs/FabJoiner.md):
+* [FabJoins](docs/FabJoins.md):
   Classes for defining fastener stacks of screws, bolts, washers, nuts, etc.
 
 * [Doc](docs/Doc.md):

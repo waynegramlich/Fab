@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""FabJoiner: Fab fastener management system.
+"""FabJoins: Fab fastener management system.
 
 While the most common fasteners are screws and bolts, there are others like rivets, set screws,
 cotter pins, etc.  This package centralizes all of the issues associated with fasteners
@@ -7,7 +7,7 @@ so that changing a fastener does not become a nightmare of having to individuall
 each fastener and make manual changes to each one.  The change is made in once place and
 it propagates to all locations where the fastener is used.
 
-The FabJoiner module deals with the following issues:
+The FabJoins module deals with the following issues:
 * Hole Drilling/Milling:
   Getting a hole of the of the correct size and depth at the correct location on a part.
 * Threading:
@@ -30,14 +30,14 @@ The FabJoiner module deals with the following issues:
 * Fastener WorkBench:
   The FreeCAD Fasteners workbench is used wherever possible.  (This may not happen.)
 
-The basic class hierarchy is:
+The basic bottom up class hierarchy is:
 
-* FabFasten: A profile for a set of related hardware for using a fastener.
 * FabOption: A base class for the sub-classes immediately below:
   * FabHead: The fastener head definition along with counter sink/bore information.
   * FabWasher: washer that is attached on the fastener.
   * FabNut: A nut that threads onto the fastener.
-* FabJoin: A specific instance of fastener that has a start and end point.
+* FabFasten: A profile for a set of related hardware for using a fastener.
+* FabJoin: A specific instance of a FabBasten that has a start and end point.
 
 I addition the "public" classes listed immediately above.  There are a number of "private" classes
 of the form `Fab_` that are used to implement everything.  The interfaces to the classes are
@@ -47,7 +47,7 @@ A FabFasten basically lists a thread profile (i.e. #4-4, M3x0.5, etc), the drive
 associated lock washers, regular washers, nuts, etc.  These are specified as a list
 of FabOption's (i.e. FabHead, FabWasher, FabNut, etc.)
 
-A FabJoin specifies a FabJoiner, a start point and an end point.  The first end point is
+A FabJoin specifies a FabJoins with both a start point and an end point.  The first end point is
 the specifies a point just under the screw/bolt head and any regular/lock washers just below
 the head.  The end point is where any additional regular/lock washers and nuts go at the other
 end of the fastener.

@@ -48,7 +48,7 @@ Produce the Box.
 
 ### <a name="test----get-all-screws"></a>1.2 `Box.`get_all_screws():
 
-Box.get_all_screws(self) -> Tuple[FabJoiner.FabJoin, ...]:
+Box.get_all_screws(self) -> Tuple[FabJoins.FabJoin, ...]:
 
 Return all Box screws.
 
