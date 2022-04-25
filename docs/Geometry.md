@@ -32,13 +32,24 @@
   * 5.9 [show()](#geometry----show): Print a detailed dump of a FabQuery.
   * 5.10 [subtract()](#geometry----subtract): Subtract one solid form a FabQuery.
   * 5.11 [three_point_arc()](#geometry----three-point-arc): Draw a three point arc.
-* 6 Class: [Fab_Geometry](#geometry--fab-geometry):
-  * 6.1 [produce()](#geometry----produce): NO DOC STRING!
-  * 6.2 [get_start()](#geometry----get-start): Return start point of geometry.
-* 7 Class: [Fab_GeometryContext](#geometry--fab-geometrycontext):
-  * 7.1 [copy()](#geometry----copy): Return a Fab_GeometryContext copy.
-  * 7.2 [copy_with_plane_adjust()](#geometry----copy-with-plane-adjust): Return a Fab_GeometryContext copy with the plane adjusted up/down.
-  * 7.3 [set_geometry_group()](#geometry----set-geometry-group): Set the GeometryContext geometry group.
+* 6 Class: [Fab_Arc](#geometry--fab-arc):
+  * 6.1 [produce()](#geometry----produce): Return line segment after moving it into Geometry group.
+* 7 Class: [Fab_Circle](#geometry--fab-circle):
+  * 7.1 [produce()](#geometry----produce): Return line segment after moving it into Geometry group.
+* 8 Class: [Fab_Fillet](#geometry--fab-fillet):
+  * 8.1 [compute_arc()](#geometry----compute-arc): Return the arc associated with a Fab_Fillet with non-zero radius.
+  * 8.2 [plane_2d_project()](#geometry----plane-2d-project): Project the Apex onto a plane.
+  * 8.3 [get_geometries()](#geometry----get-geometries): NO DOC STRING!
+* 9 Class: [Fab_Geometry](#geometry--fab-geometry):
+  * 9.1 [produce()](#geometry----produce): NO DOC STRING!
+  * 9.2 [get_start()](#geometry----get-start): Return start point of geometry.
+* 10 Class: [Fab_GeometryContext](#geometry--fab-geometrycontext):
+  * 10.1 [copy()](#geometry----copy): Return a Fab_GeometryContext copy.
+  * 10.2 [copy_with_plane_adjust()](#geometry----copy-with-plane-adjust): Return a Fab_GeometryContext copy with the plane adjusted up/down.
+  * 10.3 [set_geometry_group()](#geometry----set-geometry-group): Set the GeometryContext geometry group.
+* 11 Class: [Fab_Line](#geometry--fab-line):
+  * 11.1 [get_start()](#geometry----get-start): Return the start point of the Fab_Line.
+  * 11.2 [produce()](#geometry----produce): Return line segment after moving it into Geometry group.
 
 ## <a name="geometry--fabcircle"></a>1 Class FabCircle:
 
@@ -265,25 +276,97 @@ FabQuery.three_point_arc(self, middle: cadquery.occ_impl.geom.Vector, end: cadqu
 Draw a three point arc.
 
 
-## <a name="geometry--fab-geometry"></a>6 Class Fab_Geometry:
+## <a name="geometry--fab-arc"></a>6 Class Fab_Arc:
 
-An Internal base class for _Arc, _Circle, and _Line.
+An internal representation an arc geometry.
+Attributes:
+* *Apex* (Vector): The fillet apex point.
+* *Radius* (float): The arc radius in millimeters.
+* *Center* (Vector): The arc center point.
+* *Start* (Vector): The Arc start point.
+* *Middle* (Vector): The Arc midpoint.
+* *Finish* (Vector): The Arc finish point.
+
+# Old:
+* *StartAngle* (float): The start arc angle in radians.
+* *FinishAngle* (float): The finish arc angle in radiuns.
+* *DeltaAngle* (float):
+  The value to add to *StartAngle* to get *FinishAngle* (module 2 radians):
+
+### <a name="geometry----produce"></a>6.1 `Fab_Arc.`produce():
+
+Fab_Arc.produce(self, geometry_context: Geometry.Fab_GeometryContext, prefix: str, index: int, tracing: str = '') -> Any:
+
+Return line segment after moving it into Geometry group.
+
+
+## <a name="geometry--fab-circle"></a>7 Class Fab_Circle:
+
+An internal representation of a circle geometry.
+Attributes:
+* *Center (Vector): The circle center.
+* *Diameter (float): The circle diameter in millimeters.
+
+### <a name="geometry----produce"></a>7.1 `Fab_Circle.`produce():
+
+Fab_Circle.produce(self, geometry_context: Geometry.Fab_GeometryContext, prefix: str, index: int, tracing: str = '') -> Any:
+
+Return line segment after moving it into Geometry group.
+
+
+## <a name="geometry--fab-fillet"></a>8 Class Fab_Fillet:
+
+An object that represents one fillet of a FabPolygon.
+Attributes:
+* *Apex* (Vector): The apex corner point for the fillet.
+* *Radius* (float): The fillet radius in millimeters.
+* *Before* (Fab_Fillet): The previous Fab_Fillet in the FabPolygon.
+* *After* (Fab_Fillet): The next Fab_Fillet in the FabPolygon.
+* *Arc* (Optional[Fab_Arc]): The fillet Arc if Radius is non-zero.
+* *Line* (Optional[Fab_Line]): The line that connects to the previous Fab_Fillet
+
+### <a name="geometry----compute-arc"></a>8.1 `Fab_Fillet.`compute_arc():
+
+Fab_Fillet.compute_arc(self, tracing: str = '') -> Geometry.Fab_Arc:
+
+Return the arc associated with a Fab_Fillet with non-zero radius.
+
+### <a name="geometry----plane-2d-project"></a>8.2 `Fab_Fillet.`plane_2d_project():
+
+Fab_Fillet.plane_2d_project(self, plane: Geometry.FabPlane) -> None:
+
+Project the Apex onto a plane.
+Arguments:
+* *plane* (FabPlane): The plane to project the Fab_Fillet onto.
+
+Modifies Fab_Fillet.
+
+### <a name="geometry----get-geometries"></a>8.3 `Fab_Fillet.`get_geometries():
+
+Fab_Fillet.get_geometries(self) -> Tuple[Geometry.Fab_Geometry, ...]:
+
+NO DOC STRING!
+
+
+## <a name="geometry--fab-geometry"></a>9 Class Fab_Geometry:
+
+An Internal base class for Fab_Arc, Fab_Circle, and Fab_Line.
 All Fab_Geometry classes are immutable (i.e. frozen.)
 
-### <a name="geometry----produce"></a>6.1 `Fab_Geometry.`produce():
+### <a name="geometry----produce"></a>9.1 `Fab_Geometry.`produce():
 
 Fab_Geometry.produce(self, geometry_context: Geometry.Fab_GeometryContext, prefix: str, index: int, tracing: str = '') -> Any:
 
 NO DOC STRING!
 
-### <a name="geometry----get-start"></a>6.2 `Fab_Geometry.`get_start():
+### <a name="geometry----get-start"></a>9.2 `Fab_Geometry.`get_start():
 
 Fab_Geometry.get_start(self) -> cadquery.occ_impl.geom.Vector:
 
 Return start point of geometry.
 
 
-## <a name="geometry--fab-geometrycontext"></a>7 Class Fab_GeometryContext:
+## <a name="geometry--fab-geometrycontext"></a>10 Class Fab_GeometryContext:
 
 GeometryProduce: Context needed to produce FreeCAD geometry objects.
 Attributes:
@@ -293,23 +376,43 @@ Attributes:
   The FreeCAD group to store FreeCAD Geometry objects into.
   This field needs to be set prior to use with set_geometry_group() method.
 
-### <a name="geometry----copy"></a>7.1 `Fab_GeometryContext.`copy():
+### <a name="geometry----copy"></a>10.1 `Fab_GeometryContext.`copy():
 
 Fab_GeometryContext.copy(self, tracing: str = '') -> 'Fab_GeometryContext':
 
 Return a Fab_GeometryContext copy.
 
-### <a name="geometry----copy-with-plane-adjust"></a>7.2 `Fab_GeometryContext.`copy_with_plane_adjust():
+### <a name="geometry----copy-with-plane-adjust"></a>10.2 `Fab_GeometryContext.`copy_with_plane_adjust():
 
 Fab_GeometryContext.copy_with_plane_adjust(self, delta: float, tracing: str = '') -> 'Fab_GeometryContext':
 
 Return a Fab_GeometryContext copy with the plane adjusted up/down.
 
-### <a name="geometry----set-geometry-group"></a>7.3 `Fab_GeometryContext.`set_geometry_group():
+### <a name="geometry----set-geometry-group"></a>10.3 `Fab_GeometryContext.`set_geometry_group():
 
 Fab_GeometryContext.set_geometry_group(self, geometry_group: Any) -> None:
 
 Set the GeometryContext geometry group.
+
+
+## <a name="geometry--fab-line"></a>11 Class Fab_Line:
+
+An internal representation of a line segment geometry.
+Attributes:
+* *Start (Vector): The line segment start point.
+* *Finish (Vector): The line segment finish point.
+
+### <a name="geometry----get-start"></a>11.1 `Fab_Line.`get_start():
+
+Fab_Line.get_start(self) -> cadquery.occ_impl.geom.Vector:
+
+Return the start point of the Fab_Line.
+
+### <a name="geometry----produce"></a>11.2 `Fab_Line.`produce():
+
+Fab_Line.produce(self, geometry_context: Geometry.Fab_GeometryContext, prefix: str, index: int, tracing: str = '') -> Any:
+
+Return line segment after moving it into Geometry group.
 
 
 

@@ -414,7 +414,7 @@ class Fab_GeometryContext(object):
 # Fab_Geometry:
 @dataclass(frozen=True)
 class Fab_Geometry(object):
-    """Fab_Geometry: An Internal base class for _Arc, _Circle, and _Line.
+    """Fab_Geometry: An Internal base class for Fab_Arc, Fab_Circle, and Fab_Line.
 
     All Fab_Geometry classes are immutable (i.e. frozen.)
     """
@@ -430,10 +430,10 @@ class Fab_Geometry(object):
         raise NotImplementedError(f"{type(self)}.get_start() is not implemented yet")
 
 
-# _Arc:
+# Fab_Arc:
 @dataclass(frozen=True)
-class _Arc(Fab_Geometry):
-    """_Arc: An internal representation an arc geometry.
+class Fab_Arc(Fab_Geometry):
+    """Fab_Arc: An internal representation an arc geometry.
 
     Attributes:
     * *Apex* (Vector): The fillet apex point.
@@ -461,13 +461,13 @@ class _Arc(Fab_Geometry):
     # FinishAngle: float
     # DeltaAngle: float
 
-    # _Arc.produce():
+    # Fab_Arc.produce():
     def produce(self, geometry_context: Fab_GeometryContext, prefix: str,
                 index: int, tracing: str = "") -> Any:
         """Return line segment after moving it into Geometry group."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>_Arc.produce(*, '{prefix}', {index})")
+            print(f"{tracing}=>Fab_Arc.produce(*, '{prefix}', {index})")
 
         part_arc: Any = None
         plane: FabPlane = geometry_context._Plane
@@ -477,13 +477,13 @@ class _Arc(Fab_Geometry):
             rotated_middle, rotated_finish, tracing=next_tracing)
 
         if tracing:
-            print(f"{tracing}<=_Arc.produce(*, '{prefix}', {index})=>{part_arc}")
+            print(f"{tracing}<=Fab_Arc.produce(*, '{prefix}', {index})=>{part_arc}")
         return part_arc
 
 
 @dataclass(frozen=True)
-class _Circle(Fab_Geometry):
-    """_Circle: An internal representation of a circle geometry.
+class Fab_Circle(Fab_Geometry):
+    """Fab_Circle: An internal representation of a circle geometry.
 
     Attributes:
     * *Center (Vector): The circle center.
@@ -494,13 +494,13 @@ class _Circle(Fab_Geometry):
     Center: Vector
     Diameter: float
 
-    # _Circle.produce():
+    # Fab_Circle.produce():
     def produce(self, geometry_context: Fab_GeometryContext, prefix: str,
                 index: int, tracing: str = "") -> Any:
         """Return line segment after moving it into Geometry group."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>_Circle.produce()")
+            print(f"{tracing}=>Fab_Circle.produce()")
         plane: FabPlane = geometry_context.Plane
         center_on_plane: Vector = plane.point_project(self.Center)
         part_circle: Any = None
@@ -508,14 +508,14 @@ class _Circle(Fab_Geometry):
         query.circle(center_on_plane, self.Diameter / 2, tracing=next_tracing)
 
         if tracing:
-            print(f"{tracing}<=_Circle.produce()")
+            print(f"{tracing}<=Fab_Circle.produce()")
         return part_circle
 
 
-# _Line:
+# Fab_Line:
 @dataclass(frozen=True)
-class _Line(Fab_Geometry):
-    """_Line: An internal representation of a line segment geometry.
+class Fab_Line(Fab_Geometry):
+    """Fab_Line: An internal representation of a line segment geometry.
 
     Attributes:
     * *Start (Vector): The line segment start point.
@@ -526,18 +526,18 @@ class _Line(Fab_Geometry):
     Start: Vector
     Finish: Vector
 
-    # _Line.get_start():
+    # Fab_Line.get_start():
     def get_start(self) -> Vector:
-        """Return the start point of the _Line."""
+        """Return the start point of the Fab_Line."""
         return self.Start
 
-    # _Line.produce():
+    # Fab_Line.produce():
     def produce(self, geometry_context: Fab_GeometryContext, prefix: str,
                 index: int, tracing: str = "") -> Any:
         """Return line segment after moving it into Geometry group."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>_Line.produce()")
+            print(f"{tracing}=>Fab_Line.produce()")
 
         line_segment: Any = None
         plane: FabPlane = geometry_context._Plane
@@ -547,41 +547,41 @@ class _Line(Fab_Geometry):
         geometry_context.Query.line_to(rotated_finish, tracing=next_tracing)
 
         if tracing:
-            print(f"{tracing}<=_Line.produce()=>{line_segment}")
+            print(f"{tracing}<=Fab_Line.produce()=>{line_segment}")
         return line_segment
 
 
-# _Fillet:
+# Fab_Fillet:
 @dataclass
-class _Fillet(object):
-    """_Fillet: An object that represents one fillet of a FabPolygon.
+class Fab_Fillet(object):
+    """Fab_Fillet: An object that represents one fillet of a FabPolygon.
 
     Attributes:
     * *Apex* (Vector): The apex corner point for the fillet.
     * *Radius* (float): The fillet radius in millimeters.
-    * *Before* (_Fillet): The previous _Fillet in the FabPolygon.
-    * *After* (_Fillet): The next _Fillet in the FabPolygon.
-    * *Arc* (Optional[_Arc]): The fillet Arc if Radius is non-zero.
-    * *Line* (Optional[_Line]): The line that connects to the previous _Fillet
+    * *Before* (Fab_Fillet): The previous Fab_Fillet in the FabPolygon.
+    * *After* (Fab_Fillet): The next Fab_Fillet in the FabPolygon.
+    * *Arc* (Optional[Fab_Arc]): The fillet Arc if Radius is non-zero.
+    * *Line* (Optional[Fab_Line]): The line that connects to the previous Fab_Fillet
 
     """
 
     Apex: Vector
     Radius: float
-    Before: "_Fillet" = field(init=False, repr=False)  # Filled in by __post_init__()
-    After: "_Fillet" = field(init=False, repr=False)  # Filled in by __post_init__()
-    Arc: Optional["_Arc"] = field(init=False, default=None)  # Filled in by compute_arcs()
-    Line: Optional["_Line"] = field(init=False, default=None)  # Filled in by compute_lines()
+    Before: "Fab_Fillet" = field(init=False, repr=False)  # Filled in by __post_init__()
+    After: "Fab_Fillet" = field(init=False, repr=False)  # Filled in by __post_init__()
+    Arc: Optional["Fab_Arc"] = field(init=False, default=None)  # Filled in by compute_arcs()
+    Line: Optional["Fab_Line"] = field(init=False, default=None)  # Filled in by compute_lines()
 
-    # _Fillet.__post_init__():
+    # Fab_Fillet.__post_init__():
     def __post_init__(self) -> None:
-        """Initialize _Fillet."""
+        """Initialize Fab_Fillet."""
         self.Before = self
         self.After = self
 
-    # _Fillet.compute_arc():
-    def compute_arc(self, tracing: str = "") -> _Arc:
-        """Return the arc associated with a _Fillet with non-zero radius."""
+    # Fab_Fillet.compute_arc():
+    def compute_arc(self, tracing: str = "") -> Fab_Arc:
+        """Return the arc associated with a Fab_Fillet with non-zero radius."""
         # A fillet is represented as an arc that traverses a sphere with a specified radius.
         #
         # Each fillet specifies an 3D center point and a radius.  The the fillet the corner point is
@@ -598,7 +598,7 @@ class _Fillet(object):
         # The XC line segment from X to C crosses the circle at the arc midpoint M.  The points
         # S, M, and F uniquely specify an arc of radius r in 3D space around the C center point.
         #
-        # The crude 2D diagram below shows the basic _Fillet geometry:
+        # The crude 2D diagram below shows the basic Fab_Fillet geometry:
         #
         #       A
         #       |
@@ -636,7 +636,7 @@ class _Fillet(object):
         apex: Vector = self.Apex
         after: Vector = self.After.Apex
         if tracing:
-            print(f"{tracing}=>_Fillet.compute_arc()")
+            print(f"{tracing}=>Fab_Fillet.compute_arc()")
             print(f"{tracing}{radius=} {before=} {apex=} {after=}")
 
         # Steps 1 and 2: Compute unit vectors <XB>, <XA>, and <XC>
@@ -701,9 +701,9 @@ class _Fillet(object):
         # Let's instead go in the shorter, negative direction.
         # if delta_angle > pi:
         #    delta_angle = -(pi2 - delta_angle)
-        # arc: _Arc = _Arc(apex, radius, center, start, middle, finish,
+        # arc: Fab_Arc = Fab_Arc(apex, radius, center, start, middle, finish,
         #                            start_angle, finish_angle, delta_angle)
-        arc: _Arc = _Arc(apex, radius, center, start, middle, finish)
+        arc: Fab_Arc = Fab_Arc(apex, radius, center, start, middle, finish)
 
         # Do a sanity check:
         # finish_angle = finish_angle % pi2
@@ -711,23 +711,23 @@ class _Fillet(object):
         # assert abs(start_plus_delta_angle - finish_angle) < 1.0e-8, "Delta angle is wrong."
 
         if tracing:
-            print(f"{tracing}<=_Fillet.compute_arc()=>{arc}")
+            print(f"{tracing}<=Fab_Fillet.compute_arc()=>{arc}")
         return arc
 
-    # _Fillet.plane_2d_project:
+    # Fab_Fillet.plane_2d_project:
     def plane_2d_project(self, plane: FabPlane) -> None:
         """Project the Apex onto a plane.
 
         Arguments:
-        * *plane* (FabPlane): The plane to project the _Fillet onto.
+        * *plane* (FabPlane): The plane to project the Fab_Fillet onto.
 
-        Modifies _Fillet.
+        Modifies Fab_Fillet.
 
         """
         # FreeCAD Vector metheds like to modify Vector contents; force copies beforehand:
         self.Apex = plane.point_project(self.Apex)
 
-    # _Fillet.get_geometries():
+    # Fab_Fillet.get_geometries():
     def get_geometries(self) -> Tuple[Fab_Geometry, ...]:
         geometries: List[Fab_Geometry] = []
         if self.Line:
@@ -736,7 +736,7 @@ class _Fillet(object):
             geometries.append(self.Arc)
         return tuple(geometries)
 
-    # _Fillet.unit_tests():
+    # Fab_Fillet.unit_tests():
     @staticmethod
     def unit_tests() -> None:
         # Create 4 corners centered.
@@ -751,13 +751,13 @@ class _Fillet(object):
         sw_corner: Vector = Vector(center - dx - dy)
         se_corner: Vector = Vector(center + dx - dy)
 
-        # Create the _Fillet's:
-        ne_fillet: _Fillet = _Fillet(ne_corner, radius)
-        nw_fillet: _Fillet = _Fillet(nw_corner, radius)
-        sw_fillet: _Fillet = _Fillet(sw_corner, radius)
-        se_fillet: _Fillet = _Fillet(se_corner, radius)
+        # Create the Fab_Fillet's:
+        ne_fillet: Fab_Fillet = Fab_Fillet(ne_corner, radius)
+        nw_fillet: Fab_Fillet = Fab_Fillet(nw_corner, radius)
+        sw_fillet: Fab_Fillet = Fab_Fillet(sw_corner, radius)
+        se_fillet: Fab_Fillet = Fab_Fillet(se_corner, radius)
 
-        # Provide before/after _Fillets:
+        # Provide before/after Fab_Fillets:
         ne_fillet.Before = se_fillet
         nw_fillet.Before = ne_fillet
         sw_fillet.Before = nw_fillet
@@ -919,7 +919,7 @@ class FabCircle(FabGeometry):
     # FabCircle.get_geometries():
     def get_geometries(self) -> Tuple[Fab_Geometry, ...]:
         """Return the FabPolygon lines and arcs."""
-        return (_Circle(self.Center, self.Diameter),)
+        return (Fab_Circle(self.Center, self.Diameter),)
 
     @staticmethod
     # FabCircle._unit_tests():
@@ -967,7 +967,7 @@ class FabPolygon(FabGeometry):
     """
 
     Corners: Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]
-    _Fillets: Tuple[_Fillet, ...] = field(init=False, repr=False)
+    Fab_Fillets: Tuple[Fab_Fillet, ...] = field(init=False, repr=False)
 
     EPSILON = 1.0e-8
 
@@ -1011,15 +1011,15 @@ class FabPolygon(FabGeometry):
     def __post_init__(self) -> None:
         """Verify that the corners passed in are correct."""
         corner: Union[Vector, Tuple[Vector, Union[int, float]]]
-        fillets: List[_Fillet] = []
-        fillet: _Fillet
+        fillets: List[Fab_Fillet] = []
+        fillet: Fab_Fillet
         # TODO: Check for polygon points that are colinear.
         # TODO: Check for polygon corners with overlapping radii.
         copy: Vector = Vector()  # Vector's are mutable, add *copy* to make a private Vector copy.
         index: int
         for index, corner in enumerate(self.Corners):
             if isinstance(corner, Vector):
-                fillet = _Fillet(corner + copy, 0.0)
+                fillet = Fab_Fillet(corner + copy, 0.0)
             elif isinstance(corner, tuple):
                 if len(corner) != 2:
                     raise ValueError(f"Polygon Corner[{index}]: {corner} tuple length is not 2")
@@ -1027,14 +1027,14 @@ class FabPolygon(FabGeometry):
                     raise ValueError(f"Polygon Corner[{index}]: {corner} first entry is not Vector")
                 if not isinstance(corner[1], (int, float)):
                     raise ValueError(f"Polygon Corner[{index}]: {corner} first entry is not number")
-                fillet = _Fillet(corner[0] + copy, corner[1])
+                fillet = Fab_Fillet(corner[0] + copy, corner[1])
             else:
                 raise ValueError(
                     f"Polygon Corner[{index}] is {corner} which is neither a Vector nor "
                     "(Vector, radius) tuple.")
             fillets.append(fillet)
         # (Why __setattr__?)[https://stackoverflow.com/questions/53756788]
-        object.__setattr__(self, "_Fillets", tuple(fillets))
+        object.__setattr__(self, "Fab_Fillets", tuple(fillets))
 
         # Double link the fillets and look for errors:
         self._double_link()
@@ -1081,10 +1081,10 @@ class FabPolygon(FabGeometry):
 
     # FabPolygon._double_link():
     def _double_link(self) -> None:
-        """Double link the _Fillet's together."""
-        fillets: Tuple[_Fillet, ...] = self._Fillets
+        """Double link the Fab_Fillet's together."""
+        fillets: Tuple[Fab_Fillet, ...] = self.Fab_Fillets
         size: int = len(fillets)
-        fillet: _Fillet
+        fillet: Fab_Fillet
         index: int
         for index, fillet in enumerate(fillets):
             fillet.Before = fillets[(index - 1) % size]
@@ -1093,9 +1093,9 @@ class FabPolygon(FabGeometry):
     # FabPolygon._radii_check():
     def _radii_check(self) -> str:
         """Check for radius overlap errors."""
-        at_fillet: _Fillet
-        for at_fillet in self._Fillets:
-            before_fillet: _Fillet = at_fillet.Before
+        at_fillet: Fab_Fillet
+        for at_fillet in self.Fab_Fillets:
+            before_fillet: Fab_Fillet = at_fillet.Before
             actual_distance: float = (before_fillet.Apex - at_fillet.Apex).Length
             radii_distance: float = before_fillet.Radius + at_fillet.Radius
             if radii_distance > actual_distance:
@@ -1107,10 +1107,10 @@ class FabPolygon(FabGeometry):
     # FabPolygon._colinear_check():
     def _colinear_check(self) -> str:
         """Check for colinearity errors."""
-        at_fillet: _Fillet
+        at_fillet: Fab_Fillet
         epsilon: float = FabPolygon.EPSILON
         degrees180: float = math.pi
-        for at_fillet in self._Fillets:
+        for at_fillet in self.Fab_Fillets:
             before_apex: Vector = at_fillet.Before.Apex
             at_apex: Vector = at_fillet.Apex
             after_apex: Vector = at_fillet.After.Apex
@@ -1123,42 +1123,42 @@ class FabPolygon(FabGeometry):
 
     # FabPolygon._compute_arcs():
     def _compute_arcs(self) -> None:
-        """Create any Arc's needed for non-zero radius _Fillet's."""
-        fillet: _Fillet
-        for fillet in self._Fillets:
+        """Create any Arc's needed for non-zero radius Fab_Fillet's."""
+        fillet: Fab_Fillet
+        for fillet in self.Fab_Fillets:
             if fillet.Radius > 0.0:
                 fillet.Arc = fillet.compute_arc()
 
     # FabPolygon._compute_lines():
     def _compute_lines(self) -> None:
-        """Create Create any Line's need for _Fillet's."""
-        fillet: _Fillet
-        for fillet in self._Fillets:
-            before: _Fillet = fillet.Before
+        """Create Create any Line's need for Fab_Fillet's."""
+        fillet: Fab_Fillet
+        for fillet in self.Fab_Fillets:
+            before: Fab_Fillet = fillet.Before
             start: Vector = before.Arc.Finish if before.Arc else before.Apex
             finish: Vector = fillet.Arc.Start if fillet.Arc else fillet.Apex
             if (start - finish).Length > FabPolygon.EPSILON:
-                fillet.Line = _Line(start, finish)
+                fillet.Line = Fab_Line(start, finish)
 
     # FabPolygon.get_geometries():
     def get_geometries(self, contact: Vector, Normal: Vector) -> Tuple[Fab_Geometry, ...]:
         """Return the FabPolygon lines and arcs."""
         geometries: List[Fab_Geometry] = []
-        fillet: _Fillet
-        for fillet in self._Fillets:
+        fillet: Fab_Fillet
+        for fillet in self.Fab_Fillets:
             geometries.extend(fillet.get_geometries())
         return tuple(geometries)
 
     # FabPolygon._plane_2d_project():
     def _plane_2d_project(self, plane: FabPlane) -> None:
-        """Update the _Fillet's to be projected onto a Plane.
+        """Update the Fab_Fillet's to be projected onto a Plane.
 
         Arguments:
-        * *plane* (FabPlane): The plane to modify the _Fillet's to be on.
+        * *plane* (FabPlane): The plane to modify the Fab_Fillet's to be on.
 
         """
-        fillet: _Fillet
-        for fillet in self._Fillets:
+        fillet: Fab_Fillet
+        for fillet in self.Fab_Fillets:
             fillet.plane_2d_project(plane)
 
     # FabPolygon.produce():
@@ -1456,7 +1456,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    _Fillet.unit_tests()
+    Fab_Fillet.unit_tests()
     FabCircle._unit_tests()
     FabPolygon._unit_tests()
     main()
