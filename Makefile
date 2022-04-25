@@ -13,10 +13,10 @@ TOOLS_ROOT := FreeCADRoot/Mod/Path/Tools
 SAFE_MODULES := \
     BOM \
     Doc \
+    FabGeometries \
     FabJoiner \
     FabNodes \
     FabUtilities \
-    Geometry \
     Project \
     Shop \
     Solid \

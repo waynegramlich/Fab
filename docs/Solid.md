@@ -78,13 +78,13 @@ Return FabMount JSON structure.
 
 ### <a name="solid----extrude"></a>1.6 `FabMount.`extrude():
 
-FabMount.extrude(self, name: str, shapes: Union[Geometry.FabGeometry, Tuple[Geometry.FabGeometry, ...]], depth: float, contour: bool = True, tracing: str = '') -> None:
+FabMount.extrude(self, name: str, shapes: Union[FabGeometries.FabGeometry, Tuple[FabGeometries.FabGeometry, ...]], depth: float, contour: bool = True, tracing: str = '') -> None:
 
 Perform a extrude operation.
 
 ### <a name="solid----pocket"></a>1.7 `FabMount.`pocket():
 
-FabMount.pocket(self, name: str, shapes: Union[Geometry.FabGeometry, Tuple[Geometry.FabGeometry, ...]], depth: float, tracing: str = '') -> None:
+FabMount.pocket(self, name: str, shapes: Union[FabGeometries.FabGeometry, Tuple[FabGeometries.FabGeometry, ...]], depth: float, tracing: str = '') -> None:
 
 Perform a pocket operation.
 

@@ -12,7 +12,7 @@ from pathlib import Path
 from cadquery import Vector  # type: ignore
 
 # Fab library imports:
-from Geometry import FabCircle, FabPolygon
+from FabGeometries import FabCircle, FabPolygon
 from FabJoiner import FabFasten, FabJoin
 from FabNodes import FabNode  # This should not be needed see cast in BoxSide.produce()
 from Project import FabAssembly, FabDocument, FabProject

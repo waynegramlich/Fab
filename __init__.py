@@ -212,11 +212,11 @@ The (current) main Python modules are:
 * [Solid](docs/Solid.md):
   The Solid creation class of FabSolid and FabMount.
 
-* [Geometry](docs/Geometry.md):
-  The FabPolygon, FabCircle sub-classes of FabGeometry.
+* [FabGeometries](docs/Geometries.md):
+  The FabPolygon and FabCircle sub-classes of FabGeometry.
 
 * [FabNodes](docs/FabNodes.md):
-  The base FabNode class and associated FabBox class for describing bounding boxes.
+  The base FabNode class and its associated bounding box FabBox sub-class.
 
 * [FabUtilities](doc/FabUtilities.md):
   This contains some utility classes like FabColor and FabMaterial.
