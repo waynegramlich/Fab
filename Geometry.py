@@ -318,9 +318,9 @@ class FabPlane(object):
         return rotated_point
 
 
-# FabGeometryContext:
+# Fab_GeometryContext:
 @dataclass
-class FabGeometryContext(object):
+class Fab_GeometryContext(object):
     """GeometryProduce: Context needed to produce FreeCAD geometry objects.
 
     Attributes:
@@ -337,35 +337,35 @@ class FabGeometryContext(object):
     _geometry_group: Optional[Any] = field(init=False, repr=False)  # TODO: Is this used any more?
     _copy: Vector = field(init=False, repr=False)  # TODO: Is this used any more?
 
-    # FabGeometryContext.__post_init__():
+    # Fab_GeometryContext.__post_init__():
     def __post_init__(self) -> None:
         """Initialize FabGeometryContex."""
 
         if not isinstance(self._Plane, FabPlane):
             raise RuntimeError(
-                f"FabGeometryContext.__post_init__(): {type(self._Plane)} is not a FabPlane")
+                f"Fab_GeometryContext.__post_init__(): {type(self._Plane)} is not a FabPlane")
         if not isinstance(self._Query, FabQuery):
             raise RuntimeError(
-                "FabGeometryContext.__post_init__(): "
+                "Fab_GeometryContext.__post_init__(): "
                 f"{type(self._Query)} is not a FabQuery")
 
         copy: Vector = Vector()
         self._copy: Vector = copy
         self._GeometryGroup = None  # Set with set_geometry_group() method
 
-    # FabGeometryContext.Plane():
+    # Fab_GeometryContext.Plane():
     @property
     def Plane(self) -> FabPlane:
         """Return the FabPlane."""
         return self._Plane
 
-    # FabGeometryContext.Query():
+    # Fab_GeometryContext.Query():
     @property
     def Query(self) -> Any:
         """Return the FabQuery.."""
         return self._Query
 
-    # FabGeometryContext.Query.setter():
+    # Fab_GeometryContext.Query.setter():
     @Query.setter
     def Query(self, query: Any):
         """Set the FabQuery.."""
@@ -375,38 +375,38 @@ class FabGeometryContext(object):
         assert False, "Is this used?"
         self._Query = query
 
-    # FabGeometryContext.GeometryGroup():
+    # Fab_GeometryContext.GeometryGroup():
     @property
     def GeometryGroup(self) -> Any:
         """Return FabGeometry normal tSo 2D plane."""
         if not self._GeometryGroup:
-            raise RuntimeError("FabGeometryContext.GeometryGroup(): not set yet; must be set")
+            raise RuntimeError("Fab_GeometryContext.GeometryGroup(): not set yet; must be set")
         return self._GeometryGroup
 
-    # FabGeometryContext.copy():
-    def copy(self, tracing: str = "") -> "FabGeometryContext":
-        """Return a FabGeometryContext copy."""
+    # Fab_GeometryContext.copy():
+    def copy(self, tracing: str = "") -> "Fab_GeometryContext":
+        """Return a Fab_GeometryContext copy."""
         # next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}<=>FabGeometryContext.copy()")
+            print(f"{tracing}<=>Fab_GeometryContext.copy()")
         new_query: FabQuery = FabQuery(self._Plane)
-        return FabGeometryContext(self._Plane, new_query)
+        return Fab_GeometryContext(self._Plane, new_query)
 
-    # FabGeometryContext.copy_with_plane_adjust():
-    def copy_with_plane_adjust(self, delta: float, tracing: str = "") -> "FabGeometryContext":
-        """Return a FabGeometryContext copy with the plane adjusted up/down."""
+    # Fab_GeometryContext.copy_with_plane_adjust():
+    def copy_with_plane_adjust(self, delta: float, tracing: str = "") -> "Fab_GeometryContext":
+        """Return a Fab_GeometryContext copy with the plane adjusted up/down."""
         # next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}<=>FabGeometryContext.copy()")
+            print(f"{tracing}<=>Fab_GeometryContext.copy()")
         adjusted_plane: FabPlane = self._Plane.adjust(delta)
         new_query: FabQuery = FabQuery(adjusted_plane)
-        return FabGeometryContext(adjusted_plane, new_query)
+        return Fab_GeometryContext(adjusted_plane, new_query)
 
-    # FabGeometryContext.set_geometry_Group():
+    # Fab_GeometryContext.set_geometry_Group():
     def set_geometry_group(self, geometry_group: Any) -> None:
         """Set the GeometryContext geometry group."""
         # if not isinstance(geometry_group, App.DocumentObjectGroup):
-        #     raise RuntimeError(f"FabGeometryContext.set_geometry_grouop(): "
+        #     raise RuntimeError(f"Fab_GeometryContext.set_geometry_grouop(): "
         #                        f"{type(geometry_group)} is not App.DocumentObjectGroup")
         self._GeometryGroup = geometry_group
 
@@ -420,7 +420,7 @@ class Fab_Geometry(object):
     """
 
     # Fab_Geometry.produce():
-    def produce(self, geometry_context: FabGeometryContext, prefix: str,
+    def produce(self, geometry_context: Fab_GeometryContext, prefix: str,
                 index: int, tracing: str = "") -> Any:
         raise NotImplementedError(f"{type(self)}.produce() is not implemented yet")
 
@@ -462,7 +462,7 @@ class _Arc(Fab_Geometry):
     # DeltaAngle: float
 
     # _Arc.produce():
-    def produce(self, geometry_context: FabGeometryContext, prefix: str,
+    def produce(self, geometry_context: Fab_GeometryContext, prefix: str,
                 index: int, tracing: str = "") -> Any:
         """Return line segment after moving it into Geometry group."""
         next_tracing: str = tracing + " " if tracing else ""
@@ -495,7 +495,7 @@ class _Circle(Fab_Geometry):
     Diameter: float
 
     # _Circle.produce():
-    def produce(self, geometry_context: FabGeometryContext, prefix: str,
+    def produce(self, geometry_context: Fab_GeometryContext, prefix: str,
                 index: int, tracing: str = "") -> Any:
         """Return line segment after moving it into Geometry group."""
         next_tracing: str = tracing + " " if tracing else ""
@@ -532,7 +532,7 @@ class _Line(Fab_Geometry):
         return self.Start
 
     # _Line.produce():
-    def produce(self, geometry_context: FabGeometryContext, prefix: str,
+    def produce(self, geometry_context: Fab_GeometryContext, prefix: str,
                 index: int, tracing: str = "") -> Any:
         """Return line segment after moving it into Geometry group."""
         next_tracing: str = tracing + " " if tracing else ""
@@ -790,7 +790,7 @@ class FabGeometry(object):
         raise NotImplementedError(f"{type(self)}.get_hash() is not implemented")
 
     # FabGeometry.produce():
-    def produce(self, geometry_context: FabGeometryContext, prefix: str,
+    def produce(self, geometry_context: Fab_GeometryContext, prefix: str,
                 index: int, tracing: str = "") -> Tuple[Any, ...]:
         """Produce the necessary FreeCAD objects for the FabGeometry."""
         raise NotImplementedError(f"{type(self)}.produce() is not implemented")
@@ -898,7 +898,7 @@ class FabCircle(FabGeometry):
         return new_circle
 
     # FabCircle.produce():
-    def produce(self, geometry_context: FabGeometryContext, prefix: str,
+    def produce(self, geometry_context: Fab_GeometryContext, prefix: str,
                 index: int, tracing: str = "") -> Tuple[Any, ...]:
         """Produce the FreeCAD objects needed for FabPolygon."""
         next_tracing: str = tracing + " " if tracing else ""
@@ -1162,7 +1162,7 @@ class FabPolygon(FabGeometry):
             fillet.plane_2d_project(plane)
 
     # FabPolygon.produce():
-    def produce(self, geometry_context: FabGeometryContext, prefix: str,
+    def produce(self, geometry_context: Fab_GeometryContext, prefix: str,
                 index: int, tracing: str = "") -> Tuple[Any, ...]:
         """Produce the FreeCAD objects needed for FabPolygon."""
         # Extract mount plane *contact* and *normal* from *geometry_context*:
@@ -1170,7 +1170,7 @@ class FabPolygon(FabGeometry):
         if tracing:
             print(f"{tracing}=>FabPolygon.produce(*, '{prefix}', {index})")
         part_geometry: Any
-        assert isinstance(geometry_context, FabGeometryContext), geometry_context
+        assert isinstance(geometry_context, Fab_GeometryContext), geometry_context
         plane_contact: Vector = geometry_context.Plane.Contact
         plane_normal: Vector = geometry_context.Plane.Normal
         plane: FabPlane = FabPlane(plane_contact, plane_normal)

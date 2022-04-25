@@ -23,7 +23,7 @@ from cadquery import Vector  # type: ignore
 
 # import Part  # type: ignore
 
-from Geometry import FabCircle, FabGeometry, FabGeometryContext, FabPlane, FabQuery
+from Geometry import FabCircle, FabGeometry, Fab_GeometryContext, FabPlane, FabQuery
 from FabJoiner import FabFasten, FabJoin
 from FabNodes import FabBox, FabNode, Fab_ProduceState
 from FabUtilities import FabColor, FabToolController
@@ -405,7 +405,7 @@ class _Extrude(_Operation):
         # Extract the *part_geometries* and create the associated *shape_binder*:
         mount: FabMount = self.Mount
         geometry_prefix: str = f"{mount.Name}_{self.Name}"
-        geometry_context: FabGeometryContext = mount._GeometryContext
+        geometry_context: Fab_GeometryContext = mount._GeometryContext
         for index, geometry in enumerate(self._Geometries):
             if tracing:
                 print(f"{tracing}Geometry[{index}]:{geometry=}")
@@ -521,7 +521,7 @@ class _Pocket(_Operation):
 
         # Unpack some values from *mount*:
         mount: FabMount = self.Mount
-        geometry_context: FabGeometryContext = mount._GeometryContext
+        geometry_context: Fab_GeometryContext = mount._GeometryContext
         plane: FabPlane = geometry_context.Plane
         top_depth: float = plane.Distance
         final_depth: float = top_depth - self._Depth
@@ -580,13 +580,13 @@ class _Pocket(_Operation):
             print(f"{tracing}=>_Pocket.post_produce1('{self.Name}')")
 
         mount: FabMount = self.Mount
-        geometry_context: FabGeometryContext = mount._GeometryContext
+        geometry_context: Fab_GeometryContext = mount._GeometryContext
         geometries: Tuple[FabGeometry, ...] = self._Geometries
-        pocket_context: FabGeometryContext = geometry_context.copy(tracing=next_tracing)
+        pocket_context: Fab_GeometryContext = geometry_context.copy(tracing=next_tracing)
         pocket_query: FabQuery = pocket_context.Query
         if tracing:
             pocket_query.show("Pocket Context Before", tracing)
-        bottom_context: FabGeometryContext = geometry_context.copy_with_plane_adjust(
+        bottom_context: Fab_GeometryContext = geometry_context.copy_with_plane_adjust(
             -self._Depth, tracing=next_tracing)
 
         # Transfer *geometries* to *pocket_context* (which is a copy of *geometry_context*):
@@ -791,7 +791,7 @@ class _Hole(_Operation):
 
         # Unpack the *mount* and associated *geometry_context*:
         mount: FabMount = self.Mount
-        geometry_context: FabGeometryContext = mount._GeometryContext
+        geometry_context: Fab_GeometryContext = mount._GeometryContext
         mount_normal: Vector = mount.Normal
         plane: FabPlane = geometry_context.Plane
         query: FabQuery = geometry_context.Query
@@ -952,7 +952,7 @@ class FabMount(object):
     _Operations: "OrderedDict[str, _Operation]" = field(init=False, repr=False)
     _Copy: Vector = field(init=False, repr=False)  # Used for making private copies of Vector's
     _Tracing: str = field(init=False, repr=False)
-    _GeometryContext: FabGeometryContext = field(init=False, repr=False)
+    _GeometryContext: Fab_GeometryContext = field(init=False, repr=False)
     _AppDatumPlane: Any = field(init=False, repr=False)  # TODO: Remove
     _GuiDatumPlane: Any = field(init=False, repr=False)  # TODO: Remove
     _Plane: FabPlane = field(init=False, repr=False)
@@ -985,7 +985,7 @@ class FabMount(object):
         # Vector metheds like to modify Vector contents; force copies beforehand:
         self._Plane: FabPlane = FabPlane(self._Contact, self._Normal)  # , tracing=next_tracing)
         self._Orient = self._Plane.point_project(self._Orient)
-        self._GeometryContext = FabGeometryContext(self._Plane, self._Query)
+        self._GeometryContext = Fab_GeometryContext(self._Plane, self._Query)
         self._AppDatumPlane = None
         self._GuiDatumPlane = None
 
