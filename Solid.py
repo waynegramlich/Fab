@@ -569,7 +569,7 @@ class Fab_Pocket(Fab_Operation):
 
     # Fab_Pocket.get_kind():
     def get_kind(self) -> str:
-        """Return Fab_Extrude kind."""
+        """Return Fab_Pocket kind."""
         return "Pocket"
 
     # Fab_Pocket.post_produce1():
@@ -722,10 +722,10 @@ class Fab_HoleKey(object):
         )
 
 
-# _Hole:
+# Fab_Hole:
 @dataclass
-class _Hole(Fab_Operation):
-    """_Hole: FabDrill helper class that represents a hole."""
+class Fab_Hole(Fab_Operation):
+    """Fab_Hole: FabDrill helper class that represents a hole."""
 
     _Key: Fab_HoleKey
     Centers: Tuple[Vector, ...]  # The Center (start point) of the drils
@@ -736,9 +736,9 @@ class _Hole(Fab_Operation):
     StartDepth: float = field(init=False)
     StepFile: str = field(init=False)
 
-    # _Hole.__post_init__():
+    # Fab_Hole.__post_init__():
     def __post_init__(self) -> None:
-        """Perform final initialization of _Hole"""
+        """Perform final initialization of Fab_Hole"""
 
         super().__post_init__()
         assert isinstance(self._Key, Fab_HoleKey), self._Key
@@ -750,27 +750,27 @@ class _Hole(Fab_Operation):
         self.StartDepth = 0.0
         self.StepFile = ""
 
-    # _Hole.Key():
+    # Fab_Hole.Key():
     @property
     def Key(self) -> Fab_HoleKey:
         """Return a Hole key."""
         return self._Key
 
-    # _Hole.get_name()
+    # Fab_Hole.get_name()
     def get_name(self) -> str:
-        """Return _Hole name."""
+        """Return Fab_Hole name."""
         return self._Name
 
-    # _Hole.get_kind():
+    # Fab_Hole.get_kind():
     def get_kind(self) -> str:
-        """Return Fab_Extrude kind."""
+        """Return Fab_Hole kind."""
         return "Drilling"
 
-    # _Hole.get_hash():
+    # Fab_Hole.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:
-        """Return _Hole hash."""
+        """Return Fab_Hole hash."""
         hashes: List[Any] = [
-            "_Hole",
+            "Fab_Hole",
             self._Key.get_hash(),
             self.Join.get_hash(),
         ]
@@ -781,13 +781,13 @@ class _Hole(Fab_Operation):
             hashes.append(f"{center.z:.6f}")
         return tuple(hashes)
 
-    # _Hole.post_produce1():
+    # Fab_Hole.post_produce1():
     def post_produce1(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
-        """Perform _Hole phase 1 post production."""
+        """Perform Fab_Hole phase 1 post production."""
 
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>_Hole({self.Name}).post_produce1()")
+            print(f"{tracing}=>Fab_Hole({self.Name}).post_produce1()")
 
         # Unpack the *mount* and associated *geometry_context*:
         mount: FabMount = self.Mount
@@ -872,7 +872,7 @@ class _Hole(Fab_Operation):
 
             operation_index: int = produce_state.OperationIndex
             step_base_name: str = (
-                f"{mount.Solid.Label}__{mount.Name}__{operation_index:03d}__{self.Name}_Holes")
+                f"{mount.Solid.Label}__{mount.Name}__{operation_index:03d}__{self.Name}Fab_Holes")
             assembly: cq.Assembly = cq.Assembly(
                 holes_query.WorkPlane, name=step_base_name, color=cq.Color(0.5, 0.5, 0.5, 1.0))
 
@@ -897,11 +897,11 @@ class _Hole(Fab_Operation):
             self.set_tool_controller(tool_controller, produce_state.ToolControllersTable)
 
         if tracing:
-            print(f"{tracing}<=_Hole({self.Name}).post_produce1()")
+            print(f"{tracing}<=Fab_Hole({self.Name}).post_produce1()")
 
-    # _Hole.to_json():
+    # Fab_Hole.to_json():
     def to_json(self) -> Dict[str, Any]:
-        """"""
+        """Return the FabHole JSON."""
         start_depth: float = self.StartDepth
         extra_offset_modes: Tuple[str, ...] = ("2x Drill Tip", "Drill Tip", "None")
         json_dict: Dict[str, Any] = super().to_json()
@@ -1128,7 +1128,7 @@ class FabMount(object):
         name: str
         operation: Fab_Operation
         for name, operation in operations.items():
-            if isinstance(operation, (Fab_Extrude, Fab_Pocket, _Hole)):
+            if isinstance(operation, (Fab_Extrude, Fab_Pocket, Fab_Hole)):
                 if operation.JsonEnabled:
                     json_operations.append(operation.to_json())
 
@@ -1223,7 +1223,7 @@ class FabMount(object):
         solid: "FabSolid" = self._Solid
 
         # intersect_joins: List[FabJoin] = []
-        holes: List[_Hole] = []
+        holes: List[Fab_Hole] = []
         join_index: int  # Used for forcing individual drill operations (see below):
         for join_index, join in enumerate(joins):
             assert isinstance(join, FabJoin), f"{type(join)} is not a FabJoin"
@@ -1259,7 +1259,7 @@ class FabMount(object):
                     hole_name: str = f"{joins_name}_{join_index}"
                     hole_key: Fab_HoleKey = Fab_HoleKey(
                         fasten.ThreadName, kind, trimmed_depth, is_top)
-                    hole: _Hole = _Hole(
+                    hole: Fab_Hole = Fab_Hole(
                         self, hole_key, (mount_start,), join, hole_name, trimmed_start)
                     if tracing:
                         print(f"{tracing}Append {hole=}")
@@ -1267,7 +1267,7 @@ class FabMount(object):
 
         # Group *holes* into *hole_groups* base on their *key*:
         key: Fab_HoleKey
-        hole_groups: Dict[Fab_HoleKey, List[_Hole]] = {}
+        hole_groups: Dict[Fab_HoleKey, List[Fab_Hole]] = {}
         for hole in holes:
             key = hole.Key
             if key not in hole_groups:
@@ -1275,14 +1275,14 @@ class FabMount(object):
             hole_groups[key].append(hole)
 
         # Create *grouped_holes* where each *group_hole* has the same *key*.
-        grouped_holes: List[_Hole] = []
-        group_holes: List[_Hole]
+        grouped_holes: List[Fab_Hole] = []
+        group_holes: List[Fab_Hole]
         for group_holes in hole_groups.values():
-            group_hole: _Hole
+            group_hole: Fab_Hole
             group_centers: List[Vector] = []
             for group_hole in group_holes:
                 group_centers.extend(group_hole.Centers)
-            grouped_hole: _Hole = _Hole(
+            grouped_hole: Fab_Hole = Fab_Hole(
                 group_hole.Mount, group_hole._Key, tuple(group_centers),
                 group_hole.Join, f"{group_hole.Name}_", trimmed_start
             )

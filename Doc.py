@@ -172,6 +172,7 @@ class ModelFunction(ModelDoc):
         * *indent* (int) The prefix spaces to make the markdown work.
 
         """
+        assert self.Lines, f"{class_name=}"
         return (f"{indent}* {self.Number} [{self.Name}()]"
                 f"(#{self.Anchor}): {self.Lines[0]}",)
 
