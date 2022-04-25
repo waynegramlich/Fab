@@ -203,11 +203,11 @@ The basic work flow is done in phases:
 
 The (current) main Python modules are:
 
-* [Project](docs/Project.md):
+* [FabProjects](docs/FabProjects.md):
   The top level FabNode sub-classes of FabProject, FabDocument, and FabAssembly.
 
 * [FabSolids](docs/FabSolids.md):
-  The Solid creation class of FabSolid and FabMount.
+  The Solid creation classs of FabSolid and FabMount.
 
 * [FabNodes](docs/FabNodes.md):
   The base FabNode class and its associated bounding box FabBox sub-class.
@@ -216,7 +216,7 @@ The (current) main Python modules are:
   The FabPolygon and FabCircle sub-classes of FabGeometry.
 
 * [FabUtilities](doc/FabUtilities.md):
-  This contains some utility classes like FabColor and FabMaterial.
+  The FabColor and FabMaterial and utility classes.
 
 Additional Python modules are:
 
