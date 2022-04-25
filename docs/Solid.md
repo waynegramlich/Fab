@@ -36,7 +36,7 @@ This class basically corresponds to a FreeCad Datum Plane.  It is basically the 
 to which the 2D FabGeometry's are mapped onto prior to performing each operation.
 
 Attributes:
-* *Name*: (str): The name of the FabPlane.
+* *Name*: (str): The name of the Fab_Plane.
 * *Solid*: (FabSolid): The FabSolid to work on.
 * *Contact* (Vector): A point on the mount plane.
 * *Normal* (Vector): A normal to the mount plane

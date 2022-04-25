@@ -15,10 +15,10 @@ from cadquery import Vector  # type: ignore
 from FabNodes import FabBox
 
 
-# FabPlane:
+# Fab_Plane:
 @dataclass
-class FabPlane(object):
-    """FabPlane: A Plane class.
+class Fab_Plane(object):
+    """Fab_Plane: A Plane class.
 
     * *Contact* (Vector):  The contact point of the plane.
     * *Normal* (Vector): The normal to the plane.
@@ -34,9 +34,9 @@ class FabPlane(object):
     _XDirection: Vector = field(init=False)
     _Plane: Any = field(init=False, repr=False)  # Used by CadQuery
 
-    # FabPlane.__post_init__():
+    # Fab_Plane.__post_init__():
     def __post_init__(self) -> None:
-        """Initialize FabPlane."""
+        """Initialize Fab_Plane."""
         # Use [Wolfram MathWorld Plane](https://mathworld.wolfram.com/Plane.html) for reference.
         #
         # N is non-unit length vector (Nx, Ny, Nz)   #  Mathworld uses (a, b, c)
@@ -63,7 +63,7 @@ class FabPlane(object):
         #     O = D * <<N>>    # <<N>> is the unit normal
         tracing: str = self.tracing
         if tracing:
-            print(f"{tracing}=>FabPlane.__post_init__({self._Contact}, {self._Normal})")
+            print(f"{tracing}=>Fab_Plane.__post_init__({self._Contact}, {self._Normal})")
         next_tracing: str = tracing + " " if tracing else ""
 
         copy: Vector = Vector(0.0, 0.0, 0.0)
@@ -112,9 +112,9 @@ class FabPlane(object):
             print(f"{tracing}{origin=} {unrotated_x_direction=}")
             print(f"{tracing}{x_direction=}")
             print(f"{tracing}{self._Plane=}")
-            print(f"{tracing}<=FabPlane.__post_init__({self._Contact}, {self._Normal})")
+            print(f"{tracing}<=Fab_Plane.__post_init__({self._Contact}, {self._Normal})")
 
-    # FabPlane.point_project():
+    # Fab_Plane.point_project():
     def point_project(self, point: Vector) -> Vector:
         """Project a point onto a plane."""
         assert isinstance(point, Vector), point
@@ -124,47 +124,47 @@ class FabPlane(object):
         projected_point = point.projectToPlane(plane)
         return projected_point
 
-    # FabPlane.Contact():
+    # Fab_Plane.Contact():
     @property
     def Contact(self) -> Vector:
-        """Return FabPlane Contact."""
+        """Return Fab_Plane Contact."""
         return self._Contact + self._Copy
 
-    # FabPlane.Normal():
+    # Fab_Plane.Normal():
     @property
     def Normal(self) -> Vector:
-        """Return FabPlane Normal."""
+        """Return Fab_Plane Normal."""
         return self._Normal + self._Copy
 
-    # FabPlane.UnitNormal():
+    # Fab_Plane.UnitNormal():
     @property
     def UnitNormal(self) -> Vector:
-        """Return FabPlane Normal."""
+        """Return Fab_Plane Normal."""
         return self._UnitNormal + self._Copy
 
-    # FabPlane.Distance():
+    # Fab_Plane.Distance():
     @property
     def Distance(self) -> float:
-        """Return FabPlane distance along the normal."""
+        """Return Fab_Plane distance along the normal."""
         return self._Distance
 
     # FablPlane.Origin():
     @property
     def Origin(self) -> Vector:
-        """Return FabPlane Origin in 3D space."""
+        """Return Fab_Plane Origin in 3D space."""
         return self._Origin + self._Copy
 
-    # FabPlane.adjust():
-    def adjust(self, delta: float) -> "FabPlane":
-        """Return a new FabPlane that has been adjusted up/down the normal by a delta."""
+    # Fab_Plane.adjust():
+    def adjust(self, delta: float) -> "Fab_Plane":
+        """Return a new Fab_Plane that has been adjusted up/down the normal by a delta."""
         origin: Vector = self.Origin
         unit_normal: Vector = self.UnitNormal
         new_origin: Vector = origin + delta * unit_normal
         # Both the contact and the normal can be *new_origin*:
-        adjusted_plane: FabPlane = FabPlane(new_origin, new_origin)
+        adjusted_plane: Fab_Plane = Fab_Plane(new_origin, new_origin)
         return adjusted_plane
 
-    # FabPlane.CQPlane():
+    # Fab_Plane.CQPlane():
     @property
     def CQPlane(self) -> Any:
         """Return the associated CadQuery Plane."""
@@ -259,7 +259,7 @@ class FabPlane(object):
         rotated_point: Vector = Vector(rx, ry, rz)
         return (rotated_point, ((m00, m10, m20), (m01, m11, m21), (m02, m12, m22)))
 
-    # FabPlane.rotate_to_z_axis():
+    # Fab_Plane.rotate_to_z_axis():
     def rotate_to_z_axis(self, point: Vector, reversed: bool = False, tracing: str = "") -> Vector:
         """Rotate a point around the origin until the normal aligns with the +Z axis.
 
@@ -273,7 +273,7 @@ class FabPlane(object):
         """
 
         if tracing:
-            print(f"{tracing}=>FabPlane.rotate_to_z_axis({point})")
+            print(f"{tracing}=>Fab_Plane.rotate_to_z_axis({point})")
         rotated_point: Vector = cast(Vector, None)  # Force failure if something is broken.
 
         z_axis: Vector = Vector(0.0, 0.0, 1.)
@@ -311,10 +311,10 @@ class FabPlane(object):
                     print(f"{tracing}{rotate_axis=} {rotate_degrees=}")
 
         # Rotate the point:
-        rotated_point, rotate_matrix = FabPlane._rotate(point, rotate_axis, rotate_angle)
+        rotated_point, rotate_matrix = Fab_Plane._rotate(point, rotate_axis, rotate_angle)
 
         if tracing:
-            print(f"{tracing}<=FabPlane.rotate_to_z_axis({point})=>{rotated_point}")
+            print(f"{tracing}<=Fab_Plane.rotate_to_z_axis({point})=>{rotated_point}")
         return rotated_point
 
 
@@ -324,7 +324,7 @@ class Fab_GeometryContext(object):
     """GeometryProduce: Context needed to produce FreeCAD geometry objects.
 
     Attributes:
-    * *Plane* (FabPlane): Plane to use.
+    * *Plane* (Fab_Plane): Plane to use.
     * *Query* (Fab_Query): The CadQuery Workplane wrapper to use.
     * *_GeometryGroup*: (App.DocumentObjectGroup):
       The FreeCAD group to store FreeCAD Geometry objects into.
@@ -332,7 +332,7 @@ class Fab_GeometryContext(object):
 
     """
 
-    _Plane: FabPlane
+    _Plane: Fab_Plane
     _Query: "Fab_Query"
     _geometry_group: Optional[Any] = field(init=False, repr=False)  # TODO: Is this used any more?
     _copy: Vector = field(init=False, repr=False)  # TODO: Is this used any more?
@@ -341,9 +341,9 @@ class Fab_GeometryContext(object):
     def __post_init__(self) -> None:
         """Initialize FabGeometryContex."""
 
-        if not isinstance(self._Plane, FabPlane):
+        if not isinstance(self._Plane, Fab_Plane):
             raise RuntimeError(
-                f"Fab_GeometryContext.__post_init__(): {type(self._Plane)} is not a FabPlane")
+                f"Fab_GeometryContext.__post_init__(): {type(self._Plane)} is not a Fab_Plane")
         if not isinstance(self._Query, Fab_Query):
             raise RuntimeError(
                 "Fab_GeometryContext.__post_init__(): "
@@ -355,8 +355,8 @@ class Fab_GeometryContext(object):
 
     # Fab_GeometryContext.Plane():
     @property
-    def Plane(self) -> FabPlane:
-        """Return the FabPlane."""
+    def Plane(self) -> Fab_Plane:
+        """Return the Fab_Plane."""
         return self._Plane
 
     # Fab_GeometryContext.Query():
@@ -398,7 +398,7 @@ class Fab_GeometryContext(object):
         # next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}<=>Fab_GeometryContext.copy()")
-        adjusted_plane: FabPlane = self._Plane.adjust(delta)
+        adjusted_plane: Fab_Plane = self._Plane.adjust(delta)
         new_query: Fab_Query = Fab_Query(adjusted_plane)
         return Fab_GeometryContext(adjusted_plane, new_query)
 
@@ -470,7 +470,7 @@ class Fab_Arc(Fab_Geometry):
             print(f"{tracing}=>Fab_Arc.produce(*, '{prefix}', {index})")
 
         part_arc: Any = None
-        plane: FabPlane = geometry_context._Plane
+        plane: Fab_Plane = geometry_context._Plane
         rotated_middle: Vector = plane.rotate_to_z_axis(self.Middle, tracing=next_tracing)
         rotated_finish: Vector = plane.rotate_to_z_axis(self.Finish, tracing=next_tracing)
         geometry_context.Query.three_point_arc(
@@ -501,7 +501,7 @@ class Fab_Circle(Fab_Geometry):
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>Fab_Circle.produce()")
-        plane: FabPlane = geometry_context.Plane
+        plane: Fab_Plane = geometry_context.Plane
         center_on_plane: Vector = plane.point_project(self.Center)
         part_circle: Any = None
         query: Fab_Query = geometry_context.Query
@@ -540,7 +540,7 @@ class Fab_Line(Fab_Geometry):
             print(f"{tracing}=>Fab_Line.produce()")
 
         line_segment: Any = None
-        plane: FabPlane = geometry_context._Plane
+        plane: Fab_Plane = geometry_context._Plane
         rotated_finish: Vector = plane.rotate_to_z_axis(self.Finish, tracing=next_tracing)
         if tracing:
             print(f"{tracing}{self.Finish} ==> {rotated_finish}")
@@ -715,11 +715,11 @@ class Fab_Fillet(object):
         return arc
 
     # Fab_Fillet.plane_2d_project:
-    def plane_2d_project(self, plane: FabPlane) -> None:
+    def plane_2d_project(self, plane: Fab_Plane) -> None:
         """Project the Apex onto a plane.
 
         Arguments:
-        * *plane* (FabPlane): The plane to project the Fab_Fillet onto.
+        * *plane* (Fab_Plane): The plane to project the Fab_Fillet onto.
 
         Modifies Fab_Fillet.
 
@@ -796,7 +796,7 @@ class FabGeometry(object):
         raise NotImplementedError(f"{type(self)}.produce() is not implemented")
 
     # FabGeometry.project_to_plane():
-    def project_to_plane(self, plane: FabPlane) -> "FabGeometry":
+    def project_to_plane(self, plane: Fab_Plane) -> "FabGeometry":
         """Return a new FabGeometry projected onto a plane."""
         raise NotImplementedError(f"{type(self)}.project_to_plane is not implemented")
 
@@ -878,11 +878,11 @@ class FabCircle(FabGeometry):
         return box
 
     # FabCircle.project_to_plane():
-    def project_to_plane(self, plane: FabPlane, tracing: str = "") -> "FabCircle":
+    def project_to_plane(self, plane: Fab_Plane, tracing: str = "") -> "FabCircle":
         """Return a new FabCircle projected onto a plane.
 
         Arguments:
-        * *plane* (FabPlane): Plane to proejct to.
+        * *plane* (Fab_Plane): Plane to proejct to.
 
         Returns:
         * (FabCircle): The newly projected FabCicle.
@@ -1050,11 +1050,11 @@ class FabPolygon(FabGeometry):
         # self._compute_lines()
 
     # FabPolygon.project_to_plane():
-    def project_to_plane(self, plane: FabPlane, tracing: str = "") -> "FabPolygon":
+    def project_to_plane(self, plane: Fab_Plane, tracing: str = "") -> "FabPolygon":
         """Return nre FabPolygon prejected onto a plane.
 
         Arguments:
-        * *plane* (FabPlane): The plane to project onto.
+        * *plane* (Fab_Plane): The plane to project onto.
 
         Returns:
         * (FabPolyGon): The newly projected FabPolygon.
@@ -1150,11 +1150,11 @@ class FabPolygon(FabGeometry):
         return tuple(geometries)
 
     # FabPolygon._plane_2d_project():
-    def _plane_2d_project(self, plane: FabPlane) -> None:
+    def _plane_2d_project(self, plane: Fab_Plane) -> None:
         """Update the Fab_Fillet's to be projected onto a Plane.
 
         Arguments:
-        * *plane* (FabPlane): The plane to modify the Fab_Fillet's to be on.
+        * *plane* (Fab_Plane): The plane to modify the Fab_Fillet's to be on.
 
         """
         fillet: Fab_Fillet
@@ -1173,7 +1173,7 @@ class FabPolygon(FabGeometry):
         assert isinstance(geometry_context, Fab_GeometryContext), geometry_context
         plane_contact: Vector = geometry_context.Plane.Contact
         plane_normal: Vector = geometry_context.Plane.Normal
-        plane: FabPlane = FabPlane(plane_contact, plane_normal)
+        plane: Fab_Plane = Fab_Plane(plane_contact, plane_normal)
 
         # Use *contact*/*normal* for 2D projection:
         self._plane_2d_project(plane)
@@ -1239,27 +1239,27 @@ class Fab_Query(object):
     CadQuery Operations are added as needed.
 
     Attributes:
-    * *Plane* (FabPlane): The plain to use for CadQuery initialization.
+    * *Plane* (Fab_Plane): The plain to use for CadQuery initialization.
     * *WorkPlane: (cadquery.Workplane): The resulting CadQuery Workplane object.
 
     """
-    _Plane: FabPlane
+    _Plane: Fab_Plane
     _Query: Any = field(init=False, repr=False, default=None)
 
     # Fab_Query.__post_init__():
     def __post_init__(self) -> None:
-        """Initialize FabPlane."""
-        if not isinstance(self._Plane, FabPlane):
+        """Initialize Fab_Plane."""
+        if not isinstance(self._Plane, Fab_Plane):
             raise RuntimeError(
-                f"Fab_Query.__post_init__(): Got {type(self._Plane)}, not FabPlane")
+                f"Fab_Query.__post_init__(): Got {type(self._Plane)}, not Fab_Plane")
         plane = cast(cq.Plane, self._Plane._Plane)
         self._Query = cq.Workplane(plane)
 
     # Fab_Query.Plane():
     @property
-    def Plane(self) -> FabPlane:
-        """Return the FabPlane associated from a Fab_Query."""
-        assert isinstance(self._Plane, FabPlane), self._Plane
+    def Plane(self) -> Fab_Plane:
+        """Return the Fab_Plane associated from a Fab_Query."""
+        assert isinstance(self._Plane, Fab_Plane), self._Plane
         return self._Plane
 
     # Fab_Query.WorkPlane():
@@ -1292,13 +1292,13 @@ class Fab_Query(object):
         )
 
     # Fab_Query.copy_workplane():
-    def copy_workplane(self, plane: FabPlane, tracing: str = "") -> None:
+    def copy_workplane(self, plane: Fab_Plane, tracing: str = "") -> None:
         """Create a new CadQuery workplane and push it onto the stack."""
         if tracing:
             print(f"{tracing}=>Fab_Query.copy_workPlane({plane})")
-        if not isinstance(plane, FabPlane):
+        if not isinstance(plane, Fab_Plane):
             raise RuntimeError(
-                f"Fab_Query.copy_workplane(): Got {type(plane)}, not FabPlane")
+                f"Fab_Query.copy_workplane(): Got {type(plane)}, not Fab_Plane")
         if tracing:
             print(f"{tracing}{plane=}")
         self._Query = (
