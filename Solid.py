@@ -162,7 +162,7 @@ class FabStock(object):
 # Fab_Operation:
 @dataclass(order=True)
 class Fab_Operation(object):
-    """Fab_Operation: An base class for FabMount operations -- _Extrude, _Pocket, FabHole, etc.
+    """Fab_Operation: An base class for FabMount operations -- Fab_Extrude, _Pocket, FabHole, etc.
 
     Attributes:
     * *Mount* (FabMount):
@@ -304,10 +304,10 @@ class Fab_Operation(object):
         assert False
 
 
-# _Extrude:
+# Fab_Extrude:
 @dataclass(order=True)
-class _Extrude(Fab_Operation):
-    """_Extrude: Prepresents and extrude operation.
+class Fab_Extrude(Fab_Operation):
+    """Fab_Extrude: Prepresents and extrude operation.
 
     Attributes:
     * *Name* (str): The operation name.
@@ -332,9 +332,9 @@ class _Extrude(Fab_Operation):
     _StepDown: float = field(init=False)
     _FinalDepth: float = field(init=False)
 
-    # _Extrude.__post_init__():
+    # Fab_Extrude.__post_init__():
     def __post_init__(self) -> None:
-        """Verify _Extrude values."""
+        """Verify Fab_Extrude values."""
         super().__post_init__()
 
         # Type check self._Geometry and convert into self._Geometries:
@@ -346,61 +346,61 @@ class _Extrude(Fab_Operation):
             geometry: FabGeometry
             for geometry in self_geometry:
                 if not isinstance(geometry, FabGeometry):
-                    raise RuntimeError(f"_Extrude.__post_init__({self.Name}):"
+                    raise RuntimeError(f"Fab_Extrude.__post_init__({self.Name}):"
                                        f"{type(geometry)} is not a FabGeometry")
                 geometries.append(geometry)
         else:
-            raise RuntimeError(f"_Extrude.__post_init__({self.Name}):{type(self.Geometry)} "
+            raise RuntimeError(f"Fab_Extrude.__post_init__({self.Name}):{type(self.Geometry)} "
                                f"is neither a FabGeometry nor a Tuple[FabGeometry, ...]")
         self._Geometries = tuple(geometries)
 
         if self.Depth <= 0.0:
-            raise RuntimeError(f"_Extrude.__post_init__({self.Name}):"
+            raise RuntimeError(f"Fab_Extrude.__post_init__({self.Name}):"
                                f"Depth ({self.Depth}) is not positive.")
-        self._StepFile = "_Extrude.__post_init_()"
+        self._StepFile = "Fab_Extrude.__post_init_()"
         self._StartDepth = 0.0
         self._StepDown = 3.0
         self._FinalDepth = -self.Depth
         self._Active = self._Contour
 
-    # _Extrude.Geometry():
+    # Fab_Extrude.Geometry():
     @property
     def Geometry(self) -> Union[FabGeometry, Tuple[FabGeometry, ...]]:
-        """Return the _Extrude FabGeometry."""
+        """Return the Fab_Extrude FabGeometry."""
         return self._Geometry
 
-    # _Extrude.Depth():
+    # Fab_Extrude.Depth():
     @property
     def Depth(self) -> float:
         """Return the Depth."""
         return self._Depth
 
-    # _Extrude.get_name():
+    # Fab_Extrude.get_name():
     def get_name(self) -> str:
-        """Return _Extrude name."""
+        """Return Fab_Extrude name."""
         return self._Name
 
-    # _Extrude.get_kind():
+    # Fab_Extrude.get_kind():
     def get_kind(self) -> str:
-        """Return _Extrude kind."""
+        """Return Fab_Extrude kind."""
         return "Extrude"
 
-    # _Extrude.get_hash():
+    # Fab_Extrude.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:
-        """Return hash for _Extrude operation."""
+        """Return hash for Fab_Extrude operation."""
         return (
-            "_Extrude",
+            "Fab_Extrude",
             self._Name,
             f"{self._Depth:.6f}",
             self.get_geometries_hash(self._Geometries),
         )
 
-    # _Extrude.post_produce1():
+    # Fab_Extrude.post_produce1():
     def post_produce1(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
         """Produce the Extrude."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>_Extrude.produce1('{self.Name}')")
+            print(f"{tracing}=>Fab_Extrude.produce1('{self.Name}')")
 
         # Extract the *part_geometries* and create the associated *shape_binder*:
         mount: FabMount = self.Mount
@@ -444,16 +444,16 @@ class _Extrude(Fab_Operation):
         self.set_tool_controller(tool_controller, produce_state.ToolControllersTable)
 
         if tracing:
-            print(f"{tracing}<=_Extrude.post_produce1('{self.Name}')")
+            print(f"{tracing}<=Fab_Extrude.post_produce1('{self.Name}')")
 
-    # _Extrude.to_json():
+    # Fab_Extrude.to_json():
     def to_json(self) -> Dict[str, Any]:
-        """Return JSON dictionary for _Extrude."""
+        """Return JSON dictionary for Fab_Extrude."""
         coolant_modes: Tuple[str, ...] = ("None", "Flood", "Mist")
         direction_modes: Tuple[str, ...] = ("CCW", "CW")
         side_modes: Tuple[str, ...] = ("Inside", "Outside")
         json_dict: Dict[str, Any] = super().to_json()
-        json_dict["StepFile"] = "_Extrude.to_json:_StepFile"
+        json_dict["StepFile"] = "Fab_Extrude.to_json:_StepFile"
         json_dict["_Active"] = self._Active
         json_dict["_ClearanceHeight"] = self._StartDepth + 10.0  # TODO: Fix
         json_dict["_CoolantMode"] = coolant_modes[1]  # TODO: Fix
@@ -506,16 +506,16 @@ class _Pocket(Fab_Operation):
             geometry: FabGeometry
             for geometry in self_geometry:
                 if not isinstance(geometry, FabGeometry):
-                    raise RuntimeError(f"_Extrude.__post_init__({self.Name}):"
+                    raise RuntimeError(f"Fab_Extrude.__post_init__({self.Name}):"
                                        f"{type(geometry)} is not a FabGeometry")
                 geometries.append(geometry)
         else:
-            raise RuntimeError(f"_Extrude.__post_init__({self.Name}):{type(self.Geometry)} "
+            raise RuntimeError(f"Fab_Extrude.__post_init__({self.Name}):{type(self.Geometry)} "
                                f"is neither a FabGeometry nor a Tuple[FabGeometry, ...]")
         self._Geometries = tuple(geometries)
 
         if self._Depth <= 0.0:
-            raise RuntimeError(f"_Extrude.__post_init__({self.Name}):"
+            raise RuntimeError(f"Fab_Extrude.__post_init__({self.Name}):"
                                f"Depth ({self.Depth}) is not positive.")
         self._BottomPath = None
 
@@ -569,7 +569,7 @@ class _Pocket(Fab_Operation):
 
     # _Pocket.get_kind():
     def get_kind(self) -> str:
-        """Return _Extrude kind."""
+        """Return Fab_Extrude kind."""
         return "Pocket"
 
     # _Pocket.post_produce1():
@@ -650,7 +650,7 @@ class _Pocket(Fab_Operation):
 
     # _Pocket.to_json():
     def to_json(self) -> Dict[str, Any]:
-        """Return JSON dictionary for _Extrude."""
+        """Return JSON dictionary for Fab_Extrude."""
         bottom_path: Optional[Path] = self._BottomPath
         cut_modes: Tuple[str, ...] = ("Climb", "Conventional")
         coolant_modes: Tuple[str, ...] = ("None", "Flood", "Mist")
@@ -763,7 +763,7 @@ class _Hole(Fab_Operation):
 
     # _Hole.get_kind():
     def get_kind(self) -> str:
-        """Return _Extrude kind."""
+        """Return Fab_Extrude kind."""
         return "Drilling"
 
     # _Hole.get_hash():
@@ -1128,7 +1128,7 @@ class FabMount(object):
         name: str
         operation: Fab_Operation
         for name, operation in operations.items():
-            if isinstance(operation, (_Extrude, _Pocket, _Hole)):
+            if isinstance(operation, (Fab_Extrude, _Pocket, _Hole)):
                 if operation.JsonEnabled:
                     json_operations.append(operation.to_json())
 
@@ -1178,7 +1178,7 @@ class FabMount(object):
         self._Solid.enclose(boxes)
 
         # Create and record the *extrude*:
-        extrude: _Extrude = _Extrude(self, name, shapes, depth, contour)
+        extrude: Fab_Extrude = Fab_Extrude(self, name, shapes, depth, contour)
         self.record_operation(extrude)
 
         if tracing:
