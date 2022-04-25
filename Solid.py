@@ -618,7 +618,7 @@ class _Pocket(_Operation):
                 color=cq.Color(0.5, 0.5, 0.5, 0.5))
             _ = bottom_assembly
 
-            # Use FabSteps to manage duplicates.
+            # Use Fab_Steps to manage duplicates.
             with _suppress_stdout():
                 bottom_assembly.save(str(bottom_path), "STEP")
 

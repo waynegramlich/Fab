@@ -56,7 +56,7 @@ See the FabNode documentation for further attributes.
   * 2.13 [get_parent_document()](#node----get-parent-document): NO DOC STRING!
   * 2.14 [set_tracing()](#node----set-tracing): Set the FabNode indentation tracing level.
   * 2.15 [probe()](#node----probe): Perform a probe operation.
-* 3 Class: [FabSteps](#node--fabsteps):
+* 3 Class: [Fab_Steps](#node--fab-steps):
   * 3.1 [scan()](#node----scan): Scan the associated directory for matching .step files.
   * 3.2 [activate()](#node----activate): Reserve a .step file name to be read/written.
   * 3.3 [flush_inactives()](#node----flush-inactives): Delete inactive .step files.
@@ -280,7 +280,7 @@ Perform a probe operation.
 This method can be overriden and called to perform debug probes.
 
 
-## <a name="node--fabsteps"></a>3 Class FabSteps:
+## <a name="node--fab-steps"></a>3 Class Fab_Steps:
 
 Manage directory of .step files.
 This class will scan a directory for STEP files of the format `Name__XXXXXXXXXXXXXXXX.stp`,
@@ -288,19 +288,19 @@ where  `Name` is the human readable name of the file and `XXXXXXXXXXXXXXXX` is t
 has value associated with the .step file contents.
 
 There are three operations:
-* FabSteps(): This is the initalizer.
+* Fab_Steps(): This is the initalizer.
 * activate(): This method is used to activate a .stp file for reading and/or writing.
 * flush_stales(): This method is used to remove previous .stp files that are now longer used.
 
-### <a name="node----scan"></a>3.1 `FabSteps.`scan():
+### <a name="node----scan"></a>3.1 `Fab_Steps.`scan():
 
-FabSteps.scan(self, tracing: str = '') -> None:
+Fab_Steps.scan(self, tracing: str = '') -> None:
 
 Scan the associated directory for matching .step files.
 
-### <a name="node----activate"></a>3.2 `FabSteps.`activate():
+### <a name="node----activate"></a>3.2 `Fab_Steps.`activate():
 
-FabSteps.activate(self, name: str, hash_tuple: Tuple[Any, ...], tracing: str = '') -> pathlib.Path:
+Fab_Steps.activate(self, name: str, hash_tuple: Tuple[Any, ...], tracing: str = '') -> pathlib.Path:
 
 Reserve a .step file name to be read/written.
 This method reserves a .step file name to be read/written.
@@ -313,9 +313,9 @@ Arguments:
 Returns:
 * (Path): The full path to the .step file to be read/written.
 
-### <a name="node----flush-inactives"></a>3.3 `FabSteps.`flush_inactives():
+### <a name="node----flush-inactives"></a>3.3 `Fab_Steps.`flush_inactives():
 
-FabSteps.flush_inactives(self, tracing: str = '') -> None:
+Fab_Steps.flush_inactives(self, tracing: str = '') -> None:
 
 Delete inactive .step files.
 

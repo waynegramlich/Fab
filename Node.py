@@ -735,17 +735,17 @@ class FabBox(object):
         FabBox._intersect_unit_tests()
 
 
-# FabSteps:
+# Fab_Steps:
 @dataclass
-class FabSteps(object):
-    """FabSteps: Manage directory of .step files.
+class Fab_Steps(object):
+    """Fab_Steps: Manage directory of .step files.
 
     This class will scan a directory for STEP files of the format `Name__XXXXXXXXXXXXXXXX.stp`,
     where  `Name` is the human readable name of the file and `XXXXXXXXXXXXXXXX` is the 64-bit
     has value associated with the .step file contents.
 
     There are three operations:
-    * FabSteps(): This is the initalizer.
+    * Fab_Steps(): This is the initalizer.
     * activate(): This method is used to activate a .stp file for reading and/or writing.
     * flush_stales(): This method is used to remove previous .stp files that are now longer used.
 
@@ -754,17 +754,17 @@ class FabSteps(object):
     _scanned_steps: Dict[str, Path] = field(init=False, repr=False)
     _active_steps: Dict[str, Path] = field(init=False, repr=False)
 
-    # FabSteps.__post_init__():
+    # Fab_Steps.__post_init__():
     def __post_init__(self) -> None:
-        """Initialize FabSteps directory of .step files."""
+        """Initialize Fab_Steps directory of .step files."""
         self._scanned_steps = {}
         self._active_steps = {}
 
-    # FabSteps.scan():
+    # Fab_Steps.scan():
     def scan(self, tracing: str = "") -> None:
         """Scan the associated directory for matching .step files."""
         if tracing:
-            print(f"{tracing}=>FabSteps('{str(self.StepsDirectory)}').scan()")
+            print(f"{tracing}=>Fab_Steps('{str(self.StepsDirectory)}').scan()")
         scanned_steps: Dict[str, Path] = {}
         glob_pattern: str = "*__" + (16 * "[0-9a-f]") + ".stp"
         for step_file in self.StepsDirectory.glob(glob_pattern):
@@ -772,10 +772,10 @@ class FabSteps(object):
             scanned_steps[hash_text] = step_file
         self._scanned_steps = scanned_steps
         if tracing:
-            print(f"{tracing}<=FabSteps('{self.StepsDirectory}').scan()"
+            print(f"{tracing}<=Fab_Steps('{self.StepsDirectory}').scan()"
                   f"=>|{len(self._scanned_steps)}|")
 
-    # FabSteps.activate():
+    # Fab_Steps.activate():
     def activate(self, name: str, hash_tuple: Tuple[Any, ...], tracing: str = "") -> Path:
         """Reserve a .step file name to be read/written.
 
@@ -790,7 +790,8 @@ class FabSteps(object):
         * (Path): The full path to the .step file to be read/written.
         """
         if tracing:
-            print(f"{tracing}=>FabSteps('{str(self.StepsDirectory)}').activate('{name}', {hash:x})")
+            print(f"{tracing}=>Fab_Steps('{str(self.StepsDirectory)}').activate('{name}', "
+                  f"{hash:x})")
 
         # This was a shocker.  It turns out that __hash__() methods are not necessarily
         # consistent between Python runs.  In other words  __hash__() is non-deterministic.
@@ -804,15 +805,15 @@ class FabSteps(object):
         active_step: Path = self.StepsDirectory / Path(f"{name}__{hash_text}.stp")
         self._active_steps[hash_text] = active_step
         if tracing:
-            print(f"{tracing}=>FabSteps('{str(self.StepsDirectory)}').activate('{name}', {hash:x})"
+            print(f"{tracing}=>Fab_Steps('{str(self.StepsDirectory)}').activate('{name}', {hash:x})"
                   f"=>{active_step}")
         return active_step
 
-    # FabSteps.flush_inactives():
+    # Fab_Steps.flush_inactives():
     def flush_inactives(self, tracing: str = "") -> None:
         """Delete inactive .step files."""
         if tracing:
-            print(f"{tracing}=>FabSteps('{str(self.StepsDirectory)}').flush_inactives()")
+            print(f"{tracing}=>Fab_Steps('{str(self.StepsDirectory)}').flush_inactives()")
         active_hashes: Set[str] = set(self._active_steps.keys())
         scanned_hashes: Set[str] = set(self._scanned_steps.keys())
         inactive_hashes: Set[str] = scanned_hashes - active_hashes
@@ -831,17 +832,17 @@ class FabSteps(object):
             del scanned_steps[inactive_hash]
         if tracing:
 
-            print(f"{tracing},=FabSteps('{str(self.StepsDirectory)}').flush_inactives()"
+            print(f"{tracing},=Fab_Steps('{str(self.StepsDirectory)}').flush_inactives()"
                   f"=>|{len(inactive_hashes)}|")
 
-    # FabSteps._unit_tests():
+    # Fab_Steps._unit_tests():
     @staticmethod
     def _unit_tests(tracing: str = "") -> None:
-        """Unit tests for FabSteps."""
+        """Unit tests for Fab_Steps."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>FabSteps._unit_tests()")
-        fab_steps: FabSteps = FabSteps(Path("/tmp"))
+            print(f"{tracing}=>Fab_Steps._unit_tests()")
+        fab_steps: Fab_Steps = Fab_Steps(Path("/tmp"))
         fab_steps.flush_inactives()
         assert not fab_steps._scanned_steps, f"Should be empty {fab_steps._scanned_steps}"
 
@@ -851,7 +852,7 @@ class FabSteps(object):
             next_tracing: str = tracing + " " if tracing else ""
             if tracing:
                 print(f"{tracing}=>steps_test('{test_name}', *, {steps})")
-            fab_steps: FabSteps = FabSteps(Path("/tmp"))
+            fab_steps: Fab_Steps = Fab_Steps(Path("/tmp"))
             fab_steps.scan(tracing=next_tracing)
             if tracing:
                 print(f"{tracing}{fab_steps._scanned_steps=}")
@@ -885,7 +886,7 @@ class FabSteps(object):
         steps_test("pass4", {}, tracing=next_tracing)
 
         if tracing:
-            print(f"{tracing}<=FabSteps._unit_tests()")
+            print(f"{tracing}<=Fab_Steps._unit_tests()")
 
 
 # _NodeProduceState:
@@ -896,7 +897,7 @@ class _NodeProduceState(object):
     Attributes:
     * *StepsDirectory* (Path):
       The path to the directory to store STEP (`.stp`) files into.
-    * *Steps* (FabSteps):
+    * *Steps* (Fab_Steps):
       The step file directory managment object.
     * *ObjectsTable* (Dict[str, Any]):
       A table of objects that can be accessed via a debugger.
@@ -909,7 +910,7 @@ class _NodeProduceState(object):
     """
 
     StepsDirectory: Path
-    Steps: FabSteps = field(init=False, repr=False)
+    Steps: Fab_Steps = field(init=False, repr=False)
     ObjectsTable: Dict[str, Any] = field(init=False, repr=False)
     ToolControllersTable: Dict[FabToolController, int] = field(init=False, repr=False)
     OperationIndex: int = field(init=False, repr=False)
@@ -918,7 +919,7 @@ class _NodeProduceState(object):
     def __post_init__(self) -> None:
         """Finish initializing _ProduceState."""
         self.ObjectsTable = {}
-        self.Steps = FabSteps(self.StepsDirectory)
+        self.Steps = Fab_Steps(self.StepsDirectory)
         self.ToolControllersTable = {}
         self.OperationsIndex = 0
 
@@ -1193,5 +1194,5 @@ class FabNode(FabBox):
 
 if __name__ == "__main__":
     # _unit_tests("")
-    FabSteps._unit_tests(" ")
+    Fab_Steps._unit_tests(" ")
     FabBox._unit_tests()

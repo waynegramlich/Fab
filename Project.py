@@ -34,7 +34,7 @@ from pathlib import Path
 import cadquery as cq  # type: ignore
 from cadquery import Vector  # type: ignore
 
-from Node import FabNode, FabSteps, _NodeProduceState
+from Node import FabNode, Fab_Steps, _NodeProduceState
 from Solid import FabSolid
 
 
@@ -356,7 +356,7 @@ class FabProject(FabNode):
                 print()
                 print(f"{tracing}Project({self.Label}).run(): Phase 2: Construct")
 
-            fab_steps: FabSteps = FabSteps(Path("/tmp"))
+            fab_steps: Fab_Steps = Fab_Steps(Path("/tmp"))
             fab_steps.scan()
             if tracing:
                 print(f"{tracing}Phase 2A: post_produce1(*, '{step_directory}'):")
