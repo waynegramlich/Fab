@@ -232,7 +232,7 @@ Additional Python modules are:
 * [Doc](docs/Doc.md):
   A program for reading Python files and generating HTML documentation.
 
-* [BOM](docs/BOM.md):
+* [FabBOM](docs/FabBOM.md):
   The beginnings of a Bill of Materials manager.
 
 ## Type Hints and Data Classes <a name="type-hints-and-data-classes"></a>

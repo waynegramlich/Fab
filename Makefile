@@ -11,8 +11,8 @@ DOC_GEN := ./Doc.py  # Read Python doc strings, produces btoth Mardown (.md) and
 TOOLS_ROOT := FreeCADRoot/Mod/Path/Tools
 # List all of the modules to be dealt with:
 SAFE_MODULES := \
-    BOM \
     Doc \
+    FabBOM \
     FabGeometries \
     FabJoiner \
     FabNodes \
