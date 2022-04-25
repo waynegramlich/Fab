@@ -45,6 +45,14 @@ This internal classes are managed by FabMount methods.
   * 5.8 [post_produce1()](#solid----post-produce1): NO DOC STRING!
   * 5.9 [to_json()](#solid----to-json): Return a base JSON dictionary for an Fab_Operation.
   * 5.10 [produce_shape_binder()](#solid----produce-shape-binder): Produce the shape binder needed for the extrude, pocket, hole, ... operations.
+* 6 Class: [Fab_Pocket](#solid--fab-pocket):
+  * 6.1 [Geometry()](#solid----geometry): Return the original Geometry.
+  * 6.2 [Depth()](#solid----depth): Return the original Depth.
+  * 6.3 [get_hash()](#solid----get-hash): Return Fab_Pocket hash.
+  * 6.4 [get_name()](#solid----get-name): Return Fab_Pocket name.
+  * 6.5 [get_kind()](#solid----get-kind): Return Fab_Extrude kind.
+  * 6.6 [post_produce1()](#solid----post-produce1): Produce the Pocket.
+  * 6.7 [to_json()](#solid----to-json): Return JSON dictionary for Fab_Extrude.
 
 ## <a name="solid--fabmount"></a>1 Class FabMount:
 
@@ -253,7 +261,7 @@ Return JSON dictionary for Fab_Extrude.
 
 ## <a name="solid--fab-operation"></a>5 Class Fab_Operation:
 
-An base class for FabMount operations -- Fab_Extrude, _Pocket, FabHole, etc.
+An base class for FabMount operations -- Fab_Extrude, Fab_Pocket, FabHole, etc.
 Attributes:
 * *Mount* (FabMount):
   The FabMount to use for performing operations.
@@ -326,6 +334,60 @@ Return a base JSON dictionary for an Fab_Operation.
 Fab_Operation.produce_shape_binder(self, part_geometries: Tuple[Any, ...], prefix: str, tracing: str = '') -> Any:
 
 Produce the shape binder needed for the extrude, pocket, hole, ... operations.
+
+
+## <a name="solid--fab-pocket"></a>6 Class Fab_Pocket:
+
+Represents a pocketing operation.
+Attributes:
+* *Name* (str): The operation name.
+* *Geometry* (Union[FabGeometry, Tuple[FabGeometry, ...]]):
+   The Polygon or Circle to pocket.  If a tuple is given, the smaller FabGeometry's
+   specify "islands" to not pocket.
+* *Depth* (float): The pocket depth in millimeters.
+* *Bottom_Path* (str): The the path to the generated Pocket bottom STEP file.
+
+### <a name="solid----geometry"></a>6.1 `Fab_Pocket.`Geometry():
+
+Fab_Pocket.Geometry(self) -> Union[FabGeometries.FabGeometry, Tuple[FabGeometries.FabGeometry, ...]]:
+
+Return the original Geometry.
+
+### <a name="solid----depth"></a>6.2 `Fab_Pocket.`Depth():
+
+Fab_Pocket.Depth(self) -> float:
+
+Return the original Depth.
+
+### <a name="solid----get-hash"></a>6.3 `Fab_Pocket.`get_hash():
+
+Fab_Pocket.get_hash(self) -> Tuple[Any, ...]:
+
+Return Fab_Pocket hash.
+
+### <a name="solid----get-name"></a>6.4 `Fab_Pocket.`get_name():
+
+Fab_Pocket.get_name(self) -> str:
+
+Return Fab_Pocket name.
+
+### <a name="solid----get-kind"></a>6.5 `Fab_Pocket.`get_kind():
+
+Fab_Pocket.get_kind(self) -> str:
+
+Return Fab_Extrude kind.
+
+### <a name="solid----post-produce1"></a>6.6 `Fab_Pocket.`post_produce1():
+
+Fab_Pocket.post_produce1(self, produce_state: FabNodes.Fab_ProduceState, tracing: str = '') -> None:
+
+Produce the Pocket.
+
+### <a name="solid----to-json"></a>6.7 `Fab_Pocket.`to_json():
+
+Fab_Pocket.to_json(self) -> Dict[str, Any]:
+
+Return JSON dictionary for Fab_Extrude.
 
 
 

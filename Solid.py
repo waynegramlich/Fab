@@ -162,7 +162,7 @@ class FabStock(object):
 # Fab_Operation:
 @dataclass(order=True)
 class Fab_Operation(object):
-    """Fab_Operation: An base class for FabMount operations -- Fab_Extrude, _Pocket, FabHole, etc.
+    """Fab_Operation: An base class for FabMount operations -- Fab_Extrude, Fab_Pocket, FabHole, etc.
 
     Attributes:
     * *Mount* (FabMount):
@@ -466,10 +466,10 @@ class Fab_Extrude(Fab_Operation):
         return json_dict
 
 
-# _Pocket:
+# Fab_Pocket:
 @dataclass(order=True)
-class _Pocket(Fab_Operation):
-    """_Pocket: Represents a pocketing operation.
+class Fab_Pocket(Fab_Operation):
+    """Fab_Pocket: Represents a pocketing operation.
 
     Attributes:
     * *Name* (str): The operation name.
@@ -492,9 +492,9 @@ class _Pocket(Fab_Operation):
     _StartDepth: float = field(init=False, repr=False)
     _StepDepth: float = field(init=False, repr=False)
 
-    # _Pocket__post_init__():
+    # Fab_Pocket__post_init__():
     def __post_init__(self) -> None:
-        """Verify _Pocket values."""
+        """Verify Fab_Pocket values."""
         super().__post_init__()
 
         # Type check self._Geometry and convert into self._Geometries:
@@ -539,21 +539,21 @@ class _Pocket(Fab_Operation):
         self._StepDown = step_down
         self._FinalDepth = final_depth
 
-    # _Pocket.Geometry():
+    # Fab_Pocket.Geometry():
     def Geometry(self) -> Union[FabGeometry, Tuple[FabGeometry, ...]]:
         """Return the original Geometry."""
         return self._Geometry
 
-    # _Pocket.Depth():
+    # Fab_Pocket.Depth():
     def Depth(self) -> float:
         """Return the original Depth."""
         return self._Depth
 
-    # _Pocket.get_hash():
+    # Fab_Pocket.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:
-        """Return _Pocket hash."""
+        """Return Fab_Pocket hash."""
         hashes: List[Any] = [
-            "_Pocket",
+            "Fab_Pocket",
             self._Name,
             f"{self._Depth:.6f}",
         ]
@@ -562,22 +562,22 @@ class _Pocket(Fab_Operation):
             hashes.append(geometry.get_hash())
         return tuple(hashes)
 
-    # _Pocket.get_name():
+    # Fab_Pocket.get_name():
     def get_name(self) -> str:
-        """Return _Pocket name."""
+        """Return Fab_Pocket name."""
         return self._Name
 
-    # _Pocket.get_kind():
+    # Fab_Pocket.get_kind():
     def get_kind(self) -> str:
         """Return Fab_Extrude kind."""
         return "Pocket"
 
-    # _Pocket.post_produce1():
+    # Fab_Pocket.post_produce1():
     def post_produce1(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
         """Produce the Pocket."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>_Pocket.post_produce1('{self.Name}')")
+            print(f"{tracing}=>Fab_Pocket.post_produce1('{self.Name}')")
 
         mount: FabMount = self.Mount
         geometry_context: Fab_GeometryContext = mount._GeometryContext
@@ -646,9 +646,9 @@ class _Pocket(Fab_Operation):
         query.subtract(pocket_query, tracing=next_tracing)
         if tracing:
             query.show("Pocket After Subtract", tracing)
-            print(f"{tracing}<=_Pocket.post_produce1('{self.Name}')")
+            print(f"{tracing}<=Fab_Pocket.post_produce1('{self.Name}')")
 
-    # _Pocket.to_json():
+    # Fab_Pocket.to_json():
     def to_json(self) -> Dict[str, Any]:
         """Return JSON dictionary for Fab_Extrude."""
         bottom_path: Optional[Path] = self._BottomPath
@@ -658,7 +658,7 @@ class _Pocket(Fab_Operation):
             "Grid", "Line", "Offset", "Spiral", "Triangle", "ZigZag", "ZigZagOffset")
         start_ats: Tuple[str, ...] = ("Center", "Edge")
         if bottom_path is None:
-            raise RuntimeError("_Pocket.to_json(): no bottom path is set yet.")
+            raise RuntimeError("Fab_Pocket.to_json(): no bottom path is set yet.")
 
         start_depth: float = self._StartDepth
         step_down: float = self._StepDown
@@ -1128,7 +1128,7 @@ class FabMount(object):
         name: str
         operation: Fab_Operation
         for name, operation in operations.items():
-            if isinstance(operation, (Fab_Extrude, _Pocket, _Hole)):
+            if isinstance(operation, (Fab_Extrude, Fab_Pocket, _Hole)):
                 if operation.JsonEnabled:
                     json_operations.append(operation.to_json())
 
@@ -1192,7 +1192,7 @@ class FabMount(object):
             print(f"{tracing}=>FabMount({self.Name}).pocket('{name}', *)")
 
         # Create the *pocket* and record it into the FabMount:
-        pocket: _Pocket = _Pocket(self, name, shapes, depth)
+        pocket: Fab_Pocket = Fab_Pocket(self, name, shapes, depth)
         self.record_operation(pocket)
 
         if tracing:
