@@ -220,11 +220,8 @@ The (current) main Python modules are:
 
 Additional Python modules are:
 
-* [Shop](docs/Shop.md):
+* [FabShop](docs/FabShop.md):
   Classes for defining Shop machines and tooling.
-
-* [CNC](docs/CNC.md):
-  Classes for accessing the FreeCad Path CNC G-code generation library.
 
 * [FabJoiner](docs/FabJoiner.md):
   Classes for defining fastener stacks of screws, bolts, washers, nuts, etc.
