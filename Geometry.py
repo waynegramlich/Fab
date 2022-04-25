@@ -325,7 +325,7 @@ class Fab_GeometryContext(object):
 
     Attributes:
     * *Plane* (FabPlane): Plane to use.
-    * *Query* (FabQuery): The CadQuery Workplane wrapper to use.
+    * *Query* (Fab_Query): The CadQuery Workplane wrapper to use.
     * *_GeometryGroup*: (App.DocumentObjectGroup):
       The FreeCAD group to store FreeCAD Geometry objects into.
       This field needs to be set prior to use with set_geometry_group() method.
@@ -333,7 +333,7 @@ class Fab_GeometryContext(object):
     """
 
     _Plane: FabPlane
-    _Query: "FabQuery"
+    _Query: "Fab_Query"
     _geometry_group: Optional[Any] = field(init=False, repr=False)  # TODO: Is this used any more?
     _copy: Vector = field(init=False, repr=False)  # TODO: Is this used any more?
 
@@ -344,10 +344,10 @@ class Fab_GeometryContext(object):
         if not isinstance(self._Plane, FabPlane):
             raise RuntimeError(
                 f"Fab_GeometryContext.__post_init__(): {type(self._Plane)} is not a FabPlane")
-        if not isinstance(self._Query, FabQuery):
+        if not isinstance(self._Query, Fab_Query):
             raise RuntimeError(
                 "Fab_GeometryContext.__post_init__(): "
-                f"{type(self._Query)} is not a FabQuery")
+                f"{type(self._Query)} is not a Fab_Query")
 
         copy: Vector = Vector()
         self._copy: Vector = copy
@@ -362,16 +362,16 @@ class Fab_GeometryContext(object):
     # Fab_GeometryContext.Query():
     @property
     def Query(self) -> Any:
-        """Return the FabQuery.."""
+        """Return the Fab_Query.."""
         return self._Query
 
     # Fab_GeometryContext.Query.setter():
     @Query.setter
     def Query(self, query: Any):
-        """Set the FabQuery.."""
-        if not isinstance(query, FabQuery):
+        """Set the Fab_Query.."""
+        if not isinstance(query, Fab_Query):
             raise RuntimeError(
-                f"FabGeomtery.Query(): {type(query)}, not FabQuery.")
+                f"FabGeomtery.Query(): {type(query)}, not Fab_Query.")
         assert False, "Is this used?"
         self._Query = query
 
@@ -389,7 +389,7 @@ class Fab_GeometryContext(object):
         # next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}<=>Fab_GeometryContext.copy()")
-        new_query: FabQuery = FabQuery(self._Plane)
+        new_query: Fab_Query = Fab_Query(self._Plane)
         return Fab_GeometryContext(self._Plane, new_query)
 
     # Fab_GeometryContext.copy_with_plane_adjust():
@@ -399,7 +399,7 @@ class Fab_GeometryContext(object):
         if tracing:
             print(f"{tracing}<=>Fab_GeometryContext.copy()")
         adjusted_plane: FabPlane = self._Plane.adjust(delta)
-        new_query: FabQuery = FabQuery(adjusted_plane)
+        new_query: Fab_Query = Fab_Query(adjusted_plane)
         return Fab_GeometryContext(adjusted_plane, new_query)
 
     # Fab_GeometryContext.set_geometry_Group():
@@ -504,7 +504,7 @@ class Fab_Circle(Fab_Geometry):
         plane: FabPlane = geometry_context.Plane
         center_on_plane: Vector = plane.point_project(self.Center)
         part_circle: Any = None
-        query: FabQuery = geometry_context.Query
+        query: Fab_Query = geometry_context.Query
         query.circle(center_on_plane, self.Diameter / 2, tracing=next_tracing)
 
         if tracing:
@@ -1230,10 +1230,10 @@ class FabPolygon(FabGeometry):
         #     print(f"Geometry[{index}]: {geometry}")
 
 
-# FabQuery:
+# Fab_Query:
 @dataclass
-class FabQuery(object):
-    """FabQuery: A CadQuery Workplane wrapper.
+class Fab_Query(object):
+    """Fab_Query: A CadQuery Workplane wrapper.
 
     This class creates CadQuery Workplane provides a consistent head of the Workplane chain..
     CadQuery Operations are added as needed.
@@ -1246,34 +1246,34 @@ class FabQuery(object):
     _Plane: FabPlane
     _Query: Any = field(init=False, repr=False, default=None)
 
-    # FabQuery.__post_init__():
+    # Fab_Query.__post_init__():
     def __post_init__(self) -> None:
         """Initialize FabPlane."""
         if not isinstance(self._Plane, FabPlane):
             raise RuntimeError(
-                f"FabQuery.__post_init__(): Got {type(self._Plane)}, not FabPlane")
+                f"Fab_Query.__post_init__(): Got {type(self._Plane)}, not FabPlane")
         plane = cast(cq.Plane, self._Plane._Plane)
         self._Query = cq.Workplane(plane)
 
-    # FabQuery.Plane():
+    # Fab_Query.Plane():
     @property
     def Plane(self) -> FabPlane:
-        """Return the FabPlane associated from a FabQuery."""
+        """Return the FabPlane associated from a Fab_Query."""
         assert isinstance(self._Plane, FabPlane), self._Plane
         return self._Plane
 
-    # FabQuery.WorkPlane():
+    # Fab_Query.WorkPlane():
     @property
     def WorkPlane(self) -> Any:
-        """Return the Workplane associated from a FabQuery."""
+        """Return the Workplane associated from a Fab_Query."""
         return self._Query
 
-    # FabQuery.circle():
+    # Fab_Query.circle():
     def circle(self, center: Vector, radius: float,
                for_construction=False, tracing: str = "") -> None:
         """Draw a circle to a point."""
         if tracing:
-            print(f"{tracing}<=>FabQuery.circle({center}, {radius}, {for_construction})")
+            print(f"{tracing}<=>Fab_Query.circle({center}, {radius}, {for_construction})")
         rotated_center: Vector = self._Plane.rotate_to_z_axis(center)
         self._Query = (
             cast(cq.Workplane, self._Query)
@@ -1281,24 +1281,24 @@ class FabQuery(object):
             .circle(radius, for_construction)
         )
 
-    # FabQuery.close():
+    # Fab_Query.close():
     def close(self, tracing: str = "") -> None:
         """Close a sequence of arcs and lines."""
         if tracing:
-            print(f"{tracing}<=>FabQuery.close()")
+            print(f"{tracing}<=>Fab_Query.close()")
         self._Query = (
             cast(cq.Workplane, self._Query)
             .close()
         )
 
-    # FabQuery.copy_workplane():
+    # Fab_Query.copy_workplane():
     def copy_workplane(self, plane: FabPlane, tracing: str = "") -> None:
         """Create a new CadQuery workplane and push it onto the stack."""
         if tracing:
-            print(f"{tracing}=>FabQuery.copy_workPlane({plane})")
+            print(f"{tracing}=>Fab_Query.copy_workPlane({plane})")
         if not isinstance(plane, FabPlane):
             raise RuntimeError(
-                f"FabQuery.copy_workplane(): Got {type(plane)}, not FabPlane")
+                f"Fab_Query.copy_workplane(): Got {type(plane)}, not FabPlane")
         if tracing:
             print(f"{tracing}{plane=}")
         self._Query = (
@@ -1306,45 +1306,45 @@ class FabQuery(object):
             .copyWorkplane(cq.Workplane(plane.CQPlane))
         )
         if tracing:
-            print(f"{tracing}<=FabQuery.copy_workPlane({plane})")
+            print(f"{tracing}<=Fab_Query.copy_workPlane({plane})")
 
-    # FabQuery.cut():
+    # Fab_Query.cut():
     def cut_blind(self, depth: float, tracing: str = "") -> None:
         """Use the current 2D object to cut a pocket to a known depth."""
         if tracing:
-            print(f"{tracing}<=>FabQuery.cut_blind({depth})")
+            print(f"{tracing}<=>Fab_Query.cut_blind({depth})")
         self._Query = (
             cast(cq.Workplane, self._Query)
             .cutBlind(depth)
         )
 
-    # FabQuery.extrude():
+    # Fab_Query.extrude():
     def extrude(self, depth: float, tracing: str = "") -> None:
         """Extrude current 2D object to a known depth."""
         if tracing:
-            print(f"{tracing}<=>FabQuery.extrude({depth})")
+            print(f"{tracing}<=>Fab_Query.extrude({depth})")
         self._Query = (
             cast(cq.Workplane, self._Query)
             .extrude(-depth)
         )
 
-    # FabQuery.hole():
+    # Fab_Query.hole():
     def hole(self, diameter: float, depth: float, tracing: str = "") -> None:
         """Drill a hole."""
         if tracing:
-            print(f"{tracing}=>FabQuery.hole({diameter}, {depth})")
+            print(f"{tracing}=>Fab_Query.hole({diameter}, {depth})")
         self._Query = (
             cast(cq.Workplane, self._Query)
             .hole(diameter=diameter, depth=depth)
         )
         if tracing:
-            print(f"{tracing}<=FabQuery.hole({diameter}, {depth})")
+            print(f"{tracing}<=Fab_Query.hole({diameter}, {depth})")
 
-    # FabQuery.line_to():
+    # Fab_Query.line_to():
     def line_to(self, end: Vector, for_construction=False, tracing: str = "") -> None:
         """Draw a line to a point."""
         if tracing:
-            print(f"{tracing}=>FabQuery.line_to({end}, {for_construction})")
+            print(f"{tracing}=>Fab_Query.line_to({end}, {for_construction})")
         end_tuple: Tuple[float, float] = (end.x, end.y)
         self._Query = (
             cast(cq.Workplane, self._Query)
@@ -1352,13 +1352,13 @@ class FabQuery(object):
         )
         if tracing:
             print(f"{tracing}{end_tuple=}")
-            print(f"{tracing}<=FabQuery.line_to({end}, {for_construction})")
+            print(f"{tracing}<=Fab_Query.line_to({end}, {for_construction})")
 
-    # FabQuery.move_to():
+    # Fab_Query.move_to():
     def move_to(self, point: Vector, tracing: str = "") -> None:
         """Draw a line to a point."""
         if tracing:
-            print(f"{tracing}=>FabQuery.move_to({point})")
+            print(f"{tracing}=>Fab_Query.move_to({point})")
             print(f"{tracing}{self._Query.plane=}")
         assert isinstance(point, Vector), point
         self._Query = (
@@ -1366,11 +1366,11 @@ class FabQuery(object):
             .moveTo(point.x, point.y)
         )
         if tracing:
-            print(f"{tracing}<=FabQuery.move_to({point})")
+            print(f"{tracing}<=Fab_Query.move_to({point})")
 
-    # FabQuery.show():
+    # Fab_Query.show():
     def show(self, label: str, tracing: str = "") -> None:
-        """Print a detailed dump of a FabQuery."""
+        """Print a detailed dump of a Fab_Query."""
         # This is basically copied from the section "An Introspective Example" in the
         # CadQuery documentation.
 
@@ -1423,22 +1423,22 @@ class FabQuery(object):
         (cq.cq.CQContext.__str__, cq.occ_impl.geom.Plane.__str__,
          cq.Workplane.__str__) = previous_functions
 
-    # FabQuery.subtract():
-    def subtract(self, remove_solid: "FabQuery", tracing: str = "") -> None:
-        """Subtract one solid form a FabQuery."""
+    # Fab_Query.subtract():
+    def subtract(self, remove_solid: "Fab_Query", tracing: str = "") -> None:
+        """Subtract one solid form a Fab_Query."""
         if tracing:
-            print(f"{tracing}<=>FabQuery.subtract()")
+            print(f"{tracing}<=>Fab_Query.subtract()")
         self._Query = (
             cast(cq.Workplane, self._Query) -
             remove_solid.WorkPlane
         )
 
-    # FabQuery.three_point_arc():
+    # Fab_Query.three_point_arc():
     def three_point_arc(self, middle: Vector, end: Vector,
                         for_construction: bool = False, tracing: str = "") -> None:
         """Draw a three point arc."""
         if tracing:
-            print(f"{tracing}=>FabQuery.three_point_arc({middle}), {end})")
+            print(f"{tracing}=>Fab_Query.three_point_arc({middle}), {end})")
         middle_tuple: Tuple[float, float] = (middle.x, middle.y)
         end_tuple: Tuple[float, float] = (end.x, end.y)
         self._Query = (
@@ -1447,7 +1447,7 @@ class FabQuery(object):
         )
         if tracing:
             print(f"{tracing}{middle_tuple=} {end_tuple=}")
-            print(f"{tracing}<=FabQuery.three_point_arc({middle}), {end})")
+            print(f"{tracing}<=Fab_Query.three_point_arc({middle}), {end})")
 
 
 def main() -> None:

@@ -23,7 +23,7 @@ from cadquery import Vector  # type: ignore
 
 # import Part  # type: ignore
 
-from Geometry import FabCircle, FabGeometry, Fab_GeometryContext, FabPlane, FabQuery
+from Geometry import FabCircle, FabGeometry, Fab_GeometryContext, FabPlane, Fab_Query
 from FabJoiner import FabFasten, FabJoin
 from FabNodes import FabBox, FabNode, Fab_ProduceState
 from FabUtilities import FabColor, FabToolController
@@ -583,7 +583,7 @@ class _Pocket(_Operation):
         geometry_context: Fab_GeometryContext = mount._GeometryContext
         geometries: Tuple[FabGeometry, ...] = self._Geometries
         pocket_context: Fab_GeometryContext = geometry_context.copy(tracing=next_tracing)
-        pocket_query: FabQuery = pocket_context.Query
+        pocket_query: Fab_Query = pocket_context.Query
         if tracing:
             pocket_query.show("Pocket Context Before", tracing)
         bottom_context: Fab_GeometryContext = geometry_context.copy_with_plane_adjust(
@@ -640,7 +640,7 @@ class _Pocket(_Operation):
 
         # TODO: Use the CadQuery *cut* operation instead of *subtract*:
         query: Any = geometry_context.Query
-        assert isinstance(query, FabQuery), query
+        assert isinstance(query, Fab_Query), query
         if tracing:
             query.show("Pocket Main Before Subtract", tracing)
         query.subtract(pocket_query, tracing=next_tracing)
@@ -794,7 +794,7 @@ class _Hole(_Operation):
         geometry_context: Fab_GeometryContext = mount._GeometryContext
         mount_normal: Vector = mount.Normal
         plane: FabPlane = geometry_context.Plane
-        query: FabQuery = geometry_context.Query
+        query: Fab_Query = geometry_context.Query
 
         key: _HoleKey = self._Key
         kind: str = key.Kind
@@ -839,7 +839,7 @@ class _Hole(_Operation):
             self.StartDepth = plane.Distance
             holes_contact: Vector = Vector(0.0, 0.0, self.StartDepth)
             holes_plane: FabPlane = FabPlane(holes_contact, z_axis)
-            holes_query: FabQuery = FabQuery(holes_plane)
+            holes_query: Fab_Query = Fab_Query(holes_plane)
             self.StartDepth = plane.Distance
 
             # Compute the closing solid corners.  The enclose face area must be greater the
@@ -938,7 +938,7 @@ class FabMount(object):
       A vector that is projected onto the mount plane to specify orientation
       when mounted for CNC operations.
     * *Depth* (float): The maximum depth limit for all operations.
-    * *WorkPlane* (FabQuery): The CadQuery workplane wrapper class object.
+    * *WorkPlane* (Fab_Query): The CadQuery workplane wrapper class object.
 
     """
 
@@ -948,7 +948,7 @@ class FabMount(object):
     _Normal: Vector
     _Orient: Vector
     _Depth: float
-    _Query: FabQuery
+    _Query: Fab_Query
     _Operations: "OrderedDict[str, _Operation]" = field(init=False, repr=False)
     _Copy: Vector = field(init=False, repr=False)  # Used for making private copies of Vector's
     _Tracing: str = field(init=False, repr=False)
@@ -1100,8 +1100,8 @@ class FabMount(object):
                 print(f"{tracing}Contact={contact}")
                 print(f"{tracing}{plane=}")
 
-            query: Optional[FabQuery] = self._Solid._Query
-            assert isinstance(query, FabQuery), query
+            query: Optional[Fab_Query] = self._Solid._Query
+            assert isinstance(query, Fab_Query), query
             query.copy_workplane(plane, tracing=next_tracing)
 
             # Process each *operation* in *operations*:
@@ -1317,7 +1317,7 @@ class FabSolid(FabNode):
     _Mounts: "OrderedDict[str, FabMount]" = field(init=False, repr=False)
     _GeometryGroup: Optional[Any] = field(init=False, repr=False)
     _Body: Optional[Any] = field(init=False, repr=False)
-    _Query: FabQuery = field(init=False, repr=False)
+    _Query: Fab_Query = field(init=False, repr=False)
     _Assembly: Any = field(init=False, repr=False)
     _StepFile: Optional[Path] = field(init=False, repr=False)
     _Color: Optional[Tuple[float, ...]] = field(init=False, repr=False)
@@ -1339,7 +1339,7 @@ class FabSolid(FabNode):
         self._Mounts = OrderedDict()
         self._GeometryGroup = None
         self._Body = None
-        self._Query = FabQuery(initial_plane)
+        self._Query = Fab_Query(initial_plane)
         self._Assembly = None
         self._StepFile = None
         self._Color = None
@@ -1495,7 +1495,7 @@ class FabSolid(FabNode):
 
         # CadQuery workplanes do not have a color, but Assemblies do.
         rgb_color: Tuple[float, float, float] = FabColor.svg_to_rgb(self.Color)
-        # TODO: move this code into FabQuery:
+        # TODO: move this code into Fab_Query:
 
         assembly: cq.Assembly
         if use_cached_step:
