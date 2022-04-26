@@ -6,7 +6,7 @@
 # specified, the documents are read into FreeCAD for visualization purposes.
 #
 # Usage:
-#     cq2fc [-v|--visual] [-c|-cnc] FAB.json"
+#     fabcnc.sh [-v|--visual] [-c|-cnc] FAB.json"
 #
 # where:
 #     -v|--visual specifies visual mode.
@@ -54,7 +54,7 @@ done
 # Do argument validation:
 if [[ "${JSON}" == "" ]]; then
     echo "No .json file specified"
-    echo "Usage: cq2fc [-v|--visual] [-c|-cnc] JSON.json"
+    echo "Usage: fabcnc.sh [-v|--visual] [-c|-cnc] JSON.json"
     exit 1
 fi
 if [[ "${VISUAL}" == "" && "${CNC}" == "" ]]; then
@@ -90,12 +90,12 @@ if [[ "${VISUAL}" == "" ]]; then
     # for each STEP file read in.  These annoying messages are suppressed:
     echo "Non visual mode"
     # echo FLAGS="${FLAGS}" JSON="${JSON}" \
-    #    "${FREECAD}" -M "${SCRIPT_DIR}" -c "${SCRIPT_DIR}/CQtoFC.py"
+    #    "${FREECAD}" -M "${SCRIPT_DIR}" -c "${SCRIPT_DIR}/FabCNC.py"
     FLAGS="${FLAGS}" JSON="${JSON}" \
-       "${FREECAD}" -M "${SCRIPT_DIR}" -c "${SCRIPT_DIR}/CQtoFC.py"
+       "${FREECAD}" -M "${SCRIPT_DIR}" -c "${SCRIPT_DIR}/FabCNC.py"
 else
     # Visual_mode:
     echo "Visual mode"
     FLAGS="${FLAGS}" JSON="${JSON}" \
-	   "${FREECAD}" -M "${SCRIPT_DIR}" "${SCRIPT_DIR}/CQtoFC.FCMacro"
+	   "${FREECAD}" -M "${SCRIPT_DIR}" "${SCRIPT_DIR}/FabCNC.FCMacro"
 fi

@@ -27,7 +27,7 @@ MODULES := \
     ${SAFE_MODULES} \
     ${NON_SAFE_MODULES}
 
-#    CQtoFC has Flake8 issues (probably mypy issues as well)
+#    FabCNC has Flake8 issues (probably mypy issues as well)
 
 # Various files lists derived from MODULES:
 PY_FILES := ${MODULES:%=%.py}
@@ -40,10 +40,10 @@ HTML_FILES := \
 TEST_FILES := ${SAFE_MODULES:%=%.py}
 FLAKE8_FILES := \
     ${MODULES:%=/tmp/.%.flake8} \
-    /tmp/.CQtoFC.flake8
+    /tmp/.FabCNC.flake8
 MYPY_FILES := \
     ${MODULES:%=%.py} \
-    CQtoFC.py
+    FabCNC.py
 TOOLS_DIRS := \
     $(TOOLS_DIR)/Bit \
     $(TOOLS_DIR)/Library \
