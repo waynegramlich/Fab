@@ -18,7 +18,8 @@ SAFE_MODULES := \
     FabNodes \
     FabProjects \
     FabSolids \
-    FabShop \
+    FabShops \
+    FabTools \
     FabUtilities \
     TarSync \
     Test

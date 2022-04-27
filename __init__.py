@@ -221,8 +221,11 @@ The (current) main Python modules are:
 
 Additional Python modules are:
 
-* [FabShop](docs/FabShop.md):
-  Classes for defining Shop machines and tooling.
+* [FabShops](docs/FabShops.md):
+  Classes for defining the available machines within a Shop.
+
+* [FabTools](docs/FabTools.md):
+  Classes for defining the available toolingwithin a Shop.
 
 * [FabJoins](docs/FabJoins.md):
   Classes for defining fastener stacks of screws, bolts, washers, nuts, etc.

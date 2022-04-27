@@ -1,7 +1,6 @@
-# FabShop: Shop: Tools and Machines.
-This is a package provides classes used to define what machines and tools are available in a shop.
-They basically some classes that interface with the FreeCAD tool bit and tool table JSON files
-along with some higher level classes for defining machines and shops.
+# FabTools: FabTools: Tools for Fab..
+This is a package provides classes used to define the tooling that is available in a shop.
+They basically some classes that interface with the FreeCAD tool bit and tool table JSON files.
 
 The classes are:
 * FabTool: The base class for tool bits.
@@ -15,39 +14,28 @@ The classes are:
   * FabThreadMill: The class for defining a thread cutter.
   * FabVTool: The class for defining a V bit mill.
 * FabToolTable: A class for defining a tool table for one a given FabMachine.
-* FabMachine: A base class for machines.
-  * FabMill: A milling machine (includes routers.)
-  * FabLaser: A laser or water jet machine. (TBD)
-  * FabLathe: A lathe. (TBD)
-  * Fab3DPrinter: A 3D printer. (TBD)
-* FabShop: A collection of FabMachine's.
-
-A shop is typically defined in a bottom up fashion, where the various FabTool's are defined
-first, followed by a one or more FabToolTable's, followed by one or more FabMachine's,
-and finally a FabShop.  The ultimate goal is that a single mechanical design can be reproduced
-with more than one FabShop without having edits to the actual design.
 
 ## Table of Contents (alphabetical order):
 
-* 1 Class: [FabBallEndTool](#fabshop--fabballendtool):
-* 2 Class: [FabBullNoseTool](#fabshop--fabbullnosetool):
-* 3 Class: [FabChamferTool](#fabshop--fabchamfertool):
-* 4 Class: [FabDrillTool](#fabshop--fabdrilltool):
-* 5 Class: [FabEndMillTool](#fabshop--fabendmilltool):
-* 6 Class: [FabProbeTool](#fabshop--fabprobetool):
-* 7 Class: [FabSlittingSawTool](#fabshop--fabslittingsawtool):
-* 8 Class: [FabThreadMill](#fabshop--fabthreadmill):
-* 9 Class: [FabTool](#fabshop--fabtool):
-  * 9.1 [to_json()](#fabshop----to-json): Return FabToolTemptlate as a JSON string.
-  * 9.2 [write_json()](#fabshop----write-json): Write FabToolTemptlate out to a JSON file.
-* 10 Class: [FabTools](#fabshop--fabtools):
-  * 10.1 [add_tool()](#fabshop----add-tool): Add a FabTool to FabTools.
-  * 10.2 [add_tools()](#fabshop----add-tools): Add a some FabTool's to a FabTools.
-  * 10.3 [to_library_json()](#fabshop----to-library-json): Convert FabToolTable to JSON.
-  * 10.4 [combined_to_json()](#fabshop----combined-to-json): Return the JSON of a combined tool table JASON file.
-* 11 Class: [FabVBitTool](#fabshop--fabvbittool):
+* 1 Class: [FabBallEndTool](#fabtools--fabballendtool):
+* 2 Class: [FabBullNoseTool](#fabtools--fabbullnosetool):
+* 3 Class: [FabChamferTool](#fabtools--fabchamfertool):
+* 4 Class: [FabDrillTool](#fabtools--fabdrilltool):
+* 5 Class: [FabEndMillTool](#fabtools--fabendmilltool):
+* 6 Class: [FabProbeTool](#fabtools--fabprobetool):
+* 7 Class: [FabSlittingSawTool](#fabtools--fabslittingsawtool):
+* 8 Class: [FabThreadMill](#fabtools--fabthreadmill):
+* 9 Class: [FabTool](#fabtools--fabtool):
+  * 9.1 [to_json()](#fabtools----to-json): Return FabToolTemptlate as a JSON string.
+  * 9.2 [write_json()](#fabtools----write-json): Write FabToolTemptlate out to a JSON file.
+* 10 Class: [FabTools](#fabtools--fabtools):
+  * 10.1 [add_tool()](#fabtools----add-tool): Add a FabTool to FabTools.
+  * 10.2 [add_tools()](#fabtools----add-tools): Add a some FabTool's to a FabTools.
+  * 10.3 [to_library_json()](#fabtools----to-library-json): Convert FabToolTable to JSON.
+  * 10.4 [combined_to_json()](#fabtools----combined-to-json): Return the JSON of a combined tool table JASON file.
+* 11 Class: [FabVBitTool](#fabtools--fabvbittool):
 
-## <a name="fabshop--fabballendtool"></a>1 Class FabBallEndTool:
+## <a name="fabtools--fabballendtool"></a>1 Class FabBallEndTool:
 
 An end-mill bit template.
 Required Base Attributes: *Name*, *FileName*.
@@ -63,7 +51,7 @@ Extra Keyword Only Attributes:
 * *Flutes*: (int): The number of flutes.
 
 
-## <a name="fabshop--fabbullnosetool"></a>2 Class FabBullNoseTool:
+## <a name="fabtools--fabbullnosetool"></a>2 Class FabBullNoseTool:
 
 FabBullNose: A bull nose template.
 Required Base Attributes: *Name*, *FileName*.
@@ -81,7 +69,7 @@ Extra Keyword Only Attributes:
 * *Flutes*: (int = 0): The number of flutes.
 
 
-## <a name="fabshop--fabchamfertool"></a>3 Class FabChamferTool:
+## <a name="fabtools--fabchamfertool"></a>3 Class FabChamferTool:
 
 FabDrillTool: An drill bit template.
 Required Base Attributes: *Name*, *FileName*.
@@ -99,7 +87,7 @@ Extra Keyword Only Attributes:
 * *Flutes*: (int = 0): The number of flutes.
 
 
-## <a name="fabshop--fabdrilltool"></a>4 Class FabDrillTool:
+## <a name="fabtools--fabdrilltool"></a>4 Class FabDrillTool:
 
 An drill bit template.
 Required Base Attributes: *Name*, *FileName*.
@@ -116,7 +104,7 @@ Extra Keyword Only Attributes:
 * *SplitPoint* (bool = False): True if self-centering split points are present.
 
 
-## <a name="fabshop--fabendmilltool"></a>5 Class FabEndMillTool:
+## <a name="fabtools--fabendmilltool"></a>5 Class FabEndMillTool:
 
 An end-mill bit template.
 Required Base Attributes: *Name*, *FileName*.
@@ -132,7 +120,7 @@ Extra Keyword Only Attributes:
 * *Flutes*: (int): The number of flutes.
 
 
-## <a name="fabshop--fabprobetool"></a>6 Class FabProbeTool:
+## <a name="fabtools--fabprobetool"></a>6 Class FabProbeTool:
 
 A touch off probe.
 Required Base Attributes: *Name*, *FileName*.
@@ -144,7 +132,7 @@ Required FreeCAD Parameter Attributes:
 * *ShaftDiameter: (Union[str, float]): The shaft diameter.
 
 
-## <a name="fabshop--fabslittingsawtool"></a>7 Class FabSlittingSawTool:
+## <a name="fabtools--fabslittingsawtool"></a>7 Class FabSlittingSawTool:
 
 An slitting saw bit.
 Required Base Attributes: *Name*, *FileName*.
@@ -162,7 +150,7 @@ Extra Keyword Only Attributes:
 * *Teeth*: (int = 0): The of teeth on the saw blade.
 
 
-## <a name="fabshop--fabthreadmill"></a>8 Class FabThreadMill:
+## <a name="fabtools--fabthreadmill"></a>8 Class FabThreadMill:
 
 An thread cutter bit.
 Required Base Attributes: *Name*, *FileName*.
@@ -180,7 +168,7 @@ Extra Keyword Only Attributes:
 * *Flutes*: (int = 0): The number of flutes.
 
 
-## <a name="fabshop--fabtool"></a>9 Class FabTool:
+## <a name="fabtools--fabtool"></a>9 Class FabTool:
 
 FabCNCShape: Base class for CNC tool bit templates.
 Required Base Attributes:
@@ -199,7 +187,7 @@ Keyword Only Base Attributes:
   The distance from tool tip to the base of the tool holder.
   The tool holder must be kept above the clearance height.
 
-### <a name="fabshop----to-json"></a>9.1 `FabTool.`to_json():
+### <a name="fabtools----to-json"></a>9.1 `FabTool.`to_json():
 
 FabTool.to_json(self, with_attributes: bool = True, table_name: str = '') -> str:
 
@@ -211,14 +199,14 @@ Arguments:
   A stand alone JSON file is produced when empty, otherwise an indented JSON
   dictiornary named *table_name* is produced.
 
-### <a name="fabshop----write-json"></a>9.2 `FabTool.`write_json():
+### <a name="fabtools----write-json"></a>9.2 `FabTool.`write_json():
 
 FabTool.write_json(self, file_path: pathlib.Path) -> None:
 
 Write FabToolTemptlate out to a JSON file.
 
 
-## <a name="fabshop--fabtools"></a>10 Class FabTools:
+## <a name="fabtools--fabtools"></a>10 Class FabTools:
 
 A collection of related FabTool's.
 Attributes:
@@ -231,32 +219,32 @@ and export.  This file has all of the information for each tool embedded inside.
 The new tool library is JSON file that just has a number and a reference to a "bit" JSON file.
 This class can deal with both.
 
-### <a name="fabshop----add-tool"></a>10.1 `FabTools.`add_tool():
+### <a name="fabtools----add-tool"></a>10.1 `FabTools.`add_tool():
 
-FabTools.add_tool(self, tool_number: int, tool: FabShop.FabTool) -> None:
+FabTools.add_tool(self, tool_number: int, tool: FabTools.FabTool) -> None:
 
 Add a FabTool to FabTools.
 
-### <a name="fabshop----add-tools"></a>10.2 `FabTools.`add_tools():
+### <a name="fabtools----add-tools"></a>10.2 `FabTools.`add_tools():
 
-FabTools.add_tools(self, tools: Dict[int, FabShop.FabTool]) -> None:
+FabTools.add_tools(self, tools: Dict[int, FabTools.FabTool]) -> None:
 
 Add a some FabTool's to a FabTools.
 
-### <a name="fabshop----to-library-json"></a>10.3 `FabTools.`to_library_json():
+### <a name="fabtools----to-library-json"></a>10.3 `FabTools.`to_library_json():
 
 FabTools.to_library_json(self, with_hash: bool) -> None:
 
 Convert FabToolTable to JSON.
 
-### <a name="fabshop----combined-to-json"></a>10.4 `FabTools.`combined_to_json():
+### <a name="fabtools----combined-to-json"></a>10.4 `FabTools.`combined_to_json():
 
 FabTools.combined_to_json(self, table_name: str) -> str:
 
 Return the JSON of a combined tool table JASON file.
 
 
-## <a name="fabshop--fabvbittool"></a>11 Class FabVBitTool:
+## <a name="fabtools--fabvbittool"></a>11 Class FabVBitTool:
 
 An V bit template.
 Required Base Attributes: *Name*, *FileName*.
