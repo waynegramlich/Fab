@@ -1,6 +1,8 @@
 #*
 +*
 *~
+*.py,cover
+*.json
 .#*
 .*.lint
 .coverage

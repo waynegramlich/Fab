@@ -17,8 +17,8 @@ SAFE_MODULES := \
     FabJoins \
     FabNodes \
     FabProjects \
-    FabSolids \
     FabShops \
+    FabSolids \
     FabTools \
     FabUtilities \
     TarSync \
@@ -105,7 +105,7 @@ tests: .tests  # Use .tests to remember that tests were run.
 	    grep -v "pragma: no unit test" > /tmp/uncovered_lines ) || true
 	$(COVERAGE) report  # Generate the summary report.
 	$(COVERAGE) erase  # Do not leave around stale coverge information
-	rm -f ${COVER_FILES}  # Remove coverage files.
+	# rm -f ${COVER_FILES}  # Remove coverage files.
 	touch $@
 
 # Specific rule for "__init__.py" => "docs/ModFab.py":
