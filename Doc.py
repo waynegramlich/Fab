@@ -464,13 +464,15 @@ def main() -> int:
     document_directory: Path
     markdown_program: str
 
-    arguments: List[str] = sys.argv
+    arguments: Tuple[str, ...] = tuple(sys.argv[1:])
     if "--unit-test" in arguments:
-        return 0  # TODO: add unit tests.
+        # For now hand provide the list of files to generte documenation for.:
+        arguments = ("Doc.py", "FabBOM.py", "FabGeometries.py", "FabJoins.py", "FabNodes.py",
+                     "FabProjects.py", "FabShops.py", "FabSolids.py", "FabTools.py",
+                     "FabUtilities.py", "TarSync.py", "Test.py")
 
     try:
-        module_names, document_directory, markdown_program = (
-            process_arguments(tuple(sys.argv[1:])))
+        module_names, document_directory, markdown_program = process_arguments(arguments)
     except RuntimeError as runtime_error:
         print(runtime_error)
         return 1

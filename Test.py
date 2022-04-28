@@ -460,7 +460,7 @@ class TestProject(FabProject):
         # box: Box = document._Box
         # print(f"{label}: {box.North.Normal=}")
         # assert False, "Remove debugging probes"
-        pass
+        pass  # pragma: no cover
 
 
 def main(key: str = "") -> Any:
