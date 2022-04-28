@@ -8,11 +8,9 @@ This is a package provides classes used to define what machines are available in
   * FabCNC: A CNC mill or router:
     * FabRouter: A CNC router.
     * FabMill: A CNC Mill.
-  * FabCutter: A CNC Laser or Water Jet:
-    * FabLaser: A CNC laser.
-    * FabWaterJet: A CNC water jet.
-  * FabLathe: A CNC lathe.
-  * Fab3DPrinter: A 3D printer.
+  * FabCutter: A CNC Laser, Water Jet, or Plasma Cutter.  (TBD)
+  * FabLathe: A CNC lathe.  (TBD)
+  * Fab3DPrinter: A 3D printer.  (TBD)
 
 """
 
@@ -28,8 +26,8 @@ from cadquery import Vector  # type: ignore
 # * When setting path to library, be sure to include .../Tools/Library  (one level up does not work)
 
 from typeguard import check_argument_types, check_type
-from typing import Dict, Tuple
-from dataclasses import dataclass, field
+from typing import List, Tuple
+from dataclasses import dataclass
 
 
 # FabSpindle:
@@ -157,8 +155,8 @@ class FabController(object):
     Name: str
     PostProcessor: str
 
-    # FabController.__post_process__():
-    def __post_process__(self) -> None:
+    # FabController.__post_init__():
+    def __post_init__(self) -> None:
         """Finish initializing FabController."""
         check_type("FabController.Name", self.Name, str)
         check_type("FabController.PostProcessor", self.PostProcessor, str)
@@ -229,19 +227,34 @@ class FabCNC(FabMachine):
 
     """
 
-    _WorkVolume: Vector
-    _Spindle: FabSpindle
-    _Table: FabTable
-    _Controller: FabController
+    WorkVolume: Vector
+    Spindle: FabSpindle
+    Table: FabTable
+    Controller: FabController
 
     # FabCNC.__post_init__():
     def __post_init__(self) -> None:
         """Finish initializing FabCNCMill."""
         super().__post_init__()
-        check_type("FabCNC.WorkVolume", self._WorkVolume, Vector)
-        check_type("FabCNC.Spindle", self._Spindle, FabSpindle)
-        check_type("FabCNC.Table", self._Table, FabTable)
-        check_type("FabCNC.Controller", self._Controller, FabController)
+        check_type("FabCNC.WorkVolume", self.WorkVolume, Vector)
+        check_type("FabCNC.Spindle", self.Spindle, FabSpindle)
+        check_type("FabCNC.Table", self.Table, FabTable)
+        check_type("FabCNC.Controller", self.Controller, FabController)
+
+    # FabCNC._unit_tests():
+    @staticmethod
+    def _unit_tests():
+        """Peform FabCNC unit tests."""
+        work_volume: Vector = Vector(100.0, 50.0, 30.0)
+        spindle: FabSpindle = FabSpindle("R8", 5000, True, True, False)
+        table: FabTable = FabTable("TestTable", 100.0, 50.0, 30.0, 4, 10.0, 5.0, 5.0, 10.0, 5.0)
+        controller: FabController = FabController("MyMill", "linuxcnc")
+        cnc: FabCNC = FabCNC("TestCNC", "placement", work_volume, spindle, table, controller)
+        assert cnc.Name == "TestCNC"
+        assert cnc.Placement == "placement"
+        assert cnc.Spindle is spindle
+        assert cnc.Table is table
+        assert cnc.Controller is controller
 
 
 # FabCNCMill:
@@ -259,7 +272,7 @@ class FabCNCMill(FabCNC):
     * *Kind* (str): Return the string "CNCMill".
 
     Contstructor:
-    * FabCNCMill("Name", "Position", WorkVolume, Spindle, Table, Spindle, Controller)
+    * FabCNCMill("Name", "Placement", WorkVolume, Spindle, Table, Spindle, Controller)
 
     """
 
@@ -272,7 +285,23 @@ class FabCNCMill(FabCNC):
     @property
     def Kind(self) -> str:
         """Return the FabCNCMill kind."""
-        return "CNC_Mill"
+        return "CNCMill"
+
+    # FabCNCMill._unit_tests():
+    @staticmethod
+    def _unit_tests():
+        """Peform FabCNCMill unit tests."""
+        work_volume: Vector = Vector(100.0, 50.0, 30.0)
+        spindle: FabSpindle = FabSpindle("R8", 5000, True, True, False)
+        controller: FabController = FabController("MyMill", "linuxcnc")
+        table: FabTable = FabTable("TestTable", 100.0, 50.0, 30.0, 4, 10.0, 5.0, 5.0, 10.0, 5.0)
+        cnc: FabCNCMill = FabCNCMill(
+            "TestCNC", "placement", work_volume, spindle, table, controller)
+        assert cnc.Name == "TestCNC", cnc.Name
+        assert cnc.Placement == "placement", cnc.Location
+        assert cnc.Spindle is spindle, cnc.Spindle
+        assert cnc.Controller is controller, cnc.Controller
+        assert cnc.Kind == "CNCMill", cnc.Kind
 
 
 # FabCNCRouter:
@@ -299,6 +328,22 @@ class FabCNCRouter(FabCNC):
     def Kind(self) -> str:
         """Return the FabCNCRouter kind."""
         return "CNCRouter"
+
+    # FabCNCRouter._unit_tests():
+    @staticmethod
+    def _unit_tests():
+        """Peform FabCNCRouter unit tests."""
+        work_volume: Vector = Vector(100.0, 50.0, 30.0)
+        spindle: FabSpindle = FabSpindle("R8", 5000, True, True, False)
+        controller: FabController = FabController("MyMill", "linuxcnc")
+        table: FabTable = FabTable("TestTable", 100.0, 50.0, 30.0, 0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        cnc: FabCNCRouter = FabCNCRouter(
+            "TestCNC", "placement", work_volume, spindle, table, controller)
+        assert cnc.Name == "TestCNC", cnc.Name
+        assert cnc.Placement == "placement", cnc.Location
+        assert cnc.Spindle is spindle, cnc.Spindle
+        assert cnc.Controller is controller, cnc.Controller
+        assert cnc.Kind == "CNCRouter", cnc.Kind
 
 
 # FabLocation:
@@ -369,52 +414,28 @@ class FabShop(object):
 
     """
 
-    _Name: str
-    _Location: FabLocation
-    _Machines: Tuple[FabMachine, ...]
-    _MachinesTable: Dict[str, FabMachine] = field(init=False, repr=False)
+    Name: str
+    Location: FabLocation
+    Machines: Tuple[FabMachine, ...]
 
     # FabShop:__post_init__():
     def __post_init__(self) -> None:
         """Finish initializing FabShop."""
-        check_type("FabShop.Name", self._Name, str)
-        check_type("FabShop.Location", self._Location, FabLocation)
-        check_type("FabShop.Machines", self._Machines, Tuple[FabMachine, ...])
-        machines_table: Dict[str, FabMachine] = {}
-        machine: FabMachine
-        for machine in self._Machines:
-            machine_name: str = machine.Name
-            if machine_name in machines_table:
-                raise ValueError("Machine {machine_name} occurs more than once.")
-            machines_table[machine_name] = machine
-        self._MachinesTable = machines_table
-
-    # FabShop.Name():
-    @property
-    def Name(self) -> str:
-        """Return FabShop name."""
-        return self._Name
-
-    # FabShop.Location():
-    @property
-    def Location(self) -> FabLocation:
-        """Return FabShop location."""
-        return self._Location
-
-    # FabShop.Machines():
-    @property
-    def Machines(self) -> Tuple[FabMachine, ...]:
-        """Return FabShop machines."""
-        return self._Machines
+        check_type("FabShop.Name", self.Name, str)
+        check_type("FabShop.Location", self.Location, FabLocation)
+        check_type("FabShop.Machines", self.Machines, Tuple[FabMachine, ...])
 
     # FabShop.lookup():
     def lookup(self, machine_name: str) -> FabMachine:
         """Return the named FabMachine."""
         assert check_argument_types()
-        if machine_name not in self._MachinesTable:
-            raise KeyError(
-                f"Machine {machine_name} is not one of {sorted(self._MachinesTable.keys())}")
-        return self._MachinesTable[machine_name]
+        machine: FabMachine
+        for machine in self.Machines:
+            if machine.Name == machine_name:
+                return machine
+        machine_names: List[str] = [machine.Name for machine in self.Machines]
+        raise KeyError(
+            f"Machine {machine_name} is not one of {sorted(machine_names)}")
 
     # FabShop._unit_tests()
     @staticmethod
@@ -454,6 +475,8 @@ def main() -> None:
     FabController._unit_tests()
     FabMachine._unit_tests()
     FabCNC._unit_tests()
+    FabCNCMill._unit_tests()
+    FabCNCRouter._unit_tests()
     FabShop._unit_tests()
 
 

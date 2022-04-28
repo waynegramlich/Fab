@@ -6,11 +6,9 @@ This is a package provides classes used to define what machines are available in
   * FabCNC: A CNC mill or router:
     * FabRouter: A CNC router.
     * FabMill: A CNC Mill.
-  * FabCutter: A CNC Laser or Water Jet:
-    * FabLaser: A CNC laser.
-    * FabWaterJet: A CNC water jet.
-  * FabLathe: A CNC lathe.
-  * Fab3DPrinter: A 3D printer.
+  * FabCutter: A CNC Laser, Water Jet, or Plasma Cutter.  (TBD)
+  * FabLathe: A CNC lathe.  (TBD)
+  * Fab3DPrinter: A 3D printer.  (TBD)
 
 ## Table of Contents (alphabetical order):
 
@@ -53,7 +51,7 @@ Attributes:
 * *Kind* (str): Return the string "CNCMill".
 
 Contstructor:
-* FabCNCMill("Name", "Position", WorkVolume, Spindle, Table, Spindle, Controller)
+* FabCNCMill("Name", "Placement", WorkVolume, Spindle, Table, Spindle, Controller)
 
 
 ## <a name="fabshops--fabcncrouter"></a>3 Class FabCNCRouter:
