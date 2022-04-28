@@ -469,7 +469,7 @@ def main() -> int:
         # For now hand provide the list of files to generte documenation for.:
         arguments = ("Doc.py", "FabBOM.py", "FabGeometries.py", "FabJoins.py", "FabNodes.py",
                      "FabProjects.py", "FabShops.py", "FabSolids.py", "FabTools.py",
-                     "FabUtilities.py", "TarSync.py", "Test.py")
+                     "FabUtilities.py", "TarSync.py", "Test.py", "__init__.py")
 
     try:
         module_names, document_directory, markdown_program = process_arguments(arguments)
