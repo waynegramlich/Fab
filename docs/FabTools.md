@@ -1,265 +1,276 @@
 # FabTools: FabTools: Tools for Fab..
 This is a package provides classes used to define the tooling that is available in a shop.
-They basically some classes that interface with the FreeCAD tool bit and tool table JSON files.
+They basically define some classes that interface with the FreeCAD Path Tools infrastructure.
+The "new" FreeCAD Path Tools infrastructure organizes everything into a top level `Tools/`
+directory and associated sub-directories as follows:
 
-The classes are:
-* FabTool: The base class for tool bits.
-  * FabBallEndTool: The class for defining a ball end mill.
-  * FabBullNoseTool: The class for defining a bull nose end mill.
-  * FabChamferTool: The class for defining a chamfer end mill.
-  * FabDrillTool: The class for defining a drill bit.
-  * FabEndMillTool: The class for defining a standard end mill.
-  * FabProbeTool: The class for defining a probe tool.
-  * FabSlittingSawTool: The class for defining a slitting saw.
-  * FabThreadMill: The class for defining a thread cutter.
-  * FabVTool: The class for defining a V bit mill.
-* FabToolTable: A class for defining a tool table for one a given FabMachine.
+* `Tools/`: The top level directory that contains a `Shape/`, `Bit/`, and `Library/` sub-directory.
+  * `Tools/Shape/`: This sub-directory contains tool template files in FreeCAD `.fcstd` format:
+    * `ballend.fcstd`:  The ball end tool template.
+    * ...
+    * `v-bit.fcstd`: The V-bit groove tool template.
+
+  * `Tools/Bit/`: This sub-directory contains FreeCAD Path Tool bit JSON files (`.fctb`):
+    The JSON in each tool bit file (`.fctb`) references one shape `.fcstd` file from `Tools/Shape/`.
+    * `6mm_Ball_End.fctb`: A 6mm Ball end end tool bit that uses `ballend.fcstd`.
+    * ...
+    * `60degree_VBit.fctb`: A 60-degree VBit tool bit that uses `v-bit.fcstd`.
+
+  * `Tools/Library/`: This sub-directory contains FreeCAD Path library JSON files (`.fctl`)
+    These files define a tool number to tool bit binding.  In general, each Shop machine
+    will tend to have a dedicated library associated with it.  However, some machine tools can
+    share the same library.  Each `.fctl` JSON library references Tool Bit files from `Tools/Bin/`.
+
+    * `Default.fctl`: The default tools that comes with FreeCAD.
+    * `Machine1.fctl`: The tools library for Machine1.
+    * ...
+    * `MachineN.fctl`: The tools library for MachineN.
+
+The top-down class hierarchy for the FabTools package is:
+* FabToolsDirectory: This corresponds to a `Tools/` directory:
+  * FabShapes: This corresponds to a `Tools/Shape/` directory:
+    * FabShape: This corresponds to a `.fcstd` tool shape template in the `Tools/Shape/` directory.
+  * FabBits: This corresponds to a `Tools/Bit/` sub-Directory:
+    * FabBit: This corresponds to a `.fctb` file in the `Tools/Bit/` directory.  For each different
+      Shape, there is a dedicated class that represents that shape:
+      * FabBallBalleEndBit: This corresponds to `Tools/Shape/ballend.fcstd`.
+      * FabBallBullNoseBit: This corresponds to `Tools/Shape/bullnose.fcstd`.
+      * FabChamferBit: This corresponds to `Tools/Shape/chamfer.fcstd`.
+      * FabDrillBit: This corresponds to `Tools/Shape/drill.fcstd`.
+      * FabEndMillBit: This corresponds to `Tools/Shape/endmill.fcstd`.
+      * FabProbeBit: This corresponds to `Tools/Shape/probe.fcstd`.
+      * FabSlittingSawBit: This corresponds to `Tools/Shape/slittingsaw.fcstd`.
+      * FabThreadMillBit: This corresponds to `Tools/Shape/thread-mill.fcstd`.
+      * FabVBit: This corresponds to `Tools/Shape/v-bit.fcstd`.
+  * FabLibraries: This corresponds to a `Tool/Library` directory:
+    * FabLibrary: This corresponds to an individual `.fctl` file in the `Tools/Library` directory.
 
 ## Table of Contents (alphabetical order):
 
-* 1 Class: [FabBallEndTool](#fabtools--fabballendtool):
-* 2 Class: [FabBullNoseTool](#fabtools--fabbullnosetool):
-* 3 Class: [FabChamferTool](#fabtools--fabchamfertool):
-* 4 Class: [FabDrillTool](#fabtools--fabdrilltool):
-* 5 Class: [FabEndMillTool](#fabtools--fabendmilltool):
-* 6 Class: [FabProbeTool](#fabtools--fabprobetool):
-* 7 Class: [FabSlittingSawTool](#fabtools--fabslittingsawtool):
-* 8 Class: [FabThreadMill](#fabtools--fabthreadmill):
-* 9 Class: [FabTool](#fabtools--fabtool):
-  * 9.1 [to_json()](#fabtools----to-json): Return FabToolTemptlate as a JSON string.
-  * 9.2 [write_json()](#fabtools----write-json): Write FabToolTemptlate out to a JSON file.
-* 10 Class: [FabTools](#fabtools--fabtools):
-  * 10.1 [add_tool()](#fabtools----add-tool): Add a FabTool to FabTools.
-  * 10.2 [add_tools()](#fabtools----add-tools): Add a some FabTool's to a FabTools.
-  * 10.3 [to_library_json()](#fabtools----to-library-json): Convert FabToolTable to JSON.
-  * 10.4 [combined_to_json()](#fabtools----combined-to-json): Return the JSON of a combined tool table JASON file.
-* 11 Class: [FabVBitTool](#fabtools--fabvbittool):
+* 1 Class: [FabAttributes](#fabtools--fabattributes):
+  * 1.1 [toJSON()](#fabtools----tojson): Return FabAttributes as JSON dictionary.
+* 2 Class: [FabBallEndBit](#fabtools--fabballendbit):
+* 3 Class: [FabBit](#fabtools--fabbit):
+* 4 Class: [FabBitTemplate](#fabtools--fabbittemplate):
+  * 4.1 [kwargsFromJSON()](#fabtools----kwargsfromjson): Return the keyword arguments needed to initialize a FabBit.
+  * 4.2 [toJSON()](#fabtools----tojson): Convert a FabBit to a JSON dictionary using a FabBitTemplate.
+* 5 Class: [FabBitTemplates](#fabtools--fabbittemplates):
+* 6 Class: [FabBits](#fabtools--fabbits):
+  * 6.1 [lookup()](#fabtools----lookup): Look up a FabBit by name.
+* 7 Class: [FabBullNoseBit](#fabtools--fabbullnosebit):
+* 8 Class: [FabLibraries](#fabtools--fablibraries):
+  * 8.1 [nameLookup()](#fabtools----namelookup): Lookup a library by name.
+* 9 Class: [FabLibrary](#fabtools--fablibrary):
+  * 9.1 [lookupName()](#fabtools----lookupname): Lookup a FabBit by name.
+  * 9.2 [lookupNumber()](#fabtools----lookupnumber): Lookup a FabBit by name.
+* 10 Class: [FabShape](#fabtools--fabshape):
+* 11 Class: [FabShapes](#fabtools--fabshapes):
+  * 11.1 [lookup()](#fabtools----lookup): Lookup a FabShape by name.
 
-## <a name="fabtools--fabballendtool"></a>1 Class FabBallEndTool:
+## <a name="fabtools--fabattributes"></a>1 Class FabAttributes:
+
+Additional information about a FabBit.
+Attributes:
+* *Values* (Tuple[Tuple[str, Any], ...): Sorted list of named attribute values.
+* *Names* (Tuple[str, ...]): Sorted list of attribute names:
+
+### <a name="fabtools----tojson"></a>1.1 `FabAttributes.`toJSON():
+
+FabAttributes.toJSON(self) -> Dict[str, Any]:
+
+Return FabAttributes as JSON dictionary.
+
+
+## <a name="fabtools--fabballendbit"></a>2 Class FabBallEndBit:
 
 An end-mill bit template.
-Required Base Attributes: *Name*, *FileName*.
-Keyword Only Base Attributes: *Material*, *ToolHolderHeight*, *VendorName*, *VendorPartNumber*.
-
-Required FreeCAD Parameter Attributes:
+Attributes:
+* *Name* (str): The name of Ball End bit.
+* *BitFile* (PathFile): The `.fctb` file.
+* *Shape* (FabShape): The associated `.fcstd` shape.
+* *Attributes* (FabAttributes): Any associated attributes.
 * *CuttingEdgeHeight* (Union[str, float]): The cutting edge height.
 * *Diameter* (Union[str, float]): The end mill cutter diameter.
 * *Length* (Union[str, float]): The total length of the end mill.
 * *ShankDiameter: (Union[str, float]): The shank diameter.
 
-Extra Keyword Only Attributes:
-* *Flutes*: (int): The number of flutes.
+Constructor:
+* FabBallEndBit("Name", BitFile, Shape, Attributes,
+  CuttingEdgeHeight, Diameter, Length, ShankDiameter)
 
 
-## <a name="fabtools--fabbullnosetool"></a>2 Class FabBullNoseTool:
+## <a name="fabtools--fabbit"></a>3 Class FabBit:
 
-FabBullNose: A bull nose template.
-Required Base Attributes: *Name*, *FileName*.
-Keyword Only Base Attributes: *Material*, *ToolHolderHeight*, *VendorName*, *VendorPartNumber*.
+Base class common to all FabBit sub-classes;
+Attributes:
+* *Name* (str): The name of the tool template.
+* *BitFile* (PathFile): The file path to the corresponding `.fctb` file.
+* *Shape*: (FabShape): The associated FabShape.
+* *Attributes*: (FabAttributes): The optional bit attributes.
 
-Required FreeCAD Parameter Attributes:
-* *CuttingEdgeHeight* (Union[str, float]): The total length of the cutting edge.
-* *Diameter* (Union[str, float]): The primary diameter
-* *FlatRadius* (Union[str, float]):
-  The radius at the flat portion at the bottom where cutters are rounded.
+Constructor:
+* FabBit("Name", BitFile, Shape, Attributes)
+
+
+## <a name="fabtools--fabbittemplate"></a>4 Class FabBitTemplate:
+
+A Template for creating a FabBit.
+Attributes:
+* Name* (str): The FabBit name.
+* Shape* (FabShape):
+* Parameters (Tuple[Tuple[str, Tuple[type, ...]], ...]):
+  The allowed parameter names and associated types of the form:
+  ("ParameterName", (type1, ..., typeN)) for no type checking ("ParameterName",)
+* Attributes (Tuple[Tuple[str, Tuple[type, ...]], ...]):
+  The allowed parameter names and associated types of the form:
+  ("ParameterName", (type1, ..., typeN)) for no type checking ("ParameterName",)
+
+### <a name="fabtools----kwargsfromjson"></a>4.1 `FabBitTemplate.`kwargsFromJSON():
+
+FabBitTemplate.kwargsFromJSON(self, json_dict: Dict[str, Any], bit_file: pathlib.Path, shapes: FabTools.FabShapes, tracing: str = '') -> Dict[str, Any]:
+
+Return the keyword arguments needed to initialize a FabBit.
+
+### <a name="fabtools----tojson"></a>4.2 `FabBitTemplate.`toJSON():
+
+FabBitTemplate.toJSON(self, bit: 'FabBit', with_attributes: bool) -> Dict[str, Any]:
+
+Convert a FabBit to a JSON dictionary using a FabBitTemplate.
+
+
+## <a name="fabtools--fabbittemplates"></a>5 Class FabBitTemplates:
+
+A container of FabBitTemplate's to/from JSON.
+Attributes:
+* *BallEnd* (FabBitTemplate): A template for creating FabBallEndBit's.
+* *BullNose* (FabBitTemplate): A template for creating FabBullNoseBit's.
+* *Chamfer* (FabBitTemplate): A template for creating FabChamferBit's.
+* *DoveTail* (FabBitTemplate): A template for creating FabDoveTailBit's.
+* *Drill* (FabBitTemplate): A template for creating FabDrillBit's.
+* *EndMill* (FabBitTemplate): A template for creating FabEndMillBit's.
+* *Probe* (FabBitTemplate): A template for creating FabProbeBit's.
+* *SlittingSaw* (FabBitTemplate): A template for creating FabSlittingSawBit's.
+* *ThreadMill* (FabBitTemplate): A template for create FabThreadMillBit's.
+* *VBit* (FabBitTemplate): A template for creating FabVBitBits's.
+Constructor:
+* FabBitTemplates(BallEnd, BullNose, Chamfer, DoveTail, Drill,
+  EndMill, Probe, SlittingSaw, ThreadMill, VBit)
+
+Use FabBitTemplates.factory() instead of the constructor.
+
+
+## <a name="fabtools--fabbits"></a>6 Class FabBits:
+
+A collection FabBit's that corresponds to a `Tools/Bit/` sub-directory..
+Attributes:
+* *BitsDirectory*: (PathFile): The path to the `Tools/Bit/` sub-directory.
+* *Bits* (Tuple[FabBit, ...]): The associated FabBit's in name sorted order.
+* *Names* (Tuple[str, ...]): The sorted FabBit names.
+
+Contructor:
+* FabBits("Name", BitsPath, Bits, Names)
+
+### <a name="fabtools----lookup"></a>6.1 `FabBits.`lookup():
+
+FabBits.lookup(self, name: str) -> FabTools.FabBit:
+
+Look up a FabBit by name.
+Arguments:
+* *name* (str): The name of the FabBit.
+
+Returns:
+* (FabBit): The mataching FabBit.
+
+Raises:
+* (KeyError): If FabBit is  not present.
+
+
+## <a name="fabtools--fabbullnosebit"></a>7 Class FabBullNoseBit:
+
+An end-mill bit template.
+Attributes:
+* *Name* (str): The name of Ball End bit.
+* *BitFile* (PathFile): The `.fctb` file.
+* *Shape* (FabShape): The associated `.fcstd` shape.
+* *Attributes* (FabAttributes): Any associated attributes.
+* *CuttingEdgeHeight* (Union[str, float]): The cutting edge height.
+* *Diameter* (Union[str, float]): The bull nose cutter diameter.
+* *FlatRadius* (Union[str, float]): The flat radius of the bull nose cutter.
 * *Length* (Union[str, float]): The total length of the bull nose cutter.
 * *ShankDiameter: (Union[str, float]): The shank diameter.
 
-Extra Keyword Only Attributes:
-* *Flutes*: (int = 0): The number of flutes.
+Constructor:
+* FabBullNoseBit("Name", BitFile, Shape, Attributes,
+  CuttingEdgeHeight, Diameter, Length, ShankDiameter)
 
 
-## <a name="fabtools--fabchamfertool"></a>3 Class FabChamferTool:
+## <a name="fabtools--fablibraries"></a>8 Class FabLibraries:
 
-FabDrillTool: An drill bit template.
-Required Base Attributes: *Name*, *FileName*.
-Keyword Only Base Attributes: *Material*, *ToolHolderHeight*, *VendorName*, *VendorPartNumber*.
-
-Required FreeCAD Parameter Attributes:
-* *CuttingEdgeHeight* (Union[str, float]): The cutting edge edge height.
-* *Diameter* (Union[str, float]): The widest diameter.
-* *CuttingEdgeAngle* (Union[str, float]): The cutting edge angle in degrees.
-* *Length* (Union[str, float]): The total length of the chamfer bit.
-* *ShankDiameter*: (Union[str, float]): The shank diameter.
-* *TipDiameter*: (Union[str, float]): The diameter at the "tip".
-
-Extra Keyword Only Attributes:
-* *Flutes*: (int = 0): The number of flutes.
-
-
-## <a name="fabtools--fabdrilltool"></a>4 Class FabDrillTool:
-
-An drill bit template.
-Required Base Attributes: *Name*, *FileName*.
-Keyword Only Base Attributes: *Material*, *ToolHolderHeight*, *VendorName*, *VendorPartNumber*.
-
-Required FreeCAD Parameter Attributes:
-* *Diameter* (Union[str, float]): The end mill cutter diameter.
-* *Length* (Union[str, float]): The total length of the end mill.
-* *TipAngle: (Union[str, float]): The shank diameter.
-
-Extra Keyword Only Attributes:
-* *Flutes*: (int = 0): The number of flutes.
-* *FlutesLength* (Union[str, float] = 0.0): The drill flutes length (i.e. maximum drill depth).
-* *SplitPoint* (bool = False): True if self-centering split points are present.
-
-
-## <a name="fabtools--fabendmilltool"></a>5 Class FabEndMillTool:
-
-An end-mill bit template.
-Required Base Attributes: *Name*, *FileName*.
-Keyword Only Base Attributes: *Material*, *ToolHolderHeight*, *VendorName*, *VendorPartNumber*.
-
-Required FreeCAD Parameter Attributes:
-* *CuttingEdgeHeight* (Union[str, float]): The cutting edge height.
-* *Diameter* (Union[str, float]): The end mill cutter diameter.
-* *Length* (Union[str, float]): The total length of the end mill.
-* *ShankDiameter: (Union[str, float]): The shank diameter.
-
-Extra Keyword Only Attributes:
-* *Flutes*: (int): The number of flutes.
-
-
-## <a name="fabtools--fabprobetool"></a>6 Class FabProbeTool:
-
-A touch off probe.
-Required Base Attributes: *Name*, *FileName*.
-Keyword Only Base Attributes: *Material*, *ToolHolderHeight*, *VendorName*, *VendorPartNumber*.
-
-Required FreeCAD Parameter Attributes:
-* *Diameter* (Union[str, float]): The end mill cutter diameter.
-* *Length* (Union[str, float]): The total length of the end mill.
-* *ShaftDiameter: (Union[str, float]): The shaft diameter.
-
-
-## <a name="fabtools--fabslittingsawtool"></a>7 Class FabSlittingSawTool:
-
-An slitting saw bit.
-Required Base Attributes: *Name*, *FileName*.
-Keyword Only Base Attributes: *Material*, *ToolHolderHeight*, *VendorName*, *VendorPartNumber*.
-
-Required FreeCAD Parameter Attributes:
-* *BladeThickness* (Union[str, float]): The blade thickness.
-* *CapHeight* (Union[str, float]): The screw cap height.
-* *CapDiameter* (Union[str, float]): The screw cap diameter.
-* *Diameter* (Union[str, float]): The blade diameter.
-* *Length* (Union[str, float]): The over tool length.
-* *ShankDiameter* (Union[str, float]): The diameter of the shank above the blade.
-
-Extra Keyword Only Attributes:
-* *Teeth*: (int = 0): The of teeth on the saw blade.
-
-
-## <a name="fabtools--fabthreadmill"></a>8 Class FabThreadMill:
-
-An thread cutter bit.
-Required Base Attributes: *Name*, *FileName*.
-Keyword Only Base Attributes: *Material*, *ToolHolderHeight*, *VendorName*, *VendorPartNumber*.
-
-Required FreeCAD Parameter Attributes:
-* *Crest* (Union[str, float]): The height of the cutting disk.
-* *Diameter* (Union[str, float]): The diameter of the cutting disk.
-* *Length* (Union[str, float]): The over tool length.
-* *NeckDiameter* (Union[str, float]): The diameter of the neck poartion above the cutting disk.
-* *NeckLength* (Union[str, float]): The length of the neck portion above the cutting disk.
-* *ShankDiameter* (Union[str, float]): The diameter of the shank above the Disk.
-
-Extra Keyword Only Attributes:
-* *Flutes*: (int = 0): The number of flutes.
-
-
-## <a name="fabtools--fabtool"></a>9 Class FabTool:
-
-FabCNCShape: Base class for CNC tool bit templates.
-Required Base Attributes:
-* *Name* (str): The name of the tool template.
-* *FileName* (pathlib.Path): The tool template file name (must have a suffix of`.fcstd` file)
-
-Keyword Only Base Attributes:
-* *Material: (str = ""):
-  The tool material is one of "Carbide", "CastAlloy", "Ceramics", "Diamond",
-  "HighCarbonToolSteel", "HighSpeedSteel", or "Sialon".  This can optionally be followed
-  by further description (e.g. ":Cobalt", ":Cobalt:M42", ":Cobalt:M42:ALTIN")
-* *OffsetLength: (Unnion[None, str, float] = None):
-  The distance from the tool tip to the Z zero point on the mill.
-  This is used to populate a CNC controller offset field for each tool.
-* *ToolHolderHeight: (Union[None, str, float] = None):
-  The distance from tool tip to the base of the tool holder.
-  The tool holder must be kept above the clearance height.
-
-### <a name="fabtools----to-json"></a>9.1 `FabTool.`to_json():
-
-FabTool.to_json(self, with_attributes: bool = True, table_name: str = '') -> str:
-
-Return FabToolTemptlate as a JSON string.
-Arguments:
-* *with_attributes* (bool = True):
-  If True include additional "non-FreeCAD" attributes; otherwise leave blank.
-* *table_name* (str = ""):
-  A stand alone JSON file is produced when empty, otherwise an indented JSON
-  dictiornary named *table_name* is produced.
-
-### <a name="fabtools----write-json"></a>9.2 `FabTool.`write_json():
-
-FabTool.write_json(self, file_path: pathlib.Path) -> None:
-
-Write FabToolTemptlate out to a JSON file.
-
-
-## <a name="fabtools--fabtools"></a>10 Class FabTools:
-
-A collection of related FabTool's.
+Represents a directory of FabLibrary's.
 Attributes:
-* *Name* (str): The Tooltable name.
-* *Description* (str): A brief description of the tool table/library.
+* *Name* (str): The directory name (i.e. the stem the LibraryPath.)
+* *LibrariesPath (PathFile): The directory that contains the FabLibraries.
+* *Libraries* (Tuple[FabLibrary, ...): The actual libraries sorted by library name.
+* *LibraryNames*: Tuple[str, ...]: The sorted library names.
 
-In FreeCAD there is currently two very related concepts.  There is a tool table
-and a tool library.  A tool table is the JSON file that FreeCAD Path GUI can import
-and export.  This file has all of the information for each tool embedded inside.
-The new tool library is JSON file that just has a number and a reference to a "bit" JSON file.
-This class can deal with both.
+Constructor:
+* FabLibraries("Name", LibrariesPath, Libraries)
 
-### <a name="fabtools----add-tool"></a>10.1 `FabTools.`add_tool():
+### <a name="fabtools----namelookup"></a>8.1 `FabLibraries.`nameLookup():
 
-FabTools.add_tool(self, tool_number: int, tool: FabTools.FabTool) -> None:
+FabLibraries.nameLookup(self, name: str) -> FabTools.FabLibrary:
 
-Add a FabTool to FabTools.
-
-### <a name="fabtools----add-tools"></a>10.2 `FabTools.`add_tools():
-
-FabTools.add_tools(self, tools: Dict[int, FabTools.FabTool]) -> None:
-
-Add a some FabTool's to a FabTools.
-
-### <a name="fabtools----to-library-json"></a>10.3 `FabTools.`to_library_json():
-
-FabTools.to_library_json(self, with_hash: bool) -> None:
-
-Convert FabToolTable to JSON.
-
-### <a name="fabtools----combined-to-json"></a>10.4 `FabTools.`combined_to_json():
-
-FabTools.combined_to_json(self, table_name: str) -> str:
-
-Return the JSON of a combined tool table JASON file.
+Lookup a library by name.
 
 
-## <a name="fabtools--fabvbittool"></a>11 Class FabVBitTool:
+## <a name="fabtools--fablibrary"></a>9 Class FabLibrary:
 
-An V bit template.
-Required Base Attributes: *Name*, *FileName*.
-Keyword Only Base Attributes: *Material*, *ToolHolderHeight*, *VendorName*, *VendorPartNumber*.
+Tool libraries directory (e.g. `.../Tools/Library/*.fctl`).
+Attributes:
+* *Name* (str): The stem of LibraryFile (i.e. `xyz.fctl` => "xyz".)
+* *LibraryFile* (PathFile): The file for the `.fctl` file.
+* *NumberedBitss*: Tuple[Tuple[int, FabBit], ...]: A list of numbered to FabBit's.
 
-Required FreeCAD Parameter Attributes:
-* *CuttingEdgeAngle* (Union[str, float]): The cutting edge angle in degrees.
-* *Diameter* (Union[str, float]): The widest diameter.
-* *CuttingEdgeHeight* (Union[str, float]): The cutting edge edge height.
-* *TipDiameter*: (Union[str, float]): The diameter at the "tip".
-* *Length* (Union[str, float]): The total length of the chamfer bit.
-* *ShankDiameter*: (Union[str, float]): The shank diameter.
+Constructor:
+* FabLibrary("Name", LibraryFile, Tools)
 
-Extra Keyword Only Attributes:
-* *Flutes*: (int = 0): The number of flutes.
+### <a name="fabtools----lookupname"></a>9.1 `FabLibrary.`lookupName():
+
+FabLibrary.lookupName(self, name: str) -> FabTools.FabBit:
+
+Lookup a FabBit by name.
+
+### <a name="fabtools----lookupnumber"></a>9.2 `FabLibrary.`lookupNumber():
+
+FabLibrary.lookupNumber(self, number: int) -> FabTools.FabBit:
+
+Lookup a FabBit by name.
+
+
+## <a name="fabtools--fabshape"></a>10 Class FabShape:
+
+Corresponds to FreeCAD Path library Shape 'template'.
+Attributes:
+* *Name* (str): The shape name.
+* *ShapePath* (PathFile): The path to the associated `fcstd` file.
+
+
+## <a name="fabtools--fabshapes"></a>11 Class FabShapes:
+
+A directory of FabShape's.
+Attributes:
+* *Directory* (PathFile): The directory containing the FabShapes (.fcstd) files.
+* *Shapes* (Tuple[FabShape, ...]: The corresponding FabShape's.
+* *Names* (Tuple[str, ...]: The sorted names of the FabShape's.
+
+Constructor:
+* FabShapes(Directory, Shapes)
+
+### <a name="fabtools----lookup"></a>11.1 `FabShapes.`lookup():
+
+FabShapes.lookup(self, name) -> FabTools.FabShape:
+
+Lookup a FabShape by name.
 
 
 

@@ -128,5 +128,3 @@ docs/%.html: %.md
 # Special Rule for __init__.py => docs/Fab.md
 docs/Fab.md: __init__.py
 	$(DOC_GEN) __init__
-
-
