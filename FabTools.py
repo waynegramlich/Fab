@@ -284,26 +284,26 @@ class FabBitTemplate(object):
     * Shape* (FabShape):
     * Parameters (Tuple[Tuple[str, Tuple[type, ...]], ...]):
       The allowed parameter names and associated types of the form:
-      ("ParameterName", (type1, ..., typeN)) for no type checking ("ParameterName",)
+      ("ParameterName", (type1, ..., typeN), "example") for no type checking ("ParameterName",)
     * Attributes (Tuple[Tuple[str, Tuple[type, ...]], ...]):
       The allowed parameter names and associated types of the form:
-      ("ParameterName", (type1, ..., typeN)) for no type checking ("ParameterName",)
+      ("ParameterName", (type1, ..., typeN), "example") for no type checking ("ParameterName",)
     """
 
     Name: str
     Shape: FabShape
-    Parameters: Tuple[Tuple[str, Tuple[type, ...]], ...]
-    Attributes: Tuple[Tuple[str, Tuple[type, ...]], ...]
+    Parameters: Tuple[Tuple[str, Tuple[type, ...], Union[bool, float, int, str]], ...]
+    Attributes: Tuple[Tuple[str, Tuple[type, ...], Union[bool, float, int, str]], ...]
 
     # FabBitTemplate.__post_init__():
     def __post_init__(self) -> None:
         """Finish initalizing FabBitTemplate."""
         check_type("FabBitTemplate.Name", self.Name, str)
         check_type("FabBitTemplate.Shape", self.Shape, FabShape)
-        check_type("FabBitTemplate.Parameters",
-                   self.Parameters, Tuple[Tuple[str, Tuple[type, ...]], ...])
-        check_type("FabBitTemplate.Attributes",
-                   self.Attributes, Tuple[Tuple[str, Tuple[type, ...]], ...])
+        check_type("FabBitTemplate.Parameters", self.Parameters,
+                   Tuple[Tuple[str, Tuple[type, ...], Union[bool, float, int, str]], ...])
+        check_type("FabBitTemplate.Attributes", self.Attributes,
+                   Tuple[Tuple[str, Tuple[type, ...], Union[bool, float, int, str]], ...])
 
     # FabBitTemplate.kwargsFromJSON():
     def kwargsFromJSON(self,
@@ -331,12 +331,14 @@ class FabBitTemplate(object):
 
         # Check *json_dict* for valid *parameters* and *attributes*:
         def fill(kwargs: Optional[Dict[str, Any]], label: str, json_dict: Dict[str, Any],
-                 name_types: Tuple[Tuple[str, Tuple[type, ...]], ...]) -> None:
+                 name_types: Tuple[Tuple[str, Tuple[type, ...],
+                                         Union[int, float, str]], ...]) -> None:
             """Check whether ..."""
             name: str
             types: Tuple[type, ...]
+            example: Union[int, float, str]
             named_types_dict: Dict[str, Tuple[type, ...]] = {
-                name: types for name, types in name_types}
+                name: types for name, types, example in name_types}
 
             value: Any
             for name, value in json_dict.items():
@@ -351,7 +353,7 @@ class FabBitTemplate(object):
         # Now create the *kwargs* and fill it in:
         kwargs: Dict[str, Any] = {}
         kwargs["Name"] = self.Name
-        kwargs["BitFile"] = self.Shape.ShapePath.parent / "Bit" / f"{self.Name}.fctb"
+        kwargs["BitFile"] = self.Shape.ShapePath.parent / "Bit" / f"{self.Name.lower()}.fctb"
         kwargs["Shape"] = self.Shape
         fill(kwargs, "Parameters", parameters, self.Parameters)
         assert "attribute" in json_dict, "FabAttributes.fromJSON(): attribute key not present"
@@ -364,7 +366,7 @@ class FabBitTemplate(object):
     # FabBitTemplate.toJSON():
     def toJSON(self, bit: "FabBit", with_attributes: bool) -> Dict[str, Any]:
         """Convert a FabBit to a JSON dictionary using a FabBitTemplate."""
-        parameters: Dict[str, Any] = {name: getattr(bit, name) for name, _ in self.Parameters}
+        parameters: Dict[str, Any] = {name: getattr(bit, name) for name, _, _ in self.Parameters}
         attributes: Dict[str, Any] = bit.Attributes.toJSON() if with_attributes else {}
 
         json_dict: Dict[str, Any] = {
@@ -384,14 +386,14 @@ class FabBitTemplate(object):
             Name="EndMill",
             Shape=FabShape.example(),
             Parameters=(
-                ("CuttingEdgeHeight", (float, str)),
-                ("Diameter", (float, str)),
-                ("Length", (float, str)),
-                ("ShankDiameter", (float, str)),
+                ("CuttingEdgeHeight", (float, str), "30.000 mm"),
+                ("Diameter", (float, str), "5.000 mm"),
+                ("Length", (float, str), "50.000 mm"),
+                ("ShankDiameter", (float, str), "3.000 mm"),
             ),
             Attributes=(
-                ("Material", (str,)),
-                ("Flutes", (int,)),
+                ("Flutes", (int,), 0),
+                ("Material", (str,), "HSS"),
             )
         )
         return end_mill_template
@@ -406,15 +408,15 @@ class FabBitTemplate(object):
         assert template.Name == "EndMill"
         assert template.Shape == FabShape.example()
         assert template.Parameters == (
-            ("CuttingEdgeHeight", (float, str)),
-            ("Diameter", (float, str)),
-            ("Length", (float, str)),
-            ("ShankDiameter", (float, str)),
+            ("CuttingEdgeHeight", (float, str), "30.000 mm"),
+            ("Diameter", (float, str), "5.000 mm"),
+            ("Length", (float, str), "50.000 mm"),
+            ("ShankDiameter", (float, str), "3.000 mm"),
         )
         assert template.Attributes == (
-            ("Material", (str,)),
-            ("Flutes", (int,)),
-        )
+            ("Flutes", (int,), 0),
+            ("Material", (str,), "HSS"),
+        ), template.Attributes
         if tracing:
             print(f"{tracing}<=FabBitTemplate._unit_tests()")
 
@@ -469,7 +471,7 @@ class FabBitTemplates(object):
 
     # FabBitTemplates.factory():
     @staticmethod
-    def factory(shapes: FabShapes) -> "FabBitTemplates":
+    def factory(tools_directory: PathFile) -> "FabBitTemplates":
         """Create the FabBitTemplates object.
 
         Arguments:
@@ -479,153 +481,160 @@ class FabBitTemplates(object):
         * (FabBitTemplates): The initialized FabBitTemplates object.
 
         """
+        def to_shape(tools_directory: PathFile, name: str) -> FabShape:
+            """Create a FabShape."""
+            return FabShape(name, tools_directory / "Shape" / f"{name}.fcstd")
+
         # Create each template first:
         ball_end_template: FabBitTemplate = FabBitTemplate(
             Name="BallEnd",
-            Shape=shapes.lookup("ballend"),
+            Shape=to_shape(tools_directory, "ballend"),
             Parameters=(
-                ("CuttingEdgeHeight", (float, str)),
-                ("Diameter", (float, str)),
-                ("Length", (float, str)),
-                ("ShankDiameter", (float, str)),
+                ("CuttingEdgeHeight", (float, str), "40.0000 mm"),
+                ("Diameter", (float, str), "5.000 mm"),
+                ("Length", (float, str), "50.000 mm"),
+                ("ShankDiameter", (float, str), "3.000 mm"),
             ),
             Attributes=(
-                ("Material", (str,)),
-                ("Flutes", (int,)),
+                ("Flutes", (int,), 0),
+                ("Material", (str,), "HSS"),
             )
         )
         bull_nose_template: FabBitTemplate = FabBitTemplate(
             Name="BullNose",
-            Shape=shapes.lookup("bullnose"),
+            Shape=to_shape(tools_directory, "bullnose"),
             Parameters=(
-                ("CuttingEdgeHeight", (float, str)),
-                ("Diameter", (float, str)),
-                ("FlatRadius", (float, str)),
-                ("Length", (float, str)),
-                ("ShankDiameter", (float, str)),
+                ("CuttingEdgeHeight", (float, str), "40.000 mm"),
+                ("Diameter", (float, str), "5.000 mm"),
+                ("FlatRadius", (float, str), "1.500 mm"),
+                ("Length", (float, str), "50.000 mm"),
+                ("ShankDiameter", (float, str), "3.000 mm"),
             ),
             Attributes=(
-                ("Material", (str,)),
-                ("Flutes", (int,)),
+                ("Material", (str,), "HSS"),
+                ("Flutes", (int,), 2),
             )
         )
         chamfer_template: FabBitTemplate = FabBitTemplate(
             Name="Chamfer",
-            Shape=shapes.lookup("chamfer"),
+            Shape=to_shape(tools_directory, "chamfer"),
             Parameters=(
-                ("CuttingEdgeAngle", (float, str)),
-                ("CuttingEdgeHeight", (float, str)),
-                ("Diameter", (float, str)),
-                ("Length", (float, str)),
-                ("ShankDiameter", (float, str)),
-                ("TipDiameter", (float, str)),
+                ("CuttingEdgeAngle", (float, str), "60.000 °"),
+                ("CuttingEdgeHeight", (float, str), "6.350 mm"),
+                ("Diameter", (float, str), "12.000 mm"),
+                ("Length", (float, str), "30.000 mm"),
+                ("ShankDiameter", (float, str), "6.350 mm"),
+                ("TipDiameter", (float, str), "5.000 mm"),
             ),
             Attributes=(
-                ("Material", (str,)),
-                ("Flutes", (int,)),
+                ("Material", (str,), "HSS"),
+                ("Flutes", (int,), 2),
             )
         )
         dove_tail_template: FabBitTemplate = FabBitTemplate(
             Name="DoveTail",
-            Shape=shapes.lookup("dovetail"),
+            Shape=to_shape(tools_directory, "dovetail"),
             Parameters=(
-                ("CuttingEdgeAngle", (float, str)),
-                ("CuttingEdgeHeight", (float, str)),
-                ("Diameter", (float, str)),
-                ("Length", (float, str)),
-                ("ShankDiameter", (float, str)),
+                ("CuttingEdgeAngle", (float, str), "60.000 \u00b0"),
+                ("CuttingEdgeHeight", (float, str), "9.000 mm"),
+                ("Diameter", (float, str), "19.050 mm"),
+                ("Length", (float, str), "54.200 mm"),
+                ("NeckDiameter", (float, str), "8.000 mm"),
+                ("NeckHeight", (float, str), "5.000 mm"),
+                ("ShankDiameter", (float, str), "9.525 mm"),
+                ("TipDiameter", (float, str), "5.000 mm"),
             ),
             Attributes=(
-                ("Material", (str,)),
-                ("Flutes", (int,)),
+                ("Material", (str,), "HSS"),
+                ("Flutes", (int,), 2),
             )
         )
         drill_template: FabBitTemplate = FabBitTemplate(
             Name="Drill",
-            Shape=shapes.lookup("drill"),
+            Shape=to_shape(tools_directory, "drill"),
             Parameters=(
-                ("Diameter", (float, str)),
-                ("Length", (float, str)),
-                ("TipAngle", (float, str)),
+                ("Diameter", (float, str), "3.000 mm"),
+                ("Length", (float, str), "50.000 mm"),
+                ("TipAngle", (float, str), "119.000 \u00b0"),
             ),
             Attributes=(
-                ("Material", (str,)),
-                ("Flutes", (int,)),
+                ("Material", (str,), "HSS"),
+                ("Flutes", (int,), 2),
             )
         )
         end_mill_template: FabBitTemplate = FabBitTemplate(
             Name="EndMill",
-            Shape=shapes.lookup("drill"),
+            Shape=to_shape(tools_directory, "drill"),
             Parameters=(
-                ("CuttingEdgeHeight", (float, str)),
-                ("Diameter", (float, str)),
-                ("Length", (float, str)),
-                ("ShankDiameter", (float, str)),
+                ("CuttingEdgeHeight", (float, str), "30.000 mm"),
+                ("Diameter", (float, str), "5.000 mm"),
+                ("Length", (float, str), "50.000 mm"),
+                ("ShankDiameter", (float, str), "3.000 mm"),
             ),
             Attributes=(
-                ("Material", (str,)),
-                ("Flutes", (int,)),
+                ("Material", (str,), "HSS"),
+                ("Flutes", (int,), 2),
             )
         )
         probe_template: FabBitTemplate = FabBitTemplate(
             Name="Probe",
-            Shape=shapes.lookup("probe"),
+            Shape=to_shape(tools_directory, "probe"),
             Parameters=(
-                ("Diameter", (float, str)),
-                ("Length", (float, str)),
-                ("ShaftDiameter", (float, str)),
+                ("Diameter", (float, str), "6.000 mm"),
+                ("Length", (float, str), "50.000 mm"),
+                ("ShaftDiameter", (float, str), "4.000 mm"),
             ),
             Attributes=(
-                ("Material", (str,)),
-                ("Flutes", (int,)),
+                ("Spindle Power", (bool,), False),
             )
         )
         slitting_saw_template: FabBitTemplate = FabBitTemplate(
             Name="SlittingSaw",
-            Shape=shapes.lookup("slittingsaw"),
+            Shape=to_shape(tools_directory, "slittingsaw"),
             Parameters=(
-                ("BladeThickness", (float, str)),
-                ("CapDiameter", (float, str)),
-                ("CapHeight", (float, str)),
-                ("Diameter", (float, str)),
-                ("Length", (float, str)),
-                ("ShankDiameter", (float, str)),
+                ("BladeThickness", (float, str), "3.000 mm"),
+                ("CapDiameter", (float, str), "8.000 mm"),
+                ("CapHeight", (float, str), "3.000 mm"),
+                ("Diameter", (float, str), "76.200 mm"),
+                ("Length", (float, str), "50.000 mm"),
+                ("ShankDiameter", (float, str), "19.050 mm"),
             ),
             Attributes=(
-                ("Material", (str,)),
-                ("Flutes", (int,)),
+                ("Material", (str,), "HSS"),
+                ("Flutes", (int,), 30),
             )
         )
         thread_mill_template: FabBitTemplate = FabBitTemplate(
             Name="SlittingSaw",
-            Shape=shapes.lookup("thread-mill"),
+            Shape=to_shape(tools_directory, "thread-mill"),
             Parameters=(
-                ("Crest", (float, str)),
-                ("Diameter", (float, str)),
-                ("Length", (float, str)),
-                ("NeckDiameter", (float, str)),
-                ("NecLength", (float, str)),
-                ("ShankDiameter", (float, str)),
+                ("Crest", (float, str), "0.100 mm"),
+                ("CuttingAngle", (float, str), "60.000 \u0b00"),
+                ("Diameter", (float, str), "5.000 mm"),
+                ("Length", (float, str), "50.000 mm"),
+                ("NeckDiameter", (float, str), "3.000 mm"),
+                ("NecLength", (float, str), "20.000 mm"),
+                ("ShankDiameter", (float, str), "5.000 mm"),
             ),
             Attributes=(
-                ("Material", (str,)),
-                ("Flutes", (int,)),
+                ("Material", (str,), "HSS"),
+                ("Flutes", (int,), 10),
             )
         )
         v_bit_template: FabBitTemplate = FabBitTemplate(
             Name="VBit",
-            Shape=shapes.lookup("v-bit"),
+            Shape=to_shape(tools_directory, "v-bit"),
             Parameters=(
-                ("CuttingEdgeDiameter", (float, str)),
-                ("CuttingEdgeHeight", (float, str)),
-                ("Diameter", (float, str)),
-                ("Length", (float, str)),
-                ("TipDiameter", (float, str)),
-                ("ShankDiameter", (float, str)),
+                ("CuttingEdgeAngle", (float, str), "90.000 \u0b00"),
+                ("CuttingEdgeHeight", (float, str), "1.000 mm"),
+                ("Diameter", (float, str), "10.000 mm"),
+                ("Length", (float, str), "20.000 mm"),
+                ("ShankDiameter", (float, str), "5.000 mm"),
+                ("TipDiameter", (float, str), "1.000 mm"),
             ),
             Attributes=(
-                ("Material", (str,)),
-                ("Flutes", (int,)),
+                ("Material", (str,), "HSS"),
+                ("Flutes", (int,), 4),
             )
         )
 
@@ -643,16 +652,65 @@ class FabBitTemplates(object):
         )
         return bit_templates
 
+    # FabBitTemplates.getExample():
+    @staticmethod
+    def getExample(bit_type: type) -> "FabBit":
+        """Return an example FabBit from a FabTemplate.
+
+        Arguments:
+        * *bit_type* (type): The sub-class of FabBit to instantiate.
+
+        Returns:
+        * (FabBit) The example FabBit of type *bit_type*.
+        """
+        assert check_argument_types()
+        # Get all of the *bit_templates*:
+        tools_directory: PathFile = PathFile(__file__).parent / "Tools"
+        bit_templates: FabBitTemplates = FabBitTemplates.factory(tools_directory)
+
+        # Lookup *bit_template* using *bit_type* to extract the correct attribute name:
+        bit_type_text: str = str(bit_type)  # Should result in "<class '...FabXXXBit'>"
+        start_index: int = bit_type_text.find("Fab")
+        assert start_index >= 0
+        bit_type_name: str = bit_type_text[start_index + 3:-5]  # Extract XXX, the type name.
+        assert hasattr(bit_templates, bit_type_name), (
+            f"FabBitTemplate.getExample(): {bit_type_name=}")
+        bit_template: FabBitTemplate = getattr(bit_templates, bit_type_name)
+        bit_path: PathFile = tools_directory / "Bit" / f"{bit_type_name.lower()}.fctb"
+
+        def to_shape(tools_directory: PathFile, name: str) -> FabShape:
+            """Create a FabShape."""
+            return FabShape(name, tools_directory / "Shape" / f"{name}.fcstd")
+
+        # Initalize *kwargs* with required values:
+        attribute_name: str
+        example_value: Union[bool, float, int, str]
+        kwargs: Dict[str, Any] = {
+            "Name": bit_type_name,
+            "BitFile": bit_path,
+            "Shape": to_shape(tools_directory, bit_type_name),
+            "Attributes": FabAttributes.fromJSON({
+                attribute_name: example_value
+                for attribute_name, _, example_value in bit_template.Attributes
+            }),
+        }
+
+        # Put the remaining "positional" arguments into *kwargs*:
+        parameter_name: str
+        for parameter_name, _, example_value in bit_template.Parameters:
+            kwargs[parameter_name] = example_value
+
+        example_bit: FabBit = bit_type(**kwargs)
+        return example_bit
+
     # FabBitTemplates._unit_tests():
     @staticmethod
     def _unit_tests(tracing: str = "") -> None:
         """Perform FabBitTemplates unit tests."""
-        next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabBitTemplates._unit_tests()")
-        shapes_directory: PathFile = PathFile(__file__).parent / "Tools" / "Shape"
-        shapes: FabShapes = FabShapes.read(shapes_directory, tracing=next_tracing)
-        bit_templates: FabBitTemplates = FabBitTemplates.factory(shapes)
+        tools_directory: PathFile = PathFile(__file__).parent / "Tools"
+        bit_templates: FabBitTemplates = FabBitTemplates.factory(tools_directory)
         assert isinstance(bit_templates, FabBitTemplates)
         if tracing:
             print(f"{tracing}<=FabBitTemplates._unit_tests()")
@@ -740,44 +798,26 @@ class FabBallEndBit(FabBit):
         check_type("FabBallEndBit.Length", self.Length, Union[float, str])
         check_type("FabBallEndBit.ShankDiameter", self.ShankDiameter, Union[float, str])
 
-    # FabBallEndBit.example():
-    @staticmethod
-    def example(shapes: FabShapes, minimal: bool) -> "FabBallEndBit":
-        """Return an example FabBallEndBit."""
-        attributes_dict: Dict[str, Any] = {} if minimal else {
-            "Material": "Carbide",
-            "ToolHolderHeight": "20.000 mm",
-            "Flutes": 8,
-        }
-        attributes: FabAttributes = FabAttributes.fromJSON(attributes_dict)
-        ball_end_tool: "FabBallEndBit" = FabBallEndBit(
-            Name="6mm Ball End",
-            BitFile=PathFile("/tmp") / "Bit" / "6mm_BallEnd.fctb",
-            Shape=shapes.lookup("ballend"),
-            CuttingEdgeHeight="40.0000 mm",
-            Diameter="6.0000 mm",
-            Length="50.0000 mm",
-            ShankDiameter="3.0000 mm",
-            Attributes=attributes
-        )
-        return ball_end_tool
-
     # FabBallEndBit._unit_tests():
     @staticmethod
     def _unit_tests(tracing: str = "") -> None:
         """Perform FabBallEndBit unit tests."""
         if tracing:
             print(f"{tracing}=>FabBallEndBit._unit_tests()")
-        shapes: FabShapes = FabShapes.example()
-        ball_end_bit: FabBallEndBit = FabBallEndBit.example(shapes, True)
-        assert ball_end_bit.Name == "6mm Ball End"
-        assert ball_end_bit.BitFile == PathFile("/tmp/Bit/6mm_BallEnd.fctb")
-        assert ball_end_bit.Shape.Name == "ballend"
+        bit_directory: PathFile = PathFile(__file__).parent / "Tools" / "Bit"
+        ball_end_bit: Any = FabBitTemplates.getExample(FabBallEndBit)
+        assert isinstance(ball_end_bit, FabBallEndBit)
+        assert ball_end_bit.Name == "BallEnd"
+        assert ball_end_bit.BitFile == bit_directory / "ballend.fctb"
+        assert ball_end_bit.Shape.Name == "BallEnd"
         assert ball_end_bit.CuttingEdgeHeight == "40.0000 mm"
-        assert ball_end_bit.Diameter == "6.0000 mm"
-        assert ball_end_bit.Length == "50.0000 mm"
-        assert ball_end_bit.ShankDiameter == "3.0000 mm"
-        assert ball_end_bit.Attributes == FabAttributes.fromJSON({}), ball_end_bit.Attributes
+        assert ball_end_bit.Diameter == "5.000 mm"
+        assert ball_end_bit.Length == "50.000 mm"
+        assert ball_end_bit.ShankDiameter == "3.000 mm"
+        assert ball_end_bit.Attributes == FabAttributes.fromJSON({
+            "Flutes": 0,
+            "Material": "HSS",
+        })
         if tracing:
             print(f"{tracing}<=FabBallEndBit._unit_tests()")
 
@@ -819,46 +859,217 @@ class FabBullNoseBit(FabBit):
         check_type("FabBullNoseBit.Length", self.Length, Union[float, str])
         check_type("FabBullNoseBit.ShankDiameter", self.ShankDiameter, Union[float, str])
 
-    # FabBullNoseBit.example():
-    @staticmethod
-    def example(shapes: FabShapes, minimal: bool) -> "FabBullNoseBit":
-        """Return an example FabBullNoseBit."""
-        attributes_dict: Dict[str, Any] = {} if minimal else {
-            "Material": "Carbide",
-            "Flutes": 8,
-        }
-        attributes: FabAttributes = FabAttributes.fromJSON(attributes_dict)
-        bull_nose_tool: "FabBullNoseBit" = FabBullNoseBit(
-            Name="6mm Ball End",
-            BitFile=PathFile("/tmp") / "Bit" / "6mm_BullNose.fctb",
-            Shape=shapes.lookup("bullnose"),
-            CuttingEdgeHeight="40.0000 mm",
-            Diameter="6.0000 mm",
-            FlatRadius="1.5000 mm",
-            Length="50.0000 mm",
-            ShankDiameter="3.0000 mm",
-            Attributes=attributes
-        )
-        return bull_nose_tool
-
     # FabBullNoseBit._unit_tests():
     @staticmethod
     def _unit_tests(tracing: str = "") -> None:
         """Perform FabBullNoseBit unit tests."""
         if tracing:
             print(f"{tracing}=>FabBullNoseBit._unit_tests()")
-        shapes: FabShapes = FabShapes.example()
-        bull_nose_bit: FabBullNoseBit = FabBullNoseBit.example(shapes, True)
-        assert bull_nose_bit.Name == "6mm Ball End"
-        assert bull_nose_bit.BitFile == PathFile("/tmp/Bit/6mm_BullNose.fctb")
-        assert bull_nose_bit.Shape.Name == "bullnose"
-        assert bull_nose_bit.CuttingEdgeHeight == "40.0000 mm"
-        assert bull_nose_bit.Diameter == "6.0000 mm"
-        assert bull_nose_bit.Length == "50.0000 mm"
-        assert bull_nose_bit.ShankDiameter == "3.0000 mm"
-        assert bull_nose_bit.Attributes == FabAttributes.fromJSON({}), bull_nose_bit.Attributes
+        bull_nose_bit: Any = FabBitTemplates.getExample(FabBullNoseBit)
+        bit_directory: PathFile = PathFile(__file__).parent / "Tools" / "Bit"
+        assert bull_nose_bit.Name == "BullNose"
+        assert bull_nose_bit.BitFile == bit_directory / "bullnose.fctb"
+        assert bull_nose_bit.Shape.Name == "BullNose"
+        assert bull_nose_bit.CuttingEdgeHeight == "40.000 mm"
+        assert bull_nose_bit.Diameter == "5.000 mm"
+        assert bull_nose_bit.Length == "50.000 mm"
+        assert bull_nose_bit.ShankDiameter == "3.000 mm"
+        assert bull_nose_bit.Attributes == FabAttributes.fromJSON({
+            "Flutes": 2,
+            "Material": "HSS",
+        })
         if tracing:
             print(f"{tracing}<=FabBullNoseBit._unit_tests()")
+
+
+# FabChamferBit:
+@dataclass(frozen=True)
+class FabChamferBit(FabBit):
+    """FabChamferBit: An end-mill bit template.
+
+    Attributes:
+    * *Name* (str): The name of Ball End bit.
+    * *BitFile* (PathFile): The `.fctb` file.
+    * *Shape* (FabShape): The associated `.fcstd` shape.
+    * *Attributes* (FabAttributes): Any associated attributes.
+    * *CuttingEdgeAngle* (Union[str, float]): The cutting edge angle.
+    * *CuttingEdgeHeight* (Union[str, float]): The cutting edge height.
+    * *Diameter* (Union[str, float]): The chamfer outer diameter.
+    * *Length* (Union[str, float]): The total length of the chamfer cutter.
+    * *ShankDiameter: (Union[str, float]): The shank diameter.
+    * *TipDiameter* (Union[str, float]): The tip radius of the chamfer cutter.
+
+    Constructor:
+    * FabChamferBit("Name", BitFile, Shape, Attributes,
+      CuttingEdgeHeight, Diameter, Length, ShankDiameter)
+    """
+
+    CuttingEdgeAngle: Union[str, float]
+    CuttingEdgeHeight: Union[str, float]
+    Diameter: Union[str, float]
+    Length: Union[str, float]
+    ShankDiameter: Union[str, float]
+    TipDiameter: Union[str, float]
+
+    # FabChamferBit.__post_init__():
+    def __post_init__(self) -> None:
+        """Initialize the FabChamferTool."""
+        super().__post_init__()
+        check_type("FabChamferBit.CuttingEdgeAngle", self.CuttingEdgeAngle, Union[float, str])
+        check_type("FabChamferBit.CuttingEdgeHeight", self.CuttingEdgeHeight, Union[float, str])
+        check_type("FabChamferBit.Diameter", self.Diameter, Union[float, str])
+        check_type("FabChamferBit.Length", self.Length, Union[float, str])
+        check_type("FabChamferBit.ShankDiameter", self.ShankDiameter, Union[float, str])
+        check_type("FabChamferBit.TipDiameter", self.TipDiameter, Union[float, str])
+
+    # FabChamferBit._unit_tests():
+    @staticmethod
+    def _unit_tests(tracing: str = "") -> None:
+        """Perform FabChamferBit unit tests."""
+        if tracing:
+            print(f"{tracing}=>FabChamferBit._unit_tests()")
+        chamfer_bit: Any = FabBitTemplates.getExample(FabChamferBit)
+        bit_directory: PathFile = PathFile(__file__).parent / "Tools" / "Bit"
+        assert chamfer_bit.Name == "Chamfer", chamfer_bit.Name
+        assert chamfer_bit.BitFile == bit_directory / "chamfer.fctb"
+        assert chamfer_bit.Shape.Name == "Chamfer"
+        assert chamfer_bit.CuttingEdgeAngle == "60.000 °"
+        assert chamfer_bit.CuttingEdgeHeight == "6.350 mm"
+        assert chamfer_bit.Diameter == "12.000 mm"
+        assert chamfer_bit.Length == "30.000 mm"
+        assert chamfer_bit.ShankDiameter == "6.350 mm"
+        assert chamfer_bit.TipDiameter == "5.000 mm"
+        assert chamfer_bit.Attributes == FabAttributes.fromJSON({
+            "Flutes": 2,
+            "Material": "HSS",
+        })
+        if tracing:
+            print(f"{tracing}<=FabChamferBit._unit_tests()")
+
+
+# FabDoveTailBit:
+@dataclass(frozen=True)
+class FabDoveTailBit(FabBit):
+    """FabDoveTailBit: An end-mill bit template.
+
+    Attributes:
+    * *Name* (str): The name of Ball End bit.
+    * *BitFile* (PathFile): The `.fctb` file.
+    * *Shape* (FabShape): The associated `.fcstd` shape.
+    * *Attributes* (FabAttributes): Any associated attributes.
+    * *CuttingEdgeAngle* (Union[str, float]): The cutting edge angle.
+    * *CuttingEdgeHeight* (Union[str, float]): The cutting edge height.
+    * *Diameter* (Union[str, float]): The chamfer outer diameter.
+    * *Length* (Union[str, float]): The total length of the chamfer cutter.
+    * *NeckDiameter* (Union[str, float]): The diameter of the neck between the cutter and shank
+    * *NeckHeight* (Union[str, float]): The height of the neck between the cutter and shank
+    * *ShankDiameter: (Union[str, float]): The shank diameter.
+    * *TipDiameter* (Union[str, float]): The tip radius of the chamfer cutter.
+
+    Constructor:
+    * FabDoveTailBit("Name", BitFile, Shape, Attributes, CuttingEdgeAngle, CuttingEdgeHeight,
+      Diameter, Length, NeckDiameter, NeckHeight,  ShankDiameter, TipDiameter)
+    """
+
+    CuttingEdgeAngle: Union[str, float]
+    CuttingEdgeHeight: Union[str, float]
+    Diameter: Union[str, float]
+    Length: Union[str, float]
+    NeckDiameter: Union[str, float]
+    NeckHeight: Union[str, float]
+    ShankDiameter: Union[str, float]
+    TipDiameter: Union[str, float]
+
+    # FabDoveTailBit.__post_init__():
+    def __post_init__(self) -> None:
+        """Initialize the FabChamferTool."""
+        super().__post_init__()
+        check_type("FabDoveTailBit.CuttingEdgeAngle", self.CuttingEdgeAngle, Union[float, str])
+        check_type("FabDoveTailBit.CuttingEdgeHeight", self.CuttingEdgeHeight, Union[float, str])
+        check_type("FabDoveTailBit.Diameter", self.Diameter, Union[float, str])
+        check_type("FabDoveTailBit.Length", self.Length, Union[float, str])
+        check_type("FabDoveTailBit.ShankDiameter", self.ShankDiameter, Union[float, str])
+        check_type("FabDoveTailBit.NeckHieght", self.NeckHeight, Union[float, str])
+        check_type("FabDoveTailBit.NeckDiameter", self.NeckDiameter, Union[float, str])
+        check_type("FabDoveTailBit.TipDiameter", self.TipDiameter, Union[float, str])
+
+    # FabDoveTailBit._unit_tests():
+    @staticmethod
+    def _unit_tests(tracing: str = "") -> None:
+        """Perform FabDoveTailBit unit tests."""
+        if tracing:
+            print(f"{tracing}=>FabDoveTailBit._unit_tests()")
+        dove_tail_bit: Any = FabBitTemplates.getExample(FabDoveTailBit)
+        bit_directory: PathFile = PathFile(__file__).parent / "Tools" / "Bit"
+        assert dove_tail_bit.Name == "DoveTail"
+        assert dove_tail_bit.BitFile == bit_directory / "dovetail.fctb"
+        assert dove_tail_bit.Shape.Name == "DoveTail"
+        assert dove_tail_bit.CuttingEdgeAngle == "60.000 °"
+        assert dove_tail_bit.CuttingEdgeHeight == "9.000 mm"
+        assert dove_tail_bit.Diameter == "19.050 mm"
+        assert dove_tail_bit.Length == "54.200 mm"
+        assert dove_tail_bit.ShankDiameter == "9.525 mm"
+        assert dove_tail_bit.TipDiameter == "5.000 mm"
+        assert dove_tail_bit.Attributes == FabAttributes.fromJSON({
+            "Flutes": 2,
+            "Material": "HSS",
+        })
+        if tracing:
+            print(f"{tracing}<=FabDoveTailBit._unit_tests()")
+
+
+# FabDrillBit:
+@dataclass(frozen=True)
+class FabDrillBit(FabBit):
+    """FabDrillBit: An end-mill bit template.
+
+    Attributes:
+    * *Name* (str): The name of Ball End bit.
+    * *BitFile* (PathFile): The `.fctb` file.
+    * *Shape* (FabShape): The associated `.fcstd` shape.
+    * *Attributes* (FabAttributes): Any associated attributes.
+    * *CuttingEdgeAngle* (Union[str, float]): The cutting edge angle.
+    * *CuttingEdgeHeight* (Union[str, float]): The cutting edge height.
+    * *Diameter* (Union[str, float]): The drill outer diameter.
+    * *Length* (Union[str, float]): The total length of the drill cutter.
+    * *TipAngle: (Union[str, float]): The drill tip point angle.
+
+    Constructor:
+    * FabDrillBit("Name", BitFile, Shape, Attributes, Diameter, Length, TipAngle)
+    """
+
+    Diameter: Union[str, float]
+    Length: Union[str, float]
+    TipAngle: Union[str, float]
+
+    # FabDrillBit.__post_init__():
+    def __post_init__(self) -> None:
+        """Initialize the FabDrillTool."""
+        super().__post_init__()
+        check_type("FabDrillBit.Diameter", self.Diameter, Union[float, str])
+        check_type("FabDrillBit.Length", self.Length, Union[float, str])
+        check_type("FabDrillBit.TipAngle", self.TipAngle, Union[float, str])
+
+    # FabDrillBit._unit_tests():
+    @staticmethod
+    def _unit_tests(tracing: str = "") -> None:
+        """Perform FabDrillBit unit tests."""
+        if tracing:
+            print(f"{tracing}=>FabDrillBit._unit_tests()")
+        drill_bit: Any = FabBitTemplates.getExample(FabDrillBit)
+        bit_directory: PathFile = PathFile(__file__).parent / "Tools" / "Bit"
+        assert drill_bit.Name == "Drill", drill_bit.Name
+        assert drill_bit.BitFile == bit_directory / "drill.fctb"
+        assert drill_bit.Shape.Name == "Drill"
+        assert drill_bit.Diameter == "3.000 mm"
+        assert drill_bit.Length == "50.000 mm"
+        assert drill_bit.TipAngle == "119.000 °"
+        assert drill_bit.Attributes == FabAttributes.fromJSON({
+            "Flutes": 2,
+            "Material": "HSS",
+        })
+        if tracing:
+            print(f"{tracing}<=FabChamferBit._unit_tests()")
 
 
 # FabLibrary:
@@ -1086,19 +1297,6 @@ class FabBits(object):
     Bits: Tuple[FabBit, ...]
     Names: Tuple[str, ...]
 
-    # _KnownShapes: Dict[str, type] = {
-    #     "ballend": FabBallEndBit,
-    #     "bullnose": FabBullNoseBit,
-    #     "chamfer": FabChamferBit,
-    #     "dovetail": FabDovetailBit,
-    #     "drill": FabDrillBit,
-    #     "endmill": FabEndMillBit,
-    #     "probe": FabProbeBit,
-    #     "slittingsaw": FabSlittingSawBit,
-    #     "thread-mill": FabThreadMillBit,
-    #     "v-bit": FabVBit,
-    # }
-
     # FabBits.__post_init__():
     def __post_init__(self) -> None:
         """Initialize a FabBits."""
@@ -1123,7 +1321,7 @@ class FabBits(object):
         """
         if tracing:
             print(f"{tracing}=>FabBits.read({str(bits_directory)}, *)")
-        bit_templates: FabBitTemplates = FabBitTemplates.factory(shapes)
+        bit_templates: FabBitTemplates = FabBitTemplates.factory(bits_directory.parent)
         bits_table: Dict[str, FabBit] = {}
         assert check_argument_types()
         assert bits_directory.is_dir(), f"FabBits.read(): {str(bits_directory)} is not a directory"
@@ -1268,6 +1466,9 @@ def main(tracing: str) -> None:
     FabBit._unit_tests(tracing=next_tracing)
     FabBallEndBit._unit_tests(tracing=next_tracing)
     FabBullNoseBit._unit_tests(tracing=next_tracing)
+    FabChamferBit._unit_tests(tracing=next_tracing)
+    FabDoveTailBit._unit_tests(tracing=next_tracing)
+    FabDrillBit._unit_tests(tracing=next_tracing)
     FabBits._unit_tests(tracing=next_tracing)
     # FabLibrary._unit_tests(tracing=next_tracing)
     # FabLibraries._unit_tests(tracing=next_tracing)
