@@ -503,7 +503,7 @@ class FabBitTemplates(object):
 
     # FabBitTemplates.factory():
     @staticmethod
-    def factory(tools_directory: PathFile) -> "FabBitTemplates":
+    def factory() -> "FabBitTemplates":
         """Create the FabBitTemplates object.
 
         Arguments:
@@ -513,10 +513,6 @@ class FabBitTemplates(object):
         * (FabBitTemplates): The initialized FabBitTemplates object.
 
         """
-        def to_shape(tools_directory: PathFile, name: str) -> FabShape:
-            """Create a FabShape."""
-            return FabShape(name, tools_directory / "Shape" / f"{name}.fcstd")
-
         # Create each template first:
         ball_end_template: FabBitTemplate = FabBitTemplate(
             Name="BallEnd",
@@ -708,7 +704,7 @@ class FabBitTemplates(object):
         assert check_argument_types()
         # Get all of the *bit_templates*:
         tools_directory: PathFile = PathFile(__file__).parent / "Tools"
-        bit_templates: FabBitTemplates = FabBitTemplates.factory(tools_directory)
+        bit_templates: FabBitTemplates = FabBitTemplates.factory()
 
         # Lookup *bit_template* using *bit_type* to extract the correct attribute name:
         bit_type_text: str = str(bit_type)  # Should result in "<class '...FabXXXBit'>"
@@ -753,7 +749,7 @@ class FabBitTemplates(object):
         if tracing:
             print(f"{tracing}=>FabBitTemplates._unit_tests()")
         tools_directory: PathFile = PathFile(__file__).parent / "Tools"
-        bit_templates: FabBitTemplates = FabBitTemplates.factory(tools_directory)
+        bit_templates: FabBitTemplates = FabBitTemplates.factory()
         assert isinstance(bit_templates, FabBitTemplates)
         if tracing:
             print(f"{tracing}<=FabBitTemplates._unit_tests()")
@@ -1708,7 +1704,7 @@ class FabBits(object):
         """
         if tracing:
             print(f"{tracing}=>FabBits.read({str(bits_directory)}, *)")
-        bit_templates: FabBitTemplates = FabBitTemplates.factory(bits_directory.parent)
+        bit_templates: FabBitTemplates = FabBitTemplates.factory()
         bits_table: Dict[str, FabBit] = {}
         assert check_argument_types()
         assert bits_directory.is_dir(), f"FabBits.read(): {str(bits_directory)} is not a directory"
