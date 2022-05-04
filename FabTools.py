@@ -298,8 +298,8 @@ class FabBitTemplate(object):
 
     Attributes:
     * *Name* (str): The FabBit name.
-    * *ExampleName* (str):
-    * *Shape* (FabShape):
+    * *ExampleName* (str): The name used for a generated example FabBit.  (see getExample).
+    * *ShapeName* (str): The shape name in the `.../Tools/Shape/` directory without `.fcstd` suffix.
     * *Parameters* (Tuple[Tuple[str, Tuple[type, ...]], ...]):
       The allowed parameter names and associated types of the form:
       ("ParameterName", (type1, ..., typeN), "example") for no type checking ("ParameterName",)
@@ -310,7 +310,7 @@ class FabBitTemplate(object):
 
     Name: str
     ExampleName: str
-    Shape: FabShape
+    ShapeName: str
     Parameters: Tuple[Tuple[str, Tuple[type, ...], Union[bool, float, int, str]], ...]
     Attributes: Tuple[Tuple[str, Tuple[type, ...], Union[bool, float, int, str]], ...]
 
@@ -319,7 +319,7 @@ class FabBitTemplate(object):
         """Finish initalizing FabBitTemplate."""
         check_type("FabBitTemplate.Name", self.Name, str)
         check_type("FabBitTemplate.ExampleName", self.ExampleName, str)
-        check_type("FabBitTemplate.Shape", self.Shape, FabShape)
+        check_type("FabBitTemplate.ShapeName", self.ShapeName, str)
         check_type("FabBitTemplate.Parameters", self.Parameters,
                    Tuple[Tuple[str, Tuple[type, ...], Union[bool, float, int, str]], ...])
         check_type("FabBitTemplate.Attributes", self.Attributes,
@@ -341,13 +341,17 @@ class FabBitTemplate(object):
 
         version: Any = json_dict["version"]
         name: Any = json_dict["name"]
-        shape: Any = json_dict["shape"]
+        shape_fcstd: Any = json_dict["shape"]
         parameters: Any = json_dict["parameter"]
+        bits_directory: PathFile = bit_file.parent
+        tools_directory: PathFile = bits_directory.parent
+        shapes_directory: PathFile = tools_directory / "Shape"
 
         assert isinstance(name, str) and name, f"FabBit.kwargsFromJSON(): Bad {name=}"
         assert isinstance(version, int) and version == 2, f"FabBit.kwargsFromJSON(): Bad {version=}"
-        assert isinstance(shape, str) and shape.endswith(".fcstd"), (
-            f"FabBit.kwargsFromJSON(): Bad {shape=}")
+        assert isinstance(shape_fcstd, str) and shape_fcstd.endswith(".fcstd"), (
+            f"FabBit.kwargsFromJSON(): Bad {shape_fcstd=}")
+        assert shape_fcstd == f"{self.ShapeName}.fcstd", (shape_fcstd, self.ShapeName)
 
         # Check *json_dict* for valid *parameters* and *attributes*:
         def fill(kwargs: Optional[Dict[str, Any]], label: str, json_dict: Dict[str, Any],
@@ -376,10 +380,12 @@ class FabBitTemplate(object):
             bit_stem = "v_bit"
         if tracing:
             print("{tracign}{bit_stem=}")
+        shape_path_file: PathFile = shapes_directory / "{self.ShapeName}.fctb"
+        shape: FabShape = FabShape(self.ShapeName, shape_path_file)
         kwargs: Dict[str, Any] = {}
         kwargs["Name"] = bit_file.stem
-        kwargs["BitFile"] = self.Shape.ShapePath.parent / "Bit" / f"{bit_stem}.fctb"
-        kwargs["Shape"] = self.Shape
+        kwargs["BitFile"] = bits_directory / f"{self.ShapeName}.fctb"
+        kwargs["Shape"] = shape
         fill(kwargs, "Parameters", parameters, self.Parameters)
         assert "attribute" in json_dict, "FabAttributes.fromJSON(): attribute key not present"
         kwargs["Attributes"] = FabAttributes.fromJSON(json_dict["attribute"], tracing=next_tracing)
@@ -397,7 +403,7 @@ class FabBitTemplate(object):
         json_dict: Dict[str, Any] = {
             "version": 2,
             "name": self.Name,
-            "shape": self.Shape.ShapePath.name,
+            "shape": self.ShapeName,
             "parameter": parameters,
             "attribute": attributes,
         }
@@ -410,7 +416,7 @@ class FabBitTemplate(object):
         end_mill_template: FabBitTemplate = FabBitTemplate(
             Name="EndMill",
             ExampleName="5mm_Endmill",
-            Shape=FabShape.example(),
+            ShapeName="endmill",
             Parameters=(
                 ("CuttingEdgeHeight", (float, str), "30.000 mm"),
                 ("Diameter", (float, str), "5.000 mm"),
@@ -432,7 +438,7 @@ class FabBitTemplate(object):
             print(f"{tracing}=>FabBitTemplate._unit_tests()")
         template: FabBitTemplate = FabBitTemplate.example()
         assert template.Name == "EndMill"
-        assert template.Shape == FabShape.example()
+        assert template.ShapeName == "endmill"
         assert template.Parameters == (
             ("CuttingEdgeHeight", (float, str), "30.000 mm"),
             ("Diameter", (float, str), "5.000 mm"),
@@ -515,7 +521,7 @@ class FabBitTemplates(object):
         ball_end_template: FabBitTemplate = FabBitTemplate(
             Name="BallEnd",
             ExampleName="6mm_Ball_End",
-            Shape=to_shape(tools_directory, "ballend"),
+            ShapeName="ballend",
             Parameters=(
                 ("CuttingEdgeHeight", (float, str), "40.0000 mm"),
                 ("Diameter", (float, str), "5.000 mm"),
@@ -530,7 +536,7 @@ class FabBitTemplates(object):
         bull_nose_template: FabBitTemplate = FabBitTemplate(
             Name="BullNose",
             ExampleName="6mm_Bull_Nose",
-            Shape=to_shape(tools_directory, "bullnose"),
+            ShapeName="bullnose",
             Parameters=(
                 ("CuttingEdgeHeight", (float, str), "40.000 mm"),
                 ("Diameter", (float, str), "5.000 mm"),
@@ -546,7 +552,7 @@ class FabBitTemplates(object):
         chamfer_template: FabBitTemplate = FabBitTemplate(
             Name="Chamfer",
             ExampleName="45degree_chamfer",
-            Shape=to_shape(tools_directory, "chamfer"),
+            ShapeName="chamfer",
             Parameters=(
                 ("CuttingEdgeAngle", (float, str), "60.000 °"),
                 ("CuttingEdgeHeight", (float, str), "6.350 mm"),
@@ -563,7 +569,7 @@ class FabBitTemplates(object):
         dove_tail_template: FabBitTemplate = FabBitTemplate(
             Name="DoveTail",
             ExampleName="no_dovetail_yet",
-            Shape=to_shape(tools_directory, "dovetail"),
+            ShapeName="dovetail",
             Parameters=(
                 ("CuttingEdgeAngle", (float, str), "60.000 °"),
                 ("CuttingEdgeHeight", (float, str), "9.000 mm"),
@@ -582,7 +588,7 @@ class FabBitTemplates(object):
         drill_template: FabBitTemplate = FabBitTemplate(
             Name="Drill",
             ExampleName="5mm_Drill",
-            Shape=to_shape(tools_directory, "drill"),
+            ShapeName="drill",
             Parameters=(
                 ("Diameter", (float, str), "3.000 mm"),
                 ("Length", (float, str), "50.000 mm"),
@@ -596,7 +602,7 @@ class FabBitTemplates(object):
         end_mill_template: FabBitTemplate = FabBitTemplate(
             Name="EndMill",
             ExampleName="5mm_Endmill",
-            Shape=to_shape(tools_directory, "drill"),
+            ShapeName="endmill",
             Parameters=(
                 ("CuttingEdgeHeight", (float, str), "30.000 mm"),
                 ("Diameter", (float, str), "5.000 mm"),
@@ -611,7 +617,7 @@ class FabBitTemplates(object):
         probe_template: FabBitTemplate = FabBitTemplate(
             Name="Probe",
             ExampleName="probe",
-            Shape=to_shape(tools_directory, "probe"),
+            ShapeName="probe",
             Parameters=(
                 ("Diameter", (float, str), "6.000 mm"),
                 ("Length", (float, str), "50.000 mm"),
@@ -624,7 +630,7 @@ class FabBitTemplates(object):
         slitting_saw_template: FabBitTemplate = FabBitTemplate(
             Name="SlittingSaw",
             ExampleName="slittingsaw",
-            Shape=to_shape(tools_directory, "slittingsaw"),
+            ShapeName="slittingsaw",
             Parameters=(
                 ("BladeThickness", (float, str), "3.000 mm"),
                 ("CapDiameter", (float, str), "8.000 mm"),
@@ -641,7 +647,7 @@ class FabBitTemplates(object):
         thread_mill_template: FabBitTemplate = FabBitTemplate(
             Name="ThreadMill",
             ExampleName="5mm-thread-cutter",
-            Shape=to_shape(tools_directory, "thread-mill"),
+            ShapeName="thread-mill",
             Parameters=(
                 ("Crest", (float, str), "0.100 mm"),
                 ("CuttingAngle", (float, str), "60.000 °"),
@@ -659,7 +665,7 @@ class FabBitTemplates(object):
         v_template: FabBitTemplate = FabBitTemplate(
             Name="V",
             ExampleName="60degree_VBit",
-            Shape=to_shape(tools_directory, "v-bit"),
+            ShapeName="v-bit",
             Parameters=(
                 ("CuttingEdgeAngle", (float, str), "90.000 °"),
                 ("CuttingEdgeHeight", (float, str), "1.000 mm"),
