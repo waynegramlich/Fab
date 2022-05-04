@@ -748,11 +748,36 @@ class FabBitTemplates(object):
         """Perform FabBitTemplates unit tests."""
         if tracing:
             print(f"{tracing}=>FabBitTemplates._unit_tests()")
-        tools_directory: PathFile = PathFile(__file__).parent / "Tools"
         bit_templates: FabBitTemplates = FabBitTemplates.factory()
         assert isinstance(bit_templates, FabBitTemplates)
         if tracing:
             print(f"{tracing}<=FabBitTemplates._unit_tests()")
+
+
+# FabBitTemplatesFactory:
+class FabBitTemplatesFactory(object):
+    """FabBitTempaltesFactory: A class for getting a shared FabBitsTemplate object."""
+
+    fab_bit_templates = None
+
+    # FabBitTemplatesFactory.getTemplates():
+    @staticmethod
+    def getTemplates() -> FabBitTemplates:
+        """Return the FabTablates object."""
+        if FabBitTemplatesFactory.fab_bit_templates is None:
+            FabBitTemplatesFactory.fab_bit_templates = FabBitTemplates.factory()
+        return FabBitTemplatesFactory.fab_bit_templates
+
+    # FabBitTemplatesFactory._unit_tests():
+    @staticmethod
+    def _unit_tests(tracing: str = "") -> None:
+        """Run FabBitTemplatesFactory unit tests."""
+        if tracing:
+            print(f"{tracing}=>FabBitTemplatesFactory._unit_tests()")
+            templates: FabBitTemplates = FabBitTemplatesFactory.getTemplates()
+            assert isinstance(templates, FabBitTemplates)
+        if tracing:
+            print(f"{tracing}<=FabBitTemplatesFactory._unit_tests()")
 
 
 # FabBit:
@@ -1883,6 +1908,8 @@ def main(tracing: str) -> None:
     if tracing:
         print(f"{tracing}=>main()")
 
+    FabBitTemplates._unit_tests(tracing=next_tracing)
+    FabBitTemplatesFactory._unit_tests(tracing=next_tracing)
     FabShape._unit_tests(tracing=next_tracing)
     FabShapes._unit_tests(tracing=next_tracing)
     FabAttributes._unit_tests(tracing=next_tracing)
