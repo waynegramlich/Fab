@@ -27,14 +27,17 @@ directory and associated sub-directories as follows:
     * `MachineN.fctl`: The tools library for MachineN.
 
 The top-down class hierarchy for the FabTools package is:
-* FabToolsDirectory: This corresponds to a `Tools/` directory:
+* FabToolsDirectory: This corresponds to a `Tools/` directory:  (TBD).
   * FabShapes: This corresponds to a `Tools/Shape/` directory:
     * FabShape: This corresponds to a `.fcstd` tool shape template in the `Tools/Shape/` directory.
+  * FabAttributes: This corresponds to bit attributes that do not specify bit shape dimensions.
+  * FabBitTemplates: This contains all of the known FabBitTemplate's.
+    * FabBitTemplate: This corresponds to a template is used to construct FabBit.
   * FabBits: This corresponds to a `Tools/Bit/` sub-Directory:
     * FabBit: This corresponds to a `.fctb` file in the `Tools/Bit/` directory.  For each different
       Shape, there is a dedicated class that represents that shape:
-      * FabBallBalleEndBit: This corresponds to `Tools/Shape/ballend.fcstd`.
-      * FabBallBullNoseBit: This corresponds to `Tools/Shape/bullnose.fcstd`.
+      * FabBallEndBit: This corresponds to `Tools/Shape/ballend.fcstd`.
+      * FabBullNoseBit: This corresponds to `Tools/Shape/bullnose.fcstd`.
       * FabChamferBit: This corresponds to `Tools/Shape/chamfer.fcstd`.
       * FabDrillBit: This corresponds to `Tools/Shape/drill.fcstd`.
       * FabEndMillBit: This corresponds to `Tools/Shape/endmill.fcstd`.
@@ -61,14 +64,19 @@ The top-down class hierarchy for the FabTools package is:
 * 8 Class: [FabChamferBit](#fabtools--fabchamferbit):
 * 9 Class: [FabDoveTailBit](#fabtools--fabdovetailbit):
 * 10 Class: [FabDrillBit](#fabtools--fabdrillbit):
-* 11 Class: [FabLibraries](#fabtools--fablibraries):
-  * 11.1 [nameLookup()](#fabtools----namelookup): Lookup a library by name.
-* 12 Class: [FabLibrary](#fabtools--fablibrary):
-  * 12.1 [lookupName()](#fabtools----lookupname): Lookup a FabBit by name.
-  * 12.2 [lookupNumber()](#fabtools----lookupnumber): Lookup a FabBit by name.
-* 13 Class: [FabShape](#fabtools--fabshape):
-* 14 Class: [FabShapes](#fabtools--fabshapes):
-  * 14.1 [lookup()](#fabtools----lookup): Lookup a FabShape by name.
+* 11 Class: [FabEndMillBit](#fabtools--fabendmillbit):
+* 12 Class: [FabLibraries](#fabtools--fablibraries):
+  * 12.1 [nameLookup()](#fabtools----namelookup): Lookup a library by name.
+* 13 Class: [FabLibrary](#fabtools--fablibrary):
+  * 13.1 [lookupName()](#fabtools----lookupname): Lookup a FabBit by name.
+  * 13.2 [lookupNumber()](#fabtools----lookupnumber): Lookup a FabBit by name.
+* 14 Class: [FabProbeBit](#fabtools--fabprobebit):
+* 15 Class: [FabShape](#fabtools--fabshape):
+* 16 Class: [FabShapes](#fabtools--fabshapes):
+  * 16.1 [lookup()](#fabtools----lookup): Lookup a FabShape by name.
+* 17 Class: [FabSlittingSawBit](#fabtools--fabslittingsawbit):
+* 18 Class: [FabThreadMillBit](#fabtools--fabthreadmillbit):
+* 19 Class: [FabVBit](#fabtools--fabvbit):
 
 ## <a name="fabtools--fabattributes"></a>1 Class FabAttributes:
 
@@ -92,10 +100,10 @@ Attributes:
 * *BitFile* (PathFile): The `.fctb` file.
 * *Shape* (FabShape): The associated `.fcstd` shape.
 * *Attributes* (FabAttributes): Any associated attributes.
-* *CuttingEdgeHeight* (Union[str, float]): The cutting edge height.
-* *Diameter* (Union[str, float]): The end mill cutter diameter.
-* *Length* (Union[str, float]): The total length of the end mill.
-* *ShankDiameter: (Union[str, float]): The shank diameter.
+* *CuttingEdgeHeight* (Union[str, float]): The ball end cutting edge height.
+* *Diameter* (Union[str, float]): The ball end cutter diameter.
+* *Length* (Union[str, float]): The total length of the ball end.
+* *ShankDiameter: (Union[str, float]): The ball end shank diameter.
 
 Constructor:
 * FabBallEndBit("Name", BitFile, Shape, Attributes,
@@ -119,12 +127,13 @@ Constructor:
 
 A Template for creating a FabBit.
 Attributes:
-* Name* (str): The FabBit name.
-* Shape* (FabShape):
-* Parameters (Tuple[Tuple[str, Tuple[type, ...]], ...]):
+* *Name* (str): The FabBit name.
+* *ExampleName* (str):
+* *Shape* (FabShape):
+* *Parameters* (Tuple[Tuple[str, Tuple[type, ...]], ...]):
   The allowed parameter names and associated types of the form:
   ("ParameterName", (type1, ..., typeN), "example") for no type checking ("ParameterName",)
-* Attributes (Tuple[Tuple[str, Tuple[type, ...]], ...]):
+* *Attributes* (Tuple[Tuple[str, Tuple[type, ...]], ...]):
   The allowed parameter names and associated types of the form:
   ("ParameterName", (type1, ..., typeN), "example") for no type checking ("ParameterName",)
 
@@ -154,7 +163,7 @@ Attributes:
 * *Probe* (FabBitTemplate): A template for creating FabProbeBit's.
 * *SlittingSaw* (FabBitTemplate): A template for creating FabSlittingSawBit's.
 * *ThreadMill* (FabBitTemplate): A template for create FabThreadMillBit's.
-* *VBit* (FabBitTemplate): A template for creating FabVBitBits's.
+* *V* (FabBitTemplate): A template for creating FabVBit's.
 Constructor:
 * FabBitTemplates(BallEnd, BullNose, Chamfer, DoveTail, Drill,
   EndMill, Probe, SlittingSaw, ThreadMill, VBit)
@@ -267,7 +276,25 @@ Constructor:
 * FabDrillBit("Name", BitFile, Shape, Attributes, Diameter, Length, TipAngle)
 
 
-## <a name="fabtools--fablibraries"></a>11 Class FabLibraries:
+## <a name="fabtools--fabendmillbit"></a>11 Class FabEndMillBit:
+
+An end-mill bit template.
+Attributes:
+* *Name* (str): The name of Ball End bit.
+* *BitFile* (PathFile): The `.fctb` file.
+* *Shape* (FabShape): The associated `.fcstd` shape.
+* *Attributes* (FabAttributes): Any associated attributes.
+* *CuttingEdgeHeight* (Union[str, float]): The end mill cutting edge height.
+* *Diameter* (Union[str, float]): The end mill cutter diameter.
+* *Length* (Union[str, float]): The total length of the end mill.
+* *ShankDiameter: (Union[str, float]): The end millshank diameter.
+
+Constructor:
+* FabEndMillBit("Name", BitFile, Shape, Attributes,
+  CuttingEdgeHeight, Diameter, Length, ShankDiameter)
+
+
+## <a name="fabtools--fablibraries"></a>12 Class FabLibraries:
 
 Represents a directory of FabLibrary's.
 Attributes:
@@ -279,14 +306,14 @@ Attributes:
 Constructor:
 * FabLibraries("Name", LibrariesPath, Libraries)
 
-### <a name="fabtools----namelookup"></a>11.1 `FabLibraries.`nameLookup():
+### <a name="fabtools----namelookup"></a>12.1 `FabLibraries.`nameLookup():
 
 FabLibraries.nameLookup(self, name: str) -> FabTools.FabLibrary:
 
 Lookup a library by name.
 
 
-## <a name="fabtools--fablibrary"></a>12 Class FabLibrary:
+## <a name="fabtools--fablibrary"></a>13 Class FabLibrary:
 
 Tool libraries directory (e.g. `.../Tools/Library/*.fctl`).
 Attributes:
@@ -297,20 +324,36 @@ Attributes:
 Constructor:
 * FabLibrary("Name", LibraryFile, Tools)
 
-### <a name="fabtools----lookupname"></a>12.1 `FabLibrary.`lookupName():
+### <a name="fabtools----lookupname"></a>13.1 `FabLibrary.`lookupName():
 
 FabLibrary.lookupName(self, name: str) -> FabTools.FabBit:
 
 Lookup a FabBit by name.
 
-### <a name="fabtools----lookupnumber"></a>12.2 `FabLibrary.`lookupNumber():
+### <a name="fabtools----lookupnumber"></a>13.2 `FabLibrary.`lookupNumber():
 
 FabLibrary.lookupNumber(self, number: int) -> FabTools.FabBit:
 
 Lookup a FabBit by name.
 
 
-## <a name="fabtools--fabshape"></a>13 Class FabShape:
+## <a name="fabtools--fabprobebit"></a>14 Class FabProbeBit:
+
+An end-mill bit template.
+Attributes:
+* *Name* (str): The name of Ball End bit.
+* *BitFile* (PathFile): The `.fctb` file.
+* *Shape* (FabShape): The associated `.fcstd` shape.
+* *Attributes* (FabAttributes): Any associated attributes.
+* *Diameter* (Union[str, float]): The probe ball diameter.
+* *Length* (Union[str, float]): The total length of the probe.
+* *ShaftDiameter: (Union[str, float]): The probe shaft diameter.
+
+Constructor:
+* FabProbeBit("Name", BitFile, Shape, Attributes, Diameter, Length, TipAngle)
+
+
+## <a name="fabtools--fabshape"></a>15 Class FabShape:
 
 Corresponds to FreeCAD Path library Shape 'template'.
 Attributes:
@@ -318,7 +361,7 @@ Attributes:
 * *ShapePath* (PathFile): The path to the associated `fcstd` file.
 
 
-## <a name="fabtools--fabshapes"></a>14 Class FabShapes:
+## <a name="fabtools--fabshapes"></a>16 Class FabShapes:
 
 A directory of FabShape's.
 Attributes:
@@ -329,11 +372,71 @@ Attributes:
 Constructor:
 * FabShapes(Directory, Shapes)
 
-### <a name="fabtools----lookup"></a>14.1 `FabShapes.`lookup():
+### <a name="fabtools----lookup"></a>16.1 `FabShapes.`lookup():
 
 FabShapes.lookup(self, name) -> FabTools.FabShape:
 
 Lookup a FabShape by name.
+
+
+## <a name="fabtools--fabslittingsawbit"></a>17 Class FabSlittingSawBit:
+
+An end-mill bit template.
+Attributes:
+* *Name* (str): The name of Ball End bit.
+* *BitFile* (PathFile): The `.fctb` file.
+* *Shape* (FabShape): The associated `.fcstd` shape.
+* *Attributes* (FabAttributes): Any associated attributes.
+* *BladeThickness* (Union[str, float]): The cutting saw blade thickness.
+* *CapDiameter* (Union[str, float]): The cutting saw end cab diameter.
+* *CapHeight* (Union[str, float]): The cutting end end cab height.
+* *Diameter* (Union[str, float]): The cutting saw blade diameter.
+* *ShankDiameter: (Union[str, float]): The cutting saw shank diameter.
+
+Constructor:
+* FabSlittingSawBit("Name", BitFile, Shape, Attributes,
+  BladeThickness, CapDiameter, CapHeight, Diameter, Length, ShankDiameter)
+
+
+## <a name="fabtools--fabthreadmillbit"></a>18 Class FabThreadMillBit:
+
+An thread mill bit template.
+Attributes:
+* *Name* (str): The name of thread mill bit.
+* *BitFile* (PathFile): The `.fctb` file.
+* *Shape* (FabShape): The associated `.fcstd` shape.
+* *Attributes* (FabAttributes): Any associated attributes.
+* *CuttingAngle* (Union[str, float]): The cutter point angle.
+* *Crest* (Union[str, float]): The thread cutter crest thickness.
+* *Diameter* (Union[str, float]): The chamfer outer diameter.
+* *Length* (Union[str, float]): The total length of the chamfer cutter.
+* *NeckDiameter* (Union[str, float]): The diameter of the neck between the cutter and shank
+* *NeckLength* (Union[str, float]): The height of the neck between the cutter and shank
+* *ShankDiameter: (Union[str, float]): The shank diameter.
+
+Constructor:
+* FabThreadMillBit("Name", BitFile, Shape, Attributes, Cuttingngle, Diameter, Length,
+  NeckDiameter, NeckLength,  ShankDiameter)
+
+
+## <a name="fabtools--fabvbit"></a>19 Class FabVBit:
+
+An V groove bit template.
+Attributes:
+* *Name* (str): The name of Ball End bit.
+* *BitFile* (PathFile): The `.fctb` file.
+* *Shape* (FabShape): The associated `.fcstd` shape.
+* *Attributes* (FabAttributes): Any associated attributes.
+* *CuttingEdgeAngle* (Union[str, float]): The cutting edge angle.
+* *CuttingEdgeHeight* (Union[str, float]): The cutting edge height.
+* *Diameter* (Union[str, float]): The v outer diameter.
+* *Length* (Union[str, float]): The total length of the v cutter.
+* *ShankDiameter: (Union[str, float]): The shank diameter.
+* *TipDiameter* (Union[str, float]): The tip radius of the v cutter.
+
+Constructor:
+* FabVBit("Name", BitFile, Shape, Attributes,
+  CuttingEdgeHeight, Diameter, Length, ShankDiameter)
 
 
 
