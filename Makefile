@@ -20,6 +20,7 @@ SAFE_MODULES := \
     FabShops \
     FabSolids \
     FabTools \
+    FabToolTemplates \
     FabUtilities \
     TarSync \
     Test
