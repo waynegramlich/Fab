@@ -404,7 +404,7 @@ These installation instructions are currently focused towards the Ubuntu 20.04 L
 
 * Install the `build-essential` and `git` packages:
 
-     sudo apt install build-essential git
+     sudo apt install build-essential git code_spell
 
 * Clone the Fab git repository:
 

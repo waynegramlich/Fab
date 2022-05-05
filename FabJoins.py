@@ -989,7 +989,7 @@ class FabWasher(FabOption):
         """Perform FabWasher unit tests."""
         # Create the *washer*:
         name: str = "W6x.5"
-        detail: str = "M3 Washer (ID=3.2 OD=6, Thick=.5)"
+        detail: str = "M3 Washer (InsideDiameter=3.2 OutsideDiameter=6, Thickness=.5)"
         inner: float = 3.2
         outer: float = 6.0
         thickness: float = 0.5

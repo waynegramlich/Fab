@@ -1,7 +1,7 @@
 # Gnu make directives:
 
 # Top level non-file targets:
-.PHONY: all clean documentation flake8 html mypy tests tools
+.PHONY: all clean code_spell documentation flake8 html mypy tests tools
 
 # Simple declarations:
 PYTHON := python3
@@ -55,12 +55,19 @@ CLEAN_FILES := \
     ${MD_FILES} \
     ${HTML_FILES} \
     ${COVER_FILES} \
+    .code_spell \
     .mypy \
     .tests \
     .tools
 
 # Top level ".PHONY" targets:
-all: mypy flake8 documentation tests
+all: mypy flake8 documentation tests code_spell
+
+code_spell: .code_spell
+
+.code_spell: ${PY_FILES}
+	codespell -q 3 -L te,tne ${PY_FILES}
+	touch $@
 
 documentation: ${MD_FILES}
 

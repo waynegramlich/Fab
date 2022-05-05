@@ -5,6 +5,7 @@
 *.json
 .#*
 .*.lint
+.code_spell
 .coverage
 .mypy
 .tests
