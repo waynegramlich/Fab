@@ -50,50 +50,25 @@ The top-down class hierarchy for the FabTools package is:
 
 ## Table of Contents (alphabetical order):
 
-* 1 Class: [FabAttributes](#fabtools--fabattributes):
-  * 1.1 [toJSON()](#fabtools----tojson): Return FabAttributes as JSON dictionary.
-* 2 Class: [FabBallEndBit](#fabtools--fabballendbit):
-* 3 Class: [FabBit](#fabtools--fabbit):
-* 4 Class: [FabBitTemplate](#fabtools--fabbittemplate):
-  * 4.1 [kwargsFromJSON()](#fabtools----kwargsfromjson): Return the keyword arguments needed to initialize a FabBit.
-  * 4.2 [toJSON()](#fabtools----tojson): Convert a FabBit to a JSON dictionary using a FabBitTemplate.
-* 5 Class: [FabBitTemplates](#fabtools--fabbittemplates):
-* 6 Class: [FabBitTemplatesFactory](#fabtools--fabbittemplatesfactory):
-* 7 Class: [FabBits](#fabtools--fabbits):
-  * 7.1 [lookup()](#fabtools----lookup): Look up a FabBit by name.
-* 8 Class: [FabBullNoseBit](#fabtools--fabbullnosebit):
-* 9 Class: [FabChamferBit](#fabtools--fabchamferbit):
-* 10 Class: [FabDoveTailBit](#fabtools--fabdovetailbit):
-* 11 Class: [FabDrillBit](#fabtools--fabdrillbit):
-* 12 Class: [FabEndMillBit](#fabtools--fabendmillbit):
-* 13 Class: [FabLibraries](#fabtools--fablibraries):
-  * 13.1 [nameLookup()](#fabtools----namelookup): Lookup a library by name.
-* 14 Class: [FabLibrary](#fabtools--fablibrary):
-  * 14.1 [lookupName()](#fabtools----lookupname): Lookup a FabBit by name.
-  * 14.2 [lookupNumber()](#fabtools----lookupnumber): Lookup a FabBit by name.
-* 15 Class: [FabProbeBit](#fabtools--fabprobebit):
-* 16 Class: [FabShape](#fabtools--fabshape):
-* 17 Class: [FabShapes](#fabtools--fabshapes):
-  * 17.1 [lookup()](#fabtools----lookup): Lookup a FabShape by name.
-* 18 Class: [FabSlittingSawBit](#fabtools--fabslittingsawbit):
-* 19 Class: [FabThreadMillBit](#fabtools--fabthreadmillbit):
-* 20 Class: [FabVBit](#fabtools--fabvbit):
+* 1 Class: [FabBallEndBit](#fabtools--fabballendbit):
+* 2 Class: [FabBits](#fabtools--fabbits):
+  * 2.1 [lookup()](#fabtools----lookup): Look up a FabBit by name.
+* 3 Class: [FabBullNoseBit](#fabtools--fabbullnosebit):
+* 4 Class: [FabChamferBit](#fabtools--fabchamferbit):
+* 5 Class: [FabDoveTailBit](#fabtools--fabdovetailbit):
+* 6 Class: [FabDrillBit](#fabtools--fabdrillbit):
+* 7 Class: [FabEndMillBit](#fabtools--fabendmillbit):
+* 8 Class: [FabLibraries](#fabtools--fablibraries):
+  * 8.1 [nameLookup()](#fabtools----namelookup): Lookup a library by name.
+* 9 Class: [FabLibrary](#fabtools--fablibrary):
+  * 9.1 [lookupName()](#fabtools----lookupname): Lookup a FabBit by name.
+  * 9.2 [lookupNumber()](#fabtools----lookupnumber): Lookup a FabBit by name.
+* 10 Class: [FabProbeBit](#fabtools--fabprobebit):
+* 11 Class: [FabSlittingSawBit](#fabtools--fabslittingsawbit):
+* 12 Class: [FabThreadMillBit](#fabtools--fabthreadmillbit):
+* 13 Class: [FabVBit](#fabtools--fabvbit):
 
-## <a name="fabtools--fabattributes"></a>1 Class FabAttributes:
-
-Additional information about a FabBit.
-Attributes:
-* *Values* (Tuple[Tuple[str, Any], ...): Sorted list of named attribute values.
-* *Names* (Tuple[str, ...]): Sorted list of attribute names:
-
-### <a name="fabtools----tojson"></a>1.1 `FabAttributes.`toJSON():
-
-FabAttributes.toJSON(self) -> Dict[str, Any]:
-
-Return FabAttributes as JSON dictionary.
-
-
-## <a name="fabtools--fabballendbit"></a>2 Class FabBallEndBit:
+## <a name="fabtools--fabballendbit"></a>1 Class FabBallEndBit:
 
 An end-mill bit template.
 Attributes:
@@ -111,73 +86,7 @@ Constructor:
   CuttingEdgeHeight, Diameter, Length, ShankDiameter)
 
 
-## <a name="fabtools--fabbit"></a>3 Class FabBit:
-
-Base class common to all FabBit sub-classes;
-Attributes:
-* *Name* (str): The name of the tool template.
-* *BitFile* (PathFile): The file path to the corresponding `.fctb` file.
-* *Shape*: (FabShape): The associated FabShape.
-* *Attributes*: (FabAttributes): The optional bit attributes.
-
-Constructor:
-* FabBit("Name", BitFile, Shape, Attributes)
-
-
-## <a name="fabtools--fabbittemplate"></a>4 Class FabBitTemplate:
-
-A Template for creating a FabBit.
-Attributes:
-* *Name* (str): The FabBit name.
-* *ExampleName* (str): The name used for a generated example FabBit.  (see getExample).
-* *ShapeName* (str): The shape name in the `.../Tools/Shape/` directory without `.fcstd` suffix.
-* *Parameters* (Tuple[Tuple[str, Tuple[type, ...]], ...]):
-  The allowed parameter names and associated types of the form:
-  ("ParameterName", (type1, ..., typeN), "example") for no type checking ("ParameterName",)
-* *Attributes* (Tuple[Tuple[str, Tuple[type, ...]], ...]):
-  The allowed parameter names and associated types of the form:
-  ("ParameterName", (type1, ..., typeN), "example") for no type checking ("ParameterName",)
-
-### <a name="fabtools----kwargsfromjson"></a>4.1 `FabBitTemplate.`kwargsFromJSON():
-
-FabBitTemplate.kwargsFromJSON(self, json_dict: Dict[str, Any], bit_file: pathlib.Path, shapes: FabTools.FabShapes, tracing: str = '') -> Dict[str, Any]:
-
-Return the keyword arguments needed to initialize a FabBit.
-
-### <a name="fabtools----tojson"></a>4.2 `FabBitTemplate.`toJSON():
-
-FabBitTemplate.toJSON(self, bit: 'FabBit', with_attributes: bool) -> Dict[str, Any]:
-
-Convert a FabBit to a JSON dictionary using a FabBitTemplate.
-
-
-## <a name="fabtools--fabbittemplates"></a>5 Class FabBitTemplates:
-
-A container of FabBitTemplate's to/from JSON.
-Attributes:
-* *BallEnd* (FabBitTemplate): A template for creating FabBallEndBit's.
-* *BullNose* (FabBitTemplate): A template for creating FabBullNoseBit's.
-* *Chamfer* (FabBitTemplate): A template for creating FabChamferBit's.
-* *DoveTail* (FabBitTemplate): A template for creating FabDoveTailBit's.
-* *Drill* (FabBitTemplate): A template for creating FabDrillBit's.
-* *EndMill* (FabBitTemplate): A template for creating FabEndMillBit's.
-* *Probe* (FabBitTemplate): A template for creating FabProbeBit's.
-* *SlittingSaw* (FabBitTemplate): A template for creating FabSlittingSawBit's.
-* *ThreadMill* (FabBitTemplate): A template for create FabThreadMillBit's.
-* *V* (FabBitTemplate): A template for creating FabVBit's.
-Constructor:
-* FabBitTemplates(BallEnd, BullNose, Chamfer, DoveTail, Drill,
-  EndMill, Probe, SlittingSaw, ThreadMill, VBit)
-
-Use FabBitTemplates.factory() instead of the constructor.
-
-
-## <a name="fabtools--fabbittemplatesfactory"></a>6 Class FabBitTemplatesFactory:
-
-FabBitTempaltesFactory: A class for getting a shared FabBitsTemplate object.
-
-
-## <a name="fabtools--fabbits"></a>7 Class FabBits:
+## <a name="fabtools--fabbits"></a>2 Class FabBits:
 
 A collection FabBit's that corresponds to a `Tools/Bit/` sub-directory..
 Attributes:
@@ -188,9 +97,9 @@ Attributes:
 Constructor:
 * FabBits("Name", BitsPath, Bits, Names)
 
-### <a name="fabtools----lookup"></a>7.1 `FabBits.`lookup():
+### <a name="fabtools----lookup"></a>2.1 `FabBits.`lookup():
 
-FabBits.lookup(self, name: str) -> FabTools.FabBit:
+FabBits.lookup(self, name: str) -> FabToolTemplates.FabBit:
 
 Look up a FabBit by name.
 Arguments:
@@ -203,7 +112,7 @@ Raises:
 * (KeyError): If FabBit is  not present.
 
 
-## <a name="fabtools--fabbullnosebit"></a>8 Class FabBullNoseBit:
+## <a name="fabtools--fabbullnosebit"></a>3 Class FabBullNoseBit:
 
 An end-mill bit template.
 Attributes:
@@ -222,7 +131,7 @@ Constructor:
   CuttingEdgeHeight, Diameter, Length, ShankDiameter)
 
 
-## <a name="fabtools--fabchamferbit"></a>9 Class FabChamferBit:
+## <a name="fabtools--fabchamferbit"></a>4 Class FabChamferBit:
 
 An end-mill bit template.
 Attributes:
@@ -242,7 +151,7 @@ Constructor:
   CuttingEdgeHeight, Diameter, Length, ShankDiameter)
 
 
-## <a name="fabtools--fabdovetailbit"></a>10 Class FabDoveTailBit:
+## <a name="fabtools--fabdovetailbit"></a>5 Class FabDoveTailBit:
 
 An end-mill bit template.
 Attributes:
@@ -264,7 +173,7 @@ Constructor:
   Diameter, Length, NeckDiameter, NeckHeight,  ShankDiameter, TipDiameter)
 
 
-## <a name="fabtools--fabdrillbit"></a>11 Class FabDrillBit:
+## <a name="fabtools--fabdrillbit"></a>6 Class FabDrillBit:
 
 An end-mill bit template.
 Attributes:
@@ -282,7 +191,7 @@ Constructor:
 * FabDrillBit("Name", BitFile, Shape, Attributes, Diameter, Length, TipAngle)
 
 
-## <a name="fabtools--fabendmillbit"></a>12 Class FabEndMillBit:
+## <a name="fabtools--fabendmillbit"></a>7 Class FabEndMillBit:
 
 An end-mill bit template.
 Attributes:
@@ -300,7 +209,7 @@ Constructor:
   CuttingEdgeHeight, Diameter, Length, ShankDiameter)
 
 
-## <a name="fabtools--fablibraries"></a>13 Class FabLibraries:
+## <a name="fabtools--fablibraries"></a>8 Class FabLibraries:
 
 Represents a directory of FabLibrary's.
 Attributes:
@@ -312,14 +221,14 @@ Attributes:
 Constructor:
 * FabLibraries("Name", LibrariesPath, Libraries)
 
-### <a name="fabtools----namelookup"></a>13.1 `FabLibraries.`nameLookup():
+### <a name="fabtools----namelookup"></a>8.1 `FabLibraries.`nameLookup():
 
 FabLibraries.nameLookup(self, name: str) -> FabTools.FabLibrary:
 
 Lookup a library by name.
 
 
-## <a name="fabtools--fablibrary"></a>14 Class FabLibrary:
+## <a name="fabtools--fablibrary"></a>9 Class FabLibrary:
 
 Tool libraries directory (e.g. `.../Tools/Library/*.fctl`).
 Attributes:
@@ -330,20 +239,20 @@ Attributes:
 Constructor:
 * FabLibrary("Name", LibraryFile, Tools)
 
-### <a name="fabtools----lookupname"></a>14.1 `FabLibrary.`lookupName():
+### <a name="fabtools----lookupname"></a>9.1 `FabLibrary.`lookupName():
 
-FabLibrary.lookupName(self, name: str) -> FabTools.FabBit:
-
-Lookup a FabBit by name.
-
-### <a name="fabtools----lookupnumber"></a>14.2 `FabLibrary.`lookupNumber():
-
-FabLibrary.lookupNumber(self, number: int) -> FabTools.FabBit:
+FabLibrary.lookupName(self, name: str) -> FabToolTemplates.FabBit:
 
 Lookup a FabBit by name.
 
+### <a name="fabtools----lookupnumber"></a>9.2 `FabLibrary.`lookupNumber():
 
-## <a name="fabtools--fabprobebit"></a>15 Class FabProbeBit:
+FabLibrary.lookupNumber(self, number: int) -> FabToolTemplates.FabBit:
+
+Lookup a FabBit by name.
+
+
+## <a name="fabtools--fabprobebit"></a>10 Class FabProbeBit:
 
 An end-mill bit template.
 Attributes:
@@ -359,33 +268,7 @@ Constructor:
 * FabProbeBit("Name", BitFile, Shape, Attributes, Diameter, Length, TipAngle)
 
 
-## <a name="fabtools--fabshape"></a>16 Class FabShape:
-
-Corresponds to FreeCAD Path library Shape 'template'.
-Attributes:
-* *Name* (str): The shape name.
-* *ShapePath* (PathFile): The path to the associated `fcstd` file.
-
-
-## <a name="fabtools--fabshapes"></a>17 Class FabShapes:
-
-A directory of FabShape's.
-Attributes:
-* *Directory* (PathFile): The directory containing the FabShapes (.fcstd) files.
-* *Shapes* (Tuple[FabShape, ...]: The corresponding FabShape's.
-* *Names* (Tuple[str, ...]: The sorted names of the FabShape's.
-
-Constructor:
-* FabShapes(Directory, Shapes)
-
-### <a name="fabtools----lookup"></a>17.1 `FabShapes.`lookup():
-
-FabShapes.lookup(self, name) -> FabTools.FabShape:
-
-Lookup a FabShape by name.
-
-
-## <a name="fabtools--fabslittingsawbit"></a>18 Class FabSlittingSawBit:
+## <a name="fabtools--fabslittingsawbit"></a>11 Class FabSlittingSawBit:
 
 An end-mill bit template.
 Attributes:
@@ -404,7 +287,7 @@ Constructor:
   BladeThickness, CapDiameter, CapHeight, Diameter, Length, ShankDiameter)
 
 
-## <a name="fabtools--fabthreadmillbit"></a>19 Class FabThreadMillBit:
+## <a name="fabtools--fabthreadmillbit"></a>12 Class FabThreadMillBit:
 
 An thread mill bit template.
 Attributes:
@@ -425,7 +308,7 @@ Constructor:
   NeckDiameter, NeckLength,  ShankDiameter)
 
 
-## <a name="fabtools--fabvbit"></a>20 Class FabVBit:
+## <a name="fabtools--fabvbit"></a>13 Class FabVBit:
 
 An V groove bit template.
 Attributes:
