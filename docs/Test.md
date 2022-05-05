@@ -78,7 +78,7 @@ Additional Constructor Attributes:
 * *Contour* (bool):
   Force the side contour to be milled out. (Default: False)
 * *Drill* (bool):
-  Force holes to be drilled. (Defalut: True)
+  Force holes to be drilled. (Default: True)
 
 ### <a name="test----produce"></a>2.1 `BoxSide.`produce():
 

@@ -185,7 +185,7 @@ Attributes:
 * *Bits* (Tuple[FabBit, ...]): The associated FabBit's in name sorted order.
 * *Names* (Tuple[str, ...]): The sorted FabBit names.
 
-Contructor:
+Constructor:
 * FabBits("Name", BitsPath, Bits, Names)
 
 ### <a name="fabtools----lookup"></a>7.1 `FabBits.`lookup():

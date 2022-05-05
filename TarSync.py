@@ -116,7 +116,7 @@ def synchronize_directories(directory_names: Tuple[str, ...],
         If True, the a summary message is printed if for each (possible) synchronization.
         The actual synchronization only occurs if *dry_run* is False.
     * Returns
-      * (Tuple[str, ...]) containing the summar
+      * (Tuple[str, ...]) containing the summary
     """
     # Recursively find all *fcstd_paths* in *directories*:
     fcstd_paths: List[Path] = []

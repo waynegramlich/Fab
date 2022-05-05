@@ -21,7 +21,7 @@ from cadquery import Vector  # type: ignore
 # <--------------------------------------- 100 characters ---------------------------------------> #
 
 # Issues:
-# * Turn off Legacy tools Path => Preferrences => [] Enable Legacy Tools
+# * Turn off Legacy tools Path => Preferences => [] Enable Legacy Tools
 # * Edit move the from line 11 to line 10 in .../Tools/Bit/45degree_chamfer.fctb to fix JSON error.
 # * When setting path to library, be sure to include .../Tools/Library  (one level up does not work)
 
@@ -38,18 +38,18 @@ class FabSpindle(object):
     Attributes:
     * *Type* (str): Spindle Type (e.g. "R8", "Cat40", etc.)
     * *Speed* (int): Maximum spindle speed in rotations per minute.
-    * *Reversable* (bool): True if spindle can be reversed.
+    * *Reversible* (bool): True if spindle can be reversed.
     * *FloodCooling* (bool): True if flood cooling is available.
     * *MistCooling* (bool): True if mist coooling is available.
 
     Constructor:
-    * FabSpindle("Type", Speed, Reversable, FloodCooling, MistCooling)
+    * FabSpindle("Type", Speed, Reversible, FloodCooling, MistCooling)
 
     """
 
     Type: str
     Speed: int
-    Reversable: bool
+    Reversible: bool
     FloodCooling: bool
     MistCooling: bool
 
@@ -58,7 +58,7 @@ class FabSpindle(object):
         """Finish initializing the FabSpindle."""
         check_type("FabSpindle.Type", self.Type, str)
         check_type("FabSpindle.Speed", self.Speed, int)
-        check_type("FabSpindle.Reversable", self.Reversable, bool)
+        check_type("FabSpindle.Reversible", self.Reversible, bool)
         check_type("FabSpindle.FloodCooling", self.FloodCooling, bool)
         check_type("FabSpindle.MistCooling", self.MistCooling, bool)
 
@@ -70,7 +70,7 @@ class FabSpindle(object):
         spindle: FabSpindle = FabSpindle("R8", 5000, True, True, False)
         assert spindle.Type == "R8", spindle.Type
         assert spindle.Speed == 5000, spindle.Speed
-        assert spindle.Reversable, spindle.Reversable
+        assert spindle.Reversible, spindle.Reversible
         assert spindle.FloodCooling, spindle.FloodCooling
         assert not spindle.MistCooling, spindle.MistCooling
 
@@ -222,7 +222,7 @@ class FabCNC(FabMachine):
     * *Spindle* (FabSpindle): The spindle description.
     * *Controller* (FabController): The Controller used by the CNC machine.
 
-    Contstructor:
+    Constructor:
     * FabCNC("Name", "Position", WorkVolume, Spindle, Table, Controller)
 
     """
@@ -244,7 +244,7 @@ class FabCNC(FabMachine):
     # FabCNC._unit_tests():
     @staticmethod
     def _unit_tests():
-        """Peform FabCNC unit tests."""
+        """Perform FabCNC unit tests."""
         work_volume: Vector = Vector(100.0, 50.0, 30.0)
         spindle: FabSpindle = FabSpindle("R8", 5000, True, True, False)
         table: FabTable = FabTable("TestTable", 100.0, 50.0, 30.0, 4, 10.0, 5.0, 5.0, 10.0, 5.0)
@@ -271,7 +271,7 @@ class FabCNCMill(FabCNC):
     * *Controller* (FabController): The Controller used by the CNC machine.
     * *Kind* (str): Return the string "CNCMill".
 
-    Contstructor:
+    Constructor:
     * FabCNCMill("Name", "Placement", WorkVolume, Spindle, Table, Spindle, Controller)
 
     """
@@ -290,7 +290,7 @@ class FabCNCMill(FabCNC):
     # FabCNCMill._unit_tests():
     @staticmethod
     def _unit_tests():
-        """Peform FabCNCMill unit tests."""
+        """Perform FabCNCMill unit tests."""
         work_volume: Vector = Vector(100.0, 50.0, 30.0)
         spindle: FabSpindle = FabSpindle("R8", 5000, True, True, False)
         controller: FabController = FabController("MyMill", "linuxcnc")
@@ -318,7 +318,7 @@ class FabCNCRouter(FabCNC):
     * *Controller* (FabController): The Controller used by the CNC machine.
     * *Kind* (str): Return the string "CNCRouter".
 
-    Contstructor:
+    Constructor:
     * FabCNCRouter("Name", "Position", WorkVolume, Spindle, Table, Spindle, Controller)
 
     """
@@ -332,7 +332,7 @@ class FabCNCRouter(FabCNC):
     # FabCNCRouter._unit_tests():
     @staticmethod
     def _unit_tests():
-        """Peform FabCNCRouter unit tests."""
+        """Perform FabCNCRouter unit tests."""
         work_volume: Vector = Vector(100.0, 50.0, 30.0)
         spindle: FabSpindle = FabSpindle("R8", 5000, True, True, False)
         controller: FabController = FabController("MyMill", "linuxcnc")

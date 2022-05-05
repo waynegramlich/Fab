@@ -46,7 +46,7 @@ class BoxSide(FabSolid):
     * *Contour* (bool):
       Force the side contour to be milled out. (Default: False)
     * *Drill* (bool):
-      Force holes to be drilled. (Defalut: True)
+      Force holes to be drilled. (Default: True)
 
     """
 
@@ -447,7 +447,7 @@ class TestProject(FabProject):
     # TestProject.new():
     @classmethod
     def new(cls, name: str) -> "TestProject":
-        """Return a new TestProject properly initializedd"""
+        """Return a new TestProject properly initialized"""
         test_project = cls(name, cast(FabNode, None))  # Magic to create a root FabProject.
         return test_project
 

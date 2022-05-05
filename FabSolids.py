@@ -307,7 +307,7 @@ class Fab_Operation(object):
 # Fab_Extrude:
 @dataclass(order=True)
 class Fab_Extrude(Fab_Operation):
-    """Fab_Extrude: Prepresents and extrude operation.
+    """Fab_Extrude: Represents and extrude operation.
 
     Attributes:
     * *Name* (str): The operation name.
@@ -1469,7 +1469,7 @@ class FabSolid(FabNode):
         if tracing:
             print(f"{tracing}=>FabSolid.post_produce1('{self.Label}')")
 
-        # Deterimine wether it is posible to *use_cached_step*:
+        # Deterimine whether it is possible to *use_cached_step*:
         use_cached_step: bool = False
         step_path: Path = cast(Path, None)  # Force runtime error if used.
         # This was a shocker.  It turns out that __hash__() methods are not necessarily

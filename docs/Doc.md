@@ -30,18 +30,18 @@ This is a relatively dumb program.  All Python doc strings need to be written in
 * 1 Class: [ModelClass](#doc--modelclass):
   * 1.1 [set_annotations()](#doc----set-annotations): Set the Markdown anchor.
   * 1.2 [summary_lines()](#doc----summary-lines): Return ModelModule summary lines.
-  * 1.3 [documentation_lines()](#doc----documentation-lines): Return the ModelModule documentaion lines.
+  * 1.3 [documentation_lines()](#doc----documentation-lines): Return the ModelModule documentation lines.
 * 2 Class: [ModelDoc](#doc--modeldoc):
   * 2.1 [set_lines()](#doc----set-lines): Set the Lines field of a ModelDoc.
   * 2.2 [set_annotations()](#doc----set-annotations): Set the ModelDoc Anchor and Number attributes.
 * 3 Class: [ModelFunction](#doc--modelfunction):
   * 3.1 [set_annotations()](#doc----set-annotations): Set the markdown annotations.
   * 3.2 [summary_lines()](#doc----summary-lines): Return ModelModule table of contents summary lines.
-  * 3.3 [documentation_lines()](#doc----documentation-lines): Return the ModelModule documentaion lines.
+  * 3.3 [documentation_lines()](#doc----documentation-lines): Return the ModelModule documentation lines.
 * 4 Class: [ModelModule](#doc--modelmodule):
   * 4.1 [set_annotations()](#doc----set-annotations): Set the Markdown anchor.
   * 4.2 [summary_lines()](#doc----summary-lines): Return ModelModule summary lines.
-  * 4.3 [documentation_lines()](#doc----documentation-lines): Return the ModelModule documentaion lines.
+  * 4.3 [documentation_lines()](#doc----documentation-lines): Return the ModelModule documentation lines.
   * 4.4 [generate()](#doc----generate): Generate the markdown and HTML files.
 
 ## <a name="doc--modelclass"></a>1 Class ModelClass:
@@ -68,7 +68,7 @@ Return ModelModule summary lines.
 
 ModelClass.documentation_lines(self, prefix: str) -> Tuple[str, ...]:
 
-Return the ModelModule documentaion lines.
+Return the ModelModule documentation lines.
 
 
 ## <a name="doc--modeldoc"></a>2 Class ModelDoc:
@@ -83,7 +83,7 @@ Attributes:
 * *Anchor* (str):
    The generated Markdown anchor for the documentation element.
    It is of the form "MODULE--CLASS--FUNCTION", where the module/class/function names
-   have underscores converted to hypen.
+   have underscores converted to hyphen.
 * *Number* (str):
    The Table of contents number as a string.  '#" for classes and "#.#" for functions.
 
@@ -140,7 +140,7 @@ Arguments:
 
 ModelFunction.documentation_lines(self, class_name: str, prefix: str) -> Tuple[str, ...]:
 
-Return the ModelModule documentaion lines.
+Return the ModelModule documentation lines.
 Arguments:
 * *prefix* (str): The prefix to use to make the markdown work.
 
@@ -165,7 +165,7 @@ Return ModelModule summary lines.
 
 ModelModule.documentation_lines(self, prefix: str) -> Tuple[str, ...]:
 
-Return the ModelModule documentaion lines.
+Return the ModelModule documentation lines.
 
 ### <a name="doc----generate"></a>4.4 `ModelModule.`generate():
 

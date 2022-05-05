@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Patch: A program to patch some FreeCAD files.
 
-The FreeCAD 0.19 Path library has a bug that make it essentailly impossible to support more
+The FreeCAD 0.19 Path library has a bug that make it essentially impossible to support more
 than 1 job from a Python program without using the GUI.  This bug has been fixed in the
-FreeCAD 0.20 version of the library.  The code in this module patchs the files in the
+FreeCAD 0.20 version of the library.  The code in this module patches the files in the
 `PathScripts` directory to fix the problem.
 
 This done in the following steps:
