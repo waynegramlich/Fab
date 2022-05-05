@@ -20,6 +20,7 @@ SAFE_MODULES := \
     FabShops \
     FabSolids \
     FabTools \
+    FabToolBits \
     FabToolTemplates \
     FabUtilities \
     TarSync \

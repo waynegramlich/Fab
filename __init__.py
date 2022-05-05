@@ -224,6 +224,9 @@ Additional Python modules are:
 * [FabShops](docs/FabShops.md):
   Classes for defining the available machines within a Shop.
 
+* [FabToolBits](docs/FabToolBits.md):
+  Classes for that define all of the tool bits.
+
 * [FabToolTemplates](docs/FabToolTemplates.md):
   Classes for defining tool bit templates.
 
