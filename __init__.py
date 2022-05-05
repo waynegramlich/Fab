@@ -9,7 +9,7 @@
 * [Type Hints and Data Classes](#type-hints-and-data-classes)
 * [Python Modules](#python-modules)
 * [Bearing Block Example](#bearing-block-example)
-* [Addtional Documentation](#additional-documentation)
+* [Additional Documentation](#additional-documentation)
 * [Installation](#installation)
 
 ## Introduction
@@ -208,7 +208,7 @@ The (current) main Python modules are:
   The top level FabNode sub-classes of FabProject, FabDocument, and FabAssembly.
 
 * [FabSolids](docs/FabSolids.md):
-  The Solid creation classs of FabSolid and FabMount.
+  The Solid creation class of FabSolid and FabMount.
 
 * [FabNodes](docs/FabNodes.md):
   The base FabNode class and its associated bounding box FabBox sub-class.
@@ -419,9 +419,9 @@ These installation instructions are currently focused towards the Ubuntu 20.04 L
 
 ## Installation
 
-Installation is always a problematic since there are mulitple operating systems out there
+Installation is always a problematic since there are multiple operating systems out there
 (e.g. Windows, MacOS, Linux).
-In the Linux space, there are multple distributions (e.g. Ubuntu, Red Hat, Arch, etc.)
+In the Linux space, there are multiple distributions (e.g. Ubuntu, Red Hat, Arch, etc.)
 On top of that there various versions of all of these platforms.
 
 Since this code is currently only has one developer,
@@ -476,7 +476,7 @@ These are the steps to follow to install miniconda:
    # All done
    ```
 
-6. Do intitial miniconda activate:
+6. Do initial miniconda activate:
 
    Run:
 
@@ -502,7 +502,7 @@ These are the steps to follow to install miniconda:
    ```
    conda activate
    # `(base) ` should appear
-   conda deactive
+   conda deactivate
    # `(base) ` should disappear
    ```
 
@@ -590,7 +590,7 @@ After minconda is installed do the following:
    >> cadquery.Workplane()
    # Deactivate cadquery-stable
    conda deactivate
-   # miniconda/ directroy is ~4.5G
+   # miniconda/ directory is ~4.5G
    ```
 
 ### Install FreeCad
@@ -652,8 +652,8 @@ but these days both "disk space" and download bandwidth is pretty inexpensive.
     ```
     cd .. # Go to the parent directory of the Fab package
     # One of the following:
-    git clone https://github.com/FreeCAD/FreeCAD.git  # If you do not have Git SSH keys insalled
-    git clone git@github.com:FreeCAD/FreeCAD.git  # If you do have Git SSH keys insalled
+    git clone https://github.com/FreeCAD/FreeCAD.git  # If you do not have Git SSH keys installed
+    git clone git@github.com:FreeCAD/FreeCAD.git  # If you do have Git SSH keys installed
     cd Fab  # Return to Fab Directory
     ls -R ../FreeCAD/src/Mod/Path/Tools  # verify that the Tools directory exists
     ```

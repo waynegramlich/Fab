@@ -87,7 +87,7 @@ and point the editor at the `.py` file.
 
 Another note is that neither the FreeCAD application nor the FreeCAD console
 (see section immediately below) honor the `PYTHONPATH` environment variable.
-This is deliberate and ensures that is the exact same Python environment is alway used
+This is deliberate and ensures that is the exact same Python environment is always used
 and that it is not effected by other Python applications that require PYTHONPATH
 modifications to properly operate.
 The workaround is add code to explicitly modify `sys.path` as discussed a bit further below.
@@ -196,7 +196,7 @@ The following piece of code will exit the window system when the GUI is up:
      if App.GuiUp:
          Gui.getMainWindow().close()
 
-When the python version changes the followning packages need to be intalled:
+When the python version changes the followning packages need to be installed:
 
 
 

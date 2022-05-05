@@ -104,7 +104,7 @@ tests: .tests  # Use .tests to remember that tests were run.
 	( grep -n "^!" ${COVER_FILES} | \
 	    grep -v "pragma: no unit test" > /tmp/uncovered_lines ) || true
 	$(COVERAGE) report  # Generate the summary report.
-	$(COVERAGE) erase  # Do not leave around stale coverge information
+	$(COVERAGE) erase  # Do not leave around stale coverage information
 	# rm -f ${COVER_FILES}  # Remove coverage files.
 	touch $@
 

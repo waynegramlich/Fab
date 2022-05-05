@@ -13,7 +13,7 @@
   * 2.3 [project_to_plane()](#geometry----project-to-plane): Return a new FabGeometry projected onto a plane.
 * 3 Class: [FabPolygon](#geometry--fabpolygon):
   * 3.1 [get_hash()](#geometry----get-hash): Return the FabPolygon Hash.
-  * 3.2 [project_to_plane()](#geometry----project-to-plane): Return nre FabPolygon prejected onto a plane.
+  * 3.2 [project_to_plane()](#geometry----project-to-plane): Return nre FabPolygon projected onto a plane.
   * 3.3 [get_geometries()](#geometry----get-geometries): Return the FabPolygon lines and arcs.
   * 3.4 [produce()](#geometry----produce): Produce the FreeCAD objects needed for FabPolygon.
 * 4 Class: [Fab_Arc](#geometry--fab-arc):
@@ -74,7 +74,7 @@ FabCircle.project_to_plane(self, plane: Geometry.Fab_Plane, tracing: str = '') -
 
 Return a new FabCircle projected onto a plane.
 Arguments:
-* *plane* (Fab_Plane): Plane to proejct to.
+* *plane* (Fab_Plane): Plane to project to.
 
 Returns:
 * (FabCircle): The newly projected FabCicle.
@@ -120,10 +120,10 @@ Return a new FabGeometry projected onto a plane.
 An immutable polygon with rounded corners.
 A FabPolygon is represented as a sequence of corners (i.e. a Vector) where each corner can
 optionally be filleted with a radius.  In order to make it easier to use, a corner can be
-specified as simple Vector or as a tuple that specifes a Vector and a radius.  The radius
+specified as simple Vector or as a tuple that specifies a Vector and a radius.  The radius
 is in millimeters and can be provided as either Python int or float.  When an explicit
 fillet radius is not specified, higher levels in the software stack will typically substitute
-in a deburr radius for external corners and an interal tool radius for internal corners.
+in a deburr radius for external corners and an internal tool radius for internal corners.
 FabPolygon's are frozen and can not be modified after creation.
 
 Example:
@@ -148,7 +148,7 @@ Return the FabPolygon Hash.
 
 FabPolygon.project_to_plane(self, plane: Geometry.Fab_Plane, tracing: str = '') -> 'FabPolygon':
 
-Return nre FabPolygon prejected onto a plane.
+Return nre FabPolygon projected onto a plane.
 Arguments:
 * *plane* (Fab_Plane): The plane to project onto.
 

@@ -55,7 +55,7 @@ class ModelDoc(object):
     * *Anchor* (str):
        The generated Markdown anchor for the documentation element.
        It is of the form "MODULE--CLASS--FUNCTION", where the module/class/function names
-       have underscores converted to hypen.
+       have underscores converted to hyphen.
     * *Number* (str):
        The Table of contents number as a string.  '#" for classes and "#.#" for functions.
 
@@ -178,7 +178,7 @@ class ModelFunction(ModelDoc):
 
     # ModelFunction.documentation_lines():
     def documentation_lines(self, class_name: str, prefix: str) -> Tuple[str, ...]:
-        """Return the ModelModule documentaion lines.
+        """Return the ModelModule documentation lines.
 
         Arguments:
         * *prefix* (str): The prefix to use to make the markdown work.
@@ -220,7 +220,7 @@ class ModelClass(ModelDoc):
         if hasattr(self.Class, "__doc__"):
             self.set_lines(cast(str, getattr(self.Class, "__doc__")))
 
-        # Set the Funcions attribute:
+        # Set the Functions attribute:
         model_functions: List[ModelFunction] = []
         attribute_name: str
         attribute: Any
@@ -254,7 +254,7 @@ class ModelClass(ModelDoc):
 
     # ModelClass.documentation_lines():
     def documentation_lines(self, prefix: str) -> Tuple[str, ...]:
-        """Return the ModelModule documentaion lines."""
+        """Return the ModelModule documentation lines."""
         lines: Tuple[str, ...] = self.Lines
         doc_lines: List[str] = [
             f"{prefix} <a name=\"{self.Anchor}\"></a>{self.Number} Class {self.Name}:",
@@ -305,7 +305,7 @@ class ModelModule(ModelDoc):
                     first_line = first_line[colon_index + 2:]  # Skip over "...: "
                     self.Lines = (first_line,) + self.Lines[1:]
 
-        # The Python import statment can import class to the module namespace.
+        # The Python import statement can import class to the module namespace.
         # We are only interested in classes that are defined in *module*:
         model_classes: List[ModelClass] = []
         class_type: type = type(ModelDoc)  # Any class name to get the associated class type.
@@ -361,7 +361,7 @@ class ModelModule(ModelDoc):
 
     # ModelModule.documentation_lines():
     def documentation_lines(self, prefix: str) -> Tuple[str, ...]:
-        """Return the ModelModule documentaion lines."""
+        """Return the ModelModule documentation lines."""
         # lines: Tuple[str, ...]  = self.Lines
         # doc_lines: List[str] = [f"{prefix} <a name=\"{self.Anchor}\"></a>{lines[0]}", ""]
         # doc_lines.extend(lines[1:])
@@ -466,7 +466,7 @@ def main() -> int:
 
     arguments: Tuple[str, ...] = tuple(sys.argv[1:])
     if "--unit-test" in arguments:
-        # For now hand provide the list of files to generte documenation for.:
+        # For now hand provide the list of files to generte documentation for.:
         arguments = ("Doc.py", "FabBOM.py", "FabGeometries.py", "FabJoins.py", "FabNodes.py",
                      "FabProjects.py", "FabShops.py", "FabSolids.py", "FabTools.py",
                      "FabUtilities.py", "TarSync.py", "Test.py", "__init__.py")

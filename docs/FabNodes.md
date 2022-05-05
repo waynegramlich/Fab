@@ -28,7 +28,7 @@ Two notable attributes of the FabNode are:
    Up is frequently used in code to access other FabNode's higher in the FabNode tree.
 * *Project* (FabNode):
    The FabNode tree root and is always of type FabProject which is defined in Project package.
-   Due to the Python lanaguage disallowal of circular `import` statements, this is returned
+   Due to the Python language disallowal of circular `import` statements, this is returned
    as type FabNode rather than type FabProject.
 See the FabNode documentation for further attributes.
 
@@ -278,7 +278,7 @@ This typically done, by adding this call immediately after calling super().__pos
 FabNode.probe(self, label: str) -> None:
 
 Perform a probe operation.
-This method can be overriden and called to perform debug probes.
+This method can be overridden and called to perform debug probes.
 
 
 ## <a name="fabnodes--fab-producestate"></a>3 Class Fab_ProduceState:
@@ -288,7 +288,7 @@ Attributes:
 * *StepsDirectory* (Path):
   The path to the directory to store STEP (`.stp`) files into.
 * *Steps* (Fab_Steps):
-  The step file directory managment object.
+  The step file directory management object.
 * *ObjectsTable* (Dict[str, Any]):
   A table of objects that can be accessed via a debugger.
 * *ToolControllersTable*: (Dict[FabToolController, int]):
@@ -296,7 +296,7 @@ Attributes:
 * *OperationIndex* (int):
   An index for the current operation being performed for a mount.
 
-This class is for interal use only:
+This class is for internal use only:
 
 
 ## <a name="fabnodes--fab-steps"></a>4 Class Fab_Steps:
@@ -307,7 +307,7 @@ where  `Name` is the human readable name of the file and `XXXXXXXXXXXXXXXX` is t
 has value associated with the .step file contents.
 
 There are three operations:
-* Fab_Steps(): This is the initalizer.
+* Fab_Steps(): This is the initializer.
 * activate(): This method is used to activate a .stp file for reading and/or writing.
 * flush_stales(): This method is used to remove previous .stp files that are now longer used.
 

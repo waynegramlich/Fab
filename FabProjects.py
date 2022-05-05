@@ -112,7 +112,7 @@ class FabAssembly(Fab_Group):
 
     # FabAssembly.post_produce1():
     def post_produce1(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
-        """Preform FabAssembly phase1 post production."""
+        """Perform FabAssembly phase1 post production."""
         tracing = self.Tracing  # Ignore *tracing* argument.
         if tracing:
             print(f"{tracing}=>FabAssembly({self.Label}).post_produce1(*, *)")
@@ -188,7 +188,7 @@ class FabDocument(FabNode):
         self._AppDocument = None
         self._GuiDocument = None
 
-        # Verfiy *suffix*;
+        # Verify *suffix*;
         if not isinstance(self.FilePath, Path):
             raise RuntimeError(f"{self.FullPath}: '{self.FilePath}' is not a Path")
         suffix: str = self.FilePath.suffix

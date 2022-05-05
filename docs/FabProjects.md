@@ -5,7 +5,7 @@
 * 1 Class: [FabAssembly](#fabprojects--fabassembly):
   * 1.1 [is_assembly()](#fabprojects----is-assembly):  Return True if FabNode is a Fab_Group.
   * 1.2 [to_json()](#fabprojects----to-json): Return FabProject JSON structure.
-  * 1.3 [post_produce1()](#fabprojects----post-produce1): Preform FabAssembly phase1 post production.
+  * 1.3 [post_produce1()](#fabprojects----post-produce1): Perform FabAssembly phase1 post production.
   * 1.4 [post_produce2()](#fabprojects----post-produce2): Perform FabAssembly phase 2 post production.
 * 2 Class: [FabDocument](#fabprojects--fabdocument):
   * 2.1 [to_json()](#fabprojects----to-json): Return FabProject JSON structure.
@@ -43,7 +43,7 @@ Return FabProject JSON structure.
 
 FabAssembly.post_produce1(self, produce_state: FabNodes.Fab_ProduceState, tracing: str = '') -> None:
 
-Preform FabAssembly phase1 post production.
+Perform FabAssembly phase1 post production.
 
 ### <a name="fabprojects----post-produce2"></a>1.4 `FabAssembly.`post_produce2():
 

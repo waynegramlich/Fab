@@ -233,7 +233,7 @@ class Fab_Plane(object):
         #   OCP.Standard.Standard_ConstructionError: gp_GTrsf::Trsf() - non-orthogonal GTrsf
         # on matrices that are clearly orthogonal (i.e. M * Mt = I, where Mt is the M transpose.)
         # As a work around, skip cq.Vector and cq.Matrix, create the 3x3 rotation coefficients,
-        # and manually, do the point (1x3) by roatation matrix (3x3) and get the rotated
+        # and manually, do the point (1x3) by rotation matrix (3x3) and get the rotated
         # point (1x3).
         #
         # matrix: cq.Matrix = cq.Matrix([
@@ -882,7 +882,7 @@ class FabCircle(FabGeometry):
         """Return a new FabCircle projected onto a plane.
 
         Arguments:
-        * *plane* (Fab_Plane): Plane to proejct to.
+        * *plane* (Fab_Plane): Plane to project to.
 
         Returns:
         * (FabCircle): The newly projected FabCicle.
@@ -946,10 +946,10 @@ class FabPolygon(FabGeometry):
 
     A FabPolygon is represented as a sequence of corners (i.e. a Vector) where each corner can
     optionally be filleted with a radius.  In order to make it easier to use, a corner can be
-    specified as simple Vector or as a tuple that specifes a Vector and a radius.  The radius
+    specified as simple Vector or as a tuple that specifies a Vector and a radius.  The radius
     is in millimeters and can be provided as either Python int or float.  When an explicit
     fillet radius is not specified, higher levels in the software stack will typically substitute
-    in a deburr radius for external corners and an interal tool radius for internal corners.
+    in a deburr radius for external corners and an internal tool radius for internal corners.
     FabPolygon's are frozen and can not be modified after creation.
 
     Example:
@@ -1051,7 +1051,7 @@ class FabPolygon(FabGeometry):
 
     # FabPolygon.project_to_plane():
     def project_to_plane(self, plane: Fab_Plane, tracing: str = "") -> "FabPolygon":
-        """Return nre FabPolygon prejected onto a plane.
+        """Return nre FabPolygon projected onto a plane.
 
         Arguments:
         * *plane* (Fab_Plane): The plane to project onto.

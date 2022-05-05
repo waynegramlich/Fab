@@ -225,7 +225,7 @@ Wrap some stock material around a FabBox.
 
 ## <a name="solid--fab-extrude"></a>4 Class Fab_Extrude:
 
-Prepresents and extrude operation.
+Represents and extrude operation.
 Attributes:
 * *Name* (str): The operation name.
 * *Geometry* (Union[FabGeometry, Tuple[FabGeometry, ...]):

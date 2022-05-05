@@ -32,7 +32,7 @@ environment variable for just one execution of the freecad19 python interpreter 
 # cp -r ~/.local/lib/python3.8/site-packages/pudb ./squashfs-root/usr/lib/python3.8/site-packages/
 # ```
 # To enable `pudb`, uncomment `import pudb` and `pudb.start()`:
-# TODO: Replace `/home/wayne` imediately below and in the first line of this file.
+# TODO: Replace `/home/wayne` immediately below and in the first line of this file.
 SHARP_EXEC_PATH = "/home/wayne/public_html/projects/Fab/squashfs-root/usr/bin/python"
 import sys
 if sys.executable == SHARP_EXEC_PATH:
@@ -81,7 +81,7 @@ _ = PathPocket  # TODO: remove
 
 
 # This causes out flake8 to think App are defined.
-# It is actually present in the FreeCAD Python exectution envriorment.
+# It is actually present in the FreeCAD Python execution envriorment.
 App: Any
 if False:
     App = None
@@ -367,7 +367,7 @@ class FabCQtoFC(object):
                 append_documentation(pocket, out_file, "Pocket")
                 append_documentation(drilling, out_file, "Drilling")
 
-            # Remove the temporary opration objects:
+            # Remove the temporary operation objects:
             project_document: Any = self.ProjectDocument
             project_document.removeObject("IgnoreThisProfile")
             project_document.removeObject("IgnoreThisPocket")
@@ -379,7 +379,7 @@ class FabCQtoFC(object):
             pocket_infos: Set[str] = set(self.get_pocket_infos().keys())
             drilling_infos: Set[str] = set(self.get_drilling_infos().keys())
 
-            match("commmon", commons, common_infos)
+            match("common", commons, common_infos)
             match("pocket", pockets, pocket_infos)
             match("profile", profiles, extrude_infos)
             match("drilling", drillings, drilling_infos)
@@ -592,7 +592,7 @@ class FabCQtoFC(object):
             print(message)
             assert False, message
 
-        # Recursively process any *chidren* JSON nodes:
+        # Recursively process any *children* JSON nodes:
         if "children" in json_dict:
             children = cast(List[Dict[str, Any]],
                             self.key_verify("children", json_dict, list, tree_path, "Children"))
@@ -1029,7 +1029,7 @@ class FabCQtoFC(object):
         if indent:
             print(f"{indent} StepFile: {step_file}")
 
-        # This code currently trys to work with object in a seperate *steps_document* and
+        # This code currently tries to work with object in a separate *steps_document* and
         # the main *project_document*.  Change the conditional to switch between.
         use_project_document: bool = True
         document: Any = self.ProjectDocument if use_project_document else self.StepsDocument
@@ -1042,7 +1042,7 @@ class FabCQtoFC(object):
         step_object: Any = document.RootObjects[before_size]
         step_object.Label = label
 
-        # When the STEP files are colocated with the assemblies and such, the visibiliy
+        # When the STEP files are colocated with the assemblies and such, the visibility
         # of the associated *gui_step_object* needs to be disabled.
         if use_project_document and App.GuiUp:  # type: ignore
             gui_document: Any = Gui.getDocument(document.Label)  # type: ignore

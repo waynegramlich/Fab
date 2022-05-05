@@ -13,7 +13,7 @@
 #     -c|--cnc specifies the CNC mode.
 #     FAB.json specifies the JSON file to use.
 #
-# It is further assumed that the requried STEP files are in the same directory as the JSON file.
+# It is further assumed that the required STEP files are in the same directory as the JSON file.
 
 # Get the directory that contains this script file:
 # [Get Script Directory](https://dirask.com/posts/Bash-get-current-script-directory-path-1X9E8D)

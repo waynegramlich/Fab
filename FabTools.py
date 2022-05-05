@@ -148,7 +148,7 @@ class FabShapes(object):
 
     # FabShapes.__post_init__():
     def __post_init__(self) -> None:
-        """Finish intializing FabShapes."""
+        """Finish initializing FabShapes."""
         check_type("FabShapes.Directory", self.Directory, PathFile)
         check_type("FabShapes.Shapes", self.Shapes, Tuple[FabShape, ...])
         check_type("FabShapes.Names", self.Names, Tuple[str, ...])
@@ -234,7 +234,7 @@ class FabAttributes(object):
 
     # FabAttributes.__post_init__():
     def __post_init__(self) -> None:
-        """Finish intializing FabAttributes."""
+        """Finish initializing FabAttributes."""
         check_type("FabAttributes.Values", self.Values, Tuple[Tuple[str, Any], ...])
         check_type("FabAttributes.Names", self.Names, Tuple[str, ...])
 
@@ -316,7 +316,7 @@ class FabBitTemplate(object):
 
     # FabBitTemplate.__post_init__():
     def __post_init__(self) -> None:
-        """Finish initalizing FabBitTemplate."""
+        """Finish initializing FabBitTemplate."""
         check_type("FabBitTemplate.Name", self.Name, str)
         check_type("FabBitTemplate.ExampleName", self.ExampleName, str)
         check_type("FabBitTemplate.ShapeName", self.ShapeName, str)
@@ -720,7 +720,7 @@ class FabBitTemplates(object):
             """Create a FabShape."""
             return FabShape(name, tools_directory / "Shape" / f"{name}.fcstd")
 
-        # Initalize *kwargs* with required values:
+        # Initialize *kwargs* with required values:
         attribute_name: str
         example_name: str = bit_template.ExampleName
         example_value: Union[bool, float, int, str]
@@ -1626,7 +1626,7 @@ class FabLibraries(object):
 
     # FabLibraries.__post_init__():
     def __post_init__(self) -> None:
-        """Finish intializing FabLibriaries."""
+        """Finish initializing FabLibriaries."""
         check_type("FabLibraries.Name", self.Name, str)
         check_type("FabLibraries.LibrariesPath", self.LibrariesPath, PathFile)
         check_type("FabLibraries.Libraries", self.Libraries, Tuple[FabLibrary, ...])
@@ -1697,7 +1697,7 @@ class FabBits(object):
     * *Bits* (Tuple[FabBit, ...]): The associated FabBit's in name sorted order.
     * *Names* (Tuple[str, ...]): The sorted FabBit names.
 
-    Contructor:
+    Constructor:
     * FabBits("Name", BitsPath, Bits, Names)
     """
 

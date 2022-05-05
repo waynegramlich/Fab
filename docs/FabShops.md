@@ -34,7 +34,7 @@ Attributes:
 * *Spindle* (FabSpindle): The spindle description.
 * *Controller* (FabController): The Controller used by the CNC machine.
 
-Contstructor:
+Constructor:
 * FabCNC("Name", "Position", WorkVolume, Spindle, Table, Controller)
 
 
@@ -50,7 +50,7 @@ Attributes:
 * *Controller* (FabController): The Controller used by the CNC machine.
 * *Kind* (str): Return the string "CNCMill".
 
-Contstructor:
+Constructor:
 * FabCNCMill("Name", "Placement", WorkVolume, Spindle, Table, Spindle, Controller)
 
 
@@ -66,7 +66,7 @@ Attributes:
 * *Controller* (FabController): The Controller used by the CNC machine.
 * *Kind* (str): Return the string "CNCRouter".
 
-Contstructor:
+Constructor:
 * FabCNCRouter("Name", "Position", WorkVolume, Spindle, Table, Spindle, Controller)
 
 
@@ -154,12 +154,12 @@ Represents a machine tool spindle.
 Attributes:
 * *Type* (str): Spindle Type (e.g. "R8", "Cat40", etc.)
 * *Speed* (int): Maximum spindle speed in rotations per minute.
-* *Reversable* (bool): True if spindle can be reversed.
+* *Reversible* (bool): True if spindle can be reversed.
 * *FloodCooling* (bool): True if flood cooling is available.
 * *MistCooling* (bool): True if mist coooling is available.
 
 Constructor:
-* FabSpindle("Type", Speed, Reversable, FloodCooling, MistCooling)
+* FabSpindle("Type", Speed, Reversible, FloodCooling, MistCooling)
 
 
 ## <a name="fabshops--fabtable"></a>9 Class FabTable:
