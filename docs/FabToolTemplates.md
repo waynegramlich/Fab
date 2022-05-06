@@ -84,7 +84,7 @@ Attributes:
 
 ### <a name="fabtooltemplates----kwargsfromjson"></a>3.1 `FabBitTemplate.`kwargsFromJSON():
 
-FabBitTemplate.kwargsFromJSON(self, json_dict: Dict[str, Any], bit_file: pathlib.Path, shapes: FabToolTemplates.FabShapes, tracing: str = '') -> Dict[str, Any]:
+FabBitTemplate.kwargsFromJSON(self, json_dict: Dict[str, Any], bit_file: pathlib.Path, tracing: str = '') -> Dict[str, Any]:
 
 Return the keyword arguments needed to initialize a FabBit.
 

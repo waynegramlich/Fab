@@ -64,7 +64,7 @@ from typeguard import check_type, check_argument_types
 from typing import Any, Dict, IO, List, Tuple, Union
 from dataclasses import dataclass
 from pathlib import Path as PathFile
-from FabToolTemplates import FabBit, FabBitTemplate, FabBitTemplates, FabShapes
+from FabToolTemplates import FabBit, FabBitTemplate, FabBitTemplates, FabBitTemplatesFactory
 from FabToolBits import FabBallEndBit, FabBullNoseBit, FabChamferBit, FabDoveTailBit, FabDrillBit
 from FabToolBits import FabEndMillBit, FabProbeBit, FabSlittingSawBit, FabThreadMillBit, FabVBit
 
@@ -196,11 +196,10 @@ class FabLibrary(object):
             print(f"{tracing}=>FabLibrary._unit_tests()")
         tools_directory: PathFile = PathFile(__file__).parent / "Tools"
         bits_directory: PathFile = tools_directory / "Bit"
-        shapes_directory: PathFile = tools_directory / "Shape"
         libraries_directory: PathFile = tools_directory / "Library"
 
-        shapes: FabShapes = FabShapes.read(shapes_directory)
-        bits: FabBits = FabBits.read(bits_directory, shapes)
+        # shapes: FabShapes = FabShapes.read(shapes_directory)
+        bits: FabBits = FabBits.read(bits_directory)
         library_file: PathFile = libraries_directory / "Default.fctl"
         library: FabLibrary = FabLibrary.read(library_file, bits, tracing=next_tracing)
 
@@ -301,12 +300,12 @@ class FabLibraries(object):
         if tracing:
             print(f"{tracing}=>FabLibrarires._unit_tests()")
         tools_directory: PathFile = PathFile(__file__).parent / "Tools"
-        shapes_directory: PathFile = tools_directory / "Shape"
+        # shapes_directory: PathFile = tools_directory / "Shape"
         bits_directory: PathFile = tools_directory / "Bit"
         libraries_directory: PathFile = tools_directory / "Library"
 
-        shapes: FabShapes = FabShapes.read(shapes_directory, tracing=next_tracing)
-        bits: FabBits = FabBits.read(bits_directory, shapes, tracing=next_tracing)
+        # shapes: FabShapes = FabShapes.read(shapes_directory, tracing=next_tracing)
+        bits: FabBits = FabBits.read(bits_directory, tracing=next_tracing)
         libraries: FabLibraries = FabLibraries.read(
             libraries_directory, bits, tracing=next_tracing)
         library: FabLibrary
@@ -341,16 +340,113 @@ class FabBits(object):
         check_type("FabBits.Bits", self.Bits, Tuple[FabBit, ...])
         check_type("FabBits.Names", self.Names, Tuple[str, ...])
 
+    # FabBits.shapeNameToTemplateAndBit():
+    @staticmethod
+    def shapeNameToTemplateAndBit(shape_name: str) -> Tuple[FabBitTemplate, FabBit]:
+        """Return the FabTempate and FabBit associated with a shape name."""
+        bit_templates: FabBitTemplates = FabBitTemplatesFactory.getTemplates()  # type: ignore
+
+        template: FabBitTemplate
+        constructor: Any
+        if shape_name == "ballend":
+            template = bit_templates.BallEnd
+            constructor = FabBallEndBit
+        elif shape_name == "bullnose":
+            template = bit_templates.BullNose
+            constructor = FabBullNoseBit
+        elif shape_name == "chamfer":
+            template = bit_templates.Chamfer
+            constructor = FabChamferBit
+        elif shape_name == "dovetail":  # pragma: no unit covert
+            template = bit_templates.DoveTail
+            constructor = FabDoveTailBit
+        elif shape_name == "drill":
+            template = bit_templates.Drill
+            constructor = FabDrillBit
+        elif shape_name == "endmill":
+            template = bit_templates.EndMill
+            constructor = FabEndMillBit
+        elif shape_name == "probe":
+            template = bit_templates.Probe
+            constructor = FabProbeBit
+        elif shape_name == "slittingsaw":
+            template = bit_templates.SlittingSaw
+            constructor = FabSlittingSawBit
+        elif shape_name == "thread-mill":
+            template = bit_templates.ThreadMill
+            constructor = FabThreadMillBit
+        elif shape_name == "v-bit":
+            template = bit_templates.V
+            constructor = FabVBit
+        else:
+            assert False, f"Unrecogniezed {shape_name=}"
+        return template, constructor
+
+    # FabBits.toJSON():
+    @staticmethod
+    def toJSON(bit_json: Dict[str, Any], tools_directory: PathFile, tracing: str = "") -> FabBit:
+        """Convert JSON dictionary to a FabBit.
+
+        Arguments:
+        * *bit_json* (Dict[str, Any]: The JSON dictionary that defines the FabBit.
+        * *tools_directory* (FabPath): The tools directory under with the bit will be stored.
+
+        Returns:
+        * (FabBit): The resulting FabBit.
+
+        """
+        if tracing:
+            print(f"{tracing}=>FabBits.toJSON(*, '{str(tools_directory)}')")
+
+        assert check_argument_types()
+        assert "name" in bit_json, "FabBits.toJSON(): No name found"
+        name: str = bit_json["name"]
+        assert "version" in bit_json, "FabBits.toJSON(): No version found"
+        parameters: Dict[str, Any] = bit_json["parameter"] if "parameter" in bit_json else {}
+        attributes: Dict[str, Any] = bit_json["attribute"] if "attribute" in bit_json else {}
+        _ = attributes  # TODO: Is *attributes* actually needed?
+
+        # Extract *version* and *shape_name* from *bit_json*:
+        version: Any = bit_json["version"]
+        assert isinstance(version, int) and version == 2, "FabBits.toJSON(): version is not 2"
+        assert "shape" in bit_json, "FabBits.toJSON(): No shape found"
+        shape: Any = bit_json["shape"]
+        assert isinstance(shape, str) and shape.endswith(".fcstd"), (
+            f"FabBits.toJSON(): {shape=} does not end in '.fcstd'")
+        shape_name: str = shape[:-6]
+
+        # Convert the *shape*name* into a *template* and *constructor*:
+        template: FabBitTemplate
+        constructor: Any
+        template, constructor = FabBits.shapeNameToTemplateAndBit(shape_name)
+
+        # Do a fixup for a thread mill.:
+        if shape_name == "thread-mill":
+            # The `Tools/Bit/5mm-thread-cutter.fctb` file doe not have a CuttingAngle parameter.
+            # So we make one up here:
+            if "CuttingAngle" not in parameters:
+                parameters["CuttingAngle"] = "60.000 °"
+
+        # Construct the *bit* from ...
+        bit_path_file: PathFile = tools_directory / "Bit" / f"{name}.fctb"
+        kwargs: Dict[str, Any] = template.kwargsFromJSON(bit_json, bit_path_file)
+        if tracing:
+            print(f"{tracing}{shape_name=} {constructor=}")
+            # print(f"{tracing}{kwargs=}")
+        bit: FabBit = constructor(**kwargs)
+
+        if tracing:
+            print(f"{tracing},=FabBits.toJSON(*, '{str(tools_directory)}')=>*")
+        return bit
+
     # FabBits.read():
     @staticmethod
-    def read(bits_directory: PathFile, shapes: FabShapes, tracing: str = "") -> "FabBits":
+    def read(bits_directory: PathFile, tracing: str = "") -> "FabBits":
         """Read in a `Tools/Bit/` sub-directory.
 
         Arguments:
         * *bits_directory* (PathFile):
           The directory containing the `.fctb` Bit definitions.
-        * *shapes* (BitShapes):
-          The BitShapes object that corresponds to the `Tools/Shape` sub-directory.
 
         Returns:
         * (FabBits): The resulting FabBits that corresponds to the `Tools/Bit` sub-directory.
@@ -358,7 +454,7 @@ class FabBits(object):
         """
         if tracing:
             print(f"{tracing}=>FabBits.read({str(bits_directory)}, *)")
-        bit_templates: FabBitTemplates = FabBitTemplates.factory()
+        # bit_templates: FabBitTemplates = FabBitTemplates.factory()
         bits_table: Dict[str, FabBit] = {}
         assert check_argument_types()
         assert bits_directory.is_dir(), f"FabBits.read(): {str(bits_directory)} is not a directory"
@@ -387,6 +483,7 @@ class FabBits(object):
                 bit_json: Any = json.loads(bit_json_text)
             except json.decoder.JSONDecodeError as json_error:  # pragma: no unit cover
                 assert f"FabBits.read(): JSON read error {str(bit_path_file)}: {str(json_error)}"
+
             check_type("FabBits.read(): bit_json", bit_json, Dict[str, Any])
             assert "version" in bit_json, "FabBits.read(): No version found"
             parameters: Dict[str, Any] = bit_json["parameter"] if "parameter" in bit_json else {}
@@ -401,46 +498,15 @@ class FabBits(object):
             assert isinstance(shape, str) and shape.endswith(".fcstd"), (
                 f"FabBits.read(): {shape=} does not end in '.fcstd'")
             shape_name: str = shape[:-6]
-            assert shape_name in shapes.Names, f"Shape {shape_name} not of {shapes.Names}"
             template: FabBitTemplate
             constructor: Any
-            if shape_name == "ballend":
-                template = bit_templates.BallEnd
-                constructor = FabBallEndBit
-            elif shape_name == "bullnose":
-                template = bit_templates.BullNose
-                constructor = FabBullNoseBit
-            elif shape_name == "chamfer":
-                template = bit_templates.Chamfer
-                constructor = FabChamferBit
-            elif shape_name == "dovetail":  # pragma: no unit covert
-                template = bit_templates.DoveTail
-                constructor = FabDoveTailBit
-            elif shape_name == "drill":
-                template = bit_templates.Drill
-                constructor = FabDrillBit
-            elif shape_name == "endmill":
-                template = bit_templates.EndMill
-                constructor = FabEndMillBit
-            elif shape_name == "probe":
-                template = bit_templates.Probe
-                constructor = FabProbeBit
-            elif shape_name == "slittingsaw":
-                template = bit_templates.SlittingSaw
-                constructor = FabSlittingSawBit
-            elif shape_name == "thread-mill":
-                template = bit_templates.ThreadMill
-                constructor = FabThreadMillBit
+            template, constructor = FabBits.shapeNameToTemplateAndBit(shape_name)
+            if shape_name == "thread-mill":
                 # The `Tools/Bit/5mm-thread-cutter.fctb` file doe not have a CuttingAngle parameter.
                 # So we make one up here:
                 if "CuttingAngle" not in parameters:
                     parameters["CuttingAngle"] = "60.000 °"
-            elif shape_name == "v-bit":
-                template = bit_templates.V
-                constructor = FabVBit
-            else:
-                assert False, f"Unrecogniezed {shape_name=}"
-            kwargs: Dict[str, Any] = template.kwargsFromJSON(bit_json, bit_path_file, shapes)
+            kwargs: Dict[str, Any] = template.kwargsFromJSON(bit_json, bit_path_file)
             if tracing:
                 print(f"{tracing}{shape_name=} {constructor=}")
                 # print(f"{tracing}{kwargs=}")
@@ -493,10 +559,9 @@ class FabBits(object):
             print(f"{tracing}=>FabBits._unit_tests()")
         this_directory: PathFile = PathFile(__file__).parent
         tools_directory: PathFile = this_directory / "Tools"
-        shapes_directory: PathFile = tools_directory / "Shape"
         bits_directory: PathFile = tools_directory / "Bit"
-        shapes: FabShapes = FabShapes.read(shapes_directory)
-        bits: FabBits = FabBits.read(bits_directory, shapes, tracing=next_tracing)
+        # shapes: FabShapes = FabShapes.read(shapes_directory)
+        bits: FabBits = FabBits.read(bits_directory, tracing=next_tracing)
         index: int
         bit: FabBit
         for index, bit in enumerate(bits.Bits):

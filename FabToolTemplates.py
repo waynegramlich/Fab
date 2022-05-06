@@ -339,9 +339,9 @@ class FabBitTemplate(object):
                    Tuple[Tuple[str, Tuple[type, ...], Union[bool, float, int, str]], ...])
 
     # FabBitTemplate.kwargsFromJSON():
-    def kwargsFromJSON(self,
-                       json_dict: Dict[str, Any], bit_file: PathFile,
-                       shapes: FabShapes, tracing: str = "") -> Dict[str, Any]:
+    def kwargsFromJSON(
+            self, json_dict: Dict[str, Any],
+            bit_file: PathFile, tracing: str = "") -> Dict[str, Any]:
         """Return the keyword arguments needed to initialize a FabBit."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
