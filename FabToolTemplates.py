@@ -796,18 +796,27 @@ class FabBitTemplatesFactory(object):
 # _bit_to_json():
 def _bit_to_json(bit: FabBit) -> Dict[str, Any]:
     """Convert a FabBit to a JSON dict."""
-
     # Get the *bit_template* from the FabBit (i.e. *self*).
+
+    # This code really wants to be in FabBit.toJSON(), but since the FabBit class is defined
+    # before the FabBitTemplate/FabBitTemplates class, this functionality is implemented here
+    # as a private function defined after FabBitTemplates.
+
+    # All FabBit sub-classes have names of the form FabSomeNameBit.  We need to extract the
+    # "SomeName" from FabSomeNameBit to get the FabBitTemplate.  Hence, the somewhat obscure
+    # code below.
+
+    # For reference:
     # [Get Class Name]
     # (https://stackoverflow.com/questions/510972/getting-the-class-name-of-an-instance)
     class_name: str = type(bit).__name__
 
-    # Trim *class_name* and the FabBitTemplate by attribute name:
+    # Trim *class_name* and look up the associated FabBitTemplate by *template_name*:
     assert class_name.startswith("Fab") and class_name.endswith("Bit"), class_name
     template_name: str = class_name[3:-3]
     bit_templates: FabBitTemplates = FabBitTemplatesFactory.getTemplates()
     assert hasattr(bit_templates, template_name), (
-        f"{template_name} is not a valid attribute FabBitTemplates")
+        f"{template_name} is not a valid attribute of FabBitTemplates")
     bit_template: FabBitTemplate = getattr(bit_templates, template_name)
     json_dict: Dict[str, Any] = bit_template.toJSON(bit, True)
     return json_dict
