@@ -69,19 +69,6 @@ class FabShape(object):
             print(f"{tracing}<=FabShape.read({shape_path})=>{shape}")
         return shape
 
-    # FabShape.example():
-    @staticmethod
-    def example() -> "FabShape":
-        """Return an example FabShape."""
-        shape_path: PathFile = PathFile(__file__).parent / "Tools" / "Library" / "endmill.fcstd"
-        shape: FabShape = FabShape(
-            Name="endmill",
-            ShapePath=shape_path
-        )
-        assert shape.Name == "endmill"
-        assert shape.ShapePath == shape_path
-        return shape
-
     # FabShape._unit_tests():
     @staticmethod
     def _unit_tests(tracing: str = "") -> None:
@@ -309,6 +296,12 @@ class FabBit(object):
         assert bit.Attributes is attributes
         if tracing:
             print(f"{tracing}<=FabBit._unit_tests()")
+
+    # FabBit.toJSON():
+    def toJSON(self) -> Dict[str, Any]:
+        """Return the JSON associated with a FabBit."""
+        # Python does not really like circular class declarations.  This breaks the cycle.
+        return _bit_to_json(self)
 
 
 # FabBitTemplate:
@@ -724,7 +717,7 @@ class FabBitTemplates(object):
         assert check_argument_types()
         # Get all of the *bit_templates*:
         tools_directory: PathFile = PathFile(__file__).parent / "Tools"
-        bit_templates: FabBitTemplates = FabBitTemplates.factory()
+        bit_templates: FabBitTemplates = FabBitTemplatesFactory.getTemplates()
 
         # Lookup *bit_template* using *bit_type* to extract the correct attribute name:
         bit_type_text: str = str(bit_type)  # Should result in "<class '...FabXXXBit'>"
@@ -768,7 +761,7 @@ class FabBitTemplates(object):
         """Perform FabBitTemplates unit tests."""
         if tracing:
             print(f"{tracing}=>FabBitTemplates._unit_tests()")
-        bit_templates: FabBitTemplates = FabBitTemplates.factory()
+        bit_templates: FabBitTemplates = FabBitTemplatesFactory.getTemplates()
         assert isinstance(bit_templates, FabBitTemplates)
         if tracing:
             print(f"{tracing}<=FabBitTemplates._unit_tests()")
@@ -798,6 +791,26 @@ class FabBitTemplatesFactory(object):
             assert isinstance(templates, FabBitTemplates)
         if tracing:
             print(f"{tracing}<=FabBitTemplatesFactory._unit_tests()")
+
+
+# _bit_to_json():
+def _bit_to_json(bit: FabBit) -> Dict[str, Any]:
+    """Convert a FabBit to a JSON dict."""
+
+    # Get the *bit_template* from the FabBit (i.e. *self*).
+    # [Get Class Name]
+    # (https://stackoverflow.com/questions/510972/getting-the-class-name-of-an-instance)
+    class_name: str = type(bit).__name__
+
+    # Trim *class_name* and the FabBitTemplate by attribute name:
+    assert class_name.startswith("Fab") and class_name.endswith("Bit"), class_name
+    template_name: str = class_name[3:-3]
+    bit_templates: FabBitTemplates = FabBitTemplatesFactory.getTemplates()
+    assert hasattr(bit_templates, template_name), (
+        f"{template_name} is not a valid attribute FabBitTemplates")
+    bit_template: FabBitTemplate = getattr(bit_templates, template_name)
+    json_dict: Dict[str, Any] = bit_template.toJSON(bit, True)
+    return json_dict
 
 
 # Main program:

@@ -25,6 +25,7 @@ The classes are:
 * 1 Class: [FabAttributes](#fabtooltemplates--fabattributes):
   * 1.1 [toJSON()](#fabtooltemplates----tojson): Return FabAttributes as JSON dictionary.
 * 2 Class: [FabBit](#fabtooltemplates--fabbit):
+  * 2.1 [toJSON()](#fabtooltemplates----tojson): Return the JSON associated with a FabBit.
 * 3 Class: [FabBitTemplate](#fabtooltemplates--fabbittemplate):
   * 3.1 [kwargsFromJSON()](#fabtooltemplates----kwargsfromjson): Return the keyword arguments needed to initialize a FabBit.
   * 3.2 [toJSON()](#fabtooltemplates----tojson): Convert a FabBit to a JSON dictionary using a FabBitTemplate.
@@ -59,6 +60,12 @@ Attributes:
 
 Constructor:
 * FabBit("Name", BitFile, Shape, Attributes)
+
+### <a name="fabtooltemplates----tojson"></a>2.1 `FabBit.`toJSON():
+
+FabBit.toJSON(self) -> Dict[str, Any]:
+
+Return the JSON associated with a FabBit.
 
 
 ## <a name="fabtooltemplates--fabbittemplate"></a>3 Class FabBitTemplate:

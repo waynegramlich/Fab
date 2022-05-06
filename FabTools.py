@@ -157,7 +157,7 @@ class FabLibrary(object):
                 print(f"{tracing}Tool[{bit_number}]: '{bit_stem}'")
             try:
                 bit: FabBit = bits.lookup(bit_stem)
-            except KeyError as key_error:
+            except KeyError as key_error:  # pragma: no unit coverage
                 assert False, f"FabLibrary.readJson(): {str(key_error)}"
             numbered_bits.append((bit_number, bit))
 
@@ -290,7 +290,8 @@ class FabLibraries(object):
         for library in self.Libraries:
             if library.Name == name:
                 return library
-        raise KeyError(f"FabLibraries.nameLookup(): {name} is not one of {self.LibraryNames}")
+        raise KeyError(f"FabLibraries.nameLookup(): "
+                       f"{name} is not one of {self.LibraryNames}")  # pragma: no unit coverage
 
     # FabLibraries._unit_tests:
     @staticmethod
@@ -308,7 +309,9 @@ class FabLibraries(object):
         bits: FabBits = FabBits.read(bits_directory, shapes, tracing=next_tracing)
         libraries: FabLibraries = FabLibraries.read(
             libraries_directory, bits, tracing=next_tracing)
-        _ = libraries
+        library: FabLibrary
+        for library in libraries.Libraries:
+            assert libraries.nameLookup(library.Name) is library
         if tracing:
             print(f"{tracing}<=FabLibrarires._unit_tests()")
 
@@ -410,7 +413,7 @@ class FabBits(object):
             elif shape_name == "chamfer":
                 template = bit_templates.Chamfer
                 constructor = FabChamferBit
-            elif shape_name == "dovetail":
+            elif shape_name == "dovetail":  # pragma: no unit covert
                 template = bit_templates.DoveTail
                 constructor = FabDoveTailBit
             elif shape_name == "drill":
@@ -478,7 +481,8 @@ class FabBits(object):
         for bit in self.Bits:
             if bit.Name == name:
                 return bit
-        raise KeyError(f"FabBits.lookup(): '{name}' is not one of {self.Names}.")
+        raise KeyError(
+            f"FabBits.lookup(): '{name}' is not one of {self.Names}.")  # pragma: no unit coverage
 
     # FabBits._unit_tests():
     @staticmethod
@@ -500,6 +504,9 @@ class FabBits(object):
                 print(f"{tracing}Bit[{index}]: {bit.Name=}")
                 lookup_bit: FabBit = bits.lookup(bit.Name)
                 assert lookup_bit is bit, (bit.Name, bits.Names, lookup_bit, bit)
+
+                bit_json: Dict[str, Any] = bit.toJSON()
+                _ = bit_json
 
         # TODO: use *tools_directory*, *bit_directory*, and *shape_directory*.
 
