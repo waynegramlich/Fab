@@ -27,14 +27,10 @@ The classes are:
 
 # <--------------------------------------- 100 characters ---------------------------------------> #
 
-# Issues:
-# * Turn off Legacy tools Path => Preferences => [] Enable Legacy Tools
-# * Edit move the from line 11 to line 10 in .../Tools/Bit/45degree_chamfer.fctb to fix JSON error.
-# * When setting path to library, be sure to include .../Tools/Library  (one level up does not work)
-
+import tempfile
 from typeguard import check_type, check_argument_types
-from typing import Any, Dict, List, Optional, Tuple, Union
-from dataclasses import dataclass
+from typing import Any, Dict, IO, List, Optional, Tuple, Union
+from dataclasses import dataclass, field
 from pathlib import Path as PathFile
 
 
@@ -44,44 +40,69 @@ class FabShape(object):
     """FabShape: Corresponds to FreeCAD Path library Shape 'template'.
 
     Attributes:
-    * *Name* (str): The shape name.
-    * *ShapePath* (PathFile): The path to the associated `fcstd` file.
+    * *Name* (str):
+      The shape name which happens to be the stem `.fcstd` file (e.g. "v-bit.fcstd" => "v-bit".)
+    * *Contents* (bytes):
+      The contents of the `.fcstd` file.
     """
 
     Name: str
-    ShapePath: PathFile
+    Contents: bytes = field(repr=False)
 
     # FabShape.__post_init__():
     def __post_init__(self) -> None:
         """Finish initializing the FabShape."""
         check_type("FabShape.Name", self.Name, str)
-        check_type("FabShape.ShapePath", self.ShapePath, PathFile)
 
     # FabShape.read():
     @staticmethod
-    def read(tools_directory: PathFile, name: str, tracing: str = "") -> "FabShape":
+    def read(name: str, tools_directory: PathFile, tracing: str = "") -> "FabShape":
         """Return the FabShape for a given shape name.
 
         Arguments:
+        * *name* (str):
+          The stem name of `.fcstd` file. (For example, the stem "probe.fcstd" is "probe".)
         * *tools_directory* (PathFile):
           The `.../Tools/` directory containing the `Shape/` subdirectory of shape `.fcstd` files.
-          *name* (str): The name of the `.fcstd` shape template file.
 
         Returns:
-        * (FabShape) The assoiciated FabShape object for the `.fcstd` file.
+        * (FabShape) The associated FabShape object for the `.fcstd` file.
 
         """
         if tracing:
-            print(f"{tracing}=>FabShape.read({tools_directory}, {name})")
-        shapes_directory: PathFile = tools_directory / "Shape"
-        assert shapes_directory.exists(), (
-            f"FabShape.read(): f{str(shapes_directory)} is not a directory")
-        shape_path: PathFile = shapes_directory / f"{name}.fcstd"
-        assert shape_path.exists(), shape_path
-        shape: FabShape = FabShape(shape_path.stem, shape_path)
+            print(f"{tracing}=>FabShape.read({name}, {tools_directory}, {name})")
+        shape_path: PathFile = tools_directory / "Shape" / f"{name}.fcstd"
+        assert shape_path.exists(), f"{shape_path} does not exit"
+        contents: bytes
+        shape_file: IO[bytes]
+        with open(shape_path, "rb") as shape_file:
+            contents = shape_file.read()
+        shape: FabShape = FabShape(shape_path.stem, contents)
         if tracing:
-            print(f"{tracing}<=FabShape.read({tools_directory}, {name})=>{shape})=>*")
+            print(f"{tracing}<=FabShape.read({name}, {tools_directory}, {name})=>{shape})=>*")
         return shape
+
+    # FabShape.verify():
+    def verify(self, tools_directory: PathFile) -> bool:
+        """Verify that FabShape contents matches the actual file contents."""
+        verify_fab_shape: FabShape = FabShape.read(self.Name, tools_directory)
+        return self == verify_fab_shape
+
+    # FabShape.write():
+    def write(self, tools_directory: PathFile, tracing: str = "") -> None:
+        """Write FabShape out to disk."""
+        if tracing:
+            print(f"{tracing}=>FabShape.Write(*, {tools_directory})")
+
+        shapes_directory: PathFile = tools_directory / "Shape"
+        assert shapes_directory.exists(), f"{shapes_directory} does not exist"
+        shape_path_file: PathFile = shapes_directory / f"{self.Name}.fcstd"
+        shape_file: IO[bytes]
+        with open(shape_path_file, "wb") as shape_file:
+            shape_file.write(self.Contents)
+
+        if tracing:
+            print(f"{tracing}<=FabShape.Write(*, {tools_directory})")
 
     # FabShape._unit_tests():
     @staticmethod
@@ -90,12 +111,21 @@ class FabShape(object):
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabShape._unit_tests()")
-        this_directory: PathFile = PathFile(__file__).parent
-        tools_directory: PathFile = this_directory / "Tools"
-        shape: FabShape = FabShape.read(tools_directory, "endmill", tracing=next_tracing)
-        assert shape.Name == "endmill", f"{shape.Name=}"
-        shape_path: PathFile = tools_directory / "Shape" / "endmill.fcstd"
-        assert shape.ShapePath == shape_path, (shape.ShapePath, shape_path)
+
+        # Test read() method:
+        shape_name: str = "endmill"
+        tools_directory: PathFile = PathFile(__file__).parent / "Tools"
+        shape: FabShape = FabShape.read(shape_name, tools_directory, tracing=next_tracing)
+        assert shape.Name == shape_name, (shape.Name, shape_name)
+
+        # Test write() and verify() method:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            temporary_tools_directory: PathFile = PathFile(temporary_directory) / "Tools"
+            temporary_shape_directory: PathFile = temporary_tools_directory / "Shape"
+            temporary_shape_directory.mkdir(parents=True, exist_ok=True)
+            shape.write(temporary_tools_directory)
+            assert shape.verify(temporary_tools_directory)
+
         if tracing:
             print(f"{tracing}<=FabShape._unit_tests()")
 
@@ -138,7 +168,7 @@ class FabShapes(object):
         shape_file: PathFile
         shape_names: List[str] = []
         for shape_file in shapes_directory.glob("*.fcstd"):
-            shape: FabShape = FabShape.read(tools_directory, shape_file.stem)
+            shape: FabShape = FabShape.read(shape_file.stem, tools_directory)
             shape_names.append(shape.Name)
             shapes_table[shape.Name] = shape
 
@@ -181,7 +211,7 @@ class FabShapes(object):
         index: int
         for index, shape in enumerate(shapes.Shapes):
             assert shapes.lookup(shape.Name) is shape
-            print(f"{tracing}Shape[{index}]: {shape.Name}: {str(shape.ShapePath)}")
+            print(f"{tracing}Shape[{index}]: {shape.Name}")
         try:
             shapes.lookup("Bogus")
             assert False
@@ -270,19 +300,19 @@ class FabBit(object):
     """FabBit: Base class common to all FabBit sub-classes;
 
     Attributes:
-    * *Name* (str): The name of the tool template.
-    * *BitFile* (PathFile): The file path to the corresponding `.fctb` file.
-    * *Shape*: (FabShape): The associated FabShape.
+    * *Name* (str): The name of the tool template (e.g. "5mm Endmill".)
+    * *BitStem* (str): The stem of the corresponding `.fctb` file (e.g. "5mm_Endmill".)
+    * *ShapeStem*: (str): The stem of the corresponding shape `.fcstd` file (e.g. "endmill".)
     * *Attributes*: (FabAttributes): The optional bit attributes.
 
     Constructor:
-    * FabBit("Name", BitFile, Shape, Attributes)
+    * FabBit("Name", BitStem, ShapeStem, Attributes)
 
     """
 
     Name: str
-    BitFile: PathFile
-    Shape: FabShape
+    BitStem: str
+    ShapeStem: str
     Attributes: FabAttributes
 
     # FabBit.__post_init__():
@@ -290,10 +320,9 @@ class FabBit(object):
         """Initialize the FabCNCTemplate."""
         # assert self.Name != "BallEnd"
         check_type("FabBit.Name", self.Name, str)
-        check_type("FabBit.BitFile", self.BitFile, PathFile)
-        check_type("FabBit.Shape", self.Shape, FabShape)
+        check_type("FabBit.BitStem", self.BitStem, str)
+        check_type("FabBit.Shape", self.ShapeStem, str)
         check_type("FabBit.Attributes", self.Attributes, FabAttributes)
-        assert self.BitFile.suffix == ".fctb", self.BitFile
 
     # FabBit._unit_tests():
     @staticmethod
@@ -302,13 +331,16 @@ class FabBit(object):
         if tracing:
             print(f"{tracing}=>FabBit._unit_tests()")
         tools_directory: PathFile = PathFile(__file__).parent / "Tools"
-        bit_file: PathFile = tools_directory / "Bit" / "probe.fctb"
-        shape: FabShape = FabShape("probe", tools_directory / "Shape" / "probe.fcstd")
+        shape: FabShape = FabShape.read("probe", tools_directory)
+        _ = shape
         attributes: FabAttributes = FabAttributes.fromJSON({})
-        bit: FabBit = FabBit("TestBit", bit_file, shape, attributes)
+        bit_stem: str = "5mm_Endmill"
+        shape_stem: str = "endmill"
+
+        bit: FabBit = FabBit("TestBit", bit_stem, shape_stem, attributes)
         assert bit.Name == "TestBit"
-        assert bit.BitFile == bit_file
-        assert bit.Shape is shape
+        assert bit.BitStem == bit_stem
+        assert bit.ShapeStem == shape_stem
         assert bit.Attributes is attributes
         if tracing:
             print(f"{tracing}<=FabBit._unit_tests()")
@@ -326,20 +358,25 @@ class FabBitTemplate(object):
     """FabBitTemplate: A Template for creating a FabBit.
 
     Attributes:
-    * *Name* (str): The FabBit name.
-    * *ExampleName* (str): The name used for a generated example FabBit.  (see getExample).
-    * *ShapeName* (str): The shape name in the `.../Tools/Shape/` directory without `.fcstd` suffix.
+    * *Name* (str): The template name which matches the FabXXXBit class type.
+    * *BitName* (str): The name of the example bit.
+    * *BitStem* (str): The stem of the example `.fctb` file.  (see getExample).
+    * *ShapeStem* (str): The stem of associated example `.fcstd` shape file.
     * *Parameters* (Tuple[Tuple[str, Tuple[type, ...]], ...]):
       The allowed parameter names and associated types of the form:
       ("ParameterName", (type1, ..., typeN), "example") for no type checking ("ParameterName",)
     * *Attributes* (Tuple[Tuple[str, Tuple[type, ...]], ...]):
       The allowed parameter names and associated types of the form:
       ("ParameterName", (type1, ..., typeN), "example") for no type checking ("ParameterName",)
+
+    Constructor:
+    * FabBitTemplate("Name", "BitStem", "ShapeStem", Parameters, Attributes)
     """
 
     Name: str
-    ExampleName: str
-    ShapeName: str
+    BitName: str
+    BitStem: str
+    ShapeStem: str
     Parameters: Tuple[Tuple[str, Tuple[type, ...], Union[bool, float, int, str]], ...]
     Attributes: Tuple[Tuple[str, Tuple[type, ...], Union[bool, float, int, str]], ...]
 
@@ -347,8 +384,9 @@ class FabBitTemplate(object):
     def __post_init__(self) -> None:
         """Finish initializing FabBitTemplate."""
         check_type("FabBitTemplate.Name", self.Name, str)
-        check_type("FabBitTemplate.ExampleName", self.ExampleName, str)
-        check_type("FabBitTemplate.ShapeName", self.ShapeName, str)
+        check_type("FabBitTemplate.BitName", self.BitName, str)
+        check_type("FabBitTemplate.BitStem", self.BitStem, str)
+        check_type("FabBitTemplate.Shapetem", self.ShapeStem, str)
         check_type("FabBitTemplate.Parameters", self.Parameters,
                    Tuple[Tuple[str, Tuple[type, ...], Union[bool, float, int, str]], ...])
         check_type("FabBitTemplate.Attributes", self.Attributes,
@@ -365,7 +403,7 @@ class FabBitTemplate(object):
         * *bit_file* (PathFile): The PathFile to the FabBit JSON.
 
         Returns:
-        * (Dict[str, Any]) this is a bunch of keyword arguments that can be passed in as
+        * (Dict[str, Any]) this is aF bunch of keyword arguments that can be passed in as
           a arguments to FabBit constructor.
         """
         next_tracing: str = tracing + " " if tracing else ""
@@ -381,15 +419,12 @@ class FabBitTemplate(object):
         name: Any = json_dict["name"]
         shape_fcstd: Any = json_dict["shape"]
         parameters: Any = json_dict["parameter"]
-        bits_directory: PathFile = bit_file.parent
-        tools_directory: PathFile = bits_directory.parent
-        shapes_directory: PathFile = tools_directory / "Shape"
 
         assert isinstance(name, str) and name, f"FabBit.kwargsFromJSON(): Bad {name=}"
         assert isinstance(version, int) and version == 2, f"FabBit.kwargsFromJSON(): Bad {version=}"
         assert isinstance(shape_fcstd, str) and shape_fcstd.endswith(".fcstd"), (
             f"FabBit.kwargsFromJSON(): Bad {shape_fcstd=}")
-        assert shape_fcstd == f"{self.ShapeName}.fcstd", (shape_fcstd, self.ShapeName)
+        assert shape_fcstd == f"{self.ShapeStem}.fcstd", (shape_fcstd, self.ShapeStem)
 
         # Check *json_dict* for valid *parameters* and *attributes*:
         def fill(kwargs: Optional[Dict[str, Any]], label: str, json_dict: Dict[str, Any],
@@ -413,17 +448,10 @@ class FabBitTemplate(object):
                     kwargs[name] = value
 
         # Now create the *kwargs* and fill it in:
-        bit_stem: str = self.Name.lower()
-        if bit_stem == "v":
-            bit_stem = "v_bit"
-        if tracing:
-            print("{tracign}{bit_stem=}")
-        shape_path_file: PathFile = shapes_directory / f"{self.ShapeName}.fctb"
-        shape: FabShape = FabShape(self.ShapeName, shape_path_file)
         kwargs: Dict[str, Any] = {}
         kwargs["Name"] = name
-        kwargs["BitFile"] = bit_file
-        kwargs["Shape"] = shape
+        kwargs["BitStem"] = self.BitStem
+        kwargs["ShapeStem"] = self.ShapeStem
         fill(kwargs, "Parameters", parameters, self.Parameters)
         assert "attribute" in json_dict, "FabAttributes.fromJSON(): attribute key not present"
         kwargs["Attributes"] = FabAttributes.fromJSON(json_dict["attribute"], tracing=next_tracing)
@@ -450,7 +478,7 @@ class FabBitTemplate(object):
         json_dict: Dict[str, Any] = {
             "version": 2,
             "name": self.Name,
-            "shape": self.ShapeName,
+            "shape": f"{self.ShapeStem}.fcstd",
             "parameter": parameters,
             "attribute": attributes,
         }
@@ -462,8 +490,9 @@ class FabBitTemplate(object):
         """Return an example FabBitTemplate."""
         end_mill_template: FabBitTemplate = FabBitTemplate(
             Name="EndMill",
-            ExampleName="5mm_Endmill",
-            ShapeName="endmill",
+            BitName="5mm Endmill",
+            BitStem="5mm_Endmill",
+            ShapeStem="endmill",
             Parameters=(
                 ("CuttingEdgeHeight", (float, str), "30.000 mm"),
                 ("Diameter", (float, str), "5.000 mm"),
@@ -484,8 +513,8 @@ class FabBitTemplate(object):
         if tracing:
             print(f"{tracing}=>FabBitTemplate._unit_tests()")
         template: FabBitTemplate = FabBitTemplate.example()
-        assert template.Name == "EndMill"
-        assert template.ShapeName == "endmill"
+        assert template.BitStem == "5mm_Endmill"
+        assert template.ShapeStem == "endmill"
         assert template.Parameters == (
             ("CuttingEdgeHeight", (float, str), "30.000 mm"),
             ("Diameter", (float, str), "5.000 mm"),
@@ -560,8 +589,9 @@ class FabBitTemplates(object):
         # Create each template first:
         ball_end_template: FabBitTemplate = FabBitTemplate(
             Name="BallEnd",
-            ExampleName="6mm_Ball_End",
-            ShapeName="ballend",
+            BitName="6mm Ball End",
+            BitStem="6mm_Ball_End",
+            ShapeStem="ballend",
             Parameters=(
                 ("CuttingEdgeHeight", (float, str), "40.0000 mm"),
                 ("Diameter", (float, str), "5.000 mm"),
@@ -575,8 +605,9 @@ class FabBitTemplates(object):
         )
         bull_nose_template: FabBitTemplate = FabBitTemplate(
             Name="BullNose",
-            ExampleName="6mm_Bull_Nose",
-            ShapeName="bullnose",
+            BitName="6 mm Bull Nose",
+            BitStem="6mm_Bullnose",
+            ShapeStem="bullnose",
             Parameters=(
                 ("CuttingEdgeHeight", (float, str), "40.000 mm"),
                 ("Diameter", (float, str), "5.000 mm"),
@@ -591,8 +622,9 @@ class FabBitTemplates(object):
         )
         chamfer_template: FabBitTemplate = FabBitTemplate(
             Name="Chamfer",
-            ExampleName="45degree_chamfer",
-            ShapeName="chamfer",
+            BitName="45 Deg. Chamfer",
+            BitStem="45degree_chamfer",
+            ShapeStem="chamfer",
             Parameters=(
                 ("CuttingEdgeAngle", (float, str), "60.000 °"),
                 ("CuttingEdgeHeight", (float, str), "6.350 mm"),
@@ -608,8 +640,9 @@ class FabBitTemplates(object):
         )
         dove_tail_template: FabBitTemplate = FabBitTemplate(
             Name="DoveTail",
-            ExampleName="no_dovetail_yet",
-            ShapeName="dovetail",
+            BitName="no_dovetail_name_yet",
+            BitStem="no_dovetail_stem_yet",
+            ShapeStem="dovetail",
             Parameters=(
                 ("CuttingEdgeAngle", (float, str), "60.000 °"),
                 ("CuttingEdgeHeight", (float, str), "9.000 mm"),
@@ -627,8 +660,9 @@ class FabBitTemplates(object):
         )
         drill_template: FabBitTemplate = FabBitTemplate(
             Name="Drill",
-            ExampleName="5mm_Drill",
-            ShapeName="drill",
+            BitName="5mm Drill",
+            BitStem="5mm_Drill",
+            ShapeStem="drill",
             Parameters=(
                 ("Diameter", (float, str), "3.000 mm"),
                 ("Length", (float, str), "50.000 mm"),
@@ -641,8 +675,9 @@ class FabBitTemplates(object):
         )
         end_mill_template: FabBitTemplate = FabBitTemplate(
             Name="EndMill",
-            ExampleName="5mm_Endmill",
-            ShapeName="endmill",
+            BitName="5mm Endmill",
+            BitStem="5mm_Endmill",
+            ShapeStem="endmill",
             Parameters=(
                 ("CuttingEdgeHeight", (float, str), "30.000 mm"),
                 ("Diameter", (float, str), "5.000 mm"),
@@ -656,8 +691,9 @@ class FabBitTemplates(object):
         )
         probe_template: FabBitTemplate = FabBitTemplate(
             Name="Probe",
-            ExampleName="probe",
-            ShapeName="probe",
+            BitName="Probe",
+            BitStem="probe",
+            ShapeStem="probe",
             Parameters=(
                 ("Diameter", (float, str), "6.000 mm"),
                 ("Length", (float, str), "50.000 mm"),
@@ -669,8 +705,9 @@ class FabBitTemplates(object):
         )
         slitting_saw_template: FabBitTemplate = FabBitTemplate(
             Name="SlittingSaw",
-            ExampleName="slittingsaw",
-            ShapeName="slittingsaw",
+            BitName="Slitting Saw",
+            BitStem="slittingsaw",
+            ShapeStem="slittingsaw",
             Parameters=(
                 ("BladeThickness", (float, str), "3.000 mm"),
                 ("CapDiameter", (float, str), "8.000 mm"),
@@ -686,8 +723,9 @@ class FabBitTemplates(object):
         )
         thread_mill_template: FabBitTemplate = FabBitTemplate(
             Name="ThreadMill",
-            ExampleName="5mm-thread-cutter",
-            ShapeName="thread-mill",
+            BitName="5mm-thread-cutter",
+            BitStem="5mm-thread-cutter",
+            ShapeStem="thread-mill",
             Parameters=(
                 ("Crest", (float, str), "0.100 mm"),
                 ("CuttingAngle", (float, str), "60.000 °"),
@@ -704,8 +742,9 @@ class FabBitTemplates(object):
         )
         v_template: FabBitTemplate = FabBitTemplate(
             Name="V",
-            ExampleName="60degree_VBit",
-            ShapeName="v-bit",
+            BitName="60 Deg. V-Bit",
+            BitStem="60degree_Vbit",
+            ShapeStem="v-bit",
             Parameters=(
                 ("CuttingEdgeAngle", (float, str), "90.000 °"),
                 ("CuttingEdgeHeight", (float, str), "1.000 mm"),
@@ -748,7 +787,6 @@ class FabBitTemplates(object):
         """
         assert check_argument_types()
         # Get all of the *bit_templates*:
-        tools_directory: PathFile = PathFile(__file__).parent / "Tools"
         bit_templates: FabBitTemplates = FabBitTemplatesFactory.getTemplates()
 
         # Lookup *bit_template* using *bit_type* to extract the correct attribute name:
@@ -759,20 +797,14 @@ class FabBitTemplates(object):
         assert hasattr(bit_templates, bit_type_name), (
             f"FabBitTemplate.getExample(): {bit_type_name=}")
         bit_template: FabBitTemplate = getattr(bit_templates, bit_type_name)
-        bit_path: PathFile = tools_directory / "Bit" / f"{bit_type_name.lower()}.fctb"
-
-        def to_shape(tools_directory: PathFile, name: str) -> FabShape:
-            """Create a FabShape."""
-            return FabShape(name, tools_directory / "Shape" / f"{name}.fcstd")
 
         # Initialize *kwargs* with required values:
         attribute_name: str
-        example_name: str = bit_template.ExampleName
         example_value: Union[bool, float, int, str]
         kwargs: Dict[str, Any] = {
-            "Name": example_name,  # bit_type_name,
-            "BitFile": bit_path,
-            "Shape": to_shape(tools_directory, bit_type_name),
+            "Name": bit_template.BitName,
+            "BitStem": bit_template.BitStem,
+            "ShapeStem": bit_template.ShapeStem,
             "Attributes": FabAttributes.fromJSON({
                 attribute_name: example_value
                 for attribute_name, _, example_value in bit_template.Attributes

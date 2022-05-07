@@ -33,6 +33,8 @@ The classes are:
 * 4 Class: [FabBitTemplates](#fabtooltemplates--fabbittemplates):
 * 5 Class: [FabBitTemplatesFactory](#fabtooltemplates--fabbittemplatesfactory):
 * 6 Class: [FabShape](#fabtooltemplates--fabshape):
+  * 6.1 [verify()](#fabtooltemplates----verify): Verify that FabShape contents matches the actual file contents.
+  * 6.2 [write()](#fabtooltemplates----write): Write FabShape out to disk.
 * 7 Class: [FabShapes](#fabtooltemplates--fabshapes):
   * 7.1 [lookup()](#fabtooltemplates----lookup): Lookup a FabShape by name.
 
@@ -54,13 +56,13 @@ Return FabAttributes as JSON dictionary.
 
 Base class common to all FabBit sub-classes;
 Attributes:
-* *Name* (str): The name of the tool template.
-* *BitFile* (PathFile): The file path to the corresponding `.fctb` file.
-* *Shape*: (FabShape): The associated FabShape.
+* *Name* (str): The name of the tool template (e.g. "5mm Endmill".)
+* *BitStem* (str): The stem of the corresponding `.fctb` file (e.g. "5mm_Endmill".)
+* *ShapeStem*: (str): The stem of the corresponding shape `.fcstd` file (e.g. "endmill".)
 * *Attributes*: (FabAttributes): The optional bit attributes.
 
 Constructor:
-* FabBit("Name", BitFile, Shape, Attributes)
+* FabBit("Name", BitStem, ShapeStem, Attributes)
 
 ### <a name="fabtooltemplates----tojson"></a>2.1 `FabBit.`toJSON():
 
@@ -73,15 +75,19 @@ Return the JSON associated with a FabBit.
 
 A Template for creating a FabBit.
 Attributes:
-* *Name* (str): The FabBit name.
-* *ExampleName* (str): The name used for a generated example FabBit.  (see getExample).
-* *ShapeName* (str): The shape name in the `.../Tools/Shape/` directory without `.fcstd` suffix.
+* *Name* (str): The template name which matches the FabXXXBit class type.
+* *BitName* (str): The name of the example bit.
+* *BitStem* (str): The stem of the example `.fctb` file.  (see getExample).
+* *ShapeStem* (str): The stem of associated example `.fcstd` shape file.
 * *Parameters* (Tuple[Tuple[str, Tuple[type, ...]], ...]):
   The allowed parameter names and associated types of the form:
   ("ParameterName", (type1, ..., typeN), "example") for no type checking ("ParameterName",)
 * *Attributes* (Tuple[Tuple[str, Tuple[type, ...]], ...]):
   The allowed parameter names and associated types of the form:
   ("ParameterName", (type1, ..., typeN), "example") for no type checking ("ParameterName",)
+
+Constructor:
+* FabBitTemplate("Name", "BitStem", "ShapeStem", Parameters, Attributes)
 
 ### <a name="fabtooltemplates----kwargsfromjson"></a>3.1 `FabBitTemplate.`kwargsFromJSON():
 
@@ -93,7 +99,7 @@ Arguments:
 * *bit_file* (PathFile): The PathFile to the FabBit JSON.
 
 Returns:
-* (Dict[str, Any]) this is a bunch of keyword arguments that can be passed in as
+* (Dict[str, Any]) this is aF bunch of keyword arguments that can be passed in as
   a arguments to FabBit constructor.
 
 ### <a name="fabtooltemplates----tojson"></a>3.2 `FabBitTemplate.`toJSON():
@@ -139,8 +145,22 @@ FabBitTempaltesFactory: A class for getting a shared FabBitsTemplate object.
 
 Corresponds to FreeCAD Path library Shape 'template'.
 Attributes:
-* *Name* (str): The shape name.
-* *ShapePath* (PathFile): The path to the associated `fcstd` file.
+* *Name* (str):
+  The shape name which happens to be the stem `.fcstd` file (e.g. "v-bit.fcstd" => "v-bit".)
+* *Contents* (bytes):
+  The contents of the `.fcstd` file.
+
+### <a name="fabtooltemplates----verify"></a>6.1 `FabShape.`verify():
+
+FabShape.verify(self, tools_directory: pathlib.Path) -> bool:
+
+Verify that FabShape contents matches the actual file contents.
+
+### <a name="fabtooltemplates----write"></a>6.2 `FabShape.`write():
+
+FabShape.write(self, tools_directory: pathlib.Path, tracing: str = '') -> None:
+
+Write FabShape out to disk.
 
 
 ## <a name="fabtooltemplates--fabshapes"></a>7 Class FabShapes:

@@ -525,12 +525,12 @@ class FabBits(object):
         # Return the final FabBits object:
         sorted_names: Tuple[str, ...] = tuple(sorted(bits_table.keys()))
         sorted_bits: List[FabBit] = [bits_table[bit_name] for bit_name in sorted_names]
-        ordered_stems: List[str] = [bit.BitFile.stem for bit in sorted_bits]
+        ordered_stems: List[str] = [bit.BitStem for bit in sorted_bits]
         for index, bit in enumerate(sorted_bits):
             assert sorted_names[index] == bit.Name
             assert sorted_bits[index] is bit, (
                 f"sorted_names[{index}]: {sorted_names[index]=} != {bit}")
-            assert ordered_stems[index] == bit.BitFile.stem
+            assert ordered_stems[index] == bit.BitStem
         # if tracing:
         #     print(f"{tracing}{sorted_names=}")
         #     print(f"{tracing}{sorted_bits=}")
@@ -577,7 +577,7 @@ class FabBits(object):
         """
         bit: FabBit
         for bit in self.Bits:
-            if bit.BitFile.stem == stem:
+            if bit.BitStem == stem:
                 return bit
         raise KeyError(
             f"FabBits.lookup(): '{stem}' is not one of {self.Stems}.")  # pragma: no unit coverage
@@ -596,10 +596,10 @@ class FabBits(object):
         bit: FabBit
         for index, bit in enumerate(bits.Bits):
             if tracing:
-                print(f"{tracing}Bit[{index}]: '{bit.Name}' => {str(bit.BitFile)}")
+                print(f"{tracing}Bit[{index}]: '{bit.Name}' => {str(bit.BitStem)}")
                 name_lookup_bit: FabBit = bits.nameLookup(bit.Name)
                 assert name_lookup_bit is bit
-                stem_lookup_bit: FabBit = bits.stemLookup(bit.BitFile.stem)
+                stem_lookup_bit: FabBit = bits.stemLookup(bit.BitStem)
                 assert stem_lookup_bit is bit
                 bit_json: Dict[str, Any] = bit.toJSON()
                 _ = bit_json

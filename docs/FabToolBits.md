@@ -40,8 +40,8 @@ Both FabShape and FabAttributes are also defined in the FabTemplates module as w
 An ball end bit template.
 Attributes:
 * *Name* (str): The name of Ball End bit.
-* *BitFile* (PathFile): The ball end `.fctb` file.
-* *Shape* (FabShape): The associated ball end `.fcstd` shape.
+* *BitStem* (str): The stem of the ball end `.fctb` file name.
+* *ShapeStem* (str): The stem of the associated ball end `.fcstd` shape (e.g. "ballend".)
 * *Attributes* (FabAttributes): Any associated ball end attributes.
 * *CuttingEdgeHeight* (Union[str, float]): The ball end cutting edge height.
 * *Diameter* (Union[str, float]): The ball end cutter diameter.
@@ -49,7 +49,7 @@ Attributes:
 * *ShankDiameter: (Union[str, float]): The ball end shank diameter.
 
 Constructor:
-* FabBallEndBit("Name", BitFile, Shape, Attributes,
+* FabBallEndBit("Name", "BitStem", "ShapeStem", Attributes,
   CuttingEdgeHeight, Diameter, Length, ShankDiameter)
 
 
@@ -58,8 +58,8 @@ Constructor:
 An bull nose bit template.
 Attributes:
 * *Name* (str): The name of Bull Nose bit.
-* *BitFile* (PathFile): The bull nose `.fctb` file.
-* *Shape* (FabShape): The associated bull nose `.fcstd` shape.
+* *BitStem* (str): The stem of the bull nose `.fctb` file.
+* *ShapeStem* (str): The stem of associated bull nose `.fcstd` shape (e.g. "bullnose".)
 * *Attributes* (FabAttributes): Any associated bull nose attributes.
 * *CuttingEdgeHeight* (Union[str, float]): The bull nose cutting edge height.
 * *Diameter* (Union[str, float]): The bull nose cutter diameter.
@@ -68,7 +68,7 @@ Attributes:
 * *ShankDiameter: (Union[str, float]): The bull nose shank diameter.
 
 Constructor:
-* FabBullNoseBit("Name", BitFile, Shape, Attributes,
+* FabBullNoseBit("Name", "BitStem", "ShapeStem", Attributes,
   CuttingEdgeHeight, Diameter, Length, ShankDiameter)
 
 
@@ -77,9 +77,9 @@ Constructor:
 An chamfer bit template.
 Attributes:
 * *Name* (str): The name of Chamfer bit.
-* *BitFile* (PathFile): The `.fctb` file.
-* *Shape* (FabShape): The associated `.fcstd` shape.
-* *Attributes* (FabAttributes): Any associated attributes.
+* *BitStem* (str): The stem of chamfer`.fctb` file name.
+* *ShapeStem* (str): The stem of associated chamfer `.fcstd` shape (e.g. "chamfer".)
+* *Attributes* (FabAttributes): Any associated chamfer bit attributes.
 * *CuttingEdgeAngle* (Union[str, float]): The chamfer bit cutting edge angle.
 * *CuttingEdgeHeight* (Union[str, float]): The chamfer bit cutting edge height.
 * *Diameter* (Union[str, float]): The chamfer bit outer diameter.
@@ -88,7 +88,7 @@ Attributes:
 * *TipDiameter* (Union[str, float]): The tip radius of the chamfer bit.
 
 Constructor:
-* FabChamferBit("Name", BitFile, Shape, Attributes,
+* FabChamferBit("Name", "BitStem", "ShapeStem", Attributes,
   CuttingEdgeAngle, CuttingEdgeHeight, Diameter, Length, ShankDiameter, TipDiameter)
 
 
@@ -97,8 +97,8 @@ Constructor:
 An dove tail bit template.
 Attributes:
 * *Name* (str): The name of dove tail bit.
-* *BitFile* (PathFile): The dove tail `.fctb` file.
-* *Shape* (FabShape): The associated dove tail `.fcstd` shape.
+* *BitStem* (str): The stem of dove tail `.fctb` file.
+* *ShapeStem* (str): The stem associated dove tail `.fcstd` shape (e.g. "dovetail".)
 * *Attributes* (FabAttributes): Any associated dove tail attributes.
 * *CuttingEdgeAngle* (Union[str, float]): The dove tail cutting edge angle.
 * *CuttingEdgeHeight* (Union[str, float]): The dove tale cutting edge height.
@@ -111,8 +111,8 @@ Attributes:
 * *TipDiameter* (Union[str, float]): The tip radius of the dove tail.
 
 Constructor:
-* FabDoveTailBit("Name", BitFile, Shape, Attributes, CuttingEdgeAngle, CuttingEdgeHeight,
-  Diameter, Length, NeckDiameter, NeckHeight,  ShankDiameter, TipDiameter)
+* FabDoveTailBit("Name", "BitStem", "ShapeStem", Attributes, CuttingEdgeAngle,
+  CuttingEdgeHeight, Diameter, Length, NeckDiameter, NeckHeight,  ShankDiameter, TipDiameter)
 
 
 ## <a name="fabtoolbits--fabdrillbit"></a>5 Class FabDrillBit:
@@ -120,15 +120,15 @@ Constructor:
 An drill bit template.
 Attributes:
 * *Name* (str): The name of drill bit.
-* *BitFile* (PathFile): The drill bit `.fctb` file.
-* *Shape* (FabShape): The associated drill bit `.fcstd` shape.
+* *BitStem* (str): The stem of drill bit `.fctb` file.
+* *ShapeStem* (str): The stem of associated drill bit `.fcstd` shape (e.g. "drill".)
 * *Attributes* (FabAttributes): Any associated drill bit attributes.
 * *Diameter* (Union[str, float]): The drill bit outer diameter.
 * *Length* (Union[str, float]): The total length of the drill bit.
 * *TipAngle: (Union[str, float]): The drill bit tip point angle.
 
 Constructor:
-* FabDrillBit("Name", BitFile, Shape, Attributes, Diameter, Length, TipAngle)
+* FabDrillBit("Name", "BitStem", "ShapeStem", Attributes, Diameter, Length, TipAngle)
 
 
 ## <a name="fabtoolbits--fabendmillbit"></a>6 Class FabEndMillBit:
@@ -136,8 +136,8 @@ Constructor:
 An end-mill bit template.
 Attributes:
 * *Name* (str): The name of end mill bit.
-* *BitFile* (PathFile): The end mill `.fctb` file.
-* *Shape* (FabShape): The associated end mill `.fcstd` shape.
+* *BitStem* (str): The stem of the end mill `.fctb` file.
+* *ShapeStem* (str): The stem of the associated end mill `.fcstd` shape (e.g. "endmill".)
 * *Attributes* (FabAttributes): Any associated end mill attributes.
 * *CuttingEdgeHeight* (Union[str, float]): The end mill cutting edge height.
 * *Diameter* (Union[str, float]): The end mill cutter diameter.
@@ -145,7 +145,7 @@ Attributes:
 * *ShankDiameter: (Union[str, float]): The end mill shank diameter.
 
 Constructor:
-* FabEndMillBit("Name", BitFile, Shape, Attributes,
+* FabEndMillBit("Name", "BitStem", "ShapeStem", Attributes,
   CuttingEdgeHeight, Diameter, Length, ShankDiameter)
 
 
@@ -154,15 +154,15 @@ Constructor:
 A probe bit template.
 Attributes:
 * *Name* (str): The name of probe bit.
-* *BitFile* (PathFile): The probe `.fctb` file.
-* *Shape* (FabShape): The associated probe `.fcstd` shape.
+* *BitStem* (str): The stem of the probe `.fctb` file.
+* *ShapeStem* (str): The stem of the associated probe `.fcstd` shape.
 * *Attributes* (FabAttributes): Any associated probe attributes.
 * *Diameter* (Union[str, float]): The probe ball diameter.
 * *Length* (Union[str, float]): The total length of the probe.
 * *ShaftDiameter: (Union[str, float]): The probe shaft diameter.
 
 Constructor:
-* FabProbeBit("Name", BitFile, Shape, Attributes, Diameter, Length, ShaftDiameter)
+* FabProbeBit("Name", "BitStem", "ShapeStem", Attributes, Diameter, Length, ShaftDiameter)
 
 
 ## <a name="fabtoolbits--fabslittingsawbit"></a>8 Class FabSlittingSawBit:
@@ -170,8 +170,9 @@ Constructor:
 An slitting saw bit.
 Attributes:
 * *Name* (str): The name of slitting saw bit.
-* *BitFile* (PathFile): The slitting saw `.fctb` file.
-* *Shape* (FabShape): The associated slitting saw `.fcstd` shape.
+* *BitStem* (str): The stem of slitting saw `.fctb` file.
+* *ShapeStem* (str):
+  The stem of the associated slitting saw `.fcstd` shape (e.g. "slittingsaw".)
 * *Attributes* (FabAttributes): Any associated slitting saw attributes.
 * *BladeThickness* (Union[str, float]): The slitting saw blade thickness.
 * *CapDiameter* (Union[str, float]): The slitting saw end cab diameter.
@@ -181,7 +182,7 @@ Attributes:
 * *ShankDiameter: (Union[str, float]): The slitting saw shank diameter.
 
 Constructor:
-* FabSlittingSawBit("Name", BitFile, Shape, Attributes,
+* FabSlittingSawBit("Name", "BitStem", "ShapeStem", Attributes,
   BladeThickness, CapDiameter, CapHeight, Diameter, Length, ShankDiameter)
 
 
@@ -190,8 +191,8 @@ Constructor:
 An thread mill bit template.
 Attributes:
 * *Name* (str): The name of thread mill bit.
-* *BitFile* (PathFile): The thread mill `.fctb` file.
-* *Shape* (FabShape): The associated thread mill `.fcstd` shape.
+* *BitStem* (str): The stem of thread mill `.fctb` file.
+* *ShapeStem* (str): The stem of the associated thread mill `.fcstd` shape (e.g. .
 * *Attributes* (FabAttributes): Any associated thread mill attributes.
 * *CuttingAngle* (Union[str, float]): The thread mill point angle.
 * *Crest* (Union[str, float]): The thread mill crest thickness.
@@ -202,7 +203,7 @@ Attributes:
 * *ShankDiameter: (Union[str, float]): The thread mill shank diameter.
 
 Constructor:
-* FabThreadMillBit("Name", BitFile, Shape, Attributes,
+* FabThreadMillBit("Name", "BitStem", "ShapeStem", Attributes,
   CuttingAngle, Crest, Diameter, Length, NeckDiameter, NeckLength, ShankDiameter)
 
 
@@ -211,8 +212,8 @@ Constructor:
 An V bit template.
 Attributes:
 * *Name* (str): The name of V bit.
-* *BitFile* (PathFile): The V bit `.fctb` file.
-* *Shape* (FabShape): The associated V bit `.fcstd` shape.
+* *BitStem* (str): The stem of V bit `.fctb` file.
+* *ShapeStem* (str): The stem of the associated V bit `.fcstd` shape (e.g. "v-bit".)
 * *Attributes* (FabAttributes): Any associated V bit  attributes.
 * *CuttingEdgeAngle* (Union[str, float]): The V bit cutting edge angle.
 * *CuttingEdgeHeight* (Union[str, float]): The V bit cutting edge height.
@@ -222,7 +223,7 @@ Attributes:
 * *TipDiameter* (Union[str, float]): The tip radius of the V bit
 
 Constructor:
-* FabVBit("Name", BitFile, Shape, Attributes,
+* FabVBit("Name", "BitStem", "ShapeStem", Attributes,
   CuttingEdgeAngle, CuttingEdgeHeight, Diameter, Length, ShankDiameter, TipDiameter)
 
 
