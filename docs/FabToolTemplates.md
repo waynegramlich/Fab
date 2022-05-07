@@ -1,6 +1,6 @@
 # FabToolTemplates: FabToolTemplates: Templates for defining tool bits.
 This package provides some classes that are used to build tables of tools needed for a shop
-definition.  These are lower level classes that really are expected to be used by end-users.
+definition.  These are lower level classes that really are not expected to be used by end-users.
 The classes are:
 * FabShape:
   This represents a single Tool Bit shape template that is represented as a standard FreeCAD
@@ -10,15 +10,16 @@ The classes are:
 * FabAttributes:
   This a just a sorted list of attribute value pairs. These values get stored into `.fctb` files
   in the `.../Tools/Bit/` directory.  In general, these values do not specify the physical shape
-  parameters needed by the FabShape `.fcstd` files.
+  parameters needed by the FabShape `.fcstd` files.  Instead, they specify things like the tool
+  bit material, number flutes, etc.
 * FabBitTemplate:
   This a class that specifies a all of the fields needed to for a FabBit.  The `.fctb` files
   live in the `.../Tools/Bit/` directory and a template is used to read/write the `.fctb` files.
 * FabBitTemplates:
   This class simply lists one FaBBitTemplate for each different FabShape.
 * FabTemplatesFactory:
-  This is a trivial class that instatiates one FabTemplates object that can be resused since
-  it does not change.
+  This is a trivial class that instatiates one of each FabTemplate object that can be reused since
+  they never change.
 
 ## Table of Contents (alphabetical order):
 
@@ -87,12 +88,25 @@ Attributes:
 FabBitTemplate.kwargsFromJSON(self, json_dict: Dict[str, Any], bit_file: pathlib.Path, tracing: str = '') -> Dict[str, Any]:
 
 Return the keyword arguments needed to initialize a FabBit.
+Arguments:
+* *json_dict* (Dict[str, Any]): The JSON dictionary of information.
+* *bit_file* (PathFile): The PathFile to the FabBit JSON.
+
+Returns:
+* (Dict[str, Any]) this is a bunch of keyword arguments that can be passed in as
+  a arguments to FabBit constructor.
 
 ### <a name="fabtooltemplates----tojson"></a>3.2 `FabBitTemplate.`toJSON():
 
 FabBitTemplate.toJSON(self, bit: 'FabBit', with_attributes: bool) -> Dict[str, Any]:
 
 Convert a FabBit to a JSON dictionary using a FabBitTemplate.
+Arguments:
+* *bit* (FabBit): The FabBit to convert into JASON.
+* *with_attributes* (bool): If True, all attributes are present, otherwise they are not.
+
+Returns:
+* (Dict[str, Any]): The associated JSON dictionary.
 
 
 ## <a name="fabtooltemplates--fabbittemplates"></a>4 Class FabBitTemplates:

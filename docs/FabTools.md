@@ -51,7 +51,8 @@ The top-down class hierarchy for the FabTools package is:
 ## Table of Contents (alphabetical order):
 
 * 1 Class: [FabBits](#fabtools--fabbits):
-  * 1.1 [lookup()](#fabtools----lookup): Look up a FabBit by name.
+  * 1.1 [nameLookup()](#fabtools----namelookup): Look up a FabBit by name.
+  * 1.2 [stemLookup()](#fabtools----stemlookup): Look up a FabBit by file stem.
 * 2 Class: [FabLibraries](#fabtools--fablibraries):
   * 2.1 [nameLookup()](#fabtools----namelookup): Lookup a library by name.
 * 3 Class: [FabLibrary](#fabtools--fablibrary):
@@ -65,17 +66,32 @@ Attributes:
 * *BitsDirectory*: (PathFile): The path to the `Tools/Bit/` sub-directory.
 * *Bits* (Tuple[FabBit, ...]): The associated FabBit's in name sorted order.
 * *Names* (Tuple[str, ...]): The sorted FabBit names.
+* *Stems* (Tuple[str, ...]): Stem names in the same order as the Bits.
 
 Constructor:
 * FabBits("Name", BitsPath, Bits, Names)
 
-### <a name="fabtools----lookup"></a>1.1 `FabBits.`lookup():
+### <a name="fabtools----namelookup"></a>1.1 `FabBits.`nameLookup():
 
-FabBits.lookup(self, name: str) -> FabToolTemplates.FabBit:
+FabBits.nameLookup(self, name: str) -> FabToolTemplates.FabBit:
 
 Look up a FabBit by name.
 Arguments:
 * *name* (str): The name of the FabBit.
+
+Returns:
+* (FabBit): The mataching FabBit.
+
+Raises:
+* (KeyError): If FabBit is  not present.
+
+### <a name="fabtools----stemlookup"></a>1.2 `FabBits.`stemLookup():
+
+FabBits.stemLookup(self, stem: str) -> FabToolTemplates.FabBit:
+
+Look up a FabBit by file stem.
+Arguments:
+* *stem* (str): The stem of the FabBit (i.e. "5mm_Endmill.fctb" => "5mm_Endmill".)
 
 Returns:
 * (FabBit): The mataching FabBit.

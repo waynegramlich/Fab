@@ -2,7 +2,7 @@
 """FabToolTemplates: Templates for defining tool bits.
 
 This package provides some classes that are used to build tables of tools needed for a shop
-definition.  These are lower level classes that really are expected to be used by end-users.
+definition.  These are lower level classes that really are not expected to be used by end-users.
 The classes are:
 * FabShape:
   This represents a single Tool Bit shape template that is represented as a standard FreeCAD
@@ -12,15 +12,16 @@ The classes are:
 * FabAttributes:
   This a just a sorted list of attribute value pairs. These values get stored into `.fctb` files
   in the `.../Tools/Bit/` directory.  In general, these values do not specify the physical shape
-  parameters needed by the FabShape `.fcstd` files.
+  parameters needed by the FabShape `.fcstd` files.  Instead, they specify things like the tool
+  bit material, number flutes, etc.
 * FabBitTemplate:
   This a class that specifies a all of the fields needed to for a FabBit.  The `.fctb` files
   live in the `.../Tools/Bit/` directory and a template is used to read/write the `.fctb` files.
 * FabBitTemplates:
   This class simply lists one FaBBitTemplate for each different FabShape.
 * FabTemplatesFactory:
-  This is a trivial class that instatiates one FabTemplates object that can be resused since
-  it does not change.
+  This is a trivial class that instatiates one of each FabTemplate object that can be reused since
+  they never change.
 
 """
 
@@ -58,15 +59,28 @@ class FabShape(object):
 
     # FabShape.read():
     @staticmethod
-    def read(shape_path: PathFile, tracing: str = "") -> "FabShape":
-        """Read in a FabShape."""
+    def read(tools_directory: PathFile, name: str, tracing: str = "") -> "FabShape":
+        """Return the FabShape for a given shape name.
+
+        Arguments:
+        * *tools_directory* (PathFile):
+          The `.../Tools/` directory containing the `Shape/` subdirectory of shape `.fcstd` files.
+          *name* (str): The name of the `.fcstd` shape template file.
+
+        Returns:
+        * (FabShape) The assoiciated FabShape object for the `.fcstd` file.
+
+        """
         if tracing:
-            print(f"{tracing}=>FabShape.read({shape_path})")
-        assert shape_path.exists(), f"FabShape.__post_init__(): f{str(shape_path)} does not exist"
-        assert str(shape_path).endswith(".fcstd"), f"{shape_path=}"
+            print(f"{tracing}=>FabShape.read({tools_directory}, {name})")
+        shapes_directory: PathFile = tools_directory / "Shape"
+        assert shapes_directory.exists(), (
+            f"FabShape.read(): f{str(shapes_directory)} is not a directory")
+        shape_path: PathFile = shapes_directory / f"{name}.fcstd"
+        assert shape_path.exists(), shape_path
         shape: FabShape = FabShape(shape_path.stem, shape_path)
         if tracing:
-            print(f"{tracing}<=FabShape.read({shape_path})=>{shape}")
+            print(f"{tracing}<=FabShape.read({tools_directory}, {name})=>{shape})=>*")
         return shape
 
     # FabShape._unit_tests():
@@ -77,11 +91,11 @@ class FabShape(object):
         if tracing:
             print(f"{tracing}=>FabShape._unit_tests()")
         this_directory: PathFile = PathFile(__file__).parent
-        shapes_directory: PathFile = this_directory / "Tools" / "Shape"
-        shape_path: PathFile = shapes_directory / "endmill.fcstd"
-        shape: FabShape = FabShape.read(shape_path, tracing=next_tracing)
+        tools_directory: PathFile = this_directory / "Tools"
+        shape: FabShape = FabShape.read(tools_directory, "endmill", tracing=next_tracing)
         assert shape.Name == "endmill", f"{shape.Name=}"
-        assert shape.ShapePath is shape_path
+        shape_path: PathFile = tools_directory / "Shape" / "endmill.fcstd"
+        assert shape.ShapePath == shape_path, (shape.ShapePath, shape_path)
         if tracing:
             print(f"{tracing}<=FabShape._unit_tests()")
 
@@ -113,17 +127,18 @@ class FabShapes(object):
 
     # FabShapes.read():
     @staticmethod
-    def read(shapes_directory: PathFile, tracing: str = "") -> "FabShapes":
+    def read(tools_directory: PathFile, tracing: str = "") -> "FabShapes":
         """Read in FabShapes from a directory."""
         if tracing:
-            print(f"{tracing}=>FabShapes.read({shapes_directory})")
+            print(f"{tracing}=>FabShapes.read({tools_directory})")
+        shapes_directory: PathFile = tools_directory / "Shape"
         assert shapes_directory.is_dir(), (
             f"FabShapes.read(): {str(shapes_directory)} is not a directory")
         shapes_table: Dict[str, FabShape] = {}
         shape_file: PathFile
         shape_names: List[str] = []
         for shape_file in shapes_directory.glob("*.fcstd"):
-            shape: FabShape = FabShape.read(shape_file)
+            shape: FabShape = FabShape.read(tools_directory, shape_file.stem)
             shape_names.append(shape.Name)
             shapes_table[shape.Name] = shape
 
@@ -133,15 +148,15 @@ class FabShapes(object):
             shapes_table[shape_name] for shape_name in sorted_shape_names])
         fab_shapes: FabShapes = FabShapes(shapes_directory, shapes, sorted_shape_names)
         if tracing:
-            print(f"{tracing}<=FabShapes.read({shapes_directory})=>*")
+            print(f"{tracing}<=FabShapes.read({tools_directory})=>*")
         return fab_shapes
 
     # FabShapes.example():
     @staticmethod
     def example() -> "FabShapes":
         """Return an example FabShapes."""
-        shapes_directory: PathFile = PathFile(__file__).parent / "Tools" / "Shape"
-        shapes: FabShapes = FabShapes.read(shapes_directory)
+        tools_directory: PathFile = PathFile(__file__).parent / "Tools"
+        shapes: FabShapes = FabShapes.read(tools_directory)
         return shapes
 
     # FabShapes.lookup():
@@ -158,8 +173,8 @@ class FabShapes(object):
     def _unit_tests(tracing: str = "") -> None:
         if tracing:
             print(f"{tracing}=>FabShapes._unit_tests()")
-        shapes_directory: PathFile = PathFile(__file__).parent / "Tools" / "Shape"
-        shapes: FabShapes = FabShapes.read(shapes_directory)
+        tools_directory: PathFile = PathFile(__file__).parent / "Tools"
+        shapes: FabShapes = FabShapes.read(tools_directory)
         example_shapes: FabShapes = FabShapes.example()
         assert shapes == example_shapes
         shape: FabShape
@@ -278,6 +293,7 @@ class FabBit(object):
         check_type("FabBit.BitFile", self.BitFile, PathFile)
         check_type("FabBit.Shape", self.Shape, FabShape)
         check_type("FabBit.Attributes", self.Attributes, FabAttributes)
+        assert self.BitFile.suffix == ".fctb", self.BitFile
 
     # FabBit._unit_tests():
     @staticmethod
@@ -342,7 +358,16 @@ class FabBitTemplate(object):
     def kwargsFromJSON(
             self, json_dict: Dict[str, Any],
             bit_file: PathFile, tracing: str = "") -> Dict[str, Any]:
-        """Return the keyword arguments needed to initialize a FabBit."""
+        """Return the keyword arguments needed to initialize a FabBit.
+
+        Arguments:
+        * *json_dict* (Dict[str, Any]): The JSON dictionary of information.
+        * *bit_file* (PathFile): The PathFile to the FabBit JSON.
+
+        Returns:
+        * (Dict[str, Any]) this is a bunch of keyword arguments that can be passed in as
+          a arguments to FabBit constructor.
+        """
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabBitTemplate.kwargsFromJSON(...)")
@@ -393,11 +418,11 @@ class FabBitTemplate(object):
             bit_stem = "v_bit"
         if tracing:
             print("{tracign}{bit_stem=}")
-        shape_path_file: PathFile = shapes_directory / "{self.ShapeName}.fctb"
+        shape_path_file: PathFile = shapes_directory / f"{self.ShapeName}.fctb"
         shape: FabShape = FabShape(self.ShapeName, shape_path_file)
         kwargs: Dict[str, Any] = {}
-        kwargs["Name"] = bit_file.stem
-        kwargs["BitFile"] = bits_directory / f"{self.ShapeName}.fctb"
+        kwargs["Name"] = name
+        kwargs["BitFile"] = bit_file
         kwargs["Shape"] = shape
         fill(kwargs, "Parameters", parameters, self.Parameters)
         assert "attribute" in json_dict, "FabAttributes.fromJSON(): attribute key not present"
@@ -409,7 +434,16 @@ class FabBitTemplate(object):
 
     # FabBitTemplate.toJSON():
     def toJSON(self, bit: "FabBit", with_attributes: bool) -> Dict[str, Any]:
-        """Convert a FabBit to a JSON dictionary using a FabBitTemplate."""
+        """Convert a FabBit to a JSON dictionary using a FabBitTemplate.
+
+        Arguments:
+        * *bit* (FabBit): The FabBit to convert into JASON.
+        * *with_attributes* (bool): If True, all attributes are present, otherwise they are not.
+
+        Returns:
+        * (Dict[str, Any]): The associated JSON dictionary.
+
+        """
         parameters: Dict[str, Any] = {name: getattr(bit, name) for name, _, _ in self.Parameters}
         attributes: Dict[str, Any] = bit.Attributes.toJSON() if with_attributes else {}
 
@@ -518,9 +552,6 @@ class FabBitTemplates(object):
     @staticmethod
     def factory() -> "FabBitTemplates":
         """Create the FabBitTemplates object.
-
-        Arguments:
-        * *shapes* (FabShapes): The available FabShape's.
 
         Returns:
         * (FabBitTemplates): The initialized FabBitTemplates object.
@@ -713,6 +744,7 @@ class FabBitTemplates(object):
 
         Returns:
         * (FabBit) The example FabBit of type *bit_type*.
+
         """
         assert check_argument_types()
         # Get all of the *bit_templates*:
@@ -795,7 +827,15 @@ class FabBitTemplatesFactory(object):
 
 # _bit_to_json():
 def _bit_to_json(bit: FabBit) -> Dict[str, Any]:
-    """Convert a FabBit to a JSON dict."""
+    """Convert a FabBit to a JSON dict.
+
+    Arguments:
+    * *bit* (FabBit): The FabBit to convert into a JSON dictionary.
+
+    Returns:
+    *(Dict[str, Any]): The resulting JSON dictionary.
+
+    """
     # Get the *bit_template* from the FabBit (i.e. *self*).
 
     # This code really wants to be in FabBit.toJSON(), but since the FabBit class is defined
