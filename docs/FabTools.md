@@ -51,19 +51,23 @@ The top-down class hierarchy for the FabTools package is:
 ## Table of Contents (alphabetical order):
 
 * 1 Class: [FabBits](#fabtools--fabbits):
-  * 1.1 [nameLookup()](#fabtools----namelookup): Look up a FabBit by name.
-  * 1.2 [stemLookup()](#fabtools----stemlookup): Look up a FabBit by file stem.
+  * 1.1 [write()](#fabtools----write): Write FabBits out to disk.
+  * 1.2 [nameLookup()](#fabtools----namelookup): Look up a FabBit by name.
+  * 1.3 [stemLookup()](#fabtools----stemlookup): Look up a FabBit by file stem.
 * 2 Class: [FabLibraries](#fabtools--fablibraries):
   * 2.1 [nameLookup()](#fabtools----namelookup): Lookup a library by name.
+  * 2.2 [write()](#fabtools----write): Write FabLibaries out to disk.
 * 3 Class: [FabLibrary](#fabtools--fablibrary):
   * 3.1 [lookupName()](#fabtools----lookupname): Lookup a FabBit by name.
   * 3.2 [lookupNumber()](#fabtools----lookupnumber): Lookup a FabBit by name.
+  * 3.3 [write()](#fabtools----write): Write FabLibrary out to disk.
+* 4 Class: [FabTooling](#fabtools--fabtooling):
+  * 4.1 [write()](#fabtools----write): Write FabTooling into a directory.
 
 ## <a name="fabtools--fabbits"></a>1 Class FabBits:
 
 A collection FabBit's that corresponds to a `Tools/Bit/` sub-directory..
 Attributes:
-* *BitsDirectory*: (PathFile): The path to the `Tools/Bit/` sub-directory.
 * *Bits* (Tuple[FabBit, ...]): The associated FabBit's in name sorted order.
 * *Names* (Tuple[str, ...]): The sorted FabBit names.
 * *Stems* (Tuple[str, ...]): Stem names in the same order as the Bits.
@@ -71,7 +75,13 @@ Attributes:
 Constructor:
 * FabBits("Name", BitsPath, Bits, Names)
 
-### <a name="fabtools----namelookup"></a>1.1 `FabBits.`nameLookup():
+### <a name="fabtools----write"></a>1.1 `FabBits.`write():
+
+FabBits.write(self, tools_directory: pathlib.Path, tracing: str = '') -> None:
+
+Write FabBits out to disk.
+
+### <a name="fabtools----namelookup"></a>1.2 `FabBits.`nameLookup():
 
 FabBits.nameLookup(self, name: str) -> FabToolTemplates.FabBit:
 
@@ -85,7 +95,7 @@ Returns:
 Raises:
 * (KeyError): If FabBit is  not present.
 
-### <a name="fabtools----stemlookup"></a>1.2 `FabBits.`stemLookup():
+### <a name="fabtools----stemlookup"></a>1.3 `FabBits.`stemLookup():
 
 FabBits.stemLookup(self, stem: str) -> FabToolTemplates.FabBit:
 
@@ -105,12 +115,11 @@ Raises:
 Represents a directory of FabLibrary's.
 Attributes:
 * *Name* (str): The directory name (i.e. the stem the LibraryPath.)
-* *LibrariesPath (PathFile): The directory that contains the FabLibraries.
 * *Libraries* (Tuple[FabLibrary, ...): The actual libraries sorted by library name.
 * *LibraryNames*: Tuple[str, ...]: The sorted library names.
 
 Constructor:
-* FabLibraries("Name", LibrariesPath, Libraries)
+* FabLibraries("Name", Libraries, LibraryNames)
 
 ### <a name="fabtools----namelookup"></a>2.1 `FabLibraries.`nameLookup():
 
@@ -118,17 +127,22 @@ FabLibraries.nameLookup(self, name: str) -> FabTools.FabLibrary:
 
 Lookup a library by name.
 
+### <a name="fabtools----write"></a>2.2 `FabLibraries.`write():
+
+FabLibraries.write(self, tools_directory: pathlib.Path, tracing: str = '') -> None:
+
+Write FabLibaries out to disk.
+
 
 ## <a name="fabtools--fablibrary"></a>3 Class FabLibrary:
 
 Tool libraries directory (e.g. `.../Tools/Library/*.fctl`).
 Attributes:
 * *Name* (str): The stem of LibraryFile (i.e. `xyz.fctl` => "xyz".)
-* *LibraryFile* (PathFile): The file for the `.fctl` file.
-* *NumberedBitss*: Tuple[Tuple[int, FabBit], ...]: A list of numbered to FabBit's.
+* *NumberedBits*: Tuple[Tuple[int, FabBit], ...]: A list of numbered to FabBit's.
 
 Constructor:
-* FabLibrary("Name", LibraryFile, Tools)
+* FabLibrary("Name", Stem, NumberedBits)
 
 ### <a name="fabtools----lookupname"></a>3.1 `FabLibrary.`lookupName():
 
@@ -141,6 +155,35 @@ Lookup a FabBit by name.
 FabLibrary.lookupNumber(self, number: int) -> FabToolTemplates.FabBit:
 
 Lookup a FabBit by name.
+
+### <a name="fabtools----write"></a>3.3 `FabLibrary.`write():
+
+FabLibrary.write(self, tools_directory: pathlib.Path, tracing: str = '') -> None:
+
+Write FabLibrary out to disk.
+
+
+## <a name="fabtools--fabtooling"></a>4 Class FabTooling:
+
+A class that contains FabBit's, FabShape's, and FabLibrary's.
+Attributes:
+* *Shapes* (FabShapes): The FabShape's.
+* *Bits* (FabBits): The FabBit's
+* *Libraries* (FabLibraries): The FabLibrary's
+
+Constructor:
+* FabTooling(Shapes, Bits, Libraries)
+
+### <a name="fabtools----write"></a>4.1 `FabTooling.`write():
+
+FabTooling.write(self, tools_directory: pathlib.Path, tracing: str = '') -> None:
+
+Write FabTooling into a directory.
+Arguments:
+* *tools_directory* (PatFile): The `.../Tooling` directory to read from.
+
+Returns:
+* (FabTooling) The resulting FabTooling object.
 
 
 

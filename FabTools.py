@@ -54,287 +54,16 @@ The top-down class hierarchy for the FabTools package is:
 
 # <--------------------------------------- 100 characters ---------------------------------------> #
 
-# Issues:
-# * Turn off Legacy tools Path => Preferences => [] Enable Legacy Tools
-# * Edit move the from line 11 to line 10 in .../Tools/Bit/45degree_chamfer.fctb to fix JSON error.
-# * When setting path to library, be sure to include .../Tools/Library  (one level up does not work)
-
-import json
-from typeguard import check_type, check_argument_types
-from typing import Any, Dict, IO, List, Tuple, Union
 from dataclasses import dataclass
 from pathlib import Path as PathFile
+import json
+import tempfile
+from typeguard import check_type, check_argument_types
+from typing import Any, Dict, IO, List, Tuple, Union
 from FabToolTemplates import FabBit, FabBitTemplate, FabBitTemplates, FabBitTemplatesFactory
+from FabToolTemplates import FabShapes
 from FabToolBits import FabBallEndBit, FabBullNoseBit, FabChamferBit, FabDoveTailBit, FabDrillBit
 from FabToolBits import FabEndMillBit, FabProbeBit, FabSlittingSawBit, FabThreadMillBit, FabVBit
-
-
-# FabLibrary:
-@dataclass(frozen=True)
-class FabLibrary(object):
-    """FabLibrary: Tool libraries directory (e.g. `.../Tools/Library/*.fctl`).
-
-    Attributes:
-    * *Name* (str): The stem of LibraryFile (i.e. `xyz.fctl` => "xyz".)
-    * *LibraryFile* (PathFile): The file for the `.fctl` file.
-    * *NumberedBitss*: Tuple[Tuple[int, FabBit], ...]: A list of numbered to FabBit's.
-
-    Constructor:
-    * FabLibrary("Name", LibraryFile, Tools)
-    """
-
-    Name: str
-    LibraryFile: PathFile
-    NumberedBits: Tuple[Tuple[int, FabBit], ...]
-
-    # FabLibrary:__post_init__():
-    def __post_init__(self) -> None:
-        """Finish initializing FabLibrary."""
-        check_type("FabLibrary.Name", self.Name, str)
-        check_type("FabLibrary.LibraryFile", self.LibraryFile, PathFile)
-        check_type("FabLibrary.NumberedBits", self.NumberedBits, Tuple[Tuple[int, FabBit], ...])
-
-    # FabLibrary.read():
-    @staticmethod
-    def read(tools_directory: PathFile, name: str,
-             bits: "FabBits", tracing: str = "") -> "FabLibrary":
-        """Read in FabLibrary from a JSON file.
-
-        Arguments:
-        * *tools_directory* (PathFile):
-          The `.../Tools/` directory that contains the `Library/` sub-directory.
-        * *name* (str): The name of the `.fctl` file (i.e. `MyTools.fctl`.)
-        * *bits*: (FabBits): The available bit templates.
-
-        Returns:
-        * (FabLibrary): The associated FabLibrary object.
-        """
-        if tracing:
-            print(f"{tracing}=>FabLibrary.read({tools_directory}, *)")
-        assert check_argument_types()
-
-        # Open *library_file*, read it in and parse it into *json_dict*:
-        json_file: IO[str]
-        json_text: str
-        library_path: PathFile = tools_directory / "Library" / f"{name}.fctl"
-        assert library_path.exists(), f"FabLibrary.read(): {library_path} does not exist"
-        with open(library_path) as json_file:
-            json_text = json_file.read()
-        try:
-            json_dict: Dict[str, Any] = json.loads(json_text)
-        except json.decoder.JSONDecodeError as decode_error:  # pragma: no unit cover
-            assert False, f"Unable to parse {library_path} as JSON: Error:{str(decode_error)}"
-
-        # The format of *json_dict* should be:
-        # {
-        #   "version": 1,
-        #   "tools": [
-        #     {
-        #       "nr": 1,
-        #       "path": "xyz.fctb"
-        #     },
-        #     ...
-        #   ]
-        # }
-
-        # Extract *version* and *tools*:
-        check_type("FabLibrary.json_dict", json_dict, Dict[str, Any])
-        assert len(json_dict) == 2, "FabLibrary.readJson(): {len(json_dict)=}"
-        version: Any = json_dict["version"] if "version" in json_dict else None
-        assert isinstance(version, int) and version == 1, f"FabLibrary.readJson(): {version=}"
-        tools: Any = json_dict["tools"] if "tools" in json_dict else None
-        assert isinstance(tools, list), "FabLibrary.readJson(): {tools=}"
-
-        # Sweep through *tools* in JSON and build sorted *numbered_bit_names* list:
-        numbered_bit_names: List[Tuple[int, str]] = []
-        bit_number: int
-        bit_name: str
-        check_type("FabLibrary.readJson(): tools", tools, List[Dict[str, Union[int, str]]])
-        bit_dict: Any
-        for bit_dict in tools:
-            check_type("FabLibrary.readJson(): tool", bit_dict, Dict[str, Union[int, str]])
-            bit_number = bit_dict["nr"] if "nr" in bit_dict else -1
-            check_type("FabLibrary.readJson(): bit_number", bit_number, int)
-            bit_name = bit_dict["path"] if "path" in bit_dict else ""
-            check_type("FabLibrary.readJson(): path", bit_name, str)
-            assert bit_number >= 0 and bit_name, f"{bit_number=} {bit_name=}"
-            numbered_bit_names.append((bit_number, bit_name))
-        numbered_bit_names.sort()
-
-        # Lookup up the associated FabBit's:
-        numbered_bits: List[Tuple[int, FabBit]] = []
-        for bit_number, bit_name in numbered_bit_names:
-            assert bit_name.endswith(".fctb")
-            bit_stem: str = bit_name[:-5]
-            if tracing:
-                print(f"{tracing}Tool[{bit_number}]: '{bit_stem}'")
-            try:
-                bit: FabBit = bits.stemLookup(bit_stem)
-            except KeyError as key_error:  # pragma: no unit coverage
-                assert False, f"FabLibrary.readJson(): {str(key_error)}"
-            numbered_bits.append((bit_number, bit))
-
-        library: FabLibrary = FabLibrary(library_path.stem, library_path, tuple(numbered_bits))
-        if tracing:
-            print(f"{tracing}<=FabLibrary.read({tools_directory}, *)=>*")
-        return library
-
-    # FabLibrary.lookupName():
-    def lookupName(self, name: str) -> FabBit:
-        """Lookup a FabBit by name."""
-        numbered_bits: Tuple[Tuple[int, FabBit], ...] = self.NumberedBits
-        bit_number: int
-        bit: FabBit
-        for bit_number, bit in numbered_bits:
-            if bit.Name == name:
-                return bit
-        raise KeyError(f"FabLibrary.lookupName('{name}'): Tool not found.")
-
-    # FabLibrary.lookupNumber():
-    def lookupNumber(self, number: int) -> FabBit:
-        """Lookup a FabBit by name."""
-        bit_number: int
-        bit: FabBit
-        for bit_number, bit in self.NumberedBits:
-            if bit_number == number:
-                return bit
-        raise KeyError(f"FabLibrary.lookupNumber('{number}'): Tool not found.")
-
-    # FabLibrary._unit_tests():
-    @staticmethod
-    def _unit_tests(tracing: str = "") -> None:
-        """FabLibrary Unit tests."""
-        next_tracing: str = tracing + " " if tracing else ""
-        if tracing:
-            print(f"{tracing}=>FabLibrary._unit_tests()")
-        tools_directory: PathFile = PathFile(__file__).parent / "Tools"
-
-        # shapes: FabShapes = FabShapes.read(shapes_directory)
-        bits: FabBits = FabBits.read(tools_directory)
-        library: FabLibrary = FabLibrary.read(
-            tools_directory, "Default", bits, tracing=next_tracing)
-
-        number: int
-        bit: FabBit
-        for number, bit in library.NumberedBits:
-            assert bit is library.lookupName(bit.Name)
-            assert bit is library.lookupNumber(number)
-
-        # Test lookup methods:
-        desired_error: str
-        try:
-            library.lookupName("Bogus")
-            assert False
-        except KeyError as key_error:
-            desired_error = '"FabLibrary.lookupName(\'Bogus\'): Tool not found."'
-            assert str(key_error) == desired_error, (str(key_error), desired_error)
-        try:
-            library.lookupNumber(-1)
-            assert False
-        except KeyError as key_error:
-            desired_error = '"FabLibrary.lookupNumber(\'-1\'): Tool not found."'
-            assert str(key_error) == desired_error, (str(key_error), desired_error)
-
-        if tracing:
-            print(f"{tracing}<=FabLibrary._unit_tests()")
-
-
-# FabLibraries:
-@dataclass(frozen=True)
-class FabLibraries(object):
-    """FabLibraries: Represents a directory of FabLibrary's.
-
-    Attributes:
-    * *Name* (str): The directory name (i.e. the stem the LibraryPath.)
-    * *LibrariesPath (PathFile): The directory that contains the FabLibraries.
-    * *Libraries* (Tuple[FabLibrary, ...): The actual libraries sorted by library name.
-    * *LibraryNames*: Tuple[str, ...]: The sorted library names.
-
-    Constructor:
-    * FabLibraries("Name", LibrariesPath, Libraries)
-
-    """
-
-    Name: str
-    LibrariesPath: PathFile
-    Libraries: Tuple[FabLibrary, ...]
-    LibraryNames: Tuple[str, ...]
-
-    # FabLibraries.__post_init__():
-    def __post_init__(self) -> None:
-        """Finish initializing FabLibriaries."""
-        check_type("FabLibraries.Name", self.Name, str)
-        check_type("FabLibraries.LibrariesPath", self.LibrariesPath, PathFile)
-        check_type("FabLibraries.Libraries", self.Libraries, Tuple[FabLibrary, ...])
-        check_type("FabLibraries.LibraryNames", self.LibraryNames, Tuple[str, ...])
-
-    # FabLibraries.read():
-    @staticmethod
-    def read(tools_directory: PathFile, bits: "FabBits", tracing: str = "") -> "FabLibraries":
-        """Read in a FabLibraries from a directory.
-
-        Arguments:
-        * *tools_directory* (PathFile):
-          The `.../Tools/` directory that contains the `Library/` sub-directory.
-        * *bits*: (PathFile):
-          The FabBits's object contain the FabBits associated with the `Bits/` sub-directory.
-
-        Returns:
-        (FabLibraries):
-        The FabLibraries object that contains all of the associated FabLibrary's objects.
-
-        """
-        next_tracing: str = tracing + " " if tracing else ""
-        if tracing:
-            print(f"{tracing}=>FabLibraries.read('{str(tools_directory)}('), *)")
-        assert check_argument_types(), "FabLibraries.read()"
-        libraries_dict: Dict[str, FabLibrary] = {}
-        library_directory: PathFile = tools_directory / "Library"
-        assert library_directory.is_dir(), f"FabLibraries.read(): {library_directory=}"
-        library_path: PathFile
-        for library_path in library_directory.glob("*.fctl"):
-            assert library_path.exists(), "FabLibraries.read(): f{library_path} does not exist"
-            name: str = library_path.stem
-            library: FabLibrary = FabLibrary.read(
-                tools_directory, name, bits, tracing=next_tracing)
-            libraries_dict[library.Name] = library
-        sorted_library_names: Tuple[str, ...] = tuple(sorted(libraries_dict.keys()))
-        library_name: str
-        sorted_libraries: Tuple[FabLibrary, ...] = tuple(
-            [libraries_dict[library_name] for library_name in libraries_dict.keys()])
-        libraries: FabLibraries = FabLibraries(
-            library_path.stem, library_path, sorted_libraries, sorted_library_names)
-        if tracing:
-            print(f"{tracing}<=FabLibraries.read('{str(tools_directory)}('), *)=>*")
-        return libraries
-
-    # FabLibaries.nameLookup():
-    def nameLookup(self, name: str) -> FabLibrary:
-        """Lookup a library by name."""
-        library: FabLibrary
-        for library in self.Libraries:
-            if library.Name == name:
-                return library
-        raise KeyError(f"FabLibraries.nameLookup(): "
-                       f"{name} is not one of {self.LibraryNames}")  # pragma: no unit coverage
-
-    # FabLibraries._unit_tests:
-    @staticmethod
-    def _unit_tests(tracing: str = "") -> None:
-        """Perform the FabLibraries unit tests."""
-        next_tracing: str = tracing + " " if tracing else ""
-        if tracing:
-            print(f"{tracing}=>FabLibrarires._unit_tests()")
-        tools_directory: PathFile = PathFile(__file__).parent / "Tools"
-
-        # shapes: FabShapes = FabShapes.read(shapes_directory, tracing=next_tracing)
-        bits: FabBits = FabBits.read(tools_directory, tracing=next_tracing)
-        libraries: FabLibraries = FabLibraries.read(tools_directory, bits, tracing=next_tracing)
-        library: FabLibrary
-        for library in libraries.Libraries:
-            assert libraries.nameLookup(library.Name) is library
-        if tracing:
-            print(f"{tracing}<=FabLibrarires._unit_tests()")
 
 
 # FabBits
@@ -343,7 +72,6 @@ class FabBits(object):
     """FabBits: A collection FabBit's that corresponds to a `Tools/Bit/` sub-directory..
 
     Attributes:
-    * *BitsDirectory*: (PathFile): The path to the `Tools/Bit/` sub-directory.
     * *Bits* (Tuple[FabBit, ...]): The associated FabBit's in name sorted order.
     * *Names* (Tuple[str, ...]): The sorted FabBit names.
     * *Stems* (Tuple[str, ...]): Stem names in the same order as the Bits.
@@ -352,7 +80,6 @@ class FabBits(object):
     * FabBits("Name", BitsPath, Bits, Names)
     """
 
-    BitsPath: PathFile
     Bits: Tuple[FabBit, ...]
     Names: Tuple[str, ...]
     Stems: Tuple[str, ...]
@@ -360,7 +87,6 @@ class FabBits(object):
     # FabBits.__post_init__():
     def __post_init__(self) -> None:
         """Initialize a FabBits."""
-        check_type("FabBits.BitsPath", self.BitsPath, PathFile)
         check_type("FabBits.Bits", self.Bits, Tuple[FabBit, ...])
         check_type("FabBits.Names", self.Names, Tuple[str, ...])
         check_type("FabBits.Stems", self.Stems, Tuple[str, ...])
@@ -472,12 +198,13 @@ class FabBits(object):
 
     # FabBits.read():
     @staticmethod
-    def read(tools_directory: PathFile, tracing: str = "") -> "FabBits":
+    def read(tools_directory: PathFile, shapes: FabShapes, tracing: str = "") -> "FabBits":
         """Read in a `Tools/Bit/` sub-directory.
 
         Arguments:
         * *tools_directory* (PathFile):
           The `.../Tools` directory containing the `Bit/` subdirectory of `.fctb` Bit definitions.
+        * *shapes: (FabShapes): The FabShape objects to use.
 
         Returns:
         * (FabBits): The resulting FabBits that corresponds to the `Tools/Bit` sub-directory.
@@ -534,11 +261,29 @@ class FabBits(object):
         # if tracing:
         #     print(f"{tracing}{sorted_names=}")
         #     print(f"{tracing}{sorted_bits=}")
-        bits: FabBits = FabBits(
-            bits_directory, tuple(sorted_bits), sorted_names, tuple(ordered_stems))
+        bits: FabBits = FabBits(tuple(sorted_bits), sorted_names, tuple(ordered_stems))
         if tracing:
             print(f"{tracing}<=FabBits.read({str(tools_directory)}, *)=>|{len(sorted_names)}|")
         return bits
+
+    # FabBits.write()
+    def write(self, tools_directory: PathFile, tracing: str = "") -> None:
+        """Write FabBits out to disk."""
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabBits.write(*, {tools_directory})")
+
+        if tools_directory.stem != "Tools":
+            tools_directory = tools_directory / "Tools"  # pragma: no cover
+        bit_directory = tools_directory / "Bit"
+        bit_directory.mkdir(parents=True, exist_ok=True)
+
+        bit: FabBit
+        for bit in self.Bits:
+            bit.write(tools_directory, tracing=next_tracing)
+
+        if tracing:
+            print(f"{tracing}<=FabBits.write(*, {tools_directory})")
 
     # FabBits.nameLookup():
     def nameLookup(self, name: str) -> FabBit:
@@ -559,7 +304,7 @@ class FabBits(object):
             if bit.Name == name:
                 return bit
         raise KeyError(
-            f"FabBits.lookup(): '{name}' is not one of {self.Names}.")  # pragma: no unit coverage
+            f"FabBits.lookup(): '{name}' is not one of {self.Names}.")  # pragma: no unit cover
 
     # FabBits.stemLookup():
     def stemLookup(self, stem: str) -> FabBit:
@@ -580,7 +325,7 @@ class FabBits(object):
             if bit.BitStem == stem:
                 return bit
         raise KeyError(
-            f"FabBits.lookup(): '{stem}' is not one of {self.Stems}.")  # pragma: no unit coverage
+            f"FabBits.lookup(): '{stem}' is not one of {self.Stems}.")  # pragma: no unit cover
 
     # FabBits._unit_tests():
     @staticmethod
@@ -591,12 +336,13 @@ class FabBits(object):
             print(f"{tracing}=>FabBits._unit_tests()")
         this_directory: PathFile = PathFile(__file__).parent
         tools_directory: PathFile = this_directory / "Tools"
-        bits: FabBits = FabBits.read(tools_directory, tracing=next_tracing)
+        shapes: FabShapes = FabShapes.read(tools_directory, tracing=next_tracing)
+        bits: FabBits = FabBits.read(tools_directory, shapes, tracing=next_tracing)
         index: int
         bit: FabBit
         for index, bit in enumerate(bits.Bits):
             if tracing:
-                print(f"{tracing}Bit[{index}]: '{bit.Name}' => {str(bit.BitStem)}")
+                print(f"{tracing}XBit[{index}]: '{bit.Name}' => {str(bit.BitStem)}")
                 name_lookup_bit: FabBit = bits.nameLookup(bit.Name)
                 assert name_lookup_bit is bit
                 stem_lookup_bit: FabBit = bits.stemLookup(bit.BitStem)
@@ -606,6 +352,404 @@ class FabBits(object):
 
         if tracing:
             print(f"{tracing}<=FabBits._unit_tests()")
+
+
+# FabLibrary:
+@dataclass(frozen=True)
+class FabLibrary(object):
+    """FabLibrary: Tool libraries directory (e.g. `.../Tools/Library/*.fctl`).
+
+    Attributes:
+    * *Name* (str): The stem of LibraryFile (i.e. `xyz.fctl` => "xyz".)
+    * *NumberedBits*: Tuple[Tuple[int, FabBit], ...]: A list of numbered to FabBit's.
+
+    Constructor:
+    * FabLibrary("Name", Stem, NumberedBits)
+
+    """
+
+    Name: str
+    NumberedBits: Tuple[Tuple[int, FabBit], ...]
+
+    # FabLibrary:__post_init__():
+    def __post_init__(self) -> None:
+        """Finish initializing FabLibrary."""
+        check_type("FabLibrary.Name", self.Name, str)
+        check_type("FabLibrary.NumberedBits", self.NumberedBits, Tuple[Tuple[int, FabBit], ...])
+
+    # FabLibrary.read():
+    @staticmethod
+    def read(tools_directory: PathFile, name: str,
+             bits: "FabBits", tracing: str = "") -> "FabLibrary":
+        """Read in FabLibrary from a JSON file.
+
+        Arguments:
+        * *tools_directory* (PathFile):
+          The `.../Tools/` directory that contains the `Library/` sub-directory.
+        * *name* (str): The stem of the `.fctl` file (i.e. `MyTools.fctl` => `MyTools`.)
+        * *bits*: (FabBits): The available bit templates.
+
+        Returns:
+        * (FabLibrary): The associated FabLibrary object.
+        """
+        if tracing:
+            print(f"{tracing}=>FabLibrary.read({tools_directory}, {name}, *)")
+        assert check_argument_types()
+
+        # Open *library_file*, read it in and parse it into *json_dict*:
+        json_file: IO[str]
+        json_text: str
+        library_directory: PathFile = tools_directory / "Library"
+        library_path_file: PathFile = library_directory / f"{name}.fctl"
+        assert library_path_file.exists(), f"FabLibrary.read(): {library_path_file} does not exist"
+        with open(library_path_file) as json_file:
+            json_text = json_file.read()
+        try:
+            json_dict: Dict[str, Any] = json.loads(json_text)
+        except json.decoder.JSONDecodeError as decode_error:  # pragma: no unit cover
+            assert False, f"Unable to parse {library_path_file} as JSON: Error:{str(decode_error)}"
+
+        # The format of *json_dict* should be:
+        # {
+        #   "version": 1,
+        #   "tools": [
+        #     {
+        #       "nr": 1,
+        #       "path": "xyz.fctb"
+        #     },
+        #     ...
+        #   ]
+        # }
+
+        # Extract *version* and *tools*:
+        check_type("FabLibrary.json_dict", json_dict, Dict[str, Any])
+        assert len(json_dict) == 2, "FabLibrary.readJson(): {len(json_dict)=}"
+        version: Any = json_dict["version"] if "version" in json_dict else None
+        assert isinstance(version, int) and version == 1, f"FabLibrary.readJson(): {version=}"
+        tools: Any = json_dict["tools"] if "tools" in json_dict else None
+        assert isinstance(tools, list), "FabLibrary.readJson(): {tools=}"
+
+        # Sweep through *tools* in JSON and build sorted *numbered_bit_names* list:
+        numbered_bit_names: List[Tuple[int, str]] = []
+        bit_number: int
+        bit_name: str
+        check_type("FabLibrary.readJson(): tools", tools, List[Dict[str, Union[int, str]]])
+        bit_dict: Any
+        for bit_dict in tools:
+            check_type("FabLibrary.readJson(): tool", bit_dict, Dict[str, Union[int, str]])
+            bit_number = bit_dict["nr"] if "nr" in bit_dict else -1
+            check_type("FabLibrary.readJson(): bit_number", bit_number, int)
+            bit_name = bit_dict["path"] if "path" in bit_dict else ""
+            check_type("FabLibrary.readJson(): path", bit_name, str)
+            assert bit_number >= 0 and bit_name, f"{bit_number=} {bit_name=}"
+            numbered_bit_names.append((bit_number, bit_name))
+        numbered_bit_names.sort()
+
+        # Lookup up the associated FabBit's:
+        numbered_bits: List[Tuple[int, FabBit]] = []
+        for bit_number, bit_name in numbered_bit_names:
+            assert bit_name.endswith(".fctb")
+            bit_stem: str = bit_name[:-5]
+            if tracing:
+                print(f"{tracing}Tool[{bit_number}]: '{bit_stem}'")
+            try:
+                bit: FabBit = bits.stemLookup(bit_stem)
+            except KeyError as key_error:  # pragma: no unit coverage
+                assert False, f"FabLibrary.readJson(): {str(key_error)}"
+            numbered_bits.append((bit_number, bit))
+
+        library: FabLibrary = FabLibrary(name, tuple(numbered_bits))
+        if tracing:
+            print(f"{tracing}<=FabLibrary.read({tools_directory}, {name}, *)=>*")
+        return library
+
+    # FabLibrary.lookupName():
+    def lookupName(self, name: str) -> FabBit:
+        """Lookup a FabBit by name."""
+        numbered_bits: Tuple[Tuple[int, FabBit], ...] = self.NumberedBits
+        bit_number: int
+        bit: FabBit
+        for bit_number, bit in numbered_bits:
+            if bit.Name == name:
+                return bit
+        raise KeyError(f"FabLibrary.lookupName('{name}'): Tool not found.")
+
+    # FabLibrary.lookupNumber():
+    def lookupNumber(self, number: int) -> FabBit:
+        """Lookup a FabBit by name."""
+        bit_number: int
+        bit: FabBit
+        for bit_number, bit in self.NumberedBits:
+            if bit_number == number:
+                return bit
+        raise KeyError(f"FabLibrary.lookupNumber('{number}'): Tool not found.")
+
+    # FabLibrary.write():
+    def write(self, tools_directory: PathFile, tracing: str = "") -> None:
+        """Write FabLibrary out to disk."""
+        if tracing:
+            print(f"{tracing}=>FabLibrary.write({tools_directory}")
+
+        if tools_directory.stem != "Tools":
+            tools_directory = tools_directory / "Tools"  # pragma: no unit cover
+        bit_directory = tools_directory / "Library"
+        bit_directory.mkdir(parents=True, exist_ok=True)
+
+        # Convert the *numbered_bits* into *json_text*:
+        numbered_bits: Tuple[Tuple[int, FabBit], ...] = self.NumberedBits
+        tools: List[Dict[str, Any]] = []
+        for bit_number, bit in numbered_bits:
+            tools.append({"nr": bit_number, "path": f"{bit.BitStem}.fctb"})
+        json_dict: Dict[str, Any] = {
+            "version": 1,
+            "tools": tools,
+        }
+        json_text: str = json.dumps(json_dict, indent=2)
+
+        # Write out *json_text*:
+        library_path_file: PathFile = bit_directory / f"{self.Name}.fctl"
+        json_file: IO[str]
+        with open(library_path_file, "w") as json_file:
+            json_file.write(json_text)
+
+        if tracing:
+            print(f"{tracing}<=FabLibrary.write({tools_directory}")
+
+    # FabLibrary._unit_tests():
+    @staticmethod
+    def _unit_tests(tracing: str = "") -> None:
+        """FabLibrary Unit tests."""
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabLibrary._unit_tests()")
+        tools_directory: PathFile = PathFile(__file__).parent / "Tools"
+
+        # shapes: FabShapes = FabShapes.read(shapes_directory)
+        shapes: FabShapes = FabShapes.read(tools_directory, tracing=next_tracing)
+        bits: FabBits = FabBits.read(tools_directory, shapes, tracing=next_tracing)
+        library: FabLibrary = FabLibrary.read(
+            tools_directory, "Default", bits, tracing=next_tracing)
+
+        number: int
+        bit: FabBit
+        for number, bit in library.NumberedBits:
+            assert bit is library.lookupName(bit.Name)
+            assert bit is library.lookupNumber(number)
+
+        # Test lookup methods:
+        desired_error: str
+        try:
+            library.lookupName("Bogus")
+            assert False
+        except KeyError as key_error:
+            desired_error = '"FabLibrary.lookupName(\'Bogus\'): Tool not found."'
+            assert str(key_error) == desired_error, (str(key_error), desired_error)
+        try:
+            library.lookupNumber(-1)
+            assert False
+        except KeyError as key_error:
+            desired_error = '"FabLibrary.lookupNumber(\'-1\'): Tool not found."'
+            assert str(key_error) == desired_error, (str(key_error), desired_error)
+
+        if tracing:
+            print(f"{tracing}<=FabLibrary._unit_tests()")
+
+
+# FabLibraries:
+@dataclass(frozen=True)
+class FabLibraries(object):
+    """FabLibraries: Represents a directory of FabLibrary's.
+
+    Attributes:
+    * *Name* (str): The directory name (i.e. the stem the LibraryPath.)
+    * *Libraries* (Tuple[FabLibrary, ...): The actual libraries sorted by library name.
+    * *LibraryNames*: Tuple[str, ...]: The sorted library names.
+
+    Constructor:
+    * FabLibraries("Name", Libraries, LibraryNames)
+
+    """
+
+    Name: str
+    Libraries: Tuple[FabLibrary, ...]
+    LibraryNames: Tuple[str, ...]
+
+    # FabLibraries.__post_init__():
+    def __post_init__(self) -> None:
+        """Finish initializing FabLibriaries."""
+        check_type("FabLibraries.Name", self.Name, str)
+        check_type("FabLibraries.Libraries", self.Libraries, Tuple[FabLibrary, ...])
+        check_type("FabLibraries.LibraryNames", self.LibraryNames, Tuple[str, ...])
+
+    # FabLibraries.read():
+    @staticmethod
+    def read(tools_directory: PathFile, bits: "FabBits", tracing: str = "") -> "FabLibraries":
+        """Read in a FabLibraries from a directory.
+
+        Arguments:
+        * *tools_directory* (PathFile):
+          The `.../Tools/` directory that contains the `Library/` sub-directory.
+        * *bits*: (PathFile):
+          The FabBits's object contain the FabBits associated with the `Bits/` sub-directory.
+
+        Returns:
+        (FabLibraries):
+        The FabLibraries object that contains all of the associated FabLibrary's objects.
+
+        """
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabLibraries.read('{str(tools_directory)}('), *)")
+        assert check_argument_types(), "FabLibraries.read()"
+        libraries_dict: Dict[str, FabLibrary] = {}
+        library_directory: PathFile = tools_directory / "Library"
+        assert library_directory.is_dir(), f"FabLibraries.read(): {library_directory=}"
+        library_path: PathFile
+        for library_path in library_directory.glob("*.fctl"):
+            assert library_path.exists(), "FabLibraries.read(): f{library_path} does not exist"
+            name: str = library_path.stem
+            library: FabLibrary = FabLibrary.read(
+                tools_directory, name, bits, tracing=next_tracing)
+            libraries_dict[library.Name] = library
+        sorted_library_names: Tuple[str, ...] = tuple(sorted(libraries_dict.keys()))
+        library_name: str
+        sorted_libraries: Tuple[FabLibrary, ...] = tuple(
+            [libraries_dict[library_name] for library_name in libraries_dict.keys()])
+        libraries: FabLibraries = FabLibraries(
+            library_path.stem, sorted_libraries, sorted_library_names)
+        if tracing:
+            print(f"{tracing}<=FabLibraries.read('{str(tools_directory)}('), *)=>*")
+        return libraries
+
+    # FabLibaries.nameLookup():
+    def nameLookup(self, name: str) -> FabLibrary:
+        """Lookup a library by name."""
+        library: FabLibrary
+        for library in self.Libraries:
+            if library.Name == name:
+                return library
+        raise KeyError(f"FabLibraries.nameLookup(): "
+                       f"{name} is not one of {self.LibraryNames}")  # pragma: no unit coverage
+
+    # FabLibaries.write():
+    def write(self, tools_directory: PathFile, tracing: str = "") -> None:
+        """Write FabLibaries out to disk."""
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabLibraries.write({tools_directory})")
+
+        library: FabLibrary
+        for library in self.Libraries:
+            library.write(tools_directory, tracing=next_tracing)
+
+        if tracing:
+            print(f"{tracing}<=FabLibraries.write({tools_directory})")
+
+    # FabLibraries._unit_tests:
+    @staticmethod
+    def _unit_tests(tracing: str = "") -> None:
+        """Perform the FabLibraries unit tests."""
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabLibrarires._unit_tests()")
+        tools_directory: PathFile = PathFile(__file__).parent / "Tools"
+
+        shapes: FabShapes = FabShapes.read(tools_directory, tracing=next_tracing)
+        bits: FabBits = FabBits.read(tools_directory, shapes, tracing=next_tracing)
+        libraries: FabLibraries = FabLibraries.read(tools_directory, bits, tracing=next_tracing)
+        library: FabLibrary
+        for library in libraries.Libraries:
+            assert libraries.nameLookup(library.Name) is library
+        if tracing:
+            print(f"{tracing}<=FabLibrarires._unit_tests()")
+
+
+# FabTooling:
+@dataclass
+class FabTooling(object):
+    """FabTooling: A class that contains FabBit's, FabShape's, and FabLibrary's.
+
+    Attributes:
+    * *Shapes* (FabShapes): The FabShape's.
+    * *Bits* (FabBits): The FabBit's
+    * *Libraries* (FabLibraries): The FabLibrary's
+
+    Constructor:
+    * FabTooling(Shapes, Bits, Libraries)
+
+    """
+
+    Shapes: FabShapes
+    Bits: FabBits
+    Libraries: FabLibraries
+
+    # FabTooling.read():
+    @staticmethod
+    def read(tools_directory: PathFile, tracing: str = "") -> "FabTooling":
+        """Read in a FabTooling from directory.
+
+        Argumnets:
+        * *tools_directory* (PatFile): The `.../Tooling` directory to read from.
+
+        Returns:
+        * (FabTooling) The resulting FabTooling object.
+
+        """
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabTooling.read({tools_directory})")
+        shapes: FabShapes = FabShapes.read(tools_directory, tracing=next_tracing)
+        bits: FabBits = FabBits.read(tools_directory, shapes, tracing=next_tracing)
+        libraries: FabLibraries = FabLibraries.read(tools_directory, bits, tracing=next_tracing)
+        tooling: FabTooling = FabTooling(shapes, bits, libraries)
+        if tracing:
+            print(f"{tracing}<=FabTooling.read({tools_directory})=>*")
+        return tooling
+
+    # FabTooling.write():
+    def write(self, tools_directory: PathFile, tracing: str = "") -> None:
+        """Write FabTooling into a directory.
+
+        Arguments:
+        * *tools_directory* (PatFile): The `.../Tooling` directory to read from.
+
+        Returns:
+        * (FabTooling) The resulting FabTooling object.
+
+        """
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabTooling.write({tools_directory})")
+
+        self.Shapes.write(tools_directory, tracing=next_tracing)
+        self.Bits.write(tools_directory, tracing=next_tracing)
+        self.Libraries.write(tools_directory, tracing=next_tracing)
+
+        if tracing:
+            print(f"{tracing}<=FabTooling.write({tools_directory})")
+
+    # FabTooling._unit_tests():
+    @staticmethod
+    def _unit_tests(tracing: str = "") -> None:
+        """Run unit tests for FabTooling."""
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabTooling._unit_tests()")
+
+        from_tools_directory: PathFile = PathFile(__file__).parent / "Tools"
+        from_tooling: FabTooling = FabTooling.read(from_tools_directory, tracing=next_tracing)
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            to_tools_directory: PathFile = PathFile(temporary_directory) / "Tools"
+            from_tooling.write(to_tools_directory, tracing=next_tracing)
+            to_tooling: FabTooling = FabTooling.read(to_tools_directory, tracing=next_tracing)
+            index: int
+            assert from_tooling.Shapes == to_tooling.Shapes
+            assert from_tooling.Bits == to_tooling.Bits
+            assert from_tooling.Libraries == to_tooling.Libraries
+            assert from_tooling == to_tooling
+        if tracing:
+            print(f"{tracing}<=FabTooling._unit_tests()")
 
 
 # Main program:
@@ -618,7 +762,7 @@ def main(tracing: str) -> None:
     FabBits._unit_tests(tracing=next_tracing)
     FabLibrary._unit_tests(tracing=next_tracing)
     FabLibraries._unit_tests(tracing=next_tracing)
-    FabBits._unit_tests(tracing=next_tracing)
+    FabTooling._unit_tests(tracing=next_tracing)
     if tracing:
         print(f"{tracing}<=main()")
 

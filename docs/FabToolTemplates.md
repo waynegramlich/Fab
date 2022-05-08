@@ -27,6 +27,7 @@ The classes are:
   * 1.1 [toJSON()](#fabtooltemplates----tojson): Return FabAttributes as JSON dictionary.
 * 2 Class: [FabBit](#fabtooltemplates--fabbit):
   * 2.1 [toJSON()](#fabtooltemplates----tojson): Return the JSON associated with a FabBit.
+  * 2.2 [write()](#fabtooltemplates----write): Write FabBit out to disk.
 * 3 Class: [FabBitTemplate](#fabtooltemplates--fabbittemplate):
   * 3.1 [kwargsFromJSON()](#fabtooltemplates----kwargsfromjson): Return the keyword arguments needed to initialize a FabBit.
   * 3.2 [toJSON()](#fabtooltemplates----tojson): Convert a FabBit to a JSON dictionary using a FabBitTemplate.
@@ -37,6 +38,7 @@ The classes are:
   * 6.2 [write()](#fabtooltemplates----write): Write FabShape out to disk.
 * 7 Class: [FabShapes](#fabtooltemplates--fabshapes):
   * 7.1 [lookup()](#fabtooltemplates----lookup): Lookup a FabShape by name.
+  * 7.2 [write()](#fabtooltemplates----write): Write FabShapes out to disk.
 
 ## <a name="fabtooltemplates--fabattributes"></a>1 Class FabAttributes:
 
@@ -69,6 +71,12 @@ Constructor:
 FabBit.toJSON(self) -> Dict[str, Any]:
 
 Return the JSON associated with a FabBit.
+
+### <a name="fabtooltemplates----write"></a>2.2 `FabBit.`write():
+
+FabBit.write(self, tools_directory: pathlib.Path, tracing: str = '') -> None:
+
+Write FabBit out to disk.
 
 
 ## <a name="fabtooltemplates--fabbittemplate"></a>3 Class FabBitTemplate:
@@ -167,18 +175,23 @@ Write FabShape out to disk.
 
 A directory of FabShape's.
 Attributes:
-* *Directory* (PathFile): The directory containing the FabShapes (.fcstd) files.
 * *Shapes* (Tuple[FabShape, ...]: The corresponding FabShape's.
 * *Names* (Tuple[str, ...]: The sorted names of the FabShape's.
 
 Constructor:
-* FabShapes(Directory, Shapes)
+* FabShapes(Directory, Shapes, Names)
 
 ### <a name="fabtooltemplates----lookup"></a>7.1 `FabShapes.`lookup():
 
 FabShapes.lookup(self, name) -> FabToolTemplates.FabShape:
 
 Lookup a FabShape by name.
+
+### <a name="fabtooltemplates----write"></a>7.2 `FabShapes.`write():
+
+FabShapes.write(self, tools_directory: pathlib.Path, tracing: str = '') -> None:
+
+Write FabShapes out to disk.
 
 
 

@@ -27,11 +27,12 @@ The classes are:
 
 # <--------------------------------------- 100 characters ---------------------------------------> #
 
+from dataclasses import dataclass, field
+import json
+from pathlib import Path as PathFile
 import tempfile
 from typeguard import check_type, check_argument_types
 from typing import Any, Dict, IO, List, Optional, Tuple, Union
-from dataclasses import dataclass, field
-from pathlib import Path as PathFile
 
 
 # FabShape:
@@ -92,17 +93,21 @@ class FabShape(object):
     def write(self, tools_directory: PathFile, tracing: str = "") -> None:
         """Write FabShape out to disk."""
         if tracing:
-            print(f"{tracing}=>FabShape.Write(*, {tools_directory})")
+            print(f"{tracing}=>FabShape.Write({self.Name}, {tools_directory})")
 
-        shapes_directory: PathFile = tools_directory / "Shape"
+        if tools_directory.name != "Tools":
+            tools_directory = tools_directory / "Tools"  # pragma: no unit cover
+        shapes_directory = tools_directory / "Shape"
+        shapes_directory.mkdir(parents=True, exist_ok=True)
         assert shapes_directory.exists(), f"{shapes_directory} does not exist"
+
         shape_path_file: PathFile = shapes_directory / f"{self.Name}.fcstd"
         shape_file: IO[bytes]
         with open(shape_path_file, "wb") as shape_file:
             shape_file.write(self.Contents)
 
         if tracing:
-            print(f"{tracing}<=FabShape.Write(*, {tools_directory})")
+            print(f"{tracing}<=FabShape.Write({self.Name}, {tools_directory})")
 
     # FabShape._unit_tests():
     @staticmethod
@@ -136,22 +141,19 @@ class FabShapes(object):
     """FabShapes: A directory of FabShape's.
 
     Attributes:
-    * *Directory* (PathFile): The directory containing the FabShapes (.fcstd) files.
     * *Shapes* (Tuple[FabShape, ...]: The corresponding FabShape's.
     * *Names* (Tuple[str, ...]: The sorted names of the FabShape's.
 
     Constructor:
-    * FabShapes(Directory, Shapes)
+    * FabShapes(Directory, Shapes, Names)
     """
 
-    Directory: PathFile
     Shapes: Tuple[FabShape, ...]
     Names: Tuple[str, ...]
 
     # FabShapes.__post_init__():
     def __post_init__(self) -> None:
         """Finish initializing FabShapes."""
-        check_type("FabShapes.Directory", self.Directory, PathFile)
         check_type("FabShapes.Shapes", self.Shapes, Tuple[FabShape, ...])
         check_type("FabShapes.Names", self.Names, Tuple[str, ...])
 
@@ -176,7 +178,7 @@ class FabShapes(object):
         shape_name: str
         shapes: Tuple[FabShape, ...] = tuple([
             shapes_table[shape_name] for shape_name in sorted_shape_names])
-        fab_shapes: FabShapes = FabShapes(shapes_directory, shapes, sorted_shape_names)
+        fab_shapes: FabShapes = FabShapes(shapes, sorted_shape_names)
         if tracing:
             print(f"{tracing}<=FabShapes.read({tools_directory})=>*")
         return fab_shapes
@@ -197,6 +199,19 @@ class FabShapes(object):
             if shape.Name == name:
                 return shape
         raise KeyError(f"FabShapes.lookup(): {name} is not one of {self.Names}")
+
+    # FabShapes.write():
+    def write(self, tools_directory: PathFile, tracing: str = "") -> None:
+        """Write FabShapes out to disk."""
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabShapes.write({tools_directory})")
+
+        for shape in self.Shapes:
+            shape.write(tools_directory, tracing=next_tracing)
+
+        if tracing:
+            print(f"{tracing}<=FabShapes.write({tools_directory})")
 
     # FabShapes._unit_tests()
     @staticmethod
@@ -351,6 +366,27 @@ class FabBit(object):
         # Python does not really like circular class declarations.  This breaks the cycle.
         return _bit_to_json(self)
 
+    # FabBit.write():
+    def write(self, tools_directory: PathFile, tracing: str = "") -> None:
+        """Write FabBit out to disk."""
+        if tracing:
+            print(f"{tracing}=>FabBit.write({self.Name})")
+
+        if tools_directory.name != "Tools":
+            tools_directory = tools_directory / "Tools"  # pragma: no unit cover
+        bit_directory = tools_directory / "Bit"
+        bit_directory.mkdir(parents=True, exist_ok=True)
+        bit_path_file: PathFile = bit_directory / f"{self.BitStem}.fctb"
+
+        bit_json: Dict[str, Any] = self.toJSON()
+        json_text: str = json.dumps(bit_json, indent=2)
+        bit_file: IO[str]
+        with open(bit_path_file, "w") as bit_file:
+            bit_file.write(json_text + "\n")
+
+        if tracing:
+            print(f"{tracing}<=FabBit.write({self.Name})")
+
 
 # FabBitTemplate:
 @dataclass(frozen=True)
@@ -477,7 +513,7 @@ class FabBitTemplate(object):
 
         json_dict: Dict[str, Any] = {
             "version": 2,
-            "name": self.Name,
+            "name": bit.Name,
             "shape": f"{self.ShapeStem}.fcstd",
             "parameter": parameters,
             "attribute": attributes,
