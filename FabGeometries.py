@@ -206,7 +206,7 @@ class Fab_Plane(object):
         nz: float = zf(axis.z)
         length: float = math.sqrt(nx * nx + ny * ny + nz * nz)
         if length <= 0.0:
-            raise ValueError("Axis has a length of 0.0")
+            raise ValueError("Axis has a length of 0.0")  # pragma: no unit cover
         nx = zf(nx / length)
         ny = zf(ny / length)
         nz = zf(nz / length)
@@ -343,11 +343,12 @@ class Fab_GeometryContext(object):
 
         if not isinstance(self._Plane, Fab_Plane):
             raise RuntimeError(
-                f"Fab_GeometryContext.__post_init__(): {type(self._Plane)} is not a Fab_Plane")
+                f"Fab_GeometryContext.__post_init__(): "
+                f"{type(self._Plane)} is not a Fab_Plane")  # pragma: no unit cover
         if not isinstance(self._Query, Fab_Query):
             raise RuntimeError(
                 "Fab_GeometryContext.__post_init__(): "
-                f"{type(self._Query)} is not a Fab_Query")
+                f"{type(self._Query)} is not a Fab_Query")  # pragma: no unit cover
 
         copy: Vector = Vector()
         self._copy: Vector = copy
@@ -364,16 +365,6 @@ class Fab_GeometryContext(object):
     def Query(self) -> Any:
         """Return the Fab_Query.."""
         return self._Query
-
-    # Fab_GeometryContext.Query.setter():
-    @Query.setter
-    def Query(self, query: Any):
-        """Set the Fab_Query.."""
-        if not isinstance(query, Fab_Query):
-            raise RuntimeError(
-                f"FabGeomtery.Query(): {type(query)}, not Fab_Query.")
-        assert False, "Is this used?"
-        self._Query = query
 
     # Fab_GeometryContext.GeometryGroup():
     @property
@@ -1100,8 +1091,9 @@ class FabPolygon(FabGeometry):
             radii_distance: float = before_fillet.Radius + at_fillet.Radius
             if radii_distance > actual_distance:
                 return (f"Requested radii distance {radii_distance}mm "
-                        f"(={before_fillet.Radius}+{at_fillet.Radius}) < {actual_distance}mm "
-                        "between {at_fillet.Before} and {after_fillet.After}")
+                        f"(={before_fillet.Radius}+{at_fillet.Radius}) < "
+                        "{actual_distance}mm between {at_fillet.Before} and "
+                        "{after_fillet.After}")  # pragma: no unit cover
         return ""
 
     # FabPolygon._colinear_check():
@@ -1118,7 +1110,8 @@ class FabPolygon(FabGeometry):
             to_after_apex: Vector = after_apex - at_apex
             between_angle: float = abs(to_before_apex.getAngle(to_after_apex))
             if between_angle < epsilon or abs(degrees180 - between_angle) < epsilon:
-                return f"Points [{before_apex}, {at_apex}, {after_apex}] are colinear"
+                return (f"Points [{before_apex}, {at_apex}, "
+                        f"{after_apex}] are colinear")  # pragma: no unit cover
         return ""
 
     # FabPolygon._compute_arcs():
@@ -1181,10 +1174,10 @@ class FabPolygon(FabGeometry):
         # Double check for radii and colinear errors that result from 2D projection:
         radius_error: str = self._radii_check()
         if radius_error:
-            raise RuntimeError(radius_error)
+            raise RuntimeError(radius_error)  # pragma: no unit cover
         colinear_error: str = self._colinear_check()
         if colinear_error:
-            raise RuntimeError(colinear_error)
+            raise RuntimeError(colinear_error)  # pragma: no unit covert
 
         # Now compute the arcs and lines:
         self._compute_arcs()
@@ -1195,7 +1188,7 @@ class FabPolygon(FabGeometry):
         part_geometries: List[Any] = []
 
         if not geometries:
-            raise RuntimeError("FabPolygon.produce(): empty geometries.")
+            raise RuntimeError("FabPolygon.produce(): empty geometries.")  # pragma: no unit cover
         geometry0: Fab_Geometry = geometries[0]
         start: Vector = geometry0.get_start()
         rotated_start: Vector = geometry_context._Plane.rotate_to_z_axis(
@@ -1251,7 +1244,8 @@ class Fab_Query(object):
         """Initialize Fab_Plane."""
         if not isinstance(self._Plane, Fab_Plane):
             raise RuntimeError(
-                f"Fab_Query.__post_init__(): Got {type(self._Plane)}, not Fab_Plane")
+                f"Fab_Query.__post_init__(): Got {type(self._Plane)}, "
+                "not Fab_Plane")  # pragma: no unit cover
         plane = cast(cq.Plane, self._Plane._Plane)
         self._Query = cq.Workplane(plane)
 
