@@ -234,7 +234,8 @@ class FabDoveTailBit(FabBit):
     * *NeckHeight* (Union[str, float]):
        The height of the neck between the dove tail cutter and shank.
     * *ShankDiameter: (Union[str, float]): The dove tail shank diameter.
-    * *TipDiameter* (Union[str, float]): The tip radius of the dove tail.
+    * *TipDiameter* (Union[str, float]):
+      In theory, tip diameter of the dove tail.  In practice, *Diameter* is what is actually used.
 
     Constructor:
     * FabDoveTailBit("Name", "BitStem", "ShapeStem", Attributes, CuttingEdgeAngle,
@@ -258,9 +259,9 @@ class FabDoveTailBit(FabBit):
         check_type("FabDoveTailBit.CuttingEdgeHeight", self.CuttingEdgeHeight, Union[float, str])
         check_type("FabDoveTailBit.Diameter", self.Diameter, Union[float, str])
         check_type("FabDoveTailBit.Length", self.Length, Union[float, str])
-        check_type("FabDoveTailBit.ShankDiameter", self.ShankDiameter, Union[float, str])
         check_type("FabDoveTailBit.NeckHieght", self.NeckHeight, Union[float, str])
         check_type("FabDoveTailBit.NeckDiameter", self.NeckDiameter, Union[float, str])
+        check_type("FabDoveTailBit.ShankDiameter", self.ShankDiameter, Union[float, str])
         check_type("FabDoveTailBit.TipDiameter", self.TipDiameter, Union[float, str])
 
     # FabDoveTailBit._unit_tests():
@@ -277,6 +278,8 @@ class FabDoveTailBit(FabBit):
         assert dove_tail_bit.CuttingEdgeHeight == "9.000 mm"
         assert dove_tail_bit.Diameter == "19.050 mm"
         assert dove_tail_bit.Length == "54.200 mm"
+        assert dove_tail_bit.NeckDiameter == "8.000 mm"
+        assert dove_tail_bit.NeckHeight == "5.000 mm"
         assert dove_tail_bit.ShankDiameter == "9.525 mm"
         assert dove_tail_bit.TipDiameter == "5.000 mm"
         assert dove_tail_bit.Attributes == FabAttributes.fromJSON({

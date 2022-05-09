@@ -54,14 +54,14 @@ The top-down class hierarchy for the FabTools package is:
 
 # <--------------------------------------- 100 characters ---------------------------------------> #
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path as PathFile
 import json
 import tempfile
 from typeguard import check_type, check_argument_types
-from typing import Any, Dict, IO, List, Tuple, Union
-from FabToolTemplates import FabBit, FabBitTemplate, FabBitTemplates, FabBitTemplatesFactory
-from FabToolTemplates import FabShapes
+from typing import Any, Dict, IO, List, Sequence, Tuple, Union
+from FabToolTemplates import FabAttributes, FabBit, FabBitTemplate, FabBitTemplates
+from FabToolTemplates import FabBitTemplatesFactory, FabShapes
 from FabToolBits import FabBallEndBit, FabBullNoseBit, FabChamferBit, FabDoveTailBit, FabDrillBit
 from FabToolBits import FabEndMillBit, FabProbeBit, FabSlittingSawBit, FabThreadMillBit, FabVBit
 
@@ -78,8 +78,8 @@ class FabBits(object):
 
     Constructor:
     * FabBits("Name", BitsPath, Bits, Names)
-    """
 
+    """
     Bits: Tuple[FabBit, ...]
     Names: Tuple[str, ...]
     Stems: Tuple[str, ...]
@@ -90,6 +90,29 @@ class FabBits(object):
         check_type("FabBits.Bits", self.Bits, Tuple[FabBit, ...])
         check_type("FabBits.Names", self.Names, Tuple[str, ...])
         check_type("FabBits.Stems", self.Stems, Tuple[str, ...])
+
+    # FabBits.fromSequence():
+    @staticmethod
+    def fromSequence(bits: Sequence[FabBit], shapes: FabShapes, tracing: str = "") -> "FabBits":
+        """Create FabBits from a sequence of FabBit's
+
+        Attributes:
+        * *bits* (Sequence[FabBit])): The sequence of FabBit's.
+
+        Returns:
+        * (FabBits) The resulting FabBits object
+
+        """
+        if tracing:
+            print(f"{tracing}=>FabBits.fromBits(*, *)")
+        bits_table: Dict[str, FabBit] = {bit.Name: bit for bit in bits}
+        ordered_names: Tuple[str, ...] = tuple(sorted(bits_table.keys()))
+        ordered_bits: Tuple[FabBit, ...] = tuple([bits_table[name] for name in ordered_names])
+        ordered_stems: List[str] = [bit.BitStem for bit in ordered_bits]
+        fab_bits: FabBits = FabBits(ordered_bits, ordered_names, tuple(ordered_stems))
+        if tracing:
+            print(f"{tracing}<=FabBits.fromBits(*, *)=>*")
+        return fab_bits
 
     # FabBits.shapeNameToTemplateAndBit():
     @staticmethod
@@ -364,7 +387,7 @@ class FabLibrary(object):
     * *NumberedBits*: Tuple[Tuple[int, FabBit], ...]: A list of numbered to FabBit's.
 
     Constructor:
-    * FabLibrary("Name", Stem, NumberedBits)
+    * FabLibrary("Name", NumberedBits)
 
     """
 
@@ -488,7 +511,7 @@ class FabLibrary(object):
     def write(self, tools_directory: PathFile, tracing: str = "") -> None:
         """Write FabLibrary out to disk."""
         if tracing:
-            print(f"{tracing}=>FabLibrary.write({tools_directory}")
+            print(f"{tracing}=>FabLibrary.write({tools_directory})")
 
         if tools_directory.stem != "Tools":
             tools_directory = tools_directory / "Tools"  # pragma: no unit cover
@@ -513,7 +536,7 @@ class FabLibrary(object):
             json_file.write(json_text)
 
         if tracing:
-            print(f"{tracing}<=FabLibrary.write({tools_directory}")
+            print(f"{tracing}<=FabLibrary.write({tools_directory})")
 
     # FabLibrary._unit_tests():
     @staticmethod
@@ -665,7 +688,7 @@ class FabLibraries(object):
 
 
 # FabTooling:
-@dataclass
+@dataclass(frozen=True)
 class FabTooling(object):
     """FabTooling: A class that contains FabBit's, FabShape's, and FabLibrary's.
 
@@ -752,6 +775,331 @@ class FabTooling(object):
             print(f"{tracing}<=FabTooling._unit_tests()")
 
 
+# FabToolingFactory:
+@dataclass
+class FabToolingFactory(object):
+    """FabToolingFactory: A class to build a FabTooling."""
+
+    Name: str
+    _shapes: FabShapes = field(init=False, repr=False)
+    _tool_table: Dict[int, FabBit] = field(init=False, repr=False)
+
+    # FabToolingFactory.__post_init__():
+    def __post_init__(self) -> None:
+        """Finish initializing a FabToolingFactory."""
+        check_type("FabToolingFactory", self.Name, str)
+        tools_directory: PathFile = PathFile(__file__).parent / "Tools"
+        shapes: FabShapes = FabShapes.read(tools_directory)
+        self._shapes = shapes
+        self._tool_table = {}
+
+    # FabToolingFactory.drill():
+    def drill(self, tool_number: int, name: str, stem_name: str, material: str, flutes: int,
+              diameter: Union[str, float], length: Union[str, float],
+              tip_angle: Union[str, float], is_center_cut: bool,
+              maximum_depth: Union[str, float]) -> None:
+        """Add a drill to FabToolingFactory:
+
+        Arguments:
+        * *tool_number* (int): The tool number to use.
+        * *name* (str): The drill name:
+        * *stem_name* (str): The file stem name to use for the `.fctb` file.
+        * *material* (str): The material the tool is made out of.
+        * *flutes* (int): The number of flutes.
+        * *diameter* (Union[str, float]): The drill diameter as string (mm/inch) or a float (mm).
+        * *length* (Union[str, float]): The overall length of the drill.
+        * *tip_angle* (Union[str, float): The drill point tip angle in degrees.
+        * *is_center_cut* (bool): True for center cut drills and False otherwise.
+        * *maximum_depth* (Union[str, float]): The maximum drilling depth.
+        """
+        attributes: FabAttributes = FabAttributes.fromJSON({
+            "Material": material,
+            "Flutes": flutes,
+            "IsCenterCut": is_center_cut,
+            "MaximumDepth": maximum_depth,
+        })
+        drill_bit: FabDrillBit = FabDrillBit(name, stem_name, "drill", attributes,
+                                             diameter, length, tip_angle)
+        self._insert_tool(tool_number, drill_bit)
+
+    # FabToolingFactory.double_angle():
+    def double_angle(self, tool_number: int, name: str, stem_name: str, material: str, flutes: int,
+                     diameter: Union[str, float], cutting_edge_height: Union[str, float],
+                     cutting_edge_angle: Union[str, float], length: Union[str, float],
+                     shank_diameter: Union[str, float], neck_diameter: Union[str, float],
+                     neck_height: Union[str, float]) -> None:
+        """Add a drill to FabToolingFactory:
+
+        Arguments:
+        * *tool_number* (int): The tool number to use.
+        * *name* (str): The drill name:
+        * *stem_name* (str): The file stem name to use for the `.fctb` file.
+        * *material* (str): The material the tool is made out of.
+        * *flutes* (int): The number of flutes.
+        * *diameter* (Union[str, float]):
+           The diameter of the double angle cutter as string (mm/inch) or a float (mm).
+        * *cutting_edge_height* (Union[str, float]):
+          The height of the double angle cutter from the tool bottom to the neck bottom.
+        * *cutting_edge_angle* (Union[str, float]):
+          The cutting angle of the double angle cutter.
+        * *length* (Union[str, float]):
+          The overall length of the entire double angle cutter including shank.
+        * *shank_diameter* (Union[str, float]): The diameter of the shank (i.e. non cutting edge.)
+        * *neck_diameter* (Union[str, float]):
+          The diameter of double angle cutter neck.
+        * *neck_height* (Union[str, float]):
+          The height of the neck from the top of the double angle cutter to the bottom of the shank.
+
+        """
+        attributes: FabAttributes = FabAttributes.fromJSON({
+            "Material": material,
+            "Flutes": flutes,
+        })
+        double_angle: FabThreadMillBit = FabThreadMillBit(
+            name, stem_name, "endmill", attributes,
+            Diameter=diameter, CuttingAngle=cutting_edge_angle,
+            Crest=cutting_edge_height, Length=length, ShankDiameter=shank_diameter,
+            NeckDiameter=neck_diameter, NeckLength=neck_height)
+        self._insert_tool(tool_number, double_angle)
+
+    # FabToolingFactory.dove_tail():
+    def dove_tail(self, tool_number: int, name: str, stem_name: str, material: str, flutes: int,
+                  diameter: Union[str, float],
+                  cutting_edge_height: Union[str, float], cutting_edge_angle: Union[str, float],
+                  length: Union[str, float], shank_diameter: Union[str, float],
+                  neck_diameter: Union[str, float], neck_height: Union[str, float]) -> None:
+        """Add a drill to FabToolingFactory:
+
+        Arguments:
+        * *tool_number* (int): The tool number to use.
+        * *name* (str): The drill name:
+        * *stem_name* (str): The file stem name to use for the `.fctb` file.
+        * *material* (str): The material the tool is made out of.
+        * *flutes* (int): The number of flutes.
+        * *diameter* (Union[str, float]):
+           The diameter of the bottom of the dove tail cutter as string (mm/inch) or a float (mm).
+        * *cutting_edge_height* (Union[str, float]):
+          The height of the dove tail cutter from the bottom to the neck bottom.
+        * *cutting_edge_angle* (Union[str, float]):
+          The height of the dove tail cutter from the bottom to the neck bottom.
+        * *length* (Union[str, float]):
+          The overall length of the entire dove tail cutter including shank.
+        * *shank_diameter* (Union[str, float]): The diameter of the shank (i.e. non cutting edge.)
+        * *neck_diameter* (Union[str, float]):
+          The diameter of dove tail cutter neck.
+        * *neck_height* (Union[str, float]):
+          The height of the neck from the top of the dove tail cutter to the bottom of the shank.
+
+        """
+        attributes: FabAttributes = FabAttributes.fromJSON({
+            "Material": material,
+            "Flutes": flutes,
+        })
+        dove_tail: FabDoveTailBit = FabDoveTailBit(
+            name, stem_name, "endmill", attributes,
+            Diameter=diameter, CuttingEdgeAngle=cutting_edge_angle,
+            CuttingEdgeHeight=cutting_edge_height, Length=length, ShankDiameter=shank_diameter,
+            NeckDiameter=neck_diameter, NeckHeight=neck_height, TipDiameter=diameter)
+        self._insert_tool(tool_number, dove_tail)
+
+    # FabToolingFactory.end_mill():
+    def end_mill(self, tool_number: int, name: str, stem_name: str, material: str, flutes: int,
+                 diameter: Union[str, float], cutting_edge_height: Union[str, float],
+                 length: Union[str, float], shank_diameter: Union[str, float]) -> None:
+        """Add a drill to FabToolingFactory:
+
+        Arguments:
+        * *tool_number* (int): The tool number to use.
+        * *name* (str): The drill name:
+        * *stem_name* (str): The file stem name to use for the `.fctb` file.
+        * *material* (str): The material the tool is made out of.
+        * *flutes* (int): The number of flutes.
+        * *diameter* (Union[str, float]):
+           The diameter end mill cutter as string (mm/inch) or a float (mm).
+        * *length* (Union[str, float]): The overall length of the entire end-mill including shank.
+        * *cutting_edge_height (Union[str, float]): The length of the cutting edge.
+        * *shank_diameter* (Union[str, float]): The diameter of the shank (i.e. non cutting edge.)
+        """
+        attributes: FabAttributes = FabAttributes.fromJSON({
+            "Material": material,
+            "Flutes": flutes,
+        })
+        end_mill: FabEndMillBit = FabEndMillBit(
+            name, stem_name, "endmill", attributes,
+            cutting_edge_height, diameter, length, shank_diameter)
+        self._insert_tool(tool_number, end_mill)
+
+    # FabToolingFactory.v_groove():
+    def v_groove(self, tool_number: int, name: str, stem_name: str, material: str, flutes: int,
+                 diameter: Union[str, float], cutting_edge_angle: Union[str, float],
+                 cutting_edge_height: Union[str, float], length: Union[str, float],
+                 shank_diameter: Union[str, float], tip_diameter: Union[str, float]) -> None:
+        """Add a V grove bit to FabToolingFactory:
+
+        Arguments:
+        * *tool_number* (int): The tool number to use.
+        * *name* (str): The drill name:
+        * *stem_name* (str): The file stem name to use for the `.fctb` file.
+        * *material* (str): The material the tool is made out of.
+        * *flutes* (int): The number of flutes.
+        * *diameter* (Union[str, float]):
+           The outer diameter v grove bit as string (mm/inch) or a float (mm).
+        * *length* (Union[str, float]): The overall length of the entire end-mill including shank.
+        * *cutting_edge_angle (Union[str, float]): The cutting edge angle in degrees.
+        * *cutting_edge_height (Union[str, float]):
+          The length of the cutting edge above the V portion of the bit.
+        * *shank_diameter* (Union[str, float]): The diameter of the shank (i.e. non cutting edge.)
+        * *tip_diameter* (Union[str, float]): The bottom tip diameter (set to 0 for a point.)
+        """
+        attributes: FabAttributes = FabAttributes.fromJSON({
+            "Material": material,
+            "Flutes": flutes,
+        })
+        v_groove: FabVBit = FabVBit(
+            name, stem_name, "endmill", attributes,
+            CuttingEdgeAngle=cutting_edge_angle, CuttingEdgeHeight=cutting_edge_height,
+            Diameter=diameter, Length=length,
+            ShankDiameter=shank_diameter, TipDiameter=tip_diameter)
+        self._insert_tool(tool_number, v_groove)
+
+    # FabToolingFactory._insert_tool():
+    def _insert_tool(self, tool_number: int, bit: FabBit) -> None:
+        """Insert a tool into FabToolingFactory.
+
+        Arguments:
+        * *tool_number* (int): The tool number to use.
+        * *bit* (FabBit): The bit to assign to the tool number.
+
+        """
+        assert check_argument_types()
+        if tool_number < 1:
+            raise KeyError(f"FabToolingFactory._insert_tool(): "
+                           f"Tool number ({tool_number}) is not positive")  # pragma: no unit cover
+        if tool_number in self._tool_table:
+            raise KeyError(
+                f"FabToolingFactory._insert_tool(): Tool number ({tool_number}) "
+                "is already assigned to '{tool_table[tool_number].name}'")  # pragma: no unit cover
+        self._tool_table[tool_number] = bit
+
+    # FabToolingFactory.write():
+    def write(self, library_stem: str, tools_directory: PathFile, tracing: str) -> None:
+        """Write FabToolingFactory out to disk.
+
+        Arguments:
+        * *library_stem* (str): The stem of the `.fctl` library file in `.../Tools/Library/`.
+        * *tools_directory* (PathFile): The Tools directory to write everything out to.
+
+        """
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabToolingFactory.write({library_stem}, {tools_directory})")
+
+        # Read *shapes* from this *this_tools_directory*:
+        this_tools_directory: PathFile = PathFile(__file__).parent / "Tools"
+        shapes: FabShapes = FabShapes.read(this_tools_directory)
+
+        tool_table: Dict[int, FabBit] = self._tool_table
+        bits: FabBits = FabBits.fromSequence(
+            tuple(tool_table.values()), shapes, tracing=next_tracing)
+        sorted_tool_numbers: Tuple[int, ...] = tuple(sorted(tool_table.keys()))
+        tool_number: int
+        bit: FabBit
+        numbered_bits: Tuple[Tuple[int, FabBit], ...] = tuple([
+            (tool_number, tool_table[tool_number]) for tool_number in sorted_tool_numbers
+        ])
+
+        library: FabLibrary = FabLibrary(library_stem, numbered_bits)
+        libraries: FabLibraries = FabLibraries("Library", (library,), ("TestLibrary",))
+        tooling: FabTooling = FabTooling(shapes, bits, libraries)
+        tooling.write(tools_directory, tracing=next_tracing)
+        if tracing:
+            print(f"{tracing}<=FabToolingFactory.write({library_stem}, {tools_directory})=>*")
+
+    # FabToolingFactory._unit_tests():
+    @staticmethod
+    def _unit_tests(tracing: str) -> None:
+        """Unit tests for FabToolingFactory."""
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabToolingFactory._unit_tests()")
+
+        factory: FabToolingFactory = FabToolingFactory("TestTooling")
+        factory.v_groove(2, "3/8 in Mill Drill", "3_8_in_Mill_Drill", "HSS", flutes=2,
+                         diameter="0.375 in", cutting_edge_angle="90 °",
+                         cutting_edge_height="0.775 in", length="2.25 in",
+                         shank_diameter="0.375", tip_diameter="0.000 in")
+        factory.drill(3, "#36 Drill", "No_32_Drill", "HSS", 2,  # McMaster: 2912A211 2.5" deep drill
+                      "0.1065 in", "2.5000 in", "118 °", False, "0.0000 in")  # Max Z?
+        factory.drill(4, "#27 Drill", "No_27_Drill", "HSS", 2,
+                      "0.1440 in", "1.875 in", "118 °", False, "0.0000 in")  # Max Z?
+        factory.end_mill(5, "3/8 in End Mill", "3_8_in_End_Mill", "HSS", flutes=2,
+                         diameter="0.375 in", length="0.750 in",
+                         cutting_edge_height="0.375 in", shank_diameter="0.375 in")
+        factory.end_mill(6, "1/4 in End Mill", "1_4_in_End_Mill", "HSS", flutes=4,
+                         diameter="0.250 in", length="2.00 in",
+                         cutting_edge_height="0.750 in", shank_diameter="0.250 in")
+        factory.double_angle(7, "3/4 in 90° Double Angle", "3_4_in_90_deg_Double_Angle", "HSS",
+                             flutes=10, diameter="0.750 in", cutting_edge_height="0.250 in",
+                             cutting_edge_angle="90 °", length="2.000 in",
+                             shank_diameter="0.375 in", neck_diameter="0.250 in",
+                             neck_height="0.625 in")
+        factory.dove_tail(8, "3/8 in 45 ° Dove Tail", "3_8_in_45_deg_Dove_Tail", "HSS", flutes=6,
+                          diameter="0.375 in", cutting_edge_height="0.125 in",
+                          cutting_edge_angle="45 °", length="2.125 in",
+                          shank_diameter="0.375 in", neck_diameter="0.0125 in",
+                          neck_height="0.450 in")
+        factory.end_mill(9, "1/8 in End Mill", "1_8_in_End_Mill", "HSS", flutes=2,
+                         diameter="0.125 in", length="2.000 in",
+                         cutting_edge_height="0.500 in", shank_diameter="0.125 in")
+        factory.end_mill(10, "3/16 in End Mill", "3_16_in_End_Mill", "HSS", flutes=2,
+                         diameter="0.1875 in", length="2.500 in",
+                         cutting_edge_height="0.500 in", shank_diameter="0.1875 in")
+        factory.drill(11, "#25 Drill", "No_25_Drill", "HSS", 2,
+                      "0.1495 in", "2.000 in", "118 °", False, "0.0000 in")  # Max Z?
+        factory.drill(12, "#9 Drill", "No_9_Drill", "HSS", 2,
+                      "0.1960 in", "12.34 in", "118 °", False, "0.0000 in")  # Max Z?
+        factory.drill(13, "#43 Drill", "No_43_Drill", "HSS", 2,  # McMaster: 3096357
+                      "0.0890 in", "12.34 in", "118 °", False, "0.0000 in")  # Max Z?
+        factory.drill(14, "#32 Drill", "No_32_Drill", "HSS", 2,
+                      "0.1160 in", "12.34 in", "118 °", False, "0.0000 in")  # Max Z?
+        factory.drill(15, "6mm Drill", "6mm_Drill", "HSS", 2,
+                      "6.0000 mm", "12.34 in", "135 °", False, "0.0000 in")  # Max Z?
+        # end_mill_3_4 = shop._end_mill_append("3/4 End Mill",
+        #  13, hss, in3_4, 2, in1_3_8)
+        factory.drill(17, "#30 Drill", "No_30_Drill", "HSS", 2,
+                      "0.1285 in", "12.34 in", "118 °", False, "0.0000 in")  # Max Z?
+        factory.drill(18, "1/8 in Drill", "1_8_in_Drill", "HSS", 2,
+                      "0.125 in", "12.34 in", "118 °", False, "0.0000 in")  # Max Z?
+        factory.drill(19, "1/16 in Drill", "1_16_in_Drill", "HSS", 2,
+                      "0.0625 in", "12.34", "118 °", False, "0.0000 in")  # Max Z?
+        factory.drill(20, "3/32 in Drill", "3_16_in_Drill", "HSS", 2,
+                      "0.09375 in", "12.34", "118 °", False, "0.0000 in")  # Max Z?
+        factory.drill(21, "#42 Drill", "No_42_Drill", "HSS", 2,
+                      "0.0935 in", "12.34", "118 °", False, "0.0000 in")  # Max Z?
+        factory.drill(22, "#52 Drill", "No_52_Drill", "HSS", 2,
+                      "0.0635 in", "12.34", "118 °", False, "0.0000 in")  # Max Z?
+        factory.drill(23, "3/64 Drill", "3_64_in_Drill", "HSS", 2,
+                      "0.46875 in", "12.34", "118 °", False, "0.0000 in")  # Max Z?
+        factory.drill(24, "#19 Drill", "No_19_Drill", "HSS", 2,
+                      "0.1660 in", "12.34", "118 °", False, "0.0000 in")  # Max Z?
+        factory.drill(25, "#50 Drill", "No_50_Drill", "HSS", 2,
+                      "0.0700 in", "12.34", "118 °", False, "0.0000 in")  # Max Z?
+        factory.drill(26, "8mm Drill", "8mm_Drill", "HSS", 2,
+                      "8.0000 mm", "12.34", "135 °", False, "0.0000 in")  # Max Z?
+        # tap_4_40 = shop._tap_append("#4-40 tap",
+        #   27, hss, L(inch=0.0890), 2, L(inch=0.550), L(inch=0.050), L(inch=1.000)/40.0,
+        #   Time(sec=1.500), Time(sec=1.500), Hertz(rpm=500.0), Hertz(rpm=504.0), 0.050)
+        # tap_6_32 = shop._tap_append("#6-32 tap",
+        #   28, hss, L(inch=0.1065), 2, L(inch=0.625), L(inch=0.100), L(inch=1.000)/32.0,
+        #   Time(sec=1.500), Time(sec=1.500), Hertz(rpm=500.0), Hertz(rpm=504.0), 0.050)
+
+        test_tools_directory: PathFile = PathFile("/tmp") / "Tools"
+        factory.write("TestLibrary", test_tools_directory, tracing=next_tracing)
+
+        if tracing:
+            print(f"{tracing}<=-FabToolingFactory._unit_tests()")
+
+
 # Main program:
 def main(tracing: str) -> None:
     """Main program that executes unit tests."""
@@ -763,6 +1111,7 @@ def main(tracing: str) -> None:
     FabLibrary._unit_tests(tracing=next_tracing)
     FabLibraries._unit_tests(tracing=next_tracing)
     FabTooling._unit_tests(tracing=next_tracing)
+    FabToolingFactory._unit_tests(tracing=next_tracing)
     if tracing:
         print(f"{tracing}<=main()")
 

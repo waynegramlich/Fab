@@ -63,6 +63,13 @@ The top-down class hierarchy for the FabTools package is:
   * 3.3 [write()](#fabtools----write): Write FabLibrary out to disk.
 * 4 Class: [FabTooling](#fabtools--fabtooling):
   * 4.1 [write()](#fabtools----write): Write FabTooling into a directory.
+* 5 Class: [FabToolingFactory](#fabtools--fabtoolingfactory):
+  * 5.1 [drill()](#fabtools----drill): Add a drill to FabToolingFactory:
+  * 5.2 [double_angle()](#fabtools----double-angle): Add a drill to FabToolingFactory:
+  * 5.3 [dove_tail()](#fabtools----dove-tail): Add a drill to FabToolingFactory:
+  * 5.4 [end_mill()](#fabtools----end-mill): Add a drill to FabToolingFactory:
+  * 5.5 [v_groove()](#fabtools----v-groove): Add a V grove bit to FabToolingFactory:
+  * 5.6 [write()](#fabtools----write): Write FabToolingFactory out to disk.
 
 ## <a name="fabtools--fabbits"></a>1 Class FabBits:
 
@@ -142,7 +149,7 @@ Attributes:
 * *NumberedBits*: Tuple[Tuple[int, FabBit], ...]: A list of numbered to FabBit's.
 
 Constructor:
-* FabLibrary("Name", Stem, NumberedBits)
+* FabLibrary("Name", NumberedBits)
 
 ### <a name="fabtools----lookupname"></a>3.1 `FabLibrary.`lookupName():
 
@@ -184,6 +191,124 @@ Arguments:
 
 Returns:
 * (FabTooling) The resulting FabTooling object.
+
+
+## <a name="fabtools--fabtoolingfactory"></a>5 Class FabToolingFactory:
+
+A class to build a FabTooling.
+
+### <a name="fabtools----drill"></a>5.1 `FabToolingFactory.`drill():
+
+FabToolingFactory.drill(self, tool_number: int, name: str, stem_name: str, material: str, flutes: int, diameter: Union[str, float], length: Union[str, float], tip_angle: Union[str, float], is_center_cut: bool, maximum_depth: Union[str, float]) -> None:
+
+Add a drill to FabToolingFactory:
+Arguments:
+* *tool_number* (int): The tool number to use.
+* *name* (str): The drill name:
+* *stem_name* (str): The file stem name to use for the `.fctb` file.
+* *material* (str): The material the tool is made out of.
+* *flutes* (int): The number of flutes.
+* *diameter* (Union[str, float]): The drill diameter as string (mm/inch) or a float (mm).
+* *length* (Union[str, float]): The overall length of the drill.
+* *tip_angle* (Union[str, float): The drill point tip angle in degrees.
+* *is_center_cut* (bool): True for center cut drills and False otherwise.
+* *maximum_depth* (Union[str, float]): The maximum drilling depth.
+
+### <a name="fabtools----double-angle"></a>5.2 `FabToolingFactory.`double_angle():
+
+FabToolingFactory.double_angle(self, tool_number: int, name: str, stem_name: str, material: str, flutes: int, diameter: Union[str, float], cutting_edge_height: Union[str, float], cutting_edge_angle: Union[str, float], length: Union[str, float], shank_diameter: Union[str, float], neck_diameter: Union[str, float], neck_height: Union[str, float]) -> None:
+
+Add a drill to FabToolingFactory:
+Arguments:
+* *tool_number* (int): The tool number to use.
+* *name* (str): The drill name:
+* *stem_name* (str): The file stem name to use for the `.fctb` file.
+* *material* (str): The material the tool is made out of.
+* *flutes* (int): The number of flutes.
+* *diameter* (Union[str, float]):
+   The diameter of the double angle cutter as string (mm/inch) or a float (mm).
+* *cutting_edge_height* (Union[str, float]):
+  The height of the double angle cutter from the tool bottom to the neck bottom.
+* *cutting_edge_angle* (Union[str, float]):
+  The cutting angle of the double angle cutter.
+* *length* (Union[str, float]):
+  The overall length of the entire double angle cutter including shank.
+* *shank_diameter* (Union[str, float]): The diameter of the shank (i.e. non cutting edge.)
+* *neck_diameter* (Union[str, float]):
+  The diameter of double angle cutter neck.
+* *neck_height* (Union[str, float]):
+  The height of the neck from the top of the double angle cutter to the bottom of the shank.
+
+### <a name="fabtools----dove-tail"></a>5.3 `FabToolingFactory.`dove_tail():
+
+FabToolingFactory.dove_tail(self, tool_number: int, name: str, stem_name: str, material: str, flutes: int, diameter: Union[str, float], cutting_edge_height: Union[str, float], cutting_edge_angle: Union[str, float], length: Union[str, float], shank_diameter: Union[str, float], neck_diameter: Union[str, float], neck_height: Union[str, float]) -> None:
+
+Add a drill to FabToolingFactory:
+Arguments:
+* *tool_number* (int): The tool number to use.
+* *name* (str): The drill name:
+* *stem_name* (str): The file stem name to use for the `.fctb` file.
+* *material* (str): The material the tool is made out of.
+* *flutes* (int): The number of flutes.
+* *diameter* (Union[str, float]):
+   The diameter of the bottom of the dove tail cutter as string (mm/inch) or a float (mm).
+* *cutting_edge_height* (Union[str, float]):
+  The height of the dove tail cutter from the bottom to the neck bottom.
+* *cutting_edge_angle* (Union[str, float]):
+  The height of the dove tail cutter from the bottom to the neck bottom.
+* *length* (Union[str, float]):
+  The overall length of the entire dove tail cutter including shank.
+* *shank_diameter* (Union[str, float]): The diameter of the shank (i.e. non cutting edge.)
+* *neck_diameter* (Union[str, float]):
+  The diameter of dove tail cutter neck.
+* *neck_height* (Union[str, float]):
+  The height of the neck from the top of the dove tail cutter to the bottom of the shank.
+
+### <a name="fabtools----end-mill"></a>5.4 `FabToolingFactory.`end_mill():
+
+FabToolingFactory.end_mill(self, tool_number: int, name: str, stem_name: str, material: str, flutes: int, diameter: Union[str, float], cutting_edge_height: Union[str, float], length: Union[str, float], shank_diameter: Union[str, float]) -> None:
+
+Add a drill to FabToolingFactory:
+Arguments:
+* *tool_number* (int): The tool number to use.
+* *name* (str): The drill name:
+* *stem_name* (str): The file stem name to use for the `.fctb` file.
+* *material* (str): The material the tool is made out of.
+* *flutes* (int): The number of flutes.
+* *diameter* (Union[str, float]):
+   The diameter end mill cutter as string (mm/inch) or a float (mm).
+* *length* (Union[str, float]): The overall length of the entire end-mill including shank.
+* *cutting_edge_height (Union[str, float]): The length of the cutting edge.
+* *shank_diameter* (Union[str, float]): The diameter of the shank (i.e. non cutting edge.)
+
+### <a name="fabtools----v-groove"></a>5.5 `FabToolingFactory.`v_groove():
+
+FabToolingFactory.v_groove(self, tool_number: int, name: str, stem_name: str, material: str, flutes: int, diameter: Union[str, float], cutting_edge_angle: Union[str, float], cutting_edge_height: Union[str, float], length: Union[str, float], shank_diameter: Union[str, float], tip_diameter: Union[str, float]) -> None:
+
+Add a V grove bit to FabToolingFactory:
+Arguments:
+* *tool_number* (int): The tool number to use.
+* *name* (str): The drill name:
+* *stem_name* (str): The file stem name to use for the `.fctb` file.
+* *material* (str): The material the tool is made out of.
+* *flutes* (int): The number of flutes.
+* *diameter* (Union[str, float]):
+   The outer diameter v grove bit as string (mm/inch) or a float (mm).
+* *length* (Union[str, float]): The overall length of the entire end-mill including shank.
+* *cutting_edge_angle (Union[str, float]): The cutting edge angle in degrees.
+* *cutting_edge_height (Union[str, float]):
+  The length of the cutting edge above the V portion of the bit.
+* *shank_diameter* (Union[str, float]): The diameter of the shank (i.e. non cutting edge.)
+* *tip_diameter* (Union[str, float]): The bottom tip diameter (set to 0 for a point.)
+
+### <a name="fabtools----write"></a>5.6 `FabToolingFactory.`write():
+
+FabToolingFactory.write(self, library_stem: str, tools_directory: pathlib.Path, tracing: str) -> None:
+
+Write FabToolingFactory out to disk.
+Arguments:
+* *library_stem* (str): The stem of the `.fctl` library file in `.../Tools/Library/`.
+* *tools_directory* (PathFile): The Tools directory to write everything out to.
 
 
 

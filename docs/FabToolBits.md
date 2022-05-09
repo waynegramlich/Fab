@@ -108,7 +108,8 @@ Attributes:
 * *NeckHeight* (Union[str, float]):
    The height of the neck between the dove tail cutter and shank.
 * *ShankDiameter: (Union[str, float]): The dove tail shank diameter.
-* *TipDiameter* (Union[str, float]): The tip radius of the dove tail.
+* *TipDiameter* (Union[str, float]):
+  In theory, tip diameter of the dove tail.  In practice, *Diameter* is what is actually used.
 
 Constructor:
 * FabDoveTailBit("Name", "BitStem", "ShapeStem", Attributes, CuttingEdgeAngle,
