@@ -342,7 +342,8 @@ class ModelModule(ModelDoc):
         # Create the Title
         lines: List[str] = []
         if self.Name == "__init__":
-            lines.extend(self.Lines)  # Package is the top level doc string only.
+            # Package is the top level doc string only.
+            lines.extend(self.Lines)  # pragma: no unit cover
         else:
             lines.append(f"# {self.Name}: {self.Lines[0]}")
             lines.extend(self.Lines[1:])
@@ -389,7 +390,7 @@ class ModelModule(ModelDoc):
             markdown_file: IO[str]
             with open(markdown_path, "w") as markdown_file:
                 markdown_file.write("\n".join(markdown_lines))
-        except IOError:
+        except IOError:  # pragma: no unit covert
             raise RuntimeError(f"Unable to write to {markdown_path}")
 
         # Run *markdown_program*:
@@ -412,7 +413,7 @@ def process_arguments(arguments: Tuple[str, ...]) -> Tuple[Tuple[str, ...], Path
     # Process flags and collect *non_flag_arguments:
     documents_directory: Path = Path("docs")
     if not documents_directory.is_dir():
-        documents_directory = Path("/tmp")
+        documents_directory = Path("/tmp")  # pragma: no unit cover
     markdown_program: str = "cmark"
 
     directory_flag_prefix = "--directory="
@@ -421,29 +422,29 @@ def process_arguments(arguments: Tuple[str, ...]) -> Tuple[Tuple[str, ...], Path
     non_flag_arguments: List[str] = []
     argument: str
     for argument in arguments:
-        if argument.startswith(directory_flag_prefix):
+        if argument.startswith(directory_flag_prefix):  # pragma: no unit covert
             document_directory = Path(argument[len(directory_flag_prefix):])
             if not document_directory.is_dir():
                 raise RuntimeError(f"{document_directory} is not a directory")
         elif argument.startswith(markdown_flag_prefix):
-            markdown_program = argument[len(markdown_flag_prefix):]
+            markdown_program = argument[len(markdown_flag_prefix):]  # pragma: no unit covert
         elif argument == "--unit-test":
-            pass
+            pass  # pragma: no unit cover
         else:
             non_flag_arguments.append(argument)
-    if not non_flag_arguments:
-        non_flag_arguments.append(".")  # Scan current directory.
+    if not non_flag_arguments:  # Scan current directory.
+        non_flag_arguments.append(".")  # pragma: no unit cover
 
     module_names: Set[str] = set()
     for argument in non_flag_arguments:
         if argument.endswith(".py"):
             module_names.add(argument[:-3])
-        elif Path(argument).is_dir():
+        elif Path(argument).is_dir():  # pragma: no unit cover
             paths = tuple(Path(argument).glob("*.py"))
             path: Path
             for path in paths:
                 module_names.add(Path(path).stem)
-        else:
+        else:  # pragma: no unit cover
             module_names.add(argument)
 
     # module_names.add("__init__")
@@ -473,7 +474,7 @@ def main() -> int:
 
     try:
         module_names, document_directory, markdown_program = process_arguments(arguments)
-    except RuntimeError as runtime_error:
+    except RuntimeError as runtime_error:  # pragma: no unit cover
         print(runtime_error)
         return 1
 
@@ -485,12 +486,12 @@ def main() -> int:
         module: Any = None
         try:
             module = importlib.import_module(module_name)
-        except ModuleNotFoundError as module_not_found_error:
+        except ModuleNotFoundError as module_not_found_error:  # pragma: no unit cover
             print(f"Unable to open module '{module_name}': {str(module_not_found_error)}")
             return 1
-        except TypeError as type_error:
+        except TypeError as type_error:  # pragma: no unit cover
             print(f"Error with import of module '{module_name}: {str(type_error)}")
-        if module is None:
+        if module is None:  # pragma: no unit cover
             print(f"Unable to open module '{module_name}': Not clear why")
             return 1
 
@@ -501,7 +502,7 @@ def main() -> int:
         # Generate Markdown and HTML files:
         try:
             model_module.generate(document_directory, markdown_program)
-        except RuntimeError as runtime_error:
+        except RuntimeError as runtime_error:  # pragma: no unit cover
             print(runtime_error)
             return 1
 
