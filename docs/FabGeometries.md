@@ -42,14 +42,13 @@
   * 11.1 [circle()](#fabgeometries----circle): Draw a circle to a point.
   * 11.2 [close()](#fabgeometries----close): Close a sequence of arcs and lines.
   * 11.3 [copy_workplane()](#fabgeometries----copy-workplane): Create a new CadQuery workplane and push it onto the stack.
-  * 11.4 [cut_blind()](#fabgeometries----cut-blind): Use the current 2D object to cut a pocket to a known depth.
-  * 11.5 [extrude()](#fabgeometries----extrude): Extrude current 2D object to a known depth.
-  * 11.6 [hole()](#fabgeometries----hole): Drill a hole.
-  * 11.7 [line_to()](#fabgeometries----line-to): Draw a line to a point.
-  * 11.8 [move_to()](#fabgeometries----move-to): Draw a line to a point.
-  * 11.9 [show()](#fabgeometries----show): Print a detailed dump of a Fab_Query.
-  * 11.10 [subtract()](#fabgeometries----subtract): Subtract one solid form a Fab_Query.
-  * 11.11 [three_point_arc()](#fabgeometries----three-point-arc): Draw a three point arc.
+  * 11.4 [extrude()](#fabgeometries----extrude): Extrude current 2D object to a known depth.
+  * 11.5 [hole()](#fabgeometries----hole): Drill a hole.
+  * 11.6 [line_to()](#fabgeometries----line-to): Draw a line to a point.
+  * 11.7 [move_to()](#fabgeometries----move-to): Draw a line to a point.
+  * 11.8 [show()](#fabgeometries----show): Print a detailed dump of a Fab_Query.
+  * 11.9 [subtract()](#fabgeometries----subtract): Subtract one solid form a Fab_Query.
+  * 11.10 [three_point_arc()](#fabgeometries----three-point-arc): Draw a three point arc.
 
 ## <a name="fabgeometries--fabcircle"></a>1 Class FabCircle:
 
@@ -366,49 +365,43 @@ Fab_Query.copy_workplane(self, plane: FabGeometries.Fab_Plane, tracing: str = ''
 
 Create a new CadQuery workplane and push it onto the stack.
 
-### <a name="fabgeometries----cut-blind"></a>11.4 `Fab_Query.`cut_blind():
-
-Fab_Query.cut_blind(self, depth: float, tracing: str = '') -> None:
-
-Use the current 2D object to cut a pocket to a known depth.
-
-### <a name="fabgeometries----extrude"></a>11.5 `Fab_Query.`extrude():
+### <a name="fabgeometries----extrude"></a>11.4 `Fab_Query.`extrude():
 
 Fab_Query.extrude(self, depth: float, tracing: str = '') -> None:
 
 Extrude current 2D object to a known depth.
 
-### <a name="fabgeometries----hole"></a>11.6 `Fab_Query.`hole():
+### <a name="fabgeometries----hole"></a>11.5 `Fab_Query.`hole():
 
 Fab_Query.hole(self, diameter: float, depth: float, tracing: str = '') -> None:
 
 Drill a hole.
 
-### <a name="fabgeometries----line-to"></a>11.7 `Fab_Query.`line_to():
+### <a name="fabgeometries----line-to"></a>11.6 `Fab_Query.`line_to():
 
 Fab_Query.line_to(self, end: cadquery.occ_impl.geom.Vector, for_construction=False, tracing: str = '') -> None:
 
 Draw a line to a point.
 
-### <a name="fabgeometries----move-to"></a>11.8 `Fab_Query.`move_to():
+### <a name="fabgeometries----move-to"></a>11.7 `Fab_Query.`move_to():
 
 Fab_Query.move_to(self, point: cadquery.occ_impl.geom.Vector, tracing: str = '') -> None:
 
 Draw a line to a point.
 
-### <a name="fabgeometries----show"></a>11.9 `Fab_Query.`show():
+### <a name="fabgeometries----show"></a>11.8 `Fab_Query.`show():
 
 Fab_Query.show(self, label: str, tracing: str = '') -> None:
 
 Print a detailed dump of a Fab_Query.
 
-### <a name="fabgeometries----subtract"></a>11.10 `Fab_Query.`subtract():
+### <a name="fabgeometries----subtract"></a>11.9 `Fab_Query.`subtract():
 
 Fab_Query.subtract(self, remove_solid: 'Fab_Query', tracing: str = '') -> None:
 
 Subtract one solid form a Fab_Query.
 
-### <a name="fabgeometries----three-point-arc"></a>11.11 `Fab_Query.`three_point_arc():
+### <a name="fabgeometries----three-point-arc"></a>11.10 `Fab_Query.`three_point_arc():
 
 Fab_Query.three_point_arc(self, middle: cadquery.occ_impl.geom.Vector, end: cadquery.occ_impl.geom.Vector, for_construction: bool = False, tracing: str = '') -> None:
 

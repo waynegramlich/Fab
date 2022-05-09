@@ -367,12 +367,14 @@ class Fab_GeometryContext(object):
         return self._Query
 
     # Fab_GeometryContext.GeometryGroup():
-    @property
-    def GeometryGroup(self) -> Any:
-        """Return FabGeometry normal tSo 2D plane."""
-        if not self._GeometryGroup:
-            raise RuntimeError("Fab_GeometryContext.GeometryGroup(): not set yet; must be set")
-        return self._GeometryGroup
+    # @property
+    # def GeometryGroup(self) -> Any:
+    #     """Return FabGeometry normal tSo 2D plane."""
+    #     if not self._GeometryGroup:
+    #         raise RuntimeError(
+    #             "Fab_GeometryContext.GeometryGroup(): "
+    #             "not set yet; must be set")  # pragma: no unit cover
+    #     return self._GeometryGroup
 
     # Fab_GeometryContext.copy():
     def copy(self, tracing: str = "") -> "Fab_GeometryContext":
@@ -399,7 +401,7 @@ class Fab_GeometryContext(object):
         # if not isinstance(geometry_group, App.DocumentObjectGroup):
         #     raise RuntimeError(f"Fab_GeometryContext.set_geometry_grouop(): "
         #                        f"{type(geometry_group)} is not App.DocumentObjectGroup")
-        self._GeometryGroup = geometry_group
+        self._GeometryGroup = geometry_group  # pragma: no unit cover
 
 
 # Fab_Geometry:
@@ -848,14 +850,15 @@ class FabCircle(FabGeometry):
         # The response from Joe Strout is used.  There is probably an alternate solution based
         # on quaternions that is better, but the code below should be more than adequate.
         EPSILON = 1.0e-8
-        copy: Vector = Vector
-        normal: Vector = (self.Normal + copy).normalize()
+        copy: Vector = Vector()
+        normal: Vector = self.Normal / self.Normal.Length
         nx: float = normal.x
         ny: float = normal.y
         nz: float = normal.z
         xy_close: bool = abs(nx - ny) < EPSILON
         perpendicular1: Vector = (
-            Vector(-nz, 0, nx) if xy_close else Vector(-ny, nx, 0)).normalize()
+            Vector(-nz, 0, nx) if xy_close else Vector(-ny, nx, 0))
+        perpendicular1 = perpendicular1 / perpendicular1.Length
         perpendicular2: Vector = (normal + copy).cross(perpendicular1 + copy)
 
         center: Vector = self.Center
@@ -928,6 +931,10 @@ class FabCircle(FabGeometry):
             assert False
         except ValueError as value_error:
             assert str(value_error) == "Diameter (-1.0) must be positive.", value_error
+        circle: FabCircle = FabCircle(center, normal, 1.0)
+        box: FabBox = circle.Box
+        assert box.TNE == Vector(1.5, 2.0, 3.0)
+        assert box.BSW == Vector(0.5, 1.5, 3.0)
 
 
 # FabPolygon:
@@ -971,7 +978,7 @@ class FabPolygon(FabGeometry):
         for corner in self.Corners:
             if isinstance(corner, Vector):
                 points.append(corner)
-            elif isinstance(corner, tuple) and len(corner) == 2:
+            elif isinstance(corner, tuple) and len(corner) == 2:  # pragma: no unit cover
                 point: Any = corner[0]
                 assert isinstance(point, Vector)
                 points.append(point)
@@ -988,7 +995,7 @@ class FabPolygon(FabGeometry):
         corner: Union[Vector, Tuple[Vector, Union[int, float]]]
         for corner in self.Corners:
             if isinstance(corner, Vector):
-                corner = (corner, 0.0)
+                corner = (corner, 0.0)  # pragma: no unit cover
             point: Vector
             radius: float
             point, radius = corner
@@ -1013,16 +1020,19 @@ class FabPolygon(FabGeometry):
                 fillet = Fab_Fillet(corner + copy, 0.0)
             elif isinstance(corner, tuple):
                 if len(corner) != 2:
-                    raise ValueError(f"Polygon Corner[{index}]: {corner} tuple length is not 2")
+                    raise ValueError(f"Polygon Corner[{index}]: "
+                                     "{corner} tuple length is not 2")  # pragma: no unit cover
                 if not isinstance(corner[0], Vector):
-                    raise ValueError(f"Polygon Corner[{index}]: {corner} first entry is not Vector")
+                    raise ValueError(f"Polygon Corner[{index}]: {corner} "
+                                     "first entry is not Vector")  # pragma: no unit cover
                 if not isinstance(corner[1], (int, float)):
-                    raise ValueError(f"Polygon Corner[{index}]: {corner} first entry is not number")
+                    raise ValueError(f"Polygon Corner[{index}]: {corner} "
+                                     "first entry is not number")  # pragma: no unit cover
                 fillet = Fab_Fillet(corner[0] + copy, corner[1])
             else:
                 raise ValueError(
                     f"Polygon Corner[{index}] is {corner} which is neither a Vector nor "
-                    "(Vector, radius) tuple.")
+                    "(Vector, radius) tuple.")  # pragma: no unit cover
             fillets.append(fillet)
         # (Why __setattr__?)[https://stackoverflow.com/questions/53756788]
         object.__setattr__(self, "Fab_Fillets", tuple(fillets))
@@ -1031,10 +1041,10 @@ class FabPolygon(FabGeometry):
         self._double_link()
         radius_error: str = self._radii_check()
         if radius_error:
-            raise ValueError(radius_error)
+            raise ValueError(radius_error)  # pragma: no unit cover
         colinear_error: str = self._colinear_check()
         if colinear_error:
-            raise ValueError(colinear_error)
+            raise ValueError(colinear_error)  # pragma: no unit cover
         # These checks are repeated after 2D projection.
 
         # self._compute_arcs()
@@ -1057,7 +1067,7 @@ class FabPolygon(FabGeometry):
         projected_corners: List[Union[Vector, Tuple[Vector, Union[int, float]]]] = []
         for corner in self.Corners:
             if isinstance(corner, Vector):
-                projected_corners.append(plane.point_project(corner))
+                projected_corners.append(plane.point_project(corner))  # pragma: no unit cover
             elif isinstance(corner, tuple):
                 assert len(corner) == 2
                 point: Any = corner[0]
@@ -1250,11 +1260,11 @@ class Fab_Query(object):
         self._Query = cq.Workplane(plane)
 
     # Fab_Query.Plane():
-    @property
-    def Plane(self) -> Fab_Plane:
-        """Return the Fab_Plane associated from a Fab_Query."""
-        assert isinstance(self._Plane, Fab_Plane), self._Plane
-        return self._Plane
+    # @property
+    # def Plane(self) -> Fab_Plane:
+    #     """Return the Fab_Plane associated from a Fab_Query."""
+    #     assert isinstance(self._Plane, Fab_Plane), self._Plane
+    #     return self._Plane
 
     # Fab_Query.WorkPlane():
     @property
@@ -1292,7 +1302,8 @@ class Fab_Query(object):
             print(f"{tracing}=>Fab_Query.copy_workPlane({plane})")
         if not isinstance(plane, Fab_Plane):
             raise RuntimeError(
-                f"Fab_Query.copy_workplane(): Got {type(plane)}, not Fab_Plane")
+                f"Fab_Query.copy_workplane(): Got {type(plane)}, "
+                "not Fab_Plane")  # pragma: no unit cover
         if tracing:
             print(f"{tracing}{plane=}")
         self._Query = (
@@ -1301,16 +1312,6 @@ class Fab_Query(object):
         )
         if tracing:
             print(f"{tracing}<=Fab_Query.copy_workPlane({plane})")
-
-    # Fab_Query.cut():
-    def cut_blind(self, depth: float, tracing: str = "") -> None:
-        """Use the current 2D object to cut a pocket to a known depth."""
-        if tracing:
-            print(f"{tracing}<=>Fab_Query.cut_blind({depth})")
-        self._Query = (
-            cast(cq.Workplane, self._Query)
-            .cutBlind(depth)
-        )
 
     # Fab_Query.extrude():
     def extrude(self, depth: float, tracing: str = "") -> None:
