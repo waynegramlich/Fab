@@ -74,7 +74,7 @@ class Fab_Group(FabNode):
     # Fab_Group.is_group():
     def is_group(self) -> bool:
         """ Return True if FabNode is a Fab_Group."""
-        return True  # All other FabNode's return False.
+        return True  # All other FabNode's return False.  # pragma: no unit cover
 
     # Fab_Group._unit_tests()
     @staticmethod
@@ -101,7 +101,7 @@ class FabAssembly(Fab_Group):
     # FabAssembly.is_assembly():
     def is_assembly(self) -> bool:
         """ Return True if FabNode is a Fab_Group."""
-        return True  # All other FabNode's return False.
+        return True  # All other FabNode's return False.  # pragma: no unit cover
 
     # FabAssembly.to_json():
     def to_json(self) -> Dict[str, Any]:
@@ -136,15 +136,15 @@ class FabAssembly(Fab_Group):
                 sub_assembly = child_node._Assembly
             elif isinstance(child_node, FabSolid):
                 sub_assembly = child_node._Assembly
-            else:
+            else:  # pragma: no unit cover
                 raise RuntimeError(
-                    f"FabAssembly.post_produce2({self.Label}):"
-                    f"{child_node} is {type(child_node)}, not FabSolid or FabAssembly")
+                    f"FabAssembly.post_produce2({self.Label}): {child_node} is "
+                    f"{type(child_node)}, not FabSolid or FabAssembly")  # pragma: no unit cover
 
             if not isinstance(sub_assembly, cq.Assembly):
                 raise RuntimeError(
-                    f"FabAssembly.post_produce2({self.Label}):"
-                    f"{sub_assembly} is {type(sub_assembly)}, not cq.Assembly")
+                    f"FabAssembly.post_produce2({self.Label}): {sub_assembly} is "
+                    f"{type(sub_assembly)}, not cq.Assembly")  # pragma: no unit cover
             assembly.add(sub_assembly, name=child_node.Label)
         produce_state.ObjectsTable[self.Label] = assembly
         self._Assembly = assembly
@@ -190,22 +190,24 @@ class FabDocument(FabNode):
 
         # Verify *suffix*;
         if not isinstance(self.FilePath, Path):
-            raise RuntimeError(f"{self.FullPath}: '{self.FilePath}' is not a Path")
+            raise RuntimeError(
+                f"{self.FullPath}: '{self.FilePath}' is not a Path")  # pragma: no unit cover
         suffix: str = self.FilePath.suffix
         valid_suffixes: Tuple[str, ...] = (".fcstd", ".FCStd")
         if suffix not in valid_suffixes:
-            raise RuntimeError(f"{self.FullPath}: '{self.FilePath}' suffix '{suffix}' "
-                               f"is not a valid suffix {valid_suffixes}.")
+            raise RuntimeError(
+                f"{self.FullPath}: '{self.FilePath}' suffix '{suffix}' "
+                f"is not a valid suffix {valid_suffixes}.")  # pragma: no unit cover
 
         # Verify that *children* have valid types:
         # TODO: Is *children* always empty?
         children: Tuple[FabNode, ...] = self.Children
         child: FabNode
         for child in children:
-            if not isinstance(child, (FabAssembly, Fab_Group, FabSolid)):
+            if not isinstance(child, (FabAssembly, Fab_Group, FabSolid)):  # pragma: no unit cover
                 raise RuntimeError(
                     f"{self.FullPath}: {child.FullPath} is not a {type(child)}, "
-                    "not FabAssembly/Fab_Group/FabSolid")
+                    "not FabAssembly/Fab_Group/FabSolid")  # pragma: no unit cover
 
     # FabDocument.to_json():
     def to_json(self) -> Dict[str, Any]:
@@ -232,7 +234,7 @@ class FabDocument(FabNode):
     # FabDocument.is_document():
     def is_document(self) -> bool:
         """ Return True if FabNode is a Fab_Group."""
-        return True  # All other FabNode's return False.
+        return True  # All other FabNode's return False.  # pragma: no unit cover
 
     # FabDocument.produce():
     def produce(self) -> None:
@@ -265,21 +267,22 @@ class FabProject(FabNode):
     # FabProject.get_errors():
     def get_errors(self) -> List[str]:
         """Return the FabProject errors list."""
-        return self._Errors
+        return self._Errors  # pragma: no unit cover
 
     # FabProject.is_project():
     def is_project(self) -> bool:
         """ Return True if FabNode is a Fab_Group."""
-        return True  # All other FabNode's return False.
+        return True  # All other FabNode's return False.  # pragma: no unit cover
 
     # FabProject.new():
     @classmethod
     def new(cls, name: str) -> "FabProject":
         """Create a new root FabProject."""
         # print(f"=>FabProject.new({name}).new()")
-        project = cls(name, cast(FabNode, None))  # Magic to create a root FabProject.
+        project = cls(
+            name, cast(FabNode, None))  # Magic creation of  FabProject.  # pragma: no unit cover
         # print(f"<=Project.new({name})=>{project}")
-        return project
+        return project  # pragma: no unit cover
 
     # FabProject.to_json():
     def to_json(self) -> Dict[str, Any]:
@@ -376,7 +379,7 @@ class FabProject(FabNode):
             json_file.write(json.dumps(top_json, indent=2, sort_keys=True))
 
         # Output any *errors*:
-        if errors:
+        if errors:  # pragma: no unit cover
             print("Construction Errors:")
             # Mypy currently chokes on: `for index, error in enumerate(errors):`
             # with `error: "int" not callable`.  Weird.
