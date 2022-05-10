@@ -150,7 +150,8 @@ class FabBox(object):
 
         """
         if not isinstance(bounds, (list, tuple)):
-            raise RuntimeError(f"{bounds} is {str(type(bounds))}, not List/Tuple")
+            raise RuntimeError(
+                f"{bounds} is {str(type(bounds))}, not List/Tuple")  # pragma: no unit cover
         if not bounds:
             raise RuntimeError("Bounds sequence is empty")
 
@@ -163,7 +164,7 @@ class FabBox(object):
             elif isinstance(bound, FabBox):
                 vectors.append(bound.TNE)
                 vectors.append(bound.BSW)
-            else:
+            else:  # pragma: no unit coverage
                 raise RuntimeError(
                     f"{bound} is {str(type(bound))}, not Vector/FabBox")
 
@@ -420,23 +421,6 @@ class FabBox(object):
         """Delta Z."""
         return self._ZMax - self._ZMin
 
-    # FabBox.reorient():
-    def reorient(self, placement: Any) -> "FabBox":
-        """Reorient FabBox given a Placement.
-
-        Note after the *placement* is applied, the resulting box is still rectilinear with the
-        X/Y/Z axes.  In particular, box volume is *not* conserved.
-
-        Arguments:
-        * *placement* (Placement): The placement of the box corners.
-        """
-        reoriented_bsw: Vector = placement * self.BSW
-        reoriented_tne: Vector = placement * self.TNE
-        box = FabBox()
-        box.enclose((reoriented_bsw, reoriented_tne))
-        assert False, "TODO: Is this used anymore?"
-        return box
-
     # FabBox.intersect():
     def intersect(self, segment_start: Vector, segment_end: Vector,
                   tracing: str = "") -> Tuple[bool, float, float]:
@@ -536,14 +520,16 @@ class FabBox(object):
             elif maximum_ratio < minimum_ratio and minimum_ratio < finish_ratio:
                 new_finish_ratio = minimum_ratio
             if tracing and new_finish_ratio != finish_ratio:
-                print(f"{tracing}{axis_name}: Updating {finish_ratio=} to {new_finish_ratio=}")
+                print(f"{tracing}{axis_name}: Updating {finish_ratio=} "
+                      "to {new_finish_ratio=}")  # pragma: no unit cover
             finish_ratio = new_finish_ratio
 
-            # Somehow we over shorted the segment, so there must not be an *intersect*:
-            if begin_ratio > finish_ratio:
+            # Somehow we over shortened the segment, so there must not be an *intersect*:
+            if begin_ratio > finish_ratio:  # pragma: no unit cover
                 intersect = False
                 if tracing:
-                    print(f"{tracing}{begin_ratio=} > {finish_ratio}: => {intersect=})")
+                    print(f"{tracing}{begin_ratio=} > {finish_ratio}: "
+                          f"=> {intersect=})")
 
         # Make sure we did not screw up the rule of only shortening the line segment:
         assert 0 <= begin_ratio <= finish_ratio <= 1.0, "Segment truncation failed"
@@ -654,7 +640,7 @@ class FabBox(object):
         for index, test in enumerate(tests):
             error: str = check(test)
             if error:
-                print(f"Test[{index}]: {error}")
+                print(f"Test[{index}]: {error}")  # pragma: no unit cover
         assert not errors, f"{errors} intersect occurred"
 
     # FabBox._unit_tests():
@@ -671,6 +657,14 @@ class FabBox(object):
             assert vector.y == y, f"{vector.y} != {y}"
             assert vector.z == z, f"{vector.z} != {z}"
             return vector.x == x and vector.y == y and vector.z == z
+
+        # Do the 6 [XYZ]M{in,ax} checks.
+        assert box.XMin == -1.0
+        assert box.YMin == -2.0
+        assert box.ZMin == -3.0
+        assert box.XMax == 1.0
+        assert box.YMax == 2.0
+        assert box.ZMax == 3.0
 
         # Do 6 faces:
         assert check(box.E, 1, 0, 0), "E"
@@ -728,8 +722,8 @@ class FabBox(object):
             box1.enclose(())
             assert False
         except RuntimeError as runtime_error:
-            want1 = "Bounds sequence is empty"
-            assert str(runtime_error) == want1, str(runtime_error)
+            want1 = "Bounds sequence is empty"  # pragma: no unit cover
+            assert str(runtime_error) == want1, str(runtime_error)  # pragma: no unit cover
 
         # Do the intersect unit tests:
         FabBox._intersect_unit_tests()
@@ -960,7 +954,7 @@ class FabNode(FabBox):
         if not FabNode._is_valid_name(self._Label):
             raise RuntimeError(
                 f"FabNode.__post_init__({self._Label}) is not "
-                "alphanumeric/underscore that starts with a letter")    # pragma: no unit test
+                "alphanumeric/underscore that starts with a letter")  # pragma: no unit cover
 
         # Initialize the remaining fields to bogus values that get updated by the _setup() method.
         self._Children = OrderedDict()
@@ -984,7 +978,8 @@ class FabNode(FabBox):
             parent_children: "OrderedDict[str, FabNode]" = parent._Children
             if name in parent_children:
                 raise RuntimeError(
-                    f"FabNode.__post_init__({self._Label}) is already a child of {parent._Label}")
+                    f"FabNode.__post_init__({self._Label}) is already a child "
+                    f"of {parent._Label}")  # pragma: no unit cover
             parent_children[name] = self
 
             # Keep a list if *all_node* in the same order that all FabNode's are created.
@@ -1008,12 +1003,12 @@ class FabNode(FabBox):
             print(f"{tracing}<=>FabNode({self._Label}).__post_init__()")
 
     # FabNode.AppObject():
-    @property
-    def AppObject(self) -> Any:
-        """Return FreeCAD Application Object for FabNode."""
-        if self._AppObject is None:
-            raise RuntimeError(f"FabNode({self._Label}).AppObject(): No AppObject has been set.")
-        return self._AppObject
+    # @property
+    # def AppObject(self) -> Any:
+    #     """Return FreeCAD Application Object for FabNode."""
+    #     if self._AppObject is None:
+    #         raise RuntimeError(f"FabNode({self._Label}).AppObject(): No AppObject has been set.")
+    #     return self._AppObject
 
     # FabNode.Children():
     @property
@@ -1022,12 +1017,14 @@ class FabNode(FabBox):
         return tuple(self._Children.values())
 
     # FabNode.GuiObject():
-    @property
-    def GuiObject(self) -> Any:
-        """Return FreeCAD Gui Object for FabNode."""
-        if self._GuiObject is None:
-            raise RuntimeError(f"FabNode({self._Label}).GuiObject(): No GuiObject has been set.")
-        return self._GuiObject
+    # @property
+    # def GuiObject(self) -> Any:
+    #    """Return FreeCAD Gui Object for FabNode."""
+    #    if self._GuiObject is None:
+    #         raise RuntimeError(
+    #             f"FabNode({self._Label}).GuiObject(): "
+    #             "No GuiObject has been set.")  # pragma: no unit cover
+    #     return self._GuiObject
 
     # FabNode.FullPath():
     @property
@@ -1041,10 +1038,11 @@ class FabNode(FabBox):
         """Return the FabNode name."""
         return self._Label
 
-    @property
-    def Project(self) -> "FabNode":
-        """Return FabNode tree project root."""
-        return self._Project
+    # FabNode.Project()
+    # @property
+    # def Project(self) -> "FabNode":
+    #     """Return FabNode tree project root."""
+    #     return self._Project
 
     # FabNode.Tracing():
     @property
@@ -1058,7 +1056,7 @@ class FabNode(FabBox):
         return self._Parent
 
     # FabNode.get_errors():
-    def get_errors(self) -> List[str]:
+    def get_errors(self) -> List[str]:  # pragma: no unit cover
         """Return FabNode errors list.
 
         This method is only implemented by the FabProject class.
@@ -1069,32 +1067,32 @@ class FabNode(FabBox):
     # FabNode.error():
     def error(self, error_message: str) -> None:
         """Record and error message with FabNode root."""
-        self._Project.get_errors().append(error_message)
+        self._Project.get_errors().append(error_message)  # pragma: no unit cover
 
     # FabNode.is_project():
     def is_project(self) -> bool:
         """Return True if FabNode is a FabProject."""
-        return False  # FabProject class returns True.
+        return False  # FabProject class returns True.  # pragma: no unit cover
 
     # FabNode.is_document():
     def is_document(self) -> bool:
         """Return True if FabNode is a FabProject."""
-        return False  # FabProject class returns True.
+        return False  # FabProject class returns True.  # pragma: no unit cover
 
     # FabNode.is_group():
     def is_group(self) -> bool:
         """Return True if FabNode is a FabGroup."""
-        return False  # FabGroup class returns True.
+        return False  # FabGroup class returns True.  # pragma: no unit cover
 
     # FabNode.is_assembly():
     def is_assembly(self) -> bool:
         """Return True if FabNode is a FabAssembly."""
-        return False  # FabAssembly class returns True.
+        return False  # FabAssembly class returns True.  # pragma: no unit cover
 
     # FabNode.is_solid():
     def is_solid(self) -> bool:
         """Return True if FabNode is a FabAssembly."""
-        return False  # FabSolid class returns True.
+        return False  # FabSolid class returns True.  # pragma: no unit cover
 
     # FabNode.to_json():
     def to_json(self) -> Dict[str, Any]:
@@ -1121,14 +1119,14 @@ class FabNode(FabBox):
     # FabNode.produce():
     def produce(self) -> None:
         """Empty FabNode produce method to be over-ridden."""
-        tracing: str = self.Tracing
+        tracing: str = self.Tracing  # pragma: no unit cover
         if tracing:
             print(f"{tracing}<=>FabNode({self._Label}).produce()=>()")
 
     # FabNode.post_produce1():
     def post_produce1(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
         """Do FabNode phase 1 post production."""
-        tracing = self.Tracing  # Ignore *tracing* argument.
+        tracing = self.Tracing  # Ignore *tracing* argument.  # pragma: no unit cover
         if tracing:
             print(f"{tracing}<=>FabNode({self._Label}).post_produce1(*, *)=>()")
 
@@ -1140,20 +1138,20 @@ class FabNode(FabBox):
             print(f"{tracing}<=>FabNode({self._Label}).post_produce2(*)=>()")
 
     # FabNode.get_parent_document():
-    def get_parent_document(self, tracing: str = "") -> "FabNode":
-        if tracing:
-            print(f"{tracing}=>FabNode({self._Label}).get_gui_document()")
+    # def get_parent_document(self, tracing: str = "") -> "FabNode":
+    #     if tracing:
+    #         print(f"{tracing}=>FabNode({self._Label}).get_gui_document()")
 
-        # Search up the document tree to find the FabDocument:
-        node: FabNode = self
-        while not node.is_document() and not node.is_project():
-            node = node._Parent
-            if tracing:
-                print(f"{tracing}{node=}")
-        assert node.is_document()
-        if tracing:
-            print(f"{tracing}<=FabNode({self._Label}).get_gui_document()=>{node}")
-        return node
+    #     # Search up the document tree to find the FabDocument:
+    #     node: FabNode = self
+    #     while not node.is_document() and not node.is_project():
+    #         node = node._Parent
+    #         if tracing:
+    #             print(f"{tracing}{node=}")
+    #     assert node.is_document()
+    #     if tracing:
+    #         print(f"{tracing}<=FabNode({self._Label}).get_gui_document()=>{node}")
+    #     return node
 
     # FabNode.set_tracing():
     def set_tracing(self, tracing: str):
@@ -1174,7 +1172,7 @@ class FabNode(FabBox):
         print(f"{tracing}<=>FabNode({self._Label}).set_tracing('{tracing}')")
 
     # FabNode.probe()
-    def probe(self, label: str) -> None:
+    def probe(self, label: str) -> None:  # pragma: no unit cover
         """Perform a probe operation.
 
         This method can be overridden and called to perform debug probes.

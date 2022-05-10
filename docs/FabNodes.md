@@ -38,8 +38,7 @@ See the FabNode documentation for further attributes.
 
 * 1 Class: [FabBox](#fabnodes--fabbox):
   * 1.1 [enclose()](#fabnodes----enclose): Initialize a FabBox.
-  * 1.2 [reorient()](#fabnodes----reorient): Reorient FabBox given a Placement.
-  * 1.3 [intersect()](#fabnodes----intersect): Compute Line Segment intersection with a FabBox.a
+  * 1.2 [intersect()](#fabnodes----intersect): Compute Line Segment intersection with a FabBox.a
 * 2 Class: [FabNode](#fabnodes--fabnode):
   * 2.1 [get_errors()](#fabnodes----get-errors): Return FabNode errors list.
   * 2.2 [error()](#fabnodes----error): Record and error message with FabNode root.
@@ -53,9 +52,8 @@ See the FabNode documentation for further attributes.
   * 2.10 [produce()](#fabnodes----produce): Empty FabNode produce method to be over-ridden.
   * 2.11 [post_produce1()](#fabnodes----post-produce1): Do FabNode phase 1 post production.
   * 2.12 [post_produce2()](#fabnodes----post-produce2): Do FabNode phase 2 post production.
-  * 2.13 [get_parent_document()](#fabnodes----get-parent-document): NO DOC STRING!
-  * 2.14 [set_tracing()](#fabnodes----set-tracing): Set the FabNode indentation tracing level.
-  * 2.15 [probe()](#fabnodes----probe): Perform a probe operation.
+  * 2.13 [set_tracing()](#fabnodes----set-tracing): Set the FabNode indentation tracing level.
+  * 2.14 [probe()](#fabnodes----probe): Perform a probe operation.
 * 3 Class: [Fab_ProduceState](#fabnodes--fab-producestate):
 * 4 Class: [Fab_Steps](#fabnodes--fab-steps):
   * 4.1 [scan()](#fabnodes----scan): Scan the associated directory for matching .step files.
@@ -139,18 +137,7 @@ Arguments:
 Raises:
   * ValueError: For bad or empty corners.
 
-### <a name="fabnodes----reorient"></a>1.2 `FabBox.`reorient():
-
-FabBox.reorient(self, placement: Any) -> 'FabBox':
-
-Reorient FabBox given a Placement.
-Note after the *placement* is applied, the resulting box is still rectilinear with the
-X/Y/Z axes.  In particular, box volume is *not* conserved.
-
-Arguments:
-* *placement* (Placement): The placement of the box corners.
-
-### <a name="fabnodes----intersect"></a>1.3 `FabBox.`intersect():
+### <a name="fabnodes----intersect"></a>1.2 `FabBox.`intersect():
 
 FabBox.intersect(self, segment_start: cadquery.occ_impl.geom.Vector, segment_end: cadquery.occ_impl.geom.Vector, tracing: str = '') -> Tuple[bool, float, float]:
 
@@ -252,13 +239,7 @@ FabNode.post_produce2(self, produce_state: FabNodes.Fab_ProduceState) -> None:
 
 Do FabNode phase 2 post production.
 
-### <a name="fabnodes----get-parent-document"></a>2.13 `FabNode.`get_parent_document():
-
-FabNode.get_parent_document(self, tracing: str = '') -> 'FabNode':
-
-NO DOC STRING!
-
-### <a name="fabnodes----set-tracing"></a>2.14 `FabNode.`set_tracing():
+### <a name="fabnodes----set-tracing"></a>2.13 `FabNode.`set_tracing():
 
 FabNode.set_tracing(self, tracing: str):
 
@@ -273,7 +254,7 @@ This typically done, by adding this call immediately after calling super().__pos
         self.set_tracing(" ")  # Set the tracing here.
         # All children nodes will that are added, will have tracing set as well.
 
-### <a name="fabnodes----probe"></a>2.15 `FabNode.`probe():
+### <a name="fabnodes----probe"></a>2.14 `FabNode.`probe():
 
 FabNode.probe(self, label: str) -> None:
 
