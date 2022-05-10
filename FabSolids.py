@@ -88,7 +88,7 @@ class FabStock(object):
     StockMinimumCut: float
 
     # FabStock.__post_init__():
-    def __post__init__(self) -> None:
+    def __post_init__(self) -> None:
         """Finish initializing."""
         copy: Vector = Vector()
         self.StockIncrements += copy
@@ -200,7 +200,9 @@ class Fab_Operation(object):
     def get_tool_controller(self) -> FabToolController:
         """Return the Fab_Operation tool controller"""
         if not self._ToolController:
-            raise RuntimeError("Fab_Operation().get_tool_controller(): ToolController not set yet.")
+            raise RuntimeError(
+                "Fab_Operation().get_tool_controller(): "
+                "ToolController not set yet.")  # pragma: no unit cover
         return self._ToolController
 
     # Fab_Operation.set_tool_controller():
@@ -220,17 +222,22 @@ class Fab_Operation(object):
     # Fab_Operation.get_kind():
     def get_kind(self) -> str:
         """Return Fab_Operation kind."""
-        raise RuntimeError(f"Fab_Operation().get_kind() not implemented for {type(self)}")
+        raise RuntimeError(
+            f"Fab_Operation().get_kind() not implemented for {type(self)}")  # pragma: no unit cover
 
     # Fab_Operation.get_name():
     def get_name(self) -> str:
         """Return Fab_Operation name."""
-        raise RuntimeError(f"Fab_Operation().get_name() not implemented for {type(self)}")
+        raise RuntimeError(
+            f"Fab_Operation().get_name() not implemented "
+            f"for {type(self)}")  # pragma: no unit cover
 
     # Fab_Operation.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:
         """Return Fab_Operation hash."""
-        raise RuntimeError(f"Fab_Operation().get_hash() not implemented for {type(self)}")
+        raise RuntimeError(
+            f"Fab_Operation().get_hash() not implemented "
+            f"for {type(self)}")  # pragma: no unit cover
 
     # Fab_Operation.Mount():
     @property
@@ -265,12 +272,13 @@ class Fab_Operation(object):
     # Fab_Operation.produce():
     def produce(self, tracing: str = "") -> Tuple[str, ...]:
         """Return the operation sort key."""
-        raise NotImplementedError(f"{type(self)}.produce() is not implemented")
-        return ()
+        raise NotImplementedError(
+            f"{type(self)}.produce() is not implemented")  # pragma: no unit cover
 
     # Fab_Operation.post_produce1():
     def post_produce1(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
-        raise NotImplementedError(f"{type(self)}.post_produce1() is not implemented")
+        raise NotImplementedError(
+            f"{type(self)}.post_produce1() is not implemented")  # pragma: no unit cover
 
     # Fab_Operation.to_json():
     def to_json(self) -> Dict[str, Any]:
@@ -346,17 +354,19 @@ class Fab_Extrude(Fab_Operation):
             geometry: FabGeometry
             for geometry in self_geometry:
                 if not isinstance(geometry, FabGeometry):
-                    raise RuntimeError(f"Fab_Extrude.__post_init__({self.Name}):"
-                                       f"{type(geometry)} is not a FabGeometry")
+                    raise RuntimeError(
+                        f"Fab_Extrude.__post_init__({self.Name}):"
+                        f"{type(geometry)} is not a FabGeometry")  # pragma: no unit cover
                 geometries.append(geometry)
         else:
-            raise RuntimeError(f"Fab_Extrude.__post_init__({self.Name}):{type(self.Geometry)} "
-                               f"is neither a FabGeometry nor a Tuple[FabGeometry, ...]")
+            raise RuntimeError(
+                f"Fab_Extrude.__post_init__({self.Name}):{type(self.Geometry)} "
+                f"is neither a FabGeometry nor a Tuple[FabGeometry, ...]")  # pragma: no unit cover
         self._Geometries = tuple(geometries)
 
         if self.Depth <= 0.0:
             raise RuntimeError(f"Fab_Extrude.__post_init__({self.Name}):"
-                               f"Depth ({self.Depth}) is not positive.")
+                               f"Depth ({self.Depth}) is not positive.")  # pragma: no unit cover
         self._StepFile = "Fab_Extrude.__post_init_()"
         self._StartDepth = 0.0
         self._StepDown = 3.0
@@ -506,17 +516,20 @@ class Fab_Pocket(Fab_Operation):
             geometry: FabGeometry
             for geometry in self_geometry:
                 if not isinstance(geometry, FabGeometry):
-                    raise RuntimeError(f"Fab_Extrude.__post_init__({self.Name}):"
-                                       f"{type(geometry)} is not a FabGeometry")
+                    raise RuntimeError(
+                        f"Fab_Extrude.__post_init__({self.Name}):"
+                        f"{type(geometry)} is not a FabGeometry")  # pragma: no unit cover
                 geometries.append(geometry)
         else:
-            raise RuntimeError(f"Fab_Extrude.__post_init__({self.Name}):{type(self.Geometry)} "
-                               f"is neither a FabGeometry nor a Tuple[FabGeometry, ...]")
+            raise RuntimeError(
+                f"Fab_Extrude.__post_init__({self.Name}):{type(self.Geometry)} "
+                f"is neither a FabGeometry nor a Tuple[FabGeometry, ...]")  # pragma: no unit cover
         self._Geometries = tuple(geometries)
 
         if self._Depth <= 0.0:
-            raise RuntimeError(f"Fab_Extrude.__post_init__({self.Name}):"
-                               f"Depth ({self.Depth}) is not positive.")
+            raise RuntimeError(
+                f"Fab_Extrude.__post_init__({self.Name}):"
+                f"Depth ({self.Depth}) is not positive.")  # pragma: no unit cover
         self._BottomPath = None
 
         # Unpack some values from *mount*:
@@ -528,7 +541,7 @@ class Fab_Pocket(Fab_Operation):
         delta_depth: float = top_depth - final_depth
         tool_edge_height: float = 30.00  # TODO: Fix
         if delta_depth > tool_edge_height:
-            raise RuntimeError("FIXME")
+            raise RuntimeError("FIXME")  # pragma: no unit cover
 
         tool_diameter: float = 5.00  # TODO: Fix
         step_depth: float = tool_diameter / 2.0
@@ -658,7 +671,8 @@ class Fab_Pocket(Fab_Operation):
             "Grid", "Line", "Offset", "Spiral", "Triangle", "ZigZag", "ZigZagOffset")
         start_ats: Tuple[str, ...] = ("Center", "Edge")
         if bottom_path is None:
-            raise RuntimeError("Fab_Pocket.to_json(): no bottom path is set yet.")
+            raise RuntimeError(
+                "Fab_Pocket.to_json(): no bottom path is set yet.")  # pragma: no unit cover
 
         start_depth: float = self._StartDepth
         step_down: float = self._StepDown
@@ -701,7 +715,7 @@ class Fab_HoleKey(object):
     Depth: float
     IsTop: bool
 
-    # Fab_HoleKey.__post__init__():
+    # Fab_HoleKey.__post_init__():
     def __post_init__(self) -> None:
         """Perform checks on Fab_HoleKey."""
         thread_name: str = self.ThreadName
@@ -1066,7 +1080,8 @@ class FabMount(object):
         """Record an operation to a FabMount."""
         if not isinstance(operation, Fab_Operation):
             raise RuntimeError(
-                "FabMount.add_operation({self._Name}).{type(operation)} is not an Fab_Operation")
+                f"FabMount.add_operation({self._Name}).{type(operation)} "
+                "is not an Fab_Operation")  # pragma: no unit cover
         self._OrderedOperations[operation.Name] = operation
 
     # FabMount.set_geometry_group():
@@ -1353,7 +1368,8 @@ class FabSolid(FabNode):
     def Body(self) -> Any:
         """Return BodyBase for FabSolid."""
         if not self._Body:
-            raise RuntimeError(f"FabSolid.Body({self.Label}).Body(): body not set yet")
+            raise RuntimeError(
+                f"FabSolid.Body({self.Label}).Body(): body not set yet")  # pragma: no unit cover
         return self._Body
 
     # FabSolid.to_json():
@@ -1418,7 +1434,9 @@ class FabSolid(FabNode):
 
         mounts: "OrderedDict[str, FabMount]" = self._Mounts
         if name in mounts:
-            raise RuntimeError(f"FabSolid({self._Label}).mount(): Mount {name} is not unique.")
+            raise RuntimeError(
+                f"FabSolid({self._Label}).mount(): Mount {name} "
+                "is not unique.")  # pragma: no unit cover
         fab_mount: FabMount = FabMount(name, self, contact, normal, orient, depth, self._Query)
         self._Mounts[name] = fab_mount
 
