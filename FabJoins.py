@@ -320,6 +320,23 @@ class Fab_Fastener(object):
         check_type("Fab_Fastener.StandardDiameter", self.StandardDiameter, float)
         check_type("Fab_Fastener.StandardDrill", self.StandardDrill, str)
 
+    # Fab_Fastener._unit_tests():
+    @staticmethod
+    def _unit_tests() -> None:
+        """Perform Unit tests for Fab_Fastener."""
+        fastener: Fab_Fastener = Fab_Fastener(
+            "Test_Fastener", 0.50, "0.5mm drill", 0.75, "0.75mm drill",
+            1.00, "1.00mm Drill", 1.10, "1.10mm Drill")
+        assert fastener.Name == "Test_Fastener"
+        assert fastener.Thread50Diameter == 0.50
+        assert fastener.Thread50Drill == "0.5mm drill"
+        assert fastener.Thread75Diameter == 0.75
+        assert fastener.Thread750Drill == "0.75mm drill"
+        assert fastener.CloseDiameter == 1.00
+        assert fastener.CloseDrill == "1.00mm Drill"
+        assert fastener.StandardDiameter == 1.10
+        assert fastener.StandardDrill == "1.10mm Drill"
+
 
 # Fab_FastenTables:
 class Fab_FastenTables(object):
@@ -649,14 +666,14 @@ class Fab_FastenTables(object):
 
     FastenerTable: ClassVar[Dict[str, Fab_DrillTap]] = {}
 
-    # is_fractional_drill():
+    # Fab_FastenTables.is_fractional_drill():
     @classmethod
     def is_fractional_drill(cls, name: str) -> bool:
         """Return whether a drill name is an imperial fractional drill.
 
         The format of a fractional drill is on of the following "1-N/D", "N/D", or "1",
         where "1" is a 1 inch diameter drill.  D must be one of 2, 4, 8, 16, 32, or 64.
-        N must be positive and less than D (i.e. 1 <= N < D.)
+        N must be both 1) odd, 2) positive and 3) less than D (i.e. 1 <= N < D.)
         """
         # Split *name* into *whole* and *fraction*:
         if name == "1":
@@ -672,11 +689,15 @@ class Fab_FastenTables(object):
             return False
         numerator: int = int(parts[0])
         denominator: int = int(parts[1])
-        if denominator in (2, 4, 8, 16, 32, 64) and 1 <= numerator < denominator:
+        if numerator % 2 != 1:
+            return False
+        if denominator not in (2, 4, 8, 16, 32, 64):
+            return False
+        if 1 <= numerator < denominator:
             return True
         return False
 
-    # fractional_value():
+    # Fab_FastenTables.fractional_value():
     @classmethod
     def fractional_value(cls, name: str) -> float:
         """Return fractional drill diameter in millimeters."""
@@ -684,36 +705,51 @@ class Fab_FastenTables(object):
         inches: float = 0.0
         if name == "1":
             inches = 1.0
+            name = ""
         elif name.startswith("1-"):
-            inches = 1
+            inches = 1.0
             name = name[2:]
+        if name:
+            assert "/" in name, name
             numerator, denominator = name.split("/")
             inches += float(numerator) / float(denominator)
         return inches
 
-    # is_letter_drill():
+    # Fab_FastenTables.is_letter_drill():
     @classmethod
     def is_letter_drill(cls, name: str) -> bool:
         """Return whether a drill name is an imperial letter drill between A and Z."""
         return len(name) == 1 and name.isupper()
 
-    # is_number_drill():
+    # Fab_FastenTables.is_number_drill():
     @classmethod
     def is_number_drill(cls, name: str) -> bool:
         """Return whether a drill name is a number drill of the form "Ni" where 1<=i<=107."""
         if not name.startswith("N"):
             return False
-        if not name[1:].isnumeric:
+        if not name[1:].isnumeric():
             return False
         number: int = int(name[1:])
         return 1 <= int(number) <= 107  # Number drills less than 80 are not readily available.
 
-    # is_imperial_drill():
+    # Fab_FastenTables.is_imperial_drill():
     @classmethod
     def is_imperial_drill(cls, name: str) -> bool:
         return (
             cls.is_fractional_drill(name) or cls.is_letter_drill(name) or cls.is_number_drill(name))
 
+    # Fab_FastenTeables.is_metric_drill():
+    @classmethod
+    def is_metric_drill(cls, name: str) -> bool:
+        if not name.startswith("M"):
+            return False
+        try:
+            float(name[1:])
+        except ValueError:
+            return False
+        return True
+
+    # Fab_FastenTables.to_mm():
     @classmethod
     def to_mm(cls, imperial_name: str) -> float:
         inches: float
@@ -723,10 +759,11 @@ class Fab_FastenTables(object):
             inches = cls.LETTER_DRILL_DIAMETERS[imperial_name]
         elif cls.is_number_drill(imperial_name):
             inches = cls.NUMBER_DRILL_DIAMETERS[imperial_name]
-        else:
+        else:  # pragma: no unit cover
             raise ValueError(f"'{imperial_name}' is not an imperial drill name")
         return inches * 25.4
 
+    # Fab_FastenTables.table_initialize():
     @classmethod
     def table_initialize(cls) -> None:
         drill_tap: Fab_DrillTap
@@ -756,6 +793,7 @@ class Fab_FastenTables(object):
             )
             cls.FastenerTable[name] = drill_tap
 
+    # Fab_FastenTables.lookup():
     @classmethod
     def lookup(cls, name: str) -> Fab_DrillTap:
         """Return the Fab_DrillTap for a requested threaded fastener."""
@@ -763,8 +801,74 @@ class Fab_FastenTables(object):
             cls.table_initialize()
         if name not in cls.FastenerTable:
             raise RuntimeError(f"Threaded fastener '{name}' is not found. "
-                               f"{tuple(cls.FastenerTable.keys())}")
+                               f"{tuple(cls.FastenerTable.keys())}")  # pragma: no unit cover
         return cls.FastenerTable[name]
+
+    # Fab_FastenTables._unit_tests():
+    @staticmethod
+    def _unit_tests():
+        """Perform Fab_FastenTables unit tests."""
+        def check(flags: str, name: str, test: str) -> None:
+            """Match a drill name to some flags."""
+            fractional: bool = Fab_FastenTables.is_fractional_drill(name)
+            imperial: bool = Fab_FastenTables.is_imperial_drill(name)
+            number: bool = Fab_FastenTables.is_number_drill(name)
+            letter: bool = Fab_FastenTables.is_letter_drill(name)
+            metric: bool = Fab_FastenTables.is_metric_drill(name)
+            flag: str
+            for flag in flags:
+                if flag == "f":
+                    assert not fractional, (name, test)
+                elif flag == "F":
+                    assert fractional, (name, test)
+                elif flag == "i":
+                    assert not imperial, (name, test)
+                elif flag == "I":
+                    assert imperial, (name, test)
+                elif flag == "n":
+                    assert not number, (name, test)
+                elif flag == "N":
+                    assert number, (name, test)
+                elif flag == "l":
+                    assert not letter, (name, test)
+                elif flag == "L":
+                    assert letter, (name, test)
+                elif flag == "m":
+                    assert not metric, (name, test)
+                elif flag == "M":
+                    assert metric, (name, test)
+                else:  # pragma: no unit cover
+                    assert False, f"Bad {flag=}"
+
+        check("FnlIm", "1/4", "N/D fractional drill")
+        check("FnlIm", "1", "1 inch fractional")
+        check("FnlIm", "1-1/2", "1-N/D fractional")
+        check("fnlim", "", "Empty string")
+        check("fnlim", "1/", "Missing denominator")
+        check("fnlim", "/2", "Missing numinator")
+        check("fnlim", "1/3", "Denominator must be power of 2")
+        check("fnlim", "2/4", "Even numerator")
+        check("fnlim", "0/4", "Non positive numerator")
+        check("fnlim", "2/2", "Numerator = deonominator")
+        check("fnlim", "3/2", "Numerator > deonominator")
+        check("fnlim", "3/A", "Non numeraic denominator")
+        check("fNlIm", "N20", "Valid number drill")
+        check("fNlIm", "N1", "N1 is a valid number drill")
+        check("fNlIm", "N107", "N107 is a valid number drill")
+        check("fnlim", "Nx", "No number")
+        check("fnlim", "N0", "Not positive")
+        check("fnlim", "N108", "> 107")
+        check("fnLIm", "A", "First letter drill")
+        check("fnLIm", "E", "Another letter drill")
+        check("fnLIm", "Z", "Last letter drill")
+        check("fnlim", "a", "lower case letter drill")
+        check("fnliM", "M1.0", "Valid metric drill")
+        check("fnliM", "M0.5", "Valid metric drill")
+        check("fnlim", "MA.B", "Invalid metric drill")
+
+        assert Fab_FastenTables.fractional_value("1") == 1.0
+        assert Fab_FastenTables.fractional_value("1/2") == 0.50
+        assert Fab_FastenTables.fractional_value("1-1/2") == 1.50
 
 
 # FabOption:
@@ -792,7 +896,8 @@ class FabOption(object):
     # FabOption.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:
         """Return FabOption hash."""
-        raise RuntimeError(f"get_hash() is not implemented for {type(self)}")
+        raise RuntimeError(
+            f"get_hash() is not implemented for {type(self)}")  # pragma: no unit cover
 
     # FabOption._unit_tests():
     @staticmethod
@@ -1235,7 +1340,7 @@ class FabFasten(object):
         ]
         option: FabOption
         for option in self.Options:
-            hashes.append(option.get_hash())
+            hashes.append(option.get_hash())  # pragma: no unit cover
         return tuple(hashes)
 
     # FabFasten.get_diameter():
@@ -1249,13 +1354,13 @@ class FabFasten(object):
             drill_choice = drill_tap.Close
         elif kind == "standard":
             drill_choice = drill_tap.Standard
-        else:
+        else:  # pragma: no unit cover
             raise RuntimeError(f"'{kind}' is not one of 'thread', 'close', or 'standard'")
         if drill_choice.MetricName:
             return drill_choice.MetricDiameter
         if drill_choice.ImperialName:
             return drill_choice.ImperialDiameter
-        raise RuntimeError("Empty drill choice")
+        raise RuntimeError("Empty drill choice")  # pragma: no unit cover
 
     # FabFasten._unit_tests():
     @staticmethod
@@ -1264,9 +1369,17 @@ class FabFasten(object):
         name: str = "#4-40"
         fasten: FabFasten = FabFasten(name, "#4-40", ())
 
+        def is_close(float1: float, float2: float) -> bool:
+            """Return whether two float's are close to one another."""
+            return abs(float1 - float2) < 1.0e-8
+
         assert fasten.Name == name
         assert fasten.ThreadName == name
         assert fasten.Options == ()
+        assert is_close(fasten.get_diameter("thread"), 2.2606)
+        assert is_close(fasten.get_diameter("close"), 2.9464)
+        assert is_close(fasten.get_diameter("standard"), 3.2639)
+        assert isinstance(fasten.get_hash(), tuple), fasten.get_hash()
 
 
 # FabJoin:
@@ -1367,6 +1480,8 @@ class FabJoin(object):
 
 def _unit_tests() -> None:
     """Run unit tests."""
+    Fab_FastenTables._unit_tests()
+    Fab_Fastener._unit_tests()
     FabOption._unit_tests()
     FabHead._unit_tests()
     FabFasten._unit_tests()

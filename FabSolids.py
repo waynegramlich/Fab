@@ -1505,7 +1505,7 @@ class FabSolid(FabNode):
             assembly = cq.Assembly(work_plane, name=self.Label, color=cq.Color(*rgb_color))
             self._Color = rgb_color
             if tracing:
-                print(f"{tracing}Read file '{str(step_path)}' !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                print(f"{tracing}Read file '{str(step_path)}' !")
         else:
             assembly = cq.Assembly(
                 self._Query.WorkPlane, name=self.Label, color=cq.Color(*rgb_color))
