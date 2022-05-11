@@ -43,16 +43,14 @@ This internal classes are managed by FabMount methods.
 * 6 Class: [Fab_HoleKey](#fabsolids--fab-holekey):
   * 6.1 [get_hash()](#fabsolids----get-hash): Return a hash tuple for a Fab_HoleKey.
 * 7 Class: [Fab_Operation](#fabsolids--fab-operation):
-  * 7.1 [get_tool_controller()](#fabsolids----get-tool-controller): Return the Fab_Operation tool controller
-  * 7.2 [set_tool_controller()](#fabsolids----set-tool-controller): Set the Fab_Operation tool controller and associated index.
-  * 7.3 [get_kind()](#fabsolids----get-kind): Return Fab_Operation kind.
-  * 7.4 [get_name()](#fabsolids----get-name): Return Fab_Operation name.
-  * 7.5 [get_hash()](#fabsolids----get-hash): Return Fab_Operation hash.
-  * 7.6 [get_geometries_hash()](#fabsolids----get-geometries-hash): Return hash of FabGeometry's.
-  * 7.7 [produce()](#fabsolids----produce): Return the operation sort key.
-  * 7.8 [post_produce1()](#fabsolids----post-produce1): NO DOC STRING!
-  * 7.9 [to_json()](#fabsolids----to-json): Return a base JSON dictionary for an Fab_Operation.
-  * 7.10 [produce_shape_binder()](#fabsolids----produce-shape-binder): Produce the shape binder needed for the extrude, pocket, hole, ... operations.
+  * 7.1 [set_tool_controller()](#fabsolids----set-tool-controller): Set the Fab_Operation tool controller and associated index.
+  * 7.2 [get_kind()](#fabsolids----get-kind): Return Fab_Operation kind.
+  * 7.3 [get_name()](#fabsolids----get-name): Return Fab_Operation name.
+  * 7.4 [get_hash()](#fabsolids----get-hash): Return Fab_Operation hash.
+  * 7.5 [get_geometries_hash()](#fabsolids----get-geometries-hash): Return hash of FabGeometry's.
+  * 7.6 [produce()](#fabsolids----produce): Return the operation sort key.
+  * 7.7 [post_produce1()](#fabsolids----post-produce1): NO DOC STRING!
+  * 7.8 [to_json()](#fabsolids----to-json): Return a base JSON dictionary for an Fab_Operation.
 * 8 Class: [Fab_Pocket](#fabsolids--fab-pocket):
   * 8.1 [Geometry()](#fabsolids----geometry): Return the original Geometry.
   * 8.2 [Depth()](#fabsolids----depth): Return the original Depth.
@@ -334,65 +332,53 @@ Attributes:
   If True, the resulting operation is performed.  About the only time this is set to False
   is for an extrude of stock material like a C channel, I beam, etc.  (Default: True)
 
-### <a name="fabsolids----get-tool-controller"></a>7.1 `Fab_Operation.`get_tool_controller():
-
-Fab_Operation.get_tool_controller(self) -> FabUtilities.FabToolController:
-
-Return the Fab_Operation tool controller
-
-### <a name="fabsolids----set-tool-controller"></a>7.2 `Fab_Operation.`set_tool_controller():
+### <a name="fabsolids----set-tool-controller"></a>7.1 `Fab_Operation.`set_tool_controller():
 
 Fab_Operation.set_tool_controller(self, tool_controller: FabUtilities.FabToolController, tool_controllers_table: Dict[FabUtilities.FabToolController, int]) -> None:
 
 Set the Fab_Operation tool controller and associated index.
 
-### <a name="fabsolids----get-kind"></a>7.3 `Fab_Operation.`get_kind():
+### <a name="fabsolids----get-kind"></a>7.2 `Fab_Operation.`get_kind():
 
 Fab_Operation.get_kind(self) -> str:
 
 Return Fab_Operation kind.
 
-### <a name="fabsolids----get-name"></a>7.4 `Fab_Operation.`get_name():
+### <a name="fabsolids----get-name"></a>7.3 `Fab_Operation.`get_name():
 
 Fab_Operation.get_name(self) -> str:
 
 Return Fab_Operation name.
 
-### <a name="fabsolids----get-hash"></a>7.5 `Fab_Operation.`get_hash():
+### <a name="fabsolids----get-hash"></a>7.4 `Fab_Operation.`get_hash():
 
 Fab_Operation.get_hash(self) -> Tuple[Any, ...]:
 
 Return Fab_Operation hash.
 
-### <a name="fabsolids----get-geometries-hash"></a>7.6 `Fab_Operation.`get_geometries_hash():
+### <a name="fabsolids----get-geometries-hash"></a>7.5 `Fab_Operation.`get_geometries_hash():
 
 Fab_Operation.get_geometries_hash(self, geometries: Union[FabGeometries.FabGeometry, Tuple[FabGeometries.FabGeometry, ...]]) -> Tuple[Any, ...]:
 
 Return hash of FabGeometry's.
 
-### <a name="fabsolids----produce"></a>7.7 `Fab_Operation.`produce():
+### <a name="fabsolids----produce"></a>7.6 `Fab_Operation.`produce():
 
 Fab_Operation.produce(self, tracing: str = '') -> Tuple[str, ...]:
 
 Return the operation sort key.
 
-### <a name="fabsolids----post-produce1"></a>7.8 `Fab_Operation.`post_produce1():
+### <a name="fabsolids----post-produce1"></a>7.7 `Fab_Operation.`post_produce1():
 
 Fab_Operation.post_produce1(self, produce_state: FabNodes.Fab_ProduceState, tracing: str = '') -> None:
 
 NO DOC STRING!
 
-### <a name="fabsolids----to-json"></a>7.9 `Fab_Operation.`to_json():
+### <a name="fabsolids----to-json"></a>7.8 `Fab_Operation.`to_json():
 
 Fab_Operation.to_json(self) -> Dict[str, Any]:
 
 Return a base JSON dictionary for an Fab_Operation.
-
-### <a name="fabsolids----produce-shape-binder"></a>7.10 `Fab_Operation.`produce_shape_binder():
-
-Fab_Operation.produce_shape_binder(self, part_geometries: Tuple[Any, ...], prefix: str, tracing: str = '') -> Any:
-
-Produce the shape binder needed for the extrude, pocket, hole, ... operations.
 
 
 ## <a name="fabsolids--fab-pocket"></a>8 Class Fab_Pocket:

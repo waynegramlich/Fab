@@ -102,7 +102,7 @@ class FabStock(object):
             """Adjust a value up to the nearest multiple of an increment."""
             count: int = math.floor(value / increment)
             while count * increment < value:
-                count += 1
+                count += 1  # pragma: no unit cover
             return count * increment
 
         # Unpack:
@@ -123,7 +123,7 @@ class FabStock(object):
                 stock_dz = thickness
                 break
         if stock_dz < 0.0:
-            stock_dz = adjust(box_dz, z_increment)
+            stock_dz = adjust(box_dz, z_increment)  # pragma: no unit cover
 
         offset: Vector = Vector(stock_dx / 2.0, stock_dy / 2.0, stock_dz / 2.0)
         center: Vector = box.C
@@ -197,13 +197,13 @@ class Fab_Operation(object):
         self._Active = True
 
     # Fab_Operation.get_tool_controller():
-    def get_tool_controller(self) -> FabToolController:
-        """Return the Fab_Operation tool controller"""
-        if not self._ToolController:
-            raise RuntimeError(
-                "Fab_Operation().get_tool_controller(): "
-                "ToolController not set yet.")  # pragma: no unit cover
-        return self._ToolController
+    # def get_tool_controller(self) -> FabToolController:
+    #     """Return the Fab_Operation tool controller"""
+    #     if not self._ToolController:
+    #         raise RuntimeError(
+    #             "Fab_Operation().get_tool_controller(): "
+    #             "ToolController not set yet.")  # pragma: no unit cover
+    #     return self._ToolController
 
     # Fab_Operation.set_tool_controller():
     def set_tool_controller(self, tool_controller: FabToolController,
@@ -263,8 +263,8 @@ class Fab_Operation(object):
         """Return hash of FabGeometry's."""
         hashes: List[Union[int, str, Tuple[Any, ...]]] = []
         if isinstance(geometries, FabGeometry):
-            geometries = (geometries,)
-        geometry: FabGeometry
+            geometries = (geometries,)  # pragma: no unit cover
+        geometry: FabGeometry  # pragma: no unit cover
         for geometry in geometries:
             hashes.append(geometry.get_hash())
         return tuple(hashes)
@@ -294,22 +294,6 @@ class Fab_Operation(object):
             tool_controller_json: Dict[str, Any] = self._ToolController.to_json()
             json_dict["ToolController"] = tool_controller_json
         return json_dict
-
-    # TODO: Remove
-    # Fab_Operation.produce_shape_binder():
-    def produce_shape_binder(self, part_geometries: Tuple[Any, ...],
-                             prefix: str, tracing: str = "") -> Any:
-        """Produce the shape binder needed for the extrude, pocket, hole, ... operations."""
-        if tracing:
-            print(f"{tracing}<=>Fab_Operation.produce_shape_binder()")
-        assert False
-        return None
-
-    # TODO: remove
-    # Fab_Operation._viewer_update():
-    def _viewer_update(self, body: Any, part_feature: Any) -> None:
-        """Update the view Body view provider."""
-        assert False
 
 
 # Fab_Extrude:
@@ -350,15 +334,15 @@ class Fab_Extrude(Fab_Operation):
         self_geometry: Union[FabGeometry, Tuple[FabGeometry, ...]] = self._Geometry
         if isinstance(self_geometry, FabGeometry):
             geometries = [self_geometry]
-        elif isinstance(self_geometry, tuple):
+        elif isinstance(self_geometry, tuple):  # pragma: no unit cover
             geometry: FabGeometry
             for geometry in self_geometry:
                 if not isinstance(geometry, FabGeometry):
                     raise RuntimeError(
                         f"Fab_Extrude.__post_init__({self.Name}):"
-                        f"{type(geometry)} is not a FabGeometry")  # pragma: no unit cover
+                        f"{type(geometry)} is not a FabGeometry")
                 geometries.append(geometry)
-        else:
+        else:  # pragma: no unit cover
             raise RuntimeError(
                 f"Fab_Extrude.__post_init__({self.Name}):{type(self.Geometry)} "
                 f"is neither a FabGeometry nor a Tuple[FabGeometry, ...]")  # pragma: no unit cover
@@ -377,7 +361,7 @@ class Fab_Extrude(Fab_Operation):
     @property
     def Geometry(self) -> Union[FabGeometry, Tuple[FabGeometry, ...]]:
         """Return the Fab_Extrude FabGeometry."""
-        return self._Geometry
+        return self._Geometry  # pragma: no unit cover
 
     # Fab_Extrude.Depth():
     @property
@@ -512,7 +496,7 @@ class Fab_Pocket(Fab_Operation):
         self_geometry: Union[FabGeometry, Tuple[FabGeometry, ...]] = self._Geometry
         if isinstance(self_geometry, FabGeometry):
             geometries = [self_geometry]
-        elif isinstance(self_geometry, tuple):
+        elif isinstance(self_geometry, tuple):  # pragma: no unit cover
             geometry: FabGeometry
             for geometry in self_geometry:
                 if not isinstance(geometry, FabGeometry):
@@ -520,7 +504,7 @@ class Fab_Pocket(Fab_Operation):
                         f"Fab_Extrude.__post_init__({self.Name}):"
                         f"{type(geometry)} is not a FabGeometry")  # pragma: no unit cover
                 geometries.append(geometry)
-        else:
+        else:  # pragma: no unit cover
             raise RuntimeError(
                 f"Fab_Extrude.__post_init__({self.Name}):{type(self.Geometry)} "
                 f"is neither a FabGeometry nor a Tuple[FabGeometry, ...]")  # pragma: no unit cover
@@ -555,12 +539,12 @@ class Fab_Pocket(Fab_Operation):
     # Fab_Pocket.Geometry():
     def Geometry(self) -> Union[FabGeometry, Tuple[FabGeometry, ...]]:
         """Return the original Geometry."""
-        return self._Geometry
+        return self._Geometry  # pragma: no unit cover
 
     # Fab_Pocket.Depth():
     def Depth(self) -> float:
         """Return the original Depth."""
-        return self._Depth
+        return self._Depth  # pragma: no unit cover
 
     # Fab_Pocket.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:
@@ -1024,13 +1008,13 @@ class FabMount(object):
     @property
     def Body(self) -> Any:
         """Return PartBodyBase fr FabMount."""
-        return self._Solid.Body
+        return self._Solid.Body  # pragma: no unit cover
 
     # FabMount.Contact:
     @property
     def Contact(self) -> Vector:
         """Return the FabMount contact point."""
-        return self._Contact + self._Copy
+        return self._Contact + self._Copy  # pragma: no unit cover
 
     # FabMount.Normal:
     @property
@@ -1042,7 +1026,7 @@ class FabMount(object):
     @property
     def Orient(self) -> Vector:
         """Return the FabMount Orientation."""
-        return self._Orient + self._Copy
+        return self._Orient + self._Copy  # pragma: no unit cover
 
     # FabMount.Plane:
     @property
@@ -1054,7 +1038,7 @@ class FabMount(object):
     @property
     def Depth(self) -> float:
         """Return the depth."""
-        return self._Depth
+        return self._Depth  # pragma: no cover
 
     # FabMount.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:
@@ -1087,7 +1071,7 @@ class FabMount(object):
     # FabMount.set_geometry_group():
     def set_geometry_group(self, geometry_group: Any) -> None:
         """Set the FabMount GeometryGroup need for the FabGeometryContex."""
-        self._GeometryContext.set_geometry_group(geometry_group)
+        self._GeometryContext.set_geometry_group(geometry_group)  # pragma: no unit covert
 
     # FabMount.post_produce1():
     def post_produce1(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
@@ -1182,7 +1166,7 @@ class FabMount(object):
         geometries: Tuple[FabGeometry, ...]
         if isinstance(shapes, FabGeometry):
             geometries = (shapes,)
-        else:
+        else:  # pragma: no unit cover
             geometries = shapes
         geometry: FabGeometry
         for geometry in geometries:
@@ -1227,7 +1211,7 @@ class FabMount(object):
             return (vector1 - vector2).Length < EPSILON
 
         if isinstance(joins, FabJoin):
-            joins = (joins,)
+            joins = (joins,)  # pragma: no unit cover
         if tracing:
             print(f"{tracing}=>FabMount({self.Name}).drill_joins(|{len(joins)}|")
 
@@ -1365,11 +1349,11 @@ class FabSolid(FabNode):
 
     # FabSolid.Body():
     @property
-    def Body(self) -> Any:
+    def Body(self) -> Any:  # pragma: no unit cover
         """Return BodyBase for FabSolid."""
         if not self._Body:
             raise RuntimeError(
-                f"FabSolid.Body({self.Label}).Body(): body not set yet")  # pragma: no unit cover
+                f"FabSolid.Body({self.Label}).Body(): body not set yet")
         return self._Body
 
     # FabSolid.to_json():
@@ -1380,7 +1364,7 @@ class FabSolid(FabNode):
         if self._StepFile:
             json_dict["StepFile"] = str(self._StepFile)
         if self._Color:
-            json_dict["_Color"] = self._Color
+            json_dict["_Color"] = self._Color  # pragma: no unit cover
         json_mounts: List[Any] = []
         name: str
         mount: FabMount
@@ -1394,12 +1378,12 @@ class FabSolid(FabNode):
     # FabSolid.set_body():
     def set_body(self, body: Any) -> None:
         """Set the BodyBase of a FabSolid."""
-        self._Body = body
+        self._Body = body  # pragma: no unit cover
 
     # FabSolid.is_solid():
     def is_solid(self) -> bool:
         """ Return True if FabNode is a FabAssembly."""
-        return True  # All other FabNode's return False.
+        return True  # All other FabNode's return False.  # pragma: no unit cover
 
     # FabSolid.pre_produce():
     def pre_produce(self, produce_state: Fab_ProduceState) -> None:
@@ -1497,7 +1481,7 @@ class FabSolid(FabNode):
         hash_tuple: Tuple[Any, ...] = self.get_hash()
         step_path = produce_state.Steps.activate(self.Label, hash_tuple)
         if step_path.exists():
-            use_cached_step = True
+            use_cached_step = True  # pragma: no unit cover
         self._StepFile = step_path
 
         # Perform all of the mount operations if unable to *use_cached_step*:
@@ -1517,7 +1501,7 @@ class FabSolid(FabNode):
         # TODO: move this code into Fab_Query:
 
         assembly: cq.Assembly
-        if use_cached_step:
+        if use_cached_step:  # pragma: no unit cover
             # Read in step file here:
             work_plane: cq.Workplane = cq.importers.importStep(str(step_path))
             assembly = cq.Assembly(work_plane, name=self.Label, color=cq.Color(*rgb_color))
