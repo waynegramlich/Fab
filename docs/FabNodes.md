@@ -4,7 +4,7 @@ Node: Fab tree management.
 The Node package provides a tree of FabNode's that roughly corresponds to a FreeCAD tree
 as shown in the FreeCAD model view.
 
-There are two classes defined:
+There are two public classes defined:
 * FabBox:
   This is a generic bounding box class similar to the FreeCAD BoundBox class
   is used to enclose the FabNode contents and its children FabNode's.
@@ -12,6 +12,7 @@ There are two classes defined:
 * FabNode:
   This is a sub-class of FabBox that has a name, a parent FabNode and other data structures
   required to maintain the tree.
+There are three private classes defined -- Fab_Prefix, Fab_Steps, and Fab_ProduceState.
 
 Other Fab packages (e.g. Project and Solid) further sub-class FabNode to provide finer
 grained distinctions between FabNode's.
@@ -54,11 +55,17 @@ See the FabNode documentation for further attributes.
   * 2.12 [post_produce2()](#fabnodes----post-produce2): Do FabNode phase 2 post production.
   * 2.13 [set_tracing()](#fabnodes----set-tracing): Set the FabNode indentation tracing level.
   * 2.14 [probe()](#fabnodes----probe): Perform a probe operation.
-* 3 Class: [Fab_ProduceState](#fabnodes--fab-producestate):
-* 4 Class: [Fab_Steps](#fabnodes--fab-steps):
-  * 4.1 [scan()](#fabnodes----scan): Scan the associated directory for matching .step files.
-  * 4.2 [activate()](#fabnodes----activate): Reserve a .step file name to be read/written.
-  * 4.3 [flush_inactives()](#fabnodes----flush-inactives): Delete inactive .step files.
+* 3 Class: [Fab_Prefix](#fabnodes--fab-prefix):
+  * 3.1 [next_document()](#fabnodes----next-document): Return the next document FabPrefix.
+  * 3.2 [next_solid()](#fabnodes----next-solid): Return the next solid Fab_Prefix.
+  * 3.3 [next_mount()](#fabnodes----next-mount): Return the next mount Fab_Prefix.
+  * 3.4 [next_operation()](#fabnodes----next-operation): Return the next mount Fab_Prefix.
+  * 3.5 [to_string()](#fabnodes----to-string): Return the standard Fab_Prefix string of the form Ddd__Ssss__Mmm__Oooo.
+* 4 Class: [Fab_ProduceState](#fabnodes--fab-producestate):
+* 5 Class: [Fab_Steps](#fabnodes--fab-steps):
+  * 5.1 [scan()](#fabnodes----scan): Scan the associated directory for matching .step files.
+  * 5.2 [activate()](#fabnodes----activate): Reserve a .step file name to be read/written.
+  * 5.3 [flush_inactives()](#fabnodes----flush-inactives): Delete inactive .step files.
 
 ## <a name="fabnodes--fabbox"></a>1 Class FabBox:
 
@@ -166,6 +173,9 @@ Attributes:
   A non-empty indentation string when tracing is enabled.
   This field is recursively set when *set_tracing*() is explicitly set.
 
+Constructor:
+* FabNode(Label, Prefix)
+
 ### <a name="fabnodes----get-errors"></a>2.1 `FabNode.`get_errors():
 
 FabNode.get_errors(self) -> List[str]:
@@ -262,7 +272,51 @@ Perform a probe operation.
 This method can be overridden and called to perform debug probes.
 
 
-## <a name="fabnodes--fab-producestate"></a>3 Class Fab_ProduceState:
+## <a name="fabnodes--fab-prefix"></a>3 Class Fab_Prefix:
+
+Manage .stp and .ngc file prefixes.
+Attributes:
+* *DocumentIndex* (int): The Document index starting at 1.  (0 means not started yet.)
+* *SolidIndex* (int): The Solid index starting at 1.  (0 means not started yet.)
+* *MountIndex* (int): The Mount index starting at 1.  (0 means not started yet.)
+* *OperationIndex* (int): The Operation index starting at 1.  (0 means not started yet.)
+
+Constructor:
+* Fab_Prefix(DocumentIndex, SolidIndex, Mount_Index, OperationIndex)
+
+### <a name="fabnodes----next-document"></a>3.1 `Fab_Prefix.`next_document():
+
+Fab_Prefix.next_document(self) -> 'Fab_Prefix':
+
+Return the next document FabPrefix.
+
+### <a name="fabnodes----next-solid"></a>3.2 `Fab_Prefix.`next_solid():
+
+Fab_Prefix.next_solid(self) -> 'Fab_Prefix':
+
+Return the next solid Fab_Prefix.
+
+### <a name="fabnodes----next-mount"></a>3.3 `Fab_Prefix.`next_mount():
+
+Fab_Prefix.next_mount(self) -> 'Fab_Prefix':
+
+Return the next mount Fab_Prefix.
+
+### <a name="fabnodes----next-operation"></a>3.4 `Fab_Prefix.`next_operation():
+
+Fab_Prefix.next_operation(self) -> 'Fab_Prefix':
+
+Return the next mount Fab_Prefix.
+
+### <a name="fabnodes----to-string"></a>3.5 `Fab_Prefix.`to_string():
+
+Fab_Prefix.to_string(self) -> str:
+
+Return the standard Fab_Prefix string of the form Ddd__Ssss__Mmm__Oooo.
+Any values that are zero not provided.
+
+
+## <a name="fabnodes--fab-producestate"></a>4 Class Fab_ProduceState:
 
 Shared produce state for FabNode's.
 Attributes:
@@ -280,7 +334,7 @@ Attributes:
 This class is for internal use only:
 
 
-## <a name="fabnodes--fab-steps"></a>4 Class Fab_Steps:
+## <a name="fabnodes--fab-steps"></a>5 Class Fab_Steps:
 
 Manage directory of .step files.
 This class will scan a directory for STEP files of the format `Name__XXXXXXXXXXXXXXXX.stp`,
@@ -292,13 +346,13 @@ There are three operations:
 * activate(): This method is used to activate a .stp file for reading and/or writing.
 * flush_stales(): This method is used to remove previous .stp files that are now longer used.
 
-### <a name="fabnodes----scan"></a>4.1 `Fab_Steps.`scan():
+### <a name="fabnodes----scan"></a>5.1 `Fab_Steps.`scan():
 
 Fab_Steps.scan(self, tracing: str = '') -> None:
 
 Scan the associated directory for matching .step files.
 
-### <a name="fabnodes----activate"></a>4.2 `Fab_Steps.`activate():
+### <a name="fabnodes----activate"></a>5.2 `Fab_Steps.`activate():
 
 Fab_Steps.activate(self, name: str, hash_tuple: Tuple[Any, ...], tracing: str = '') -> pathlib.Path:
 
@@ -313,7 +367,7 @@ Arguments:
 Returns:
 * (Path): The full path to the .step file to be read/written.
 
-### <a name="fabnodes----flush-inactives"></a>4.3 `Fab_Steps.`flush_inactives():
+### <a name="fabnodes----flush-inactives"></a>5.3 `Fab_Steps.`flush_inactives():
 
 Fab_Steps.flush_inactives(self, tracing: str = '') -> None:
 

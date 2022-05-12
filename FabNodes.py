@@ -5,7 +5,7 @@ Node: Fab tree management.
 The Node package provides a tree of FabNode's that roughly corresponds to a FreeCAD tree
 as shown in the FreeCAD model view.
 
-There are two classes defined:
+There are two public classes defined:
 * FabBox:
   This is a generic bounding box class similar to the FreeCAD BoundBox class
   is used to enclose the FabNode contents and its children FabNode's.
@@ -13,6 +13,7 @@ There are two classes defined:
 * FabNode:
   This is a sub-class of FabBox that has a name, a parent FabNode and other data structures
   required to maintain the tree.
+There are three private classes defined -- Fab_Prefix, Fab_Steps, and Fab_ProduceState.
 
 Other Fab packages (e.g. Project and Solid) further sub-class FabNode to provide finer
 grained distinctions between FabNode's.
@@ -45,6 +46,7 @@ from dataclasses import dataclass, field
 import hashlib
 from pathlib import Path
 from typing import Any, Dict, IO, List, Sequence, Set, Tuple, Union
+from typeguard import check_type
 
 from cadquery import Vector  # type: ignore
 
@@ -729,6 +731,120 @@ class FabBox(object):
         FabBox._intersect_unit_tests()
 
 
+# Fab_Prefix:
+@dataclass(frozen=True)
+class Fab_Prefix(object):
+    """Fab_Prefix: Manage .stp and .ngc file prefixes.
+
+    Attributes:
+    * *DocumentIndex* (int): The Document index starting at 1.  (0 means not started yet.)
+    * *SolidIndex* (int): The Solid index starting at 1.  (0 means not started yet.)
+    * *MountIndex* (int): The Mount index starting at 1.  (0 means not started yet.)
+    * *OperationIndex* (int): The Operation index starting at 1.  (0 means not started yet.)
+
+    Constructor:
+    * Fab_Prefix(DocumentIndex, SolidIndex, Mount_Index, OperationIndex)
+
+    """
+    DocumentIndex: int
+    SolidIndex: int
+    MountIndex: int
+    OperationIndex: int
+
+    # Fab_Prefix.__post_init__():
+    def __post_init__(self) -> None:
+        """Finish initializing Fab_Prefix."""
+        check_type("Fab_Prefix.DocumentIndex", self.DocumentIndex, int)
+        check_type("Fab_Prefix.SolidIndex", self.SolidIndex, int)
+        check_type("Fab_Prefix.MountIndex", self.MountIndex, int)
+        check_type("Fab_Prefix.OperationIndex", self.OperationIndex, int)
+
+    # Fab_Prefix.next_docuement():
+    def next_document(self) -> "Fab_Prefix":
+        """Return the next document FabPrefix."""
+        return Fab_Prefix(self.DocumentIndex + 1, 0, 0, 0)
+
+    # Fab_Prefix.next_solid():
+    def next_solid(self) -> "Fab_Prefix":
+        """Return the next solid Fab_Prefix."""
+        return Fab_Prefix(self.DocumentIndex, self.SolidIndex + 1, 0, 0)
+
+    # Fab_Prefix.next_mount():
+    def next_mount(self) -> "Fab_Prefix":
+        """Return the next mount Fab_Prefix."""
+        return Fab_Prefix(self.DocumentIndex, self.SolidIndex, self.MountIndex + 1, 0)
+
+    # Fab_Prefix.next_operation():
+    def next_operation(self) -> "Fab_Prefix":
+        """Return the next mount Fab_Prefix."""
+        return Fab_Prefix(self.DocumentIndex, self.SolidIndex, self.MountIndex,
+                          self.OperationIndex + 1)
+
+    # Fab_Prefix.to_string():
+    def to_string(self) -> str:
+        """Return the standard Fab_Prefix string of the form Ddd__Ssss__Mmm__Oooo.
+
+        Any values that are zero not provided.
+        """
+        prefixes: List[str] = []
+        if self.DocumentIndex > 0:
+            prefixes.append(f"D{self.DocumentIndex:02d}")
+        if self.SolidIndex > 0:
+            prefixes.append(f"S{self.SolidIndex:03d}")
+        if self.MountIndex > 0:
+            prefixes.append(f"M{self.MountIndex:02d}")
+        if self.OperationIndex > 0:
+            prefixes.append(f"O{self.OperationIndex:03d}")
+        return "_".join(prefixes)
+
+    # Fab_Prefix._unit_tests():
+    @staticmethod
+    def _unit_tests() -> None:
+        """Run unit tests for FabPrefix."""
+        empty: Fab_Prefix = Fab_Prefix(0, 0, 0, 0)
+        assert empty.DocumentIndex == 0
+        assert empty.SolidIndex == 0
+        assert empty.MountIndex == 0
+        assert empty.OperationIndex == 0
+        assert empty.to_string() == ""
+
+        first_document: Fab_Prefix = empty.next_document()
+        assert first_document.DocumentIndex == 1
+        second_document: Fab_Prefix = first_document.next_document()
+        assert second_document.DocumentIndex == 2
+        assert second_document.to_string() == "D02"
+
+        first_solid: Fab_Prefix = first_document.next_solid()
+        assert first_solid.DocumentIndex == 1
+        assert first_solid.SolidIndex == 1
+        second_solid: Fab_Prefix = first_solid.next_solid()
+        assert second_solid.DocumentIndex == 1
+        assert second_solid.SolidIndex == 2
+        assert second_solid.to_string() == "D01_S002"
+
+        first_mount: Fab_Prefix = second_solid.next_mount()
+        assert first_mount.DocumentIndex == 1
+        assert first_mount.SolidIndex == 2
+        assert first_mount.MountIndex == 1
+        second_mount: Fab_Prefix = first_mount.next_mount()
+        assert second_mount.DocumentIndex == 1
+        assert second_mount.SolidIndex == 2
+        assert second_mount.MountIndex == 2
+        assert second_mount.to_string() == "D01_S002_M02"
+
+        first_operation: Fab_Prefix = second_mount.next_operation()
+        assert first_operation.DocumentIndex == 1
+        assert first_operation.SolidIndex == 2
+        assert first_operation.MountIndex == 2
+        assert first_operation.OperationIndex == 1
+        second_operation: Fab_Prefix = first_operation.next_operation()
+        assert second_operation.DocumentIndex == 1
+        assert second_operation.SolidIndex == 2
+        assert second_operation.MountIndex == 2
+        assert second_operation.OperationIndex == 2
+        assert second_operation.to_string() == "D01_S002_M02_O002"
+
+
 # Fab_Steps:
 @dataclass
 class Fab_Steps(object):
@@ -933,6 +1049,9 @@ class FabNode(FabBox):
     * *Tracing* (str):
       A non-empty indentation string when tracing is enabled.
       This field is recursively set when *set_tracing*() is explicitly set.
+
+    Constructor:
+    * FabNode(Label, Prefix)
 
     """
 
@@ -1192,5 +1311,6 @@ class FabNode(FabBox):
 
 if __name__ == "__main__":
     # _unit_tests("")
+    Fab_Prefix._unit_tests()
     Fab_Steps._unit_tests(" ")
     FabBox._unit_tests()
