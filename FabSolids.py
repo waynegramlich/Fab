@@ -25,7 +25,7 @@ from cadquery import Vector  # type: ignore
 
 from FabGeometries import FabCircle, FabGeometry, Fab_GeometryContext, Fab_Plane, Fab_Query
 from FabJoins import FabFasten, FabJoin
-from FabNodes import FabBox, FabNode, Fab_ProduceState
+from FabNodes import FabBox, FabNode, Fab_Prefix, Fab_ProduceState
 from FabUtilities import FabColor, FabToolController
 
 # The *_suppress_stdout* function is based on code from:
@@ -184,6 +184,7 @@ class Fab_Operation(object):
     _ToolControllerIndex: int = field(init=False)
     _JsonEnabled: bool = field(init=False)
     _Active: bool = field(init=False)
+    _Prefix: Fab_Prefix = field(init=False, repr=False)
 
     # Fab_Operation.__post_init__():
     def __post_init__(self) -> None:
@@ -195,6 +196,8 @@ class Fab_Operation(object):
         self._ToolControllerIndex = -1  # Unassigned.
         self._JsonEnabled = True
         self._Active = True
+        mount: FabMount = self._Mount
+        self._Prefix = mount.Solid.Project.get_next_operation_prefix()
 
     # Fab_Operation.get_tool_controller():
     # def get_tool_controller(self) -> FabToolController:
@@ -587,12 +590,12 @@ class Fab_Pocket(Fab_Operation):
             -self._Depth, tracing=next_tracing)
 
         # Transfer *geometries* to *pocket_context* (which is a copy of *geometry_context*):
-        prefix: str = f"{mount.Solid.Label}__{mount.Name}__{self.Name}"
-        bottom_prefix: str = f"{prefix}_bottom"
+        pocket_prefix: str = self._Prefix.to_string()
+        bottom_prefix: str = f"{pocket_prefix}__{self.Name}__bottom"
         geometry: FabGeometry
         index: int
         for index, geometry in enumerate(geometries):
-            geometry.produce(pocket_context, prefix, index, tracing=next_tracing)
+            geometry.produce(pocket_context, bottom_prefix, index, tracing=next_tracing)
             geometry.produce(bottom_context, bottom_prefix, index, tracing=next_tracing)
             if tracing:
                 pocket_query.show(f"Pocket Context after Geometry {index}", tracing)
@@ -600,10 +603,7 @@ class Fab_Pocket(Fab_Operation):
         # Extrude the pocket *pocket_query* volume to be removed.
         pocket_query.extrude(self._Depth, tracing=next_tracing)
 
-        bottom_name: str = (
-            f"{mount.Solid.Label}__{mount.Name}__{produce_state.OperationIndex:03d}__"
-            f"{self.Name}__pocket_bottom"
-        )
+        bottom_name: str = f"{pocket_prefix}__{self.Name}__pocket_bottom"
         bottom_path = produce_state.Steps.activate(bottom_name,
                                                    self.get_geometries_hash(geometries))
         if not bottom_path.exists():
@@ -618,6 +618,7 @@ class Fab_Pocket(Fab_Operation):
             # Use Fab_Steps to manage duplicates.
             with _suppress_stdout():
                 bottom_assembly.save(str(bottom_path), "STEP")
+        self._BottomPath = bottom_path
 
         tool_controller: FabToolController = FabToolController(
             BitName="5mm_Endmill",
@@ -868,9 +869,8 @@ class Fab_Hole(Fab_Operation):
                 holes_query.hole(diameter, depth)
             self.HolesCount = len(self.Centers)
 
-            operation_index: int = produce_state.OperationIndex
-            step_base_name: str = (
-                f"{mount.Solid.Label}__{mount.Name}__{operation_index:03d}__{self.Name}Fab_Holes")
+            prefix: str = self._Prefix.to_string()
+            step_base_name: str = f"{prefix}__{self.Name}_holes"
             assembly: cq.Assembly = cq.Assembly(
                 holes_query.WorkPlane, name=step_base_name, color=cq.Color(0.5, 0.5, 0.5, 1.0))
 
@@ -954,6 +954,7 @@ class FabMount(object):
     _AppDatumPlane: Any = field(init=False, repr=False)  # TODO: Remove
     _GuiDatumPlane: Any = field(init=False, repr=False)  # TODO: Remove
     _Plane: Fab_Plane = field(init=False, repr=False)
+    _Prefix: Fab_Prefix = field(init=False, repr=False)
 
     # FabMount.__post_init__():
     def __post_init__(self) -> None:
@@ -986,6 +987,7 @@ class FabMount(object):
         self._GeometryContext = Fab_GeometryContext(self._Plane, self._Query)
         self._AppDatumPlane = None
         self._GuiDatumPlane = None
+        self._Prefix = solid.Project.get_next_mount_prefix()
 
         if tracing:
             print(f"{tracing}{self._Contact=} {self._Normal=}")
@@ -1321,6 +1323,7 @@ class FabSolid(FabNode):
     _Assembly: Any = field(init=False, repr=False)
     _StepFile: Optional[Path] = field(init=False, repr=False)
     _Color: Optional[Tuple[float, ...]] = field(init=False, repr=False)
+    _Prefix: Fab_Prefix = field(init=False, repr=False)
 
     # FabSolid.__post_init__():
     def __post_init__(self) -> None:
@@ -1343,6 +1346,8 @@ class FabSolid(FabNode):
         self._Assembly = None
         self._StepFile = None
         self._Color = None
+        project: FabNode = self.Project
+        self._Prefix = project.get_next_solid_prefix()
 
         if tracing:
             print(f"{tracing}<=FabSolid({self.Label}).__post_init__()")
@@ -1479,7 +1484,9 @@ class FabSolid(FabNode):
         # Instead use one of the hashlib hash functions instead:
         #     hash_tuple => repr string => hashlib.sha256 => trim to 16 bytes
         hash_tuple: Tuple[Any, ...] = self.get_hash()
-        step_path = produce_state.Steps.activate(self.Label, hash_tuple)
+        prefix: str = self._Prefix.to_string()
+        solid_name: str = f"{prefix}__{self.Label}"
+        step_path = produce_state.Steps.activate(solid_name, hash_tuple)
         if step_path.exists():
             use_cached_step = True  # pragma: no unit cover
         self._StepFile = step_path
@@ -1524,6 +1531,11 @@ class FabSolid(FabNode):
         if tracing:
             print(f"{tracing}<=FabSolid.post_produce1('{self.Label}')")
 
+    # FabSolid._unit_tests():
+    @staticmethod
+    def _unit_tests() -> None:
+        pass
+
 
 # TODO: Remove
 def visibility_set(element: Any, new_value: bool = True, tracing: str = "") -> None:
@@ -1536,7 +1548,7 @@ def visibility_set(element: Any, new_value: bool = True, tracing: str = "") -> N
 # TODO: Add unit tests.
 def main() -> None:
     FabStock._unit_tests()
-    pass
+    FabSolid._unit_tests()
 
 
 if __name__ == "__main__":

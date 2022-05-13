@@ -16,8 +16,12 @@
 * 3 Class: [FabProject](#fabprojects--fabproject):
   * 3.1 [get_errors()](#fabprojects----get-errors): Return the FabProject errors list.
   * 3.2 [is_project()](#fabprojects----is-project):  Return True if FabNode is a Fab_Group.
-  * 3.3 [to_json()](#fabprojects----to-json): Return FabProject JSON structure.
-  * 3.4 [run()](#fabprojects----run): NO DOC STRING!
+  * 3.3 [get_next_document_prefix()](#fabprojects----get-next-document-prefix): Return the next document Fab_Prefix.
+  * 3.4 [get_next_solid_prefix()](#fabprojects----get-next-solid-prefix): Return the next solid Fab_Prefix.
+  * 3.5 [get_next_mount_prefix()](#fabprojects----get-next-mount-prefix): Return the next mount Fab_Prefix.
+  * 3.6 [get_next_operation_prefix()](#fabprojects----get-next-operation-prefix): Return the next mount Fab_Prefix.
+  * 3.7 [to_json()](#fabprojects----to-json): Return FabProject JSON structure.
+  * 3.8 [run()](#fabprojects----run): NO DOC STRING!
 * 4 Class: [Fab_Group](#fabprojects--fab-group):
   * 4.1 [post_produce1()](#fabprojects----post-produce1): Perform Fab_Group phase 1 post production.
   * 4.2 [produce()](#fabprojects----produce): Create the FreeCAD group object.
@@ -112,13 +116,37 @@ FabProject.is_project(self) -> bool:
 
  Return True if FabNode is a Fab_Group.
 
-### <a name="fabprojects----to-json"></a>3.3 `FabProject.`to_json():
+### <a name="fabprojects----get-next-document-prefix"></a>3.3 `FabProject.`get_next_document_prefix():
+
+FabProject.get_next_document_prefix(self) -> FabNodes.Fab_Prefix:
+
+Return the next document Fab_Prefix.
+
+### <a name="fabprojects----get-next-solid-prefix"></a>3.4 `FabProject.`get_next_solid_prefix():
+
+FabProject.get_next_solid_prefix(self) -> FabNodes.Fab_Prefix:
+
+Return the next solid Fab_Prefix.
+
+### <a name="fabprojects----get-next-mount-prefix"></a>3.5 `FabProject.`get_next_mount_prefix():
+
+FabProject.get_next_mount_prefix(self) -> FabNodes.Fab_Prefix:
+
+Return the next mount Fab_Prefix.
+
+### <a name="fabprojects----get-next-operation-prefix"></a>3.6 `FabProject.`get_next_operation_prefix():
+
+FabProject.get_next_operation_prefix(self) -> FabNodes.Fab_Prefix:
+
+Return the next mount Fab_Prefix.
+
+### <a name="fabprojects----to-json"></a>3.7 `FabProject.`to_json():
 
 FabProject.to_json(self) -> Dict[str, Any]:
 
 Return FabProject JSON structure.
 
-### <a name="fabprojects----run"></a>3.4 `FabProject.`run():
+### <a name="fabprojects----run"></a>3.8 `FabProject.`run():
 
 FabProject.run(self, step_directory: Union[pathlib.Path, NoneType] = None) -> None:
 

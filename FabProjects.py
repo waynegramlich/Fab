@@ -34,7 +34,7 @@ from pathlib import Path
 import cadquery as cq  # type: ignore
 from cadquery import Vector  # type: ignore
 
-from FabNodes import FabNode, Fab_Steps, Fab_ProduceState
+from FabNodes import FabNode, Fab_Prefix, Fab_ProduceState, Fab_Steps
 from FabSolids import FabSolid
 
 
@@ -178,6 +178,7 @@ class FabDocument(FabNode):
     FilePath: Path = Path("/bogus_file")
     _AppDocument: Any = field(init=False, repr=False)
     _GuiDocument: Any = field(init=False, repr=False)
+    _Prefix: Fab_Prefix = field(init=False, repr=False)
 
     # FabDocument.__post_init__():
     def __post_init__(self) -> None:
@@ -187,6 +188,8 @@ class FabDocument(FabNode):
         super().__post_init__()
         self._AppDocument = None
         self._GuiDocument = None
+        project: FabNode = self.Project
+        self._Prefix = project.get_next_document_prefix()
 
         # Verify *suffix*;
         if not isinstance(self.FilePath, Path):
@@ -256,6 +259,10 @@ class FabProject(FabNode):
 
     _AllNodes: Tuple[FabNode, ...] = field(init=False, repr=False)
     _Errors: List[str] = field(init=False, repr=False)
+    _LastDocumentPrefix: Fab_Prefix = field(init=False, repr=False)
+    _LastSolidPrefix: Fab_Prefix = field(init=False, repr=False)
+    _LastMountPrefix: Fab_Prefix = field(init=False, repr=False)
+    _LastOperationPreix: Fab_Prefix = field(init=False, repr=False)
 
     # FabProject.__post_init__():
     def __post_init__(self) -> None:
@@ -263,6 +270,11 @@ class FabProject(FabNode):
         super().__post_init__()
         self._AllNodes = ()
         self._Errors = []
+        empty_prefix: Fab_Prefix = Fab_Prefix(0, 0, 0, 0)
+        self._LastDocumentPrefix = empty_prefix
+        self._LastSolidPrefix = empty_prefix
+        self._LastMountPrefix = empty_prefix
+        self._LastOperationPrefix = empty_prefix
 
     # FabProject.get_errors():
     def get_errors(self) -> List[str]:
@@ -283,6 +295,40 @@ class FabProject(FabNode):
             name, cast(FabNode, None))  # Magic creation of  FabProject.  # pragma: no unit cover
         # print(f"<=Project.new({name})=>{project}")
         return project  # pragma: no unit cover
+
+    # FabProject.get_next_document_prefix():
+    def get_next_document_prefix(self) -> Fab_Prefix:
+        """Return the next document Fab_Prefix."""
+        document_prefix: Fab_Prefix = self._LastDocumentPrefix.next_document()
+        self._LastDocumentPrefix = document_prefix
+        self._LastSolidPrefix = document_prefix
+        self._LastMountPrefix = document_prefix
+        self._LastOperationPrefix = document_prefix
+        return document_prefix
+
+    # FabProject.get_next_solid_prefix():
+    def get_next_solid_prefix(self) -> Fab_Prefix:
+        """Return the next solid Fab_Prefix."""
+        solid_prefix: Fab_Prefix = self._LastSolidPrefix.next_solid()
+        self._LastSolidPrefix = solid_prefix
+        self._LastMountPrefix = solid_prefix
+        self._LastOperationPrefix = solid_prefix
+        return solid_prefix
+
+    # FabProject.get_next_mount_prefix():
+    def get_next_mount_prefix(self) -> Fab_Prefix:
+        """Return the next mount Fab_Prefix."""
+        mount_prefix: Fab_Prefix = self._LastMountPrefix.next_mount()
+        self._LastMountPrefix = mount_prefix
+        self._LastOperationPrefix = mount_prefix
+        return mount_prefix
+
+    # FabProject.get_next_operation_prefix():
+    def get_next_operation_prefix(self) -> Fab_Prefix:
+        """Return the next mount Fab_Prefix."""
+        operation_prefix: Fab_Prefix = self._LastOperationPrefix.next_operation()
+        self._LastOperationPrefix = operation_prefix
+        return operation_prefix
 
     # FabProject.to_json():
     def to_json(self) -> Dict[str, Any]:

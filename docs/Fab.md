@@ -478,6 +478,9 @@ These are the steps to follow to install miniconda:
    # Accept ENTER to accept default install directory: (/home/YOURLOGIN/miniconda3)
    # Type "yes" for running conda init
    # Type "yes" to initialize Miniconda3
+   #   * This modifies your `$HOME/.bashrc`
+   #   * Alternatively type "no" to leave `~/.bashrc` alone.
+   #   * Use `source ~/miniconda3/bin/activate`.
    # All done
    ```
 
@@ -486,32 +489,32 @@ These are the steps to follow to install miniconda:
    Run:
 
    ```
-   source `~/.bashrc`
+   source `~/.bashrc`   # or `source ~/minconda3/bin/activate`
    ```
 
    There is a new `(base) ` prefix in your shell prompt.
 
 
-6. Deactivate conda auto activate on shell startup:
+7. Deactivate conda auto activate on shell startup (only if ~/.bashrc was modified`):
 
    ```
    conda config --set auto_activate_base false
-   source ~/.bashrc
+   source ~/.bashrc  #
    ```
    # The `(base) ` prefix should disappear from your shell prompt.
 
-7. Activate and decativate conda:
+8. Activate and decativate conda:
 
    To activate/deactivate miniconda, use one of the commands below
 
    ```
-   conda activate
+   conda activate  # Or `source ~/miniconda/bin/activate`
    # `(base) ` should appear
    conda deactivate
    # `(base) ` should disappear
    ```
 
-8. Update miniconda.
+9. Update miniconda.
 
 
    ```
@@ -524,8 +527,9 @@ If you eventually decide remove miniconda, do the following:
 
 1. Edit `~/.bashrc` and remove the stuff from `# >>> conda initialize >>>` to
    `# <<< conda initialize <<<<`.
+   This is only necessary if you let the miniconda install edit your `~/.bashrc` file.
 
-2. Remove the `miniconda3` directory:
+2. Remove the `miniconda3` directory tree:
 
    ```
         rm -rf ~/miniconda3 ~/.condarc ~/.conda ~/continuum
@@ -545,11 +549,11 @@ After minconda is installed do the following:
    bash miniforge.sh -b -p $HOME/miniconda
    # Do not do the init step, since it modifies your `~/.bashrc`.
 
-   # Each time you want to activate miniconda, doe the following command:
+   # Each time you want to activate miniconda, do the following command:
    source $HOME/miniconda/bin/activate
-   # The  miniconda/ directory is now ~407M.
+   # By the way, the  miniconda/ directory is pretty big right now (~407M.)
+   # It will get much larger belows.
    ```
-
 
 3. Create cadquery-dev and install CadQuery from master:
 
@@ -576,7 +580,8 @@ After minconda is installed do the following:
    conda install -c cadquery -c conda-forge cq-editor=master
    cq-editor
    # If a screen pops up, you have succeeded.
-   # If not, well miniconda failed you.  It is not strictly required.
+   # If not, well miniconda failed you.  It is not strictly required, since Fab is focused
+   # on using FreedCAD as the visualizer.
    # Exit the cq-editor
    conda deactivate
    # The miniconda/ directory is ~3.6G.
@@ -616,17 +621,36 @@ After minconda is installed do the following:
    ln -s ~/bin/FreeCAD_0.19.3-Linux-Conda_glibc2.12-x86_64.AppImage ~/bin/freecad
    ```
 
-4. Make the symbolic link executable:
+5. Make the symbolic link executable:
 
    chmod +x ~/bin/freecad
 
-4. Execute the FreeCAD program:
+6. Execute the FreeCAD program:
 
    ```
    freecad &
    ```
 
-   The FreeCAD window should pop u.
+   The FreeCAD window should pop up.
+
+#### Older FreeCAD Install Instructions
+
+These instructions should be merged with previous instructions.
+
+The Fab Shop system uses some CNC tool files from the FreeCAD Path module.
+In the directory that parent directory of the Fab directory,
+install the entire source tree from FreeCAD.
+This is a huge download to get a small number of files,
+but these days both "disk space" and download bandwidth is pretty inexpensive.
+
+    ```
+    cd .. # Go to the parent directory of the Fab package
+    # One of the following:
+    git clone https://github.com/FreeCAD/FreeCAD.git  # If you do not have Git SSH keys installed
+    git clone git@github.com:FreeCAD/FreeCAD.git  # If you do have Git SSH keys installed
+    cd Fab  # Return to Fab Directory
+    ls -R ../FreeCAD/src/Mod/Path/Tools  # verify that the Tools directory exists
+    ```
 
 ### Install Fab
 
@@ -645,23 +669,6 @@ Do the following to install Fab:
    ```
    # To Be Figured out
    ```
-
-### Install FreeCAD
-
-The Fab Shop system uses some CNC tool files from the FreeCAD Path module.
-In the directory that parent directory of the Fab directory,
-install the entire source tree from FreeCAD.
-This is a huge download to get a small number of files,
-but these days both "disk space" and download bandwidth is pretty inexpensive.
-
-    ```
-    cd .. # Go to the parent directory of the Fab package
-    # One of the following:
-    git clone https://github.com/FreeCAD/FreeCAD.git  # If you do not have Git SSH keys installed
-    git clone git@github.com:FreeCAD/FreeCAD.git  # If you do have Git SSH keys installed
-    cd Fab  # Return to Fab Directory
-    ls -R ../FreeCAD/src/Mod/Path/Tools  # verify that the Tools directory exists
-    ```
 
 
 

@@ -1060,10 +1060,10 @@ class FabNode(FabBox):
     _FullPath: str = field(init=False, repr=False)
     _Tracing: str = field(init=False, repr=False)
     _Children: "OrderedDict[str, FabNode]" = field(init=False, repr=False)
-    # The next fields are private and are not user accessible via property accessors:
+    # The next fields are private and are not user accessible via property access methods:
     _Project: "FabNode" = field(init=False, repr=False)
-    _AppObject: Any = field(init=False, repr=False)
-    _GuiObject: Any = field(init=False, repr=False)
+    _AppObject: Any = field(init=False, repr=False)  # TODO: Remove
+    _GuiObject: Any = field(init=False, repr=False)  # TODO: Remove
 
     # FabNode.__post_init__():
     def __post_init__(self) -> None:
@@ -1158,10 +1158,10 @@ class FabNode(FabBox):
         return self._Label
 
     # FabNode.Project()
-    # @property
-    # def Project(self) -> "FabNode":
-    #     """Return FabNode tree project root."""
-    #     return self._Project
+    @property
+    def Project(self) -> "FabNode":
+        """Return FabNode tree project root."""
+        return self._Project
 
     # FabNode.Tracing():
     @property
@@ -1182,6 +1182,34 @@ class FabNode(FabBox):
         """
         raise RuntimeError(f"FabNode.get_errors({self._Label}).get_errors(): not implemented")
         return []  # Make linters happy.
+
+    # FabNode.get_next_document_prefix():
+    def get_next_document_prefix(self) -> Fab_Prefix:
+        """Return the next document Fab_Prefix."""
+        # Only implemented FabProject sub-class of FabNode.
+        raise NotImplementedError(
+            f"{type(self)}.get_next_document_prefix() is not implemented")  # pragma: no unit cover
+
+    # FabNode.get_next_solid_prefix():
+    def get_next_solid_prefix(self) -> Fab_Prefix:
+        """Return the next solid Fab_Prefix."""
+        # Only implemented FabProject sub-class of FabNode.
+        raise NotImplementedError(
+            f"{type(self)}.get_next_solid_prefix() is not implemented")  # pragma: no unit cover
+
+    # FabNode.get_next_mount_prefix():
+    def get_next_mount_prefix(self) -> Fab_Prefix:
+        """Return the next mount Fab_Prefix."""
+        # Only implemented FabProject sub-class of FabNode.
+        raise NotImplementedError(
+            f"{type(self)}.get_next_mount_prefix() is not implemented")  # pragma: no unit cover
+
+    # FabNode.get_next_operation_prefix():
+    def get_next_operation_prefix(self) -> Fab_Prefix:
+        """Return the next mount Fab_Prefix."""
+        # Only implemented FabProject sub-class of FabNode.
+        raise NotImplementedError(
+            f"{type(self)}.get_next_operation_prefix() is not implemented")  # pragma: no unit cover
 
     # FabNode.error():
     def error(self, error_message: str) -> None:
