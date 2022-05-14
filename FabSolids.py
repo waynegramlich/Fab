@@ -1348,6 +1348,7 @@ class FabSolid(FabNode):
         self._Color = None
         project: FabNode = self.Project
         self._Prefix = project.get_next_solid_prefix()
+        print(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> {self._Prefix=}")
 
         if tracing:
             print(f"{tracing}<=FabSolid({self.Label}).__post_init__()")

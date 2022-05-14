@@ -782,20 +782,21 @@ class Fab_Prefix(object):
 
     # Fab_Prefix.to_string():
     def to_string(self) -> str:
-        """Return the standard Fab_Prefix string of the form Ddd__Ssss__Mmm__Oooo.
+        """Return the standard Fab_Prefix string of the form d##s###m##o###.
 
         Any values that are zero not provided.
         """
-        prefixes: List[str] = []
-        if self.DocumentIndex > 0:
-            prefixes.append(f"D{self.DocumentIndex:02d}")
-        if self.SolidIndex > 0:
-            prefixes.append(f"S{self.SolidIndex:03d}")
-        if self.MountIndex > 0:
-            prefixes.append(f"M{self.MountIndex:02d}")
-        if self.OperationIndex > 0:
-            prefixes.append(f"O{self.OperationIndex:03d}")
-        return "_".join(prefixes)
+        # The goal of this is for the file names to show up in the correct order when an `ls`
+        # command is done.  The `ls` command as evolved away from strict ASCII order to a much
+        # more nuanced Unicode sort order that depends upon the LC_COLLATE and LANG environment
+        # manuals.  To avoid this confusion, the prefix consists of letter and digits in a fixed
+        # order. The letter "a" always sorts before the the letters "d", "s", "m" and "o".
+        # "XX" and "XXX" are stand-ins for "00" and "000" which are uninitialized values.
+        documentation: str = f"d{self.DocumentIndex:02d}" if self.DocumentIndex > 0 else "aXX"
+        solid: str = f"s{self.SolidIndex:03d}" if self.SolidIndex > 0 else "aXXX"
+        mount: str = f"m{self.MountIndex:02d}" if self.MountIndex > 0 else "aXX"
+        operation: str = f"o{self.OperationIndex:03d}" if self.OperationIndex > 0 else "aXXX"
+        return documentation + solid + mount + operation
 
     # Fab_Prefix._unit_tests():
     @staticmethod
@@ -806,13 +807,13 @@ class Fab_Prefix(object):
         assert empty.SolidIndex == 0
         assert empty.MountIndex == 0
         assert empty.OperationIndex == 0
-        assert empty.to_string() == ""
+        assert empty.to_string() == "aXXaXXXaXXaXXX"
 
         first_document: Fab_Prefix = empty.next_document()
         assert first_document.DocumentIndex == 1
         second_document: Fab_Prefix = first_document.next_document()
         assert second_document.DocumentIndex == 2
-        assert second_document.to_string() == "D02"
+        assert second_document.to_string() == "d02aXXXaXXaXXX"
 
         first_solid: Fab_Prefix = first_document.next_solid()
         assert first_solid.DocumentIndex == 1
@@ -820,7 +821,7 @@ class Fab_Prefix(object):
         second_solid: Fab_Prefix = first_solid.next_solid()
         assert second_solid.DocumentIndex == 1
         assert second_solid.SolidIndex == 2
-        assert second_solid.to_string() == "D01_S002"
+        assert second_solid.to_string() == "d01s002aXXaXXX"
 
         first_mount: Fab_Prefix = second_solid.next_mount()
         assert first_mount.DocumentIndex == 1
@@ -830,7 +831,7 @@ class Fab_Prefix(object):
         assert second_mount.DocumentIndex == 1
         assert second_mount.SolidIndex == 2
         assert second_mount.MountIndex == 2
-        assert second_mount.to_string() == "D01_S002_M02"
+        assert second_mount.to_string() == "d01s002m02aXXX"
 
         first_operation: Fab_Prefix = second_mount.next_operation()
         assert first_operation.DocumentIndex == 1
@@ -842,7 +843,7 @@ class Fab_Prefix(object):
         assert second_operation.SolidIndex == 2
         assert second_operation.MountIndex == 2
         assert second_operation.OperationIndex == 2
-        assert second_operation.to_string() == "D01_S002_M02_O002"
+        assert second_operation.to_string() == "d01s002m02o002"
 
 
 # Fab_Steps:

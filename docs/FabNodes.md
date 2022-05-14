@@ -64,7 +64,7 @@ See the FabNode documentation for further attributes.
   * 3.2 [next_solid()](#fabnodes----next-solid): Return the next solid Fab_Prefix.
   * 3.3 [next_mount()](#fabnodes----next-mount): Return the next mount Fab_Prefix.
   * 3.4 [next_operation()](#fabnodes----next-operation): Return the next mount Fab_Prefix.
-  * 3.5 [to_string()](#fabnodes----to-string): Return the standard Fab_Prefix string of the form Ddd__Ssss__Mmm__Oooo.
+  * 3.5 [to_string()](#fabnodes----to-string): Return the standard Fab_Prefix string of the form d##s###m##o###.
 * 4 Class: [Fab_ProduceState](#fabnodes--fab-producestate):
 * 5 Class: [Fab_Steps](#fabnodes--fab-steps):
   * 5.1 [scan()](#fabnodes----scan): Scan the associated directory for matching .step files.
@@ -340,7 +340,7 @@ Return the next mount Fab_Prefix.
 
 Fab_Prefix.to_string(self) -> str:
 
-Return the standard Fab_Prefix string of the form Ddd__Ssss__Mmm__Oooo.
+Return the standard Fab_Prefix string of the form d##s###m##o###.
 Any values that are zero not provided.
 
 
