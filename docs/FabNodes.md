@@ -42,23 +42,19 @@ See the FabNode documentation for further attributes.
   * 1.2 [intersect()](#fabnodes----intersect): Compute Line Segment intersection with a FabBox.a
 * 2 Class: [FabNode](#fabnodes--fabnode):
   * 2.1 [get_errors()](#fabnodes----get-errors): Return FabNode errors list.
-  * 2.2 [get_next_document_prefix()](#fabnodes----get-next-document-prefix): Return the next document Fab_Prefix.
-  * 2.3 [get_next_solid_prefix()](#fabnodes----get-next-solid-prefix): Return the next solid Fab_Prefix.
-  * 2.4 [get_next_mount_prefix()](#fabnodes----get-next-mount-prefix): Return the next mount Fab_Prefix.
-  * 2.5 [get_next_operation_prefix()](#fabnodes----get-next-operation-prefix): Return the next mount Fab_Prefix.
-  * 2.6 [error()](#fabnodes----error): Record and error message with FabNode root.
-  * 2.7 [is_project()](#fabnodes----is-project): Return True if FabNode is a FabProject.
-  * 2.8 [is_document()](#fabnodes----is-document): Return True if FabNode is a FabProject.
-  * 2.9 [is_group()](#fabnodes----is-group): Return True if FabNode is a FabGroup.
-  * 2.10 [is_assembly()](#fabnodes----is-assembly): Return True if FabNode is a FabAssembly.
-  * 2.11 [is_solid()](#fabnodes----is-solid): Return True if FabNode is a FabAssembly.
-  * 2.12 [to_json()](#fabnodes----to-json): Return a dictionary for JSON output.
-  * 2.13 [pre_produce()](#fabnodes----pre-produce): Perform FabNode pre produce operations.
-  * 2.14 [produce()](#fabnodes----produce): Empty FabNode produce method to be over-ridden.
-  * 2.15 [post_produce1()](#fabnodes----post-produce1): Do FabNode phase 1 post production.
-  * 2.16 [post_produce2()](#fabnodes----post-produce2): Do FabNode phase 2 post production.
-  * 2.17 [set_tracing()](#fabnodes----set-tracing): Set the FabNode indentation tracing level.
-  * 2.18 [probe()](#fabnodes----probe): Perform a probe operation.
+  * 2.2 [error()](#fabnodes----error): Record and error message with FabNode root.
+  * 2.3 [is_project()](#fabnodes----is-project): Return True if FabNode is a FabProject.
+  * 2.4 [is_document()](#fabnodes----is-document): Return True if FabNode is a FabProject.
+  * 2.5 [is_group()](#fabnodes----is-group): Return True if FabNode is a FabGroup.
+  * 2.6 [is_assembly()](#fabnodes----is-assembly): Return True if FabNode is a FabAssembly.
+  * 2.7 [is_solid()](#fabnodes----is-solid): Return True if FabNode is a FabAssembly.
+  * 2.8 [to_json()](#fabnodes----to-json): Return a dictionary for JSON output.
+  * 2.9 [pre_produce()](#fabnodes----pre-produce): Perform FabNode pre produce operations.
+  * 2.10 [produce()](#fabnodes----produce): Empty FabNode produce method to be over-ridden.
+  * 2.11 [post_produce1()](#fabnodes----post-produce1): Do FabNode phase 1 post production.
+  * 2.12 [post_produce2()](#fabnodes----post-produce2): Do FabNode phase 2 post production.
+  * 2.13 [set_tracing()](#fabnodes----set-tracing): Set the FabNode indentation tracing level.
+  * 2.14 [probe()](#fabnodes----probe): Perform a probe operation.
 * 3 Class: [Fab_Prefix](#fabnodes--fab-prefix):
   * 3.1 [next_document()](#fabnodes----next-document): Return the next document FabPrefix.
   * 3.2 [next_solid()](#fabnodes----next-solid): Return the next solid Fab_Prefix.
@@ -187,97 +183,73 @@ FabNode.get_errors(self) -> List[str]:
 Return FabNode errors list.
 This method is only implemented by the FabProject class.
 
-### <a name="fabnodes----get-next-document-prefix"></a>2.2 `FabNode.`get_next_document_prefix():
-
-FabNode.get_next_document_prefix(self) -> FabNodes.Fab_Prefix:
-
-Return the next document Fab_Prefix.
-
-### <a name="fabnodes----get-next-solid-prefix"></a>2.3 `FabNode.`get_next_solid_prefix():
-
-FabNode.get_next_solid_prefix(self) -> FabNodes.Fab_Prefix:
-
-Return the next solid Fab_Prefix.
-
-### <a name="fabnodes----get-next-mount-prefix"></a>2.4 `FabNode.`get_next_mount_prefix():
-
-FabNode.get_next_mount_prefix(self) -> FabNodes.Fab_Prefix:
-
-Return the next mount Fab_Prefix.
-
-### <a name="fabnodes----get-next-operation-prefix"></a>2.5 `FabNode.`get_next_operation_prefix():
-
-FabNode.get_next_operation_prefix(self) -> FabNodes.Fab_Prefix:
-
-Return the next mount Fab_Prefix.
-
-### <a name="fabnodes----error"></a>2.6 `FabNode.`error():
+### <a name="fabnodes----error"></a>2.2 `FabNode.`error():
 
 FabNode.error(self, error_message: str) -> None:
 
 Record and error message with FabNode root.
 
-### <a name="fabnodes----is-project"></a>2.7 `FabNode.`is_project():
+### <a name="fabnodes----is-project"></a>2.3 `FabNode.`is_project():
 
 FabNode.is_project(self) -> bool:
 
 Return True if FabNode is a FabProject.
 
-### <a name="fabnodes----is-document"></a>2.8 `FabNode.`is_document():
+### <a name="fabnodes----is-document"></a>2.4 `FabNode.`is_document():
 
 FabNode.is_document(self) -> bool:
 
 Return True if FabNode is a FabProject.
 
-### <a name="fabnodes----is-group"></a>2.9 `FabNode.`is_group():
+### <a name="fabnodes----is-group"></a>2.5 `FabNode.`is_group():
 
 FabNode.is_group(self) -> bool:
 
 Return True if FabNode is a FabGroup.
 
-### <a name="fabnodes----is-assembly"></a>2.10 `FabNode.`is_assembly():
+### <a name="fabnodes----is-assembly"></a>2.6 `FabNode.`is_assembly():
 
 FabNode.is_assembly(self) -> bool:
 
 Return True if FabNode is a FabAssembly.
 
-### <a name="fabnodes----is-solid"></a>2.11 `FabNode.`is_solid():
+### <a name="fabnodes----is-solid"></a>2.7 `FabNode.`is_solid():
 
 FabNode.is_solid(self) -> bool:
 
 Return True if FabNode is a FabAssembly.
 
-### <a name="fabnodes----to-json"></a>2.12 `FabNode.`to_json():
+### <a name="fabnodes----to-json"></a>2.8 `FabNode.`to_json():
 
 FabNode.to_json(self) -> Dict[str, Any]:
 
 Return a dictionary for JSON output.
 
-### <a name="fabnodes----pre-produce"></a>2.13 `FabNode.`pre_produce():
+### <a name="fabnodes----pre-produce"></a>2.9 `FabNode.`pre_produce():
 
 FabNode.pre_produce(self, produce_state: FabNodes.Fab_ProduceState) -> None:
 
 Perform FabNode pre produce operations.
 
-### <a name="fabnodes----produce"></a>2.14 `FabNode.`produce():
+### <a name="fabnodes----produce"></a>2.10 `FabNode.`produce():
 
 FabNode.produce(self) -> None:
 
 Empty FabNode produce method to be over-ridden.
 
-### <a name="fabnodes----post-produce1"></a>2.15 `FabNode.`post_produce1():
+### <a name="fabnodes----post-produce1"></a>2.11 `FabNode.`post_produce1():
 
 FabNode.post_produce1(self, produce_state: FabNodes.Fab_ProduceState, tracing: str = '') -> None:
 
 Do FabNode phase 1 post production.
 
-### <a name="fabnodes----post-produce2"></a>2.16 `FabNode.`post_produce2():
+### <a name="fabnodes----post-produce2"></a>2.12 `FabNode.`post_produce2():
 
 FabNode.post_produce2(self, produce_state: FabNodes.Fab_ProduceState) -> None:
 
 Do FabNode phase 2 post production.
 
-### <a name="fabnodes----set-tracing"></a>2.17 `FabNode.`set_tracing():
+### <a name="fabnodes----set-tracing"></a>2.13 `FabNode.`set_tracing():
 
 FabNode.set_tracing(self, tracing: str):
 
@@ -292,7 +264,7 @@ This typically done, by adding this call immediately after calling super().__pos
         self.set_tracing(" ")  # Set the tracing here.
         # All children nodes will that are added, will have tracing set as well.
 
-### <a name="fabnodes----probe"></a>2.18 `FabNode.`probe():
+### <a name="fabnodes----probe"></a>2.14 `FabNode.`probe():
 
 FabNode.probe(self, label: str) -> None:
 

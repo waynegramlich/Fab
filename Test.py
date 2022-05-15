@@ -324,8 +324,10 @@ class TestSolid(FabSolid):
         _ = depth2
         top_origin: Vector = Vector(0.0, 0.0, 55.0)
         normal: Vector = Vector(0, 0, 1)
-        top_mount: FabMount = self.mount(
-            "Top", top_origin, self.DT, self.DN, depth, tracing=tracing)
+        dt: Vector = self.DT
+        dn: Vector = self.DN
+        top_mount: FabMount = self.mount("Top", top_origin, dt, dn, depth, tracing=tracing)
+
         wx: float = -40.0
         ex: float = 40.0
         ny: float = 20.0
@@ -353,7 +355,7 @@ class TestSolid(FabSolid):
                 (Vector(-10, 10, z_offset), pocket_fillet_radius),  # NE
                 (Vector(-30, 10, z_offset), pocket_fillet_radius),  # NW
             ))
-            top_mount.pocket("LeftPocket", left_polygon, depth)
+            top_mount.pocket("LeftPocket", left_polygon, depth2)
 
         if "RPP" in features:  # Right Polygon Pocket
             right_pocket: FabPolygon = FabPolygon((
@@ -373,14 +375,17 @@ class TestSolid(FabSolid):
             top_mount.pocket("CenterCircle", center_circle, depth2)
             screw_start: Vector = Vector(0.0, -10.0, z_offset)
             screw_end: Vector = Vector(0.0, -10.0, z_offset - depth)
-            self.Screw1: FabJoin = FabJoin("Screw1", self.Fasten, screw_start, screw_end)
-            top_mount.drill_joins("Screw1", (self.Screw1,), tracing=next_tracing)
+            self.Screw1: FabJoin = FabJoin("ScrewT", self.Fasten, screw_start, screw_end)
+            top_mount.drill_joins("ScrewT", (self.Screw1,), tracing=next_tracing)
+            top_mount.pocket("LeftPocket", left_polygon, depth)
 
         if "DSH" in features:  # Drill Screw Hole:
             north_start: Vector = self.N
             north_end: Vector = self.C
-            north_mount: FabMount = self.mount(
-                "North", self.N, self.DN, self.DE, self.YMax - self.YMin, tracing=tracing)
+            n: Vector = self.N
+            de: Vector = self.DE
+            dy: Vector = self.YMax - self.YMin  # FIXME: use self.DY instead.
+            north_mount: FabMount = self.mount("NorthX", n, dn, de, dy, tracing=tracing)
             self.ScrewN: FabJoin = FabJoin("ScrewN", self.Fasten, north_start, north_end)
             north_mount.drill_joins("ScrewN", (self.ScrewN,), tracing=next_tracing)
 

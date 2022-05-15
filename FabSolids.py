@@ -162,7 +162,7 @@ class FabStock(object):
 # Fab_Operation:
 @dataclass(order=True)
 class Fab_Operation(object):
-    """Fab_Operation: An base class for FabMount operations -- Fab_Extrude, Fab_Pocket, FabHole, etc.
+    """Fab_Operation: An base class for FabMount operations.
 
     Attributes:
     * *Mount* (FabMount):
@@ -184,7 +184,7 @@ class Fab_Operation(object):
     _ToolControllerIndex: int = field(init=False)
     _JsonEnabled: bool = field(init=False)
     _Active: bool = field(init=False)
-    _Prefix: Fab_Prefix = field(init=False, repr=False)
+    Prefix: Optional[Fab_Prefix] = field(init=False, repr=False)
 
     # Fab_Operation.__post_init__():
     def __post_init__(self) -> None:
@@ -196,8 +196,7 @@ class Fab_Operation(object):
         self._ToolControllerIndex = -1  # Unassigned.
         self._JsonEnabled = True
         self._Active = True
-        mount: FabMount = self._Mount
-        self._Prefix = mount.Solid.Project.get_next_operation_prefix()
+        self.Prefix = None
 
     # Fab_Operation.get_tool_controller():
     # def get_tool_controller(self) -> FabToolController:
@@ -359,6 +358,7 @@ class Fab_Extrude(Fab_Operation):
         self._StepDown = 3.0
         self._FinalDepth = -self.Depth
         self._Active = self._Contour
+        self.Prefix = self._Mount.lookup_prefix(self._Name)
 
     # Fab_Extrude.Geometry():
     @property
@@ -538,6 +538,7 @@ class Fab_Pocket(Fab_Operation):
         self._StartDepth = max(top_depth - step_depth, final_depth)
         self._StepDown = step_down
         self._FinalDepth = final_depth
+        self.Prefix = self._Mount.lookup_prefix(self._Name)
 
     # Fab_Pocket.Geometry():
     def Geometry(self) -> Union[FabGeometry, Tuple[FabGeometry, ...]]:
@@ -590,8 +591,9 @@ class Fab_Pocket(Fab_Operation):
             -self._Depth, tracing=next_tracing)
 
         # Transfer *geometries* to *pocket_context* (which is a copy of *geometry_context*):
-        pocket_prefix: str = self._Prefix.to_string()
-        bottom_prefix: str = f"{pocket_prefix}__{self.Name}__bottom"
+        pocket_prefix: Optional[Fab_Prefix] = self.Prefix
+        assert isinstance(pocket_prefix, Fab_Prefix)
+        bottom_prefix: str = pocket_prefix.to_string()
         geometry: FabGeometry
         index: int
         for index, geometry in enumerate(geometries):
@@ -603,7 +605,7 @@ class Fab_Pocket(Fab_Operation):
         # Extrude the pocket *pocket_query* volume to be removed.
         pocket_query.extrude(self._Depth, tracing=next_tracing)
 
-        bottom_name: str = f"{pocket_prefix}__{self.Name}__pocket_bottom"
+        bottom_name: str = f"{bottom_prefix}__{self.Name}__pocket_bottom"
         bottom_path = produce_state.Steps.activate(bottom_name,
                                                    self.get_geometries_hash(geometries))
         if not bottom_path.exists():
@@ -734,6 +736,7 @@ class Fab_Hole(Fab_Operation):
     HolesCount: int = field(init=False)  # Number of holes in this opertation
     StartDepth: float = field(init=False)
     StepFile: str = field(init=False)
+    Prefix: Optional[Fab_Prefix] = field(init=False)
 
     # Fab_Hole.__post_init__():
     def __post_init__(self) -> None:
@@ -748,6 +751,7 @@ class Fab_Hole(Fab_Operation):
         self.HolesCount = 0
         self.StartDepth = 0.0
         self.StepFile = ""
+        self.Prefix = self._Mount.lookup_prefix(self._Name)
 
     # Fab_Hole.Key():
     @property
@@ -861,7 +865,7 @@ class Fab_Hole(Fab_Operation):
             holes_query.close()
             # The + 1.0mm ensures that there is always a bottom face at the hole bottom.
             # Thus there are no through holes in the final drilled extrusion.
-            holes_query.extrude(depth + 1.0)
+            holes_query.extrude(depth + 1.0)  # TODO: 1.0 may be too high.  Use depth/100.0?
 
             # Drill the holes:
             for center in self.Centers:
@@ -869,8 +873,10 @@ class Fab_Hole(Fab_Operation):
                 holes_query.hole(diameter, depth)
             self.HolesCount = len(self.Centers)
 
-            prefix: str = self._Prefix.to_string()
-            step_base_name: str = f"{prefix}__{self.Name}_holes"
+            drill_prefix: Optional[Fab_Prefix] = self.Prefix
+            assert isinstance(drill_prefix, Fab_Prefix)
+            assert isinstance(drill_prefix, Fab_Prefix), drill_prefix
+            step_base_name: str = f"{drill_prefix.to_string()}__{self.Name}_holes"
             assembly: cq.Assembly = cq.Assembly(
                 holes_query.WorkPlane, name=step_base_name, color=cq.Color(0.5, 0.5, 0.5, 1.0))
 
@@ -947,14 +953,14 @@ class FabMount(object):
     _Orient: Vector
     _Depth: float
     _Query: Fab_Query
-    _OrderedOperations: "OrderedDict[str, Fab_Operation]" = field(init=False, repr=False)
+    _Operations: "OrderedDict[str, Fab_Operation]" = field(init=False, repr=False)
     _Copy: Vector = field(init=False, repr=False)  # Used for making private copies of Vector's
     _Tracing: str = field(init=False, repr=False)
     _GeometryContext: Fab_GeometryContext = field(init=False, repr=False)
     _AppDatumPlane: Any = field(init=False, repr=False)  # TODO: Remove
     _GuiDatumPlane: Any = field(init=False, repr=False)  # TODO: Remove
     _Plane: Fab_Plane = field(init=False, repr=False)
-    _Prefix: Fab_Prefix = field(init=False, repr=False)
+    Prefix: Optional[Fab_Prefix] = field(init=False, repr=False)
 
     # FabMount.__post_init__():
     def __post_init__(self) -> None:
@@ -980,14 +986,14 @@ class FabMount(object):
         self._Copy = copy
         self._Contact = self._Contact + copy
         self._Normal = self._Normal + copy
-        self._OrderedOperations = OrderedDict()
+        self._Operations = OrderedDict()
         # Vector metheds like to modify Vector contents; force copies beforehand:
         self._Plane: Fab_Plane = Fab_Plane(self._Contact, self._Normal)  # , tracing=next_tracing)
         self._Orient = self._Plane.point_project(self._Orient)
         self._GeometryContext = Fab_GeometryContext(self._Plane, self._Query)
         self._AppDatumPlane = None
         self._GuiDatumPlane = None
-        self._Prefix = solid.Project.get_next_mount_prefix()
+        self.Prefix = None
 
         if tracing:
             print(f"{tracing}{self._Contact=} {self._Normal=}")
@@ -1004,7 +1010,7 @@ class FabMount(object):
     @property
     def Solid(self) -> "FabSolid":
         """Return the FabSolid."""
-        return self._Solid
+        return self._Solid  # pragma: no unit cover
 
     # FabMount.Body:
     @property
@@ -1042,6 +1048,13 @@ class FabMount(object):
         """Return the depth."""
         return self._Depth  # pragma: no cover
 
+    # FabMount.lookup_prefix():
+    def lookup_prefix(self, operation_name: str) -> Fab_Prefix:
+        """Return the Fab_Prefix for an operation."""
+        solid: FabSolid = self._Solid
+        prefix: Fab_Prefix = solid.lookup_prefix(self.Name, operation_name)
+        return prefix
+
     # FabMount.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:
         """Return a has the current contents of a FabMount."""
@@ -1057,7 +1070,7 @@ class FabMount(object):
             f"{self._Depth:.6f}",
         ]
         operation: Fab_Operation
-        for operation in self._OrderedOperations.values():
+        for operation in self._Operations.values():
             hashes.append(operation.get_hash())
         return tuple(hashes)
 
@@ -1068,7 +1081,7 @@ class FabMount(object):
             raise RuntimeError(
                 f"FabMount.add_operation({self._Name}).{type(operation)} "
                 "is not an Fab_Operation")  # pragma: no unit cover
-        self._OrderedOperations[operation.Name] = operation
+        self._Operations[operation.Name] = operation
 
     # FabMount.set_geometry_group():
     def set_geometry_group(self, geometry_group: Any) -> None:
@@ -1083,7 +1096,7 @@ class FabMount(object):
             print(f"{tracing}=>FabMount.post_produce1('{self.Name}')")
 
         # If there are no *operations* there is nothing to do:
-        operations: "OrderedDict[str, Fab_Operation]" = self._OrderedOperations
+        operations: OrderedDict[str, Fab_Operation] = self._Operations
         if operations:
             # Create the Fab_Plane used for the drawing support.
             plane: Fab_Plane = self.Plane
@@ -1125,7 +1138,7 @@ class FabMount(object):
     def to_json(self) -> Dict[str, Any]:
         """Return FabMount JSON structure."""
         json_operations: List[Any] = []
-        operations: OrderedDict[str, Fab_Operation] = self._OrderedOperations
+        operations: OrderedDict[str, Fab_Operation] = self._Operations
         name: str
         operation: Fab_Operation
         for name, operation in operations.items():
@@ -1192,7 +1205,6 @@ class FabMount(object):
         if tracing:
             print(f"{tracing}=>FabMount({self.Name}).pocket('{name}', *)")
 
-        # Create the *pocket* and record it into the FabMount:
         pocket: Fab_Pocket = Fab_Pocket(self, name, shapes, depth)
         self.record_operation(pocket)
 
@@ -1203,7 +1215,6 @@ class FabMount(object):
     def drill_joins(self, joins_name: str,
                     joins: Union[FabJoin, Sequence[FabJoin]], tracing: str = "") -> None:
         """Drill some FabJoin's into a FabMount."""
-        # Quickly convert a single FabJoin into a tuple:
 
         EPSILON: float = 1.0e-8
 
@@ -1212,6 +1223,7 @@ class FabMount(object):
             """Return whether 2 normals are very close to one another."""
             return (vector1 - vector2).Length < EPSILON
 
+        # Quickly convert a single FabJoin into a tuple:
         if isinstance(joins, FabJoin):
             joins = (joins,)  # pragma: no unit cover
         if tracing:
@@ -1293,6 +1305,7 @@ class FabMount(object):
         for hole_index, hole in enumerate(grouped_holes):
             if tracing:
                 print(f"{tracing}Hole[{hole_index}]: record_operation({hole})")
+            self.Prefix = hole._Mount.lookup_prefix(self._Name)
             self.record_operation(hole)
 
         if tracing:
@@ -1318,12 +1331,13 @@ class FabSolid(FabNode):
     Color: str
     _Mounts: "OrderedDict[str, FabMount]" = field(init=False, repr=False)
     _GeometryGroup: Optional[Any] = field(init=False, repr=False)
-    _Body: Optional[Any] = field(init=False, repr=False)
+    _Body: Optional[Any] = field(init=False, repr=False)  # TODO: remove?
     _Query: Fab_Query = field(init=False, repr=False)
     _Assembly: Any = field(init=False, repr=False)
     _StepFile: Optional[Path] = field(init=False, repr=False)
     _Color: Optional[Tuple[float, ...]] = field(init=False, repr=False)
-    _Prefix: Fab_Prefix = field(init=False, repr=False)
+    Prefix: Fab_Prefix = field(init=False, repr=False)
+    MountOperationPrefixes: Dict[str, Dict[str, Fab_Prefix]] = field(init=False, repr=False)
 
     # FabSolid.__post_init__():
     def __post_init__(self) -> None:
@@ -1346,12 +1360,105 @@ class FabSolid(FabNode):
         self._Assembly = None
         self._StepFile = None
         self._Color = None
+        # See FabSolid.lookup_prefix() for an explanation of MountOperationPrefixes.
+        self.MountOperationPrefixes = {}
+
+        # Extract all *all_documents* from *project*:
         project: FabNode = self.Project
-        self._Prefix = project.get_next_solid_prefix()
-        print(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> {self._Prefix=}")
+        assert project.is_project()
+
+        # Find the *solid_document* that contains this FabSolid (i.e. *self*).
+        solid_document: FabNode = self
+        while not solid_document.is_document():
+            assert not solid_document.is_project(), "Did not find document"
+            solid_document = solid_document.Up
+        assert solid_document.is_document(), solid_document
+
+        # Determine the *document_index* for *solid_document
+        document_index: int
+        document: FabNode
+        for document_index, document in enumerate(project.Children):
+            if document is solid_document:
+                break
+        else:  # pragma: no unit cover
+            raise RuntimeError("Could not find document")
+
+        # Extract *all_solids* from *document*:
+        def find_solids(node: FabNode, all_solids: List[FabSolid]) -> None:
+            if isinstance(node, FabSolid):
+                all_solids.append(node)
+            else:
+                child: FabNode
+                for child in node.Children:
+                    find_solids(child, all_solids)
+        all_solids: List[FabSolid] = []
+        find_solids(document, all_solids)
+
+        # Extract the *solid_index* from *all_solids*:
+        solid_index: int
+        for solid_index, solid in enumerate(all_solids):
+            if tracing:
+                print(f"{tracing}[{solid_index}]: {solid.Label}")
+            if solid is self:
+                break
+        else:  # pragma: no unit cover
+            raise RuntimeError("Could not find solid")
+
+        # Set the FabPrefix for *self*:
+        self.Prefix = Fab_Prefix(document_index + 1, solid_index + 1, 0, 0)
 
         if tracing:
             print(f"{tracing}<=FabSolid({self.Label}).__post_init__()")
+
+    # FabSolid.lookup_prefix():
+    def lookup_prefix(self, mount_name: str, operation_name: str) -> Fab_Prefix:
+        """Return the Fab_Prefix for a mount/operation name pair."""
+
+        # Th FabProject, FabDocument, FabAssembly, and FabSolid sub-classes of FabNode are
+        # all instantiated once at startup as a FabNode tree.  Thus, assigning a unique
+        # Fab_Prefix to each of these object can easily be done in the appropriate constructor.
+        #
+        # The iterative nataure of constraint propagation causes the *produce* method of
+        # each FabNode to be called multiple times.  This causes the recreation of multiple
+        # FabMount's and Fab_Operation sub-classes (e.g. Fab_Extrude, Fab_Pocket, Fab_Hole, etc.)
+        # These Fab_Operation sub-classes keep being recreated until constraint propagation ends.
+        #
+        # For debugging and consistency reasons, it is nice to have a "sticky" Fab_Prefix
+        # that does not change as a result of constraint propagation changes.  The "sticky"
+        # Fab_Prefix's for FabMounts and Fab_Operations are store in the FabSolid MountOperations
+        # attribute.  This attribute is an Dict of Dict's, where the first level is keyed off a
+        # mount name and the second level is keyed of an operation name.  Once a Fab_Prefix
+        # is assigned to mount/operation name pair, it no longer changes.
+
+        mount_operations: Dict[str, Dict[str, Fab_Prefix]] = self.MountOperationPrefixes
+
+        # The second level dictionary has a key of "" that contains the Mount Fab_Prefix.
+        # All remaining entries in the second level dictionary contain Fab_Prefix's that
+        # correspond to an explicit operation name.
+        operations: Dict[str, Fab_Prefix]
+        mount_prefix: Fab_Prefix
+        if mount_name in mount_operations:
+            operations = mount_operations[mount_name]
+        else:
+            solid_prefix: Fab_Prefix = self.Prefix
+            mount_prefix = Fab_Prefix(
+                solid_prefix.DocumentIndex, solid_prefix.SolidIndex, len(mount_operations) + 1, 0)
+            operations = {"": mount_prefix}
+            mount_operations[mount_name] = operations
+
+        operation_prefix: Fab_Prefix
+        if operation_name in operations:
+            operation_prefix = operations[operation_name]
+        else:
+            mount_prefix = operations[""]
+            assert mount_prefix.DocumentIndex > 0
+            assert mount_prefix.SolidIndex > 0
+            assert mount_prefix.MountIndex > 0
+            assert len(operations) > 0
+            operation_prefix = Fab_Prefix(mount_prefix.DocumentIndex, mount_prefix.SolidIndex,
+                                          mount_prefix.MountIndex, len(operations))
+            operations[operation_name] = operation_prefix
+        return operation_prefix
 
     # FabSolid.Body():
     @property
@@ -1376,7 +1483,7 @@ class FabSolid(FabNode):
         mount: FabMount
         for mount in self._Mounts.values():
             # Skip mount if it has no operations.
-            if len(mount._OrderedOperations) > 0:
+            if len(mount._Operations) > 0:
                 json_mounts.append(mount.to_json())
         json_dict["children"] = json_mounts
         return json_dict
@@ -1423,12 +1530,9 @@ class FabSolid(FabNode):
             print(f"{tracing}=>FabSolid({self.Label}).mount('{name}', ...)")
 
         mounts: "OrderedDict[str, FabMount]" = self._Mounts
-        if name in mounts:
-            raise RuntimeError(
-                f"FabSolid({self._Label}).mount(): Mount {name} "
-                "is not unique.")  # pragma: no unit cover
+        self.LastMountPrefix = None
         fab_mount: FabMount = FabMount(name, self, contact, normal, orient, depth, self._Query)
-        self._Mounts[name] = fab_mount
+        mounts[name] = fab_mount
 
         if tracing:
             print(f"{tracing}=>FabSolid({self.Label}).mount('{name}', ...)=>{fab_mount}")
@@ -1485,8 +1589,9 @@ class FabSolid(FabNode):
         # Instead use one of the hashlib hash functions instead:
         #     hash_tuple => repr string => hashlib.sha256 => trim to 16 bytes
         hash_tuple: Tuple[Any, ...] = self.get_hash()
-        prefix: str = self._Prefix.to_string()
-        solid_name: str = f"{prefix}__{self.Label}"
+        prefix: Fab_Prefix = self.Prefix
+        assert isinstance(prefix, Fab_Prefix)
+        solid_name: str = f"{prefix.to_string()}__{self.Label}"
         step_path = produce_state.Steps.activate(solid_name, hash_tuple)
         if step_path.exists():
             use_cached_step = True  # pragma: no unit cover

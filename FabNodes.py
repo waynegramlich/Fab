@@ -792,10 +792,10 @@ class Fab_Prefix(object):
         # manuals.  To avoid this confusion, the prefix consists of letter and digits in a fixed
         # order. The letter "a" always sorts before the the letters "d", "s", "m" and "o".
         # "XX" and "XXX" are stand-ins for "00" and "000" which are uninitialized values.
-        documentation: str = f"d{self.DocumentIndex:02d}" if self.DocumentIndex > 0 else "aXX"
-        solid: str = f"s{self.SolidIndex:03d}" if self.SolidIndex > 0 else "aXXX"
-        mount: str = f"m{self.MountIndex:02d}" if self.MountIndex > 0 else "aXX"
-        operation: str = f"o{self.OperationIndex:03d}" if self.OperationIndex > 0 else "aXXX"
+        documentation: str = f"d{self.DocumentIndex:02d}" if self.DocumentIndex > 0 else "a__"
+        solid: str = f"s{self.SolidIndex:03d}" if self.SolidIndex > 0 else "a___"
+        mount: str = f"m{self.MountIndex:02d}" if self.MountIndex > 0 else "a__"
+        operation: str = f"o{self.OperationIndex:03d}" if self.OperationIndex > 0 else "a___"
         return documentation + solid + mount + operation
 
     # Fab_Prefix._unit_tests():
@@ -807,13 +807,13 @@ class Fab_Prefix(object):
         assert empty.SolidIndex == 0
         assert empty.MountIndex == 0
         assert empty.OperationIndex == 0
-        assert empty.to_string() == "aXXaXXXaXXaXXX"
+        assert empty.to_string() == "a__a___a__a___"
 
         first_document: Fab_Prefix = empty.next_document()
         assert first_document.DocumentIndex == 1
         second_document: Fab_Prefix = first_document.next_document()
         assert second_document.DocumentIndex == 2
-        assert second_document.to_string() == "d02aXXXaXXaXXX"
+        assert second_document.to_string() == "d02a___a__a___"
 
         first_solid: Fab_Prefix = first_document.next_solid()
         assert first_solid.DocumentIndex == 1
@@ -821,7 +821,7 @@ class Fab_Prefix(object):
         second_solid: Fab_Prefix = first_solid.next_solid()
         assert second_solid.DocumentIndex == 1
         assert second_solid.SolidIndex == 2
-        assert second_solid.to_string() == "d01s002aXXaXXX"
+        assert second_solid.to_string() == "d01s002a__a___"
 
         first_mount: Fab_Prefix = second_solid.next_mount()
         assert first_mount.DocumentIndex == 1
@@ -831,7 +831,7 @@ class Fab_Prefix(object):
         assert second_mount.DocumentIndex == 1
         assert second_mount.SolidIndex == 2
         assert second_mount.MountIndex == 2
-        assert second_mount.to_string() == "d01s002m02aXXX"
+        assert second_mount.to_string() == "d01s002m02a___"
 
         first_operation: Fab_Prefix = second_mount.next_operation()
         assert first_operation.DocumentIndex == 1
@@ -1102,7 +1102,7 @@ class FabNode(FabBox):
                     f"of {parent._Label}")  # pragma: no unit cover
             parent_children[name] = self
 
-            # Keep a list if *all_node* in the same order that all FabNode's are created.
+            # Keep a list if *all_nodes* in the same order that all FabNode's are created.
             root: "FabNode" = self._Project
             assert hasattr(root, "_AllNodes")  # Only a valid Root has this attribute:
             all_nodes: Tuple["FabNode"] = getattr(root, "_AllNodes")
@@ -1184,33 +1184,16 @@ class FabNode(FabBox):
         raise RuntimeError(f"FabNode.get_errors({self._Label}).get_errors(): not implemented")
         return []  # Make linters happy.
 
-    # FabNode.get_next_document_prefix():
-    def get_next_document_prefix(self) -> Fab_Prefix:
-        """Return the next document Fab_Prefix."""
-        # Only implemented FabProject sub-class of FabNode.
-        raise NotImplementedError(
-            f"{type(self)}.get_next_document_prefix() is not implemented")  # pragma: no unit cover
+    def _get_next_document_prefix(self) -> Fab_Prefix:
+        """Return the next document FabPrefix."""
+        # Only the FabProject sub-class of FabNode is expected to implement this method.
+        raise NotImplementedError(f"{type(self)}._get_next_document_prefix() is not implemented")
 
-    # FabNode.get_next_solid_prefix():
-    def get_next_solid_prefix(self) -> Fab_Prefix:
-        """Return the next solid Fab_Prefix."""
-        # Only implemented FabProject sub-class of FabNode.
-        raise NotImplementedError(
-            f"{type(self)}.get_next_solid_prefix() is not implemented")  # pragma: no unit cover
-
-    # FabNode.get_next_mount_prefix():
-    def get_next_mount_prefix(self) -> Fab_Prefix:
-        """Return the next mount Fab_Prefix."""
-        # Only implemented FabProject sub-class of FabNode.
-        raise NotImplementedError(
-            f"{type(self)}.get_next_mount_prefix() is not implemented")  # pragma: no unit cover
-
-    # FabNode.get_next_operation_prefix():
-    def get_next_operation_prefix(self) -> Fab_Prefix:
-        """Return the next mount Fab_Prefix."""
-        # Only implemented FabProject sub-class of FabNode.
-        raise NotImplementedError(
-            f"{type(self)}.get_next_operation_prefix() is not implemented")  # pragma: no unit cover
+    # FabNode._set_last_document():
+    def _set_last_document(self, document: "FabNode") -> None:
+        """Set the last document for a FabProject."""
+        # Only the FabProject sub-class of FabNode is expected to implement this method.
+        raise NotImplementedError(f"{type(self)}._set_last_document() is not implemented")
 
     # FabNode.error():
     def error(self, error_message: str) -> None:
@@ -1336,6 +1319,11 @@ class FabNode(FabBox):
         """Return whether a name is valid or not."""
         no_underscores: str = name.replace("_", "")
         return len(no_underscores) >= 1 and no_underscores.isalnum() and no_underscores[0].isalpha()
+
+    # FabDocument._set_last_solid():
+    def _set_last_solid(self, last_solid: "FabNode") -> None:
+        """Set the last FabSolid for FabDocument."""
+        raise NotImplementedError(f"{type(self)}._set_last_solid() is not implemented")
 
 
 if __name__ == "__main__":
