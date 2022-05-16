@@ -53,14 +53,16 @@ This internal classes are managed by FabMount methods.
   * 7.6 [produce()](#fabsolids----produce): Return the operation sort key.
   * 7.7 [post_produce1()](#fabsolids----post-produce1): NO DOC STRING!
   * 7.8 [to_json()](#fabsolids----to-json): Return a base JSON dictionary for an Fab_Operation.
-* 8 Class: [Fab_Pocket](#fabsolids--fab-pocket):
-  * 8.1 [Geometry()](#fabsolids----geometry): Return the original Geometry.
-  * 8.2 [Depth()](#fabsolids----depth): Return the original Depth.
-  * 8.3 [get_hash()](#fabsolids----get-hash): Return Fab_Pocket hash.
-  * 8.4 [get_name()](#fabsolids----get-name): Return Fab_Pocket name.
-  * 8.5 [get_kind()](#fabsolids----get-kind): Return Fab_Pocket kind.
-  * 8.6 [post_produce1()](#fabsolids----post-produce1): Produce the Pocket.
-  * 8.7 [to_json()](#fabsolids----to-json): Return JSON dictionary for Fab_Extrude.
+* 8 Class: [Fab_OperationKind](#fabsolids--fab-operationkind):
+* 9 Class: [Fab_OperationOrder](#fabsolids--fab-operationorder):
+* 10 Class: [Fab_Pocket](#fabsolids--fab-pocket):
+  * 10.1 [Geometry()](#fabsolids----geometry): Return the original Geometry.
+  * 10.2 [Depth()](#fabsolids----depth): Return the original Depth.
+  * 10.3 [get_hash()](#fabsolids----get-hash): Return Fab_Pocket hash.
+  * 10.4 [get_name()](#fabsolids----get-name): Return Fab_Pocket name.
+  * 10.5 [get_kind()](#fabsolids----get-kind): Return Fab_Pocket kind.
+  * 10.6 [post_produce1()](#fabsolids----post-produce1): Produce the Pocket.
+  * 10.7 [to_json()](#fabsolids----to-json): Return JSON dictionary for Fab_Extrude.
 
 ## <a name="fabsolids--fabmount"></a>1 Class FabMount:
 
@@ -395,7 +397,17 @@ Fab_Operation.to_json(self) -> Dict[str, Any]:
 Return a base JSON dictionary for an Fab_Operation.
 
 
-## <a name="fabsolids--fab-pocket"></a>8 Class Fab_Pocket:
+## <a name="fabsolids--fab-operationkind"></a>8 Class Fab_OperationKind:
+
+Value for the kind of operation.
+
+
+## <a name="fabsolids--fab-operationorder"></a>9 Class Fab_OperationOrder:
+
+ OperationOrder: A enumeration that specifies the desired order of operations.
+
+
+## <a name="fabsolids--fab-pocket"></a>10 Class Fab_Pocket:
 
 Represents a pocketing operation.
 Attributes:
@@ -406,43 +418,43 @@ Attributes:
 * *Depth* (float): The pocket depth in millimeters.
 * *Bottom_Path* (str): The the path to the generated Pocket bottom STEP file.
 
-### <a name="fabsolids----geometry"></a>8.1 `Fab_Pocket.`Geometry():
+### <a name="fabsolids----geometry"></a>10.1 `Fab_Pocket.`Geometry():
 
 Fab_Pocket.Geometry(self) -> Union[FabGeometries.FabGeometry, Tuple[FabGeometries.FabGeometry, ...]]:
 
 Return the original Geometry.
 
-### <a name="fabsolids----depth"></a>8.2 `Fab_Pocket.`Depth():
+### <a name="fabsolids----depth"></a>10.2 `Fab_Pocket.`Depth():
 
 Fab_Pocket.Depth(self) -> float:
 
 Return the original Depth.
 
-### <a name="fabsolids----get-hash"></a>8.3 `Fab_Pocket.`get_hash():
+### <a name="fabsolids----get-hash"></a>10.3 `Fab_Pocket.`get_hash():
 
 Fab_Pocket.get_hash(self) -> Tuple[Any, ...]:
 
 Return Fab_Pocket hash.
 
-### <a name="fabsolids----get-name"></a>8.4 `Fab_Pocket.`get_name():
+### <a name="fabsolids----get-name"></a>10.4 `Fab_Pocket.`get_name():
 
 Fab_Pocket.get_name(self) -> str:
 
 Return Fab_Pocket name.
 
-### <a name="fabsolids----get-kind"></a>8.5 `Fab_Pocket.`get_kind():
+### <a name="fabsolids----get-kind"></a>10.5 `Fab_Pocket.`get_kind():
 
 Fab_Pocket.get_kind(self) -> str:
 
 Return Fab_Pocket kind.
 
-### <a name="fabsolids----post-produce1"></a>8.6 `Fab_Pocket.`post_produce1():
+### <a name="fabsolids----post-produce1"></a>10.6 `Fab_Pocket.`post_produce1():
 
 Fab_Pocket.post_produce1(self, produce_state: FabNodes.Fab_ProduceState, tracing: str = '') -> None:
 
 Produce the Pocket.
 
-### <a name="fabsolids----to-json"></a>8.7 `Fab_Pocket.`to_json():
+### <a name="fabsolids----to-json"></a>10.7 `Fab_Pocket.`to_json():
 
 Fab_Pocket.to_json(self) -> Dict[str, Any]:
 

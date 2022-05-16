@@ -14,6 +14,7 @@ import sys
 import math
 
 from collections import OrderedDict
+from enum import IntEnum, auto
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, cast, Dict, Generator, IO, List, Optional, Sequence, Tuple, Union
@@ -157,6 +158,89 @@ class FabStock(object):
         results: Tuple[Vector, Vector] = stock.enclose(box)
         print(f"{results=}")
         _ = results
+
+
+# Fab_OperationOrder:
+class Fab_OperationOrder(IntEnum):
+    """ OperationOrder: A enumeration that specifies the desired order of operations."""
+
+    NONE = auto()
+    MOUNT = auto()
+    DOWEL_PIN = auto()
+    END_MILL_EXTERIOR = auto()
+    MILL_DRILL_EXTERIOR = auto()
+    MILL_DRILL_CHAMFER = auto()
+    MILL_DRILL_COUNTERSINK = auto()
+    MILL_DRILL = auto()
+    END_MILL_DRILL = auto()
+    END_MILL_ROUND_POCKET = auto()
+    END_MILL_SIMPLE_POCKET = auto()
+    MILL_DRILL_POCKET_CHAMFER = auto()
+    MILL_DOVE_TAIL_CHAMFER = auto()
+    DOUBLE_ANGLE_V_GROOVE = auto()
+    DOUBLE_ANGLE_CHAMFER = auto()
+    DRILL = auto()
+    TAP = auto()
+    VERTICAL_LATHE = auto()
+    SLIDE = auto()
+    LAST = auto()
+
+    @staticmethod
+    def _unit_tests() -> None:
+        """Perform unit tests on Fab_OperationOrder."""
+        none = Fab_OperationOrder.NONE
+        mount = Fab_OperationOrder.MOUNT
+        pin = Fab_OperationOrder.DOWEL_PIN
+        end_mill = Fab_OperationOrder.END_MILL_EXTERIOR
+        mill_drill_exterior = Fab_OperationOrder.MILL_DRILL_EXTERIOR
+        mill_drill_chamfer = Fab_OperationOrder.MILL_DRILL_CHAMFER
+        mill_drill_countersink = Fab_OperationOrder.MILL_DRILL_COUNTERSINK
+        mill_drill = Fab_OperationOrder.MILL_DRILL
+        end_mill_drill = Fab_OperationOrder.END_MILL_DRILL
+        end_mill_round_pocket = Fab_OperationOrder.END_MILL_ROUND_POCKET
+        end_mill_simple_pocket = Fab_OperationOrder.END_MILL_SIMPLE_POCKET
+        mill_drill_pocket_chamfer = Fab_OperationOrder.MILL_DRILL_POCKET_CHAMFER
+        mill_dove_tail_chamfer = Fab_OperationOrder.MILL_DOVE_TAIL_CHAMFER
+        double_angle_v_groove = Fab_OperationOrder.DOUBLE_ANGLE_V_GROOVE
+        double_angle_chamfer = Fab_OperationOrder.DOUBLE_ANGLE_CHAMFER
+        drill = Fab_OperationOrder.DRILL
+        tap = Fab_OperationOrder.TAP
+        vertical_lathe = Fab_OperationOrder.VERTICAL_LATHE
+        slide = Fab_OperationOrder.SLIDE
+        last = Fab_OperationOrder.LAST
+        assert none < mount < pin < end_mill < mill_drill_exterior < mill_drill_chamfer
+        assert mill_drill_chamfer < mill_drill_countersink < mill_drill < end_mill_drill
+        assert end_mill_drill < end_mill_round_pocket < end_mill_simple_pocket
+        assert end_mill_simple_pocket < mill_drill_pocket_chamfer < mill_dove_tail_chamfer
+        assert mill_dove_tail_chamfer < double_angle_v_groove < double_angle_chamfer
+        assert double_angle_chamfer < drill < tap < vertical_lathe < slide < last
+
+
+# Fab_OperationKind:
+class Fab_OperationKind(IntEnum):
+    """Fab_OperationKind: Value for the kind of operation. """
+    CONTOUR = auto()
+    DOWEL_PIN = auto()
+    DRILL = auto()
+    ROUND_POCKET = auto()
+    SIMPLE_EXTERIOR = auto()
+    SIMPLE_POCKET = auto()
+    VERTICAL_LATHE = auto()
+    SLIDE = auto()
+
+    @staticmethod
+    def _unit_tests() -> None:
+        """Perform unit tests on Fab_OperationKinde."""
+        contour = Fab_OperationKind.CONTOUR
+        dowel_pin = Fab_OperationKind.DOWEL_PIN
+        drill = Fab_OperationKind.DRILL
+        round_pocket = Fab_OperationKind.ROUND_POCKET
+        simple_exterior = Fab_OperationKind.SIMPLE_EXTERIOR
+        simple_pocket = Fab_OperationKind.SIMPLE_POCKET
+        vertical_lathe = Fab_OperationKind.VERTICAL_LATHE
+        slide = Fab_OperationKind.SLIDE
+        assert contour < dowel_pin < drill < round_pocket < simple_exterior < simple_pocket
+        assert simple_pocket < vertical_lathe < slide
 
 
 # Fab_Operation:
@@ -1653,6 +1737,8 @@ def visibility_set(element: Any, new_value: bool = True, tracing: str = "") -> N
 
 # TODO: Add unit tests.
 def main() -> None:
+    Fab_OperationOrder._unit_tests()
+    Fab_OperationKind._unit_tests()
     FabStock._unit_tests()
     FabSolid._unit_tests()
 
