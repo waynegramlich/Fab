@@ -8,6 +8,7 @@
 
 from dataclasses import dataclass, field
 import math
+from typeguard import check_argument_types, check_type
 from typing import Any, cast, List, Optional, Tuple, Union
 
 import cadquery as cq  # type: ignore
@@ -172,7 +173,7 @@ class Fab_Plane(object):
         assert isinstance(plane, cq.Plane), plane
         return plane
 
-    # FabPlne._rotate():
+    # FabPlane._rotate():
     @staticmethod
     def _rotate(point: Vector,
                 axis: Vector, angle: float) -> Tuple[Vector, Tuple[Tuple[float, ...], ...]]:
@@ -412,6 +413,11 @@ class Fab_Geometry(object):
     All Fab_Geometry classes are immutable (i.e. frozen.)
     """
 
+    # Fab_Geometry.__post_init__():
+    def __post_init__(self) -> None:
+        """Finish initializing Fab_Geometry."""
+        pass  # Nothing to do.
+
     # Fab_Geometry.produce():
     def produce(self, geometry_context: Fab_GeometryContext, prefix: str,
                 index: int, tracing: str = "") -> Any:
@@ -436,11 +442,8 @@ class Fab_Arc(Fab_Geometry):
     * *Middle* (Vector): The Arc midpoint.
     * *Finish* (Vector): The Arc finish point.
 
-    # Old:
-    * *StartAngle* (float): The start arc angle in radians.
-    * *FinishAngle* (float): The finish arc angle in radiuns.
-    * *DeltaAngle* (float):
-      The value to add to *StartAngle* to get *FinishAngle* (module 2 radians):
+    Constructor:
+    * Fab_Arc(Apex, Radius, Center, Start, Middle, Finish)
 
     """
 
@@ -450,9 +453,6 @@ class Fab_Arc(Fab_Geometry):
     Start: Vector
     Middle: Vector
     Finish: Vector
-    # StartAngle: float
-    # FinishAngle: float
-    # DeltaAngle: float
 
     # Fab_Arc.produce():
     def produce(self, geometry_context: Fab_GeometryContext, prefix: str,
@@ -514,10 +514,17 @@ class Fab_Line(Fab_Geometry):
     * *Start (Vector): The line segment start point.
     * *Finish (Vector): The line segment finish point.
 
+    Constructor:
+    * Fab_Line(Start, Finish)
     """
 
     Start: Vector
     Finish: Vector
+
+    # Fab_Line.__post_init__(self):
+    def __post_init__(self) -> None:
+        """Finish initializing a Fab_Line."""
+        super().__post_init__()
 
     # Fab_Line.get_start():
     def get_start(self) -> Vector:
@@ -577,7 +584,7 @@ class Fab_Fillet(object):
         """Return the arc associated with a Fab_Fillet with non-zero radius."""
         # A fillet is represented as an arc that traverses a sphere with a specified radius.
         #
-        # Each fillet specifies an 3D center point and a radius.  The the fillet the corner point is
+        # Each fillet specifies an 3D center point and a radius.  The fillet the corner point is
         # X and the radius is r.  Each fillet also has two neighbors on the polygon (called before
         # and after) and each of the respectively have corner points called B and A.  These three
         # points specify line segment XB and XA respectively.  XB and XA also specify a plane
@@ -729,9 +736,13 @@ class Fab_Fillet(object):
             geometries.append(self.Arc)
         return tuple(geometries)
 
-    # Fab_Fillet.unit_tests():
+    # Fab_Fillet._unit_tests():
     @staticmethod
-    def unit_tests() -> None:
+    def _unit_tests(tracing: str = "") -> None:
+        """Run Fab_Fillet unit tests."""
+        if tracing:
+            print(f"{tracing}=>Fab_Fillet._unit_tests()")
+
         # Create 4 corners centered.
         dx: float = Vector(20.0, 0.0, 0.0)
         dy: float = Vector(0.0, 10.0, 0.0)
@@ -765,11 +776,19 @@ class Fab_Fillet(object):
         sw_fillet.compute_arc(tracing="SW:")
         se_fillet.compute_arc(tracing="SE:")
 
+        if tracing:
+            print(f"{tracing}<=Fab_Fillet._unit_tests()")
+
 
 # FabGeometry:
 @dataclass(frozen=True)
 class FabGeometry(object):
     """FabGeometry: The base class for FabPolygon and FabCircle."""
+
+    # FabGeometry.__post_init__():
+    def __post_init__(self) -> None:
+        """Finish initializing a FaabGeometry."""
+        pass
 
     # FabGeometry.Box():
     @property
@@ -815,7 +834,8 @@ class FabCircle(FabGeometry):
 
     # FabCircle.__post_init__():
     def __post_init__(self) -> None:
-        """Make private copy of Center."""
+        """Finish initializing a FabCircle."""
+        super().__post_init__()
         if self.Diameter <= 0.0:
             raise ValueError(f"Diameter ({self.Diameter}) must be positive.")
         # (Why __setattr__?)[https://stackoverflow.com/questions/53756788]
@@ -840,7 +860,7 @@ class FabCircle(FabGeometry):
         )
         return hashes
 
-    # FabGeometry.Box():
+    # FabCircle.Box():
     @property
     def Box(self) -> FabBox:
         """Return a FabBox that encloses the FabGeometry."""
@@ -917,8 +937,11 @@ class FabCircle(FabGeometry):
 
     @staticmethod
     # FabCircle._unit_tests():
-    def _unit_tests():
+    def _unit_tests(tracing: str = "") -> None:
         """Run FabCircle unit tests."""
+        if tracing:
+            print(f"{tracing}=>FabCircle._unit_tests()")
+
         normal: Vector = Vector(0, 0, 1)
         center: Vector = Vector(1, 2, 3)
         try:
@@ -936,6 +959,9 @@ class FabCircle(FabGeometry):
         assert box.TNE == Vector(1.5, 2.0, 3.0)
         assert box.BSW == Vector(0.5, 1.5, 3.0)
 
+        if tracing:
+            print(f"{tracing}<=FabCircle._unit_tests()")
+
 
 # FabPolygon:
 @dataclass(frozen=True)
@@ -945,29 +971,74 @@ class FabPolygon(FabGeometry):
     A FabPolygon is represented as a sequence of corners (i.e. a Vector) where each corner can
     optionally be filleted with a radius.  In order to make it easier to use, a corner can be
     specified as simple Vector or as a tuple that specifies a Vector and a radius.  The radius
-    is in millimeters and can be provided as either Python int or float.  When an explicit
+    is in millimeters and can be provided as either a Python int or float.  When an explicit
     fillet radius is not specified, higher levels in the software stack will typically substitute
     in a deburr radius for external corners and an internal tool radius for internal corners.
-    FabPolygon's are frozen and can not be modified after creation.
-
-    Example:
-         polygon: Fab.FabPolyon = Fab.FabPolygon((
-             Vector(-10, -10, 0),  # Lower left (no radius)
-             Vector(10, -10, 0),  # Lower right (no radius)
-             (Vector(10, 10, 0), 5),  # Upper right (5mm radius)
-             (Vector(-0, 10, 0), 5.5),  # Upper right (5.5mm radius)
-         ), "Name")
+    FabPolygon's are frozen and can not be modified after creation.  Since Vector's are mutable,
+    a copy of each vector stored inside the FabPolygon.
 
     Attributes:
     * *Corners* (Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]):
       See description below for more on corners.
 
+    Constructor:
+    * FabPolygon(Corners):
+
+    Example:
+    ```
+         polygon: FabPolyon = FabPolygon((
+             Vector(-10, -10, 0),  # Lower left (no radius)
+             Vector(10, -10, 0),  # Lower right (no radius)
+             (Vector(10, 10, 0), 5),  # Upper right (5mm radius)
+             (Vector(-0, 10, 0), 5.5),  # Upper right (5.5mm radius)
+         ), "Name")
+    ```
     """
 
     Corners: Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]
     Fab_Fillets: Tuple[Fab_Fillet, ...] = field(init=False, repr=False)
 
     EPSILON = 1.0e-8
+
+    # FabPolygon.__post_init__():
+    def __post_init__(self) -> None:
+        """Verify that the corners passed in are correct."""
+        assert check_argument_types()
+        corner: Union[Vector, Tuple[Vector, Union[int, float]]]
+        fillets: List[Fab_Fillet] = []
+        fillet: Fab_Fillet
+        # TODO: Check for polygon points that are colinear.
+        # TODO: Check for polygon corners with overlapping radii.
+        copy: Vector = Vector()  # Vector's are mutable, add *copy* to make a private Vector copy.
+        index: int
+        for index, corner in enumerate(self.Corners):
+            if isinstance(corner, Vector):
+                fillet = Fab_Fillet(corner + copy, 0.0)
+            elif isinstance(corner, tuple):
+                check_type(f"Corner[{index}]:", corner, Tuple[Vector, Union[int, float]])
+                fillet = Fab_Fillet(corner[0] + copy, float(corner[1]))
+            else:
+                raise ValueError(
+                    f"Polygon Corner[{index}] is {corner} which is neither a Vector nor "
+                    "(Vector, radius) tuple.")  # pragma: no unit cover
+            fillets.append(fillet)
+
+        # This is the only way to initialize a field in a frozen data class:
+        # See: [Why __setattr__?](https://stackoverflow.com/questions/53756788)
+        object.__setattr__(self, "Fab_Fillets", tuple(fillets))
+
+        # Double link the fillets and look for errors:
+        self._double_link()
+        radius_error: str = self._radii_check()
+        if radius_error:
+            raise ValueError(radius_error)  # pragma: no unit cover
+        colinear_error: str = self._colinear_check()
+        if colinear_error:
+            raise ValueError(colinear_error)  # pragma: no unit cover
+        # These checks are repeated after 2D projection.
+
+        # self._compute_arcs()
+        # self._compute_lines()
 
     # FabPolygon.Box:
     @property
@@ -988,6 +1059,49 @@ class FabPolygon(FabGeometry):
         box.enclose(points)
         return box
 
+    # FabPolygon.get_area():
+    def get_area(self, tracing: str = "") -> float:
+        """Return the area of FabPolygon ignoring fillets."""
+        # For References:
+        # * [Polygon Area](https://www.mathsisfun.com/geometry/area-irregular-polygons.html)
+        if tracing:
+            print(f"{tracing}=>FabPolygon.get_area(*)")
+        points: List[Vector] = []
+        corner: Union[Vector, Tuple[Vector, Union[int, float]]]
+        for corner in self.Corners:
+            if isinstance(corner, Vector):
+                points.append(corner)
+            elif isinstance(corner, tuple) and len(corner) == 2 and isinstance(corner[0], Vector):
+                points.append(cast(Vector, corner[0]))
+            else:  # pragma: no unit cover
+                raise RuntimeError("FabPolygon.Area(): bad corner")
+        if tracing:
+            print(f"{tracing}{points=}")
+
+        # Compute the *minimum_y* in for *points*:
+        minimum_y: float = 0.0  # Overwritten on first iteration.
+        index: int
+        point: Vector
+        for index, point in enumerate(points):
+            minimum_y = point.y if index == 0 else min(minimum_y, point.y)
+        if tracing:
+            print(f"{tracing}{minimum_y=}")
+
+        # Compute the *area* under the polygon *points*.  Since we do not know if the polygon
+        # is clockwise or counter-clockwise the *area* can be either positive or negative:
+        size: int = len(points)
+        area: float = 0.0
+        for index, point in enumerate(points):
+            next_point = points[(index + 1) % size]
+            dx: float = next_point.x - point.x
+            average_dy: float = (point.y + next_point.y) / 2.0
+            area += dx * average_dy
+
+        area = abs(area)
+        if tracing:
+            print(f"{tracing}<=FabPolygon.get_area(*)=>{area}")
+        return area
+
     # FabPolygon.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:
         """Return the FabPolygon Hash."""
@@ -1004,51 +1118,6 @@ class FabPolygon(FabGeometry):
             hashes.append(f"{point.z:.6f}")
             hashes.append(f"{radius:.6f}")
         return tuple(hashes)
-
-    # FabPolygon.__post_init__():
-    def __post_init__(self) -> None:
-        """Verify that the corners passed in are correct."""
-        corner: Union[Vector, Tuple[Vector, Union[int, float]]]
-        fillets: List[Fab_Fillet] = []
-        fillet: Fab_Fillet
-        # TODO: Check for polygon points that are colinear.
-        # TODO: Check for polygon corners with overlapping radii.
-        copy: Vector = Vector()  # Vector's are mutable, add *copy* to make a private Vector copy.
-        index: int
-        for index, corner in enumerate(self.Corners):
-            if isinstance(corner, Vector):
-                fillet = Fab_Fillet(corner + copy, 0.0)
-            elif isinstance(corner, tuple):
-                if len(corner) != 2:
-                    raise ValueError(f"Polygon Corner[{index}]: "
-                                     "{corner} tuple length is not 2")  # pragma: no unit cover
-                if not isinstance(corner[0], Vector):
-                    raise ValueError(f"Polygon Corner[{index}]: {corner} "
-                                     "first entry is not Vector")  # pragma: no unit cover
-                if not isinstance(corner[1], (int, float)):
-                    raise ValueError(f"Polygon Corner[{index}]: {corner} "
-                                     "first entry is not number")  # pragma: no unit cover
-                fillet = Fab_Fillet(corner[0] + copy, corner[1])
-            else:
-                raise ValueError(
-                    f"Polygon Corner[{index}] is {corner} which is neither a Vector nor "
-                    "(Vector, radius) tuple.")  # pragma: no unit cover
-            fillets.append(fillet)
-        # (Why __setattr__?)[https://stackoverflow.com/questions/53756788]
-        object.__setattr__(self, "Fab_Fillets", tuple(fillets))
-
-        # Double link the fillets and look for errors:
-        self._double_link()
-        radius_error: str = self._radii_check()
-        if radius_error:
-            raise ValueError(radius_error)  # pragma: no unit cover
-        colinear_error: str = self._colinear_check()
-        if colinear_error:
-            raise ValueError(colinear_error)  # pragma: no unit cover
-        # These checks are repeated after 2D projection.
-
-        # self._compute_arcs()
-        # self._compute_lines()
 
     # FabPolygon.project_to_plane():
     def project_to_plane(self, plane: Fab_Plane, tracing: str = "") -> "FabPolygon":
@@ -1217,20 +1286,22 @@ class FabPolygon(FabGeometry):
 
     # FabPolygon._unit_tests():
     @staticmethod
-    def _unit_tests() -> None:
-        """Do some unit tests."""
+    def _unit_tests(tracing: str = "") -> None:
+        """Run FabPolygon unit tests."""
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabPolygon._unit_tests()")
+
         v1: Vector = Vector(-40, -20, 0)
         v2: Vector = Vector(40, -20, 0)
         v3: Vector = Vector(40, 20, 0)
         v4: Vector = Vector(-40, 20, 0)
         polygon: FabPolygon = FabPolygon((v1, v2, (v3, 10), v4))
-        _ = polygon
+        area: float = polygon.get_area(tracing=next_tracing)
+        assert 3200.0 <= area <= 3200.0, area
 
-        # geometries: Tuple[Fab_Geometry, ...] = polygon.get_geometries()
-        # index: int
-        # geometry: Fab_Geometry
-        # for index, geometry in enumerate(geometries):
-        #     print(f"Geometry[{index}]: {geometry}")
+        if tracing:
+            print(f"{tracing}<=FabPolygon._unit_tests()")
 
 
 # Fab_Query:
@@ -1445,13 +1516,17 @@ class Fab_Query(object):
             print(f"{tracing}<=Fab_Query.three_point_arc({middle}), {end})")
 
 
-def main() -> None:
+def main(tracing: str = "") -> None:
     """Run main program."""
-    pass
+    next_tracing: str = tracing + " " if tracing else ""
+    if tracing:
+        print(f"{tracing}=>FabGeometries.main()")
+    Fab_Fillet._unit_tests(tracing=next_tracing)
+    FabCircle._unit_tests(tracing=next_tracing)
+    FabPolygon._unit_tests(tracing=next_tracing)
+    if tracing:
+        print(f"{tracing}<=FabGeometries.main()")
 
 
 if __name__ == "__main__":
-    Fab_Fillet.unit_tests()
-    FabCircle._unit_tests()
-    FabPolygon._unit_tests()
-    main()
+    main(tracing=" ")

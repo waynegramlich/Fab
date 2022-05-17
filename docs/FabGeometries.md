@@ -12,10 +12,11 @@
   * 2.2 [produce()](#fabgeometries----produce): Produce the necessary FreeCAD objects for the FabGeometry.
   * 2.3 [project_to_plane()](#fabgeometries----project-to-plane): Return a new FabGeometry projected onto a plane.
 * 3 Class: [FabPolygon](#fabgeometries--fabpolygon):
-  * 3.1 [get_hash()](#fabgeometries----get-hash): Return the FabPolygon Hash.
-  * 3.2 [project_to_plane()](#fabgeometries----project-to-plane): Return nre FabPolygon projected onto a plane.
-  * 3.3 [get_geometries()](#fabgeometries----get-geometries): Return the FabPolygon lines and arcs.
-  * 3.4 [produce()](#fabgeometries----produce): Produce the FreeCAD objects needed for FabPolygon.
+  * 3.1 [get_area()](#fabgeometries----get-area): Return the area of FabPolygon ignoring fillets.
+  * 3.2 [get_hash()](#fabgeometries----get-hash): Return the FabPolygon Hash.
+  * 3.3 [project_to_plane()](#fabgeometries----project-to-plane): Return nre FabPolygon projected onto a plane.
+  * 3.4 [get_geometries()](#fabgeometries----get-geometries): Return the FabPolygon lines and arcs.
+  * 3.5 [produce()](#fabgeometries----produce): Produce the FreeCAD objects needed for FabPolygon.
 * 4 Class: [Fab_Arc](#fabgeometries--fab-arc):
   * 4.1 [produce()](#fabgeometries----produce): Return line segment after moving it into Geometry group.
 * 5 Class: [Fab_Circle](#fabgeometries--fab-circle):
@@ -120,30 +121,42 @@ An immutable polygon with rounded corners.
 A FabPolygon is represented as a sequence of corners (i.e. a Vector) where each corner can
 optionally be filleted with a radius.  In order to make it easier to use, a corner can be
 specified as simple Vector or as a tuple that specifies a Vector and a radius.  The radius
-is in millimeters and can be provided as either Python int or float.  When an explicit
+is in millimeters and can be provided as either a Python int or float.  When an explicit
 fillet radius is not specified, higher levels in the software stack will typically substitute
 in a deburr radius for external corners and an internal tool radius for internal corners.
-FabPolygon's are frozen and can not be modified after creation.
-
-Example:
-     polygon: Fab.FabPolyon = Fab.FabPolygon((
-         Vector(-10, -10, 0),  # Lower left (no radius)
-         Vector(10, -10, 0),  # Lower right (no radius)
-         (Vector(10, 10, 0), 5),  # Upper right (5mm radius)
-         (Vector(-0, 10, 0), 5.5),  # Upper right (5.5mm radius)
-     ), "Name")
+FabPolygon's are frozen and can not be modified after creation.  Since Vector's are mutable,
+a copy of each vector stored inside the FabPolygon.
 
 Attributes:
 * *Corners* (Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]):
   See description below for more on corners.
 
-### <a name="fabgeometries----get-hash"></a>3.1 `FabPolygon.`get_hash():
+Constructor:
+* FabPolygon(Corners):
+
+Example:
+```
+     polygon: FabPolyon = FabPolygon((
+         Vector(-10, -10, 0),  # Lower left (no radius)
+         Vector(10, -10, 0),  # Lower right (no radius)
+         (Vector(10, 10, 0), 5),  # Upper right (5mm radius)
+         (Vector(-0, 10, 0), 5.5),  # Upper right (5.5mm radius)
+     ), "Name")
+```
+
+### <a name="fabgeometries----get-area"></a>3.1 `FabPolygon.`get_area():
+
+FabPolygon.get_area(self, tracing: str = '') -> float:
+
+Return the area of FabPolygon ignoring fillets.
+
+### <a name="fabgeometries----get-hash"></a>3.2 `FabPolygon.`get_hash():
 
 FabPolygon.get_hash(self) -> Tuple[Any, ...]:
 
 Return the FabPolygon Hash.
 
-### <a name="fabgeometries----project-to-plane"></a>3.2 `FabPolygon.`project_to_plane():
+### <a name="fabgeometries----project-to-plane"></a>3.3 `FabPolygon.`project_to_plane():
 
 FabPolygon.project_to_plane(self, plane: FabGeometries.Fab_Plane, tracing: str = '') -> 'FabPolygon':
 
@@ -154,13 +167,13 @@ Arguments:
 Returns:
 * (FabPolyGon): The newly projected FabPolygon.
 
-### <a name="fabgeometries----get-geometries"></a>3.3 `FabPolygon.`get_geometries():
+### <a name="fabgeometries----get-geometries"></a>3.4 `FabPolygon.`get_geometries():
 
 FabPolygon.get_geometries(self, contact: cadquery.occ_impl.geom.Vector, Normal: cadquery.occ_impl.geom.Vector) -> Tuple[FabGeometries.Fab_Geometry, ...]:
 
 Return the FabPolygon lines and arcs.
 
-### <a name="fabgeometries----produce"></a>3.4 `FabPolygon.`produce():
+### <a name="fabgeometries----produce"></a>3.5 `FabPolygon.`produce():
 
 FabPolygon.produce(self, geometry_context: FabGeometries.Fab_GeometryContext, prefix: str, index: int, tracing: str = '') -> Tuple[Any, ...]:
 
@@ -178,11 +191,8 @@ Attributes:
 * *Middle* (Vector): The Arc midpoint.
 * *Finish* (Vector): The Arc finish point.
 
-# Old:
-* *StartAngle* (float): The start arc angle in radians.
-* *FinishAngle* (float): The finish arc angle in radiuns.
-* *DeltaAngle* (float):
-  The value to add to *StartAngle* to get *FinishAngle* (module 2 radians):
+Constructor:
+* Fab_Arc(Apex, Radius, Center, Start, Middle, Finish)
 
 ### <a name="fabgeometries----produce"></a>4.1 `Fab_Arc.`produce():
 
@@ -292,6 +302,9 @@ An internal representation of a line segment geometry.
 Attributes:
 * *Start (Vector): The line segment start point.
 * *Finish (Vector): The line segment finish point.
+
+Constructor:
+* Fab_Line(Start, Finish)
 
 ### <a name="fabgeometries----get-start"></a>9.1 `Fab_Line.`get_start():
 
