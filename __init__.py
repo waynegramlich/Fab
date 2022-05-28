@@ -11,6 +11,7 @@
 * [Bearing Block Example](#bearing-block-example)
 * [Additional Documentation](#additional-documentation)
 * [Installation](#installation)
+* [Coding Standards](#coding-standards)
 
 ## Introduction
 
@@ -676,7 +677,7 @@ Do the following to install Fab:
 
 The ultimate goal is for the Fab project to have code that largely compatible with FreeCAD.
 
-There three name styles:
+There are three name styles:
 
 * UpperCamelCase: Each word starts with an upper case character.
   Generally, there are no underscores.
@@ -684,15 +685,16 @@ There three name styles:
   The first word is all lower case and all subsequent words start with an upper case character.
   Generally, there are no underscores.
 * snake_case:
-  Each word is all lower case and is separated by and underscore character(`_`).
+  Each word is all lower case and is separated by an underscore character(`_`).
 
 In general, FreeCAD seems to use UpperCamelCase for attribute names and lowerCamelCase
 for class method names, and snake_case for variable names.
-Sometimes m
+Sometimes method names are in snake_case.
+In general, the Fab package adheres to these general style guidelines,
+there are some differences that are discussed below.
 
-While in general, the Fab package adheres to this style, there are some differences.
 All Fab packages are start with the `Fab` prefix.  There are a few modules (`Doc`, `TarSync`, etc.)
-are really separated and do not start with `Fab...`.
+are strictly part of the Fab package and do not start with `Fab...`.
 
 Fab makes a distinction between "public" and  "private" classes:
 * Public Classes:
@@ -727,7 +729,7 @@ where things tend to be located.
 
 Sometimes a lower level class needs to access an upper level class this is done by
 creating an abstract method in the base class and having the sub-classes implement
-an overriding implementation of the abstract method.  This is pretty standard practice.
+an overriding implementation of the abstract method.  This is a pretty standard practice.
 
 All documentation is embedded in Python document strings and is written in markdown format.
 There is a program called `Doc.py` extracts this markdown text and create a markdown document
@@ -735,7 +737,7 @@ that is 1-to-1 with each Python package.  Thus, the documentation extracted by`F
 is saved into `docs/fabProjects.md`.  This documentation is uploaded to [github.com](gitub.com)
 where it gets converted into HTML suitable for reading.
 
-Each class uses the following basic template for class definition and associated documenation
+Each class uses the following basic template for class definition and associated documentation
 strings:
 
 ```
@@ -768,9 +770,10 @@ strings:
 
 The is a one line comment immediately in front of the class definition that is only used
 to provide a searchable name in a text editor.
-The Attributes section lists all attributes for the class and its parent classes.
+The Attributes section lists all attributes for the class and any associated parent classes.
 The Constructor section lists all attributes needed to construct an instance of the class.
-String attributes are enclosed in double quotes (e.g. "StringAttribute".)
+String attributes are enclosed in double quotes (e.g. "StringAttribute") to slightly improve
+readability.
 
 All code uses Python Type Hints and the `mypy` program to detect type mismatches.
 Since neither CadQuery nor FreeCAD seem to be using type hints, the code CadQuery/FreeCAD
@@ -819,6 +822,31 @@ The general format for tracing code is as follows.
                 print(f"{tracing}=>MyClass.myMethod({arg1}, ...{argN}) => {returnValue}")
             return returnValue    
 ```
+
+The code also uses the Python `typeguard` package that can verify that each argument actually
+matches the specified type hints.  It is simple:
+
+```
+     from typeguard import check_type, check_argument_types
+
+     def function(a: int, b: float, c: list[int], d: Dict[str, float], e: Tuple[int, str]) -> None:
+         assert argument_types()
+
+```
+
+For dataclasses, the __post_init__() method used check_type() as follows:
+
+```
+     @dataclass
+     class MyClass(object):
+         Attribute1: Type1
+         # ...
+         AttributeN: TypeN
+
+     def __post_init__(self) -> None:
+         check_type("MyClass.Attribute1", self.Attribute1, Type1`)
+         # ...
+         check_type("MyClass.AttributeN", self.AttributeN, TypeN`)
 
 """
 
