@@ -9,7 +9,7 @@
 from dataclasses import dataclass, field
 import math
 from typeguard import check_argument_types, check_type
-from typing import Any, cast, List, Optional, Tuple, Union
+from typing import Any, cast, Callable, List, Optional, Sequence, Tuple, Union
 
 import cadquery as cq  # type: ignore
 from cadquery import Vector  # type: ignore
@@ -572,12 +572,14 @@ class Fab_Fillet(object):
     After: "Fab_Fillet" = field(init=False, repr=False)  # Filled in by __post_init__()
     Arc: Optional["Fab_Arc"] = field(init=False, default=None)  # Filled in by compute_arcs()
     Line: Optional["Fab_Line"] = field(init=False, default=None)  # Filled in by compute_lines()
+    ProjectedApex: Vector = field(init=False, repr=False)  # Used by get_area_and_minimum_radius()
 
     # Fab_Fillet.__post_init__():
     def __post_init__(self) -> None:
         """Initialize Fab_Fillet."""
         self.Before = self
         self.After = self
+        self.RotatedApex = Vector()
 
     # Fab_Fillet.compute_arc():
     def compute_arc(self, tracing: str = "") -> Fab_Arc:
@@ -727,6 +729,61 @@ class Fab_Fillet(object):
         # FreeCAD Vector metheds like to modify Vector contents; force copies beforehand:
         self.Apex = plane.point_project(self.Apex)
 
+    # Fab_Fillet.compute_fillet_area():
+    def compute_fillet_area(self, tracing: str = "") -> float:
+        """Return the fillet area that is excluded to corner rounding."""
+        if tracing:
+            print(f"{tracing}=>Fab_Fillet.compute_fillet_area()")
+        fillet_area: float = 0.0
+
+        arc: Optional[Fab_Arc] = self.Arc
+        if arc:
+            # *arc_points* defines a diamond shaped polygon that sweeps from the arc start,
+            # to the arc apex, to the arc finish.  Compute *diamond_area*:
+            arc_points: Tuple[Vector, ...] = (
+                arc.Center,
+                arc.Start,
+                arc.Apex,
+                arc.Finish,
+            )
+            diamond_area: float = FabPolygon.compute_polygon_area(arc_points)
+            if tracing:
+                print(f"{tracing}{diamond_area=}")
+
+            # Compute *sweep_angle*, the angle that sweeps from start to finish:
+            start: Vector = arc.Start - arc.Apex
+            start_angle: float = math.atan2(start.y, start.x)
+            finish: Vector = arc.Finish - arc.Apex
+            finish_angle: float = math.atan2(finish.y, finish.x)
+            sweep_angle: float = abs(finish_angle - start_angle)
+
+            # Compute the acute *sweep_angle*:
+            pi: float = math.pi
+            pi2: float = 2.0 * pi
+            while sweep_angle > pi:
+                sweep_angle -= pi2
+            while sweep_angle < -pi:
+                sweep_angle += pi2  # pragma: no unit cover
+            sweep_angle = abs(sweep_angle)
+            if tracing:
+                print(f"{tracing}{math.degrees(sweep_angle)=} {math.degrees(pi2)}")
+
+            # Compute *excluded_area*:
+            radius: float = arc.Radius
+            circle_area: float = pi * radius * radius
+            secant_area: float = circle_area * (sweep_angle / pi2)
+            fillet_area = diamond_area - secant_area
+            assert fillet_area >= 0.0, fillet_area
+            if tracing:
+                print(f"{tracing}{circle_area=} {secant_area=} {fillet_area=}")
+        else:
+            if tracing:
+                print(f"{tracing}No arc")
+
+        if tracing:
+            print(f"{tracing}<=Fab_Fillet.compute_fillet_area()=>{fillet_area}")
+        return fillet_area
+
     # Fab_Fillet.get_geometries():
     def get_geometries(self) -> Tuple[Fab_Geometry, ...]:
         geometries: List[Fab_Geometry] = []
@@ -740,6 +797,7 @@ class Fab_Fillet(object):
     @staticmethod
     def _unit_tests(tracing: str = "") -> None:
         """Run Fab_Fillet unit tests."""
+        next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>Fab_Fillet._unit_tests()")
 
@@ -771,10 +829,16 @@ class Fab_Fillet(object):
         sw_fillet.After = se_fillet
         se_fillet.After = ne_fillet
 
-        ne_fillet.compute_arc(tracing="NE:")
-        nw_fillet.compute_arc(tracing="NW:")
-        sw_fillet.compute_arc(tracing="SW:")
-        se_fillet.compute_arc(tracing="SE:")
+        if tracing:
+            ne_fillet.compute_arc(tracing=f"{next_tracing}NE:")
+            nw_fillet.compute_arc(tracing=f"{next_tracing}NW:")
+            sw_fillet.compute_arc(tracing=f"{next_tracing}SW:")
+            se_fillet.compute_arc(tracing=f"{next_tracing}SE:")
+        else:  # pragma: no unit cover
+            ne_fillet.compute_arc()
+            nw_fillet.compute_arc()
+            sw_fillet.compute_arc()
+            se_fillet.compute_arc()
 
         if tracing:
             print(f"{tracing}<=Fab_Fillet._unit_tests()")
@@ -996,13 +1060,16 @@ class FabPolygon(FabGeometry):
     """
 
     Corners: Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]
-    Fab_Fillets: Tuple[Fab_Fillet, ...] = field(init=False, repr=False)
+    Fab_Fillets: Tuple[Fab_Fillet, ...] = field(init=False, repr=False)  # TODO make Private
 
     EPSILON = 1.0e-8
 
     # FabPolygon.__post_init__():
     def __post_init__(self) -> None:
         """Verify that the corners passed in are correct."""
+        tracing: str = ""  # Edit to enable tracing.
+        if tracing:
+            print(f"{tracing}=>FabPolygon.__post_init__()")
         assert check_argument_types()
         corner: Union[Vector, Tuple[Vector, Union[int, float]]]
         fillets: List[Fab_Fillet] = []
@@ -1035,10 +1102,12 @@ class FabPolygon(FabGeometry):
         colinear_error: str = self._colinear_check()
         if colinear_error:
             raise ValueError(colinear_error)  # pragma: no unit cover
-        # These checks are repeated after 2D projection.
 
+        # These checks are repeated after 2D projection.
         # self._compute_arcs()
         # self._compute_lines()
+        if tracing:
+            print(f"{tracing}<=FabPolygon.__post_init__()")
 
     # FabPolygon.Box:
     @property
@@ -1059,24 +1128,12 @@ class FabPolygon(FabGeometry):
         box.enclose(points)
         return box
 
-    # FabPolygon.get_area():
-    def get_area(self, tracing: str = "") -> float:
-        """Return the area of FabPolygon ignoring fillets."""
-        # For References:
+    # FabPolygon.compute_polgyon_area():
+    @staticmethod
+    def compute_polygon_area(points: Sequence[Vector]) -> float:
+        """Compute that area of an irregular polygon."""
+        # References:
         # * [Polygon Area](https://www.mathsisfun.com/geometry/area-irregular-polygons.html)
-        if tracing:
-            print(f"{tracing}=>FabPolygon.get_area(*)")
-        points: List[Vector] = []
-        corner: Union[Vector, Tuple[Vector, Union[int, float]]]
-        for corner in self.Corners:
-            if isinstance(corner, Vector):
-                points.append(corner)
-            elif isinstance(corner, tuple) and len(corner) == 2 and isinstance(corner[0], Vector):
-                points.append(cast(Vector, corner[0]))
-            else:  # pragma: no unit cover
-                raise RuntimeError("FabPolygon.Area(): bad corner")
-        if tracing:
-            print(f"{tracing}{points=}")
 
         # Compute the *minimum_y* in for *points*:
         minimum_y: float = 0.0  # Overwritten on first iteration.
@@ -1084,8 +1141,6 @@ class FabPolygon(FabGeometry):
         point: Vector
         for index, point in enumerate(points):
             minimum_y = point.y if index == 0 else min(minimum_y, point.y)
-        if tracing:
-            print(f"{tracing}{minimum_y=}")
 
         # Compute the *area* under the polygon *points*.  Since we do not know if the polygon
         # is clockwise or counter-clockwise the *area* can be either positive or negative:
@@ -1097,10 +1152,105 @@ class FabPolygon(FabGeometry):
             average_dy: float = (point.y + next_point.y) / 2.0
             area += dx * average_dy
 
-        area = abs(area)
+        return abs(area)
+
+    # FabPolygon.get_area_and_minimum_radius():
+    def get_area_and_minimum_radius(
+            self, plane: Fab_Plane, tracing: str = "") -> Tuple[float, float]:
+        """Return the area and minimum internal radius of FabPolygon.
+
+        Method Arguments:
+        * *plane* (Fab_Plane): The FabPolyogn projection to use for Area computation.
+
+        Returns:
+        * (float): The area of the projected FabPolygon.
+        * (float):
+          The minimum internal fillet radius of the FabPolygon.
+          -1.0 is returned if there is no internal radius.
+
+        """
+        next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}<=FabPolygon.get_area(*)=>{area}")
-        return area
+            print(f"{tracing}=>FabPolygon.get_area_and_minimum_radius(*)")
+
+        # Step 1: Project the Apex points from *plane* to the XY plane.
+        fillet: Fab_Fillet
+        for fillet in self.Fab_Fillets:
+            fillet.ProjectedApex = plane.rotate_to_z_axis(fillet.Apex)
+
+        # Step 2: Compute the *maximum_radius* and *total_angle* of turning at each *fillet*:
+        pi: float = math.pi
+        pi2: float = 2.0 * pi
+        polygon_points: List[Vector] = []
+        total_angle: float = 0.0
+        positive_fillet_area: float = 0.0
+        negative_fillet_area: float = 0.0
+        positive_radius: float = -1.0
+        negative_radius: float = -1.0
+        index: int
+        for index, fillet in enumerate(self.Fab_Fillets):
+            before_apex: Vector = fillet.Before.ProjectedApex
+            at_apex: Vector = fillet.ProjectedApex
+            after_apex: Vector = fillet.After.ProjectedApex
+            polygon_points.append(at_apex)
+
+            before: Vector = at_apex - before_apex
+            after: Vector = after_apex - at_apex
+            before_angle: float = math.atan2(before.y, before.x)
+            after_angle: float = math.atan2(after.y, after.x)
+            delta_angle: float = after_angle - before_angle
+            while delta_angle < -pi:
+                delta_angle += pi2
+            while delta_angle > pi:
+                delta_angle -= pi2
+            total_angle += delta_angle
+            if False and tracing:  # pragma: no unit cover
+                degrees: Callable = math.degrees
+                print(f"{tracing}Fillet[{index}]:{before_apex=} {at_apex=} {after_apex=}")
+                print(f"{tracing}Fillet[{index}]:{before=} {after=}")
+                print(f"{tracing}Fillet[{index}]:{degrees(before_angle)=} {degrees(after_angle)=}")
+                print(f"{tracing}Fillet[{index}]:{degrees(delta_angle)=} {degrees(total_angle)=}")
+
+            fillet_area: float = fillet.compute_fillet_area(tracing=next_tracing)
+
+            def update_radius(radius, fillet: Fab_Fillet) -> float:
+                """Update the minimum radius."""
+                arc: Optional[Fab_Arc] = fillet.Arc
+                if arc:
+                    arc_radius: float = arc.Radius
+                    radius = arc_radius if radius < 0.0 else min(radius, arc_radius)
+                return radius
+
+            if delta_angle > 0.0:
+                positive_fillet_area += fillet_area
+                positive_radius = update_radius(positive_radius, fillet)
+            else:
+                negative_fillet_area += fillet_area
+                negative_radius = update_radius(negative_radius, fillet)
+        if tracing:
+            print(f"{tracing}{positive_fillet_area=} {positive_radius=}")
+            print(f"{tracing}{negative_fillet_area=} {negative_radius=}")
+
+        # Sanity check: *total_angle* should be either +360 degrees or -360 degrees:
+        degrees360: float = 2.0 * pi
+        epsilon: float = 1.0e-8
+        assert abs(abs(total_angle) - degrees360) < epsilon, f"{math.degrees(total_angle)=}"
+
+        # Compute the *maximum_area* that does not deal with fillet rounding:
+        area: float = FabPolygon.compute_polygon_area(polygon_points)
+        radius: float
+        if total_angle > 0.0:
+            # Clockwise:
+            area += negative_fillet_area - positive_fillet_area
+            radius = positive_radius
+        else:
+            # Counter-Clockwise:
+            area += positive_fillet_area - negative_fillet_area
+            radius = negative_radius
+
+        if tracing:
+            print(f"{tracing}<=FabPolygon.get_area_and_minimum_radius()=>({area}, {radius})")
+        return area, radius
 
     # FabPolygon.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:
@@ -1288,18 +1438,77 @@ class FabPolygon(FabGeometry):
     @staticmethod
     def _unit_tests(tracing: str = "") -> None:
         """Run FabPolygon unit tests."""
-        next_tracing: str = tracing + " " if tracing else ""
+        # next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabPolygon._unit_tests()")
+
+        origin: Vector = Vector()
+        z_axis: Vector = Vector(0.0, 0.0, 1.0)
+        xy_plane: Fab_Plane = Fab_Plane(origin, z_axis)
 
         v1: Vector = Vector(-40, -20, 0)
         v2: Vector = Vector(40, -20, 0)
         v3: Vector = Vector(40, 20, 0)
         v4: Vector = Vector(-40, 20, 0)
-        polygon: FabPolygon = FabPolygon((v1, v2, (v3, 10), v4))
-        area: float = polygon.get_area(tracing=next_tracing)
-        assert 3200.0 <= area <= 3200.0, area
 
+        def check_helper(test_name: str, corners: Tuple[Any, ...],
+                         desired_area: float, desired_radius: float, tracing: str) -> None:
+            next_tracing: str = tracing + " " if tracing else ""
+            if tracing:
+                print(f"{tracing}=>check_helper({test_name}, *, {desired_area}, {desired_radius})")
+            epsilon: float = 0.001  # Only match to three places after the decimal point.
+            area: float
+            radius: float
+            polygon: FabPolygon = FabPolygon(corners)
+
+            # In order to finsish filling in Fab_Fillet's, a *geometry_context* is needed.
+            query: Fab_Query = Fab_Query(xy_plane)  # Not used, but *geometry_context* needs it.
+            geometry_context: Fab_GeometryContext = Fab_GeometryContext(xy_plane, query)
+            _ = polygon.produce(geometry_context, "prefix", 0, tracing=next_tracing)
+
+            area, radius = polygon.get_area_and_minimum_radius(xy_plane, tracing=next_tracing)
+            assert area > 0.0, area
+            if abs(desired_area - area) > epsilon:
+                raise RuntimeError(f"{test_name}: Area: Want {desired_area}, not {area}")
+            if abs(desired_radius - radius) > epsilon:
+                raise RuntimeError(f"{test_name}: Radius: Want {desired_radius}, not {radius}")
+            if tracing:
+                print(f"{tracing}<=check_helper({test_name}, *, {desired_area}, {desired_radius})")
+
+        def check(test_name: str, corners: Tuple[Any, ...],
+                  desired_area: float, desired_radius: float, tracing: str = "") -> None:
+            next_tracing: str = tracing + " " if tracing else ""
+            if tracing:
+                print(f"{tracing}=>check('{test_name}', {corners=}, "
+                      f"{desired_area=}, {desired_radius})")
+            check_helper(test_name, corners, desired_area, desired_radius, next_tracing)
+            check_helper("f{test_name}_reversed", tuple(reversed(corners)),
+                         desired_area, desired_radius, next_tracing)
+            if tracing:
+                print(f"{tracing}<=check('{test_name}', {corners=}, "
+                      f"{desired_area=}, {desired_radius})")
+
+        check("no_corners", (v1, v2, v3, v4), 80.0 * 40, -1.0)
+
+        # Make sure that failures are actually detected:
+        try:
+            check("area_fail", (v1, v2, v3, v4), 80.0 * 40 + 1, -1.0)
+            assert False
+        except RuntimeError as error:
+            assert str(error) == "area_fail: Area: Want 3201.0, not 3200.0", str(error)
+        try:
+            check("radius_fail", (v1, v2, v3, v4), 80.0 * 40, 0.0)
+            assert False
+        except RuntimeError as error:
+            assert str(error) == "radius_fail: Radius: Want 0.0, not -1.0", str(error)
+
+        # Round the corner by 1mm
+        pi: float = math.pi
+        fillet_area: float = (2.0 * 2.0) - (pi * 1.0 * 1.0)  # 2x2 square - 2mm circle A=pi*r^2
+        if tracing:
+            print(f"{tracing}{fillet_area=}")
+        check("1mm corners", ((v1, 1.0), (v2, 1.0), (v3, 1.0), (v4, 1.0)),
+              80.0 * 40 - fillet_area, 1.0)
         if tracing:
             print(f"{tracing}<=FabPolygon._unit_tests()")
 
@@ -1313,7 +1522,7 @@ class Fab_Query(object):
     CadQuery Operations are added as needed.
 
     Attributes:
-    * *Plane* (Fab_Plane): The plain to use for CadQuery initialization.
+    * *Plane* (Fab_Plane): The plane to use for CadQuery initialization.
     * *WorkPlane: (cadquery.Workplane): The resulting CadQuery Workplane object.
 
     """

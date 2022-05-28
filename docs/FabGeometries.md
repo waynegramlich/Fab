@@ -12,7 +12,7 @@
   * 2.2 [produce()](#fabgeometries----produce): Produce the necessary FreeCAD objects for the FabGeometry.
   * 2.3 [project_to_plane()](#fabgeometries----project-to-plane): Return a new FabGeometry projected onto a plane.
 * 3 Class: [FabPolygon](#fabgeometries--fabpolygon):
-  * 3.1 [get_area()](#fabgeometries----get-area): Return the area of FabPolygon ignoring fillets.
+  * 3.1 [get_area_and_minimum_radius()](#fabgeometries----get-area-and-minimum-radius): Return the area and minimum internal radius of FabPolygon.
   * 3.2 [get_hash()](#fabgeometries----get-hash): Return the FabPolygon Hash.
   * 3.3 [project_to_plane()](#fabgeometries----project-to-plane): Return nre FabPolygon projected onto a plane.
   * 3.4 [get_geometries()](#fabgeometries----get-geometries): Return the FabPolygon lines and arcs.
@@ -24,7 +24,8 @@
 * 6 Class: [Fab_Fillet](#fabgeometries--fab-fillet):
   * 6.1 [compute_arc()](#fabgeometries----compute-arc): Return the arc associated with a Fab_Fillet with non-zero radius.
   * 6.2 [plane_2d_project()](#fabgeometries----plane-2d-project): Project the Apex onto a plane.
-  * 6.3 [get_geometries()](#fabgeometries----get-geometries): NO DOC STRING!
+  * 6.3 [compute_fillet_area()](#fabgeometries----compute-fillet-area): Return the fillet area that is excluded to corner rounding.
+  * 6.4 [get_geometries()](#fabgeometries----get-geometries): NO DOC STRING!
 * 7 Class: [Fab_Geometry](#fabgeometries--fab-geometry):
   * 7.1 [produce()](#fabgeometries----produce): NO DOC STRING!
   * 7.2 [get_start()](#fabgeometries----get-start): Return start point of geometry.
@@ -144,11 +145,19 @@ Example:
      ), "Name")
 ```
 
-### <a name="fabgeometries----get-area"></a>3.1 `FabPolygon.`get_area():
+### <a name="fabgeometries----get-area-and-minimum-radius"></a>3.1 `FabPolygon.`get_area_and_minimum_radius():
 
-FabPolygon.get_area(self, tracing: str = '') -> float:
+FabPolygon.get_area_and_minimum_radius(self, plane: FabGeometries.Fab_Plane, tracing: str = '') -> Tuple[float, float]:
 
-Return the area of FabPolygon ignoring fillets.
+Return the area and minimum internal radius of FabPolygon.
+Method Arguments:
+* *plane* (Fab_Plane): The FabPolyogn projection to use for Area computation.
+
+Returns:
+* (float): The area of the projected FabPolygon.
+* (float):
+  The minimum internal fillet radius of the FabPolygon.
+  -1.0 is returned if there is no internal radius.
 
 ### <a name="fabgeometries----get-hash"></a>3.2 `FabPolygon.`get_hash():
 
@@ -242,7 +251,13 @@ Arguments:
 
 Modifies Fab_Fillet.
 
-### <a name="fabgeometries----get-geometries"></a>6.3 `Fab_Fillet.`get_geometries():
+### <a name="fabgeometries----compute-fillet-area"></a>6.3 `Fab_Fillet.`compute_fillet_area():
+
+Fab_Fillet.compute_fillet_area(self, tracing: str = '') -> float:
+
+Return the fillet area that is excluded to corner rounding.
+
+### <a name="fabgeometries----get-geometries"></a>6.4 `Fab_Fillet.`get_geometries():
 
 Fab_Fillet.get_geometries(self) -> Tuple[FabGeometries.Fab_Geometry, ...]:
 
@@ -357,7 +372,7 @@ This class creates CadQuery Workplane provides a consistent head of the Workplan
 CadQuery Operations are added as needed.
 
 Attributes:
-* *Plane* (Fab_Plane): The plain to use for CadQuery initialization.
+* *Plane* (Fab_Plane): The plane to use for CadQuery initialization.
 * *WorkPlane: (cadquery.Workplane): The resulting CadQuery Workplane object.
 
 ### <a name="fabgeometries----circle"></a>11.1 `Fab_Query.`circle():
