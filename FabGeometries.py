@@ -766,7 +766,7 @@ class Fab_Fillet(object):
                 sweep_angle += pi2  # pragma: no unit cover
             sweep_angle = abs(sweep_angle)
             if tracing:
-                print(f"{tracing}{math.degrees(sweep_angle)=} {math.degrees(pi2)}")
+                print(f"{tracing}{math.degrees(sweep_angle)=}")
 
             # Compute *excluded_area*:
             radius: float = arc.Radius
@@ -829,7 +829,7 @@ class Fab_Fillet(object):
         sw_fillet.After = se_fillet
         se_fillet.After = ne_fillet
 
-        if tracing:
+        if False and tracing:  # pragma: no unit cover
             ne_fillet.compute_arc(tracing=f"{next_tracing}NE:")
             nw_fillet.compute_arc(tracing=f"{next_tracing}NW:")
             sw_fillet.compute_arc(tracing=f"{next_tracing}SW:")
@@ -1130,29 +1130,45 @@ class FabPolygon(FabGeometry):
 
     # FabPolygon.compute_polgyon_area():
     @staticmethod
-    def compute_polygon_area(points: Sequence[Vector]) -> float:
+    def compute_polygon_area(points: Sequence[Vector], tracing: str = "") -> float:
         """Compute that area of an irregular polygon."""
+        if tracing:
+            print(f"{tracing}=>compute_polygon_area({points=})")
+
         # References:
         # * [Polygon Area](https://www.mathsisfun.com/geometry/area-irregular-polygons.html)
 
         # Compute the *minimum_y* in for *points*:
+        # TODO: This algorithm probably works just fine with *minimum_y* set to 0.0.
         minimum_y: float = 0.0  # Overwritten on first iteration.
         index: int
         point: Vector
         for index, point in enumerate(points):
-            minimum_y = point.y if index == 0 else min(minimum_y, point.y)
+            y: float = point.y
+            minimum_y = y if index == 0 else min(minimum_y, y)
+        if tracing:
+            print(f"{tracing}{minimum_y=}")
 
-        # Compute the *area* under the polygon *points*.  Since we do not know if the polygon
-        # is clockwise or counter-clockwise the *area* can be either positive or negative:
+        # Compute the *area* under the polygon *points*.
         size: int = len(points)
         area: float = 0.0
         for index, point in enumerate(points):
             next_point = points[(index + 1) % size]
             dx: float = next_point.x - point.x
-            average_dy: float = (point.y + next_point.y) / 2.0
+            dy1: float = point.y - minimum_y
+            dy2: float = next_point.y - minimum_y
+            average_dy: float = (dy1 + dy2) / 2.0
             area += dx * average_dy
+            if tracing:
+                print(f"{tracing}[{index}]: {point=} {next_point=} "
+                      f"{dx=} {dy1=} {dy2=} {average_dy=} {area=}")
 
-        return abs(area)
+        # Since we do not know if the polygon is clockwise or counter-clockwise,
+        # the *area* can be either positive or negative.  Make it positive.
+        area = abs(area)
+        if tracing:
+            print(f"{tracing}<=compute_polygon_area({points=})=>{area}")
+        return area
 
     # FabPolygon.get_area_and_minimum_radius():
     def get_area_and_minimum_radius(
@@ -1204,12 +1220,12 @@ class FabPolygon(FabGeometry):
             while delta_angle > pi:
                 delta_angle -= pi2
             total_angle += delta_angle
-            if False and tracing:  # pragma: no unit cover
+            if tracing:  # pragma: no unit cover
                 degrees: Callable = math.degrees
                 print(f"{tracing}Fillet[{index}]:{before_apex=} {at_apex=} {after_apex=}")
-                print(f"{tracing}Fillet[{index}]:{before=} {after=}")
-                print(f"{tracing}Fillet[{index}]:{degrees(before_angle)=} {degrees(after_angle)=}")
-                print(f"{tracing}Fillet[{index}]:{degrees(delta_angle)=} {degrees(total_angle)=}")
+                print(f"{tracing}Fillet[{index}]: {before=} {after=}")
+                print(f"{tracing}Fillet[{index}]: {degrees(before_angle)=} {degrees(after_angle)=}")
+                print(f"{tracing}Fillet[{index}]: {degrees(delta_angle)=} {degrees(total_angle)=}")
 
             fillet_area: float = fillet.compute_fillet_area(tracing=next_tracing)
 
@@ -1218,7 +1234,7 @@ class FabPolygon(FabGeometry):
                 arc: Optional[Fab_Arc] = fillet.Arc
                 if arc:
                     arc_radius: float = arc.Radius
-                    radius = arc_radius if radius < 0.0 else min(radius, arc_radius)
+                    radius = arc_radius if radius < 0.0 else max(radius, arc_radius)
                 return radius
 
             if delta_angle > 0.0:
@@ -1227,6 +1243,7 @@ class FabPolygon(FabGeometry):
             else:
                 negative_fillet_area += fillet_area
                 negative_radius = update_radius(negative_radius, fillet)
+
         if tracing:
             print(f"{tracing}{positive_fillet_area=} {positive_radius=}")
             print(f"{tracing}{negative_fillet_area=} {negative_radius=}")
@@ -1238,15 +1255,17 @@ class FabPolygon(FabGeometry):
 
         # Compute the *maximum_area* that does not deal with fillet rounding:
         area: float = FabPolygon.compute_polygon_area(polygon_points)
+        if tracing:
+            print(f"{tracing}Initial polygon {area=}")
         radius: float
         if total_angle > 0.0:
             # Clockwise:
             area += negative_fillet_area - positive_fillet_area
-            radius = positive_radius
+            radius = negative_radius
         else:
             # Counter-Clockwise:
             area += positive_fillet_area - negative_fillet_area
-            radius = negative_radius
+            radius = positive_radius
 
         if tracing:
             print(f"{tracing}<=FabPolygon.get_area_and_minimum_radius()=>({area}, {radius})")
@@ -1442,38 +1461,104 @@ class FabPolygon(FabGeometry):
         if tracing:
             print(f"{tracing}=>FabPolygon._unit_tests()")
 
-        origin: Vector = Vector()
-        z_axis: Vector = Vector(0.0, 0.0, 1.0)
-        xy_plane: Fab_Plane = Fab_Plane(origin, z_axis)
+        # The area compute method is pretty involved and requires extensivie unit tests.
 
-        v1: Vector = Vector(-40, -20, 0)
-        v2: Vector = Vector(40, -20, 0)
-        v3: Vector = Vector(40, 20, 0)
-        v4: Vector = Vector(-40, 20, 0)
+        # Create 16 corners using the following naming [NS][EW][IONEWS], where
+        # * N=>North
+        # * S=>South
+        # * E=>East
+        # * W=>West
+        # * I=>Inner
+        # * O=>Outer
+        #
+        # The North East corner looks like:
+        #
+        #             NEW (NorthEast corner to the West)
+        #    ----------*------* NEO (NorthEash corner Outer)
+        #              |      |
+        #              |      |
+        #              *------* NES (NorthEast corner to the South)
+        #             NEI     | NEI => (NorthEast corner Inner)
+        #
+        # Thus, the corners must be:
+        #
+        #    *-*---------------*-*
+        #    | |               | |
+        #    *-*               *-*
+        #    |                   |
+        #    |                   |
+        #    |                   |
+        #    |                   |
+        #    *-*               *-*
+        #    | |               | |
+        #    *-*---------------*-*
+        #
+        # The NE/SW corners have a 1mm radius and the NW/SE corners have a 2mm radius.
+
+        # Create 4 quads of corners:
+        offset: float = 4.0
+        dx: Vector = Vector(40.0, 0.0, 0.0)
+        ddx: Vector = Vector(offset, 0.0, 0.0)
+        dy: Vector = Vector(0.0, 20.0, 0.0)
+        ddy: Vector = Vector(0.0, offset, 0.0)
+
+        ne: Vector = dx + dy  # No corner
+        neo: Tuple[Vector, float] = (dx + dy, 1.0)
+        new: Tuple[Vector, float] = (dx + dy - ddx, 1.0)
+        nes: Tuple[Vector, float] = (dx + dy - ddy, 1.0)
+        nei: Tuple[Vector, float] = (dx + dy - ddx - ddy, 1.0)
+
+        sw: Vector = -dx - dy  # No corner
+        swo: Tuple[Vector, float] = (-dx - dy, 1.0)
+        swe: Tuple[Vector, float] = (-dx - dy + ddx, 1.0)
+        swn: Tuple[Vector, float] = (-dx - dy + ddy, 1.0)
+        swi: Tuple[Vector, float] = (-dx - dy + ddx + ddy, 1.0)
+
+        nw: Vector = -dx + dy  # No corner
+        nwo: Tuple[Vector, float] = (-dx + dy, 2.0)
+        nwe: Tuple[Vector, float] = (-dx + dy + ddx, 2.0)
+        nws: Tuple[Vector, float] = (-dx + dy - ddy, 2.0)
+        nwi: Tuple[Vector, float] = (-dx + dy + ddx - ddy, 2.0)
+
+        se: Vector = dx - dy  # No corner
+        seo: Tuple[Vector, float] = (dx - dy, 2.0)
+        sew: Tuple[Vector, float] = (dx - dy - ddx, 2.0)
+        sen: Tuple[Vector, float] = (dx - dy + ddy, 2.0)
+        sei: Tuple[Vector, float] = (dx - dy - ddx + ddy, 2.0)
 
         def check_helper(test_name: str, corners: Tuple[Any, ...],
-                         desired_area: float, desired_radius: float, tracing: str) -> None:
+                         desired_area: float, desired_radius: float, tracing: str = "") -> str:
             next_tracing: str = tracing + " " if tracing else ""
             if tracing:
-                print(f"{tracing}=>check_helper({test_name}, *, {desired_area}, {desired_radius})")
+                print(f"{tracing}=>check_helper("
+                      f"'{test_name}', {corners}, {desired_area}, {desired_radius})")
             epsilon: float = 0.001  # Only match to three places after the decimal point.
             area: float
             radius: float
             polygon: FabPolygon = FabPolygon(corners)
 
             # In order to finsish filling in Fab_Fillet's, a *geometry_context* is needed.
+            origin: Vector = Vector(0.0, 0.0, 0.0)
+            z_axis: Vector = Vector(0.0, 0.0, 1.0)
+            xy_plane = Fab_Plane(origin, z_axis)
             query: Fab_Query = Fab_Query(xy_plane)  # Not used, but *geometry_context* needs it.
+            # Fill in the contents of the FabFillet's:
             geometry_context: Fab_GeometryContext = Fab_GeometryContext(xy_plane, query)
-            _ = polygon.produce(geometry_context, "prefix", 0, tracing=next_tracing)
+            _ = polygon.produce(geometry_context, "prefix", 0)
 
             area, radius = polygon.get_area_and_minimum_radius(xy_plane, tracing=next_tracing)
+            error: str = ""
             assert area > 0.0, area
             if abs(desired_area - area) > epsilon:
-                raise RuntimeError(f"{test_name}: Area: Want {desired_area}, not {area}")
+                error = f"{test_name}: Area: Want {desired_area}, not {area}"
             if abs(desired_radius - radius) > epsilon:
-                raise RuntimeError(f"{test_name}: Radius: Want {desired_radius}, not {radius}")
+                error = f"{test_name}: Radius: Want {desired_radius}, not {radius}"
+
             if tracing:
-                print(f"{tracing}<=check_helper({test_name}, *, {desired_area}, {desired_radius})")
+                print(f"{tracing}>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                print(f"{tracing}<=check_helper("
+                      f"'{test_name}', {corners}, {desired_area}, {desired_radius})=>'{error}'")
+            return error
 
         def check(test_name: str, corners: Tuple[Any, ...],
                   desired_area: float, desired_radius: float, tracing: str = "") -> None:
@@ -1481,34 +1566,92 @@ class FabPolygon(FabGeometry):
             if tracing:
                 print(f"{tracing}=>check('{test_name}', {corners=}, "
                       f"{desired_area=}, {desired_radius})")
-            check_helper(test_name, corners, desired_area, desired_radius, next_tracing)
-            check_helper("f{test_name}_reversed", tuple(reversed(corners)),
-                         desired_area, desired_radius, next_tracing)
+            error: str
+            error1 = check_helper(test_name, corners, desired_area, desired_radius, next_tracing)
+            error2 = check_helper(test_name, tuple(reversed(corners)),
+                                  desired_area, desired_radius)  # , next_tracing)
+            if tracing:
+                print(f"{tracing}{error1=}")
+                print(f"{tracing}{error2=}")
+            assert error1 == error2, (error1, error2)
+            if len(error1) > 0:
+                raise RuntimeError(error1)
+
             if tracing:
                 print(f"{tracing}<=check('{test_name}', {corners=}, "
                       f"{desired_area=}, {desired_radius})")
 
-        check("no_corners", (v1, v2, v3, v4), 80.0 * 40, -1.0)
+        def fillet_area(radius: float, tracing: str = "") -> float:
+            """Return fillet area for 90 degree fillet."""
+            if tracing:
+                print(f"{tracing}=>fillet_area({radius})")
+            diameter: float = 2.0 * radius
+            square_area: float = diameter * diameter
+            pi: float = math.pi
+            circle_area: float = pi * radius * radius
+            fillet_area: float = (square_area - circle_area) / 4.0  # 1/4 => 90 degrees
+            if tracing:
+                print(f"{tracing}{square_area=} {circle_area=} {fillet_area=}")
+                print(f"{tracing}<=fillet_area({radius})=>{fillet_area}")
+            return fillet_area
+
+        rectangle: Tuple[Vector, ...] = (ne, nw, sw, se)
+        check("no fillets", rectangle, 80.0 * 40.0, -1.0)
 
         # Make sure that failures are actually detected:
         try:
-            check("area_fail", (v1, v2, v3, v4), 80.0 * 40 + 1, -1.0)
+            check("area_fail", rectangle, 80.0 * 40.0 + 1.0, -1.0)  # No internal fillets
             assert False
         except RuntimeError as error:
             assert str(error) == "area_fail: Area: Want 3201.0, not 3200.0", str(error)
         try:
-            check("radius_fail", (v1, v2, v3, v4), 80.0 * 40, 0.0)
+            check("radius_fail", rectangle, 80.0 * 40, 1.0)  # -1 expected for no internal fillets
             assert False
         except RuntimeError as error:
-            assert str(error) == "radius_fail: Radius: Want 0.0, not -1.0", str(error)
+            assert str(error) == "radius_fail: Radius: Want 1.0, not -1.0", str(error)
 
         # Round the corner by 1mm
-        pi: float = math.pi
-        fillet_area: float = (2.0 * 2.0) - (pi * 1.0 * 1.0)  # 2x2 square - 2mm circle A=pi*r^2
-        if tracing:
-            print(f"{tracing}{fillet_area=}")
-        check("1mm corners", ((v1, 1.0), (v2, 1.0), (v3, 1.0), (v4, 1.0)),
-              80.0 * 40 - fillet_area, 1.0)
+        fillet_1mm: float = fillet_area(1.0)
+        fillet_2mm: float = fillet_area(2.0)
+
+        # Rectangle tests with no internal fillets:
+        rectangle_area: float = 40.0 * 80.0  # Total rectangle area.
+        check("ne fillet only", (neo, nw, sw, se),  # 1 x 1 mm fillet
+              rectangle_area - fillet_1mm, -1.0)
+        check("ne,se fillets", (neo, nw, swo, se),  # 2 x 1 mm fillet
+              rectangle_area - 2 * fillet_1mm, -1.0)
+        check("nw fillet only", (ne, nwo, sw, se),  # 1 x 2 mm fillet
+              rectangle_area - fillet_2mm, -1.0)
+        check("nw,se fillet only", (ne, nwo, sw, seo),  # 2 x 2 mm fillet
+              rectangle_area - 2 * fillet_2mm, -1.0)
+        check("rectangle with all fillets", (neo, nwo, swo, seo),
+              rectangle_area - 2 * fillet_1mm - 2 * fillet_2mm, -1.0)
+
+        # Rectangle tests with internal fillets:
+        notch_area: float = offset * offset
+        check("ne_notch", (nes, nei, new, nw, sw, se),  # (2 - 1) 1mm fillets
+              rectangle_area - notch_area - (2 - 1) * fillet_1mm, 1.0)
+        check("nw_notch", (nwe, nwi, nws, sw, se, ne),  # (2 - 1) 2mm fillets
+              rectangle_area - notch_area - (2 - 1) * fillet_2mm, 2.0)
+        check("sw_notch", (swn, swi, swe, se, ne, nw),  # (2 - 1) 1mm fillets
+              rectangle_area - notch_area - (2 - 1) * fillet_1mm, 1.0)
+        check("se_notch", (sew, sei, sen, ne, nw, sw),  # (2 - 1) 2mm fillets
+              rectangle_area - notch_area - (2 - 1) * fillet_2mm, 2.0)
+        check("ne_sw_notch", (nes, nei, new, nw, swn, swi, swe, se),  # (4 - 2) 1mm fillets
+              rectangle_area - 2.0 * notch_area - (4 - 2) * fillet_1mm, 1.0)
+        check("nw_se_notch", (nwe, nwi, nws, sw, sew, sei, sen, ne),  # (4 - 2) 2mm fillets
+              rectangle_area - 2.0 * notch_area - (4 - 2) * fillet_2mm, 2.0)
+        check("notch all", (nes, nei, new, nwe, nwi, nws, swn, swi, swe, sew, sei, sen),
+              rectangle_area - 4.0 * notch_area - (4 - 2) * fillet_1mm - (4 - 2) * fillet_2mm, 2.0)
+
+        # Two notches with 2 internal fillets:
+        big_notch_area = (40.0 - 2 * offset) * offset  # DY is 20 - (-20) == 40
+        check("double internal notch",
+              (neo, nwo, nws, nwi, swi, swn, swo, seo, sen, sei, nei, nes),
+              rectangle_area - (2.0 * big_notch_area) -  # Remove the 2 big notches,
+              (2.0 * fillet_1mm + 2.0 * fillet_2mm),  # Remove the 4 corner fillets,
+              2.0)  # The notch has 4 fillets (2 internal and 2 external) and the cancel out).
+
         if tracing:
             print(f"{tracing}<=FabPolygon._unit_tests()")
 
