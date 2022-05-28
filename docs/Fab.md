@@ -671,4 +671,153 @@ Do the following to install Fab:
    ```
 
 
+## Coding Standards:
+
+The ultimate goal is for the Fab project to have code that largely compatible with FreeCAD.
+
+There three name styles:
+
+* UpperCamelCase: Each word starts with an upper case character.
+  Generally, there are no underscores.
+* lowerCamelCase:
+  The first word is all lower case and all subsequent words start with an upper case character.
+  Generally, there are no underscores.
+* snake_case:
+  Each word is all lower case and is separated by and underscore character(`_`).
+
+In general, FreeCAD seems to use UpperCamelCase for attribute names and lowerCamelCase
+for class method names, and snake_case for variable names.
+Sometimes m
+
+While in general, the Fab package adheres to this style, there are some differences.
+All Fab packages are start with the `Fab` prefix.  There are a few modules (`Doc`, `TarSync`, etc.)
+are really separated and do not start with `Fab...`.
+
+Fab makes a distinction between "public" and  "private" classes:
+* Public Classes:
+  A public class is meant to manipulated by end-users.  These classes have no underscore
+  (e.g. FabNode, FabMount, FabSolid, etc.)  The public class attributes are in UpperCamelCase
+  (i.e. PublicAttribute) are almost always immutable (i.e. they can not be modified.)
+  The public methods are in lowerCamelCase (i.e. drillJoins).
+* Private Classes:
+  A private class is only meant to be used by Fab developers.
+  A private class is always prefixed by `Fab_` (e.g. Fab_Operation, Fab_Pocket, etc...)
+
+Since Python does not like to have import loops, the modules are ordered from lowest to highest.
+The higher level modules can import the lower level ones, but not vice versa.  The ordering
+from lowest to highest below:
+
+* FabUtilities: FabColor, FabToolController, FabMaterial
+* FabFabNodes: FabNode, FabBox (and some private classes)
+* FabToolTemplates:
+  FabShape, FabShapes, FabAttributes, FabBit, FabBitTemplate FabBitTemplates, FabBitTemplatesFactory
+* FabToolBits: FabBallEndBit, ..., FabVBit
+* FabTools: FabBits, FabLibrary, FabLibraries, FabTooling, FabToolingFactory
+* FabShops:
+  FabShop, FabLocation, FabCNC, FabLathe, FabRouter, FabLaser, FabMachine,
+  FabController, FabTable, FabSpindle
+* FabJoins: FabJoin, FabFasten, FabWasher, FabNut, FabHead, FabOption
+* FabGeometries: FabPolygon, FabCircle, FabGeometry
+* FabSolids: FabSolid, FabMount, FabStock
+* FabProjects: FabProject, FabDocument, FabAssembly
+
+Note this table will almost certainly become out of date, but it gives a general idea of
+where things tend to be located.
+
+Sometimes a lower level class needs to access an upper level class this is done by
+creating an abstract method in the base class and having the sub-classes implement
+an overriding implementation of the abstract method.  This is pretty standard practice.
+
+All documentation is embedded in Python document strings and is written in markdown format.
+There is a program called `Doc.py` extracts this markdown text and create a markdown document
+that is 1-to-1 with each Python package.  Thus, the documentation extracted by`FabProjects.py`
+is saved into `docs/fabProjects.md`.  This documentation is uploaded to [github.com](gitub.com)
+where it gets converted into HTML suitable for reading.
+
+Each class uses the following basic template for class definition and associated documenation
+strings:
+
+```
+     # ClassName():  # Used for editor searches.
+     @dataclass(...)  # Optional dataclass decorator.
+     class ClassName(ParentClass):
+         '''ClassName: One line description.
+
+         Attributes:
+         * Attribute1 (TypeName): Description
+         ...
+         * AttributeN (TypeName): Description
+
+         Constructor:
+         * ClassName(Attribute1, ..., AtrributeN)
+         '''
+
+     # ClassName.__post_init__():  # Used for editor searches.
+     def __post_init__(self) -> None:   # For data classes only.
+         '''Finish Initializing ClassName.'''
+         super().__post_init__()  # For a data class sub-class only.
+         # ...
+
+     # ClassName.__init():  # Used for editor searches.
+     def ClassName.__init__(self, ...) -> None:  # For non-dataclass classes.
+         '''Initalize ClassName.'''
+         super().__init__()  # For a sub-class only.
+         # ...
+```
+
+The is a one line comment immediately in front of the class definition that is only used
+to provide a searchable name in a text editor.
+The Attributes section lists all attributes for the class and its parent classes.
+The Constructor section lists all attributes needed to construct an instance of the class.
+String attributes are enclosed in double quotes (e.g. "StringAttribute".)
+
+All code uses Python Type Hints and the `mypy` program to detect type mismatches.
+Since neither CadQuery nor FreeCAD seem to be using type hints, the code CadQuery/FreeCAD
+access code does not do as good a job with the type hints.
+
+All code is run through flake8 to look for formatting, lint, unused imports, unused variables, etc.
+PEP8 formatting style is used for pretty much everything.
+The one difference is rather that limiting to 80 character lines,
+100 character lines are used instead.
+Generally, vowel dropping in variable, method, attribute names is discouraged.
+Full words are preferred.  Thus `index` instead of `i`, etc.
+The original Fab author turns on the spelling checker when writing code.
+While misspellings do slip through, the are not that frequent.
+
+In addition, each module is supposed to define a `main()` function that calls the `_unit_tests`
+method for each class defined in the module.
+The top level `Makefile` will call all of the unit tests and collect code coverage information.
+The `.coveragerc` file specifies the various patterns to use to disable code coverage checking.
+The goal is to keep code coverage as close to 100% as possible.
+
+In general, code is never bug free.
+For this reason, tracing code tends to be left in the code.
+There are variety of Python tracing decorators and tools out there, but so far,
+they tend to lack the flexibility of just passing a tracing argument around.
+The general format for tracing code is as follows.
+
+```
+     # MyClass:
+     class MyClass(object):
+        '''Class doc string.'''
+        # ...
+
+        # MyClass.myMethod():
+        def myMethod(self, arg1: Type1, ..., argN: TypeN, tracing: str = "") -> ReturnType:
+            '''Method duc string'''
+            next_tracing: str = tracing + " " if tracing else ""
+            if tracing:
+                print(f"{tracing}=>MyClass.myMethod({arg1}, ...{argN})")
+            #...
+            if tracing:
+                print(f"{tracing}{value=}")
+
+            functionMethodCall(..., tracing=next_tracing)
+
+            if tracing:
+                print(f"{tracing}=>MyClass.myMethod({arg1}, ...{argN}) => {returnValue}")
+            return returnValue
+```
+
+
 
