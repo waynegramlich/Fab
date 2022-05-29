@@ -54,13 +54,13 @@ Represents a CNC mill or router.
 Attributes:
 * *Name* (str): The CNC mill name.
 * *Placement* (str): The placement in the shop.
-* *WorkVolume* (Vector): The work volume DX/DY/DZ.
+* *Axes* (Tuple[FabAxis, ...]): The various control axes (usually, X/Y/Z).
 * *Table* (FabTable):
 * *Spindle* (FabSpindle): The spindle description.
 * *Controller* (FabController): The Controller used by the CNC machine.
 
 Constructor:
-* FabCNC("Name", "Position", WorkVolume, Spindle, Table, Controller)
+* FabCNC("Name", "Placement", Axes, Table, Spindle, Controller)
 
 
 ## <a name="fabshops--fabcncmill"></a>3 Class FabCNCMill:
@@ -69,7 +69,7 @@ Represents a CNC mill.
 Attributes:
 * *Name* (str): The CNC mill name.
 * *Placement* (str): The placement in the shop.
-* *WorkVolume* (Vector): The work volume DX/DY/DZ.
+* *Axes* (Tuple[FabAxis, ...]): The mill axes.
 * *Table* (FabTable):
 * *Spindle* (FabSpindle): The spindle description.
 * *Controller* (FabController): The Controller used by the CNC machine.
@@ -85,14 +85,14 @@ Represents a CNC Router.
 Attributes:
 * *Name* (str): The CNC mill name.
 * *Position* (str): The position in the shop.
-* *WorkVolume* (Vector): The work volume DX/DY/DZ.
-* *Table* (FabTable):
+* *Axes* (Tuple[FabAxis, ...]): The axis descriptions.
+* *Table* (FabTable): The table description.
 * *Spindle* (FabSpindle): The spindle description.
 * *Controller* (FabController): The Controller used by the CNC machine.
 * *Kind* (str): Return the string "CNCRouter".
 
 Constructor:
-* FabCNCRouter("Name", "Position", WorkVolume, Spindle, Table, Spindle, Controller)
+* FabCNCRouter("Name", "Position", Axes, Table, Spindle, Controller)
 
 
 ## <a name="fabshops--fabcontroller"></a>5 Class FabController:
@@ -148,7 +148,7 @@ Base class for a FabShop machine.
 Attributes:
 * *Name* (str): The name of the  machines.
 * *Placement* (str): The machine placement in the shop.
-* *Kind* (str): The machine kind (supplied by sub-class).
+* *Kind* (str): The machine kind (supplied by sub-class as a property).
 
 Constructor:
 * Fabmachine("Name", "Placement")
@@ -196,6 +196,7 @@ Attributes:
 * *Width* (float): The overall table width in millimieters.
 * *Height* (float): The overall table Height in millimeters.
 * *Slots* (int): The number of T slots.
+* *SlotPitch (float): The pitch between slot center-lines.
 * *SlotWidth* (float): The top slot width in millimeters.
 * *SlotDepth* (float): The overall slot depth from top to keyway bottom in millimeters.
 * *KeywayWidth* (float): The keyway width in millimeters.

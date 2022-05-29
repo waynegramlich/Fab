@@ -14,10 +14,6 @@ This is a package provides classes used to define what machines are available in
 
 """
 
-
-from cadquery import Vector  # type: ignore
-
-
 # <--------------------------------------- 100 characters ---------------------------------------> #
 
 # Issues:
@@ -85,7 +81,9 @@ class FabAxis(object):
         if tracing:
             print(f"{tracing}=>FabAxis._unit_tests()")
 
-        linear_axis: FabAxis = FabAxis("X Axis", "X", True, 100.0, 10.0, 0.0, True, False)
+        linear_axis: FabAxis = FabAxis(
+            Name="X Axis", Letter="X", Linear=True, Range=100.0, Speed=10.0, Acceleration=0.0,
+            EndSensors=True, Brake=False)
         assert linear_axis.Name == "X Axis", linear_axis
         assert linear_axis.Letter == "X", linear_axis
         assert linear_axis.Linear, linear_axis
@@ -137,7 +135,8 @@ class FabSpindle(object):
         """Perform FabSpindle unit tests."""
         if tracing:
             print(f"{tracing}=>FabSpindle._unit_tests()")
-        spindle: FabSpindle = FabSpindle("R8", 5000, True, True, False)
+        spindle: FabSpindle = FabSpindle(
+            Type="R8", Speed=5000, Reversible=True, FloodCooling=True, MistCooling=False)
         assert spindle.Type == "R8", spindle.Type
         assert spindle.Speed == 5000, spindle.Speed
         assert spindle.Reversible, spindle.Reversible
@@ -158,6 +157,7 @@ class FabTable(object):
     * *Width* (float): The overall table width in millimieters.
     * *Height* (float): The overall table Height in millimeters.
     * *Slots* (int): The number of T slots.
+    * *SlotPitch (float): The pitch between slot center-lines.
     * *SlotWidth* (float): The top slot width in millimeters.
     * *SlotDepth* (float): The overall slot depth from top to keyway bottom in millimeters.
     * *KeywayWidth* (float): The keyway width in millimeters.
@@ -262,7 +262,7 @@ class FabMachine(object):
     Attributes:
     * *Name* (str): The name of the  machines.
     * *Placement* (str): The machine placement in the shop.
-    * *Kind* (str): The machine kind (supplied by sub-class).
+    * *Kind* (str): The machine kind (supplied by sub-class as a property).
 
     Constructor:
     * Fabmachine("Name", "Placement")
@@ -305,28 +305,28 @@ class FabCNC(FabMachine):
     Attributes:
     * *Name* (str): The CNC mill name.
     * *Placement* (str): The placement in the shop.
-    * *WorkVolume* (Vector): The work volume DX/DY/DZ.
+    * *Axes* (Tuple[FabAxis, ...]): The various control axes (usually, X/Y/Z).
     * *Table* (FabTable):
     * *Spindle* (FabSpindle): The spindle description.
     * *Controller* (FabController): The Controller used by the CNC machine.
 
     Constructor:
-    * FabCNC("Name", "Position", WorkVolume, Spindle, Table, Controller)
+    * FabCNC("Name", "Placement", Axes, Table, Spindle, Controller)
 
     """
 
-    WorkVolume: Vector
-    Spindle: FabSpindle
+    Axes: Tuple[FabAxis, ...]
     Table: FabTable
+    Spindle: FabSpindle
     Controller: FabController
 
     # FabCNC.__post_init__():
     def __post_init__(self) -> None:
         """Finish initializing FabCNCMill."""
         super().__post_init__()
-        check_type("FabCNC.WorkVolume", self.WorkVolume, Vector)
-        check_type("FabCNC.Spindle", self.Spindle, FabSpindle)
+        check_type("FabCNC.WorkVolume", self.Axes, Tuple[FabAxis, ...])
         check_type("FabCNC.Table", self.Table, FabTable)
+        check_type("FabCNC.Spindle", self.Spindle, FabSpindle)
         check_type("FabCNC.Controller", self.Controller, FabController)
 
     # FabCNC._unit_tests():
@@ -335,15 +335,27 @@ class FabCNC(FabMachine):
         """Perform FabCNC unit tests."""
         if tracing:
             print(f"{tracing}=>FabCNC._unit_tests()")
-        work_volume: Vector = Vector(100.0, 50.0, 30.0)
-        spindle: FabSpindle = FabSpindle("R8", 5000, True, True, False)
+        x_axis: FabAxis = FabAxis(
+            Name="X Axis", Letter="X", Linear=True, Range=100.0, Speed=10.0, Acceleration=0.0,
+            EndSensors=True, Brake=False)
+        y_axis: FabAxis = FabAxis(
+            Name="Y Axis", Letter="Y", Linear=True, Range=100.0, Speed=10.0, Acceleration=0.0,
+            EndSensors=True, Brake=False)
+        z_axis: FabAxis = FabAxis(
+            Name="Z Axis", Letter="Z", Linear=True, Range=100.0, Speed=10.0, Acceleration=0.0,
+            EndSensors=True, Brake=False)
+        axes: Tuple[FabAxis, ...] = (x_axis, y_axis, z_axis)
+        spindle: FabSpindle = FabSpindle(
+            Type="R8", Speed=5000, Reversible=True, FloodCooling=True, MistCooling=False)
         table: FabTable = FabTable("TestTable", 100.0, 50.0, 30.0, 4, 10.0, 5.0, 5.0, 10.0, 5.0)
         controller: FabController = FabController("MyMill", "linuxcnc")
-        cnc: FabCNC = FabCNC("TestCNC", "placement", work_volume, spindle, table, controller)
+        cnc: FabCNC = FabCNC(Name="TestCNC", Placement="placement", Axes=axes, Table=table,
+                             Spindle=spindle, Controller=controller)
         assert cnc.Name == "TestCNC"
         assert cnc.Placement == "placement"
-        assert cnc.Spindle is spindle
+        assert cnc.Axes is axes
         assert cnc.Table is table
+        assert cnc.Spindle is spindle
         assert cnc.Controller is controller
         if tracing:
             print(f"{tracing}<=FabCNC._unit_tests()")
@@ -357,7 +369,7 @@ class FabCNCMill(FabCNC):
     Attributes:
     * *Name* (str): The CNC mill name.
     * *Placement* (str): The placement in the shop.
-    * *WorkVolume* (Vector): The work volume DX/DY/DZ.
+    * *Axes* (Tuple[FabAxis, ...]): The mill axes.
     * *Table* (FabTable):
     * *Spindle* (FabSpindle): The spindle description.
     * *Controller* (FabController): The Controller used by the CNC machine.
@@ -385,12 +397,24 @@ class FabCNCMill(FabCNC):
         """Perform FabCNCMill unit tests."""
         if tracing:
             print(f"{tracing}=>FabCNCMill._unit_tests()")
-        work_volume: Vector = Vector(100.0, 50.0, 30.0)
-        spindle: FabSpindle = FabSpindle("R8", 5000, True, True, False)
-        controller: FabController = FabController("MyMill", "linuxcnc")
+        x_axis: FabAxis = FabAxis(
+            Name="X Axis", Letter="X", Linear=True, Range=100.0, Speed=10.0, Acceleration=0.0,
+            EndSensors=True, Brake=False)
+        y_axis: FabAxis = FabAxis(
+            Name="Y Axis", Letter="Y", Linear=True, Range=100.0, Speed=10.0, Acceleration=0.0,
+            EndSensors=True, Brake=False)
+        z_axis: FabAxis = FabAxis(
+            Name="Z Axis", Letter="Z", Linear=True, Range=100.0, Speed=10.0, Acceleration=0.0,
+            EndSensors=True, Brake=False)
+        axes: Tuple[FabAxis, ...] = (x_axis, y_axis, z_axis)
+        spindle: FabSpindle = FabSpindle(
+            Type="R8", Speed=5000, Reversible=True, FloodCooling=True, MistCooling=False)
+        controller: FabController = FabController(Name="MyMill", PostProcessor="linuxcnc")
         table: FabTable = FabTable("TestTable", 100.0, 50.0, 30.0, 4, 10.0, 5.0, 5.0, 10.0, 5.0)
         cnc: FabCNCMill = FabCNCMill(
-            "TestCNC", "placement", work_volume, spindle, table, controller)
+            Name="TestCNC", Placement="placement", Axes=axes, Table=table,
+            Spindle=spindle, Controller=controller
+        )
         assert cnc.Name == "TestCNC", cnc.Name
         assert cnc.Placement == "placement", cnc.Placement
         assert cnc.Spindle is spindle, cnc.Spindle
@@ -408,16 +432,21 @@ class FabCNCRouter(FabCNC):
     Attributes:
     * *Name* (str): The CNC mill name.
     * *Position* (str): The position in the shop.
-    * *WorkVolume* (Vector): The work volume DX/DY/DZ.
-    * *Table* (FabTable):
+    * *Axes* (Tuple[FabAxis, ...]): The axis descriptions.
+    * *Table* (FabTable): The table description.
     * *Spindle* (FabSpindle): The spindle description.
     * *Controller* (FabController): The Controller used by the CNC machine.
     * *Kind* (str): Return the string "CNCRouter".
 
     Constructor:
-    * FabCNCRouter("Name", "Position", WorkVolume, Spindle, Table, Spindle, Controller)
+    * FabCNCRouter("Name", "Position", Axes, Table, Spindle, Controller)
 
     """
+
+    # FabCNCRouter.__post_init__():
+    def __post_init__(self) -> None:
+        """Finish initializing FabCNCRouter."""
+        super().__post_init__()
 
     # FabCNCRouter.Kind():
     @property
@@ -431,12 +460,25 @@ class FabCNCRouter(FabCNC):
         """Perform FabCNCRouter unit tests."""
         if tracing:
             print(f"{tracing}=>FabCNCRouter._unit_tests()")
-        work_volume: Vector = Vector(100.0, 50.0, 30.0)
-        spindle: FabSpindle = FabSpindle("R8", 5000, True, True, False)
-        controller: FabController = FabController("MyMill", "linuxcnc")
-        table: FabTable = FabTable("TestTable", 100.0, 50.0, 30.0, 0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        x_axis: FabAxis = FabAxis(
+            Name="X Axis", Letter="X", Linear=True, Range=100.0, Speed=10.0, Acceleration=0.0,
+            EndSensors=True, Brake=False)
+        y_axis: FabAxis = FabAxis(
+            Name="Y Axis", Letter="Y", Linear=True, Range=100.0, Speed=10.0, Acceleration=0.0,
+            EndSensors=True, Brake=False)
+        z_axis: FabAxis = FabAxis(
+            Name="Z Axis", Letter="Z", Linear=True, Range=100.0, Speed=10.0, Acceleration=0.0,
+            EndSensors=True, Brake=False)
+        axes: Tuple[FabAxis, ...] = (x_axis, y_axis, z_axis)
+        spindle: FabSpindle = FabSpindle(
+            Type="R8", Speed=5000, Reversible=True, FloodCooling=True, MistCooling=False)
+        controller: FabController = FabController(Name="MyMill", PostProcessor="linuxcnc")
+        table: FabTable = FabTable(
+            Name="TestTable", Length=100.0, Width=50.0, Height=30.0, Slots=5, SlotPitch=20.0,
+            SlotWidth=5.0, SlotDepth=60.0, KeywayWidth=15.0, KeywayHeight=10.0)
         cnc: FabCNCRouter = FabCNCRouter(
-            "TestCNC", "placement", work_volume, spindle, table, controller)
+            Name="TestCNC", Placement="placement", Axes=axes, Spindle=spindle, Table=table,
+            Controller=controller)
         assert cnc.Name == "TestCNC", cnc.Name
         assert cnc.Placement == "placement", cnc.Placement
         assert cnc.Spindle is spindle, cnc.Spindle
@@ -548,11 +590,22 @@ class FabShop(object):
             CountryCode="US", StateProvince="California", City="Sunnyvale", ZipCode="94086")
         placement: str = "somewhere in shop"
         table: FabTable = FabTable("TestTable", 100.0, 50.0, 30.0, 4, 10.0, 5.0, 5.0, 10.0, 5.0)
-        work_volume: Vector = Vector(100.0, 50.0, 40.0)
         spindle: FabSpindle = FabSpindle("R8", 5000, True, True, False)
         controller: FabController = FabController("MyMill", "linuxcnc")
+        x_axis: FabAxis = FabAxis(
+            Name="X Axis", Letter="X", Linear=True, Range=100.0, Speed=10.0, Acceleration=0.0,
+            EndSensors=True, Brake=False)
+        y_axis: FabAxis = FabAxis(
+            Name="Y Axis", Letter="Y", Linear=True, Range=100.0, Speed=10.0, Acceleration=0.0,
+            EndSensors=True, Brake=False)
+        z_axis: FabAxis = FabAxis(
+            Name="Z Axis", Letter="Z", Linear=True, Range=100.0, Speed=10.0, Acceleration=0.0,
+            EndSensors=True, Brake=False)
+        axes: Tuple[FabAxis, ...] = (x_axis, y_axis, z_axis)
         cnc_mill: FabCNCMill = FabCNCMill(
-            "MyCNCMill", placement, work_volume, spindle, table, controller)
+            Name="MyCNCMill", Placement=placement, Axes=axes, Spindle=spindle, Table=table,
+            Controller=controller
+        )
         machines: Tuple[FabMachine, ...] = (cnc_mill,)
         shop: FabShop = FabShop("MyShop", location, machines)
         assert shop.Name == name, shop.Name
