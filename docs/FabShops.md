@@ -123,8 +123,10 @@ Attributes:
   The county/canton/whatever that the shop is located in.  (Default: "")
 * *City* (str):
   The city the shop is located in.  (Default: "")
-* *StreetAddress* (str):
-  The street address of the shop. (Default: "")
+* *StreetAddress1* (str):
+  The first line of the shop street address. (Default: "")
+* *StreetAddress2* (str):
+  The second line of the shop street address. (Default: "")
 * *Unit* (str):
   The unit within the building that contains the shop. (Default: "")
 * *ZipCode* (str):

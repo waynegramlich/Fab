@@ -16,7 +16,8 @@ from FabGeometries import FabCircle, FabPolygon
 from FabJoins import FabFasten, FabJoin
 from FabNodes import FabNode  # This should not be needed see cast in BoxSide.produce()
 from FabProjects import FabAssembly, FabDocument, FabProject
-from FabShops import FabAxis, FabCNCMill, FabController, FabSpindle, FabTable
+from FabShops import (
+    FabAxis, FabCNCMill, FabController, FabLocation, FabMachine, FabSpindle, FabShop, FabTable)
 from FabSolids import FabSolid, FabMount
 from FabTools import FabLibrary, FabToolingFactory
 
@@ -503,7 +504,10 @@ def main(key: str = "") -> Any:
         Name="MyMill", Placement="Garage", Axes=axes, Table=table, Spindle=spindle,
         Controller=controller, Library=library
     )
-    _ = cnc_mill
+    location: FabLocation = FabLocation()
+    machines: Tuple[FabMachine, ] = (cnc_mill,)
+    shop: FabShop = FabShop(Name="TestShop", Location=location, Machines=machines)
+    _ = shop
 
     return 0
 

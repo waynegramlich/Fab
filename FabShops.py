@@ -530,8 +530,10 @@ class FabLocation(object):
       The county/canton/whatever that the shop is located in.  (Default: "")
     * *City* (str):
       The city the shop is located in.  (Default: "")
-    * *StreetAddress* (str):
-      The street address of the shop. (Default: "")
+    * *StreetAddress1* (str):
+      The first line of the shop street address. (Default: "")
+    * *StreetAddress2* (str):
+      The second line of the shop street address. (Default: "")
     * *Unit* (str):
       The unit within the building that contains the shop. (Default: "")
     * *ZipCode* (str):
@@ -556,13 +558,65 @@ class FabLocation(object):
     StateProvince: str = ""
     County: str = ""
     City: str = ""
-    StreetAddress: str = ""
+    StreetAddress1: str = ""
+    StreetAddress2: str = ""
     Unit: str = ""
     ZipCode: str = ""
     Latitude: str = ""
     Longitude: str = ""
     PhoneNumber: str = ""
     URL: str = ""
+
+    # FabLocation.__post_init__():
+    def __post_init__(self) -> None:
+        """Finish initlializing FabLocation."""
+        check_type("FabLocation.CountryCode", self.CountryCode, str)
+        check_type("FabLocation.StateProvince", self.StateProvince, str)
+        check_type("FabLocation.County", self.County, str)
+        check_type("FabLocation.City", self.City, str)
+        check_type("FabLocation.StreetAddress1", self.StreetAddress1, str)
+        check_type("FabLocation.StreetAddress2", self.StreetAddress2, str)
+        check_type("FabLocation.Unit", self.Unit, str)
+        check_type("FabLocation.ZipCode", self.ZipCode, str)
+        check_type("FabLocation.Latitude", self.Latitude, str)
+        check_type("FabLocation.Longitude", self.Longitude, str)
+        check_type("FabLocation.PhoneNumber", self.PhoneNumber, str)
+        check_type("FabLocation.URL", self.URL, str)
+
+    # FabLocation._unit_tests():
+    @staticmethod
+    def _unit_tests(tracing: str = "") -> None:
+        """Run FabLocation unit tests."""
+        if tracing:
+            print(f"{tracing}=>FabLocation._unit__tests()")
+        location: FabLocation = FabLocation(
+            CountryCode="US",
+            StateProvince="CA",
+            County="Santa Clara",
+            City="Sunnyvale",
+            StreetAddress1="Sunnyvale Police Public Safety Services",
+            StreetAddress2="700 All American Wayne",
+            Unit="",
+            ZipCode="94086",
+            Latitude="37.37066",
+            Longitude="-122.04002",
+            PhoneNumber="1-408-730-7100",
+            URL="https://www.townofsunnyvale.org/81/Police"
+        )
+        assert location.CountryCode == "US"
+        assert location.StateProvince == "CA"
+        assert location.County == "Santa Clara"
+        assert location.City == "Sunnyvale"
+        assert location.StreetAddress1 == "Sunnyvale Police Public Safety Services"
+        assert location.StreetAddress2 == "700 All American Wayne"
+        assert location.Unit == ""
+        assert location.ZipCode == "94086"
+        assert location.Latitude == "37.37066"
+        assert location.Longitude == "-122.04002"
+        assert location.PhoneNumber == "1-408-730-7100"
+        assert location.URL == "https://www.townofsunnyvale.org/81/Police"
+        if tracing:
+            print(f"{tracing}<=FabLocation._unit__tests()")
 
 
 # FabShop:
@@ -661,14 +715,15 @@ def main(tracing: str = "") -> None:
     if tracing:
         print("=>FabShops.main()")
     FabAxis._unit_tests(tracing=next_tracing)
-    FabSpindle._unit_tests(tracing=next_tracing)
-    FabTable._unit_tests(tracing=next_tracing)
-    FabController._unit_tests(tracing=next_tracing)
-    FabMachine._unit_tests(tracing=next_tracing)
     FabCNC._unit_tests(tracing=next_tracing)
     FabCNCMill._unit_tests(tracing=next_tracing)
     FabCNCRouter._unit_tests(tracing=next_tracing)
+    FabController._unit_tests(tracing=next_tracing)
+    FabLocation._unit_tests(tracing=next_tracing)
+    FabMachine._unit_tests(tracing=next_tracing)
+    FabSpindle._unit_tests(tracing=next_tracing)
     FabShop._unit_tests(tracing=next_tracing)
+    FabTable._unit_tests(tracing=next_tracing)
     if tracing:
         print("=>FabShops.main()")
 
