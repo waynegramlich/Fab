@@ -30,6 +30,75 @@ from typing import List, Tuple
 from dataclasses import dataclass
 
 
+# FabAxis:
+@dataclass(frozen=True)
+class FabAxis(object):
+    """FabAxis: Represents one axis of FabMachine.
+
+    Attributes:
+    * Name (*str*): The long name for the axis.
+    * Letter (*str*): The letter name for the axis (usually 'X', 'Y', 'Z', or 'A')
+    * Linear (*bool*): True for a linear axis and False for a rotational axis.
+    * Range (*float*):
+      The range that axis can span in millimeters (Linear=True) or in degrees (Linear=False).
+      If there are no restrictions for the rotational axis, set to 0.0.
+    * Speed (*float*):
+      The maximum speed for the axis in mm/sec (Linear=True) or degrees/sec (Linear=False).
+    * Acceleration (*float*):
+      The maximum acceleration for axis in mm/sec^2 (Linear=True) or degrees/sec^2 (Linear=False).
+      Set to 0.0 if maximum acceleration is not known.
+    * EndSensors (*bool): True if the axis has limit sensors for both ends of the the travel.
+    * Brake (*bool*):
+      True if there is a brake to lock the axis and False otherwise.
+      Typically this is only available for rotational axes.
+
+    Constructor:
+    * FabAxis("Name", "Letter", Linear, Range, Speed, EndSensors, Brake)
+
+    """
+
+    Name: str
+    Letter: str
+    Linear: bool
+    Range: float
+    Speed: float
+    Acceleration: float
+    EndSensors: bool
+    Brake: bool
+
+    # FabAxis.__post_init__():
+    def __post_init__(self) -> None:
+        """Finish initializing the FabAxis."""
+        check_type("FabAxis.Name", self.Name, str)
+        check_type("FabAxis.Letter", self.Letter, str)
+        check_type("FabAxis.Linear", self.Linear, bool)
+        check_type("FabAxis.Range", self.Range, float)
+        check_type("FabAxis.Speed", self.Speed, float)
+        check_type("FabAxis.Acceleration", self.Acceleration, float)
+        check_type("FabAxis.EndSensors", self.EndSensors, bool)
+        check_type("FabAxis.Brake", self.Brake, bool)
+
+    # FabAxis._unit_tests():
+    @staticmethod
+    def _unit_tests(tracing: str = "") -> None:
+        """Run FabAxis unit tests."""
+        if tracing:
+            print(f"{tracing}=>FabAxis._unit_tests()")
+
+        linear_axis: FabAxis = FabAxis("X Axis", "X", True, 100.0, 10.0, 0.0, True, False)
+        assert linear_axis.Name == "X Axis", linear_axis
+        assert linear_axis.Letter == "X", linear_axis
+        assert linear_axis.Linear, linear_axis
+        assert linear_axis.Range == 100.00, linear_axis
+        assert linear_axis.Speed == 10.00, linear_axis
+        assert linear_axis.Acceleration == 0.00, linear_axis
+        assert linear_axis.EndSensors, linear_axis
+        assert not linear_axis.Brake, linear_axis
+
+        if tracing:
+            print(f"{tracing}<=FabAxis._unit_tests()")
+
+
 # FabSpindle:
 @dataclass(frozen=True)
 class FabSpindle(object):
@@ -64,15 +133,18 @@ class FabSpindle(object):
 
     # FabSpindle._unit_tests():
     @staticmethod
-    def _unit_tests() -> None:
+    def _unit_tests(tracing: str = "") -> None:
         """Perform FabSpindle unit tests."""
-
+        if tracing:
+            print(f"{tracing}=>FabSpindle._unit_tests()")
         spindle: FabSpindle = FabSpindle("R8", 5000, True, True, False)
         assert spindle.Type == "R8", spindle.Type
         assert spindle.Speed == 5000, spindle.Speed
         assert spindle.Reversible, spindle.Reversible
         assert spindle.FloodCooling, spindle.FloodCooling
         assert not spindle.MistCooling, spindle.MistCooling
+        if tracing:
+            print(f"{tracing}<=FabSpindle._unit_tests()")
 
 
 # FabTable:
@@ -124,8 +196,10 @@ class FabTable(object):
 
     # FabTable._unit_tests():
     @staticmethod
-    def _unit_tests() -> None:
+    def _unit_tests(tracing: str = "") -> None:
         """Perform unit tests on FabTable."""
+        if tracing:
+            print(f"{tracing}=>FabTable._unit_tests()")
         table: FabTable = FabTable("TestTable", 100.0, 50.0, 30.0, 4, 10.0, 5.0, 5.0, 10.0, 5.0)
         assert table.Name == "TestTable", table.Name
         assert table.Length == 100.0, table.Length
@@ -136,6 +210,8 @@ class FabTable(object):
         assert table.SlotDepth == 5.0, table.SlotDepth
         assert table.KeywayWidth == 10.0, table.KeywayWidth
         assert table.KeywayHeight == 5.0, table.KeywayHeight
+        if tracing:
+            print(f"{tracing}=>FabTable._unit_tests()")
 
 
 # FabController:
@@ -156,18 +232,26 @@ class FabController(object):
     PostProcessor: str
 
     # FabController.__post_init__():
-    def __post_init__(self) -> None:
+    def __post_init__(self, tracing: str = "") -> None:
         """Finish initializing FabController."""
+        if tracing:
+            print(f"{tracing}=>FabController._unit_tests()")
         check_type("FabController.Name", self.Name, str)
         check_type("FabController.PostProcessor", self.PostProcessor, str)
+        if tracing:
+            print(f"{tracing}<=FabController._unit_tests()")
 
     # FabController._unit_tests():
     @staticmethod
-    def _unit_tests() -> None:
+    def _unit_tests(tracing: str = "") -> None:
         """Perform FabController Unit Tests."""
+        if tracing:
+            print(f"{tracing}=>FabController._unit_tests()")
         controller: FabController = FabController("MyMill", "linuxcnc")
         assert controller.Name == "MyMill", controller.Name
         assert controller.PostProcessor == "linuxcnc", controller.PostProcessor
+        if tracing:
+            print(f"{tracing}<=FabController._unit_tests()")
 
 
 # FabMachine:
@@ -202,11 +286,15 @@ class FabMachine(object):
 
     # FabMachine._unit_tests():
     @staticmethod
-    def _unit_tests() -> None:
+    def _unit_tests(tracing: str = "") -> None:
         """Perform FabMachine unit tests."""
+        if tracing:
+            print(f"{tracing}=>FabMachine._unit_tests()")
         machine: FabMachine = FabMachine("TestMachine", "Test Placement")
         assert machine.Name == "TestMachine", machine.Name
         assert machine.Placement == "Test Placement", machine.Placement
+        if tracing:
+            print(f"{tracing}<=FabMachine._unit_tests()")
 
 
 # FabCNC:
@@ -243,8 +331,10 @@ class FabCNC(FabMachine):
 
     # FabCNC._unit_tests():
     @staticmethod
-    def _unit_tests():
+    def _unit_tests(tracing: str = "") -> None:
         """Perform FabCNC unit tests."""
+        if tracing:
+            print(f"{tracing}=>FabCNC._unit_tests()")
         work_volume: Vector = Vector(100.0, 50.0, 30.0)
         spindle: FabSpindle = FabSpindle("R8", 5000, True, True, False)
         table: FabTable = FabTable("TestTable", 100.0, 50.0, 30.0, 4, 10.0, 5.0, 5.0, 10.0, 5.0)
@@ -255,6 +345,8 @@ class FabCNC(FabMachine):
         assert cnc.Spindle is spindle
         assert cnc.Table is table
         assert cnc.Controller is controller
+        if tracing:
+            print(f"{tracing}<=FabCNC._unit_tests()")
 
 
 # FabCNCMill:
@@ -289,8 +381,10 @@ class FabCNCMill(FabCNC):
 
     # FabCNCMill._unit_tests():
     @staticmethod
-    def _unit_tests():
+    def _unit_tests(tracing: str = "") -> None:
         """Perform FabCNCMill unit tests."""
+        if tracing:
+            print(f"{tracing}=>FabCNCMill._unit_tests()")
         work_volume: Vector = Vector(100.0, 50.0, 30.0)
         spindle: FabSpindle = FabSpindle("R8", 5000, True, True, False)
         controller: FabController = FabController("MyMill", "linuxcnc")
@@ -298,10 +392,12 @@ class FabCNCMill(FabCNC):
         cnc: FabCNCMill = FabCNCMill(
             "TestCNC", "placement", work_volume, spindle, table, controller)
         assert cnc.Name == "TestCNC", cnc.Name
-        assert cnc.Placement == "placement", cnc.Location
+        assert cnc.Placement == "placement", cnc.Placement
         assert cnc.Spindle is spindle, cnc.Spindle
         assert cnc.Controller is controller, cnc.Controller
         assert cnc.Kind == "CNCMill", cnc.Kind
+        if tracing:
+            print(f"{tracing}<=FabCNCMill._unit_tests()")
 
 
 # FabCNCRouter:
@@ -331,8 +427,10 @@ class FabCNCRouter(FabCNC):
 
     # FabCNCRouter._unit_tests():
     @staticmethod
-    def _unit_tests():
+    def _unit_tests(tracing: str = "") -> None:
         """Perform FabCNCRouter unit tests."""
+        if tracing:
+            print(f"{tracing}=>FabCNCRouter._unit_tests()")
         work_volume: Vector = Vector(100.0, 50.0, 30.0)
         spindle: FabSpindle = FabSpindle("R8", 5000, True, True, False)
         controller: FabController = FabController("MyMill", "linuxcnc")
@@ -340,10 +438,12 @@ class FabCNCRouter(FabCNC):
         cnc: FabCNCRouter = FabCNCRouter(
             "TestCNC", "placement", work_volume, spindle, table, controller)
         assert cnc.Name == "TestCNC", cnc.Name
-        assert cnc.Placement == "placement", cnc.Location
+        assert cnc.Placement == "placement", cnc.Placement
         assert cnc.Spindle is spindle, cnc.Spindle
         assert cnc.Controller is controller, cnc.Controller
         assert cnc.Kind == "CNCRouter", cnc.Kind
+        if tracing:
+            print(f"{tracing}<=FabCNCRouter._unit_tests()")
 
 
 # FabLocation:
@@ -351,7 +451,7 @@ class FabCNCRouter(FabCNC):
 class FabLocation(object):
     """FabLocation: Location information for a shop.
 
-    The shop can be located with as much or as little specificity and the shop owner chooses.
+    The shop can be located with as much or as little specificity that the shop owner chooses.
     Sometimes the Shop is on a mobile platform (like a boat) and no location makes much sense.
 
     Attributes:
@@ -439,8 +539,10 @@ class FabShop(object):
 
     # FabShop._unit_tests()
     @staticmethod
-    def _unit_tests() -> None:
+    def _unit_tests(tracing: str = "") -> None:
         """Perform FabShop unit tests."""
+        if tracing:
+            print(f"{tracing}=>FabShop._unit_tests()")
         name: str = "MyShop"
         location: FabLocation = FabLocation(
             CountryCode="US", StateProvince="California", City="Sunnyvale", ZipCode="94086")
@@ -466,19 +568,28 @@ class FabShop(object):
             got: str = str(key_error)
             assert want == got, f"\n{want} !=\n{got}"
         assert shop.lookup("MyCNCMill") is cnc_mill
+        if tracing:
+            print(f"{tracing}<=FabShop._unit_tests()")
 
 
 # Main program:
-def main() -> None:
-    FabSpindle._unit_tests()
-    FabTable._unit_tests()
-    FabController._unit_tests()
-    FabMachine._unit_tests()
-    FabCNC._unit_tests()
-    FabCNCMill._unit_tests()
-    FabCNCRouter._unit_tests()
-    FabShop._unit_tests()
+def main(tracing: str = "") -> None:
+    """Run the unit test suites."""
+    next_tracing: str = tracing + " " if tracing else ""
+    if tracing:
+        print("=>FabShops.main()")
+    FabAxis._unit_tests(tracing=next_tracing)
+    FabSpindle._unit_tests(tracing=next_tracing)
+    FabTable._unit_tests(tracing=next_tracing)
+    FabController._unit_tests(tracing=next_tracing)
+    FabMachine._unit_tests(tracing=next_tracing)
+    FabCNC._unit_tests(tracing=next_tracing)
+    FabCNCMill._unit_tests(tracing=next_tracing)
+    FabCNCRouter._unit_tests(tracing=next_tracing)
+    FabShop._unit_tests(tracing=next_tracing)
+    if tracing:
+        print("=>FabShops.main()")
 
 
 if __name__ == "__main__":
-    main()
+    main(tracing=" ")
