@@ -6,7 +6,7 @@
 # Python library imports:
 from dataclasses import dataclass, field
 from typing import Any, cast, List, Tuple
-from pathlib import Path
+from pathlib import Path as PathFile
 
 # CadQuery library imports:
 from cadquery import Vector  # type: ignore
@@ -18,6 +18,7 @@ from FabNodes import FabNode  # This should not be needed see cast in BoxSide.pr
 from FabProjects import FabAssembly, FabDocument, FabProject
 from FabShops import FabAxis, FabCNCMill, FabController, FabSpindle, FabTable
 from FabSolids import FabSolid, FabMount
+from FabTools import FabLibrary, FabToolingFactory
 
 
 # BoxSide:
@@ -445,7 +446,7 @@ class TestProject(FabProject):
         if tracing:
             print(f"{tracing}=>TestProject({self.Label}).__post_init__()")
 
-        self.Document = TestDocument("TestDocument", self, Path("/tmp/TestDocument.fcstd"))
+        self.Document = TestDocument("TestDocument", self, PathFile("/tmp/TestDocument.fcstd"))
 
         if tracing:
             print(f"{tracing}<=TestProject({self.Label}).__post_init__()")
@@ -495,17 +496,15 @@ def main(key: str = "") -> Any:
         Type="R8", Speed=5000, Reversible=True, FloodCooling=True, MistCooling=False
     )
     controller: FabController = FabController(Name="LinuxCNC", PostProcessor="linuxcnc")
+    tools_directory: PathFile = PathFile(__file__).parent / "Tools"
+    tooling_factory = FabToolingFactory("TestTooling")
+    library: FabLibrary = tooling_factory.getLibrary("TestLibrary", tools_directory)
     cnc_mill: FabCNCMill = FabCNCMill(
         Name="MyMill", Placement="Garage", Axes=axes, Table=table, Spindle=spindle,
-        Controller=controller
+        Controller=controller, Library=library
     )
-
-    _ = x_axis
-    _ = y_axis
-    _ = z_axis
-    _ = table
-    _ = spindle
     _ = cnc_mill
+
     return 0
 
 

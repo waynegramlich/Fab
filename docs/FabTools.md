@@ -47,6 +47,7 @@ The top-down class hierarchy for the FabTools package is:
       * FabVBit: This corresponds to `Tools/Shape/v-bit.fcstd`.
   * FabLibraries: This corresponds to a `Tool/Library` directory:
     * FabLibrary: This corresponds to an individual `.fctl` file in the `Tools/Library` directory.
+  * FabTooling: THis corresponds to the `Tools/` driectory.
 
 ## Table of Contents (alphabetical order):
 
@@ -69,7 +70,9 @@ The top-down class hierarchy for the FabTools package is:
   * 5.3 [dove_tail()](#fabtools----dove-tail): Add a drill to FabToolingFactory:
   * 5.4 [end_mill()](#fabtools----end-mill): Add a drill to FabToolingFactory:
   * 5.5 [v_groove()](#fabtools----v-groove): Add a V grove bit to FabToolingFactory:
-  * 5.6 [write()](#fabtools----write): Write FabToolingFactory out to disk.
+  * 5.6 [getLibrary()](#fabtools----getlibrary): Return a FabLibrary containti the current tools.
+  * 5.7 [write()](#fabtools----write): Write FabToolingFactory out to disk.
+  * 5.8 [create_example_tools()](#fabtools----create-example-tools): Create some example tools.
 
 ## <a name="fabtools--fabbits"></a>1 Class FabBits:
 
@@ -301,7 +304,13 @@ Arguments:
 * *shank_diameter* (Union[str, float]): The diameter of the shank (i.e. non cutting edge.)
 * *tip_diameter* (Union[str, float]): The bottom tip diameter (set to 0 for a point.)
 
-### <a name="fabtools----write"></a>5.6 `FabToolingFactory.`write():
+### <a name="fabtools----getlibrary"></a>5.6 `FabToolingFactory.`getLibrary():
+
+FabToolingFactory.getLibrary(self, library_stem: str, tools_directory: pathlib.Path, tracing: str = '') -> FabTools.FabLibrary:
+
+Return a FabLibrary containti the current tools.
+
+### <a name="fabtools----write"></a>5.7 `FabToolingFactory.`write():
 
 FabToolingFactory.write(self, library_stem: str, tools_directory: pathlib.Path, tracing: str) -> None:
 
@@ -309,6 +318,12 @@ Write FabToolingFactory out to disk.
 Arguments:
 * *library_stem* (str): The stem of the `.fctl` library file in `.../Tools/Library/`.
 * *tools_directory* (PathFile): The Tools directory to write everything out to.
+
+### <a name="fabtools----create-example-tools"></a>5.8 `FabToolingFactory.`create_example_tools():
+
+FabToolingFactory.create_example_tools(self, tracing: str = '') -> None:
+
+Create some example tools.
 
 
 

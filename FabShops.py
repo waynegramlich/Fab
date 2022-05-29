@@ -21,9 +21,15 @@ This is a package provides classes used to define what machines are available in
 # * Edit move the from line 11 to line 10 in .../Tools/Bit/45degree_chamfer.fctb to fix JSON error.
 # * When setting path to library, be sure to include .../Tools/Library  (one level up does not work)
 
+from dataclasses import dataclass
+from pathlib import Path as PathFile
 from typeguard import check_argument_types, check_type
 from typing import List, Tuple
-from dataclasses import dataclass
+from FabTools import FabLibrary, FabToolingFactory
+
+# Useful reference:
+# * [MachiningDoctor](https://www.machiningdoctor.com/calculators/chip-load-calculator/):
+#   Describes the formulas to use for chip load, speed, and feed calculations.
 
 
 # FabAxis:
@@ -309,6 +315,7 @@ class FabCNC(FabMachine):
     * *Table* (FabTable):
     * *Spindle* (FabSpindle): The spindle description.
     * *Controller* (FabController): The Controller used by the CNC machine.
+    * *Library* (FabLibrary): The library containing all of the tools.
 
     Constructor:
     * FabCNC("Name", "Placement", Axes, Table, Spindle, Controller)
@@ -319,6 +326,7 @@ class FabCNC(FabMachine):
     Table: FabTable
     Spindle: FabSpindle
     Controller: FabController
+    Library: FabLibrary
 
     # FabCNC.__post_init__():
     def __post_init__(self) -> None:
@@ -328,6 +336,7 @@ class FabCNC(FabMachine):
         check_type("FabCNC.Table", self.Table, FabTable)
         check_type("FabCNC.Spindle", self.Spindle, FabSpindle)
         check_type("FabCNC.Controller", self.Controller, FabController)
+        check_type("FabCNC.Library", self.Library, FabLibrary)
 
     # FabCNC._unit_tests():
     @staticmethod
@@ -349,8 +358,13 @@ class FabCNC(FabMachine):
             Type="R8", Speed=5000, Reversible=True, FloodCooling=True, MistCooling=False)
         table: FabTable = FabTable("TestTable", 100.0, 50.0, 30.0, 4, 10.0, 5.0, 5.0, 10.0, 5.0)
         controller: FabController = FabController("MyMill", "linuxcnc")
+
+        tools_directory: PathFile = PathFile(__file__).parent / "Tools"
+        tooling_factory: FabToolingFactory = FabToolingFactory("TestTooling")
+        tooling_factory.create_example_tools()
+        library: FabLibrary = tooling_factory.getLibrary("TestLibrary", tools_directory)
         cnc: FabCNC = FabCNC(Name="TestCNC", Placement="placement", Axes=axes, Table=table,
-                             Spindle=spindle, Controller=controller)
+                             Spindle=spindle, Controller=controller, Library=library)
         assert cnc.Name == "TestCNC"
         assert cnc.Placement == "placement"
         assert cnc.Axes is axes
@@ -373,10 +387,11 @@ class FabCNCMill(FabCNC):
     * *Table* (FabTable):
     * *Spindle* (FabSpindle): The spindle description.
     * *Controller* (FabController): The Controller used by the CNC machine.
-    * *Kind* (str): Return the string "CNCMill".
+    * *Library* (FabLibrary): The tool library to use.
+    * *Kind* (str): A property that returns the string "CNCMill".
 
     Constructor:
-    * FabCNCMill("Name", "Placement", WorkVolume, Spindle, Table, Spindle, Controller)
+    * FabCNCMill("Name", "Placement", WorkVolume, Spindle, Table, Spindle, Controller, Library)
 
     """
 
@@ -408,12 +423,17 @@ class FabCNCMill(FabCNC):
             EndSensors=True, Brake=False)
         axes: Tuple[FabAxis, ...] = (x_axis, y_axis, z_axis)
         spindle: FabSpindle = FabSpindle(
-            Type="R8", Speed=5000, Reversible=True, FloodCooling=True, MistCooling=False)
+            Type="R8", Speed=5000, Reversible=True, FloodCooling=True, MistCooling=False
+        )
         controller: FabController = FabController(Name="MyMill", PostProcessor="linuxcnc")
         table: FabTable = FabTable("TestTable", 100.0, 50.0, 30.0, 4, 10.0, 5.0, 5.0, 10.0, 5.0)
+        tooling_factory: FabToolingFactory = FabToolingFactory("TestTooling")
+        tooling_factory.create_example_tools()
+        tools_directory: PathFile = PathFile(__file__).parent / "Tools"
+        library: FabLibrary = tooling_factory.getLibrary("TestLibrary", tools_directory)
         cnc: FabCNCMill = FabCNCMill(
             Name="TestCNC", Placement="placement", Axes=axes, Table=table,
-            Spindle=spindle, Controller=controller
+            Spindle=spindle, Controller=controller, Library=library
         )
         assert cnc.Name == "TestCNC", cnc.Name
         assert cnc.Placement == "placement", cnc.Placement
@@ -476,9 +496,14 @@ class FabCNCRouter(FabCNC):
         table: FabTable = FabTable(
             Name="TestTable", Length=100.0, Width=50.0, Height=30.0, Slots=5, SlotPitch=20.0,
             SlotWidth=5.0, SlotDepth=60.0, KeywayWidth=15.0, KeywayHeight=10.0)
+        tooling_factory: FabToolingFactory = FabToolingFactory("TestTooling")
+        tooling_factory.create_example_tools()
+        tools_directory: PathFile = PathFile(__file__).parent / "Tools"
+        library: FabLibrary = tooling_factory.getLibrary("TestLibrary", tools_directory)
         cnc: FabCNCRouter = FabCNCRouter(
             Name="TestCNC", Placement="placement", Axes=axes, Spindle=spindle, Table=table,
-            Controller=controller)
+            Controller=controller, Library=library
+        )
         assert cnc.Name == "TestCNC", cnc.Name
         assert cnc.Placement == "placement", cnc.Placement
         assert cnc.Spindle is spindle, cnc.Spindle
@@ -602,9 +627,13 @@ class FabShop(object):
             Name="Z Axis", Letter="Z", Linear=True, Range=100.0, Speed=10.0, Acceleration=0.0,
             EndSensors=True, Brake=False)
         axes: Tuple[FabAxis, ...] = (x_axis, y_axis, z_axis)
+        tooling_factory: FabToolingFactory = FabToolingFactory("TestTooling")
+        tooling_factory.create_example_tools()
+        tools_directory: PathFile = PathFile(__file__).parent / "Tools"
+        library: FabLibrary = tooling_factory.getLibrary("TestLibrary", tools_directory)
         cnc_mill: FabCNCMill = FabCNCMill(
             Name="MyCNCMill", Placement=placement, Axes=axes, Spindle=spindle, Table=table,
-            Controller=controller
+            Controller=controller, Library=library
         )
         machines: Tuple[FabMachine, ...] = (cnc_mill,)
         shop: FabShop = FabShop("MyShop", location, machines)

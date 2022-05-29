@@ -49,6 +49,7 @@ The top-down class hierarchy for the FabTools package is:
       * FabVBit: This corresponds to `Tools/Shape/v-bit.fcstd`.
   * FabLibraries: This corresponds to a `Tool/Library` directory:
     * FabLibrary: This corresponds to an individual `.fctl` file in the `Tools/Library` directory.
+  * FabTooling: THis corresponds to the `Tools/` driectory.
 
 """
 
@@ -59,7 +60,7 @@ from pathlib import Path as PathFile
 import json
 import tempfile
 from typeguard import check_type, check_argument_types
-from typing import Any, Dict, IO, List, Sequence, Tuple, Union
+from typing import Any, Dict, IO, List, Tuple, Union
 from FabToolTemplates import FabAttributes, FabBit, FabBitTemplate, FabBitTemplates
 from FabToolTemplates import FabBitTemplatesFactory, FabShapes
 from FabToolBits import FabBallEndBit, FabBullNoseBit, FabChamferBit, FabDoveTailBit, FabDrillBit
@@ -90,29 +91,6 @@ class FabBits(object):
         check_type("FabBits.Bits", self.Bits, Tuple[FabBit, ...])
         check_type("FabBits.Names", self.Names, Tuple[str, ...])
         check_type("FabBits.Stems", self.Stems, Tuple[str, ...])
-
-    # FabBits.fromSequence():
-    @staticmethod
-    def fromSequence(bits: Sequence[FabBit], shapes: FabShapes, tracing: str = "") -> "FabBits":
-        """Create FabBits from a sequence of FabBit's
-
-        Attributes:
-        * *bits* (Sequence[FabBit])): The sequence of FabBit's.
-
-        Returns:
-        * (FabBits) The resulting FabBits object
-
-        """
-        if tracing:
-            print(f"{tracing}=>FabBits.fromBits(*, *)")
-        bits_table: Dict[str, FabBit] = {bit.Name: bit for bit in bits}
-        ordered_names: Tuple[str, ...] = tuple(sorted(bits_table.keys()))
-        ordered_bits: Tuple[FabBit, ...] = tuple([bits_table[name] for name in ordered_names])
-        ordered_stems: List[str] = [bit.BitStem for bit in ordered_bits]
-        fab_bits: FabBits = FabBits(ordered_bits, ordered_names, tuple(ordered_stems))
-        if tracing:
-            print(f"{tracing}<=FabBits.fromBits(*, *)=>*")
-        return fab_bits
 
     # FabBits.shapeNameToTemplateAndBit():
     @staticmethod
@@ -711,7 +689,7 @@ class FabTooling(object):
     def read(tools_directory: PathFile, tracing: str = "") -> "FabTooling":
         """Read in a FabTooling from directory.
 
-        Argumnets:
+        Arguments:
         * *tools_directory* (PatFile): The `.../Tooling` directory to read from.
 
         Returns:
@@ -981,6 +959,27 @@ class FabToolingFactory(object):
                 "is already assigned to '{tool_table[tool_number].name}'")  # pragma: no unit cover
         self._tool_table[tool_number] = bit
 
+    # FabToolingFactory.getLibrary():
+    def getLibrary(
+            self, library_stem: str, tools_directory: PathFile, tracing: str = "") -> FabLibrary:
+        """Return a FabLibrary containti the current tools."""
+        # next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabToolingFactory.createLibrary('{library_stem}')")
+
+        tool_table: Dict[int, FabBit] = self._tool_table
+        sorted_tool_numbers: Tuple[int, ...] = tuple(sorted(tool_table.keys()))
+        tool_number: int
+        bit: FabBit
+        numbered_bits: Tuple[Tuple[int, FabBit], ...] = tuple([
+            (tool_number, tool_table[tool_number]) for tool_number in sorted_tool_numbers
+        ])
+
+        library: FabLibrary = FabLibrary(library_stem, numbered_bits)
+        if tracing:
+            print(f"{tracing}<=FabToolingFactory.createLibrary('{library_stem}')=>*")
+        return library
+
     # FabToolingFactory.write():
     def write(self, library_stem: str, tools_directory: PathFile, tracing: str) -> None:
         """Write FabToolingFactory out to disk.
@@ -995,25 +994,93 @@ class FabToolingFactory(object):
             print(f"{tracing}=>FabToolingFactory.write({library_stem}, {tools_directory})")
 
         # Read *shapes* from this *this_tools_directory*:
-        this_tools_directory: PathFile = PathFile(__file__).parent / "Tools"
-        shapes: FabShapes = FabShapes.read(this_tools_directory)
-
-        tool_table: Dict[int, FabBit] = self._tool_table
-        bits: FabBits = FabBits.fromSequence(
-            tuple(tool_table.values()), shapes, tracing=next_tracing)
-        sorted_tool_numbers: Tuple[int, ...] = tuple(sorted(tool_table.keys()))
-        tool_number: int
-        bit: FabBit
-        numbered_bits: Tuple[Tuple[int, FabBit], ...] = tuple([
-            (tool_number, tool_table[tool_number]) for tool_number in sorted_tool_numbers
-        ])
-
-        library: FabLibrary = FabLibrary(library_stem, numbered_bits)
+        shapes: FabShapes = FabShapes.read(tools_directory, tracing=next_tracing)
+        bits: FabBits = FabBits.read(tools_directory, shapes, tracing=next_tracing)
+        library: FabLibrary = self.getLibrary(library_stem, tools_directory, tracing=next_tracing)
         libraries: FabLibraries = FabLibraries("Library", (library,), ("TestLibrary",))
         tooling: FabTooling = FabTooling(shapes, bits, libraries)
         tooling.write(tools_directory, tracing=next_tracing)
+
         if tracing:
             print(f"{tracing}<=FabToolingFactory.write({library_stem}, {tools_directory})=>*")
+
+    # FabToolingFactory.create_example_tools():
+    def create_example_tools(self, tracing: str = "") -> None:
+        """Create some example tools."""
+        if tracing:
+            print(f"{tracing}=>FabToolingFactory.create_example_tools()")
+
+        self.v_groove(2, "3/8 in Mill Drill", "3_8_in_Mill_Drill", "HSS", flutes=2,
+                      diameter="0.375 in", cutting_edge_angle="90 °",
+                      cutting_edge_height="0.775 in", length="2.25 in",
+                      shank_diameter="0.375", tip_diameter="0.000 in")
+        self.drill(3, "#36 Drill", "No_32_Drill", "HSS", 2,  # McMaster: 2912A211 2.5" deep drill
+                   "0.1065 in", "2.5000 in", "118 °", False, "0.0000 in")  # Max Z?
+        self.drill(4, "#27 Drill", "No_27_Drill", "HSS", 2,
+                   "0.1440 in", "1.875 in", "118 °", False, "0.0000 in")  # Max Z?
+        self.end_mill(5, "3/8 in End Mill", "3_8_in_End_Mill", "HSS", flutes=2,
+                      diameter="0.375 in", length="0.750 in",
+                         cutting_edge_height="0.375 in", shank_diameter="0.375 in")
+        self.end_mill(6, "1/4 in End Mill", "1_4_in_End_Mill", "HSS", flutes=4,
+                      diameter="0.250 in", length="2.00 in",
+                      cutting_edge_height="0.750 in", shank_diameter="0.250 in")
+        self.double_angle(7, "3/4 in 90° Double Angle", "3_4_in_90_deg_Double_Angle", "HSS",
+                          flutes=10, diameter="0.750 in", cutting_edge_height="0.250 in",
+                          cutting_edge_angle="90 °", length="2.000 in",
+                          shank_diameter="0.375 in", neck_diameter="0.250 in",
+                          neck_height="0.625 in")
+        self.dove_tail(8, "3/8 in 45 ° Dove Tail", "3_8_in_45_deg_Dove_Tail", "HSS", flutes=6,
+                       diameter="0.375 in", cutting_edge_height="0.125 in",
+                       cutting_edge_angle="45 °", length="2.125 in",
+                       shank_diameter="0.375 in", neck_diameter="0.0125 in",
+                       neck_height="0.450 in")
+        self.end_mill(9, "1/8 in End Mill", "1_8_in_End_Mill", "HSS", flutes=2,
+                      diameter="0.125 in", length="2.000 in",
+                      cutting_edge_height="0.500 in", shank_diameter="0.125 in")
+        self.end_mill(10, "3/16 in End Mill", "3_16_in_End_Mill", "HSS", flutes=2,
+                      diameter="0.1875 in", length="2.500 in",
+                      cutting_edge_height="0.500 in", shank_diameter="0.1875 in")
+        self.drill(11, "#25 Drill", "No_25_Drill", "HSS", 2,
+                   "0.1495 in", "2.000 in", "118 °", False, "0.0000 in")  # Max Z?
+        self.drill(12, "#9 Drill", "No_9_Drill", "HSS", 2,
+                   "0.1960 in", "12.34 in", "118 °", False, "0.0000 in")  # Max Z?
+        self.drill(13, "#43 Drill", "No_43_Drill", "HSS", 2,  # McMaster: 3096357
+                   "0.0890 in", "12.34 in", "118 °", False, "0.0000 in")  # Max Z?
+        self.drill(14, "#32 Drill", "No_32_Drill", "HSS", 2,
+                   "0.1160 in", "12.34 in", "118 °", False, "0.0000 in")  # Max Z?
+        self.drill(15, "6mm Drill", "6mm_Drill", "HSS", 2,
+                   "6.0000 mm", "12.34 in", "135 °", False, "0.0000 in")  # Max Z?
+        # end_mill_3_4 = shop._end_mill_append("3/4 End Mill",
+        #  13, hss, in3_4, 2, in1_3_8)
+        self.drill(17, "#30 Drill", "No_30_Drill", "HSS", 2,
+                   "0.1285 in", "12.34 in", "118 °", False, "0.0000 in")  # Max Z?
+        self.drill(18, "1/8 in Drill", "1_8_in_Drill", "HSS", 2,
+                   "0.125 in", "12.34 in", "118 °", False, "0.0000 in")  # Max Z?
+        self.drill(19, "1/16 in Drill", "1_16_in_Drill", "HSS", 2,
+                   "0.0625 in", "12.34", "118 °", False, "0.0000 in")  # Max Z?
+        self.drill(20, "3/32 in Drill", "3_16_in_Drill", "HSS", 2,
+                   "0.09375 in", "12.34", "118 °", False, "0.0000 in")  # Max Z?
+        self.drill(21, "#42 Drill", "No_42_Drill", "HSS", 2,
+                   "0.0935 in", "12.34", "118 °", False, "0.0000 in")  # Max Z?
+        self.drill(22, "#52 Drill", "No_52_Drill", "HSS", 2,
+                   "0.0635 in", "12.34", "118 °", False, "0.0000 in")  # Max Z?
+        self.drill(23, "3/64 Drill", "3_64_in_Drill", "HSS", 2,
+                   "0.46875 in", "12.34", "118 °", False, "0.0000 in")  # Max Z?
+        self.drill(24, "#19 Drill", "No_19_Drill", "HSS", 2,
+                   "0.1660 in", "12.34", "118 °", False, "0.0000 in")  # Max Z?
+        self.drill(25, "#50 Drill", "No_50_Drill", "HSS", 2,
+                   "0.0700 in", "12.34", "118 °", False, "0.0000 in")  # Max Z?
+        self.drill(26, "8mm Drill", "8mm_Drill", "HSS", 2,
+                   "8.0000 mm", "12.34", "135 °", False, "0.0000 in")  # Max Z?
+        # tap_4_40 = shop._tap_append("#4-40 tap",
+        #   27, hss, L(inch=0.0890), 2, L(inch=0.550), L(inch=0.050), L(inch=1.000)/40.0,
+        #   Time(sec=1.500), Time(sec=1.500), Hertz(rpm=500.0), Hertz(rpm=504.0), 0.050)
+        # tap_6_32 = shop._tap_append("#6-32 tap",
+        #   28, hss, L(inch=0.1065), 2, L(inch=0.625), L(inch=0.100), L(inch=1.000)/32.0,
+        #   Time(sec=1.500), Time(sec=1.500), Hertz(rpm=500.0), Hertz(rpm=504.0), 0.050)
+
+        if tracing:
+            print(f"{tracing}<=FabToolingFactory.create_example_tools()")
 
     # FabToolingFactory._unit_tests():
     @staticmethod
@@ -1024,75 +1091,7 @@ class FabToolingFactory(object):
             print(f"{tracing}=>FabToolingFactory._unit_tests()")
 
         factory: FabToolingFactory = FabToolingFactory("TestTooling")
-        factory.v_groove(2, "3/8 in Mill Drill", "3_8_in_Mill_Drill", "HSS", flutes=2,
-                         diameter="0.375 in", cutting_edge_angle="90 °",
-                         cutting_edge_height="0.775 in", length="2.25 in",
-                         shank_diameter="0.375", tip_diameter="0.000 in")
-        factory.drill(3, "#36 Drill", "No_32_Drill", "HSS", 2,  # McMaster: 2912A211 2.5" deep drill
-                      "0.1065 in", "2.5000 in", "118 °", False, "0.0000 in")  # Max Z?
-        factory.drill(4, "#27 Drill", "No_27_Drill", "HSS", 2,
-                      "0.1440 in", "1.875 in", "118 °", False, "0.0000 in")  # Max Z?
-        factory.end_mill(5, "3/8 in End Mill", "3_8_in_End_Mill", "HSS", flutes=2,
-                         diameter="0.375 in", length="0.750 in",
-                         cutting_edge_height="0.375 in", shank_diameter="0.375 in")
-        factory.end_mill(6, "1/4 in End Mill", "1_4_in_End_Mill", "HSS", flutes=4,
-                         diameter="0.250 in", length="2.00 in",
-                         cutting_edge_height="0.750 in", shank_diameter="0.250 in")
-        factory.double_angle(7, "3/4 in 90° Double Angle", "3_4_in_90_deg_Double_Angle", "HSS",
-                             flutes=10, diameter="0.750 in", cutting_edge_height="0.250 in",
-                             cutting_edge_angle="90 °", length="2.000 in",
-                             shank_diameter="0.375 in", neck_diameter="0.250 in",
-                             neck_height="0.625 in")
-        factory.dove_tail(8, "3/8 in 45 ° Dove Tail", "3_8_in_45_deg_Dove_Tail", "HSS", flutes=6,
-                          diameter="0.375 in", cutting_edge_height="0.125 in",
-                          cutting_edge_angle="45 °", length="2.125 in",
-                          shank_diameter="0.375 in", neck_diameter="0.0125 in",
-                          neck_height="0.450 in")
-        factory.end_mill(9, "1/8 in End Mill", "1_8_in_End_Mill", "HSS", flutes=2,
-                         diameter="0.125 in", length="2.000 in",
-                         cutting_edge_height="0.500 in", shank_diameter="0.125 in")
-        factory.end_mill(10, "3/16 in End Mill", "3_16_in_End_Mill", "HSS", flutes=2,
-                         diameter="0.1875 in", length="2.500 in",
-                         cutting_edge_height="0.500 in", shank_diameter="0.1875 in")
-        factory.drill(11, "#25 Drill", "No_25_Drill", "HSS", 2,
-                      "0.1495 in", "2.000 in", "118 °", False, "0.0000 in")  # Max Z?
-        factory.drill(12, "#9 Drill", "No_9_Drill", "HSS", 2,
-                      "0.1960 in", "12.34 in", "118 °", False, "0.0000 in")  # Max Z?
-        factory.drill(13, "#43 Drill", "No_43_Drill", "HSS", 2,  # McMaster: 3096357
-                      "0.0890 in", "12.34 in", "118 °", False, "0.0000 in")  # Max Z?
-        factory.drill(14, "#32 Drill", "No_32_Drill", "HSS", 2,
-                      "0.1160 in", "12.34 in", "118 °", False, "0.0000 in")  # Max Z?
-        factory.drill(15, "6mm Drill", "6mm_Drill", "HSS", 2,
-                      "6.0000 mm", "12.34 in", "135 °", False, "0.0000 in")  # Max Z?
-        # end_mill_3_4 = shop._end_mill_append("3/4 End Mill",
-        #  13, hss, in3_4, 2, in1_3_8)
-        factory.drill(17, "#30 Drill", "No_30_Drill", "HSS", 2,
-                      "0.1285 in", "12.34 in", "118 °", False, "0.0000 in")  # Max Z?
-        factory.drill(18, "1/8 in Drill", "1_8_in_Drill", "HSS", 2,
-                      "0.125 in", "12.34 in", "118 °", False, "0.0000 in")  # Max Z?
-        factory.drill(19, "1/16 in Drill", "1_16_in_Drill", "HSS", 2,
-                      "0.0625 in", "12.34", "118 °", False, "0.0000 in")  # Max Z?
-        factory.drill(20, "3/32 in Drill", "3_16_in_Drill", "HSS", 2,
-                      "0.09375 in", "12.34", "118 °", False, "0.0000 in")  # Max Z?
-        factory.drill(21, "#42 Drill", "No_42_Drill", "HSS", 2,
-                      "0.0935 in", "12.34", "118 °", False, "0.0000 in")  # Max Z?
-        factory.drill(22, "#52 Drill", "No_52_Drill", "HSS", 2,
-                      "0.0635 in", "12.34", "118 °", False, "0.0000 in")  # Max Z?
-        factory.drill(23, "3/64 Drill", "3_64_in_Drill", "HSS", 2,
-                      "0.46875 in", "12.34", "118 °", False, "0.0000 in")  # Max Z?
-        factory.drill(24, "#19 Drill", "No_19_Drill", "HSS", 2,
-                      "0.1660 in", "12.34", "118 °", False, "0.0000 in")  # Max Z?
-        factory.drill(25, "#50 Drill", "No_50_Drill", "HSS", 2,
-                      "0.0700 in", "12.34", "118 °", False, "0.0000 in")  # Max Z?
-        factory.drill(26, "8mm Drill", "8mm_Drill", "HSS", 2,
-                      "8.0000 mm", "12.34", "135 °", False, "0.0000 in")  # Max Z?
-        # tap_4_40 = shop._tap_append("#4-40 tap",
-        #   27, hss, L(inch=0.0890), 2, L(inch=0.550), L(inch=0.050), L(inch=1.000)/40.0,
-        #   Time(sec=1.500), Time(sec=1.500), Hertz(rpm=500.0), Hertz(rpm=504.0), 0.050)
-        # tap_6_32 = shop._tap_append("#6-32 tap",
-        #   28, hss, L(inch=0.1065), 2, L(inch=0.625), L(inch=0.100), L(inch=1.000)/32.0,
-        #   Time(sec=1.500), Time(sec=1.500), Hertz(rpm=500.0), Hertz(rpm=504.0), 0.050)
-
+        factory.create_example_tools(tracing=next_tracing)
         test_tools_directory: PathFile = PathFile("/tmp") / "Tools"
         factory.write("TestLibrary", test_tools_directory, tracing=next_tracing)
 

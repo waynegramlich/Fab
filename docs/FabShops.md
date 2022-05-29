@@ -58,6 +58,7 @@ Attributes:
 * *Table* (FabTable):
 * *Spindle* (FabSpindle): The spindle description.
 * *Controller* (FabController): The Controller used by the CNC machine.
+* *Library* (FabLibrary): The library containing all of the tools.
 
 Constructor:
 * FabCNC("Name", "Placement", Axes, Table, Spindle, Controller)
@@ -73,10 +74,11 @@ Attributes:
 * *Table* (FabTable):
 * *Spindle* (FabSpindle): The spindle description.
 * *Controller* (FabController): The Controller used by the CNC machine.
-* *Kind* (str): Return the string "CNCMill".
+* *Library* (FabLibrary): The tool library to use.
+* *Kind* (str): A property that returns the string "CNCMill".
 
 Constructor:
-* FabCNCMill("Name", "Placement", WorkVolume, Spindle, Table, Spindle, Controller)
+* FabCNCMill("Name", "Placement", WorkVolume, Spindle, Table, Spindle, Controller, Library)
 
 
 ## <a name="fabshops--fabcncrouter"></a>4 Class FabCNCRouter:
