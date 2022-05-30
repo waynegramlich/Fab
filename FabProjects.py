@@ -1,38 +1,26 @@
 #!/usr/bin/env python3
-"""Project: A module for creating Fab projects."""
+"""FabProjects: Module for creating Fabrication projects.
 
-# [Part2DObject](http://www.iesensor.com/FreeCADDoc/0.16-dev/d9/d57/classPart_1_1Part2DObject.html)
-# [App FeaturePython](https://wiki.freecadweb.org/App_FeaturePython)
-# [Vidos from "Part Design Scripting" Guy](https://www.youtube.com/c/mwganson/videos)
-# [Part Design Scripting](https://forum.freecadweb.org/viewtopic.php?t=62751)
-# [Scripted Objects](https://wiki.freecadweb.org/Scripted_objects)
-# [FilletArc]
-#     (https://github.com/FreeCAD/FreeCAD/blob/master/src/Mod/PartDesign/Scripts/FilletArc.py)
-# [Creating and Manipulating Geometry](https://yorikvanhavre.gitbooks.io/
-#    a-freecad-manual/content/python_scripting/creating_and_manipulating_geometry.html)
-# [Use LineSegment instead of Line](https://forum.freecadweb.org/viewtopic.php?p=330999)
-# [Topo Data Scripting](https://wiki.freecadweb.org/index.php?title=Topological_data_scripting)
-# [Part Scripting](https://wiki.freecadweb.org/Part_scripting)
+Classes:
+* FabProject: The top-level project.
+* FabDocument: This is one-to-one with a FreeCAD (`.fcstd`) document file.
+* FabAssembly: This is a collection of FabAssembly's and FabSolid's.
 
-# [Draft SelectPlane](https://wiki.freecadweb.org/Draft_SelectPlane)
-# [Draft Workbench Scripting](https://wiki.freecadweb.org/Draft_Workbench#Scripting)
-
-# [Combine Draft and Sketch to simplify Modeling.](https://www.youtube.com/watch?v=lfzGEk727eo)
-
-# Note this code uses nested dataclasses that are frozen.  Computed attributes are tricky.
-# See (Set frozen data class files in __post_init__)[https://stackoverflow.com/questions/53756788]
+"""
 
 # <--------------------------------------- 100 characters ---------------------------------------> #
 
 from dataclasses import dataclass, field
 import json
-from typing import Any, cast, Dict, IO, List, Optional, Set, Tuple
 from pathlib import Path
+from typing import Any, cast, Dict, IO, List, Optional, Set, Tuple
+from typeguard import check_argument_types, check_type
 
 import cadquery as cq  # type: ignore
 from cadquery import Vector  # type: ignore
 
 from FabNodes import FabNode, Fab_Prefix, Fab_ProduceState, Fab_Steps
+from FabShops import FabShop
 from FabSolids import FabSolid
 
 
@@ -174,9 +162,9 @@ class FabDocument(FabNode):
     """
 
     FilePath: Path = Path("/bogus_file")
-    _AppDocument: Any = field(init=False, repr=False)
-    _GuiDocument: Any = field(init=False, repr=False)
-    LastSolid: Optional[FabSolid] = field(init=False, repr=False)
+    _AppDocument: Any = field(init=False, repr=False)  # TODO: remove
+    _GuiDocument: Any = field(init=False, repr=False)  # TODO: remove
+    LastSolid: Optional[FabSolid] = field(init=False, repr=False)  # TODO: remove
     Prefix: Fab_Prefix = field(init=False, repr=False)
 
     # FabDocument.__post_init__():
@@ -185,6 +173,7 @@ class FabDocument(FabNode):
 
         # Initialize fields:
         super().__post_init__()
+        check_type("FabDocument.FilePath", self.FilePath, Path)
         self._AppDocument = None
         self._GuiDocument = None
         self.LastSolid = None  # set by FabSolid() constructor.
@@ -257,8 +246,20 @@ class FabDocument(FabNode):
 @dataclass
 # FabProject:
 class FabProject(FabNode):
-    """FabProject: The Root mode a FabNode tree."""
+    """FabProject: The Root mode a FabNode tree.
 
+    Attributes:
+    * *Label* (str): The project name.
+    * *Shops* (Tuple[FabShop, ...]):
+      The FabShop's available for fabrication.  Set using FabShop.set_shops() method.
+
+
+    Constructor:
+    * FabProject.new("Name")
+
+    """
+
+    _Shops: Tuple[FabShop, ...] = field(init=False, repr=False)
     _AllNodes: Tuple[FabNode, ...] = field(init=False, repr=False)
     _Errors: List[str] = field(init=False, repr=False)
     LastDocument: Optional[FabDocument] = field(init=False, repr=False)
@@ -267,9 +268,16 @@ class FabProject(FabNode):
     def __post_init__(self) -> None:
         """Process FabRoot."""
         super().__post_init__()
+        self._Shops = ()
         self._AllNodes = ()
         self._Errors = []
         self.LastDocument = None
+
+    # FabProject.Shops():
+    @property
+    def Shops(self) -> Tuple[FabShop, ...]:
+        """Set the FabShop's."""
+        return self._Shops
 
     # FabProject.get_errors():
     def get_errors(self) -> List[str]:
@@ -281,13 +289,20 @@ class FabProject(FabNode):
         """ Return True if FabNode is a Fab_Group."""
         return True  # All other FabNode's return False.  # pragma: no unit cover
 
+    # FabProject.set_shops():
+    def set_shops(self, shops: Tuple[FabShop, ...]) -> None:
+        """Set the shops for a FabProject."""
+        assert check_argument_types()
+        self._Shops = shops
+
     # FabProject.new():
     @classmethod
     def new(cls, name: str) -> "FabProject":
         """Create a new root FabProject."""
         # print(f"=>FabProject.new({name}).new()")
+        # Magic creation of FabProject.
         project = cls(
-            name, cast(FabNode, None))  # Magic creation of  FabProject.  # pragma: no unit cover
+            name, cast(FabNode, None))  # pragma: no unit cover
         # print(f"<=Project.new({name})=>{project}")
         return project  # pragma: no unit cover
 
@@ -415,17 +430,32 @@ class FabProject(FabNode):
 
     # FabProject._unit_tests()
     @staticmethod
-    def _unit_tests() -> None:
-        pass
+    def _unit_tests(tracing: str = "") -> None:
+        """Run unit tests for FabProject."""
+        if tracing:
+            print(f"{tracing}=>FabProject._unit_tests")
+
+        project: FabProject = FabProject.new("TestProject")
+        assert project.Label == "TestProject"
+        shops: Tuple[FabShop, ...] = ()
+        project.set_shops(shops)
+        assert project.Shops is shops
+        if tracing:
+            print(f"{tracing}<=FabProject._unit_tests")
 
 
 # main():
-def main() -> None:
+def main(tracing: str = "") -> None:
     """Run Project unit tests."""
+    next_tracing: str = tracing + " " if tracing else ""
+    if tracing:
+        print(f"{tracing}=>main()")
     Fab_Group._unit_tests()
-    FabProject._unit_tests()
+    FabProject._unit_tests(tracing=next_tracing)
     FabDocument._unit_tests()
     FabAssembly._unit_tests()
+    if tracing:
+        print(f"{tracing}<=main()")
 
 
 if __name__ == "__main__":

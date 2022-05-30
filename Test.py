@@ -473,9 +473,6 @@ class TestProject(FabProject):
 
 def main(key: str = "") -> Any:
     """Run main program."""
-    test_project: TestProject = TestProject.new("TestProject")
-    test_project.run()
-
     x_axis: FabAxis = FabAxis(
         "X Axis", "X", Linear=True, Range=100.0, Speed=50.0, Acceleration=0.0,
         EndSensors=True, Brake=False
@@ -507,7 +504,11 @@ def main(key: str = "") -> Any:
     location: FabLocation = FabLocation()
     machines: Tuple[FabMachine, ] = (cnc_mill,)
     shop: FabShop = FabShop(Name="TestShop", Location=location, Machines=machines)
-    _ = shop
+    shops: Tuple[FabShop, ...] = (shop,)
+
+    test_project: TestProject = TestProject.new("TestProject")
+    test_project.set_shops(shops)
+    test_project.run()
 
     return 0
 
