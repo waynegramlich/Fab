@@ -168,7 +168,7 @@ Inherited Attributes:
 Attributes:
 * *Label* (str): The FabNode name.
 * *Up* (FabNode): The FabNode parent.
-* *FullPath* (str):  The FabNode full path from the root.  (Filled in)
+* *FullPathFile* (str):  The FabNode full path from the root.  (Filled in)
 * *Tracing* (str):
   A non-empty indentation string when tracing is enabled.
   This field is recursively set when *set_tracing*() is explicitly set.
@@ -320,8 +320,9 @@ Any values that are zero not provided.
 
 Shared produce state for FabNode's.
 Attributes:
-* *StepsDirectory* (Path):
+* *StepsDirectory* (PathFile):
   The path to the directory to store STEP (`.stp`) files into.
+* *Shops* (Tuple[FabShop, ...]): The list of available shops to use.
 * *Steps* (Fab_Steps):
   The step file directory management object.
 * *ObjectsTable* (Dict[str, Any]):
@@ -332,6 +333,9 @@ Attributes:
   An index for the current operation being performed for a mount.
 
 This class is for internal use only:
+
+Constructor:
+* Fab_ProduceState(StepsDirectory, Shops)
 
 
 ## <a name="fabnodes--fab-steps"></a>5 Class Fab_Steps:
@@ -365,7 +369,7 @@ Arguments:
   A tuple tree, where the leaf values are bool, int, float, or str values.
 
 Returns:
-* (Path): The full path to the .step file to be read/written.
+* (PathFile): The full path to the .step file to be read/written.
 
 ### <a name="fabnodes----flush-inactives"></a>5.3 `Fab_Steps.`flush_inactives():
 

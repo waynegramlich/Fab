@@ -83,7 +83,7 @@ Attributes:
 * *Stems* (Tuple[str, ...]): Stem names in the same order as the Bits.
 
 Constructor:
-* FabBits("Name", BitsPath, Bits, Names)
+* FabBits(Bits, Names, Stems)
 
 ### <a name="fabtools----write"></a>1.1 `FabBits.`write():
 
@@ -199,6 +199,11 @@ Returns:
 ## <a name="fabtools--fabtoolingfactory"></a>5 Class FabToolingFactory:
 
 A class to build a FabTooling.
+Attributes:
+* *Name* (str): The name of the tooling factory (empty string is allowed.)
+* *InitialToolsPath* (PathFile):
+  The parent directory of an initial `Tools` directory.
+  This directory is used to fetch the available shapes from `.../Tools/Shape`.
 
 ### <a name="fabtools----drill"></a>5.1 `FabToolingFactory.`drill():
 

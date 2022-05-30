@@ -207,6 +207,8 @@ class FabShapes(object):
         if tracing:
             print(f"{tracing}=>FabShapes.write({tools_directory})")
 
+        shapes_directory: PathFile = tools_directory / "Shape"
+        shapes_directory.mkdir(parents=True, exist_ok=True)
         for shape in self.Shapes:
             shape.write(tools_directory, tracing=next_tracing)
 
@@ -300,6 +302,7 @@ class FabAttributes(object):
         """Perform FabAttributes unit tests."""
         if tracing:
             print(f"{tracing}=>FabAttributes._unit_tests()")
+
         attributes: FabAttributes = FabAttributes.example()
         json_dict: Dict[str, Any] = attributes.toJSON()
         assert json_dict == {"Material": "Carbide", "Flutes": 2}
@@ -339,6 +342,33 @@ class FabBit(object):
         check_type("FabBit.Shape", self.ShapeStem, str)
         check_type("FabBit.Attributes", self.Attributes, FabAttributes)
 
+    # FabBit.toJSON():
+    def toJSON(self) -> Dict[str, Any]:
+        """Return the JSON associated with a FabBit."""
+        # Python does not really like circular class declarations.  This breaks the cycle.
+        return _bit_to_json(self)
+
+    # FabBit.write():
+    def write(self, tools_directory: PathFile, tracing: str = "") -> None:
+        """Write FabBit out to disk."""
+        if tracing:
+            print(f"{tracing}=>FabBit.write({self.Name})")
+
+        if tools_directory.name != "Tools":
+            tools_directory = tools_directory / "Tools"  # pragma: no unit cover
+        bit_directory = tools_directory / "Bit"
+        bit_directory.mkdir(parents=True, exist_ok=True)
+        bit_path_file: PathFile = bit_directory / f"{self.BitStem}.fctb"
+
+        bit_json: Dict[str, Any] = self.toJSON()
+        json_text: str = json.dumps(bit_json, sort_keys=True, indent=2)
+        bit_file: IO[str]
+        with open(bit_path_file, "w") as bit_file:
+            bit_file.write(json_text + "\n")
+
+        if tracing:
+            print(f"{tracing}<=FabBit.write({self.Name})")
+
     # FabBit._unit_tests():
     @staticmethod
     def _unit_tests(tracing: str = "") -> None:
@@ -359,33 +389,6 @@ class FabBit(object):
         assert bit.Attributes is attributes
         if tracing:
             print(f"{tracing}<=FabBit._unit_tests()")
-
-    # FabBit.toJSON():
-    def toJSON(self) -> Dict[str, Any]:
-        """Return the JSON associated with a FabBit."""
-        # Python does not really like circular class declarations.  This breaks the cycle.
-        return _bit_to_json(self)
-
-    # FabBit.write():
-    def write(self, tools_directory: PathFile, tracing: str = "") -> None:
-        """Write FabBit out to disk."""
-        if tracing:
-            print(f"{tracing}=>FabBit.write({self.Name})")
-
-        if tools_directory.name != "Tools":
-            tools_directory = tools_directory / "Tools"  # pragma: no unit cover
-        bit_directory = tools_directory / "Bit"
-        bit_directory.mkdir(parents=True, exist_ok=True)
-        bit_path_file: PathFile = bit_directory / f"{self.BitStem}.fctb"
-
-        bit_json: Dict[str, Any] = self.toJSON()
-        json_text: str = json.dumps(bit_json, indent=2)
-        bit_file: IO[str]
-        with open(bit_path_file, "w") as bit_file:
-            bit_file.write(json_text + "\n")
-
-        if tracing:
-            print(f"{tracing}<=FabBit.write({self.Name})")
 
 
 # FabBitTemplate:
@@ -486,7 +489,7 @@ class FabBitTemplate(object):
         # Now create the *kwargs* and fill it in:
         kwargs: Dict[str, Any] = {}
         kwargs["Name"] = name
-        kwargs["BitStem"] = self.BitStem
+        kwargs["BitStem"] = bit_file.stem
         kwargs["ShapeStem"] = self.ShapeStem
         fill(kwargs, "Parameters", parameters, self.Parameters)
         assert "attribute" in json_dict, "FabAttributes.fromJSON(): attribute key not present"

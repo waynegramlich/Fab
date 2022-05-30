@@ -360,7 +360,7 @@ class FabCNC(FabMachine):
         controller: FabController = FabController("MyMill", "linuxcnc")
 
         tools_directory: PathFile = PathFile(__file__).parent / "Tools"
-        tooling_factory: FabToolingFactory = FabToolingFactory("TestTooling")
+        tooling_factory: FabToolingFactory = FabToolingFactory("TestTooling", tools_directory)
         tooling_factory.create_example_tools()
         library: FabLibrary = tooling_factory.getLibrary("TestLibrary", tools_directory)
         cnc: FabCNC = FabCNC(Name="TestCNC", Placement="placement", Axes=axes, Table=table,
@@ -427,9 +427,9 @@ class FabCNCMill(FabCNC):
         )
         controller: FabController = FabController(Name="MyMill", PostProcessor="linuxcnc")
         table: FabTable = FabTable("TestTable", 100.0, 50.0, 30.0, 4, 10.0, 5.0, 5.0, 10.0, 5.0)
-        tooling_factory: FabToolingFactory = FabToolingFactory("TestTooling")
-        tooling_factory.create_example_tools()
         tools_directory: PathFile = PathFile(__file__).parent / "Tools"
+        tooling_factory: FabToolingFactory = FabToolingFactory("TestTooling", tools_directory)
+        tooling_factory.create_example_tools()
         library: FabLibrary = tooling_factory.getLibrary("TestLibrary", tools_directory)
         cnc: FabCNCMill = FabCNCMill(
             Name="TestCNC", Placement="placement", Axes=axes, Table=table,
@@ -496,9 +496,9 @@ class FabCNCRouter(FabCNC):
         table: FabTable = FabTable(
             Name="TestTable", Length=100.0, Width=50.0, Height=30.0, Slots=5, SlotPitch=20.0,
             SlotWidth=5.0, SlotDepth=60.0, KeywayWidth=15.0, KeywayHeight=10.0)
-        tooling_factory: FabToolingFactory = FabToolingFactory("TestTooling")
-        tooling_factory.create_example_tools()
         tools_directory: PathFile = PathFile(__file__).parent / "Tools"
+        tooling_factory: FabToolingFactory = FabToolingFactory("TestTooling", tools_directory)
+        tooling_factory.create_example_tools()
         library: FabLibrary = tooling_factory.getLibrary("TestLibrary", tools_directory)
         cnc: FabCNCRouter = FabCNCRouter(
             Name="TestCNC", Placement="placement", Axes=axes, Spindle=spindle, Table=table,
@@ -681,9 +681,9 @@ class FabShop(object):
             Name="Z Axis", Letter="Z", Linear=True, Range=100.0, Speed=10.0, Acceleration=0.0,
             EndSensors=True, Brake=False)
         axes: Tuple[FabAxis, ...] = (x_axis, y_axis, z_axis)
-        tooling_factory: FabToolingFactory = FabToolingFactory("TestTooling")
-        tooling_factory.create_example_tools()
         tools_directory: PathFile = PathFile(__file__).parent / "Tools"
+        tooling_factory: FabToolingFactory = FabToolingFactory("TestTooling", tools_directory)
+        tooling_factory.create_example_tools()
         library: FabLibrary = tooling_factory.getLibrary("TestLibrary", tools_directory)
         cnc_mill: FabCNCMill = FabCNCMill(
             Name="MyCNCMill", Placement=placement, Axes=axes, Spindle=spindle, Table=table,

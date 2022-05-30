@@ -253,7 +253,6 @@ class FabProject(FabNode):
     * *Shops* (Tuple[FabShop, ...]):
       The FabShop's available for fabrication.  Set using FabShop.set_shops() method.
 
-
     Constructor:
     * FabProject.new("Name")
 
@@ -331,7 +330,7 @@ class FabProject(FabNode):
         node: FabNode
         errors: List[str] = self._Errors
 
-        produce_state: Fab_ProduceState = Fab_ProduceState(Path("/tmp"))
+        produce_state: Fab_ProduceState = Fab_ProduceState(Path("/tmp"), self.Shops)
         if step_directory is None:
             step_directory = Path("/tmp")
         previous_constraints: Set[str] = set()

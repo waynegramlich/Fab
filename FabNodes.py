@@ -44,13 +44,14 @@ See the FabNode documentation for further attributes.
 from collections import OrderedDict
 from dataclasses import dataclass, field
 import hashlib
-from pathlib import Path
+from pathlib import Path as PathFile
 from typing import Any, Dict, IO, List, Sequence, Set, Tuple, Union
 from typeguard import check_type
 
 from cadquery import Vector  # type: ignore
 
 from FabUtilities import FabToolController
+from FabShops import FabShop
 
 
 # FabBox:
@@ -861,9 +862,9 @@ class Fab_Steps(object):
     * flush_stales(): This method is used to remove previous .stp files that are now longer used.
 
     """
-    StepsDirectory: Path  # Directory containing STEP files.
-    _scanned_steps: Dict[str, Path] = field(init=False, repr=False)
-    _active_steps: Dict[str, Path] = field(init=False, repr=False)
+    StepsDirectory: PathFile  # Directory containing STEP files.
+    _scanned_steps: Dict[str, PathFile] = field(init=False, repr=False)
+    _active_steps: Dict[str, PathFile] = field(init=False, repr=False)
 
     # Fab_Steps.__post_init__():
     def __post_init__(self) -> None:
@@ -876,7 +877,7 @@ class Fab_Steps(object):
         """Scan the associated directory for matching .step files."""
         if tracing:
             print(f"{tracing}=>Fab_Steps('{str(self.StepsDirectory)}').scan()")
-        scanned_steps: Dict[str, Path] = {}
+        scanned_steps: Dict[str, PathFile] = {}
         glob_pattern: str = "*__" + (16 * "[0-9a-f]") + ".stp"
         for step_file in self.StepsDirectory.glob(glob_pattern):
             hash_text: str = step_file.stem[-16:]  # "XXX...X" -> int
@@ -887,7 +888,7 @@ class Fab_Steps(object):
                   f"=>|{len(self._scanned_steps)}|")
 
     # Fab_Steps.activate():
-    def activate(self, name: str, hash_tuple: Tuple[Any, ...], tracing: str = "") -> Path:
+    def activate(self, name: str, hash_tuple: Tuple[Any, ...], tracing: str = "") -> PathFile:
         """Reserve a .step file name to be read/written.
 
         This method reserves a .step file name to be read/written.
@@ -898,7 +899,7 @@ class Fab_Steps(object):
           A tuple tree, where the leaf values are bool, int, float, or str values.
 
         Returns:
-        * (Path): The full path to the .step file to be read/written.
+        * (PathFile): The full path to the .step file to be read/written.
         """
         if tracing:
             print(f"{tracing}=>Fab_Steps('{str(self.StepsDirectory)}').activate('{name}', "
@@ -913,7 +914,7 @@ class Fab_Steps(object):
         hasher.update(hash_bytes)
         hash_text: str = hasher.hexdigest()[:16]
 
-        active_step: Path = self.StepsDirectory / Path(f"{name}__{hash_text}.stp")
+        active_step: PathFile = self.StepsDirectory / PathFile(f"{name}__{hash_text}.stp")
         self._active_steps[hash_text] = active_step
         if tracing:
             print(f"{tracing}=>Fab_Steps('{str(self.StepsDirectory)}').activate('{name}', {hash:x})"
@@ -933,10 +934,10 @@ class Fab_Steps(object):
             print(f"{tracing}{scanned_hashes=}")
             print(f"{tracing}{inactive_hashes=}")
 
-        scanned_steps: Dict[str, Path] = self._scanned_steps
+        scanned_steps: Dict[str, PathFile] = self._scanned_steps
         inactive_hash: str
         for inactive_hash in inactive_hashes:
-            inactive_step: Path = scanned_steps[inactive_hash]
+            inactive_step: PathFile = scanned_steps[inactive_hash]
             inactive_step.unlink()
             if tracing:
                 print(f"{tracing}unlink({'str(inactive_step)'}).")
@@ -953,7 +954,7 @@ class Fab_Steps(object):
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>Fab_Steps._unit_tests()")
-        fab_steps: Fab_Steps = Fab_Steps(Path("/tmp"))
+        fab_steps: Fab_Steps = Fab_Steps(PathFile("/tmp"))
         fab_steps.flush_inactives()
         assert not fab_steps._scanned_steps, f"Should be empty {fab_steps._scanned_steps}"
 
@@ -963,14 +964,14 @@ class Fab_Steps(object):
             next_tracing: str = tracing + " " if tracing else ""
             if tracing:
                 print(f"{tracing}=>steps_test('{test_name}', *, {steps})")
-            fab_steps: Fab_Steps = Fab_Steps(Path("/tmp"))
+            fab_steps: Fab_Steps = Fab_Steps(PathFile("/tmp"))
             fab_steps.scan(tracing=next_tracing)
             if tracing:
                 print(f"{tracing}{fab_steps._scanned_steps=}")
             hash_text: str
             name: str
             for hash_text, name in steps.items():
-                step_path: Path = fab_steps.activate(name, (hash_text,))
+                step_path: PathFile = fab_steps.activate(name, (hash_text,))
                 step_file: IO[str]
                 with open(step_path, "w") as step_file:
                     step_file.write(f"{name} {hash_text}\n")
@@ -1006,8 +1007,9 @@ class Fab_ProduceState(object):
     """Fab_ProduceState: Shared produce state for FabNode's.
 
     Attributes:
-    * *StepsDirectory* (Path):
+    * *StepsDirectory* (PathFile):
       The path to the directory to store STEP (`.stp`) files into.
+    * *Shops* (Tuple[FabShop, ...]): The list of available shops to use.
     * *Steps* (Fab_Steps):
       The step file directory management object.
     * *ObjectsTable* (Dict[str, Any]):
@@ -1018,9 +1020,14 @@ class Fab_ProduceState(object):
       An index for the current operation being performed for a mount.
 
     This class is for internal use only:
+
+    Constructor:
+    * Fab_ProduceState(StepsDirectory, Shops)
+
     """
 
-    StepsDirectory: Path
+    StepsDirectory: PathFile
+    Shops: Tuple[FabShop, ...]
     Steps: Fab_Steps = field(init=False, repr=False)
     ObjectsTable: Dict[str, Any] = field(init=False, repr=False)
     ToolControllersTable: Dict[FabToolController, int] = field(init=False, repr=False)
@@ -1046,7 +1053,7 @@ class FabNode(FabBox):
     Attributes:
     * *Label* (str): The FabNode name.
     * *Up* (FabNode): The FabNode parent.
-    * *FullPath* (str):  The FabNode full path from the root.  (Filled in)
+    * *FullPathFile* (str):  The FabNode full path from the root.  (Filled in)
     * *Tracing* (str):
       A non-empty indentation string when tracing is enabled.
       This field is recursively set when *set_tracing*() is explicitly set.

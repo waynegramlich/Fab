@@ -60,14 +60,15 @@ from pathlib import Path as PathFile
 import json
 import tempfile
 from typeguard import check_type, check_argument_types
-from typing import Any, Dict, IO, List, Tuple, Union
+from typing import Any, Dict, IO, List, Sequence, Tuple, Union
+
 from FabToolTemplates import FabAttributes, FabBit, FabBitTemplate, FabBitTemplates
 from FabToolTemplates import FabBitTemplatesFactory, FabShapes
 from FabToolBits import FabBallEndBit, FabBullNoseBit, FabChamferBit, FabDoveTailBit, FabDrillBit
 from FabToolBits import FabEndMillBit, FabProbeBit, FabSlittingSawBit, FabThreadMillBit, FabVBit
 
 
-# FabBits
+# FabBits:
 @dataclass(frozen=True)
 class FabBits(object):
     """FabBits: A collection FabBit's that corresponds to a `Tools/Bit/` sub-directory..
@@ -78,7 +79,7 @@ class FabBits(object):
     * *Stems* (Tuple[str, ...]): Stem names in the same order as the Bits.
 
     Constructor:
-    * FabBits("Name", BitsPath, Bits, Names)
+    * FabBits(Bits, Names, Stems)
 
     """
     Bits: Tuple[FabBit, ...]
@@ -189,9 +190,9 @@ class FabBits(object):
             # print(f"{tracing}{kwargs=}")
         bit: FabBit = constructor(**kwargs)
 
-        if tracing:
-            print(f"{tracing}bit_json=")
-            print(json.dumps(bit_json, indent=4))
+        if False and tracing:  # pragma: no unit cover
+            # print(f"{tracing}bit_json=")
+            # print(json.dumps(bit_json, indent=4))
             print(f"{tracing}{bit=}")
         if tracing:
             print(f"{tracing}<=FabBits.toJSON(*, '{str(tools_directory)}', '{bit_stem_name}')=>*")
@@ -224,9 +225,6 @@ class FabBits(object):
         for bit_file_path in bits_directory.glob("*.fctb"):
             bit_paths_table[str(bit_file_path)] = bit_file_path
         sorted_bit_path_file_names: Tuple[str, ...] = tuple(sorted(bit_paths_table.keys()))
-        if tracing:
-            print(f"{tracing}{sorted_bit_path_file_names=}")
-
         bit_path_file_name: str
         index: int
         for index, bit_path_file_name in enumerate(sorted_bit_path_file_names):
@@ -274,14 +272,28 @@ class FabBits(object):
         if tracing:
             print(f"{tracing}=>FabBits.write(*, {tools_directory})")
 
-        if tools_directory.stem != "Tools":
-            tools_directory = tools_directory / "Tools"  # pragma: no cover
-        bit_directory = tools_directory / "Bit"
-        bit_directory.mkdir(parents=True, exist_ok=True)
+        assert tools_directory.name == "Tools", str(tools_directory)
+        shapes_directory: PathFile = tools_directory / "Shape"
+        bits_directory: PathFile = tools_directory / "Bit"
 
         bit: FabBit
+        if shapes_directory.is_dir() and bits_directory.is_dir():
+            shapes: FabShapes = FabShapes.read(tools_directory)
+            previous_bits: FabBits = FabBits.read(tools_directory, shapes, tracing=next_tracing)
+            previous_bit: FabBit
+            for bit in self.Bits:
+                try:
+                    previous_bit = previous_bits.nameLookup(bit.Name)
+                except KeyError:  # pragma: no unit cover
+                    continue
+                assert bit == previous_bit, (bit, previous_bit)
+                #     raise RuntimeError(f"Bit '{bit.Name} already exists with different content'")
+
+        # Write any new bits:
+        bits_directory.mkdir(parents=True, exist_ok=True)
         for bit in self.Bits:
-            bit.write(tools_directory, tracing=next_tracing)
+            if not (bits_directory / f"{bit.Name}.fctb").exists():
+                bit.write(tools_directory, tracing=next_tracing)
 
         if tracing:
             print(f"{tracing}<=FabBits.write(*, {tools_directory})")
@@ -328,6 +340,23 @@ class FabBits(object):
         raise KeyError(
             f"FabBits.lookup(): '{stem}' is not one of {self.Stems}.")  # pragma: no unit cover
 
+    # FabBits.fromSequence():
+    @staticmethod
+    def fromSequence(bits: Sequence[FabBit]) -> "FabBits":
+        """Create a FabBits from a sequence of FabBit's."""
+        bits_table: Dict[str, FabBit] = {}
+        name: str
+        bit: FabBit
+        for bit in bits:
+            if bit.Name not in bits_table:
+                bits_table[bit.Name] = bit
+        unsorted_names: Tuple[str, ...] = tuple(bits_table.keys())
+        sorted_names: Tuple[str, ...] = tuple(sorted(unsorted_names))
+        sorted_bits: Tuple[FabBit, ...] = tuple([bits_table[name] for name in sorted_names])
+        sorted_stems: Tuple[str, ...] = tuple([bits_table[name].ShapeStem for name in sorted_names])
+        fab_bits: "FabBits" = FabBits(sorted_bits, sorted_names, sorted_stems)
+        return fab_bits
+
     # FabBits._unit_tests():
     @staticmethod
     def _unit_tests(tracing: str = "") -> None:
@@ -335,10 +364,15 @@ class FabBits(object):
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabBits._unit_tests()")
-        this_directory: PathFile = PathFile(__file__).parent
-        tools_directory: PathFile = this_directory / "Tools"
+        tools_directory: PathFile = PathFile(__file__).absolute().parent / "Tools"
         shapes: FabShapes = FabShapes.read(tools_directory, tracing=next_tracing)
         bits: FabBits = FabBits.read(tools_directory, shapes, tracing=next_tracing)
+        temporary_directory: Any
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            assert isinstance(temporary_directory, str), temporary_directory
+            temporary_tools_directory: PathFile = PathFile(temporary_directory) / "Tools"
+            bits.write(temporary_tools_directory)
+            bits.write(temporary_tools_directory)  # The 2nd call should succeed without error.
         index: int
         bit: FabBit
         for index, bit in enumerate(bits.Bits):
@@ -523,7 +557,7 @@ class FabLibrary(object):
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabLibrary._unit_tests()")
-        tools_directory: PathFile = PathFile(__file__).parent / "Tools"
+        tools_directory: PathFile = PathFile(__file__).absolute().parent / "Tools"
 
         # shapes: FabShapes = FabShapes.read(shapes_directory)
         shapes: FabShapes = FabShapes.read(tools_directory, tracing=next_tracing)
@@ -653,7 +687,7 @@ class FabLibraries(object):
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabLibrarires._unit_tests()")
-        tools_directory: PathFile = PathFile(__file__).parent / "Tools"
+        tools_directory: PathFile = PathFile(__file__).absolute().parent / "Tools"
 
         shapes: FabShapes = FabShapes.read(tools_directory, tracing=next_tracing)
         bits: FabBits = FabBits.read(tools_directory, shapes, tracing=next_tracing)
@@ -737,7 +771,7 @@ class FabTooling(object):
         if tracing:
             print(f"{tracing}=>FabTooling._unit_tests()")
 
-        from_tools_directory: PathFile = PathFile(__file__).parent / "Tools"
+        from_tools_directory: PathFile = PathFile(__file__).absolute().parent / "Tools"
         from_tooling: FabTooling = FabTooling.read(from_tools_directory, tracing=next_tracing)
 
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -756,18 +790,26 @@ class FabTooling(object):
 # FabToolingFactory:
 @dataclass
 class FabToolingFactory(object):
-    """FabToolingFactory: A class to build a FabTooling."""
+    """FabToolingFactory: A class to build a FabTooling.
+
+    Attributes:
+    * *Name* (str): The name of the tooling factory (empty string is allowed.)
+    * *InitialToolsPath* (PathFile):
+      The parent directory of an initial `Tools` directory.
+      This directory is used to fetch the available shapes from `.../Tools/Shape`.
+    """
 
     Name: str
+    InitialToolsDirectory: PathFile
     _shapes: FabShapes = field(init=False, repr=False)
     _tool_table: Dict[int, FabBit] = field(init=False, repr=False)
 
     # FabToolingFactory.__post_init__():
     def __post_init__(self) -> None:
         """Finish initializing a FabToolingFactory."""
-        check_type("FabToolingFactory", self.Name, str)
-        tools_directory: PathFile = PathFile(__file__).parent / "Tools"
-        shapes: FabShapes = FabShapes.read(tools_directory)
+        check_type("FabToolingFactory.Name", self.Name, str)
+        check_type("FabToolingFactory.InitialShapesPath", self.InitialToolsDirectory, PathFile)
+        shapes: FabShapes = FabShapes.read(self.InitialToolsDirectory)
         self._shapes = shapes
         self._tool_table = {}
 
@@ -834,7 +876,7 @@ class FabToolingFactory(object):
             "Flutes": flutes,
         })
         double_angle: FabThreadMillBit = FabThreadMillBit(
-            name, stem_name, "endmill", attributes,
+            name, stem_name, "thread-mill", attributes,
             Diameter=diameter, CuttingAngle=cutting_edge_angle,
             Crest=cutting_edge_height, Length=length, ShankDiameter=shank_diameter,
             NeckDiameter=neck_diameter, NeckLength=neck_height)
@@ -874,7 +916,7 @@ class FabToolingFactory(object):
             "Flutes": flutes,
         })
         dove_tail: FabDoveTailBit = FabDoveTailBit(
-            name, stem_name, "endmill", attributes,
+            name, stem_name, "dovetail", attributes,
             Diameter=diameter, CuttingEdgeAngle=cutting_edge_angle,
             CuttingEdgeHeight=cutting_edge_height, Length=length, ShankDiameter=shank_diameter,
             NeckDiameter=neck_diameter, NeckHeight=neck_height, TipDiameter=diameter)
@@ -934,7 +976,7 @@ class FabToolingFactory(object):
             "Flutes": flutes,
         })
         v_groove: FabVBit = FabVBit(
-            name, stem_name, "endmill", attributes,
+            name, stem_name, "v-bit", attributes,
             CuttingEdgeAngle=cutting_edge_angle, CuttingEdgeHeight=cutting_edge_height,
             Diameter=diameter, Length=length,
             ShankDiameter=shank_diameter, TipDiameter=tip_diameter)
@@ -993,9 +1035,11 @@ class FabToolingFactory(object):
         if tracing:
             print(f"{tracing}=>FabToolingFactory.write({library_stem}, {tools_directory})")
 
+        bits: FabBits = FabBits.fromSequence(tuple(self._tool_table.values()))
+
         # Read *shapes* from this *this_tools_directory*:
-        shapes: FabShapes = FabShapes.read(tools_directory, tracing=next_tracing)
-        bits: FabBits = FabBits.read(tools_directory, shapes, tracing=next_tracing)
+        tools_directory.mkdir(parents=True, exist_ok=True)
+        shapes: FabShapes = FabShapes.read(self.InitialToolsDirectory, tracing=next_tracing)
         library: FabLibrary = self.getLibrary(library_stem, tools_directory, tracing=next_tracing)
         libraries: FabLibraries = FabLibraries("Library", (library,), ("TestLibrary",))
         tooling: FabTooling = FabTooling(shapes, bits, libraries)
@@ -1090,7 +1134,8 @@ class FabToolingFactory(object):
         if tracing:
             print(f"{tracing}=>FabToolingFactory._unit_tests()")
 
-        factory: FabToolingFactory = FabToolingFactory("TestTooling")
+        tools_directory: PathFile = PathFile(__file__).absolute().parent / "Tools"
+        factory: FabToolingFactory = FabToolingFactory("TestTooling", tools_directory)
         factory.create_example_tools(tracing=next_tracing)
         test_tools_directory: PathFile = PathFile("/tmp") / "Tools"
         factory.write("TestLibrary", test_tools_directory, tracing=next_tracing)

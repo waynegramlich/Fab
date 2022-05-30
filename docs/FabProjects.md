@@ -109,7 +109,6 @@ Attributes:
 * *Shops* (Tuple[FabShop, ...]):
   The FabShop's available for fabrication.  Set using FabShop.set_shops() method.
 
-
 Constructor:
 * FabProject.new("Name")
 
