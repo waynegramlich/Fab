@@ -496,6 +496,7 @@ def main(key: str = "") -> Any:
     controller: FabController = FabController(Name="LinuxCNC", PostProcessor="linuxcnc")
     tools_directory: PathFile = PathFile(__file__).parent / "Tools"
     tooling_factory = FabToolingFactory("TestTooling", tools_directory)
+    tooling_factory.create_example_tools()
     library: FabLibrary = tooling_factory.getLibrary("TestLibrary", tools_directory)
     cnc_mill: FabCNCMill = FabCNCMill(
         Name="MyMill", Placement="Garage", Axes=axes, Table=table, Spindle=spindle,

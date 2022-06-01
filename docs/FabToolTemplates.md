@@ -24,7 +24,8 @@ The classes are:
 ## Table of Contents (alphabetical order):
 
 * 1 Class: [FabAttributes](#fabtooltemplates--fabattributes):
-  * 1.1 [toJSON()](#fabtooltemplates----tojson): Return FabAttributes as JSON dictionary.
+  * 1.1 [find()](#fabtooltemplates----find): Look up an attribute value by name.
+  * 1.2 [toJSON()](#fabtooltemplates----tojson): Return FabAttributes as JSON dictionary.
 * 2 Class: [FabBit](#fabtooltemplates--fabbit):
   * 2.1 [toJSON()](#fabtooltemplates----tojson): Return the JSON associated with a FabBit.
   * 2.2 [write()](#fabtooltemplates----write): Write FabBit out to disk.
@@ -47,7 +48,13 @@ Attributes:
 * *Values* (Tuple[Tuple[str, Any], ...): Sorted list of named attribute values.
 * *Names* (Tuple[str, ...]): Sorted list of attribute names:
 
-### <a name="fabtooltemplates----tojson"></a>1.1 `FabAttributes.`toJSON():
+### <a name="fabtooltemplates----find"></a>1.1 `FabAttributes.`find():
+
+FabAttributes.find(self, desired_name: str) -> Any:
+
+Look up an attribute value by name.
+
+### <a name="fabtooltemplates----tojson"></a>1.2 `FabAttributes.`toJSON():
 
 FabAttributes.toJSON(self) -> Dict[str, Any]:
 

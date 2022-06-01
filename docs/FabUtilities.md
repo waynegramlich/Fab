@@ -27,8 +27,11 @@ Represents a stock material.
 Other properties to be added later (e.g. transparency, shine, machining properties, etc.)
 
 Attributes:
-* *Name* (Tuple[str, ...]): A list of material names from generict to specific.
+* *Name* (Tuple[str, ...]): A list of material names from generic to specific.
 * *Color* (str): The color name to use.
+
+# Constructor:
+* * FabMaterial(Name, Color)
 
 
 ## <a name="fabutilities--fabtoolcontroller"></a>3 Class FabToolController:

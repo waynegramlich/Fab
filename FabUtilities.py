@@ -17,7 +17,7 @@ The Utility classes are:
 
 from dataclasses import dataclass
 from typeguard import check_type
-from typing import Any, Dict, Tuple
+from typing import Any, ClassVar, Dict, List, Tuple
 
 
 # FabColor:
@@ -195,14 +195,19 @@ class FabColor(object):
         return (float(red) / 255.0, float(green) / 255.0, float(blue) / 255.0)
 
     @staticmethod
-    def _unit_tests() -> None:
+    def _unit_tests(tracing: str = "") -> None:
         """Run FabColor unit tests."""
+        if tracing:
+            print(f"{tracing}=>FabColor._unit_tests()")
         _ = FabColor.svg_to_rgb("red")
 
         try:
             FabColor.svg_to_rgb("fred")
         except ValueError as value_error:
             assert str(value_error) == "'fred' is not a supported SVG color name.", str(value_error)
+
+        if tracing:
+            print(f"{tracing}<=FabColor._unit_tests()")
 
 
 # FabToolController:
@@ -234,7 +239,7 @@ class FabToolController(object):
     VerticalRapid: float
 
     # FabToolController.__post_init__():
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Fininsh initializing FabToolController"""
         check_type("FabToolController.BitName", self.BitName, str)
         check_type("FabToolController.Cooling", self.BitName, str)
@@ -263,8 +268,11 @@ class FabToolController(object):
 
     # FabController._unit_tests()
     @staticmethod
-    def _unit_tests() -> None:
-        """Perform Unit tests."""
+    def _unit_tests(tracing: str = "") -> None:
+        """Perform FabController unit tests."""
+        if tracing:
+            print(f"{tracing}=>FabController._unit_tests()")
+
         tool_controller1a: FabToolController = FabToolController(
             BitName="5mm_Endmill",
             Cooling="Flood",
@@ -328,45 +336,166 @@ class FabToolController(object):
         assert tool_controller2 in tool_controller_table, "Insert failed"
         assert len(tool_controller_table) == 2, "Table is wrong size"
 
+        if tracing:
+            print(f"{tracing}<=FabController._unit_tests()")
+
 
 # FabMaterial:
-@dataclass
+@dataclass(frozen=True)
 class FabMaterial(object):
     """FabMaterial: Represents a stock material.
 
     Other properties to be added later (e.g. transparency, shine, machining properties, etc.)
 
     Attributes:
-    * *Name* (Tuple[str, ...]): A list of material names from generict to specific.
+    * *Name* (Tuple[str, ...]): A list of material names from generic to specific.
     * *Color* (str): The color name to use.
+
+    # Constructor:
+    * * FabMaterial(Name, Color)
 
     """
 
-    Name: Tuple[str, ...]  # Hierarchical name from least specific to most specific.
+    Name: Tuple[str, ...]  # Hierarchical name from generic to specific.
     Color: str  # SVG color name to use.
 
-    # FabMaterial.__init__():
+    _InchChipLoadData: ClassVar[Tuple[str, ...]] = (
+        "  in: Steel         Stainless     Aluminium     Titanium      Wood          Plastic",
+        "1/16: 0.0019-0.0036 0.0016-0.0030 0.0021-0.0040 0.0015-0.0028 0.0028-0.0053 0.0052-0.0098",
+        " 1/8: 0.0023-0.0044 0.0019-0.0036 0.0025-0.0048 0.0018-0.0034 0.0033-0.0063 0.0062-0.0118",
+        "3/16: 0.0025-0.0048 0.0021-0.0040 0.0028-0.0053 0.0020-0.0037 0.0037-0.0070 0.0068-0.0129",
+        " 1/4: 0.0027-0.0051 0.0022-0.0042 0.0030-0.0056 0.0021-0.0040 0.0039-0.0074 0.0073-0.0138",
+        "5/16: 0.0028-0.0053 0.0023-0.0044 0.0031-0.0059 0.0022-0.0042 0.0041-0.0077 0.0076-0.0144",
+        " 3/8: 0.0029-0.0055 0.0024-0.0046 0.0032-0.0061 0.0023-0.0043 0.0042-0.0080 0.0079-0.0149",
+        " 1/2: 0.0031-0.0058 0.0026-0.0048 0.0034-0.0064 0.0024-0.0045 0.0045-0.0084 0.0083-0.0157",
+        " 5/8: 0.0032-0.0061 0.0027-0.0050 0.0035-0.0067 0.0025-0.0047 0.0046-0.0088 0.0086-0.0164",
+        " 3/4: 0.0033-0.0063 0.0027-0.0052 0.0036-0.0069 0.0026-0.0049 0.0048-0.0091 0.0089-0.0169",
+        " 7/8: 0.0034-0.0064 0.0028-0.0053 0.0037-0.0071 0.0026-0.0050 0.0049-0.0093 0.0092-0.0173",
+        "   1: 0.0035-0.0066 0.0029-0.0054 0.0038-0.0072 0.0027-0.0051 0.0050-0.0095 0.0094-0.0177",
+    )
+    _MmChipLoadData: ClassVar[Tuple[str, ...]] = (
+        "mm: Steel     Stainless Aluminium Titanium  Wood      Plastic",
+        " 2: 0.01-0.01 0.01-0.01 0.01-0.01 0.01-0.01 0.01-0.02 0.02-0.03",
+        " 3: 0.01-0.02 0.01-0.02 0.01-0.03 0.01-0.02 0.02-0.03 0.03-0.06",
+        " 4: 0.02-0.03 0.01-0.03 0.02-0.03 0.01-0.02 0.02-0.04 0.04-0.08",
+        " 5: 0.02-0.04 0.02-0.03 0.02-0.04 0.02-0.03 0.03-0.05 0.05-0.10",
+        " 6: 0.02-0.04 0.02-0.03 0.02-0.05 0.02-0.03 0.03-0.06 0.06-0.11",
+        " 8: 0.03-0.05 0.02-0.04 0.03-0.05 0.02-0.04 0.04-0.07 0.07-0.13",
+        "10: 0.03-0.06 0.02-0.05 0.03-0.06 0.02-0.04 0.04-0.08 0.08-0.15",
+        "12: 0.03-0.06 0.03-0.05 0.03-0.07 0.02-0.05 0.05-0.09 0.09-0.16",
+        "16: 0.04-0.07 0.03-0.06 0.04-0.07 0.03-0.05 0.05-0.10 0.10-0.18",
+        "20: 0.04-0.07 0.03-0.06 0.04-0.08 0.03-0.06 0.06-0.11 0.11-0.20",
+        "25: 0.04-0.08 0.03-0.07 0.05-0.09 0.03-0.06 0.06-0.12 0.11-0.22",
+    )
+
+    _ChipLoadTable: ClassVar[Dict[str, List[Tuple[float, float]]]] = {}
+
     def __post_init__(self) -> None:
-        """Finish initializing FabMatarials."""
+        """Finish initialized FabMaterial."""
+        tracing: str = ""  # Manually set to non-empty string to trace:
+        if tracing:
+            print(f"{tracing}=>FabMaterial.__post_init__()")
+
         check_type("FabMaterial.Name", self.Name, Tuple[str, ...])
         check_type("FabMaterial.Color", self.Color, str)
 
+        # Fill in the *chip_load_table* the first time any FabMaterial is created:
+        chip_load_table: Dict[str, List[Tuple[float, float]]] = FabMaterial._ChipLoadTable
+        if len(chip_load_table) == 0:
+            # Iterate over both of the *chip_load_data* tables:
+            convert_chip_load_datas: List[Tuple[float, Tuple[str, ...], bool]] = [
+                (25.4, FabMaterial._InchChipLoadData, True),  # 1 inch = 25.4 mm
+                (1.0, FabMaterial._MmChipLoadData, False),
+            ]
+
+            def words_split(words: str) -> List[str]:
+                """"""
+                word: str
+                return [word for word in words.split(" ") if len(word) > 0]
+
+            convert: float
+            chip_load_data: Tuple[str, ...]
+            initialize: bool
+            for convert, chip_load_data, initialize in convert_chip_load_datas:
+                if tracing:
+                    print(f"{tracing}{convert=} {initialize=}")
+                # Extract the *materials* names:
+                materials: List[str] = [material for material in words_split(chip_load_data[0])]
+                del materials[0]  # Delete "in:" or "mm:"
+                if tracing:
+                    print(f"{tracing}{materials=}")
+                if initialize:
+                    material: str
+                    for material in materials:
+                        chip_load_table[material] = []
+
+                # Iterate through each *row* in *chip_load_table*, extracting *diameter*:
+                row_index: int
+                row: str
+                for row_index, row in enumerate(chip_load_data[1:]):
+                    # Split *row* into *columns* and extract the *diameter*:
+                    columns: List[str] = words_split(row)
+                    diameter_text: str = columns[0].strip(" :")
+                    diameter: float
+                    if '/' in diameter_text:
+                        fraction: List[str] = diameter_text.split("/")
+                        diameter = float(fraction[0]) / float(fraction[1]) * convert
+                    else:
+                        diameter = float(diameter_text) * convert
+                    if tracing:
+                        print(f"{tracing}[{row_index}]: {diameter:.3f} '{columns[1:]}'")
+
+                    # The remaining *columns* are chip-load ranges of the form "#-#".
+                    index: int
+                    low_high: str
+                    for index, low_high in enumerate(columns[1:]):
+                        pair: List[str] = low_high.split("-")
+                        assert len(pair) == 2, pair
+                        low: float = float(pair[0]) * convert
+                        high: float = float(pair[1]) * convert
+                        chip_load: float = (high + low) / 2.0
+                        material = materials[index]
+                        chip_load_table[material].append((diameter, chip_load))
+
+                # Now sort the *chip_load_table* entries:
+                for material, xxx in chip_load_table.items():
+                    chip_load_table[material].sort()
+
+        if tracing:
+            print(f"{tracing}{chip_load_table=}")
+            print(f"{tracing}<=FabMaterial.__post_init__()")
+
+    # FabMaterial._unit_tests()
     @staticmethod
-    def _unit_tests() -> None:
+    def _unit_tests(tracing: str = "") -> None:
         """Run FabMaterial unit tests."""
-        name: Tuple[str, ...] = ("brass",)
+        if tracing:
+            print(f"{tracing}=>FabMaterial._unit_tests()")
+
+        name: Tuple[str, ...] = ("Aluminum",)
         color: str = "orange"
         material: FabMaterial = FabMaterial(name, color)
-        material.Name = name
-        material.Color == color
+        material.Name == name, material.Name
+        material.Color == color, material.Color
+
+        if tracing:
+            print(f"{tracing}<=FabMaterial._unit_tests()")
 
 
-def _unit_tests() -> None:
+# main()
+def main(tracing: str = "") -> None:
     """Run the unit tests."""
-    FabColor._unit_tests()
-    FabMaterial._unit_tests()
-    FabToolController._unit_tests()
+    next_tracing: str = tracing + " " if tracing else ""
+    if tracing:
+        print(f"{tracing}=>main()")
+
+    FabColor._unit_tests(tracing=next_tracing)
+    FabMaterial._unit_tests(tracing=next_tracing)
+    FabToolController._unit_tests(tracing=next_tracing)
+
+    if tracing:
+        print(f"{tracing}<=main()")
 
 
 if __name__ == "__main__":
-    _unit_tests()
+    main(tracing=" ")

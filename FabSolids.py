@@ -27,6 +27,10 @@ from cadquery import Vector  # type: ignore
 from FabGeometries import FabCircle, FabGeometry, Fab_GeometryContext, Fab_Plane, Fab_Query
 from FabJoins import FabFasten, FabJoin
 from FabNodes import FabBox, FabNode, Fab_Prefix, Fab_ProduceState
+from FabShops import FabCNC, FabMachine, FabShop
+from FabTools import FabLibrary
+from FabToolBits import FabEndMillBit
+from FabToolTemplates import FabAttributes, FabBit
 from FabUtilities import FabColor, FabToolController
 
 # The *_suppress_stdout* function is based on code from:
@@ -705,6 +709,38 @@ class Fab_Pocket(Fab_Operation):
             with _suppress_stdout():
                 bottom_assembly.save(str(bottom_path), "STEP")
         self._BottomPath = bottom_path
+
+        MillBit = Tuple[FabShop, FabMachine, int, FabBit]
+        mill_bit: MillBit
+        mill_bits: List[MillBit] = []
+        shops: Tuple[FabShop, ...] = produce_state.Shops
+        print(f"{len(shops)=}")
+        shop: FabShop
+        for shop in shops:
+            machines: Tuple[FabMachine, ...] = shop.Machines
+            print(f"{len(machines)=}")
+            machine: FabMachine
+            for machine in machines:
+                if isinstance(machine, FabCNC):
+                    print("Have FabCNC")
+                    library: FabLibrary = machine.Library
+                    numbered_bits: Tuple[Tuple[int, FabBit], ...] = library.NumberedBits
+                    print(f"{len(numbered_bits)=}")
+                    number: int
+                    bit: FabBit
+                    for number, bit in numbered_bits:
+                        if isinstance(bit, FabEndMillBit):
+                            mill_bit = (shop, machine, number, bit)
+                            mill_bits.append(mill_bit)
+        print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+        for index, mill_bit in enumerate(mill_bits):
+            _, _, _, bit = mill_bit
+            assert isinstance(bit, FabEndMillBit), bit
+            attributes: FabAttributes = bit.Attributes
+            flutes: Any = attributes.find("Flutes")
+            assert isinstance(flutes, int), flutes
+            print(f"MillBit[{index}]: "
+                  f"{bit.Name=} {bit.Diameter=} {bit.CuttingEdgeHeight=} {flutes=}")
 
         tool_controller: FabToolController = FabToolController(
             BitName="5mm_Endmill",

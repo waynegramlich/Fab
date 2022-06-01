@@ -278,6 +278,17 @@ class FabAttributes(object):
             print(f"{tracing}<=FabAttributes.fromJSON({json_dict})=>{attributes}")
         return attributes
 
+    # FabAttributes.find():
+    def find(self, desired_name: str) -> Any:
+        """Look up an attribute value by name."""
+        name: str
+        value: Any
+        for name, value in self.Values:
+            if name == desired_name:
+                return value
+        raise RuntimeError(
+            f"Could not find '{desired_name} in {self.Names}")  # pragma: no unit cover
+
     # FabAttributes.toJSON():
     def toJSON(self) -> Dict[str, Any]:
         """Return FabAttributes as JSON dictionary."""
