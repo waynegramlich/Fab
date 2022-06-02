@@ -360,7 +360,7 @@ class FabMaterial(object):
     Color: str  # SVG color name to use.
 
     _InchChipLoadData: ClassVar[Tuple[str, ...]] = (
-        "  in: Steel         Stainless     Aluminium     Titanium      Wood          Plastic",
+        "  in: Steel         Stainless     Aluminum      Titanium      Wood          Plastic",
         "1/16: 0.0019-0.0036 0.0016-0.0030 0.0021-0.0040 0.0015-0.0028 0.0028-0.0053 0.0052-0.0098",
         " 1/8: 0.0023-0.0044 0.0019-0.0036 0.0025-0.0048 0.0018-0.0034 0.0033-0.0063 0.0062-0.0118",
         "3/16: 0.0025-0.0048 0.0021-0.0040 0.0028-0.0053 0.0020-0.0037 0.0037-0.0070 0.0068-0.0129",
@@ -374,7 +374,7 @@ class FabMaterial(object):
         "   1: 0.0035-0.0066 0.0029-0.0054 0.0038-0.0072 0.0027-0.0051 0.0050-0.0095 0.0094-0.0177",
     )
     _MmChipLoadData: ClassVar[Tuple[str, ...]] = (
-        "mm: Steel     Stainless Aluminium Titanium  Wood      Plastic",
+        "mm: Steel     Stainless Aluminum  Titanium  Wood      Plastic",
         " 2: 0.01-0.01 0.01-0.01 0.01-0.01 0.01-0.01 0.01-0.02 0.02-0.03",
         " 3: 0.01-0.02 0.01-0.02 0.01-0.03 0.01-0.02 0.02-0.03 0.03-0.06",
         " 4: 0.02-0.03 0.01-0.03 0.02-0.03 0.01-0.02 0.02-0.04 0.04-0.08",
@@ -420,7 +420,8 @@ class FabMaterial(object):
                 if tracing:
                     print(f"{tracing}{convert=} {initialize=}")
                 # Extract the *materials* names:
-                materials: List[str] = [material for material in words_split(chip_load_data[0])]
+                materials: List[str] = [material.lower()
+                                        for material in words_split(chip_load_data[0])]
                 del materials[0]  # Delete "in:" or "mm:"
                 if tracing:
                     print(f"{tracing}{materials=}")
@@ -465,6 +466,40 @@ class FabMaterial(object):
             print(f"{tracing}{chip_load_table=}")
             print(f"{tracing}<=FabMaterial.__post_init__()")
 
+    # FabMaterial.getChipLoad():
+    def getChipLoad(self, effective_diameter: float, tracing: str = "") -> float:
+        """Return FabMatrial chip load.
+
+        Arguments:
+        * *effective_diameter* (float): The effective diameter of the tool bit.
+
+        Returns:
+        * (float): The chipload in millimeters.
+
+        """
+        if tracing:
+            print(f"{tracing}=>FabMaterial.getChipLoad()")
+        chip_load_table: Dict[str, List[Tuple[float, float]]] = FabMaterial._ChipLoadTable
+        top_material: str = self.Name[0].lower()
+        if top_material not in chip_load_table:
+            raise RuntimeError(f"FabMaterial.getChipLoad(): '{top_material}' "
+                               f"is not one of {tuple(chip_load_table.keys())})")
+        diameter_chip_loads: List[Tuple[float, float]] = chip_load_table[top_material]
+        diameter: float
+        chip_load: float
+        for diameter, chip_load in reversed(diameter_chip_loads):
+            if diameter <= effective_diameter:
+                break
+        else:
+            raise RuntimeError(
+                f"FabMaterial.getChipLoad('{top_material}') no chip load found "
+                f"for ({effective_diameter:.5f})"
+            )
+
+        if tracing:
+            print(f"{tracing}=>FabMaterial.getChipLoad()=>{chip_load:.5f}")
+        return chip_load
+
     # FabMaterial._unit_tests()
     @staticmethod
     def _unit_tests(tracing: str = "") -> None:
@@ -477,6 +512,34 @@ class FabMaterial(object):
         material: FabMaterial = FabMaterial(name, color)
         material.Name == name, material.Name
         material.Color == color, material.Color
+
+        def check(test_name: str, material: FabMaterial,
+                  diameter: float, desired_chip_load: float) -> None:
+            """Check chip load."""
+            chip_load: float = material.getChipLoad(diameter)
+            assert abs(chip_load - desired_chip_load) < 1.0e-6, (
+                f"{test_name} {chip_load:.5f} != {desired_chip_load}")
+
+        # Do working tests:
+        aluminum: FabMaterial = FabMaterial(("Aluminum", "6061"), "silver")
+        steel: FabMaterial = FabMaterial(("Steel",), "grey")
+        check("aluminum1", aluminum, 3.0, 0.02000)
+        check("steel", steel, .5 * 25.4, 0.11303)  # TODO(FIX)
+
+        # Do exception tests:
+        unobtainium: FabMaterial = FabMaterial(("Unobtainium",), "grey")
+        try:
+            unobtainium.getChipLoad(5.0)
+            assert False
+        except RuntimeError as runtime_error:
+            assert str(runtime_error).startswith(
+                "FabMaterial.getChipLoad(): 'unobtainium' is not one of (")
+        try:
+            aluminum.getChipLoad(.10)
+            assert False
+        except RuntimeError as runtime_error:
+            expected: str = "FabMaterial.getChipLoad('aluminum') no chip load found for (0.10000)"
+            assert str(runtime_error) == expected
 
         if tracing:
             print(f"{tracing}<=FabMaterial._unit_tests()")

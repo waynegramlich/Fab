@@ -13,6 +13,7 @@ The Utility classes are:
 
 * 1 Class: [FabColor](#fabutilities--fabcolor):
 * 2 Class: [FabMaterial](#fabutilities--fabmaterial):
+  * 2.1 [getChipLoad()](#fabutilities----getchipload): Return FabMatrial chip load.
 * 3 Class: [FabToolController](#fabutilities--fabtoolcontroller):
   * 3.1 [to_json()](#fabutilities----to-json): Return a dictionary containing the controller information.
 
@@ -32,6 +33,17 @@ Attributes:
 
 # Constructor:
 * * FabMaterial(Name, Color)
+
+### <a name="fabutilities----getchipload"></a>2.1 `FabMaterial.`getChipLoad():
+
+FabMaterial.getChipLoad(self, effective_diameter: float, tracing: str = '') -> float:
+
+Return FabMatrial chip load.
+Arguments:
+* *effective_diameter* (float): The effective diameter of the tool bit.
+
+Returns:
+* (float): The chipload in millimeters.
 
 
 ## <a name="fabutilities--fabtoolcontroller"></a>3 Class FabToolController:
