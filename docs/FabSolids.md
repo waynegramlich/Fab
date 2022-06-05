@@ -56,7 +56,7 @@ This internal classes are managed by FabMount methods.
 * 8 Class: [Fab_OperationKind](#fabsolids--fab-operationkind):
 * 9 Class: [Fab_OperationOrder](#fabsolids--fab-operationorder):
 * 10 Class: [Fab_Pocket](#fabsolids--fab-pocket):
-  * 10.1 [Geometry()](#fabsolids----geometry): Return the original Geometry.
+  * 10.1 [Geometries()](#fabsolids----geometries): Return the original Geometry.
   * 10.2 [Depth()](#fabsolids----depth): Return the original Depth.
   * 10.3 [get_hash()](#fabsolids----get-hash): Return Fab_Pocket hash.
   * 10.4 [get_name()](#fabsolids----get-name): Return Fab_Pocket name.
@@ -128,6 +128,12 @@ Perform a extrude operation.
 FabMount.pocket(self, name: str, shapes: Union[FabGeometries.FabGeometry, Tuple[FabGeometries.FabGeometry, ...]], depth: float, tracing: str = '') -> None:
 
 Perform a pocket operation.
+Arguments:
+* *name* (str): The name of the pocket.
+* *shapes* (Union[FabGeometry, Tuple[FabGeometry, ...]]):
+  Either a single FabGeometry or a tuple of FabGeometry's.  The first FabGeometry specifies
+  the pocket boundary.
+* *depth* (float): The pocket depth in millimeters from the mount plane.
 
 ### <a name="fabsolids----drill-joins"></a>1.9 `FabMount.`drill_joins():
 
@@ -412,15 +418,16 @@ Value for the kind of operation.
 Represents a pocketing operation.
 Attributes:
 * *Name* (str): The operation name.
-* *Geometry* (Union[FabGeometry, Tuple[FabGeometry, ...]]):
-   The Polygon or Circle to pocket.  If a tuple is given, the smaller FabGeometry's
-   specify "islands" to not pocket.
+* *Geometries* (Tuple[FabGeometry, ...]):
+   The Polygon or Circle to pocket.  If a tuple is given, first FabGeometry in the tuple
+   specifies the pocket exterior, and the remaining FabGeometry's specify islands of
+   material within the pocket that must not be removed.
 * *Depth* (float): The pocket depth in millimeters.
 * *Bottom_Path* (str): The the path to the generated Pocket bottom STEP file.
 
-### <a name="fabsolids----geometry"></a>10.1 `Fab_Pocket.`Geometry():
+### <a name="fabsolids----geometries"></a>10.1 `Fab_Pocket.`Geometries():
 
-Fab_Pocket.Geometry(self) -> Union[FabGeometries.FabGeometry, Tuple[FabGeometries.FabGeometry, ...]]:
+Fab_Pocket.Geometries(self) -> Tuple[FabGeometries.FabGeometry, ...]:
 
 Return the original Geometry.
 

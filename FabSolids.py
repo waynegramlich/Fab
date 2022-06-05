@@ -17,6 +17,7 @@ from collections import OrderedDict
 from enum import IntEnum, auto
 from dataclasses import dataclass, field
 from pathlib import Path
+from typeguard import check_argument_types
 from typing import Any, cast, Dict, Generator, IO, List, Optional, Sequence, Tuple, Union
 
 import cadquery as cq  # type: ignore
@@ -558,46 +559,46 @@ class Fab_Pocket(Fab_Operation):
 
     Attributes:
     * *Name* (str): The operation name.
-    * *Geometry* (Union[FabGeometry, Tuple[FabGeometry, ...]]):
-       The Polygon or Circle to pocket.  If a tuple is given, the smaller FabGeometry's
-       specify "islands" to not pocket.
+    * *Geometries* (Tuple[FabGeometry, ...]):
+       The Polygon or Circle to pocket.  If a tuple is given, first FabGeometry in the tuple
+       specifies the pocket exterior, and the remaining FabGeometry's specify islands of
+       material within the pocket that must not be removed.
     * *Depth* (float): The pocket depth in millimeters.
     * *Bottom_Path* (str): The the path to the generated Pocket bottom STEP file.
 
     """
 
     _Name: str
-    _Geometry: Union[FabGeometry, Tuple[FabGeometry, ...]] = field(compare=False)
+    _Geometries: Tuple[FabGeometry, ...] = field(compare=False)
     _Depth: float
     # TODO: Make _Geometries be comparable.
-    _Geometries: Tuple[FabGeometry, ...] = field(init=False, repr=False, compare=False)
     _BottomPath: Optional[Path] = field(init=False)
     _FinalDepth: float = field(init=False, repr=False)
     _TopDepth: float = field(init=False, repr=False)
     _StartDepth: float = field(init=False, repr=False)
     _StepDepth: float = field(init=False, repr=False)
 
-    # Fab_Pocket__post_init__():
+    # Fab_Pocket.__post_init__():
     def __post_init__(self) -> None:
         """Verify Fab_Pocket values."""
         super().__post_init__()
 
         # Type check self._Geometry and convert into self._Geometries:
         geometries: List[FabGeometry] = []
-        self_geometry: Union[FabGeometry, Tuple[FabGeometry, ...]] = self._Geometry
+        self_geometry: Union[FabGeometry, Tuple[FabGeometry, ...]] = self._Geometries
         if isinstance(self_geometry, FabGeometry):
-            geometries = [self_geometry]
+            geometries = [self_geometry]  # pragma: no unit cover
         elif isinstance(self_geometry, tuple):  # pragma: no unit cover
             geometry: FabGeometry
             for geometry in self_geometry:
-                if not isinstance(geometry, FabGeometry):
+                if not isinstance(geometry, FabGeometry):  # pragma: no unit cover
                     raise RuntimeError(
                         f"Fab_Extrude.__post_init__({self.Name}):"
                         f"{type(geometry)} is not a FabGeometry")  # pragma: no unit cover
                 geometries.append(geometry)
         else:  # pragma: no unit cover
-            raise RuntimeError(
-                f"Fab_Extrude.__post_init__({self.Name}):{type(self.Geometry)} "
+            raise RuntimeError(  # pragma: no unit cover
+                f"Fab_Extrude.__post_init__({self.Name}):{type(self.Geometries)} "
                 f"is neither a FabGeometry nor a Tuple[FabGeometry, ...]")  # pragma: no unit cover
         self._Geometries = tuple(geometries)
 
@@ -628,10 +629,10 @@ class Fab_Pocket(Fab_Operation):
         self._FinalDepth = final_depth
         self.Prefix = self._Mount.lookup_prefix(self._Name)
 
-    # Fab_Pocket.Geometry():
-    def Geometry(self) -> Union[FabGeometry, Tuple[FabGeometry, ...]]:
+    # Fab_Pocket.Geometries():
+    def Geometries(self) -> Tuple[FabGeometry, ...]:
         """Return the original Geometry."""
-        return self._Geometry  # pragma: no unit cover
+        return self._Geometries  # pragma: no unit cover
 
     # Fab_Pocket.Depth():
     def Depth(self) -> float:
@@ -668,6 +669,8 @@ class Fab_Pocket(Fab_Operation):
         if tracing:
             print(f"{tracing}=>Fab_Pocket.post_produce1('{self.Name}')")
 
+        # Step 1: Produce the pocket Step file for the pocket:
+        # Step 1a: Create the needed CadQuery *pocket_context* and *bottom_context*:
         mount: FabMount = self.Mount
         geometry_context: Fab_GeometryContext = mount._GeometryContext
         geometries: Tuple[FabGeometry, ...] = self._Geometries
@@ -678,7 +681,7 @@ class Fab_Pocket(Fab_Operation):
         bottom_context: Fab_GeometryContext = geometry_context.copy_with_plane_adjust(
             -self._Depth, tracing=next_tracing)
 
-        # Transfer *geometries* to *pocket_context* (which is a copy of *geometry_context*):
+        # Step 1b: Transfer *geometries* to *pocket_context* and *bottom_context*:
         pocket_prefix: Optional[Fab_Prefix] = self.Prefix
         assert isinstance(pocket_prefix, Fab_Prefix)
         bottom_prefix: str = pocket_prefix.to_string()
@@ -690,7 +693,7 @@ class Fab_Pocket(Fab_Operation):
             if tracing:
                 pocket_query.show(f"Pocket Context after Geometry {index}", tracing)
 
-        # Extrude the pocket *pocket_query* volume to be removed.
+        # Step 1c: Extrude *bottom_path* and save it to a STEP file:
         pocket_query.extrude(self._Depth, tracing=next_tracing)
 
         bottom_name: str = f"{bottom_prefix}__{self.Name}__pocket_bottom"
@@ -710,6 +713,7 @@ class Fab_Pocket(Fab_Operation):
                 bottom_assembly.save(str(bottom_path), "STEP")
         self._BottomPath = bottom_path
 
+        # Step 2: Now deal with finding acceptable tool bits from *machines* in *shops*:
         MillBit = Tuple[FabShop, FabMachine, int, FabBit]
         mill_bit: MillBit
         mill_bits: List[MillBit] = []
@@ -721,19 +725,32 @@ class Fab_Pocket(Fab_Operation):
             print(f"{len(machines)=}")
             machine: FabMachine
             for machine in machines:
+                # In order to be able to do the job:
+                # 1. The end mill must have a cutting edge depth that exceeds pocket depth.
+                # 2. The end mill needs to have diameter that allows it to cut the internal fillets.
+                # numbered_end_mills: List[Tuple[int, FabBit]] = []
                 if isinstance(machine, FabCNC):
-                    print("Have FabCNC")
+                    if tracing:
+                        print(f"{tracing}Have FabCNC")
                     library: FabLibrary = machine.Library
                     numbered_bits: Tuple[Tuple[int, FabBit], ...] = library.NumberedBits
                     print(f"{len(numbered_bits)=}")
-                    number: int
                     bit: FabBit
-                    for number, bit in numbered_bits:
-                        if isinstance(bit, FabEndMillBit):
-                            mill_bit = (shop, machine, number, bit)
-                            mill_bits.append(mill_bit)
+                    numbered_bit: Tuple[int, FabBit]
+                    for numbered_bit in numbered_bits:
+                        _, bit = numbered_bit
+                        if False:
+                            pass
+                            # In order to be able to do the job:
+                            # 1. The end mill must have a cutting edge depth that exceeds
+                            #    pocket depth.
+                            # 2. The end mill needs to have diameter that allows it to cut
+                            #    the internal fillets.
+                            # mill_bit = (shop, machine, number, bit)
+                        # numbered_end_mills.append(mill_bit)
+
         print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-        for index, mill_bit in enumerate(mill_bits):
+        for index, mill_bit in enumerate(mill_bits):  # pragma: no unit cover
             _, _, _, bit = mill_bit
             assert isinstance(bit, FabEndMillBit), bit
             attributes: FabAttributes = bit.Attributes
@@ -1321,10 +1338,23 @@ class FabMount(object):
     # FabMount.pocket():
     def pocket(self, name: str, shapes: Union[FabGeometry, Tuple[FabGeometry, ...]],
                depth: float, tracing: str = "") -> None:
-        """Perform a pocket operation."""
+        """Perform a pocket operation.
+
+        Arguments:
+        * *name* (str): The name of the pocket.
+        * *shapes* (Union[FabGeometry, Tuple[FabGeometry, ...]]):
+          Either a single FabGeometry or a tuple of FabGeometry's.  The first FabGeometry specifies
+          the pocket boundary.
+        * *depth* (float): The pocket depth in millimeters from the mount plane.
+
+        """
+        # TODO: Add the ability to do pockets in pockets.
         if tracing:
             print(f"{tracing}=>FabMount({self.Name}).pocket('{name}', *)")
 
+        assert check_argument_types()
+        if isinstance(shapes, FabGeometry):
+            shapes = (shapes,)
         pocket: Fab_Pocket = Fab_Pocket(self, name, shapes, depth)
         self.record_operation(pocket)
 

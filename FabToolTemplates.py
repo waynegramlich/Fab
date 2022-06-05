@@ -319,6 +319,7 @@ class FabAttributes(object):
         assert json_dict == {"Material": "Carbide", "Flutes": 2}
         extracted_attributes: FabAttributes = FabAttributes.fromJSON(json_dict)
         assert extracted_attributes == attributes, (extracted_attributes, attributes)
+        assert attributes.find("Flutes") == 2
         if tracing:
             print(f"{tracing}<=FabAttributes._unit_tests()")
 

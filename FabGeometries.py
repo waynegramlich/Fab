@@ -572,7 +572,7 @@ class Fab_Fillet(object):
     After: "Fab_Fillet" = field(init=False, repr=False)  # Filled in by __post_init__()
     Arc: Optional["Fab_Arc"] = field(init=False, default=None)  # Filled in by compute_arcs()
     Line: Optional["Fab_Line"] = field(init=False, default=None)  # Filled in by compute_lines()
-    ProjectedApex: Vector = field(init=False, repr=False)  # Used by get_area_and_minimum_radius()
+    ProjectedApex: Vector = field(init=False, repr=False)  # Used by get_geometry_info()
 
     # Fab_Fillet.__post_init__():
     def __post_init__(self) -> None:
@@ -729,12 +729,22 @@ class Fab_Fillet(object):
         # FreeCAD Vector metheds like to modify Vector contents; force copies beforehand:
         self.Apex = plane.point_project(self.Apex)
 
-    # Fab_Fillet.compute_fillet_area():
-    def compute_fillet_area(self, tracing: str = "") -> float:
-        """Return the fillet area that is excluded to corner rounding."""
+    # Fab_Fillet.compute_fillet_area_perimeter():
+    def compute_fillet_area_perimeter(self, tracing: str = "") -> Tuple[float, float]:
+        """Return the excluded fillet area and the perimeter for a Fab_Fillet.
+
+        To be more concise, the fillet_area is the area outside of the fillet arc, but inside
+        the straight lines "corner" of the fillet.
+
+        Returns:
+        * (float): The excluded area of a fillet (i.e. the area not under the arc segment.)
+        * (float): The length the of the arc segment.
+
+        """
         if tracing:
-            print(f"{tracing}=>Fab_Fillet.compute_fillet_area()")
+            print(f"{tracing}=>Fab_Fillet.compute_fillet_area_perimeter()")
         fillet_area: float = 0.0
+        fillet_perimeter: float = 0.0
 
         arc: Optional[Fab_Arc] = self.Arc
         if arc:
@@ -746,9 +756,9 @@ class Fab_Fillet(object):
                 arc.Apex,
                 arc.Finish,
             )
-            diamond_area: float = FabPolygon.compute_polygon_area(arc_points)
+            diamond_area: float = FabPolygon._compute_polygon_area(arc_points)
             if tracing:
-                print(f"{tracing}{diamond_area=}")
+                print(f"{tracing}{diamond_area=:.3f}")
 
             # Compute *sweep_angle*, the angle that sweeps from start to finish:
             start: Vector = arc.Start - arc.Apex
@@ -765,24 +775,32 @@ class Fab_Fillet(object):
             while sweep_angle < -pi:
                 sweep_angle += pi2  # pragma: no unit cover
             sweep_angle = abs(sweep_angle)
+            assert 0.0 <= sweep_angle <= pi, f"{math.degrees(sweep_angle)=:.3f}"
             if tracing:
-                print(f"{tracing}{math.degrees(sweep_angle)=}")
+                print(f"{tracing}{math.degrees(sweep_angle)=:.3f} {sweep_angle=:.3f}")
 
-            # Compute *excluded_area*:
+            # Add the *sweep_area* to *total_fillet_area*:
             radius: float = arc.Radius
             circle_area: float = pi * radius * radius
-            secant_area: float = circle_area * (sweep_angle / pi2)
-            fillet_area = diamond_area - secant_area
+            sweep_area: float = circle_area * (sweep_angle / pi2)
+            fillet_area = diamond_area - sweep_area
+
+            # Compute *fillet_perimeter*:
+            diameter: float = pi2 * radius
+            fraction: float = sweep_angle / pi2
+            fillet_perimeter = diameter * fraction
             assert fillet_area >= 0.0, fillet_area
             if tracing:
-                print(f"{tracing}{circle_area=} {secant_area=} {fillet_area=}")
+                print(f"{tracing}{circle_area=:.3f} {sweep_area=:.3f} {fillet_area=:.3f} ")
+                print(f"{tracing}{diameter=:.3f} {fraction=:.3f} {fillet_perimeter=:.3f}")
         else:
             if tracing:
                 print(f"{tracing}No arc")
 
         if tracing:
-            print(f"{tracing}<=Fab_Fillet.compute_fillet_area()=>{fillet_area}")
-        return fillet_area
+            print(f"{tracing}<=Fab_Fillet.compute_fillet_area_perimeter()=>"
+                  f"{fillet_area=:.3f}, {fillet_perimeter=:.3f}")
+        return fillet_area, fillet_perimeter
 
     # Fab_Fillet.get_geometries():
     def get_geometries(self) -> Tuple[Fab_Geometry, ...]:
@@ -876,6 +894,23 @@ class FabGeometry(object):
         """Return a new FabGeometry projected onto a plane."""
         raise NotImplementedError(f"{type(self)}.project_to_plane is not implemented")
 
+    # FabGeometry.get_geometry_info():
+    def get_geometry_info(
+            self, plane: Fab_Plane, tracing: str = "") -> Tuple[float, float, float, float]:
+        """Return information about FabGeometry.
+
+        Arguments:
+        * *plane* (Fab_Plane): The plane to project the FabGeometry onto.
+
+        Returns:
+        * (float): The geometry area in square millimeters.
+        * (float): The perimeter length in millimeters.
+        * (float):
+          The minimum internal radius in millimeters. -1.0 means there is no internal radius.
+        * (float): The minimum external radius in millimeters. 0 means that all corners are "sharp".
+        """
+        raise NotImplementedError(f"{type(self)}.get_geometry_info is not implemented")
+
 
 # FabCircle:
 @dataclass(frozen=True)
@@ -923,6 +958,34 @@ class FabCircle(FabGeometry):
             f"{self.Diameter:.6f}",
         )
         return hashes
+
+    # FabCircle.get_geometry_info():
+    def get_geometry_info(
+            self, plane: Fab_Plane, tracing: str = "") -> Tuple[float, float, float, float]:
+        """Return information about FabGeometry.
+
+        Arguments:
+        * *plane* (Fab_Plane): The plane to project FabGeometry onto.
+
+        Returns:
+        * (float): The circle area in square millimeters.
+        * (float): The perimeter length in millimeters.
+        * (float): -1 since there are no internal radius corners for a circle.
+        * (float): The circle radius in millimeters.
+
+        """
+        if tracing:
+            print("{tracing}=>FabCircle.get_geometry_info(*))")
+        pi: float = math.pi
+        radius: float = self.Diameter / 2.0
+        area: float = pi * radius * radius
+        perimeter: float = 2.0 * pi * radius
+        minimum_internal_radius: float = -1.0
+        minimum_external_radius: float = radius
+        if tracing:
+            print(f"{tracing}=>FabCircle.get_geometry_info(*))=>"
+                  f"({area}, {perimeter}, {minimum_internal_radius}, {minimum_external_radius})")
+        return area, perimeter, minimum_internal_radius, minimum_external_radius
 
     # FabCircle.Box():
     @property
@@ -1037,7 +1100,7 @@ class FabPolygon(FabGeometry):
     specified as simple Vector or as a tuple that specifies a Vector and a radius.  The radius
     is in millimeters and can be provided as either a Python int or float.  When an explicit
     fillet radius is not specified, higher levels in the software stack will typically substitute
-    in a deburr radius for external corners and an internal tool radius for internal corners.
+x    in a deburr radius for external corners and an internal tool radius for internal corners.
     FabPolygon's are frozen and can not be modified after creation.  Since Vector's are mutable,
     a copy of each vector stored inside the FabPolygon.
 
@@ -1130,10 +1193,10 @@ class FabPolygon(FabGeometry):
 
     # FabPolygon.compute_polgyon_area():
     @staticmethod
-    def compute_polygon_area(points: Sequence[Vector], tracing: str = "") -> float:
+    def _compute_polygon_area(points: Sequence[Vector], tracing: str = "") -> float:
         """Compute that area of an irregular polygon."""
         if tracing:
-            print(f"{tracing}=>compute_polygon_area({points=})")
+            print(f"{tracing}=>FabPolygon_compute_polygon_ares({points})")
 
         # References:
         # * [Polygon Area](https://www.mathsisfun.com/geometry/area-irregular-polygons.html)
@@ -1167,27 +1230,39 @@ class FabPolygon(FabGeometry):
         # the *area* can be either positive or negative.  Make it positive.
         area = abs(area)
         if tracing:
-            print(f"{tracing}<=compute_polygon_area({points=})=>{area}")
+            print(f"{tracing}<=_compute_polygon_area({points})=>{area}")
         return area
 
-    # FabPolygon.get_area_and_minimum_radius():
-    def get_area_and_minimum_radius(
-            self, plane: Fab_Plane, tracing: str = "") -> Tuple[float, float]:
-        """Return the area and minimum internal radius of FabPolygon.
+    # FabPolygon.get_geometry_info():
+    def get_geometry_info(
+            self, plane: Fab_Plane, tracing: str = "") -> Tuple[float, float, float, float]:
+        """Return the values needed for a FabGeometry_Info from a FabPolygon.
 
         Method Arguments:
-        * *plane* (Fab_Plane): The FabPolyogn projection to use for Area computation.
+        * *plane* (Fab_Plane): The FabPolygon projection to use for Area computation.
 
         Returns:
         * (float): The area of the projected FabPolygon.
+        * (float): The polygon perimeter in millimeters with rounded corners.
         * (float):
-          The minimum internal fillet radius of the FabPolygon.
-          -1.0 is returned if there is no internal radius.
+          The minimum internal radius corners for the polygon.
+          -1.0 means no internal corners.
+        * (float): The minimum external radius corners for the polygon.
 
         """
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>FabPolygon.get_area_and_minimum_radius(*)")
+            print(f"{tracing}=>FabPolygon.get_geometry_info(*)")
+
+        # In order to finish filling in Fab_Fillet's, a *geometry_context* is needed.
+        origin: Vector = Vector(0.0, 0.0, 0.0)
+        z_axis: Vector = Vector(0.0, 0.0, 1.0)
+        xy_plane = Fab_Plane(origin, z_axis)
+        query: Fab_Query = Fab_Query(xy_plane)  # Not used, but *geometry_context* needs it.
+        # Fill in the contents of the FabFillet's:
+        geometry_context: Fab_GeometryContext = Fab_GeometryContext(xy_plane, query)
+        _ = self.produce(geometry_context, "prefix", 0)
+        # Now the Fab_Fillets are filled in.
 
         # Step 1: Project the Apex points from *plane* to the XY plane.
         fillet: Fab_Fillet
@@ -1203,6 +1278,7 @@ class FabPolygon(FabGeometry):
         negative_fillet_area: float = 0.0
         positive_radius: float = -1.0
         negative_radius: float = -1.0
+        perimeter: float = 0.0
         index: int
         for index, fillet in enumerate(self.Fab_Fillets):
             before_apex: Vector = fillet.Before.ProjectedApex
@@ -1227,14 +1303,28 @@ class FabPolygon(FabGeometry):
                 print(f"{tracing}Fillet[{index}]: {degrees(before_angle)=} {degrees(after_angle)=}")
                 print(f"{tracing}Fillet[{index}]: {degrees(delta_angle)=} {degrees(total_angle)=}")
 
-            fillet_area: float = fillet.compute_fillet_area(tracing=next_tracing)
+            fillet_area: float
+            fillet_perimeter: float
+            fillet_area, fillet_perimeter = (
+                fillet.compute_fillet_area_perimeter(tracing=next_tracing))
+            if tracing:
+                print(f"{tracing}perimeter += {fillet_perimeter=:.3f}")
+            perimeter += fillet_perimeter
+
+            line: Optional[Fab_Line] = fillet.Line
+            if line:
+                projected_start: Vector = plane.point_project(line.Start)
+                projected_finish: Vector = plane.point_project(line.Finish)
+                line_length: float = (projected_finish - projected_start).Length
+                perimeter += line_length
+                if tracing:
+                    print(f"{tracing}perimeter += {line_length=:.3f}")
 
             def update_radius(radius, fillet: Fab_Fillet) -> float:
                 """Update the minimum radius."""
                 arc: Optional[Fab_Arc] = fillet.Arc
-                if arc:
-                    arc_radius: float = arc.Radius
-                    radius = arc_radius if radius < 0.0 else max(radius, arc_radius)
+                arc_radius: float = arc.Radius if arc else 0.0
+                radius = arc_radius if radius < 0.0 else min(radius, arc_radius)
                 return radius
 
             if delta_angle > 0.0:
@@ -1245,31 +1335,33 @@ class FabPolygon(FabGeometry):
                 negative_radius = update_radius(negative_radius, fillet)
 
         if tracing:
-            print(f"{tracing}{positive_fillet_area=} {positive_radius=}")
-            print(f"{tracing}{negative_fillet_area=} {negative_radius=}")
+            print(f"{tracing}{positive_fillet_area=:.3f} {positive_radius=:.3f}")
+            print(f"{tracing}{negative_fillet_area=:.3f} {negative_radius=:.3f}")
 
         # Sanity check: *total_angle* should be either +360 degrees or -360 degrees:
         degrees360: float = 2.0 * pi
         epsilon: float = 1.0e-8
-        assert abs(abs(total_angle) - degrees360) < epsilon, f"{math.degrees(total_angle)=}"
+        assert abs(abs(total_angle) - degrees360) < epsilon, f"{math.degrees(total_angle)=:.3f}"
 
         # Compute the *maximum_area* that does not deal with fillet rounding:
-        area: float = FabPolygon.compute_polygon_area(polygon_points)
+        area: float = FabPolygon._compute_polygon_area(polygon_points)
         if tracing:
             print(f"{tracing}Initial polygon {area=}")
-        radius: float
+        internal_radius: float = 0.0
+        external_radius: float = 0.0
         if total_angle > 0.0:
             # Clockwise:
             area += negative_fillet_area - positive_fillet_area
-            radius = negative_radius
+            internal_radius, external_radius = negative_radius, positive_radius
         else:
             # Counter-Clockwise:
             area += positive_fillet_area - negative_fillet_area
-            radius = positive_radius
+            internal_radius, external_radius = positive_radius, negative_radius
 
         if tracing:
-            print(f"{tracing}<=FabPolygon.get_area_and_minimum_radius()=>({area}, {radius})")
-        return area, radius
+            print(f"{tracing}<=FabPolygon.get_geometry_info()=>"
+                  f"({area:.3f}, {perimeter:.3f}, {internal_radius:.3f}, {external_radius:.3f})")
+        return area, perimeter, internal_radius, external_radius
 
     # FabPolygon.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:
@@ -1453,6 +1545,36 @@ class FabPolygon(FabGeometry):
             print(f"{tracing}<=FabPolygon.produce(*, '{prefix}', {index})=>*")
         return tuple(part_geometries)
 
+    # FabPolygon._check_info():
+    @staticmethod
+    def _check_info(
+            test_name: str, corners: Tuple[Any, ...], desired_area: float, desired_perimeter: float,
+            desired_internal_radius: float, desired_external_radius, tracing: str = "") -> None:
+        """Check that Fab_GeometryInfo is correct."""
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabPolygon._check_info('{test_name}', *, "
+                  f"{desired_area:.3f}, {desired_perimeter:.3f}, "
+                  f"{desired_internal_radius:.3f}, {desired_external_radius:.3f})")
+        origin: Vector = Vector()
+        z_axis: Vector = Vector(0.0, 0.0, 1.0)
+        xy_plane: Fab_Plane = Fab_Plane(origin, z_axis)
+
+        polygon1: FabPolygon = FabPolygon(corners)
+        info1: Fab_GeometryInfo = Fab_GeometryInfo(polygon1, xy_plane, tracing=next_tracing)
+        info1._check(test_name, desired_area, desired_perimeter,
+                     desired_internal_radius, desired_external_radius, tracing=next_tracing)
+
+        polygon2: FabPolygon = FabPolygon(tuple(reversed(corners)))
+        info2: Fab_GeometryInfo = Fab_GeometryInfo(polygon2, xy_plane)
+        info2._check(test_name, desired_area, desired_perimeter,
+                     desired_internal_radius, desired_external_radius, tracing=next_tracing)
+
+        if tracing:
+            print(f"{tracing}<=FabPolygon._check_info('{test_name}', *, "
+                  f"{desired_area:.3f}, {desired_perimeter:.3f}, "
+                  f"{desired_internal_radius:.3f}, {desired_external_radius:.3f})")
+
     # FabPolygon._unit_tests():
     @staticmethod
     def _unit_tests(tracing: str = "") -> None:
@@ -1479,6 +1601,7 @@ class FabPolygon(FabGeometry):
         #              |      |
         #              *------* NES (NorthEast corner to the South)
         #             NEI     | NEI => (NorthEast corner Inner)
+        #                     |
         #
         # Thus, the corners must be:
         #
@@ -1493,167 +1616,401 @@ class FabPolygon(FabGeometry):
         #    | |               | |
         #    *-*---------------*-*
         #
-        # The NE/SW corners have a 1mm radius and the NW/SE corners have a 2mm radius.
+        # All corners on the eastern side have a radius of 1mm.
+        # All corners on the western side have a radius of 2mm.
 
         # Create 4 quads of corners:
+        length: float = 80.0
+        half_length: float = length / 2.0
+        width: float = 40.0
+        half_width: float = width / 2.0
         offset: float = 4.0
-        dx: Vector = Vector(40.0, 0.0, 0.0)
+        dx: Vector = Vector(half_length, 0.0, 0.0)
         ddx: Vector = Vector(offset, 0.0, 0.0)
-        dy: Vector = Vector(0.0, 20.0, 0.0)
+        dy: Vector = Vector(0.0, half_width, 0.0)
         ddy: Vector = Vector(0.0, offset, 0.0)
 
-        ne: Vector = dx + dy  # No corner
-        neo: Tuple[Vector, float] = (dx + dy, 1.0)
-        new: Tuple[Vector, float] = (dx + dy - ddx, 1.0)
-        nes: Tuple[Vector, float] = (dx + dy - ddy, 1.0)
-        nei: Tuple[Vector, float] = (dx + dy - ddx - ddy, 1.0)
+        neo: Vector = dx + dy  # No corner
+        new: Vector = neo - ddx
+        nes: Vector = neo - ddy
+        nei: Vector = neo - ddx - ddy
+        neof: Tuple[Vector, float] = (neo, 1.0)
+        newf: Tuple[Vector, float] = (new, 1.0)
+        nesf: Tuple[Vector, float] = (nes, 1.0)
+        neif: Tuple[Vector, float] = (nei, 1.0)
+        ne_notch: Tuple[Vector, ...] = (nes, nei, new)
+        nef_notch: Tuple[Tuple[Vector, float], ...] = (nesf, neif, newf)
 
-        sw: Vector = -dx - dy  # No corner
-        swo: Tuple[Vector, float] = (-dx - dy, 1.0)
-        swe: Tuple[Vector, float] = (-dx - dy + ddx, 1.0)
-        swn: Tuple[Vector, float] = (-dx - dy + ddy, 1.0)
-        swi: Tuple[Vector, float] = (-dx - dy + ddx + ddy, 1.0)
+        swo: Vector = -dx - dy
+        swe: Vector = swo + ddx
+        swn: Vector = swo + ddy
+        swi: Vector = swo + ddx + ddy
+        swof: Tuple[Vector, float] = (swo, 2.0)
+        swef: Tuple[Vector, float] = (swe, 2.0)
+        swnf: Tuple[Vector, float] = (swn, 2.0)
+        swif: Tuple[Vector, float] = (swi, 2.0)
+        sw_notch: Tuple[Vector, ...] = (swn, swi, swe)
+        swf_notch: Tuple[Tuple[Vector, float], ...] = (swnf, swif, swef)
 
-        nw: Vector = -dx + dy  # No corner
-        nwo: Tuple[Vector, float] = (-dx + dy, 2.0)
-        nwe: Tuple[Vector, float] = (-dx + dy + ddx, 2.0)
-        nws: Tuple[Vector, float] = (-dx + dy - ddy, 2.0)
-        nwi: Tuple[Vector, float] = (-dx + dy + ddx - ddy, 2.0)
+        nwo: Vector = -dx + dy
+        nwe: Vector = nwo + ddx
+        nws: Vector = nwo - ddy
+        nwi: Vector = nwo + ddx - ddy
+        nwof: Tuple[Vector, float] = (nwo, 2.0)
+        nwef: Tuple[Vector, float] = (nwe, 2.0)
+        nwsf: Tuple[Vector, float] = (nws, 2.0)
+        nwif: Tuple[Vector, float] = (nwi, 2.0)
+        nw_notch: Tuple[float, ...] = (nwe, nwi, nws)
+        nwf_notch: Tuple[Tuple[Vector, float], ...] = (nwef, nwif, nwsf)
 
-        se: Vector = dx - dy  # No corner
-        seo: Tuple[Vector, float] = (dx - dy, 2.0)
-        sew: Tuple[Vector, float] = (dx - dy - ddx, 2.0)
-        sen: Tuple[Vector, float] = (dx - dy + ddy, 2.0)
-        sei: Tuple[Vector, float] = (dx - dy - ddx + ddy, 2.0)
+        seo: Vector = dx - dy
+        sew: Vector = seo - ddx
+        sen: Vector = seo + ddy
+        sei: Vector = seo - ddx + ddy
+        seof: Tuple[Vector, float] = (seo, 1.0)
+        sewf: Tuple[Vector, float] = (sew, 1.0)
+        senf: Tuple[Vector, float] = (sen, 1.0)
+        seif: Tuple[Vector, float] = (sei, 1.0)
+        se_notch: Tuple[float, ...] = (sew, sei, sen)
+        sef_notch: Tuple[Tuple[Vector, float], ...] = (sewf, seif, senf)
 
-        def check_helper(test_name: str, corners: Tuple[Any, ...],
-                         desired_area: float, desired_radius: float, tracing: str = "") -> str:
-            next_tracing: str = tracing + " " if tracing else ""
-            if tracing:
-                print(f"{tracing}=>check_helper("
-                      f"'{test_name}', {corners}, {desired_area}, {desired_radius})")
-            epsilon: float = 0.001  # Only match to three places after the decimal point.
-            area: float
-            radius: float
-            polygon: FabPolygon = FabPolygon(corners)
+        notch_area: float = offset * offset
+        side_area: float = offset * (width - 2.0 * offset)
+        side_perimeter: float = 2.0 * offset  # The notch goes both in and out by *offset*.o
 
-            # In order to finsish filling in Fab_Fillet's, a *geometry_context* is needed.
-            origin: Vector = Vector(0.0, 0.0, 0.0)
-            z_axis: Vector = Vector(0.0, 0.0, 1.0)
-            xy_plane = Fab_Plane(origin, z_axis)
-            query: Fab_Query = Fab_Query(xy_plane)  # Not used, but *geometry_context* needs it.
-            # Fill in the contents of the FabFillet's:
-            geometry_context: Fab_GeometryContext = Fab_GeometryContext(xy_plane, query)
-            _ = polygon.produce(geometry_context, "prefix", 0)
+        # Side notches:
+        east_side_notch: Tuple[Vector, ...] = (seo, sen, sei, nei, nes, neo)
+        west_side_notch: Tuple[Vector, ...] = (nwo, nws, nwi, swi, swn, swo)
+        east_side_notchf: Tuple[Vector, ...] = (seof, senf, seif, neif, nesf, neof)
+        west_side_notchf: Tuple[Vector, ...] = (nwof, nwsf, nwif, swif, swnf, swof)
 
-            area, radius = polygon.get_area_and_minimum_radius(xy_plane, tracing=next_tracing)
-            error: str = ""
-            assert area > 0.0, area
-            if abs(desired_area - area) > epsilon:
-                error = f"{test_name}: Area: Want {desired_area}, not {area}"
-            if abs(desired_radius - radius) > epsilon:
-                error = f"{test_name}: Radius: Want {desired_radius}, not {radius}"
+        area: float = length * width  # Total rectangle area.
+        perimeter: float = 2 * length + 2 * width
+        simple_rectangle: Tuple[Vector, ...] = (neo, nwo, swo, seo)
+        FabPolygon._check_info("no fillets",
+                               simple_rectangle, area, perimeter, -1.0, 0.0)
 
-            if tracing:
-                print(f"{tracing}>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-                print(f"{tracing}<=check_helper("
-                      f"'{test_name}', {corners}, {desired_area}, {desired_radius})=>'{error}'")
-            return error
+        # Make sure that failures are actually detected:
+        try:
+            FabPolygon._check_info("area_fail",
+                                   simple_rectangle, 123.0, perimeter, -1.0, -1.0)
+            assert False
+        except RuntimeError as error:
+            assert str(error) == (
+                "area_fail: Area: Want 123.000, not 3200.000"), str(error)
+        try:
+            # -1 expected for no extenral fillets
+            # -1 expected for no internal fillets
+            FabPolygon._check_info("perimeter_fail",
+                                   simple_rectangle, area, 123.0, -1.0, -1.0)
+            assert False
+        except RuntimeError as error:
+            assert str(error) == (
+                "perimeter_fail: Perimeter: Want 123.000, not 240.000"), str(error)
+        try:
+            FabPolygon._check_info("internal_radius_fail",
+                                   simple_rectangle, area, perimeter, 123.0, -1.0)
+            assert False
+        except RuntimeError as error:
+            assert str(error) == (
+                "internal_radius_fail: DesiredInternalRadius: Want 123.000, not -1.000"), (
+                    str(error))
+        try:
+            FabPolygon._check_info("external_radius_fail",
+                                   simple_rectangle, area, perimeter, -1.0, 123.0)
+            assert False
+        except RuntimeError as error:
+            assert str(error) == (
+                "external_radius_fail: DesiredExternalRadius: Want 123.000, not 0.000"), str(error)
 
-        def check(test_name: str, corners: Tuple[Any, ...],
-                  desired_area: float, desired_radius: float, tracing: str = "") -> None:
-            next_tracing: str = tracing + " " if tracing else ""
-            if tracing:
-                print(f"{tracing}=>check('{test_name}', {corners=}, "
-                      f"{desired_area=}, {desired_radius})")
-            error: str
-            error1 = check_helper(test_name, corners, desired_area, desired_radius, next_tracing)
-            error2 = check_helper(test_name, tuple(reversed(corners)),
-                                  desired_area, desired_radius)  # , next_tracing)
-            if tracing:
-                print(f"{tracing}{error1=}")
-                print(f"{tracing}{error2=}")
-            assert error1 == error2, (error1, error2)
-            if len(error1) > 0:
-                raise RuntimeError(error1)
-
-            if tracing:
-                print(f"{tracing}<=check('{test_name}', {corners=}, "
-                      f"{desired_area=}, {desired_radius})")
-
-        def fillet_area(radius: float, tracing: str = "") -> float:
+        def fillet_area(radius: float) -> float:
             """Return fillet area for 90 degree fillet."""
-            if tracing:
-                print(f"{tracing}=>fillet_area({radius})")
             diameter: float = 2.0 * radius
             square_area: float = diameter * diameter
             pi: float = math.pi
             circle_area: float = pi * radius * radius
             fillet_area: float = (square_area - circle_area) / 4.0  # 1/4 => 90 degrees
-            if tracing:
-                print(f"{tracing}{square_area=} {circle_area=} {fillet_area=}")
-                print(f"{tracing}<=fillet_area({radius})=>{fillet_area}")
             return fillet_area
 
-        rectangle: Tuple[Vector, ...] = (ne, nw, sw, se)
-        check("no fillets", rectangle, 80.0 * 40.0, -1.0)
-
-        # Make sure that failures are actually detected:
-        try:
-            check("area_fail", rectangle, 80.0 * 40.0 + 1.0, -1.0)  # No internal fillets
-            assert False
-        except RuntimeError as error:
-            assert str(error) == "area_fail: Area: Want 3201.0, not 3200.0", str(error)
-        try:
-            check("radius_fail", rectangle, 80.0 * 40, 1.0)  # -1 expected for no internal fillets
-            assert False
-        except RuntimeError as error:
-            assert str(error) == "radius_fail: Radius: Want 1.0, not -1.0", str(error)
-
         # Round the corner by 1mm
-        fillet_1mm: float = fillet_area(1.0)
-        fillet_2mm: float = fillet_area(2.0)
+        radius1: float = 1.0
+        radius2: float = 2.0
+        fillet_1mm: float = fillet_area(radius1)
+        fillet_2mm: float = fillet_area(radius2)
+        pi: float = math.pi
+        perimeter_1mm = 2.0 * pi * radius1 / 4.0 - 2.0 * radius1   # 1/4 1mm circle - 2x1mm
+        perimeter_2mm = 2.0 * pi * radius2 / 4.0 - 2.0 * radius2   # 1/4 2mm circle - 2x2mm
+
+        # Do non-fillet tests first:
+        FabPolygon._check_info("no notches",
+                               (neo, nwo, swo, seo), area, perimeter, -1.0, 0.0)
+        FabPolygon._check_info("ne notch", ne_notch + (nwo, swo, seo),
+                               area - notch_area, perimeter, 0.0, 0.0)
+        FabPolygon._check_info("nw notch", nw_notch + (swo, seo, neo),
+                               area - notch_area, perimeter, 0.0, 0.0)
+        FabPolygon._check_info("sw notch", sw_notch + (seo, neo, nwo),
+                               area - notch_area, perimeter, 0.0, 0.0)
+        FabPolygon._check_info("se notch", se_notch + (neo, nwo, swo),
+                               area - notch_area, perimeter, 0.0, 0.0)
+
+        FabPolygon._check_info("ne/nw notch", ne_notch + nw_notch + (swo, seo),
+                               area - 2.0 * notch_area, perimeter, 0.0, 0.0)
+        FabPolygon._check_info("nw/sw notch", nw_notch + sw_notch + (seo, neo),
+                               area - 2.0 * notch_area, perimeter, 0.0, 0.0)
+        FabPolygon._check_info("sw/se notch", sw_notch + se_notch + (neo, nwo),
+                               area - 2.0 * notch_area, perimeter, 0.0, 0.0)
+        FabPolygon._check_info("se/ne notch", se_notch + ne_notch + (nwo, swo),
+                               area - 2.0 * notch_area, perimeter, 0.0, 0.0)
+        FabPolygon._check_info("ne/sw notch", ne_notch + (nwo,) + sw_notch + (seo,),
+                               area - 2.0 * notch_area, perimeter, 0.0, 0.0)
+        FabPolygon._check_info("nw/se notch", nw_notch + (swo,) + se_notch + (neo,),
+                               area - 2.0 * notch_area, perimeter, 0.0, 0.0)
+
+        FabPolygon._check_info("all notches", ne_notch + nw_notch + sw_notch + se_notch,
+                               area - 4.0 * notch_area, perimeter, 0.0, 0.0)
+
+        # Side notches with no fillets:
+        FabPolygon._check_info("east side notch", east_side_notch + (nwo, swo),
+                               area - side_area, perimeter + side_perimeter, 0.0, 0.0)
+        FabPolygon._check_info("west side notch", west_side_notch + (seo, neo),
+                               area - side_area, perimeter + side_perimeter, 0.0, 0.0)
+        FabPolygon._check_info("both side notch", east_side_notch + west_side_notch,
+                               area - 2.0 * side_area, perimeter + 2.0 * side_perimeter, 0.0, 0.0)
 
         # Rectangle tests with no internal fillets:
-        rectangle_area: float = 40.0 * 80.0  # Total rectangle area.
-        check("ne fillet only", (neo, nw, sw, se),  # 1 x 1 mm fillet
-              rectangle_area - fillet_1mm, -1.0)
-        check("ne,se fillets", (neo, nw, swo, se),  # 2 x 1 mm fillet
-              rectangle_area - 2 * fillet_1mm, -1.0)
-        check("nw fillet only", (ne, nwo, sw, se),  # 1 x 2 mm fillet
-              rectangle_area - fillet_2mm, -1.0)
-        check("nw,se fillet only", (ne, nwo, sw, seo),  # 2 x 2 mm fillet
-              rectangle_area - 2 * fillet_2mm, -1.0)
-        check("rectangle with all fillets", (neo, nwo, swo, seo),
-              rectangle_area - 2 * fillet_1mm - 2 * fillet_2mm, -1.0)
+        # Single fillets at all 4 corners:
+        FabPolygon._check_info("ne fillet only",  # 1 x 1 mm fillet
+                               (neof, nwo, swo, seo),
+                               area - fillet_1mm,
+                               perimeter + perimeter_1mm, -1.0, 0.0)
+        FabPolygon._check_info("nw fillet only",  # 1 x 2 mm fillet
+                               (nwof, swo, seo, neo),
+                               area - fillet_2mm,
+                               perimeter + perimeter_2mm, -1.0, 0.0)
+        FabPolygon._check_info("se fillet only",  # 1 x 1 mm fillet
+                               (seof, neo, nwo, swo),
+                               area - fillet_1mm,
+                               perimeter + perimeter_1mm, -1.0, 0.0)
+        FabPolygon._check_info("sw fillet only",  # 1 x 2 mm fillet
+                               (swof, seo, neo, nwo),
+                               area - fillet_2mm,
+                               perimeter + perimeter_2mm, -1.0, 0.0)
 
-        # Rectangle tests with internal fillets:
-        notch_area: float = offset * offset
-        check("ne_notch", (nes, nei, new, nw, sw, se),  # (2 - 1) 1mm fillets
-              rectangle_area - notch_area - (2 - 1) * fillet_1mm, 1.0)
-        check("nw_notch", (nwe, nwi, nws, sw, se, ne),  # (2 - 1) 2mm fillets
-              rectangle_area - notch_area - (2 - 1) * fillet_2mm, 2.0)
-        check("sw_notch", (swn, swi, swe, se, ne, nw),  # (2 - 1) 1mm fillets
-              rectangle_area - notch_area - (2 - 1) * fillet_1mm, 1.0)
-        check("se_notch", (sew, sei, sen, ne, nw, sw),  # (2 - 1) 2mm fillets
-              rectangle_area - notch_area - (2 - 1) * fillet_2mm, 2.0)
-        check("ne_sw_notch", (nes, nei, new, nw, swn, swi, swe, se),  # (4 - 2) 1mm fillets
-              rectangle_area - 2.0 * notch_area - (4 - 2) * fillet_1mm, 1.0)
-        check("nw_se_notch", (nwe, nwi, nws, sw, sew, sei, sen, ne),  # (4 - 2) 2mm fillets
-              rectangle_area - 2.0 * notch_area - (4 - 2) * fillet_2mm, 2.0)
-        check("notch all", (nes, nei, new, nwe, nwi, nws, swn, swi, swe, sew, sei, sen),
-              rectangle_area - 4.0 * notch_area - (4 - 2) * fillet_1mm - (4 - 2) * fillet_2mm, 2.0)
+        # Adjacent adjacent corner pairs:
+        FabPolygon._check_info("ne,nw fillet only",  # 1 x 1 mm fillet + 1 x 2mm fillet
+                               (neof, nwof, swo, seo),
+                               area - fillet_1mm - fillet_2mm,
+                               perimeter + perimeter_1mm + perimeter_2mm, -1.0, 0.0)
+        FabPolygon._check_info("nw,sw fillets",   # 2 x 2 mm fillets
+                               (nwof, swof, seo, neo),
+                               area - 2 * fillet_2mm,
+                               perimeter + 2.0 * perimeter_2mm, -1.0, 0.0)
+        FabPolygon._check_info("sw,se fillet only",  # 1 x 1 mm fillet + 1 x 2mm fillet
+                               (swof, seof, neo, nwo),
+                               area - fillet_1mm - fillet_2mm,
+                               perimeter + perimeter_1mm + perimeter_2mm, -1.0, 0.0)
+        FabPolygon._check_info("se,ne fillet only",  # 1 x 1 mm fillet + 1 x 2mm fillet
+                               (seof, neof, nwo, swo),
+                               area - 2 * fillet_1mm,
+                               perimeter + 2.0 * perimeter_1mm, -1.0, 0.0)
 
-        # Two notches with 2 internal fillets:
-        big_notch_area = (40.0 - 2 * offset) * offset  # DY is 20 - (-20) == 40
-        check("double internal notch",
-              (neo, nwo, nws, nwi, swi, swn, swo, seo, sen, sei, nei, nes),
-              rectangle_area - (2.0 * big_notch_area) -  # Remove the 2 big notches,
-              (2.0 * fillet_1mm + 2.0 * fillet_2mm),  # Remove the 4 corner fillets,
-              2.0)  # The notch has 4 fillets (2 internal and 2 external) and the cancel out).
+        # Diagonal corners:
+        FabPolygon._check_info("ne,sw fillet only",  # 1 x 1 mm fillet + 1 x 2mm fillet
+                               (neof, nwo, swof, seo),
+                               area - fillet_1mm - fillet_2mm,
+                               perimeter + perimeter_1mm + perimeter_2mm, -1.0, 0.0)
+        FabPolygon._check_info("nw,se fillet only",  # 1 x 1 mm fillet + 1 x 2mm fillet
+                               (nwof, swo, seof, neo),
+                               area - fillet_1mm - fillet_2mm,
+                               perimeter + perimeter_1mm + perimeter_2mm, -1.0, 0.0)
+
+        # All 4 corners:
+        FabPolygon._check_info("rectangle with all fillets",  # 2 x 1 mm fillets + 2 x 2 mm fillets
+                               (neof, nwof, swof, seof),
+                               area - 2 * fillet_1mm - 2 * fillet_2mm,
+                               perimeter + 2.0 * perimeter_1mm + 2.0 * perimeter_2mm, -1.0, radius1)
+
+        # From here on, all corners have some sort of fillet enabled.
+
+        # Fillet notch each of the 4 corners:
+        if tracing:
+            print(f"{tracing}{area=:.3f} {notch_area=:.3f} {fillet_1mm=:.3f} {fillet_2mm=:.3f}")
+        FabPolygon._check_info("ne fillet notch",
+                               nef_notch + (nwof, swof, seof),
+                               area - notch_area - 2 * fillet_1mm - 2 * fillet_2mm,
+                               perimeter + 4 * perimeter_1mm + 2 * perimeter_2mm, radius1, radius1)
+        FabPolygon._check_info("nw fillet_notch",
+                               nwf_notch + (swof, seof, neof),
+                               area - notch_area - 2 * fillet_1mm - 2 * fillet_2mm,
+                               perimeter + 2 * perimeter_1mm + 4 * perimeter_2mm, radius2, radius1)
+        FabPolygon._check_info("sw fillet notch",
+                               swf_notch + (seof, neof, nwof),
+                               area - notch_area - 2 * fillet_1mm - 2 * fillet_2mm,
+                               perimeter + 2 * perimeter_1mm + 4 * perimeter_2mm, radius2, radius1)
+        FabPolygon._check_info("se fillet notch",
+                               sef_notch + (neof, nwof, swof),
+                               area - notch_area - 2 * fillet_1mm - 2 * fillet_2mm,
+                               perimeter + 4 * perimeter_1mm + 2 * perimeter_2mm, radius1, radius1)
+
+        FabPolygon._check_info("ne/se fillet notch",
+                               nef_notch + (nwof, swof) + sef_notch,
+                               area - 2 * notch_area - 2 * fillet_1mm - 2 * fillet_2mm,
+                               perimeter + 6 * perimeter_1mm + 2 * perimeter_2mm, radius1, radius1)
+        FabPolygon._check_info("nw/sw fillet notch",  # Both internal radii are 2mm.
+                               nwf_notch + swf_notch + (seof, neof),
+                               area - 2 * notch_area - 2 * fillet_1mm - 2 * fillet_2mm,
+                               perimeter + 2 * perimeter_1mm + 6 * perimeter_2mm, radius2, radius1)
+        FabPolygon._check_info("ne/nw fillet notch",
+                               nef_notch + nwf_notch + (swof, seof),
+                               area - 2 * notch_area - 2 * fillet_1mm - 2 * fillet_2mm,
+                               perimeter + 4 * perimeter_1mm + 4 * perimeter_2mm, radius1, radius1)
+        FabPolygon._check_info("sw/se fillet notch",
+                               swf_notch + sef_notch + (neof, nwof),
+                               area - 2 * notch_area - 2 * fillet_1mm - 2 * fillet_2mm,
+                               perimeter + 4 * perimeter_1mm + 4 * perimeter_2mm, radius1, radius1)
+        FabPolygon._check_info("notch all",
+                               nef_notch + nwf_notch + swf_notch + sef_notch,
+                               area - 4 * notch_area - 2 * fillet_1mm - 2 * fillet_2mm,
+                               perimeter + 6 * perimeter_1mm + 6 * perimeter_2mm, radius1, radius1)
+
+        # Side notches with fillets:
+        FabPolygon._check_info("east side fillet notch",
+                               east_side_notchf + (nwof, swof),
+                               area - 1 * side_area - 2 * fillet_1mm - 2 * fillet_2mm,
+                               perimeter + 2 * offset + 6 * perimeter_1mm + 2 * perimeter_2mm,
+                               radius1, radius1)
+        FabPolygon._check_info("west side fillet notch",
+                               west_side_notchf + (seof, neof),
+                               area - 1 * side_area - 2 * fillet_1mm - 2 * fillet_2mm,
+                               perimeter + 2 * offset + 2 * perimeter_1mm + 6 * perimeter_2mm,
+                               radius2, radius1)
+        FabPolygon._check_info("both side fillet notch",
+                               west_side_notchf + east_side_notchf,
+                               area - 2 * side_area - 2 * fillet_1mm - 2 * fillet_2mm,
+                               perimeter + 4 * offset + 6 * perimeter_1mm + 6 * perimeter_2mm,
+                               radius1, radius1)
 
         if tracing:
             print(f"{tracing}<=FabPolygon._unit_tests()")
+
+
+# Fab_GeometryInfo:
+@dataclass
+class Fab_GeometryInfo(object):
+    """Fab_GeometryInfo: Information about a FabGeomtry object.
+
+    Attributes:
+    * Geometry (FabGeometry): The FabGeometry object used.
+    * Plane (Fab_Plane): The geometry plane to project onto.
+    * Area (float): The geometry area in square millimeters.
+    * Perimeter (float): The perimeter length in millimetes.
+    * MinimumInternalRadius:
+      The minimum internal radius in millimeters. -1.0 means there is no internal radius.
+    * MinimumExternalRadius:
+      The minimum external radius in millimeters.
+
+    Constructor:
+    * Fab_GeometryInfo(Geometry)
+    """
+
+    Geometry: FabGeometry
+    Plane: Fab_Plane
+    tracing: str = ""  # TODO: remove for debugging only
+    Area: float = field(init=False)  # Filled in by __post_init__()
+    Perimeter: float = field(init=False)  # Filled in by __post_init__()
+    MinimumInternalRadius: float = field(init=False)  # Filled in by __post_init__()
+    MinimumExternalRadius: float = field(init=False)  # Filled in by __post_init__()
+
+    # Fab_GeometryInfo.__post_init__():
+    def __post_init__(self) -> None:
+        """Finish initializing Fab_GeometryInfo."""
+        # Manually set *tracing* to debug.
+        tracing: str = self.tracing
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>Fab_GeometryInfo.__post_init__()")
+        check_type("Fab_GeometryInfo.Geometry", self.Geometry, FabGeometry)
+        check_type("Fab_GeometryInfo.Geometry", self.Geometry, FabGeometry)
+        self.Area, self.Perimeter, self.MinimumInternalRadius, self.MinimumExternalRadius = (
+            self.Geometry.get_geometry_info(self.Plane, tracing=next_tracing))
+        if tracing:
+            print(f"{tracing}<=Fab_GeometryInfo.__post_init__()")
+
+    # Fab_GeometryInfo._check():
+    def _check(
+            self, test_name: str, desired_area: float, desired_perimeter: float,
+            desired_internal_radius: float, desired_external_radius: float, tracing: str = ""
+    ) -> None:
+        """Check: test
+
+        Arguments:
+        * *test_name*: The test name to print on an error.
+        * *desired_area*: The desired area.
+        * *desired_perimeter*: The desired perimeter.
+        * *desired_internal_radius*: The desired internal radius.
+        * *desired_external_radius*: The desired external radius.
+
+        # Raises:
+        * RuntimeError if the actual values do not match to desired to with .001mm.
+
+        """
+        # next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>Fab_GeometryInfo._check('{test_name}', "
+                  f"{desired_area:.3f}, {desired_perimeter:.3f}, "
+                  f"{desired_internal_radius:.3f}, {desired_external_radius:.3f})")
+
+        epsilon: float = 0.001  # Only match to !three places after the decimal point.
+        error: str = ""
+        if abs(desired_area - self.Area) > epsilon:
+            error = (f"{test_name}: Area: Want {desired_area:.3f}, "
+                     f"not {self.Area:.3f}")
+        elif abs(desired_perimeter - self.Perimeter) > epsilon:
+            error = (f"{test_name}: Perimeter: Want {desired_perimeter:.3f}, "
+                     f"not {self.Perimeter:.3f}")
+        elif abs(desired_internal_radius - self.MinimumInternalRadius) > epsilon:
+            error = (f"{test_name}: DesiredInternalRadius: Want {desired_internal_radius:.3f}, "
+                     f"not {self.MinimumInternalRadius:.3f}")
+        elif abs(desired_external_radius - self.MinimumExternalRadius) > epsilon:
+            error = (f"{test_name}: DesiredExternalRadius: Want {desired_external_radius:.3f}, "
+                     f"not {self.MinimumExternalRadius:.3f}")
+        if error:
+            raise RuntimeError(error)
+
+        if tracing:
+            print(f"{tracing}<=Fab_GeometryInfo._check('{test_name}', "
+                  f"{desired_area:.3f}, {desired_perimeter:.3f}, "
+                  f"{desired_internal_radius:.3f}, {desired_external_radius:.3f})")
+
+    # Fab_GeometryInfo._unit_tests():
+    @staticmethod
+    def _unit_tests(self, tracing: str = "") -> None:
+        """Run Fab_GeometryInfo unit tests."""
+        if tracing:
+            print(f"{tracing}=>Fab_GeometryInfo._unit_tests()")
+
+        def close(have: float, want: float) -> None:
+            """Fail if two numbers are not  close."""
+            assert abs(have - want) < 1.0e-8, f"{have=} != {want=}"
+
+        def circle_check(radius: float) -> None:
+            """Fail if a FabCircle computes incorrect Fab_GeometryInfo."""
+            origin: Vector = Vector()
+            z_axis: Vector = Vector(0.0, 0.0, 1.0)
+            xy_plane: Fab_Plane = Fab_Plane(origin, z_axis)
+            pi: float = math.pi
+            circle: FabCircle = FabCircle(origin, z_axis, 2.0 * radius)
+            info: Fab_GeometryInfo = Fab_GeometryInfo(circle, xy_plane)
+            close(info.MinimumInternalRadius, -1.0)
+            close(info.MinimumExternalRadius, radius)
+            close(info.Perimeter, 2.0 * pi * radius)
+            close(info.Area, pi * radius * radius)
+
+        circle_check(1.0)
+        circle_check(2.0)
+
+        if tracing:
+            print(f"{tracing}<=Fab_GeometryInfo._unit_tests()")
 
 
 # Fab_Query:
@@ -1876,6 +2233,7 @@ def main(tracing: str = "") -> None:
     Fab_Fillet._unit_tests(tracing=next_tracing)
     FabCircle._unit_tests(tracing=next_tracing)
     FabPolygon._unit_tests(tracing=next_tracing)
+    Fab_GeometryInfo._unit_tests(tracing)
     if tracing:
         print(f"{tracing}<=FabGeometries.main()")
 

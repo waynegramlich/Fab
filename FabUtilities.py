@@ -390,6 +390,7 @@ class FabMaterial(object):
 
     _ChipLoadTable: ClassVar[Dict[str, List[Tuple[float, float]]]] = {}
 
+    # FabUtilities.__post_init__():
     def __post_init__(self) -> None:
         """Finish initialized FabMaterial."""
         tracing: str = ""  # Manually set to non-empty string to trace:
@@ -459,8 +460,9 @@ class FabMaterial(object):
                         chip_load_table[material].append((diameter, chip_load))
 
                 # Now sort the *chip_load_table* entries:
-                for material, xxx in chip_load_table.items():
-                    chip_load_table[material].sort()
+                diameter_loads: List[Tuple[float, float]]
+                for diameter_loads in chip_load_table.values():
+                    diameter_loads.sort()
 
         if tracing:
             print(f"{tracing}{chip_load_table=}")

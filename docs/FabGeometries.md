@@ -4,15 +4,17 @@
 
 * 1 Class: [FabCircle](#fabgeometries--fabcircle):
   * 1.1 [get_hash()](#fabgeometries----get-hash): Feturn FabCircle hash.
-  * 1.2 [project_to_plane()](#fabgeometries----project-to-plane): Return a new FabCircle projected onto a plane.
-  * 1.3 [produce()](#fabgeometries----produce): Produce the FreeCAD objects needed for FabPolygon.
-  * 1.4 [get_geometries()](#fabgeometries----get-geometries): Return the FabPolygon lines and arcs.
+  * 1.2 [get_geometry_info()](#fabgeometries----get-geometry-info): Return information about FabGeometry.
+  * 1.3 [project_to_plane()](#fabgeometries----project-to-plane): Return a new FabCircle projected onto a plane.
+  * 1.4 [produce()](#fabgeometries----produce): Produce the FreeCAD objects needed for FabPolygon.
+  * 1.5 [get_geometries()](#fabgeometries----get-geometries): Return the FabPolygon lines and arcs.
 * 2 Class: [FabGeometry](#fabgeometries--fabgeometry):
   * 2.1 [get_hash()](#fabgeometries----get-hash): Return FabGeometry hash.
   * 2.2 [produce()](#fabgeometries----produce): Produce the necessary FreeCAD objects for the FabGeometry.
   * 2.3 [project_to_plane()](#fabgeometries----project-to-plane): Return a new FabGeometry projected onto a plane.
+  * 2.4 [get_geometry_info()](#fabgeometries----get-geometry-info): Return information about FabGeometry.
 * 3 Class: [FabPolygon](#fabgeometries--fabpolygon):
-  * 3.1 [get_area_and_minimum_radius()](#fabgeometries----get-area-and-minimum-radius): Return the area and minimum internal radius of FabPolygon.
+  * 3.1 [get_geometry_info()](#fabgeometries----get-geometry-info): Return the values needed for a FabGeometry_Info from a FabPolygon.
   * 3.2 [get_hash()](#fabgeometries----get-hash): Return the FabPolygon Hash.
   * 3.3 [project_to_plane()](#fabgeometries----project-to-plane): Return nre FabPolygon projected onto a plane.
   * 3.4 [get_geometries()](#fabgeometries----get-geometries): Return the FabPolygon lines and arcs.
@@ -24,7 +26,7 @@
 * 6 Class: [Fab_Fillet](#fabgeometries--fab-fillet):
   * 6.1 [compute_arc()](#fabgeometries----compute-arc): Return the arc associated with a Fab_Fillet with non-zero radius.
   * 6.2 [plane_2d_project()](#fabgeometries----plane-2d-project): Project the Apex onto a plane.
-  * 6.3 [compute_fillet_area()](#fabgeometries----compute-fillet-area): Return the fillet area that is excluded to corner rounding.
+  * 6.3 [compute_fillet_area_perimeter()](#fabgeometries----compute-fillet-area-perimeter): Return the excluded fillet area and the perimeter for a Fab_Fillet.
   * 6.4 [get_geometries()](#fabgeometries----get-geometries): NO DOC STRING!
 * 7 Class: [Fab_Geometry](#fabgeometries--fab-geometry):
   * 7.1 [produce()](#fabgeometries----produce): NO DOC STRING!
@@ -33,24 +35,25 @@
   * 8.1 [copy()](#fabgeometries----copy): Return a Fab_GeometryContext copy.
   * 8.2 [copy_with_plane_adjust()](#fabgeometries----copy-with-plane-adjust): Return a Fab_GeometryContext copy with the plane adjusted up/down.
   * 8.3 [set_geometry_group()](#fabgeometries----set-geometry-group): Set the GeometryContext geometry group.
-* 9 Class: [Fab_Line](#fabgeometries--fab-line):
-  * 9.1 [get_start()](#fabgeometries----get-start): Return the start point of the Fab_Line.
-  * 9.2 [produce()](#fabgeometries----produce): Return line segment after moving it into Geometry group.
-* 10 Class: [Fab_Plane](#fabgeometries--fab-plane):
-  * 10.1 [point_project()](#fabgeometries----point-project): Project a point onto a plane.
-  * 10.2 [adjust()](#fabgeometries----adjust): Return a new Fab_Plane that has been adjusted up/down the normal by a delta.
-  * 10.3 [rotate_to_z_axis()](#fabgeometries----rotate-to-z-axis): Rotate a point around the origin until the normal aligns with the +Z axis.
-* 11 Class: [Fab_Query](#fabgeometries--fab-query):
-  * 11.1 [circle()](#fabgeometries----circle): Draw a circle to a point.
-  * 11.2 [close()](#fabgeometries----close): Close a sequence of arcs and lines.
-  * 11.3 [copy_workplane()](#fabgeometries----copy-workplane): Create a new CadQuery workplane and push it onto the stack.
-  * 11.4 [extrude()](#fabgeometries----extrude): Extrude current 2D object to a known depth.
-  * 11.5 [hole()](#fabgeometries----hole): Drill a hole.
-  * 11.6 [line_to()](#fabgeometries----line-to): Draw a line to a point.
-  * 11.7 [move_to()](#fabgeometries----move-to): Draw a line to a point.
-  * 11.8 [show()](#fabgeometries----show): Print a detailed dump of a Fab_Query.
-  * 11.9 [subtract()](#fabgeometries----subtract): Subtract one solid form a Fab_Query.
-  * 11.10 [three_point_arc()](#fabgeometries----three-point-arc): Draw a three point arc.
+* 9 Class: [Fab_GeometryInfo](#fabgeometries--fab-geometryinfo):
+* 10 Class: [Fab_Line](#fabgeometries--fab-line):
+  * 10.1 [get_start()](#fabgeometries----get-start): Return the start point of the Fab_Line.
+  * 10.2 [produce()](#fabgeometries----produce): Return line segment after moving it into Geometry group.
+* 11 Class: [Fab_Plane](#fabgeometries--fab-plane):
+  * 11.1 [point_project()](#fabgeometries----point-project): Project a point onto a plane.
+  * 11.2 [adjust()](#fabgeometries----adjust): Return a new Fab_Plane that has been adjusted up/down the normal by a delta.
+  * 11.3 [rotate_to_z_axis()](#fabgeometries----rotate-to-z-axis): Rotate a point around the origin until the normal aligns with the +Z axis.
+* 12 Class: [Fab_Query](#fabgeometries--fab-query):
+  * 12.1 [circle()](#fabgeometries----circle): Draw a circle to a point.
+  * 12.2 [close()](#fabgeometries----close): Close a sequence of arcs and lines.
+  * 12.3 [copy_workplane()](#fabgeometries----copy-workplane): Create a new CadQuery workplane and push it onto the stack.
+  * 12.4 [extrude()](#fabgeometries----extrude): Extrude current 2D object to a known depth.
+  * 12.5 [hole()](#fabgeometries----hole): Drill a hole.
+  * 12.6 [line_to()](#fabgeometries----line-to): Draw a line to a point.
+  * 12.7 [move_to()](#fabgeometries----move-to): Draw a line to a point.
+  * 12.8 [show()](#fabgeometries----show): Print a detailed dump of a Fab_Query.
+  * 12.9 [subtract()](#fabgeometries----subtract): Subtract one solid form a Fab_Query.
+  * 12.10 [three_point_arc()](#fabgeometries----three-point-arc): Draw a three point arc.
 
 ## <a name="fabgeometries--fabcircle"></a>1 Class FabCircle:
 
@@ -69,7 +72,21 @@ FabCircle.get_hash(self) -> Tuple[Any, ...]:
 
 Feturn FabCircle hash.
 
-### <a name="fabgeometries----project-to-plane"></a>1.2 `FabCircle.`project_to_plane():
+### <a name="fabgeometries----get-geometry-info"></a>1.2 `FabCircle.`get_geometry_info():
+
+FabCircle.get_geometry_info(self, plane: FabGeometries.Fab_Plane, tracing: str = '') -> Tuple[float, float, float, float]:
+
+Return information about FabGeometry.
+Arguments:
+* *plane* (Fab_Plane): The plane to project FabGeometry onto.
+
+Returns:
+* (float): The circle area in square millimeters.
+* (float): The perimeter length in millimeters.
+* (float): -1 since there are no internal radius corners for a circle.
+* (float): The circle radius in millimeters.
+
+### <a name="fabgeometries----project-to-plane"></a>1.3 `FabCircle.`project_to_plane():
 
 FabCircle.project_to_plane(self, plane: FabGeometries.Fab_Plane, tracing: str = '') -> 'FabCircle':
 
@@ -80,13 +97,13 @@ Arguments:
 Returns:
 * (FabCircle): The newly projected FabCicle.
 
-### <a name="fabgeometries----produce"></a>1.3 `FabCircle.`produce():
+### <a name="fabgeometries----produce"></a>1.4 `FabCircle.`produce():
 
 FabCircle.produce(self, geometry_context: FabGeometries.Fab_GeometryContext, prefix: str, index: int, tracing: str = '') -> Tuple[Any, ...]:
 
 Produce the FreeCAD objects needed for FabPolygon.
 
-### <a name="fabgeometries----get-geometries"></a>1.4 `FabCircle.`get_geometries():
+### <a name="fabgeometries----get-geometries"></a>1.5 `FabCircle.`get_geometries():
 
 FabCircle.get_geometries(self) -> Tuple[FabGeometries.Fab_Geometry, ...]:
 
@@ -115,49 +132,66 @@ FabGeometry.project_to_plane(self, plane: FabGeometries.Fab_Plane) -> 'FabGeomet
 
 Return a new FabGeometry projected onto a plane.
 
+### <a name="fabgeometries----get-geometry-info"></a>2.4 `FabGeometry.`get_geometry_info():
+
+FabGeometry.get_geometry_info(self, plane: FabGeometries.Fab_Plane, tracing: str = '') -> Tuple[float, float, float, float]:
+
+Return information about FabGeometry.
+Arguments:
+* *plane* (Fab_Plane): The plane to project the FabGeometry onto.
+
+Returns:
+* (float): The geometry area in square millimeters.
+* (float): The perimeter length in millimeters.
+* (float):
+  The minimum internal radius in millimeters. -1.0 means there is no internal radius.
+* (float): The minimum external radius in millimeters. 0 means that all corners are "sharp".
+
 
 ## <a name="fabgeometries--fabpolygon"></a>3 Class FabPolygon:
 
 An immutable polygon with rounded corners.
-A FabPolygon is represented as a sequence of corners (i.e. a Vector) where each corner can
-optionally be filleted with a radius.  In order to make it easier to use, a corner can be
-specified as simple Vector or as a tuple that specifies a Vector and a radius.  The radius
-is in millimeters and can be provided as either a Python int or float.  When an explicit
-fillet radius is not specified, higher levels in the software stack will typically substitute
-in a deburr radius for external corners and an internal tool radius for internal corners.
-FabPolygon's are frozen and can not be modified after creation.  Since Vector's are mutable,
-a copy of each vector stored inside the FabPolygon.
+    A FabPolygon is represented as a sequence of corners (i.e. a Vector) where each corner can
+    optionally be filleted with a radius.  In order to make it easier to use, a corner can be
+    specified as simple Vector or as a tuple that specifies a Vector and a radius.  The radius
+    is in millimeters and can be provided as either a Python int or float.  When an explicit
+    fillet radius is not specified, higher levels in the software stack will typically substitute
+x    in a deburr radius for external corners and an internal tool radius for internal corners.
+    FabPolygon's are frozen and can not be modified after creation.  Since Vector's are mutable,
+    a copy of each vector stored inside the FabPolygon.
 
-Attributes:
-* *Corners* (Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]):
-  See description below for more on corners.
+    Attributes:
+    * *Corners* (Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]):
+      See description below for more on corners.
 
-Constructor:
-* FabPolygon(Corners):
+    Constructor:
+    * FabPolygon(Corners):
 
-Example:
-```
-     polygon: FabPolyon = FabPolygon((
-         Vector(-10, -10, 0),  # Lower left (no radius)
-         Vector(10, -10, 0),  # Lower right (no radius)
-         (Vector(10, 10, 0), 5),  # Upper right (5mm radius)
-         (Vector(-0, 10, 0), 5.5),  # Upper right (5.5mm radius)
-     ), "Name")
-```
+    Example:
+    ```
+         polygon: FabPolyon = FabPolygon((
+             Vector(-10, -10, 0),  # Lower left (no radius)
+             Vector(10, -10, 0),  # Lower right (no radius)
+             (Vector(10, 10, 0), 5),  # Upper right (5mm radius)
+             (Vector(-0, 10, 0), 5.5),  # Upper right (5.5mm radius)
+         ), "Name")
+    ```
 
-### <a name="fabgeometries----get-area-and-minimum-radius"></a>3.1 `FabPolygon.`get_area_and_minimum_radius():
+### <a name="fabgeometries----get-geometry-info"></a>3.1 `FabPolygon.`get_geometry_info():
 
-FabPolygon.get_area_and_minimum_radius(self, plane: FabGeometries.Fab_Plane, tracing: str = '') -> Tuple[float, float]:
+FabPolygon.get_geometry_info(self, plane: FabGeometries.Fab_Plane, tracing: str = '') -> Tuple[float, float, float, float]:
 
-Return the area and minimum internal radius of FabPolygon.
+Return the values needed for a FabGeometry_Info from a FabPolygon.
 Method Arguments:
-* *plane* (Fab_Plane): The FabPolyogn projection to use for Area computation.
+* *plane* (Fab_Plane): The FabPolygon projection to use for Area computation.
 
 Returns:
 * (float): The area of the projected FabPolygon.
+* (float): The polygon perimeter in millimeters with rounded corners.
 * (float):
-  The minimum internal fillet radius of the FabPolygon.
-  -1.0 is returned if there is no internal radius.
+  The minimum internal radius corners for the polygon.
+  -1.0 means no internal corners.
+* (float): The minimum external radius corners for the polygon.
 
 ### <a name="fabgeometries----get-hash"></a>3.2 `FabPolygon.`get_hash():
 
@@ -251,11 +285,17 @@ Arguments:
 
 Modifies Fab_Fillet.
 
-### <a name="fabgeometries----compute-fillet-area"></a>6.3 `Fab_Fillet.`compute_fillet_area():
+### <a name="fabgeometries----compute-fillet-area-perimeter"></a>6.3 `Fab_Fillet.`compute_fillet_area_perimeter():
 
-Fab_Fillet.compute_fillet_area(self, tracing: str = '') -> float:
+Fab_Fillet.compute_fillet_area_perimeter(self, tracing: str = '') -> Tuple[float, float]:
 
-Return the fillet area that is excluded to corner rounding.
+Return the excluded fillet area and the perimeter for a Fab_Fillet.
+To be more concise, the fillet_area is the area outside of the fillet arc, but inside
+the straight lines "corner" of the fillet.
+
+Returns:
+* (float): The excluded area of a fillet (i.e. the area not under the arc segment.)
+* (float): The length the of the arc segment.
 
 ### <a name="fabgeometries----get-geometries"></a>6.4 `Fab_Fillet.`get_geometries():
 
@@ -311,7 +351,24 @@ Fab_GeometryContext.set_geometry_group(self, geometry_group: Any) -> None:
 Set the GeometryContext geometry group.
 
 
-## <a name="fabgeometries--fab-line"></a>9 Class Fab_Line:
+## <a name="fabgeometries--fab-geometryinfo"></a>9 Class Fab_GeometryInfo:
+
+Information about a FabGeomtry object.
+Attributes:
+* Geometry (FabGeometry): The FabGeometry object used.
+* Plane (Fab_Plane): The geometry plane to project onto.
+* Area (float): The geometry area in square millimeters.
+* Perimeter (float): The perimeter length in millimetes.
+* MinimumInternalRadius:
+  The minimum internal radius in millimeters. -1.0 means there is no internal radius.
+* MinimumExternalRadius:
+  The minimum external radius in millimeters.
+
+Constructor:
+* Fab_GeometryInfo(Geometry)
+
+
+## <a name="fabgeometries--fab-line"></a>10 Class Fab_Line:
 
 An internal representation of a line segment geometry.
 Attributes:
@@ -321,38 +378,38 @@ Attributes:
 Constructor:
 * Fab_Line(Start, Finish)
 
-### <a name="fabgeometries----get-start"></a>9.1 `Fab_Line.`get_start():
+### <a name="fabgeometries----get-start"></a>10.1 `Fab_Line.`get_start():
 
 Fab_Line.get_start(self) -> cadquery.occ_impl.geom.Vector:
 
 Return the start point of the Fab_Line.
 
-### <a name="fabgeometries----produce"></a>9.2 `Fab_Line.`produce():
+### <a name="fabgeometries----produce"></a>10.2 `Fab_Line.`produce():
 
 Fab_Line.produce(self, geometry_context: FabGeometries.Fab_GeometryContext, prefix: str, index: int, tracing: str = '') -> Any:
 
 Return line segment after moving it into Geometry group.
 
 
-## <a name="fabgeometries--fab-plane"></a>10 Class Fab_Plane:
+## <a name="fabgeometries--fab-plane"></a>11 Class Fab_Plane:
 
 A Plane class.
 * *Contact* (Vector):  The contact point of the plane.
 * *Normal* (Vector): The normal to the plane.
 
-### <a name="fabgeometries----point-project"></a>10.1 `Fab_Plane.`point_project():
+### <a name="fabgeometries----point-project"></a>11.1 `Fab_Plane.`point_project():
 
 Fab_Plane.point_project(self, point: cadquery.occ_impl.geom.Vector) -> cadquery.occ_impl.geom.Vector:
 
 Project a point onto a plane.
 
-### <a name="fabgeometries----adjust"></a>10.2 `Fab_Plane.`adjust():
+### <a name="fabgeometries----adjust"></a>11.2 `Fab_Plane.`adjust():
 
 Fab_Plane.adjust(self, delta: float) -> 'Fab_Plane':
 
 Return a new Fab_Plane that has been adjusted up/down the normal by a delta.
 
-### <a name="fabgeometries----rotate-to-z-axis"></a>10.3 `Fab_Plane.`rotate_to_z_axis():
+### <a name="fabgeometries----rotate-to-z-axis"></a>11.3 `Fab_Plane.`rotate_to_z_axis():
 
 Fab_Plane.rotate_to_z_axis(self, point: cadquery.occ_impl.geom.Vector, reversed: bool = False, tracing: str = '') -> cadquery.occ_impl.geom.Vector:
 
@@ -365,7 +422,7 @@ Returns:
 * (Vector): The rotated vector position.
 
 
-## <a name="fabgeometries--fab-query"></a>11 Class Fab_Query:
+## <a name="fabgeometries--fab-query"></a>12 Class Fab_Query:
 
 A CadQuery Workplane wrapper.
 This class creates CadQuery Workplane provides a consistent head of the Workplane chain..
@@ -375,61 +432,61 @@ Attributes:
 * *Plane* (Fab_Plane): The plane to use for CadQuery initialization.
 * *WorkPlane: (cadquery.Workplane): The resulting CadQuery Workplane object.
 
-### <a name="fabgeometries----circle"></a>11.1 `Fab_Query.`circle():
+### <a name="fabgeometries----circle"></a>12.1 `Fab_Query.`circle():
 
 Fab_Query.circle(self, center: cadquery.occ_impl.geom.Vector, radius: float, for_construction=False, tracing: str = '') -> None:
 
 Draw a circle to a point.
 
-### <a name="fabgeometries----close"></a>11.2 `Fab_Query.`close():
+### <a name="fabgeometries----close"></a>12.2 `Fab_Query.`close():
 
 Fab_Query.close(self, tracing: str = '') -> None:
 
 Close a sequence of arcs and lines.
 
-### <a name="fabgeometries----copy-workplane"></a>11.3 `Fab_Query.`copy_workplane():
+### <a name="fabgeometries----copy-workplane"></a>12.3 `Fab_Query.`copy_workplane():
 
 Fab_Query.copy_workplane(self, plane: FabGeometries.Fab_Plane, tracing: str = '') -> None:
 
 Create a new CadQuery workplane and push it onto the stack.
 
-### <a name="fabgeometries----extrude"></a>11.4 `Fab_Query.`extrude():
+### <a name="fabgeometries----extrude"></a>12.4 `Fab_Query.`extrude():
 
 Fab_Query.extrude(self, depth: float, tracing: str = '') -> None:
 
 Extrude current 2D object to a known depth.
 
-### <a name="fabgeometries----hole"></a>11.5 `Fab_Query.`hole():
+### <a name="fabgeometries----hole"></a>12.5 `Fab_Query.`hole():
 
 Fab_Query.hole(self, diameter: float, depth: float, tracing: str = '') -> None:
 
 Drill a hole.
 
-### <a name="fabgeometries----line-to"></a>11.6 `Fab_Query.`line_to():
+### <a name="fabgeometries----line-to"></a>12.6 `Fab_Query.`line_to():
 
 Fab_Query.line_to(self, end: cadquery.occ_impl.geom.Vector, for_construction=False, tracing: str = '') -> None:
 
 Draw a line to a point.
 
-### <a name="fabgeometries----move-to"></a>11.7 `Fab_Query.`move_to():
+### <a name="fabgeometries----move-to"></a>12.7 `Fab_Query.`move_to():
 
 Fab_Query.move_to(self, point: cadquery.occ_impl.geom.Vector, tracing: str = '') -> None:
 
 Draw a line to a point.
 
-### <a name="fabgeometries----show"></a>11.8 `Fab_Query.`show():
+### <a name="fabgeometries----show"></a>12.8 `Fab_Query.`show():
 
 Fab_Query.show(self, label: str, tracing: str = '') -> None:
 
 Print a detailed dump of a Fab_Query.
 
-### <a name="fabgeometries----subtract"></a>11.9 `Fab_Query.`subtract():
+### <a name="fabgeometries----subtract"></a>12.9 `Fab_Query.`subtract():
 
 Fab_Query.subtract(self, remove_solid: 'Fab_Query', tracing: str = '') -> None:
 
 Subtract one solid form a Fab_Query.
 
-### <a name="fabgeometries----three-point-arc"></a>11.10 `Fab_Query.`three_point_arc():
+### <a name="fabgeometries----three-point-arc"></a>12.10 `Fab_Query.`three_point_arc():
 
 Fab_Query.three_point_arc(self, middle: cadquery.occ_impl.geom.Vector, end: cadquery.occ_impl.geom.Vector, for_construction: bool = False, tracing: str = '') -> None:
 
