@@ -322,7 +322,7 @@ Shared produce state for FabNode's.
 Attributes:
 * *StepsDirectory* (PathFile):
   The path to the directory to store STEP (`.stp`) files into.
-* *Shops* (Tuple[FabShop, ...]): The list of available shops to use.
+* *Shops* (FabShops): The list of available shops to use.
 * *Steps* (Fab_Steps):
   The step file directory management object.
 * *ObjectsTable* (Dict[str, Any]):

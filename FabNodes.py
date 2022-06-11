@@ -51,7 +51,7 @@ from typeguard import check_type
 from cadquery import Vector  # type: ignore
 
 from FabUtilities import FabToolController
-from FabShops import FabShop
+from FabShops import FabShops
 
 
 # FabBox:
@@ -1009,7 +1009,7 @@ class Fab_ProduceState(object):
     Attributes:
     * *StepsDirectory* (PathFile):
       The path to the directory to store STEP (`.stp`) files into.
-    * *Shops* (Tuple[FabShop, ...]): The list of available shops to use.
+    * *Shops* (FabShops): The list of available shops to use.
     * *Steps* (Fab_Steps):
       The step file directory management object.
     * *ObjectsTable* (Dict[str, Any]):
@@ -1027,7 +1027,7 @@ class Fab_ProduceState(object):
     """
 
     StepsDirectory: PathFile
-    Shops: Tuple[FabShop, ...]
+    Shops: FabShops
     Steps: Fab_Steps = field(init=False, repr=False)
     ObjectsTable: Dict[str, Any] = field(init=False, repr=False)
     ToolControllersTable: Dict[FabToolController, int] = field(init=False, repr=False)

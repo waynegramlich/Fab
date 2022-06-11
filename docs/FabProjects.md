@@ -18,11 +18,12 @@ Classes:
   * 2.4 [is_document()](#fabprojects----is-document):  Return True if FabNode is a Fab_Group.
   * 2.5 [produce()](#fabprojects----produce): Produce FabDocument.
 * 3 Class: [FabProject](#fabprojects--fabproject):
-  * 3.1 [get_errors()](#fabprojects----get-errors): Return the FabProject errors list.
-  * 3.2 [is_project()](#fabprojects----is-project):  Return True if FabNode is a Fab_Group.
-  * 3.3 [set_shops()](#fabprojects----set-shops): Set the shops for a FabProject.
-  * 3.4 [to_json()](#fabprojects----to-json): Return FabProject JSON structure.
-  * 3.5 [run()](#fabprojects----run): NO DOC STRING!
+  * 3.1 [setShops()](#fabprojects----setshops): Set the shops to use for a FabProject.
+  * 3.2 [get_errors()](#fabprojects----get-errors): Return the FabProject errors list.
+  * 3.3 [is_project()](#fabprojects----is-project):  Return True if FabNode is a Fab_Group.
+  * 3.4 [set_shops()](#fabprojects----set-shops): Set the shops for a FabProject.
+  * 3.5 [to_json()](#fabprojects----to-json): Return FabProject JSON structure.
+  * 3.6 [run()](#fabprojects----run): NO DOC STRING!
 * 4 Class: [Fab_Group](#fabprojects--fab-group):
   * 4.1 [post_produce1()](#fabprojects----post-produce1): Perform Fab_Group phase 1 post production.
   * 4.2 [produce()](#fabprojects----produce): Create the FreeCAD group object.
@@ -106,37 +107,43 @@ Produce FabDocument.
 The Root mode a FabNode tree.
 Attributes:
 * *Label* (str): The project name.
-* *Shops* (Tuple[FabShop, ...]):
-  The FabShop's available for fabrication.  Set using FabShop.set_shops() method.
+* *Shops* (FabShops):
+  The FabShop's available for fabrication.  Set using FabShop.setShops() method.
 
 Constructor:
 * FabProject.new("Name")
 
-### <a name="fabprojects----get-errors"></a>3.1 `FabProject.`get_errors():
+### <a name="fabprojects----setshops"></a>3.1 `FabProject.`setShops():
+
+FabProject.setShops(self, shops: FabShops.FabShops) -> None:
+
+Set the shops to use for a FabProject.
+
+### <a name="fabprojects----get-errors"></a>3.2 `FabProject.`get_errors():
 
 FabProject.get_errors(self) -> List[str]:
 
 Return the FabProject errors list.
 
-### <a name="fabprojects----is-project"></a>3.2 `FabProject.`is_project():
+### <a name="fabprojects----is-project"></a>3.3 `FabProject.`is_project():
 
 FabProject.is_project(self) -> bool:
 
  Return True if FabNode is a Fab_Group.
 
-### <a name="fabprojects----set-shops"></a>3.3 `FabProject.`set_shops():
+### <a name="fabprojects----set-shops"></a>3.4 `FabProject.`set_shops():
 
-FabProject.set_shops(self, shops: Tuple[FabShops.FabShop, ...]) -> None:
+FabProject.set_shops(self, shops: FabShops.FabShops) -> None:
 
 Set the shops for a FabProject.
 
-### <a name="fabprojects----to-json"></a>3.4 `FabProject.`to_json():
+### <a name="fabprojects----to-json"></a>3.5 `FabProject.`to_json():
 
 FabProject.to_json(self) -> Dict[str, Any]:
 
 Return FabProject JSON structure.
 
-### <a name="fabprojects----run"></a>3.5 `FabProject.`run():
+### <a name="fabprojects----run"></a>3.6 `FabProject.`run():
 
 FabProject.run(self, step_directory: Union[pathlib.Path, NoneType] = None) -> None:
 

@@ -20,7 +20,7 @@ import cadquery as cq  # type: ignore
 from cadquery import Vector  # type: ignore
 
 from FabNodes import FabNode, Fab_Prefix, Fab_ProduceState, Fab_Steps
-from FabShops import FabShop
+from FabShops import FabShops
 from FabSolids import FabSolid
 
 
@@ -250,15 +250,15 @@ class FabProject(FabNode):
 
     Attributes:
     * *Label* (str): The project name.
-    * *Shops* (Tuple[FabShop, ...]):
-      The FabShop's available for fabrication.  Set using FabShop.set_shops() method.
+    * *Shops* (FabShops):
+      The FabShop's available for fabrication.  Set using FabShop.setShops() method.
 
     Constructor:
     * FabProject.new("Name")
 
     """
 
-    _Shops: Tuple[FabShop, ...] = field(init=False, repr=False)
+    _Shops: Optional[FabShops] = field(init=False, repr=False)
     _AllNodes: Tuple[FabNode, ...] = field(init=False, repr=False)
     _Errors: List[str] = field(init=False, repr=False)
     LastDocument: Optional[FabDocument] = field(init=False, repr=False)
@@ -267,16 +267,28 @@ class FabProject(FabNode):
     def __post_init__(self) -> None:
         """Process FabRoot."""
         super().__post_init__()
-        self._Shops = ()
+        self._Shops = None
         self._AllNodes = ()
         self._Errors = []
         self.LastDocument = None
 
     # FabProject.Shops():
     @property
-    def Shops(self) -> Tuple[FabShop, ...]:
+    def Shops(self) -> FabShops:
         """Set the FabShop's."""
+        if not isinstance(self._Shops, FabShops):
+            raise RuntimeError(
+                "FabProject.Shops(): Shops has not be set yet.")  # pragma: no unit cover
         return self._Shops
+
+    # FabProjet.setShops():
+    def setShops(self, shops: FabShops) -> None:
+        """Set the shops to use for a FabProject."""
+        assert check_argument_types()
+        if self._Shops is not None:
+            raise RuntimeError(
+                "FabProject.Shops(): Shops has already been set.")  # pragma: no unit cover
+        self._Shops = shops
 
     # FabProject.get_errors():
     def get_errors(self) -> List[str]:
@@ -288,8 +300,8 @@ class FabProject(FabNode):
         """ Return True if FabNode is a Fab_Group."""
         return True  # All other FabNode's return False.  # pragma: no unit cover
 
-    # FabProject.set_shops():
-    def set_shops(self, shops: Tuple[FabShop, ...]) -> None:
+    # FabProject.setShops():
+    def set_shops(self, shops: FabShops) -> None:
         """Set the shops for a FabProject."""
         assert check_argument_types()
         self._Shops = shops
@@ -436,8 +448,8 @@ class FabProject(FabNode):
 
         project: FabProject = FabProject.new("TestProject")
         assert project.Label == "TestProject"
-        shops: Tuple[FabShop, ...] = ()
-        project.set_shops(shops)
+        shops: FabShops = FabShops.getExample()
+        project.setShops(shops)
         assert project.Shops is shops
         if tracing:
             print(f"{tracing}<=FabProject._unit_tests")

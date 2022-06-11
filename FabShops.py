@@ -32,6 +32,8 @@ from FabTools import FabBit, FabLibrary, FabLibraries, FabTooling, FabToolingFac
 # * [MachiningDoctor](https://www.machiningdoctor.com/calculators/chip-load-calculator/):
 #   Describes the formulas to use for chip load, speed, and feed calculations.
 
+from FabToolBits import FabEndMillBit
+
 
 # FabAxis:
 @dataclass(frozen=True)
@@ -624,19 +626,17 @@ class FabLocation(object):
         check_type("FabLocation.PhoneNumber", self.PhoneNumber, str)
         check_type("FabLocation.URL", self.URL, str)
 
-    # FabLocation._unit_tests():
+    # FabLocation.getExample():
     @staticmethod
-    def _unit_tests(tracing: str = "") -> None:
-        """Run FabLocation unit tests."""
-        if tracing:
-            print(f"{tracing}=>FabLocation._unit__tests()")
+    def getExample() -> "FabLocation":
+        """Return an example FabLocation."""
         location: FabLocation = FabLocation(
             CountryCode="US",
             StateProvince="CA",
             County="Santa Clara",
             City="Sunnyvale",
             StreetAddress1="Sunnyvale Police Public Safety Services",
-            StreetAddress2="700 All American Wayne",
+            StreetAddress2="700 All American Way",
             Unit="",
             ZipCode="94086",
             Latitude="37.37066",
@@ -644,12 +644,21 @@ class FabLocation(object):
             PhoneNumber="1-408-730-7100",
             URL="https://www.townofsunnyvale.org/81/Police"
         )
+        return location
+
+    # FabLocation._unit_tests():
+    @staticmethod
+    def _unit_tests(tracing: str = "") -> None:
+        """Run FabLocation unit tests."""
+        if tracing:
+            print(f"{tracing}=>FabLocation._unit__tests()")
+        location: FabLocation = FabLocation.getExample()
         assert location.CountryCode == "US"
         assert location.StateProvince == "CA"
         assert location.County == "Santa Clara"
         assert location.City == "Sunnyvale"
         assert location.StreetAddress1 == "Sunnyvale Police Public Safety Services"
-        assert location.StreetAddress2 == "700 All American Wayne"
+        assert location.StreetAddress2 == "700 All American Way"
         assert location.Unit == ""
         assert location.ZipCode == "94086"
         assert location.Latitude == "37.37066"
@@ -687,6 +696,16 @@ class FabShop(object):
         check_type("FabShop.Location", self.Location, FabLocation)
         check_type("FabShop.Machines", self.Machines, Tuple[FabMachine, ...])
 
+    # FabShop.getExample():
+    @staticmethod
+    def getExample() -> "FabShop":
+        """Return an example FabShop."""
+        cnc_mill: FabCNCMill = FabCNCMill.getExample()
+        location: FabLocation = FabLocation.getExample()
+        machines: Tuple[FabMachine, ...] = (cnc_mill,)
+        shop: FabShop = FabShop(Name="MyShop", Location=location, Machines=machines)
+        return shop
+
     # FabShop.lookup():
     def lookup(self, machine_name: str) -> FabMachine:
         """Return the named FabMachine."""
@@ -705,46 +724,23 @@ class FabShop(object):
         """Perform FabShop unit tests."""
         if tracing:
             print(f"{tracing}=>FabShop._unit_tests()")
-        name: str = "MyShop"
-        location: FabLocation = FabLocation(
-            CountryCode="US", StateProvince="California", City="Sunnyvale", ZipCode="94086")
-        placement: str = "somewhere in shop"
-        table: FabTable = FabTable("TestTable", 100.0, 50.0, 30.0, 4, 10.0, 5.0, 5.0, 10.0, 5.0)
-        spindle: FabSpindle = FabSpindle("R8", 5000, True, True, False)
-        controller: FabController = FabController("MyMill", "linuxcnc")
-        x_axis: FabAxis = FabAxis(
-            Name="X Axis", Letter="X", Linear=True, Range=100.0, Speed=10.0, Acceleration=0.0,
-            EndSensors=True, Brake=False)
-        y_axis: FabAxis = FabAxis(
-            Name="Y Axis", Letter="Y", Linear=True, Range=100.0, Speed=10.0, Acceleration=0.0,
-            EndSensors=True, Brake=False)
-        z_axis: FabAxis = FabAxis(
-            Name="Z Axis", Letter="Z", Linear=True, Range=100.0, Speed=10.0, Acceleration=0.0,
-            EndSensors=True, Brake=False)
-        axes: Tuple[FabAxis, ...] = (x_axis, y_axis, z_axis)
-        tools_directory: PathFile = PathFile(__file__).parent / "Tools"
-        tooling_factory: FabToolingFactory = FabToolingFactory("TestTooling", tools_directory)
-        tooling_factory.create_example_tools()
-        library: FabLibrary = tooling_factory.getLibrary("TestLibrary", tools_directory)
-        cnc_mill: FabCNCMill = FabCNCMill(
-            Name="MyCNCMill", Placement=placement, Axes=axes, Spindle=spindle, Table=table,
-            Controller=controller, Library=library
-        )
-        machines: Tuple[FabMachine, ...] = (cnc_mill,)
-        shop: FabShop = FabShop("MyShop", location, machines)
-        assert shop.Name == name, shop.Name
+
+        shop: FabShop = FabShop.getExample()
+        location: FabLocation = FabLocation.getExample()
+        cnc_mill: FabCNCMill = FabCNCMill.getExample()
+        assert shop.Name == "MyShop", shop.Name
         assert shop.Location == location, shop.Location
-        assert shop.Machines == machines
+        assert shop.Machines == (cnc_mill,), shop.Machines
 
         # Test lookup():
         try:
             shop.lookup("BadMachine")
             assert False
         except KeyError as key_error:
-            want: str = "\"Machine BadMachine is not one of ['MyCNCMill']\""
+            want: str = "\"Machine BadMachine is not one of ['TestCNC']\""
             got: str = str(key_error)
             assert want == got, f"\n{want} !=\n{got}"
-        assert shop.lookup("MyCNCMill") is cnc_mill
+        assert shop.lookup("TestCNC") == cnc_mill
         if tracing:
             print(f"{tracing}<=FabShop._unit_tests()")
 
@@ -802,13 +798,45 @@ class Fab_ShopBit(object):
     # Fab_ShopBit.__post_init__():
     def __post_init__(self) -> None:
         """ Finish initializing a Fab_Shopbit."""
+        check_type("Fab_ShopBit.BitPriority", self.BitPriority, float)
         check_type("Fab_ShopBit.Shop", self.Shop, FabShop)
+        check_type("Fab_ShopBit.ShopIndex", self.ShopIndex, int)
         check_type("Fab_ShopBit.Machine", self.Machine, FabMachine)
+        check_type("Fab_ShopBit.MachineIndex", self.MachineIndex, int)
         check_type("Fab_ShopBit.Bit", self.Bit, FabBit)
         check_type("Fab_ShopBit.Number", self.Number, int)
-        check_type("Fab_ShopBit.ShopIndex", self.ShopIndex, int)
-        check_type("Fab_ShopBit.MachineIndex", self.MachineIndex, int)
-        check_type("Fab_ShopBit.BitPriority", self.BitPriority, float)
+
+    # Fab_ShopBit.getExample():
+    @staticmethod
+    def getExample() -> "Fab_ShopBit":
+        """Return an example Fab_ShopBit."""
+        shop: FabShop = FabShop.getExample()
+        end_mill_bit: FabEndMillBit = FabEndMillBit.getExample()
+        cnc_machine: FabCNCMill = FabCNCMill.getExample()
+        shop_bit: Fab_ShopBit = Fab_ShopBit(
+            BitPriority=-123.456, Shop=shop, ShopIndex=0,
+            Machine=cnc_machine, MachineIndex=0, Bit=end_mill_bit, Number=1)
+        return shop_bit
+
+    # Fab_ShopBit._unit_tests():
+    @staticmethod
+    def _unit_tests(tracing: str = "") -> None:
+        """Run Fab_ShopBit unit tests."""
+        if tracing:
+            print(f"{tracing}=>Fab_ShopBit._unit_tests()")
+
+        # shop_bit: Fab_ShopBit = Fab_ShopBit.getExample()
+        # assert shop_bit.BitPriority == -123.456
+        # assert shop_bit.Shop == FabShop.getExample()
+        # assert shop_bit.ShopIndex == 0
+        # assert shop_bit.Machine == FabCNCMill.getExample()
+        # assert shop_bit.MachineIndex == 0
+        # assert shop_bit.Bit == FabEndMillBit.getExample()
+        # assert shop_bit.Number == 1
+        pass
+
+        if tracing:
+            print(f"{tracing}<=Fab_ShopBit._unit_tests()")
 
 
 # FabShops:
@@ -878,61 +906,22 @@ class FabShops(object):
         self.PerimeterShopBits = tuple(perimeter_shop_bits)
         self.PocketShopBits = tuple(pocket_shop_bits)
 
-    # FabShops.example():
+    # FabShops.getExample():
     @staticmethod
-    def example(tracing: str = "") -> "FabShops":
+    def getExample() -> "FabShops":
         """Return an example FabShops."""
-        if tracing:
-            print(f"{tracing}=>FabShops.example()")
-
-        x_axis: FabAxis = FabAxis(
-            "X Axis", "X", Linear=True, Range=100.0, Speed=50.0, Acceleration=0.0,
-            EndSensors=True, Brake=False
-        )
-        y_axis: FabAxis = FabAxis(
-            "Y Axis", "Y", Linear=True, Range=50.0, Speed=50.0, Acceleration=0.0,
-            EndSensors=True, Brake=False
-        )
-        z_axis: FabAxis = FabAxis(
-            "Z Axis", Letter="Z", Linear=True, Range=75.0, Speed=50.0, Acceleration=0.0,
-            EndSensors=True, Brake=False
-        )
-        axes: Tuple[FabAxis, ...] = (x_axis, y_axis, z_axis)
-        table: FabTable = FabTable(
-            "MillTable", Length=150.0, Width=75.0, Height=35.0,
-            Slots=3, SlotPitch=20.0, SlotWidth=8.0, SlotDepth=5.0,
-            KeywayWidth=12.0, KeywayHeight=8.0
-        )
-        spindle: FabSpindle = FabSpindle(
-            Type="R8", Speed=5000, Reversible=True, FloodCooling=True, MistCooling=False
-        )
-        controller: FabController = FabController(Name="LinuxCNC", PostProcessor="linuxcnc")
-        tools_directory: PathFile = PathFile(__file__).parent / "Tools"
-        tooling_factory = FabToolingFactory("TestTooling", tools_directory)
-        tooling_factory.create_example_tools()
-        library: FabLibrary = tooling_factory.getLibrary("TestLibrary", tools_directory)
-        cnc_mill: FabCNCMill = FabCNCMill(
-            Name="MyMill", Placement="Garage", Axes=axes, Table=table, Spindle=spindle,
-            Controller=controller, Library=library
-        )
-        location: FabLocation = FabLocation()
-        machines: Tuple[FabMachine, ] = (cnc_mill,)
-        shop: FabShop = FabShop(Name="TestShop", Location=location, Machines=machines)
+        shop: FabShop = FabShop.getExample()
         shops: FabShops = FabShops((shop,))
-
-        if tracing:
-            print(f"{tracing}<=FabShops.example()=>*")
         return shops
 
     # FabShops._unit_tests():
     @staticmethod
     def _unit_tests(tracing: str = "") -> None:
         """Run FabShops unit tests."""
-        next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabShops._unit_tests()")
 
-        shops: FabShops = FabShops.example(tracing=next_tracing)
+        shops: FabShops = FabShops.getExample()
         if tracing:
             print(f"{tracing}{len(shops.AllShopBits)=}")
             print(f"{tracing}{len(shops.DrillShopBits)=}")
@@ -960,6 +949,7 @@ def main(tracing: str = "") -> None:
     FabShop._unit_tests(tracing=next_tracing)
     FabShops._unit_tests(tracing=next_tracing)
     FabTable._unit_tests(tracing=next_tracing)
+    Fab_ShopBit._unit_tests(tracing=next_tracing)
     if tracing:
         print("=>FabShops.main()")
 

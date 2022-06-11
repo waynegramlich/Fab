@@ -384,6 +384,14 @@ class FabEndMillBit(FabBit):
         """
         return ("perimeter", "pocket")
 
+    # FabEndMillBit.getExample():
+    @staticmethod
+    def getExample() -> "FabEndMillBit":
+        """Return an example FabEndMillBit."""
+        end_mill_bit: Any = FabBitTemplates.getExample(FabEndMillBit)
+        assert isinstance(end_mill_bit, FabEndMillBit)
+        return end_mill_bit
+
     # FabEndMillBit._unit_tests():
     @staticmethod
     def _unit_tests(tracing: str = "") -> None:

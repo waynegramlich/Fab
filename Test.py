@@ -16,10 +16,8 @@ from FabGeometries import FabCircle, FabPolygon
 from FabJoins import FabFasten, FabJoin
 from FabNodes import FabNode  # This should not be needed see cast in BoxSide.produce()
 from FabProjects import FabAssembly, FabDocument, FabProject
-from FabShops import (
-    FabAxis, FabCNCMill, FabController, FabLocation, FabMachine, FabSpindle, FabShop, FabTable)
+from FabShops import FabShops
 from FabSolids import FabSolid, FabMount
-from FabTools import FabLibrary, FabToolingFactory
 
 
 # BoxSide:
@@ -473,42 +471,9 @@ class TestProject(FabProject):
 
 def main(key: str = "") -> Any:
     """Run main program."""
-    x_axis: FabAxis = FabAxis(
-        "X Axis", "X", Linear=True, Range=100.0, Speed=50.0, Acceleration=0.0,
-        EndSensors=True, Brake=False
-    )
-    y_axis: FabAxis = FabAxis(
-        "Y Axis", "Y", Linear=True, Range=50.0, Speed=50.0, Acceleration=0.0,
-        EndSensors=True, Brake=False
-    )
-    z_axis: FabAxis = FabAxis(
-        "Z Axis", Letter="Z", Linear=True, Range=75.0, Speed=50.0, Acceleration=0.0,
-        EndSensors=True, Brake=False
-    )
-    axes: Tuple[FabAxis, ...] = (x_axis, y_axis, z_axis)
-    table: FabTable = FabTable(
-        "MillTable", Length=150.0, Width=75.0, Height=35.0,
-        Slots=3, SlotPitch=20.0, SlotWidth=8.0, SlotDepth=5.0, KeywayWidth=12.0, KeywayHeight=8.0
-    )
-    spindle: FabSpindle = FabSpindle(
-        Type="R8", Speed=5000, Reversible=True, FloodCooling=True, MistCooling=False
-    )
-    controller: FabController = FabController(Name="LinuxCNC", PostProcessor="linuxcnc")
-    tools_directory: PathFile = PathFile(__file__).parent / "Tools"
-    tooling_factory = FabToolingFactory("TestTooling", tools_directory)
-    tooling_factory.create_example_tools()
-    library: FabLibrary = tooling_factory.getLibrary("TestLibrary", tools_directory)
-    cnc_mill: FabCNCMill = FabCNCMill(
-        Name="MyMill", Placement="Garage", Axes=axes, Table=table, Spindle=spindle,
-        Controller=controller, Library=library
-    )
-    location: FabLocation = FabLocation()
-    machines: Tuple[FabMachine, ] = (cnc_mill,)
-    shop: FabShop = FabShop(Name="TestShop", Location=location, Machines=machines)
-    shops: Tuple[FabShop, ...] = (shop,)
-
+    shops: FabShops = FabShops.getExample()
     test_project: TestProject = TestProject.new("TestProject")
-    test_project.set_shops(shops)
+    test_project.setShops(shops)
     test_project.run()
 
     return 0
