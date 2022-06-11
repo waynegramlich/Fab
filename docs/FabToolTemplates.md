@@ -27,8 +27,11 @@ The classes are:
   * 1.1 [find()](#fabtooltemplates----find): Look up an attribute value by name.
   * 1.2 [toJSON()](#fabtooltemplates----tojson): Return FabAttributes as JSON dictionary.
 * 2 Class: [FabBit](#fabtooltemplates--fabbit):
-  * 2.1 [toJSON()](#fabtooltemplates----tojson): Return the JSON associated with a FabBit.
-  * 2.2 [write()](#fabtooltemplates----write): Write FabBit out to disk.
+  * 2.1 [getBitPriority()](#fabtooltemplates----getbitpriority): Return operation priority for an operation.
+  * 2.2 [getNumber()](#fabtooltemplates----getnumber): Return an number value from a FabBit.
+  * 2.3 [getOperationKinds()](#fabtooltemplates----getoperationkinds): Return the kind of operations supported by the FabBit.
+  * 2.4 [toJSON()](#fabtooltemplates----tojson): Return the JSON associated with a FabBit.
+  * 2.5 [write()](#fabtooltemplates----write): Write FabBit out to disk.
 * 3 Class: [FabBitTemplate](#fabtooltemplates--fabbittemplate):
   * 3.1 [kwargsFromJSON()](#fabtooltemplates----kwargsfromjson): Return the keyword arguments needed to initialize a FabBit.
   * 3.2 [toJSON()](#fabtooltemplates----tojson): Convert a FabBit to a JSON dictionary using a FabBitTemplate.
@@ -50,9 +53,14 @@ Attributes:
 
 ### <a name="fabtooltemplates----find"></a>1.1 `FabAttributes.`find():
 
-FabAttributes.find(self, desired_name: str) -> Any:
+FabAttributes.find(self, attribute_name: str) -> Any:
 
 Look up an attribute value by name.
+Arguments:
+* *attribute_name* (str): The attribute name to find.
+
+Returns:
+* (Any): The attribute value.  None is returned if *attribute_name* is not found.
 
 ### <a name="fabtooltemplates----tojson"></a>1.2 `FabAttributes.`toJSON():
 
@@ -73,13 +81,55 @@ Attributes:
 Constructor:
 * FabBit("Name", BitStem, ShapeStem, Attributes)
 
-### <a name="fabtooltemplates----tojson"></a>2.1 `FabBit.`toJSON():
+### <a name="fabtooltemplates----getbitpriority"></a>2.1 `FabBit.`getBitPriority():
+
+FabBit.getBitPriority(self, operation_kind: str) -> Union[float, NoneType]:
+
+Return operation priority for an operation.
+Arguments:
+* *operation_kind* (str): The kind of operation (e.g. "pocket", "drill", etc.).
+
+Returns:
+* (Optional[float]): The priority as a negative number, where more negative numbers
+  have a higher priority.
+
+### <a name="fabtooltemplates----getnumber"></a>2.2 `FabBit.`getNumber():
+
+FabBit.getNumber(self, attribute_name: str) -> Union[float, int]:
+
+Return an number value from a FabBit.
+The FabBit base class is sub-classed for each different bit type (e.g. FabEndMitBit,
+FabDrillBit, etd.)  Each sub-class adds specifies geometric attributes that make sense
+for the tool bit (e.g. CuttingEdgeHeight, Diameter, etc.)  In addition, all FabBit's
+have an attribute named Attributes that contains a FabAttributes object.  This contains
+information about the tool bit that do not effect the overall shape (e.g. "flutes",
+"material", etc.)  This method looks up a value from either the sub-class attributes
+of the FabAttributes object and returns the value number (Union[float, int]).  The
+values can be represented as string (e.g. "17", "123.45", "5mm", ".5in", "true", "false"
+etc.) or as explicit Python values int, float, or bool.  The result is an integer or
+a float as appropriate.
+
+Arguments:
+* *attribute_name* (str): The attribute name
+
+Returns:
+* (Union[int, float]): The resulting number.
+
+### <a name="fabtooltemplates----getoperationkinds"></a>2.3 `FabBit.`getOperationKinds():
+
+FabBit.getOperationKinds(self) -> Tuple[str, ...]:
+
+Return the kind of operations supported by the FabBit.
+Returns:
+* (Tuple[str, ...]): The list of supported operations (e.g. "pocket", "drill", etc.)
+
+### <a name="fabtooltemplates----tojson"></a>2.4 `FabBit.`toJSON():
 
 FabBit.toJSON(self) -> Dict[str, Any]:
 
 Return the JSON associated with a FabBit.
 
-### <a name="fabtooltemplates----write"></a>2.2 `FabBit.`write():
+### <a name="fabtooltemplates----write"></a>2.5 `FabBit.`write():
 
 FabBit.write(self, tools_directory: pathlib.Path, tracing: str = '') -> None:
 

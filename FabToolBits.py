@@ -29,7 +29,7 @@ Both FabShape and FabAttributes are also defined in the FabTemplates module as w
 # <--------------------------------------- 100 characters ---------------------------------------> #
 
 from typeguard import check_type
-from typing import Any, Union
+from typing import Any, Optional, Tuple, Union
 from dataclasses import dataclass
 from FabToolTemplates import FabAttributes, FabBit, FabBitTemplates
 
@@ -375,6 +375,15 @@ class FabEndMillBit(FabBit):
         check_type("FabEndMillBit.Length", self.Length, Union[float, str])
         check_type("FabEndMillBit.ShankDiameter", self.ShankDiameter, Union[float, str])
 
+    # FabEndMillBit.getOperationKinds():
+    def getOperationKinds(self) -> Tuple[str, ...]:
+        """Return the kind of operations by a FabEndMillBit.
+
+        Returns:
+        * (Tuple[str, ...]): The list of supported operations (e.g. "pocket", "drill", etc.)
+        """
+        return ("perimeter", "pocket")
+
     # FabEndMillBit._unit_tests():
     @staticmethod
     def _unit_tests(tracing: str = "") -> None:
@@ -396,6 +405,27 @@ class FabEndMillBit(FabBit):
         }), end_mill_bit.Attributes
         if tracing:
             print(f"{tracing}<=FabEndMillBit._unit_tests()")
+
+    # FabEndMillBit.getBitPriority():
+    def getBitPriority(self, operation_kind: str) -> Optional[float]:
+        """Return operation priority for a FabEndMillBit.
+
+        Arguments:
+        * *operation_kind* (str): The kind of operation (e.g. "pocket", "drill", etc.).
+
+        Returns:
+        * (Optional[float]): The priority as a negative number, where more negative numbers
+          have a higher priority.
+        """
+        operation_kinds: Tuple[str, ...] = self.getOperationKinds()
+        assert operation_kind in operation_kinds, (
+            f"FabEndMillBit.getBitPriority(): {operation_kind} is not one of {operation_kinds}")
+        priority: Optional[float] = None
+        diameter: Union[float, int] = self.getNumber("Diameter")
+        flutes: Union[float, int] = self.getNumber("Flutes")
+        cutting_edge_length: Union[float, int] = self.getNumber("CuttingEdgeHeight")
+        priority = diameter * flutes * cutting_edge_length
+        return priority
 
 
 # FabProbeBit:

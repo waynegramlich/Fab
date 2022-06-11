@@ -279,15 +279,22 @@ class FabAttributes(object):
         return attributes
 
     # FabAttributes.find():
-    def find(self, desired_name: str) -> Any:
-        """Look up an attribute value by name."""
+    def find(self, attribute_name: str) -> Any:
+        """Look up an attribute value by name.
+
+        Arguments:
+        * *attribute_name* (str): The attribute name to find.
+
+        Returns:
+        * (Any): The attribute value.  None is returned if *attribute_name* is not found.
+
+        """
         name: str
         value: Any
         for name, value in self.Values:
-            if name == desired_name:
+            if name == attribute_name:
                 return value
-        raise RuntimeError(
-            f"Could not find '{desired_name} in {self.Names}")  # pragma: no unit cover
+        return None  # pragma: no unit cover
 
     # FabAttributes.toJSON():
     def toJSON(self) -> Dict[str, Any]:
@@ -354,6 +361,102 @@ class FabBit(object):
         check_type("FabBit.Shape", self.ShapeStem, str)
         check_type("FabBit.Attributes", self.Attributes, FabAttributes)
 
+    # FabBit.getBitPriority():
+    def getBitPriority(self, operation_kind: str) -> Optional[float]:
+        """Return operation priority for an operation.
+
+        Arguments:
+        * *operation_kind* (str): The kind of operation (e.g. "pocket", "drill", etc.).
+
+        Returns:
+        * (Optional[float]): The priority as a negative number, where more negative numbers
+          have a higher priority.
+
+        """
+        return None  # pragma: no unit cover
+
+    # FabBit.getNumber():
+    def getNumber(self, attribute_name: str) -> Union[float, int]:
+        """Return an number value from a FabBit.
+
+        The FabBit base class is sub-classed for each different bit type (e.g. FabEndMitBit,
+        FabDrillBit, etd.)  Each sub-class adds specifies geometric attributes that make sense
+        for the tool bit (e.g. CuttingEdgeHeight, Diameter, etc.)  In addition, all FabBit's
+        have an attribute named Attributes that contains a FabAttributes object.  This contains
+        information about the tool bit that do not effect the overall shape (e.g. "flutes",
+        "material", etc.)  This method looks up a value from either the sub-class attributes
+        of the FabAttributes object and returns the value number (Union[float, int]).  The
+        values can be represented as string (e.g. "17", "123.45", "5mm", ".5in", "true", "false"
+        etc.) or as explicit Python values int, float, or bool.  The result is an integer or
+        a float as appropriate.
+
+        Arguments:
+        * *attribute_name* (str): The attribute name
+
+        Returns:
+        * (Union[int, float]): The resulting number.
+
+        """
+        attribute_value: Any = None
+        if hasattr(self, attribute_name):
+            attribute_value = getattr(self, attribute_name)
+        else:
+            attribute_value = self.Attributes.find(attribute_name)
+        if attribute_value is None:
+            raise RuntimeError(f"FabBit.getNumber('{attribute_name}'): attrinbute not found")
+        value: Union[int, float] = 0.0
+        if isinstance(attribute_value, bool):
+            value = int(attribute_value)
+        if isinstance(attribute_value, (float, int)):
+            value = attribute_value
+        elif isinstance(attribute_value, str):
+            # A string of the form "number units"
+            attribute_value = attribute_value.lower()
+            if attribute_value == "true":
+                value = 1
+            elif attribute_value == "false":
+                value = 0
+            elif attribute_value.isdecimal():
+                value = int(attribute_value)
+            else:
+                # Deal with string sof the form "NUMBER UNITS", where UNITS is optional:
+                units: str = "mm"
+                index: int
+                character: str
+                number: str = attribute_value
+                for index, character in enumerate(attribute_value):
+                    if character.isalpha():
+                        units = attribute_value[index:].lower().strip()
+                        number = attribute_value[:index]
+                        break
+                try:
+                    value = float(number)
+                except ValueError:
+                    raise RuntimeError(
+                        f"FabBit.getNumber('{attribute_name}'): "
+                        f"Could not convert '{attribute_value}' into a number")
+                assert isinstance(value, float), attribute_value
+                if units == "mm":
+                    pass
+                elif units == "in":
+                    value *= 2.54
+                else:
+                    raise RuntimeError(
+                        f"FabBit.getNumber('{attribute_name}'): Unrecognized units '{units}'")
+        else:
+            raise RuntimeError(f"FabBit.getNumber('{attribute_name}'): "
+                               f"Has {type(attribute_value)}, not a number")
+        return value
+
+    # FabBit.getOperationKinds():
+    def getOperationKinds(self) -> Tuple[str, ...]:
+        """Return the kind of operations supported by the FabBit.
+
+        Returns:
+        * (Tuple[str, ...]): The list of supported operations (e.g. "pocket", "drill", etc.)
+        """
+        return ()
+
     # FabBit.toJSON():
     def toJSON(self) -> Dict[str, Any]:
         """Return the JSON associated with a FabBit."""
@@ -390,7 +493,22 @@ class FabBit(object):
         tools_directory: PathFile = PathFile(__file__).parent / "Tools"
         shape: FabShape = FabShape.read("probe", tools_directory)
         _ = shape
-        attributes: FabAttributes = FabAttributes.fromJSON({})
+        attributes: FabAttributes = FabAttributes.fromJSON({
+            "bool1": True,
+            "bool2": False,
+            "bool3": "True",
+            "bool4": "False",
+            "int1": 123,
+            "int2": "123",
+            "float1": 123.456,
+            "float2": "123.456",
+            "string1": "",
+            "string2": "abc",
+            "mm_test": "1.0 mm",
+            "in_test": "1.0 in",
+            "bad_unit": "123.0 fish",
+            "bad_type": ("tuple",),
+        })
         bit_stem: str = "5mm_Endmill"
         shape_stem: str = "endmill"
 
@@ -399,6 +517,54 @@ class FabBit(object):
         assert bit.BitStem == bit_stem
         assert bit.ShapeStem == shape_stem
         assert bit.Attributes is attributes
+        assert bit.getNumber("bool1") == 1
+        assert bit.getNumber("bool2") == 0
+        assert bit.getNumber("bool3") == 1
+        assert bit.getNumber("bool4") == 0
+        assert bit.getNumber("int1") == 123
+        assert bit.getNumber("int2") == 123
+        assert bit.getNumber("float1") == 123.456
+        assert bit.getNumber("float2") == 123.456
+        assert bit.getNumber("mm_test") == 1.0
+        assert bit.getNumber("in_test") == 2.54
+
+        # Exception tests:
+        try:
+            _ = bit.getNumber("bogus")
+            assert False
+        except RuntimeError as error:
+            assert str(error) == "FabBit.getNumber('bogus'): attrinbute not found", str(error)
+        try:
+            _ = bit.getNumber("bad_unit")
+            assert False
+        except RuntimeError as error:
+            assert str(error) == "FabBit.getNumber('bad_unit'): Unrecognized units 'fish'", (
+                str(error))
+        try:
+            _ = bit.getNumber("bad_attribute_name")
+            assert False
+        except RuntimeError as error:
+            assert str(error) == "FabBit.getNumber('bad_attribute_name'): attrinbute not found", (
+                str(error))
+        try:
+            _ = bit.getNumber("string1")
+            assert False
+        except RuntimeError as error:
+            assert str(error) == (
+                "FabBit.getNumber('string1'): Could not convert '' into a number"), str(error)
+        try:
+            _ = bit.getNumber("string2")
+            assert False
+        except RuntimeError as error:
+            assert str(error) == (
+                "FabBit.getNumber('string2'): Could not convert 'abc' into a number"), str(error)
+        try:
+            _ = bit.getNumber("bad_type")
+            assert False
+        except RuntimeError as error:
+            assert str(error) == (
+                "FabBit.getNumber('bad_type'): Has <class 'tuple'>, not a number"), str(error)
+
         if tracing:
             print(f"{tracing}<=FabBit._unit_tests()")
 

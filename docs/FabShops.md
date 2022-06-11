@@ -1,6 +1,7 @@
 # FabShops: FabShop: Shop and associated Machines.
 This is a package provides classes used to define what machines are available in a shop.
 
+* FabShops: A collection of FabShops's.
 * FabShop: A collection of FabMachine's.
 * FabMachine: A base class for all machines.
   * FabCNC: A CNC mill or router:
@@ -21,8 +22,10 @@ This is a package provides classes used to define what machines are available in
 * 7 Class: [FabMachine](#fabshops--fabmachine):
 * 8 Class: [FabShop](#fabshops--fabshop):
   * 8.1 [lookup()](#fabshops----lookup): Return the named FabMachine.
-* 9 Class: [FabSpindle](#fabshops--fabspindle):
-* 10 Class: [FabTable](#fabshops--fabtable):
+* 9 Class: [FabShops](#fabshops--fabshops):
+* 10 Class: [FabSpindle](#fabshops--fabspindle):
+* 11 Class: [FabTable](#fabshops--fabtable):
+* 12 Class: [Fab_ShopBit](#fabshops--fab-shopbit):
 
 ## <a name="fabshops--fabaxis"></a>1 Class FabAxis:
 
@@ -152,6 +155,7 @@ Base class for a FabShop machine.
 Attributes:
 * *Name* (str): The name of the  machines.
 * *Placement* (str): The machine placement in the shop.
+* *Library* (FabLibrary): The library of tools available.
 * *Kind* (str): The machine kind (supplied by sub-class as a property).
 
 Constructor:
@@ -177,7 +181,27 @@ FabShop.lookup(self, machine_name: str) -> FabShops.FabMachine:
 Return the named FabMachine.
 
 
-## <a name="fabshops--fabspindle"></a>9 Class FabSpindle:
+## <a name="fabshops--fabshops"></a>9 Class FabShops:
+
+A collection of FabShop's.
+This class collects all available FabShop's together.
+It precomputes the FabShopBit's that are available for each operation type.
+
+Attributes:
+* *Shops* (Tuple[FabShop, ...]: All available FabShop's.
+* *Machines* (Tuple[Tuple[FabShop, FabMachine, ...]: A tuple of all (FabShop, FabMachine) pairs.
+* *AllShopBits: (Tuple[FabShopBit, ...]): A tuple of a FabShopBit's.
+* *DrillShipBits (Tuple[FabShopBit, ...]):
+  A tuple of FabShopBit's suitable for exterior drilling.
+* *PerimeterShopBits: (Tuple[FabShopBit, ...]):
+  A tuple of FabShopBit's suitable for exterior perimeter contouring.
+* *PocketShopBits: (Tuple[FabShopBit, ...]): A tuple of FabShopBit's suitable for pocketing.
+
+Constructor:
+* FabShops(Shops)
+
+
+## <a name="fabshops--fabspindle"></a>10 Class FabSpindle:
 
 Represents a machine tool spindle.
 Attributes:
@@ -191,7 +215,7 @@ Constructor:
 * FabSpindle("Type", Speed, Reversible, FloodCooling, MistCooling)
 
 
-## <a name="fabshops--fabtable"></a>10 Class FabTable:
+## <a name="fabshops--fabtable"></a>11 Class FabTable:
 
 Represents a CNC table.
 Attributes:
@@ -209,6 +233,46 @@ Attributes:
 Constructor:
 *  FabTable("Name", Length, Width, Height, Slots,
    SlotWidth, SlotDepth, KeywayWidth, KeywayHeight)
+
+
+## <a name="fabshops--fab-shopbit"></a>12 Class Fab_ShopBit:
+
+
+Fab_ShopBit: Represents a tool bit for a FabMachine in a FabShop.
+
+Fab_ShopBit is a sub-class of FabBit and it is used to describe a FabBit that can be used
+given operation -- pocket, drill, chamfer, face mill, etc.  Fab_ShopBit's are assembled
+into operation specific lists that are subsequently searched to find ones that match.
+
+When a FabSolid is produced using a CNC machine (i.e. a FabCNCMill) process, it starts with
+some stock material which is machined down with one or more mount operations.  Conceptually,
+a FabSolid can be mounted onto any CNC machine that is capable of performing all requested
+operations.  Since moving a part between machines is annoying (particularly if the machines
+are in different shops), the Fab system attempts find a single CNC machine that can perform
+all of the mounts for a given solid.  However, sometimes that is not possible.  A contrived
+example is one CNC machine having the only 25mm drill bit and another having the only 8mm
+drill bit.  Once the Fab system has identified a minimal set of CNC machines that can be
+used to fabricate the FabSolid, it will generate G-code files for those machines.
+For example, if a FabSolid has 5 mounts (arbitrarily named A, B, C, and D), where machine 1
+can perform mounts [A, B, D] and machine 2 can perform mounts [A, C, D], the Fab system will
+produce G-code files 1A, 2A, 1B, 2C, 1D, and 2D.  The user will probably use 1A, 1B, 2C and 2D.
+Whenever possible, the Fab system will attempt to minimize moving a FabSolid between different
+FabShop's, since FabShop's may be located a distance from one another.
+
+Attributes:
+* *BitPriorty* (float):
+  This specifies the preferred priority for selecting a bit.
+  This is typically a negative number since more negative number sorts first.
+* *Shop* (FabShop): The shop that tool bit.
+* *ShopIndex* (int): The index of the FabShop in FabShops.
+  This is used to distinguish
+* *Machine* (FabMachine): The machine that can use the tool bit.
+* *MachineIndex* (int): The machine precedence order (lower values sort first.)
+* *Bit*: (FabBit): The machine tool bit.
+* *Number*: (int): The tool bit number to use in generated G-Code.
+
+Constructor:
+* Fab_ShopBit(BitPriority, Shop, ShopIndex, Machine, MachineIndex, Bit, Number)
 
 
 

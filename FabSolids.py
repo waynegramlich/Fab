@@ -25,13 +25,14 @@ from cadquery import Vector  # type: ignore
 
 # import Part  # type: ignore
 
-from FabGeometries import FabCircle, FabGeometry, Fab_GeometryContext, Fab_Plane, Fab_Query
+from FabGeometries import (
+    FabCircle, FabGeometry, Fab_GeometryContext, Fab_Plane, Fab_Query)
 from FabJoins import FabFasten, FabJoin
 from FabNodes import FabBox, FabNode, Fab_Prefix, Fab_ProduceState
-from FabShops import FabCNC, FabMachine, FabShop
-from FabTools import FabLibrary
-from FabToolBits import FabEndMillBit
-from FabToolTemplates import FabAttributes, FabBit
+# from FabShops import FabCNC, FabMachine, FabShop
+# from FabTools import FabLibrary
+# from FabToolBits import FabEndMillBit
+# from FabToolTemplates import FabAttributes, FabBit
 from FabUtilities import FabColor, FabToolController
 
 # The *_suppress_stdout* function is based on code from:
@@ -714,50 +715,9 @@ class Fab_Pocket(Fab_Operation):
         self._BottomPath = bottom_path
 
         # Step 2: Now deal with finding acceptable tool bits from *machines* in *shops*:
-        MillBit = Tuple[FabShop, FabMachine, int, FabBit]
-        mill_bit: MillBit
-        mill_bits: List[MillBit] = []
-        shops: Tuple[FabShop, ...] = produce_state.Shops
-        print(f"{len(shops)=}")
-        shop: FabShop
-        for shop in shops:
-            machines: Tuple[FabMachine, ...] = shop.Machines
-            print(f"{len(machines)=}")
-            machine: FabMachine
-            for machine in machines:
-                # In order to be able to do the job:
-                # 1. The end mill must have a cutting edge depth that exceeds pocket depth.
-                # 2. The end mill needs to have diameter that allows it to cut the internal fillets.
-                # numbered_end_mills: List[Tuple[int, FabBit]] = []
-                if isinstance(machine, FabCNC):
-                    if tracing:
-                        print(f"{tracing}Have FabCNC")
-                    library: FabLibrary = machine.Library
-                    numbered_bits: Tuple[Tuple[int, FabBit], ...] = library.NumberedBits
-                    print(f"{len(numbered_bits)=}")
-                    bit: FabBit
-                    numbered_bit: Tuple[int, FabBit]
-                    for numbered_bit in numbered_bits:
-                        _, bit = numbered_bit
-                        if False:
-                            pass
-                            # In order to be able to do the job:
-                            # 1. The end mill must have a cutting edge depth that exceeds
-                            #    pocket depth.
-                            # 2. The end mill needs to have diameter that allows it to cut
-                            #    the internal fillets.
-                            # mill_bit = (shop, machine, number, bit)
-                        # numbered_end_mills.append(mill_bit)
-
-        print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-        for index, mill_bit in enumerate(mill_bits):  # pragma: no unit cover
-            _, _, _, bit = mill_bit
-            assert isinstance(bit, FabEndMillBit), bit
-            attributes: FabAttributes = bit.Attributes
-            flutes: Any = attributes.find("Flutes")
-            assert isinstance(flutes, int), flutes
-            print(f"MillBit[{index}]: "
-                  f"{bit.Name=} {bit.Diameter=} {bit.CuttingEdgeHeight=} {flutes=}")
+        # pocket_geometry: FabGeometry = self._Geometries[0]
+        # pocket_info: Fab_GeometryInfo = Fab_GeometryInfo(pocket_geometry)
+        # _ = pocket_info
 
         tool_controller: FabToolController = FabToolController(
             BitName="5mm_Endmill",

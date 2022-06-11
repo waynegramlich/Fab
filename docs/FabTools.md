@@ -1,4 +1,4 @@
-# FabTools: FabTools: Tools for Fab..
+# FabTools: FabTools: Tools for Fab.
 This is a package provides classes used to define the tooling that is available in a shop.
 They basically define some classes that interface with the FreeCAD Path Tools infrastructure.
 The "new" FreeCAD Path Tools infrastructure organizes everything into a top level `Tools/`
@@ -38,6 +38,7 @@ The top-down class hierarchy for the FabTools package is:
       Shape, there is a dedicated class that represents that shape:
       * FabBallEndBit: This corresponds to `Tools/Shape/ballend.fcstd`.
       * FabBullNoseBit: This corresponds to `Tools/Shape/bullnose.fcstd`.
+
       * FabChamferBit: This corresponds to `Tools/Shape/chamfer.fcstd`.
       * FabDrillBit: This corresponds to `Tools/Shape/drill.fcstd`.
       * FabEndMillBit: This corresponds to `Tools/Shape/endmill.fcstd`.
@@ -47,7 +48,7 @@ The top-down class hierarchy for the FabTools package is:
       * FabVBit: This corresponds to `Tools/Shape/v-bit.fcstd`.
   * FabLibraries: This corresponds to a `Tool/Library` directory:
     * FabLibrary: This corresponds to an individual `.fctl` file in the `Tools/Library` directory.
-  * FabTooling: THis corresponds to the `Tools/` driectory.
+  * FabTooling: This corresponds to the `Tools/` directory.
 
 ## Table of Contents (alphabetical order):
 
@@ -57,7 +58,7 @@ The top-down class hierarchy for the FabTools package is:
   * 1.3 [stemLookup()](#fabtools----stemlookup): Look up a FabBit by file stem.
 * 2 Class: [FabLibraries](#fabtools--fablibraries):
   * 2.1 [nameLookup()](#fabtools----namelookup): Lookup a library by name.
-  * 2.2 [write()](#fabtools----write): Write FabLibaries out to disk.
+  * 2.2 [write()](#fabtools----write): Write FabLibraries out to disk.
 * 3 Class: [FabLibrary](#fabtools--fablibrary):
   * 3.1 [lookupName()](#fabtools----lookupname): Lookup a FabBit by name.
   * 3.2 [lookupNumber()](#fabtools----lookupnumber): Lookup a FabBit by name.
@@ -71,8 +72,9 @@ The top-down class hierarchy for the FabTools package is:
   * 5.4 [end_mill()](#fabtools----end-mill): Add a drill to FabToolingFactory:
   * 5.5 [v_groove()](#fabtools----v-groove): Add a V grove bit to FabToolingFactory:
   * 5.6 [getLibrary()](#fabtools----getlibrary): Return a FabLibrary containti the current tools.
-  * 5.7 [write()](#fabtools----write): Write FabToolingFactory out to disk.
-  * 5.8 [create_example_tools()](#fabtools----create-example-tools): Create some example tools.
+  * 5.7 [getBits()](#fabtools----getbits): Return FabBits from a FabToolingFactory.
+  * 5.8 [write()](#fabtools----write): Using FabToolingFactory write out files for a FabTooling.
+  * 5.9 [create_example_tools()](#fabtools----create-example-tools): Create some example tools.
 
 ## <a name="fabtools--fabbits"></a>1 Class FabBits:
 
@@ -141,7 +143,7 @@ Lookup a library by name.
 
 FabLibraries.write(self, tools_directory: pathlib.Path, tracing: str = '') -> None:
 
-Write FabLibaries out to disk.
+Write FabLibraries out to disk.
 
 
 ## <a name="fabtools--fablibrary"></a>3 Class FabLibrary:
@@ -183,6 +185,8 @@ Attributes:
 
 Constructor:
 * FabTooling(Shapes, Bits, Libraries)
+
+In practice, The FabToolingFactory class is an easier way to create a FabTooling object.
 
 ### <a name="fabtools----write"></a>4.1 `FabTooling.`write():
 
@@ -315,16 +319,22 @@ FabToolingFactory.getLibrary(self, library_stem: str, tools_directory: pathlib.P
 
 Return a FabLibrary containti the current tools.
 
-### <a name="fabtools----write"></a>5.7 `FabToolingFactory.`write():
+### <a name="fabtools----getbits"></a>5.7 `FabToolingFactory.`getBits():
+
+FabToolingFactory.getBits(self) -> FabTools.FabBits:
+
+Return FabBits from a FabToolingFactory.
+
+### <a name="fabtools----write"></a>5.8 `FabToolingFactory.`write():
 
 FabToolingFactory.write(self, library_stem: str, tools_directory: pathlib.Path, tracing: str) -> None:
 
-Write FabToolingFactory out to disk.
+Using FabToolingFactory write out files for a FabTooling.
 Arguments:
 * *library_stem* (str): The stem of the `.fctl` library file in `.../Tools/Library/`.
 * *tools_directory* (PathFile): The Tools directory to write everything out to.
 
-### <a name="fabtools----create-example-tools"></a>5.8 `FabToolingFactory.`create_example_tools():
+### <a name="fabtools----create-example-tools"></a>5.9 `FabToolingFactory.`create_example_tools():
 
 FabToolingFactory.create_example_tools(self, tracing: str = '') -> None:
 

@@ -3,6 +3,7 @@
 
 This is a package provides classes used to define what machines are available in a shop.
 
+* FabShops: A collection of FabShops's.
 * FabShop: A collection of FabMachine's.
 * FabMachine: A base class for all machines.
   * FabCNC: A CNC mill or router:
@@ -21,11 +22,11 @@ This is a package provides classes used to define what machines are available in
 # * Edit move the from line 11 to line 10 in .../Tools/Bit/45degree_chamfer.fctb to fix JSON error.
 # * When setting path to library, be sure to include .../Tools/Library  (one level up does not work)
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path as PathFile
 from typeguard import check_argument_types, check_type
-from typing import List, Tuple
-from FabTools import FabLibrary, FabToolingFactory
+from typing import Dict, List, Optional, Tuple
+from FabTools import FabBit, FabLibrary, FabLibraries, FabTooling, FabToolingFactory
 
 # Useful reference:
 # * [MachiningDoctor](https://www.machiningdoctor.com/calculators/chip-load-calculator/):
@@ -80,6 +81,15 @@ class FabAxis(object):
         check_type("FabAxis.EndSensors", self.EndSensors, bool)
         check_type("FabAxis.Brake", self.Brake, bool)
 
+    # FabAxis.example():
+    @staticmethod
+    def example() -> "FabAxis":
+        """Return an example FabAxis."""
+        return FabAxis(
+            Name="X Axis", Letter="X", Linear=True, Range=100.0, Speed=10.0,
+            Acceleration=0.0, EndSensors=True, Brake=False
+        )
+
     # FabAxis._unit_tests():
     @staticmethod
     def _unit_tests(tracing: str = "") -> None:
@@ -87,9 +97,7 @@ class FabAxis(object):
         if tracing:
             print(f"{tracing}=>FabAxis._unit_tests()")
 
-        linear_axis: FabAxis = FabAxis(
-            Name="X Axis", Letter="X", Linear=True, Range=100.0, Speed=10.0, Acceleration=0.0,
-            EndSensors=True, Brake=False)
+        linear_axis: FabAxis = FabAxis.example()
         assert linear_axis.Name == "X Axis", linear_axis
         assert linear_axis.Letter == "X", linear_axis
         assert linear_axis.Linear, linear_axis
@@ -135,14 +143,20 @@ class FabSpindle(object):
         check_type("FabSpindle.FloodCooling", self.FloodCooling, bool)
         check_type("FabSpindle.MistCooling", self.MistCooling, bool)
 
+    # FabSpindle.example()
+    @staticmethod
+    def example() -> "FabSpindle":
+        """Return an example FabSpindle"""
+        return FabSpindle(
+            Type="R8", Speed=5000, Reversible=True, FloodCooling=True, MistCooling=False)
+
     # FabSpindle._unit_tests():
     @staticmethod
     def _unit_tests(tracing: str = "") -> None:
         """Perform FabSpindle unit tests."""
         if tracing:
             print(f"{tracing}=>FabSpindle._unit_tests()")
-        spindle: FabSpindle = FabSpindle(
-            Type="R8", Speed=5000, Reversible=True, FloodCooling=True, MistCooling=False)
+        spindle: FabSpindle = FabSpindle.example()
         assert spindle.Type == "R8", spindle.Type
         assert spindle.Speed == 5000, spindle.Speed
         assert spindle.Reversible, spindle.Reversible
@@ -200,13 +214,23 @@ class FabTable(object):
         check_type("FabTable.KeywayWidth", self.KeywayWidth, float)
         check_type("FabTable.KeywayHeight", self.KeywayHeight, float)
 
+    # FabTable.example():
+    @staticmethod
+    def example() -> "FabTable":
+        """Return an example FabTable."""
+        return FabTable(
+            Name="TestTable", Length=100.0, Width=50.0, Height=30.0,
+            Slots=4, SlotPitch=10.0, SlotWidth=5.0, SlotDepth=5.0,
+            KeywayWidth=10.0, KeywayHeight=5.0
+        )
+
     # FabTable._unit_tests():
     @staticmethod
     def _unit_tests(tracing: str = "") -> None:
         """Perform unit tests on FabTable."""
         if tracing:
             print(f"{tracing}=>FabTable._unit_tests()")
-        table: FabTable = FabTable("TestTable", 100.0, 50.0, 30.0, 4, 10.0, 5.0, 5.0, 10.0, 5.0)
+        table: FabTable = FabTable.example()
         assert table.Name == "TestTable", table.Name
         assert table.Length == 100.0, table.Length
         assert table.Width == 50.0, table.Width
@@ -247,13 +271,19 @@ class FabController(object):
         if tracing:
             print(f"{tracing}<=FabController._unit_tests()")
 
+    # FabControler.example():
+    @staticmethod
+    def example() -> "FabController":
+        """Return example FabController."""
+        return FabController(Name="MyMill", PostProcessor="linuxcnc")
+
     # FabController._unit_tests():
     @staticmethod
     def _unit_tests(tracing: str = "") -> None:
         """Perform FabController Unit Tests."""
         if tracing:
             print(f"{tracing}=>FabController._unit_tests()")
-        controller: FabController = FabController("MyMill", "linuxcnc")
+        controller: FabController = FabController.example()
         assert controller.Name == "MyMill", controller.Name
         assert controller.PostProcessor == "linuxcnc", controller.PostProcessor
         if tracing:
@@ -268,6 +298,7 @@ class FabMachine(object):
     Attributes:
     * *Name* (str): The name of the  machines.
     * *Placement* (str): The machine placement in the shop.
+    * *Library* (FabLibrary): The library of tools available.
     * *Kind* (str): The machine kind (supplied by sub-class as a property).
 
     Constructor:
@@ -277,6 +308,7 @@ class FabMachine(object):
 
     Name: str
     Placement: str
+    Library: FabLibrary
 
     # FabMachine.__post_init__():
     def __post_init__(self) -> None:
@@ -288,7 +320,8 @@ class FabMachine(object):
     @property
     def Kind(self) -> str:
         """Return the FabMachine kind."""
-        raise NotImplementedError(f"{type(self)}.Kind() is not implemented.")
+        raise NotImplementedError(
+            f"{type(self)}.Kind() is not implemented.")  # pragma: no unit test
 
     # FabMachine._unit_tests():
     @staticmethod
@@ -296,7 +329,11 @@ class FabMachine(object):
         """Perform FabMachine unit tests."""
         if tracing:
             print(f"{tracing}=>FabMachine._unit_tests()")
-        machine: FabMachine = FabMachine("TestMachine", "Test Placement")
+        tools_directory: PathFile = PathFile(__file__).parent / "Tools"
+        tooling: FabTooling = FabTooling.read(tools_directory)
+        libraries: FabLibraries = tooling.Libraries
+        library: FabLibrary = libraries.Libraries[0]
+        machine: FabMachine = FabMachine("TestMachine", "Test Placement", library)
         assert machine.Name == "TestMachine", machine.Name
         assert machine.Placement == "Test Placement", machine.Placement
         if tracing:
@@ -406,12 +443,10 @@ class FabCNCMill(FabCNC):
         """Return the FabCNCMill kind."""
         return "CNCMill"
 
-    # FabCNCMill._unit_tests():
+    # FabCNCMill.getExample():
     @staticmethod
-    def _unit_tests(tracing: str = "") -> None:
-        """Perform FabCNCMill unit tests."""
-        if tracing:
-            print(f"{tracing}=>FabCNCMill._unit_tests()")
+    def getExample() -> "FabCNCMill":
+        """Return an example FabCNCMill."""
         x_axis: FabAxis = FabAxis(
             Name="X Axis", Letter="X", Linear=True, Range=100.0, Speed=10.0, Acceleration=0.0,
             EndSensors=True, Brake=False)
@@ -422,24 +457,30 @@ class FabCNCMill(FabCNC):
             Name="Z Axis", Letter="Z", Linear=True, Range=100.0, Speed=10.0, Acceleration=0.0,
             EndSensors=True, Brake=False)
         axes: Tuple[FabAxis, ...] = (x_axis, y_axis, z_axis)
-        spindle: FabSpindle = FabSpindle(
-            Type="R8", Speed=5000, Reversible=True, FloodCooling=True, MistCooling=False
-        )
-        controller: FabController = FabController(Name="MyMill", PostProcessor="linuxcnc")
-        table: FabTable = FabTable("TestTable", 100.0, 50.0, 30.0, 4, 10.0, 5.0, 5.0, 10.0, 5.0)
+        controller: FabController = FabController.example()
+        spindle: FabSpindle = FabSpindle.example()
+        table: FabTable = FabTable.example()
         tools_directory: PathFile = PathFile(__file__).parent / "Tools"
-        tooling_factory: FabToolingFactory = FabToolingFactory("TestTooling", tools_directory)
-        tooling_factory.create_example_tools()
-        library: FabLibrary = tooling_factory.getLibrary("TestLibrary", tools_directory)
-        cnc: FabCNCMill = FabCNCMill(
+        tooling_factory: FabToolingFactory = FabToolingFactory("", tools_directory)
+        library: FabLibrary = tooling_factory.getLibrary("Library", tools_directory)
+        cnc_mill: FabCNCMill = FabCNCMill(
             Name="TestCNC", Placement="placement", Axes=axes, Table=table,
             Spindle=spindle, Controller=controller, Library=library
         )
-        assert cnc.Name == "TestCNC", cnc.Name
-        assert cnc.Placement == "placement", cnc.Placement
-        assert cnc.Spindle is spindle, cnc.Spindle
-        assert cnc.Controller is controller, cnc.Controller
-        assert cnc.Kind == "CNCMill", cnc.Kind
+        return cnc_mill
+
+    # FabCNCMill._unit_tests():
+    @staticmethod
+    def _unit_tests(tracing: str = "") -> None:
+        """Perform FabCNCMill unit tests."""
+        if tracing:
+            print(f"{tracing}=>FabCNCMill._unit_tests()")
+        cnc_mill: FabCNCMill = FabCNCMill.getExample()
+        assert cnc_mill.Name == "TestCNC", cnc_mill.Name
+        assert cnc_mill.Placement == "placement", cnc_mill.Placement
+        assert isinstance(cnc_mill.Spindle, FabSpindle), cnc_mill.Spindle
+        assert isinstance(cnc_mill.Controller, FabController), cnc_mill.Controller
+        assert cnc_mill.Kind == "CNCMill", cnc_mill.Kind
         if tracing:
             print(f"{tracing}<=FabCNCMill._unit_tests()")
 
@@ -620,7 +661,7 @@ class FabLocation(object):
 
 
 # FabShop:
-@dataclass
+@dataclass(frozen=True)
 class FabShop(object):
     """FabShop: Describes Machines/Tool in a Shop.
 
@@ -708,6 +749,200 @@ class FabShop(object):
             print(f"{tracing}<=FabShop._unit_tests()")
 
 
+# Fab_ShopBit:
+@dataclass(frozen=True, order=True)
+class Fab_ShopBit(object):
+    """
+    Fab_ShopBit: Represents a tool bit for a FabMachine in a FabShop.
+
+    Fab_ShopBit is a sub-class of FabBit and it is used to describe a FabBit that can be used
+    given operation -- pocket, drill, chamfer, face mill, etc.  Fab_ShopBit's are assembled
+    into operation specific lists that are subsequently searched to find ones that match.
+
+    When a FabSolid is produced using a CNC machine (i.e. a FabCNCMill) process, it starts with
+    some stock material which is machined down with one or more mount operations.  Conceptually,
+    a FabSolid can be mounted onto any CNC machine that is capable of performing all requested
+    operations.  Since moving a part between machines is annoying (particularly if the machines
+    are in different shops), the Fab system attempts find a single CNC machine that can perform
+    all of the mounts for a given solid.  However, sometimes that is not possible.  A contrived
+    example is one CNC machine having the only 25mm drill bit and another having the only 8mm
+    drill bit.  Once the Fab system has identified a minimal set of CNC machines that can be
+    used to fabricate the FabSolid, it will generate G-code files for those machines.
+    For example, if a FabSolid has 5 mounts (arbitrarily named A, B, C, and D), where machine 1
+    can perform mounts [A, B, D] and machine 2 can perform mounts [A, C, D], the Fab system will
+    produce G-code files 1A, 2A, 1B, 2C, 1D, and 2D.  The user will probably use 1A, 1B, 2C and 2D.
+    Whenever possible, the Fab system will attempt to minimize moving a FabSolid between different
+    FabShop's, since FabShop's may be located a distance from one another.
+
+    Attributes:
+    * *BitPriorty* (float):
+      This specifies the preferred priority for selecting a bit.
+      This is typically a negative number since more negative number sorts first.
+    * *Shop* (FabShop): The shop that tool bit.
+    * *ShopIndex* (int): The index of the FabShop in FabShops.
+      This is used to distinguish
+    * *Machine* (FabMachine): The machine that can use the tool bit.
+    * *MachineIndex* (int): The machine precedence order (lower values sort first.)
+    * *Bit*: (FabBit): The machine tool bit.
+    * *Number*: (int): The tool bit number to use in generated G-Code.
+
+    Constructor:
+    * Fab_ShopBit(BitPriority, Shop, ShopIndex, Machine, MachineIndex, Bit, Number)
+
+    """
+
+    BitPriority: float
+    Shop: FabShop = field(compare=False, repr=False)
+    ShopIndex: int
+    Machine: FabMachine = field(compare=False, repr=False)
+    MachineIndex: int
+    Bit: FabBit = field(compare=False, repr=False)
+    Number: int
+
+    # Fab_ShopBit.__post_init__():
+    def __post_init__(self) -> None:
+        """ Finish initializing a Fab_Shopbit."""
+        check_type("Fab_ShopBit.Shop", self.Shop, FabShop)
+        check_type("Fab_ShopBit.Machine", self.Machine, FabMachine)
+        check_type("Fab_ShopBit.Bit", self.Bit, FabBit)
+        check_type("Fab_ShopBit.Number", self.Number, int)
+        check_type("Fab_ShopBit.ShopIndex", self.ShopIndex, int)
+        check_type("Fab_ShopBit.MachineIndex", self.MachineIndex, int)
+        check_type("Fab_ShopBit.BitPriority", self.BitPriority, float)
+
+
+# FabShops:
+@dataclass
+class FabShops(object):
+    """FabShops: A collection of FabShop's.
+
+    This class collects all available FabShop's together.
+    It precomputes the FabShopBit's that are available for each operation type.
+
+    Attributes:
+    * *Shops* (Tuple[FabShop, ...]: All available FabShop's.
+    * *Machines* (Tuple[Tuple[FabShop, FabMachine, ...]: A tuple of all (FabShop, FabMachine) pairs.
+    * *AllShopBits: (Tuple[FabShopBit, ...]): A tuple of a FabShopBit's.
+    * *DrillShipBits (Tuple[FabShopBit, ...]):
+      A tuple of FabShopBit's suitable for exterior drilling.
+    * *PerimeterShopBits: (Tuple[FabShopBit, ...]):
+      A tuple of FabShopBit's suitable for exterior perimeter contouring.
+    * *PocketShopBits: (Tuple[FabShopBit, ...]): A tuple of FabShopBit's suitable for pocketing.
+
+    Constructor:
+    * FabShops(Shops)
+
+    """
+    Shops: Tuple[FabShop, ...]
+    ShopMachines: Tuple[Tuple[FabShop, FabMachine], ...] = field(init=False, repr=False)
+    AllShopBits: Tuple[Fab_ShopBit, ...] = field(init=False, repr=False)
+    DrillShopBits: Tuple[Fab_ShopBit, ...] = field(init=False, repr=False)
+    PerimeterShopBits: Tuple[Fab_ShopBit, ...] = field(init=False, repr=False)
+    PocketShopBits: Tuple[Fab_ShopBit, ...] = field(init=False, repr=False)
+
+    # FabShops.__post_init__():
+    def __post_init__(self) -> None:
+        """Finish initializing FabShops."""
+        all_shop_bits: List[Fab_ShopBit] = []
+        drill_shop_bits: List[Fab_ShopBit] = []
+        perimeter_shop_bits: List[Fab_ShopBit] = []
+        pocket_shop_bits: List[Fab_ShopBit] = []
+        operations_table: Dict[str, List[Fab_ShopBit]] = {
+            "drill": drill_shop_bits,
+            "perimeter": perimeter_shop_bits,
+            "pocket": pocket_shop_bits,
+        }
+
+        shop_index: int
+        shop: FabShop
+        for shop_index, shop in enumerate(self.Shops):
+            machine_index: int
+            machine: FabMachine
+            for machine_index, machine in enumerate(shop.Machines):
+                library: FabLibrary = machine.Library
+                number: int
+                bit: FabBit
+                for number, bit in library.NumberedBits:
+                    operation_kinds: Tuple[str, ...] = bit.getOperationKinds()
+                    operation_kind: str
+                    for operation_kind in operation_kinds:
+                        assert operation_kind in operations_table, operation_kind
+                        bit_priority: Optional[float] = bit.getBitPriority(operation_kind)
+                        if bit_priority is not None:
+                            shop_bit: Fab_ShopBit = Fab_ShopBit(bit_priority, shop, shop_index,
+                                                                machine, machine_index, bit, number)
+                            operations_table[operation_kind].append(shop_bit)
+
+        self.AllShopBits = tuple(all_shop_bits)
+        self.DrillShopBits = tuple(drill_shop_bits)
+        self.PerimeterShopBits = tuple(perimeter_shop_bits)
+        self.PocketShopBits = tuple(pocket_shop_bits)
+
+    # FabShops.example():
+    @staticmethod
+    def example(tracing: str = "") -> "FabShops":
+        """Return an example FabShops."""
+        if tracing:
+            print(f"{tracing}=>FabShops.example()")
+
+        x_axis: FabAxis = FabAxis(
+            "X Axis", "X", Linear=True, Range=100.0, Speed=50.0, Acceleration=0.0,
+            EndSensors=True, Brake=False
+        )
+        y_axis: FabAxis = FabAxis(
+            "Y Axis", "Y", Linear=True, Range=50.0, Speed=50.0, Acceleration=0.0,
+            EndSensors=True, Brake=False
+        )
+        z_axis: FabAxis = FabAxis(
+            "Z Axis", Letter="Z", Linear=True, Range=75.0, Speed=50.0, Acceleration=0.0,
+            EndSensors=True, Brake=False
+        )
+        axes: Tuple[FabAxis, ...] = (x_axis, y_axis, z_axis)
+        table: FabTable = FabTable(
+            "MillTable", Length=150.0, Width=75.0, Height=35.0,
+            Slots=3, SlotPitch=20.0, SlotWidth=8.0, SlotDepth=5.0,
+            KeywayWidth=12.0, KeywayHeight=8.0
+        )
+        spindle: FabSpindle = FabSpindle(
+            Type="R8", Speed=5000, Reversible=True, FloodCooling=True, MistCooling=False
+        )
+        controller: FabController = FabController(Name="LinuxCNC", PostProcessor="linuxcnc")
+        tools_directory: PathFile = PathFile(__file__).parent / "Tools"
+        tooling_factory = FabToolingFactory("TestTooling", tools_directory)
+        tooling_factory.create_example_tools()
+        library: FabLibrary = tooling_factory.getLibrary("TestLibrary", tools_directory)
+        cnc_mill: FabCNCMill = FabCNCMill(
+            Name="MyMill", Placement="Garage", Axes=axes, Table=table, Spindle=spindle,
+            Controller=controller, Library=library
+        )
+        location: FabLocation = FabLocation()
+        machines: Tuple[FabMachine, ] = (cnc_mill,)
+        shop: FabShop = FabShop(Name="TestShop", Location=location, Machines=machines)
+        shops: FabShops = FabShops((shop,))
+
+        if tracing:
+            print(f"{tracing}<=FabShops.example()=>*")
+        return shops
+
+    # FabShops._unit_tests():
+    @staticmethod
+    def _unit_tests(tracing: str = "") -> None:
+        """Run FabShops unit tests."""
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabShops._unit_tests()")
+
+        shops: FabShops = FabShops.example(tracing=next_tracing)
+        if tracing:
+            print(f"{tracing}{len(shops.AllShopBits)=}")
+            print(f"{tracing}{len(shops.DrillShopBits)=}")
+            print(f"{tracing}{len(shops.PerimeterShopBits)=}")
+            print(f"{tracing}{len(shops.PocketShopBits)=}")
+
+        if tracing:
+            print(f"{tracing}<=FabShops._unit_tests()")
+
+
 # Main program:
 def main(tracing: str = "") -> None:
     """Run the unit test suites."""
@@ -723,6 +958,7 @@ def main(tracing: str = "") -> None:
     FabMachine._unit_tests(tracing=next_tracing)
     FabSpindle._unit_tests(tracing=next_tracing)
     FabShop._unit_tests(tracing=next_tracing)
+    FabShops._unit_tests(tracing=next_tracing)
     FabTable._unit_tests(tracing=next_tracing)
     if tracing:
         print("=>FabShops.main()")

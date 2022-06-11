@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""FabTools: Tools for Fab..
+"""FabTools: Tools for Fab.
 
 This is a package provides classes used to define the tooling that is available in a shop.
 They basically define some classes that interface with the FreeCAD Path Tools infrastructure.
@@ -40,6 +40,7 @@ The top-down class hierarchy for the FabTools package is:
       Shape, there is a dedicated class that represents that shape:
       * FabBallEndBit: This corresponds to `Tools/Shape/ballend.fcstd`.
       * FabBullNoseBit: This corresponds to `Tools/Shape/bullnose.fcstd`.
+
       * FabChamferBit: This corresponds to `Tools/Shape/chamfer.fcstd`.
       * FabDrillBit: This corresponds to `Tools/Shape/drill.fcstd`.
       * FabEndMillBit: This corresponds to `Tools/Shape/endmill.fcstd`.
@@ -49,7 +50,7 @@ The top-down class hierarchy for the FabTools package is:
       * FabVBit: This corresponds to `Tools/Shape/v-bit.fcstd`.
   * FabLibraries: This corresponds to a `Tool/Library` directory:
     * FabLibrary: This corresponds to an individual `.fctl` file in the `Tools/Library` directory.
-  * FabTooling: THis corresponds to the `Tools/` driectory.
+  * FabTooling: This corresponds to the `Tools/` directory.
 
 """
 
@@ -656,7 +657,7 @@ class FabLibraries(object):
             print(f"{tracing}<=FabLibraries.read('{str(tools_directory)}('), *)=>*")
         return libraries
 
-    # FabLibaries.nameLookup():
+    # FabLibraries.nameLookup():
     def nameLookup(self, name: str) -> FabLibrary:
         """Lookup a library by name."""
         library: FabLibrary
@@ -666,9 +667,9 @@ class FabLibraries(object):
         raise KeyError(f"FabLibraries.nameLookup(): "
                        f"{name} is not one of {self.LibraryNames}")  # pragma: no unit coverage
 
-    # FabLibaries.write():
+    # FabLibraries.write():
     def write(self, tools_directory: PathFile, tracing: str = "") -> None:
-        """Write FabLibaries out to disk."""
+        """Write FabLibraries out to disk."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabLibraries.write({tools_directory})")
@@ -711,6 +712,8 @@ class FabTooling(object):
 
     Constructor:
     * FabTooling(Shapes, Bits, Libraries)
+
+    In practice, The FabToolingFactory class is an easier way to create a FabTooling object.
 
     """
 
@@ -1022,9 +1025,15 @@ class FabToolingFactory(object):
             print(f"{tracing}<=FabToolingFactory.createLibrary('{library_stem}')=>*")
         return library
 
+    # FabToolingFactory.getBits():
+    def getBits(self) -> FabBits:
+        """Return FabBits from a FabToolingFactory."""
+        bits: FabBits = FabBits.fromSequence(tuple(self._tool_table.values()))
+        return bits
+
     # FabToolingFactory.write():
     def write(self, library_stem: str, tools_directory: PathFile, tracing: str) -> None:
-        """Write FabToolingFactory out to disk.
+        """Using FabToolingFactory write out files for a FabTooling.
 
         Arguments:
         * *library_stem* (str): The stem of the `.fctl` library file in `.../Tools/Library/`.
@@ -1035,11 +1044,10 @@ class FabToolingFactory(object):
         if tracing:
             print(f"{tracing}=>FabToolingFactory.write({library_stem}, {tools_directory})")
 
-        bits: FabBits = FabBits.fromSequence(tuple(self._tool_table.values()))
-
         # Read *shapes* from this *this_tools_directory*:
         tools_directory.mkdir(parents=True, exist_ok=True)
         shapes: FabShapes = FabShapes.read(self.InitialToolsDirectory, tracing=next_tracing)
+        bits: FabBits = self.getBits()
         library: FabLibrary = self.getLibrary(library_stem, tools_directory, tracing=next_tracing)
         libraries: FabLibraries = FabLibraries("Library", (library,), ("TestLibrary",))
         tooling: FabTooling = FabTooling(shapes, bits, libraries)
@@ -1126,6 +1134,31 @@ class FabToolingFactory(object):
         if tracing:
             print(f"{tracing}<=FabToolingFactory.create_example_tools()")
 
+    # FabToolingFactory.getExampleTooling():
+    @staticmethod
+    def getExampleTooling(tracing: str = "") -> FabTooling:
+        """Return an example FabTooling."""
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>getExampleTooling()")
+
+        tools_directory: PathFile = PathFile(__file__).parent / "Tools"
+        # library: FabLibrary = FabLibrary.getExample(shapes)
+
+        factory: FabToolingFactory = FabToolingFactory("TestTooling", tools_directory)
+        factory.create_example_tools(tracing=next_tracing)
+
+        shapes: FabShapes = FabShapes.read(tools_directory, tracing=next_tracing)
+        bits: FabBits = factory.getBits()
+
+        library: FabLibrary = factory.getLibrary("Library", tools_directory)
+        libraries: FabLibraries = FabLibraries("Library", (library,), ("TestLibrary",))
+        tooling: FabTooling = FabTooling(shapes, bits, libraries)
+
+        if tracing:
+            print(f"{tracing}<=getExampleTooling()=>*")
+        return tooling
+
     # FabToolingFactory._unit_tests():
     @staticmethod
     def _unit_tests(tracing: str) -> None:
@@ -1139,6 +1172,9 @@ class FabToolingFactory(object):
         factory.create_example_tools(tracing=next_tracing)
         test_tools_directory: PathFile = PathFile("/tmp") / "Tools"
         factory.write("TestLibrary", test_tools_directory, tracing=next_tracing)
+
+        example_tooling: FabTooling = FabToolingFactory.getExampleTooling(tracing=next_tracing)
+        _ = example_tooling
 
         if tracing:
             print(f"{tracing}<=-FabToolingFactory._unit_tests()")
