@@ -281,7 +281,7 @@ class FabProject(FabNode):
                 "FabProject.Shops(): Shops has not be set yet.")  # pragma: no unit cover
         return self._Shops
 
-    # FabProjet.setShops():
+    # FabProject.setShops():
     def setShops(self, shops: FabShops) -> None:
         """Set the shops to use for a FabProject."""
         assert check_argument_types()
@@ -299,12 +299,6 @@ class FabProject(FabNode):
     def is_project(self) -> bool:
         """ Return True if FabNode is a Fab_Group."""
         return True  # All other FabNode's return False.  # pragma: no unit cover
-
-    # FabProject.setShops():
-    def set_shops(self, shops: FabShops) -> None:
-        """Set the shops for a FabProject."""
-        assert check_argument_types()
-        self._Shops = shops
 
     # FabProject.new():
     @classmethod
@@ -444,15 +438,16 @@ class FabProject(FabNode):
     def _unit_tests(tracing: str = "") -> None:
         """Run unit tests for FabProject."""
         if tracing:
-            print(f"{tracing}=>FabProject._unit_tests")
+            print(f"{tracing}=>FabProject._unit_tests()")
 
         project: FabProject = FabProject.new("TestProject")
         assert project.Label == "TestProject"
         shops: FabShops = FabShops.getExample()
         project.setShops(shops)
         assert project.Shops is shops
+
         if tracing:
-            print(f"{tracing}<=FabProject._unit_tests")
+            print(f"{tracing}<=FabProject._unit_tests()")
 
 
 # main():
@@ -470,4 +465,4 @@ def main(tracing: str = "") -> None:
 
 
 if __name__ == "__main__":
-    main()
+    main(tracing=" ")

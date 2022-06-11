@@ -369,7 +369,7 @@ class FabCNC(FabMachine):
 
     # FabCNC.__post_init__():
     def __post_init__(self) -> None:
-        """Finish initializing FabCNCMill."""
+        """Finish initializing FabCNC."""
         super().__post_init__()
         check_type("FabCNC.WorkVolume", self.Axes, Tuple[FabAxis, ...])
         check_type("FabCNC.Table", self.Table, FabTable)
@@ -400,7 +400,7 @@ class FabCNC(FabMachine):
 
         tools_directory: PathFile = PathFile(__file__).parent / "Tools"
         tooling_factory: FabToolingFactory = FabToolingFactory("TestTooling", tools_directory)
-        tooling_factory.create_example_tools()
+        tooling_factory.createExampleTools()
         library: FabLibrary = tooling_factory.getLibrary("TestLibrary", tools_directory)
         cnc: FabCNC = FabCNC(Name="TestCNC", Placement="placement", Axes=axes, Table=table,
                              Spindle=spindle, Controller=controller, Library=library)
@@ -464,6 +464,7 @@ class FabCNCMill(FabCNC):
         table: FabTable = FabTable.example()
         tools_directory: PathFile = PathFile(__file__).parent / "Tools"
         tooling_factory: FabToolingFactory = FabToolingFactory("", tools_directory)
+        tooling_factory.createExampleTools()
         library: FabLibrary = tooling_factory.getLibrary("Library", tools_directory)
         cnc_mill: FabCNCMill = FabCNCMill(
             Name="TestCNC", Placement="placement", Axes=axes, Table=table,
@@ -541,7 +542,7 @@ class FabCNCRouter(FabCNC):
             SlotWidth=5.0, SlotDepth=60.0, KeywayWidth=15.0, KeywayHeight=10.0)
         tools_directory: PathFile = PathFile(__file__).parent / "Tools"
         tooling_factory: FabToolingFactory = FabToolingFactory("TestTooling", tools_directory)
-        tooling_factory.create_example_tools()
+        tooling_factory.createExampleTools()
         library: FabLibrary = tooling_factory.getLibrary("TestLibrary", tools_directory)
         cnc: FabCNCRouter = FabCNCRouter(
             Name="TestCNC", Placement="placement", Axes=axes, Spindle=spindle, Table=table,
@@ -825,15 +826,14 @@ class Fab_ShopBit(object):
         if tracing:
             print(f"{tracing}=>Fab_ShopBit._unit_tests()")
 
-        # shop_bit: Fab_ShopBit = Fab_ShopBit.getExample()
-        # assert shop_bit.BitPriority == -123.456
-        # assert shop_bit.Shop == FabShop.getExample()
-        # assert shop_bit.ShopIndex == 0
-        # assert shop_bit.Machine == FabCNCMill.getExample()
-        # assert shop_bit.MachineIndex == 0
-        # assert shop_bit.Bit == FabEndMillBit.getExample()
-        # assert shop_bit.Number == 1
-        pass
+        shop_bit: Fab_ShopBit = Fab_ShopBit.getExample()
+        assert shop_bit.BitPriority == -123.456
+        assert shop_bit.Shop == FabShop.getExample()
+        assert shop_bit.ShopIndex == 0
+        assert shop_bit.Machine == FabCNCMill.getExample()
+        assert shop_bit.MachineIndex == 0
+        assert shop_bit.Bit == FabEndMillBit.getExample()
+        assert shop_bit.Number == 1
 
         if tracing:
             print(f"{tracing}<=Fab_ShopBit._unit_tests()")
@@ -873,12 +873,17 @@ class FabShops(object):
         """Finish initializing FabShops."""
         all_shop_bits: List[Fab_ShopBit] = []
         drill_shop_bits: List[Fab_ShopBit] = []
+        lower_chamfer_shop_bits: List[Fab_ShopBit] = []
         perimeter_shop_bits: List[Fab_ShopBit] = []
         pocket_shop_bits: List[Fab_ShopBit] = []
+        upper_chamfer_shop_bits: List[Fab_ShopBit] = []
+
         operations_table: Dict[str, List[Fab_ShopBit]] = {
             "drill": drill_shop_bits,
+            "lower_chamfer": lower_chamfer_shop_bits,
             "perimeter": perimeter_shop_bits,
             "pocket": pocket_shop_bits,
+            "upper_chamfer": upper_chamfer_shop_bits,
         }
 
         shop_index: int

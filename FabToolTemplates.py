@@ -455,7 +455,8 @@ class FabBit(object):
         Returns:
         * (Tuple[str, ...]): The list of supported operations (e.g. "pocket", "drill", etc.)
         """
-        return ()
+        raise NotImplementedError("FabBit.getOperationKinds() not implemented "
+                                  f"for {type(self)}")  # pragma: no unit cover
 
     # FabBit.toJSON():
     def toJSON(self) -> Dict[str, Any]:
@@ -512,7 +513,15 @@ class FabBit(object):
         bit_stem: str = "5mm_Endmill"
         shape_stem: str = "endmill"
 
-        bit: FabBit = FabBit("TestBit", bit_stem, shape_stem, attributes)
+        # TestBit:
+        @dataclass(frozen=True)
+        class TestBit(FabBit):
+            RandomNumber: int
+
+            def __post_init__(self) -> None:
+                super().__post_init__()
+
+        bit: FabBit = TestBit("TestBit", bit_stem, shape_stem, attributes, RandomNumber=17)
         assert bit.Name == "TestBit"
         assert bit.BitStem == bit_stem
         assert bit.ShapeStem == shape_stem
@@ -527,6 +536,7 @@ class FabBit(object):
         assert bit.getNumber("float2") == 123.456
         assert bit.getNumber("mm_test") == 1.0
         assert bit.getNumber("in_test") == 2.54
+        assert bit.getNumber("RandomNumber") == 17
 
         # Exception tests:
         try:
@@ -1008,7 +1018,7 @@ class FabBitTemplates(object):
 
         # Lookup *bit_template* using *bit_type* to extract the correct attribute name:
         bit_type_text: str = str(bit_type)  # Should result in "<class '...FabXXXBit'>"
-        start_index: int = bit_type_text.find("Fab")
+        start_index: int = bit_type_text.rindex("Fab")
         assert start_index >= 0
         bit_type_name: str = bit_type_text[start_index + 3:-5]  # Extract XXX, the type name.
         assert hasattr(bit_templates, bit_type_name), (

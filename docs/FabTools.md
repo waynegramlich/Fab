@@ -74,7 +74,7 @@ The top-down class hierarchy for the FabTools package is:
   * 5.6 [getLibrary()](#fabtools----getlibrary): Return a FabLibrary containti the current tools.
   * 5.7 [getBits()](#fabtools----getbits): Return FabBits from a FabToolingFactory.
   * 5.8 [write()](#fabtools----write): Using FabToolingFactory write out files for a FabTooling.
-  * 5.9 [create_example_tools()](#fabtools----create-example-tools): Create some example tools.
+  * 5.9 [createExampleTools()](#fabtools----createexampletools): Create some example tools.
 
 ## <a name="fabtools--fabbits"></a>1 Class FabBits:
 
@@ -334,9 +334,9 @@ Arguments:
 * *library_stem* (str): The stem of the `.fctl` library file in `.../Tools/Library/`.
 * *tools_directory* (PathFile): The Tools directory to write everything out to.
 
-### <a name="fabtools----create-example-tools"></a>5.9 `FabToolingFactory.`create_example_tools():
+### <a name="fabtools----createexampletools"></a>5.9 `FabToolingFactory.`createExampleTools():
 
-FabToolingFactory.create_example_tools(self, tracing: str = '') -> None:
+FabToolingFactory.createExampleTools(self, tracing: str = '') -> None:
 
 Create some example tools.
 

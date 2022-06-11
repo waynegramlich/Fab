@@ -28,14 +28,18 @@ Both FabShape and FabAttributes are also defined in the FabTemplates module as w
 * 2 Class: [FabBullNoseBit](#fabtoolbits--fabbullnosebit):
 * 3 Class: [FabChamferBit](#fabtoolbits--fabchamferbit):
 * 4 Class: [FabDoveTailBit](#fabtoolbits--fabdovetailbit):
+  * 4.1 [getOperationKinds()](#fabtoolbits----getoperationkinds): Return the kind of operations by a FabDoveTailBit.
 * 5 Class: [FabDrillBit](#fabtoolbits--fabdrillbit):
+  * 5.1 [getOperationKinds()](#fabtoolbits----getoperationkinds): Return the kind of operations by a FabDrillBit.
 * 6 Class: [FabEndMillBit](#fabtoolbits--fabendmillbit):
   * 6.1 [getOperationKinds()](#fabtoolbits----getoperationkinds): Return the kind of operations by a FabEndMillBit.
   * 6.2 [getBitPriority()](#fabtoolbits----getbitpriority): Return operation priority for a FabEndMillBit.
 * 7 Class: [FabProbeBit](#fabtoolbits--fabprobebit):
 * 8 Class: [FabSlittingSawBit](#fabtoolbits--fabslittingsawbit):
 * 9 Class: [FabThreadMillBit](#fabtoolbits--fabthreadmillbit):
+  * 9.1 [getOperationKinds()](#fabtoolbits----getoperationkinds): Return the kind of operations by a FabVBit.
 * 10 Class: [FabVBit](#fabtoolbits--fabvbit):
+  * 10.1 [getOperationKinds()](#fabtoolbits----getoperationkinds): Return the kind of operations by a FabVBit.
 
 ## <a name="fabtoolbits--fabballendbit"></a>1 Class FabBallEndBit:
 
@@ -117,6 +121,14 @@ Constructor:
 * FabDoveTailBit("Name", "BitStem", "ShapeStem", Attributes, CuttingEdgeAngle,
   CuttingEdgeHeight, Diameter, Length, NeckDiameter, NeckHeight,  ShankDiameter, TipDiameter)
 
+### <a name="fabtoolbits----getoperationkinds"></a>4.1 `FabDoveTailBit.`getOperationKinds():
+
+FabDoveTailBit.getOperationKinds(self) -> Tuple[str, ...]:
+
+Return the kind of operations by a FabDoveTailBit.
+Returns:
+* (Tuple[str, ...]): The list of supported operations (e.g. "pocket", "drill", etc.)
+
 
 ## <a name="fabtoolbits--fabdrillbit"></a>5 Class FabDrillBit:
 
@@ -132,6 +144,14 @@ Attributes:
 
 Constructor:
 * FabDrillBit("Name", "BitStem", "ShapeStem", Attributes, Diameter, Length, TipAngle)
+
+### <a name="fabtoolbits----getoperationkinds"></a>5.1 `FabDrillBit.`getOperationKinds():
+
+FabDrillBit.getOperationKinds(self) -> Tuple[str, ...]:
+
+Return the kind of operations by a FabDrillBit.
+Returns:
+* (Tuple[str, ...]): The list of supported operations (e.g. "pocket", "drill", etc.)
 
 
 ## <a name="fabtoolbits--fabendmillbit"></a>6 Class FabEndMillBit:
@@ -229,6 +249,14 @@ Constructor:
 * FabThreadMillBit("Name", "BitStem", "ShapeStem", Attributes,
   CuttingAngle, Crest, Diameter, Length, NeckDiameter, NeckLength, ShankDiameter)
 
+### <a name="fabtoolbits----getoperationkinds"></a>9.1 `FabThreadMillBit.`getOperationKinds():
+
+FabThreadMillBit.getOperationKinds(self) -> Tuple[str, ...]:
+
+Return the kind of operations by a FabVBit.
+Returns:
+* (Tuple[str, ...]): The list of supported operations (e.g. "pocket", "drill", etc.)
+
 
 ## <a name="fabtoolbits--fabvbit"></a>10 Class FabVBit:
 
@@ -248,6 +276,14 @@ Attributes:
 Constructor:
 * FabVBit("Name", "BitStem", "ShapeStem", Attributes,
   CuttingEdgeAngle, CuttingEdgeHeight, Diameter, Length, ShankDiameter, TipDiameter)
+
+### <a name="fabtoolbits----getoperationkinds"></a>10.1 `FabVBit.`getOperationKinds():
+
+FabVBit.getOperationKinds(self) -> Tuple[str, ...]:
+
+Return the kind of operations by a FabVBit.
+Returns:
+* (Tuple[str, ...]): The list of supported operations (e.g. "pocket", "drill", etc.)
 
 
 

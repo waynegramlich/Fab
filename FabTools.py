@@ -1056,11 +1056,11 @@ class FabToolingFactory(object):
         if tracing:
             print(f"{tracing}<=FabToolingFactory.write({library_stem}, {tools_directory})=>*")
 
-    # FabToolingFactory.create_example_tools():
-    def create_example_tools(self, tracing: str = "") -> None:
+    # FabToolingFactory.createExampleTools():
+    def createExampleTools(self, tracing: str = "") -> None:
         """Create some example tools."""
         if tracing:
-            print(f"{tracing}=>FabToolingFactory.create_example_tools()")
+            print(f"{tracing}=>FabToolingFactory.createExampleTools()")
 
         self.v_groove(2, "3/8 in Mill Drill", "3_8_in_Mill_Drill", "HSS", flutes=2,
                       diameter="0.375 in", cutting_edge_angle="90 °",
@@ -1132,7 +1132,7 @@ class FabToolingFactory(object):
         #   Time(sec=1.500), Time(sec=1.500), Hertz(rpm=500.0), Hertz(rpm=504.0), 0.050)
 
         if tracing:
-            print(f"{tracing}<=FabToolingFactory.create_example_tools()")
+            print(f"{tracing}<=FabToolingFactory.createExampleTools()")
 
     # FabToolingFactory.getExampleTooling():
     @staticmethod
@@ -1146,7 +1146,7 @@ class FabToolingFactory(object):
         # library: FabLibrary = FabLibrary.getExample(shapes)
 
         factory: FabToolingFactory = FabToolingFactory("TestTooling", tools_directory)
-        factory.create_example_tools(tracing=next_tracing)
+        factory.createExampleTools(tracing=next_tracing)
 
         shapes: FabShapes = FabShapes.read(tools_directory, tracing=next_tracing)
         bits: FabBits = factory.getBits()
@@ -1169,7 +1169,7 @@ class FabToolingFactory(object):
 
         tools_directory: PathFile = PathFile(__file__).absolute().parent / "Tools"
         factory: FabToolingFactory = FabToolingFactory("TestTooling", tools_directory)
-        factory.create_example_tools(tracing=next_tracing)
+        factory.createExampleTools(tracing=next_tracing)
         test_tools_directory: PathFile = PathFile("/tmp") / "Tools"
         factory.write("TestLibrary", test_tools_directory, tracing=next_tracing)
 

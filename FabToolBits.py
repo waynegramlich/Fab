@@ -68,14 +68,21 @@ class FabBallEndBit(FabBit):
         check_type("FabBallEndBit.Length", self.Length, Union[float, str])
         check_type("FabBallEndBit.ShankDiameter", self.ShankDiameter, Union[float, str])
 
+    # FabBallEndBit.getExample():
+    @staticmethod
+    def getExample() -> "FabBallEndBit":
+        """Return an example FabBallEndBit."""
+        ball_end_bit: Any = FabBitTemplates.getExample(FabBallEndBit)
+        assert isinstance(ball_end_bit, FabBallEndBit)
+        return ball_end_bit
+
     # FabBallEndBit._unit_tests():
     @staticmethod
     def _unit_tests(tracing: str = "") -> None:
         """Perform FabBallEndBit unit tests."""
         if tracing:
             print(f"{tracing}=>FabBallEndBit._unit_tests()")
-        ball_end_bit: Any = FabBitTemplates.getExample(FabBallEndBit)
-        assert isinstance(ball_end_bit, FabBallEndBit)
+        ball_end_bit: FabBallEndBit = FabBallEndBit.getExample()
         assert ball_end_bit.Name == "6mm Ball End", ball_end_bit.Name
         assert ball_end_bit.BitStem == "6mm_Ball_End"
         assert ball_end_bit.ShapeStem == "ballend"
@@ -130,13 +137,21 @@ class FabBullNoseBit(FabBit):
         check_type("FabBullNoseBit.Length", self.Length, Union[float, str])
         check_type("FabBullNoseBit.ShankDiameter", self.ShankDiameter, Union[float, str])
 
+    # FabBullNoseBit.getExample():
+    @staticmethod
+    def getExample() -> "FabBullNoseBit":
+        """Return an example FabBullNoseBit."""
+        bull_nose_bit: Any = FabBitTemplates.getExample(FabBullNoseBit)
+        assert isinstance(bull_nose_bit, FabBullNoseBit)
+        return bull_nose_bit
+
     # FabBullNoseBit._unit_tests():
     @staticmethod
     def _unit_tests(tracing: str = "") -> None:
         """Perform FabBullNoseBit unit tests."""
         if tracing:
             print(f"{tracing}=>FabBullNoseBit._unit_tests()")
-        bull_nose_bit: Any = FabBitTemplates.getExample(FabBullNoseBit)
+        bull_nose_bit: FabBullNoseBit = FabBullNoseBit.getExample()
         assert bull_nose_bit.Name == "6 mm Bull Nose"
         assert bull_nose_bit.BitStem == "6mm_Bullnose"
         assert bull_nose_bit.ShapeStem == "bullnose"
@@ -192,13 +207,21 @@ class FabChamferBit(FabBit):
         check_type("FabChamferBit.ShankDiameter", self.ShankDiameter, Union[float, str])
         check_type("FabChamferBit.TipDiameter", self.TipDiameter, Union[float, str])
 
+    # FabChamferBit.getExample():
+    @staticmethod
+    def getExample() -> "FabChamferBit":
+        """Return an example FabChamferBit."""
+        chamfer_bit: Any = FabBitTemplates.getExample(FabChamferBit)
+        assert isinstance(chamfer_bit, FabChamferBit)
+        return chamfer_bit
+
     # FabChamferBit._unit_tests():
     @staticmethod
     def _unit_tests(tracing: str = "") -> None:
         """Perform FabChamferBit unit tests."""
         if tracing:
             print(f"{tracing}=>FabChamferBit._unit_tests()")
-        chamfer_bit: Any = FabBitTemplates.getExample(FabChamferBit)
+        chamfer_bit: FabChamferBit = FabChamferBit.getExample()
         assert chamfer_bit.Name == "45 Deg. Chamfer"
         assert chamfer_bit.BitStem == "45degree_chamfer"
         assert chamfer_bit.ShapeStem == "chamfer"
@@ -264,13 +287,30 @@ class FabDoveTailBit(FabBit):
         check_type("FabDoveTailBit.ShankDiameter", self.ShankDiameter, Union[float, str])
         check_type("FabDoveTailBit.TipDiameter", self.TipDiameter, Union[float, str])
 
+    # FabDoveTailBit.getExample():
+    @staticmethod
+    def getExample() -> "FabDoveTailBit":
+        """Return an example FabChamferBit."""
+        dove_tail_bit: Any = FabBitTemplates.getExample(FabDoveTailBit)
+        assert isinstance(dove_tail_bit, FabDoveTailBit)
+        return dove_tail_bit
+
+    # FabDDoveTailBit.getOperationKinds():
+    def getOperationKinds(self) -> Tuple[str, ...]:
+        """Return the kind of operations by a FabDoveTailBit.
+
+        Returns:
+        * (Tuple[str, ...]): The list of supported operations (e.g. "pocket", "drill", etc.)
+        """
+        return ("lower_chamfer",)
+
     # FabDoveTailBit._unit_tests():
     @staticmethod
     def _unit_tests(tracing: str = "") -> None:
         """Perform FabDoveTailBit unit tests."""
         if tracing:
             print(f"{tracing}=>FabDoveTailBit._unit_tests()")
-        dove_tail_bit: Any = FabBitTemplates.getExample(FabDoveTailBit)
+        dove_tail_bit: FabDoveTailBit = FabDoveTailBit.getExample()
         assert dove_tail_bit.Name == "no_dovetail_name_yet"
         assert dove_tail_bit.BitStem == "no_dovetail_stem_yet"
         assert dove_tail_bit.ShapeStem == "dovetail"
@@ -320,13 +360,30 @@ class FabDrillBit(FabBit):
         check_type("FabDrillBit.Length", self.Length, Union[float, str])
         check_type("FabDrillBit.TipAngle", self.TipAngle, Union[float, str])
 
+    # FabDrillBit.getExample():
+    @staticmethod
+    def getExample() -> "FabDrillBit":
+        """Return an example FabDrillBit."""
+        drill_bit: Any = FabBitTemplates.getExample(FabDrillBit)
+        assert isinstance(drill_bit, FabDrillBit)
+        return drill_bit
+
+    # FabDrillBit.getOperationKinds():
+    def getOperationKinds(self) -> Tuple[str, ...]:
+        """Return the kind of operations by a FabDrillBit.
+
+        Returns:
+        * (Tuple[str, ...]): The list of supported operations (e.g. "pocket", "drill", etc.)
+        """
+        return ("lower_chamfer",)
+
     # FabDrillBit._unit_tests():
     @staticmethod
     def _unit_tests(tracing: str = "") -> None:
         """Perform FabDrillBit unit tests."""
         if tracing:
             print(f"{tracing}=>FabDrillBit._unit_tests()")
-        drill_bit: Any = FabBitTemplates.getExample(FabDrillBit)
+        drill_bit: Any = FabDrillBit.getExample()
         assert drill_bit.Name == "5mm Drill"
         assert drill_bit.BitStem == "5mm_Drill"
         assert drill_bit.ShapeStem == "drill"
@@ -398,8 +455,7 @@ class FabEndMillBit(FabBit):
         """Perform FabEndMillBit unit tests."""
         if tracing:
             print(f"{tracing}=>FabEndMillBit._unit_tests()")
-        end_mill_bit: Any = FabBitTemplates.getExample(FabEndMillBit)
-        assert isinstance(end_mill_bit, FabEndMillBit)
+        end_mill_bit: FabEndMillBit = FabEndMillBit.getExample()
         assert end_mill_bit.Name == "5mm Endmill"
         assert end_mill_bit.BitStem == "5mm_Endmill"
         assert end_mill_bit.ShapeStem == "endmill"
@@ -466,13 +522,21 @@ class FabProbeBit(FabBit):
         check_type("FabProbeBit.Length", self.Length, Union[float, str])
         check_type("FabProbeBit.ShaftDiameter", self.ShaftDiameter, Union[float, str])
 
+    # FabProbeBit.getExample():
+    @staticmethod
+    def getExample() -> "FabProbeBit":
+        """Return an example FabProbeBit."""
+        probe_bit: Any = FabBitTemplates.getExample(FabProbeBit)
+        assert isinstance(probe_bit, FabProbeBit)
+        return probe_bit
+
     # FabProbeBit._unit_tests():
     @staticmethod
     def _unit_tests(tracing: str = "") -> None:
         """Perform FabProbeBit unit tests."""
         if tracing:
             print(f"{tracing}=>FabProbeBit._unit_tests()")
-        probe_bit: Any = FabBitTemplates.getExample(FabProbeBit)
+        probe_bit: FabProbeBit = FabProbeBit.getExample()
         assert probe_bit.Name == "Probe"
         assert probe_bit.BitStem == "probe"
         assert probe_bit.ShapeStem == "probe"
@@ -527,13 +591,21 @@ class FabSlittingSawBit(FabBit):
         check_type("FabSlittingSawBit.Length", self.Length, Union[float, str])
         check_type("FabSlittingSawBit.ShankDiameter", self.ShankDiameter, Union[float, str])
 
+    # FabSlittingSawBit.getExample():
+    @staticmethod
+    def getExample() -> "FabSlittingSawBit":
+        """Return an example FabSlittingSawBit."""
+        slitting_saw_bit: Any = FabBitTemplates.getExample(FabSlittingSawBit)
+        assert isinstance(slitting_saw_bit, FabSlittingSawBit)
+        return slitting_saw_bit
+
     # FabSlittingSawBit._unit_tests():
     @staticmethod
     def _unit_tests(tracing: str = "") -> None:
         """Perform FabSlittingSawBit unit tests."""
         if tracing:
             print(f"{tracing}=>FabSlittingSawBit._unit_tests()")
-        slitting_saw_bit: Any = FabBitTemplates.getExample(FabSlittingSawBit)
+        slitting_saw_bit: FabSlittingSawBit = FabSlittingSawBit.getExample()
         assert slitting_saw_bit.Name == "Slitting Saw"
         assert slitting_saw_bit.BitStem == "slittingsaw"
         assert slitting_saw_bit.ShapeStem == "slittingsaw"
@@ -593,6 +665,15 @@ class FabThreadMillBit(FabBit):
         check_type("FabThreadMillBit.NeckDiameter", self.NeckDiameter, Union[float, str])
         check_type("FabThreadMillBit.NeckLength", self.NeckLength, Union[float, str])
         check_type("FabThreadMillBit.ShankDiameter", self.ShankDiameter, Union[float, str])
+
+    # FabThreadMillBit.getOperationKinds():
+    def getOperationKinds(self) -> Tuple[str, ...]:
+        """Return the kind of operations by a FabVBit.
+
+        Returns:
+        * (Tuple[str, ...]): The list of supported operations (e.g. "pocket", "drill", etc.)
+        """
+        return ("lower_chamfer", "upper_chamfer")
 
     # FabThreadMillBit._unit_tests():
     @staticmethod
@@ -656,13 +737,30 @@ class FabVBit(FabBit):
         check_type("FabVBit.ShankDiameter", self.ShankDiameter, Union[float, str])
         check_type("FabVBit.TipDiameter", self.TipDiameter, Union[float, str])
 
+    # FabVBit.getOperationKinds():
+    def getOperationKinds(self) -> Tuple[str, ...]:
+        """Return the kind of operations by a FabVBit.
+
+        Returns:
+        * (Tuple[str, ...]): The list of supported operations (e.g. "pocket", "drill", etc.)
+        """
+        return ("perimeter",)
+
+    # FabVBit.getExample():
+    @staticmethod
+    def getExample() -> "FabVBit":
+        """Return an example FabVBit."""
+        v_bit: Any = FabBitTemplates.getExample(FabVBit)
+        assert isinstance(v_bit, FabVBit)
+        return v_bit
+
     # FabVBit._unit_tests():
     @staticmethod
     def _unit_tests(tracing: str = "") -> None:
         """Perform FabVBit unit tests."""
         if tracing:
             print(f"{tracing}=>FabVBit._unit_tests()")
-        v_bit: Any = FabBitTemplates.getExample(FabVBit)
+        v_bit: FabVBit = FabVBit.getExample()
         assert v_bit.Name == "60 Deg. V-Bit"
         assert v_bit.BitStem == "60degree_Vbit", v_bit.BitStem
         assert v_bit.ShapeStem == "v-bit"
