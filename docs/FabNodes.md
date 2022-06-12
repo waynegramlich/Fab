@@ -51,10 +51,11 @@ See the FabNode documentation for further attributes.
   * 2.8 [to_json()](#fabnodes----to-json): Return a dictionary for JSON output.
   * 2.9 [pre_produce()](#fabnodes----pre-produce): Perform FabNode pre produce operations.
   * 2.10 [produce()](#fabnodes----produce): Empty FabNode produce method to be over-ridden.
-  * 2.11 [post_produce2()](#fabnodes----post-produce2): Do FabNode phase 1 post production.
-  * 2.12 [post_produce3()](#fabnodes----post-produce3): Do FabNode phase 2 post production.
-  * 2.13 [set_tracing()](#fabnodes----set-tracing): Set the FabNode indentation tracing level.
-  * 2.14 [probe()](#fabnodes----probe): Perform a probe operation.
+  * 2.11 [post_produce1()](#fabnodes----post-produce1): Do FabNode phase 2A post production.
+  * 2.12 [post_produce2()](#fabnodes----post-produce2): Do FabNode phase 2B post production.
+  * 2.13 [post_produce3()](#fabnodes----post-produce3): Do FabNode phase 2C post production.
+  * 2.14 [set_tracing()](#fabnodes----set-tracing): Set the FabNode indentation tracing level.
+  * 2.15 [probe()](#fabnodes----probe): Perform a probe operation.
 * 3 Class: [Fab_Prefix](#fabnodes--fab-prefix):
   * 3.1 [next_document()](#fabnodes----next-document): Return the next document FabPrefix.
   * 3.2 [next_solid()](#fabnodes----next-solid): Return the next solid Fab_Prefix.
@@ -237,19 +238,25 @@ FabNode.produce(self) -> None:
 
 Empty FabNode produce method to be over-ridden.
 
-### <a name="fabnodes----post-produce2"></a>2.11 `FabNode.`post_produce2():
+### <a name="fabnodes----post-produce1"></a>2.11 `FabNode.`post_produce1():
+
+FabNode.post_produce1(self, produce_state: FabNodes.Fab_ProduceState, tracing: str = '') -> None:
+
+Do FabNode phase 2A post production.
+
+### <a name="fabnodes----post-produce2"></a>2.12 `FabNode.`post_produce2():
 
 FabNode.post_produce2(self, produce_state: FabNodes.Fab_ProduceState, tracing: str = '') -> None:
 
-Do FabNode phase 1 post production.
+Do FabNode phase 2B post production.
 
-### <a name="fabnodes----post-produce3"></a>2.12 `FabNode.`post_produce3():
+### <a name="fabnodes----post-produce3"></a>2.13 `FabNode.`post_produce3():
 
 FabNode.post_produce3(self, produce_state: FabNodes.Fab_ProduceState) -> None:
 
-Do FabNode phase 2 post production.
+Do FabNode phase 2C post production.
 
-### <a name="fabnodes----set-tracing"></a>2.13 `FabNode.`set_tracing():
+### <a name="fabnodes----set-tracing"></a>2.14 `FabNode.`set_tracing():
 
 FabNode.set_tracing(self, tracing: str):
 
@@ -264,7 +271,7 @@ This typically done, by adding this call immediately after calling super().__pos
         self.set_tracing(" ")  # Set the tracing here.
         # All children nodes will that are added, will have tracing set as well.
 
-### <a name="fabnodes----probe"></a>2.14 `FabNode.`probe():
+### <a name="fabnodes----probe"></a>2.15 `FabNode.`probe():
 
 FabNode.probe(self, label: str) -> None:
 

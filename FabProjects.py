@@ -388,15 +388,22 @@ class FabProject(FabNode):
 
             fab_steps: Fab_Steps = Fab_Steps(Path("/tmp"))
             fab_steps.scan()
+
             if tracing:
-                print(f"{tracing}Phase 2A: post_produce2(*, '{step_directory}'):")
+                print(f"{tracing}Phase 2A: post_produce1(*, '{step_directory}'):")
+            del errors[:]  # Clear *errors*
+            for node in all_nodes:
+                node.post_produce1(produce_state)
+
+            if tracing:
+                print(f"{tracing}Phase 2B: post_produce2(*, '{step_directory}'):")
             del errors[:]  # Clear *errors*
             for node in all_nodes:
                 node.post_produce2(produce_state)
             fab_steps.flush_inactives()
 
             if tracing:
-                print(f"{tracing}Phase 2b: post_produce3():")
+                print(f"{tracing}Phase 2C: post_produce3():")
             for node in reversed(all_nodes):
                 node.post_produce3(produce_state)
 
