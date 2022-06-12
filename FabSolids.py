@@ -274,7 +274,7 @@ class Fab_Operation(object):
 
     _Mount: "FabMount" = field(repr=False, compare=False)
     _ToolController: Optional[FabToolController] = field(init=False, repr=False)
-    _ToolControllerIndex: int = field(init=False)
+    ToolControllerIndex: int = field(init=False)
     _JsonEnabled: bool = field(init=False)
     _Active: bool = field(init=False)
     Prefix: Optional[Fab_Prefix] = field(init=False, repr=False)
@@ -286,7 +286,7 @@ class Fab_Operation(object):
         # if not self._Mount.is_mount():
         #   raise RuntimeError("Fab_Operation.__post_init__(): {type(self._Mount)} is not FabMount")
         self._ToolController = None
-        self._ToolControllerIndex = -1  # Unassigned.
+        self.ToolControllerIndex = -1  # Unassigned.
         self._JsonEnabled = True
         self._Active = True
         self.Prefix = None
@@ -312,7 +312,7 @@ class Fab_Operation(object):
             tool_controller_index = len(tool_controllers_table)
             tool_controllers_table[tool_controller] = tool_controller_index
             self._ToolController = tool_controller
-        self._ToolControllerIndex = tool_controller_index
+        self.ToolControllerIndex = tool_controller_index
 
     # Fab_Operation.get_kind():
     def get_kind(self) -> str:
@@ -383,8 +383,8 @@ class Fab_Operation(object):
             "Label": self.get_name(),
             "_Active": self._Active,
         }
-        if self._ToolControllerIndex >= 0:
-            json_dict["ToolControllerIndex"] = self._ToolControllerIndex
+        if self.ToolControllerIndex >= 0:
+            json_dict["ToolControllerIndex"] = self.ToolControllerIndex
         if self._ToolController:
             tool_controller_json: Dict[str, Any] = self._ToolController.to_json()
             json_dict["ToolController"] = tool_controller_json
