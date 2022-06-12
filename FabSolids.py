@@ -276,7 +276,7 @@ class Fab_Operation(object):
     ToolController: Optional[FabToolController] = field(init=False, repr=False)
     ToolControllerIndex: int = field(init=False)
     JsonEnabled: bool = field(init=False)
-    _Active: bool = field(init=False)
+    Active: bool = field(init=False)
     Prefix: Optional[Fab_Prefix] = field(init=False, repr=False)
 
     # Fab_Operation.__post_init__():
@@ -288,7 +288,7 @@ class Fab_Operation(object):
         self.ToolController = None
         self.ToolControllerIndex = -1  # Unassigned.
         self.JsonEnabled = True
-        self._Active = True
+        self.Active = True
         self.Prefix = None
 
     # Fab_Operation.get_tool_controller():
@@ -375,7 +375,7 @@ class Fab_Operation(object):
         json_dict: Dict[str, Any] = {
             "Kind": self.get_kind(),
             "Label": self.get_name(),
-            "_Active": self._Active,
+            "_Active": self.Active,
         }
         if self.ToolControllerIndex >= 0:
             json_dict["ToolControllerIndex"] = self.ToolControllerIndex
@@ -444,7 +444,7 @@ class Fab_Extrude(Fab_Operation):
         self._StartDepth = 0.0
         self._StepDown = 3.0
         self._FinalDepth = -self.Depth
-        self._Active = self._Contour
+        self.Active = self._Contour
         self.Prefix = self._Mount.lookup_prefix(self._Name)
 
     # Fab_Extrude.Geometry():
@@ -538,7 +538,7 @@ class Fab_Extrude(Fab_Operation):
         side_modes: Tuple[str, ...] = ("Inside", "Outside")
         json_dict: Dict[str, Any] = super().to_json()
         json_dict["StepFile"] = "Fab_Extrude.to_json:_StepFile"
-        json_dict["_Active"] = self._Active
+        json_dict["_Active"] = self.Active
         json_dict["_ClearanceHeight"] = self._StartDepth + 10.0  # TODO: Fix
         json_dict["_CoolantMode"] = coolant_modes[1]  # TODO: Fix
         json_dict["_Direction"] = direction_modes[0]
@@ -946,7 +946,7 @@ class Fab_Hole(Fab_Operation):
             self.StartDepth = plane.Distance
 
             # Compute the closing solid corners.  The enclose face area must be greater the
-            # drill face area so that the JSON reader code and distinguish between faces.
+            # drill face area so that the JSON reader code can distinguish between faces.
             # Thus, we make extend it by *diameter* in +/- X/Y.
             extra: float = diameter
             z: float = 0.0  # *z* is ignored.
