@@ -1261,19 +1261,19 @@ class FabNode(FabBox):
         if tracing:
             print(f"{tracing}<=>FabNode({self._Label}).produce()=>()")
 
-    # FabNode.post_produce1():
-    def post_produce1(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
+    # FabNode.post_produce2():
+    def post_produce2(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
         """Do FabNode phase 1 post production."""
         tracing = self.Tracing  # Ignore *tracing* argument.  # pragma: no unit cover
         if tracing:
-            print(f"{tracing}<=>FabNode({self._Label}).post_produce1(*, *)=>()")
+            print(f"{tracing}<=>FabNode({self._Label}).post_produce2(*, *)=>()")
 
-    # FabNode.post_produce2():
-    def post_produce2(self, produce_state: Fab_ProduceState) -> None:
+    # FabNode.post_produce3():
+    def post_produce3(self, produce_state: Fab_ProduceState) -> None:
         """Do FabNode phase 2 post production."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}<=>FabNode({self._Label}).post_produce2(*)=>()")
+            print(f"{tracing}<=>FabNode({self._Label}).post_produce3(*)=>()")
 
     # FabNode.get_parent_document():
     # def get_parent_document(self, tracing: str = "") -> "FabNode":

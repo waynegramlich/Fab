@@ -43,12 +43,12 @@ class Fab_Group(FabNode):
         """Initialize Fab_Group."""
         super().__post_init__()
 
-    # Fab_Group.post_produce1():
-    def post_produce1(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
+    # Fab_Group.post_produce2():
+    def post_produce2(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
         """Perform Fab_Group phase 1 post production."""
         tracing = self.Tracing  # Ignore *tracing* argument.
         if tracing:
-            print(f"{tracing}<=>Fab_Group({self.Label}).post_produce1(*, *)")
+            print(f"{tracing}<=>Fab_Group({self.Label}).post_produce2(*, *)")
 
     # Fab_Group.produce():
     def produce(self) -> None:
@@ -96,22 +96,22 @@ class FabAssembly(Fab_Group):
         json["Kind"] = "Assembly"
         return json
 
-    # FabAssembly.post_produce1():
-    def post_produce1(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
+    # FabAssembly.post_produce2():
+    def post_produce2(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
         """Perform FabAssembly phase1 post production."""
         tracing = self.Tracing  # Ignore *tracing* argument.
         if tracing:
-            print(f"{tracing}=>FabAssembly({self.Label}).post_produce1(*, *)")
-        super().post_produce1(produce_state)
+            print(f"{tracing}=>FabAssembly({self.Label}).post_produce2(*, *)")
+        super().post_produce2(produce_state)
         if tracing:
-            print(f"{tracing}<=FabAssembly({self.Label}).post_produce1(*, *)")
+            print(f"{tracing}<=FabAssembly({self.Label}).post_produce2(*, *)")
 
-    # FabAssembly.post_produce2():
-    def post_produce2(self, produce_state: Fab_ProduceState) -> None:
+    # FabAssembly.post_produce3():
+    def post_produce3(self, produce_state: Fab_ProduceState) -> None:
         """Perform FabAssembly phase 2 post production."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}=>FabAssembly({self.Label}).post_produce2()")
+            print(f"{tracing}=>FabAssembly({self.Label}).post_produce3()")
 
         # Create the CadQuery *assembly* and fill it in:
         child_node: FabNode
@@ -124,19 +124,19 @@ class FabAssembly(Fab_Group):
                 sub_assembly = child_node._Assembly
             else:  # pragma: no unit cover
                 raise RuntimeError(
-                    f"FabAssembly.post_produce2({self.Label}): {child_node} is "
+                    f"FabAssembly.post_produce3({self.Label}): {child_node} is "
                     f"{type(child_node)}, not FabSolid or FabAssembly")  # pragma: no unit cover
 
             if not isinstance(sub_assembly, cq.Assembly):
                 raise RuntimeError(
-                    f"FabAssembly.post_produce2({self.Label}): {sub_assembly} is "
+                    f"FabAssembly.post_produce3({self.Label}): {sub_assembly} is "
                     f"{type(sub_assembly)}, not cq.Assembly")  # pragma: no unit cover
             assembly.add(sub_assembly, name=child_node.Label)
         produce_state.ObjectsTable[self.Label] = assembly
         self._Assembly = assembly
 
         if tracing:
-            print(f"{tracing}<=FabAssembly({self.Label}).post_produce2()")
+            print(f"{tracing}<=FabAssembly({self.Label}).post_produce3()")
 
     # FabAssembly._unit_tests()
     @staticmethod
@@ -211,19 +211,19 @@ class FabDocument(FabNode):
         json["_FilePath"] = str(self.FilePath)
         return json
 
-    # FabDocument.post_produce1():
-    def post_produce1(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
+    # FabDocument.post_produce2():
+    def post_produce2(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
         """Perform FabDocument phase 1 post production."""
         tracing = self.Tracing  # Ignore *tracing* argument.
         if tracing:
-            print(f"{tracing}<=>FabDocument({self.Label}).post_produce1(*, *)")
+            print(f"{tracing}<=>FabDocument({self.Label}).post_produce2(*, *)")
 
-    # FabDocument.post_produce2():
-    def post_produce2(self, produce_state: Fab_ProduceState) -> None:
+    # FabDocument.post_produce3():
+    def post_produce3(self, produce_state: Fab_ProduceState) -> None:
         """Close the FabDocument."""
         tracing: str = self.Tracing
         if tracing:
-            print(f"{tracing}<=>FabDocument({self.Label}).post_produce2()")
+            print(f"{tracing}<=>FabDocument({self.Label}).post_produce3()")
 
     # FabDocument.is_document():
     def is_document(self) -> bool:
@@ -389,16 +389,16 @@ class FabProject(FabNode):
             fab_steps: Fab_Steps = Fab_Steps(Path("/tmp"))
             fab_steps.scan()
             if tracing:
-                print(f"{tracing}Phase 2A: post_produce1(*, '{step_directory}'):")
+                print(f"{tracing}Phase 2A: post_produce2(*, '{step_directory}'):")
             del errors[:]  # Clear *errors*
             for node in all_nodes:
-                node.post_produce1(produce_state)
+                node.post_produce2(produce_state)
             fab_steps.flush_inactives()
 
             if tracing:
-                print(f"{tracing}Phase 2b: post_produce2():")
+                print(f"{tracing}Phase 2b: post_produce3():")
             for node in reversed(all_nodes):
-                node.post_produce2(produce_state)
+                node.post_produce3(produce_state)
 
         top_json: Dict[str, Any] = self.to_json()
         json_file: IO[str]
