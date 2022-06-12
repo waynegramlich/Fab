@@ -273,7 +273,7 @@ class Fab_Operation(object):
     """
 
     _Mount: "FabMount" = field(repr=False, compare=False)
-    _ToolController: Optional[FabToolController] = field(init=False, repr=False)
+    ToolController: Optional[FabToolController] = field(init=False, repr=False)
     ToolControllerIndex: int = field(init=False)
     _JsonEnabled: bool = field(init=False)
     _Active: bool = field(init=False)
@@ -285,7 +285,7 @@ class Fab_Operation(object):
         # TODO: Enable check:
         # if not self._Mount.is_mount():
         #   raise RuntimeError("Fab_Operation.__post_init__(): {type(self._Mount)} is not FabMount")
-        self._ToolController = None
+        self.ToolController = None
         self.ToolControllerIndex = -1  # Unassigned.
         self._JsonEnabled = True
         self._Active = True
@@ -294,11 +294,11 @@ class Fab_Operation(object):
     # Fab_Operation.get_tool_controller():
     # def get_tool_controller(self) -> FabToolController:
     #     """Return the Fab_Operation tool controller"""
-    #     if not self._ToolController:
+    #     if not self.ToolController:
     #         raise RuntimeError(
     #             "Fab_Operation().get_tool_controller(): "
     #             "ToolController not set yet.")  # pragma: no unit cover
-    #     return self._ToolController
+    #     return self.ToolController
 
     # Fab_Operation.set_tool_controller():
     def set_tool_controller(self, tool_controller: FabToolController,
@@ -307,11 +307,11 @@ class Fab_Operation(object):
         tool_controller_index: int
         if tool_controller in tool_controllers_table:
             tool_controller_index = tool_controllers_table[tool_controller]
-            self._ToolController = None
+            self.ToolController = None
         else:
             tool_controller_index = len(tool_controllers_table)
             tool_controllers_table[tool_controller] = tool_controller_index
-            self._ToolController = tool_controller
+            self.ToolController = tool_controller
         self.ToolControllerIndex = tool_controller_index
 
     # Fab_Operation.get_kind():
@@ -385,8 +385,8 @@ class Fab_Operation(object):
         }
         if self.ToolControllerIndex >= 0:
             json_dict["ToolControllerIndex"] = self.ToolControllerIndex
-        if self._ToolController:
-            tool_controller_json: Dict[str, Any] = self._ToolController.to_json()
+        if self.ToolController:
+            tool_controller_json: Dict[str, Any] = self.ToolController.to_json()
             json_dict["ToolController"] = tool_controller_json
         return json_dict
 
