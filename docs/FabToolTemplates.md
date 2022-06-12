@@ -83,7 +83,7 @@ Constructor:
 
 ### <a name="fabtooltemplates----getbitpriority"></a>2.1 `FabBit.`getBitPriority():
 
-FabBit.getBitPriority(self, operation_kind: str) -> Union[float, NoneType]:
+FabBit.getBitPriority(self, operation_kind: str, tracing: str = '') -> Union[float, NoneType]:
 
 Return operation priority for an operation.
 Arguments:

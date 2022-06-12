@@ -699,12 +699,16 @@ class FabShop(object):
 
     # FabShop.getExample():
     @staticmethod
-    def getExample() -> "FabShop":
+    def getExample(tracing: str = "") -> "FabShop":
         """Return an example FabShop."""
+        if tracing:
+            print(f"{tracing}=>FabShop.getExample()")
         cnc_mill: FabCNCMill = FabCNCMill.getExample()
         location: FabLocation = FabLocation.getExample()
         machines: Tuple[FabMachine, ...] = (cnc_mill,)
         shop: FabShop = FabShop(Name="MyShop", Location=location, Machines=machines)
+        if tracing:
+            print(f"{tracing}<=FabShop.getExample()=>*")
         return shop
 
     # FabShop.lookup():
@@ -862,6 +866,7 @@ class FabShops(object):
 
     """
     Shops: Tuple[FabShop, ...]
+    tracing: str = ""  # TODO(remove)
     ShopMachines: Tuple[Tuple[FabShop, FabMachine], ...] = field(init=False, repr=False)
     AllShopBits: Tuple[Fab_ShopBit, ...] = field(init=False, repr=False)
     DrillShopBits: Tuple[Fab_ShopBit, ...] = field(init=False, repr=False)
@@ -871,6 +876,10 @@ class FabShops(object):
     # FabShops.__post_init__():
     def __post_init__(self) -> None:
         """Finish initializing FabShops."""
+        tracing: str = self.tracing
+        if tracing:
+            print(f"{tracing}=>FabShops.__post_init__().")
+
         all_shop_bits: List[Fab_ShopBit] = []
         drill_shop_bits: List[Fab_ShopBit] = []
         lower_chamfer_shop_bits: List[Fab_ShopBit] = []
@@ -898,35 +907,49 @@ class FabShops(object):
                 for number, bit in library.NumberedBits:
                     operation_kinds: Tuple[str, ...] = bit.getOperationKinds()
                     operation_kind: str
+                    if tracing:
+                        print(f"{tracing}[{shop_index},{machine_index},{number}]"
+                              f"{bit.Name}:{operation_kinds}")
                     for operation_kind in operation_kinds:
                         assert operation_kind in operations_table, operation_kind
                         bit_priority: Optional[float] = bit.getBitPriority(operation_kind)
+                        if tracing:
+                            print(f"{tracing}  {operation_kind=} {bit_priority=}")
                         if bit_priority is not None:
                             shop_bit: Fab_ShopBit = Fab_ShopBit(bit_priority, shop, shop_index,
                                                                 machine, machine_index, bit, number)
                             operations_table[operation_kind].append(shop_bit)
+                            all_shop_bits.append(shop_bit)
 
         self.AllShopBits = tuple(all_shop_bits)
         self.DrillShopBits = tuple(drill_shop_bits)
         self.PerimeterShopBits = tuple(perimeter_shop_bits)
         self.PocketShopBits = tuple(pocket_shop_bits)
+        if tracing:
+            print(f"{tracing}<=FabShops.__post_init__()")
 
     # FabShops.getExample():
     @staticmethod
-    def getExample() -> "FabShops":
+    def getExample(tracing: str = "") -> "FabShops":
         """Return an example FabShops."""
-        shop: FabShop = FabShop.getExample()
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabShops.getExample()")
+        shop: FabShop = FabShop.getExample(tracing=next_tracing)
         shops: FabShops = FabShops((shop,))
+        if tracing:
+            print(f"{tracing}<=FabShops.getExample()=>*")
         return shops
 
     # FabShops._unit_tests():
     @staticmethod
     def _unit_tests(tracing: str = "") -> None:
         """Run FabShops unit tests."""
+        next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabShops._unit_tests()")
 
-        shops: FabShops = FabShops.getExample()
+        shops: FabShops = FabShops.getExample(tracing=next_tracing)
         if tracing:
             print(f"{tracing}{len(shops.AllShopBits)=}")
             print(f"{tracing}{len(shops.DrillShopBits)=}")

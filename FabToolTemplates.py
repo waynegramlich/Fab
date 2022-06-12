@@ -362,7 +362,7 @@ class FabBit(object):
         check_type("FabBit.Attributes", self.Attributes, FabAttributes)
 
     # FabBit.getBitPriority():
-    def getBitPriority(self, operation_kind: str) -> Optional[float]:
+    def getBitPriority(self, operation_kind: str, tracing: str = "") -> Optional[float]:
         """Return operation priority for an operation.
 
         Arguments:
@@ -373,6 +373,8 @@ class FabBit(object):
           have a higher priority.
 
         """
+        if tracing:
+            print(f"{tracing}<=>{type(self)}.getBitPriority('{operation_kind}')=>None")
         return None  # pragma: no unit cover
 
     # FabBit.getNumber():

@@ -25,17 +25,23 @@ Both FabShape and FabAttributes are also defined in the FabTemplates module as w
 ## Table of Contents (alphabetical order):
 
 * 1 Class: [FabBallEndBit](#fabtoolbits--fabballendbit):
+  * 1.1 [getOperationKinds()](#fabtoolbits----getoperationkinds): Return the kind of operations by a FabBallEndBit.
 * 2 Class: [FabBullNoseBit](#fabtoolbits--fabbullnosebit):
+  * 2.1 [getOperationKinds()](#fabtoolbits----getoperationkinds): Return the kind of operations by a FabBullNoseBit.
 * 3 Class: [FabChamferBit](#fabtoolbits--fabchamferbit):
+  * 3.1 [getOperationKinds()](#fabtoolbits----getoperationkinds): Return the kind of operations by a FabChamferBit.
 * 4 Class: [FabDoveTailBit](#fabtoolbits--fabdovetailbit):
   * 4.1 [getOperationKinds()](#fabtoolbits----getoperationkinds): Return the kind of operations by a FabDoveTailBit.
 * 5 Class: [FabDrillBit](#fabtoolbits--fabdrillbit):
   * 5.1 [getOperationKinds()](#fabtoolbits----getoperationkinds): Return the kind of operations by a FabDrillBit.
+  * 5.2 [getBitPriority()](#fabtoolbits----getbitpriority): Return operation priority for a FabEndMillBit.
 * 6 Class: [FabEndMillBit](#fabtoolbits--fabendmillbit):
   * 6.1 [getOperationKinds()](#fabtoolbits----getoperationkinds): Return the kind of operations by a FabEndMillBit.
   * 6.2 [getBitPriority()](#fabtoolbits----getbitpriority): Return operation priority for a FabEndMillBit.
 * 7 Class: [FabProbeBit](#fabtoolbits--fabprobebit):
+  * 7.1 [getOperationKinds()](#fabtoolbits----getoperationkinds): Return the kind of operations by a FabProbeBit.
 * 8 Class: [FabSlittingSawBit](#fabtoolbits--fabslittingsawbit):
+  * 8.1 [getOperationKinds()](#fabtoolbits----getoperationkinds): Return the kind of operations by a FabSlittingSawBit.
 * 9 Class: [FabThreadMillBit](#fabtoolbits--fabthreadmillbit):
   * 9.1 [getOperationKinds()](#fabtoolbits----getoperationkinds): Return the kind of operations by a FabVBit.
 * 10 Class: [FabVBit](#fabtoolbits--fabvbit):
@@ -58,6 +64,14 @@ Constructor:
 * FabBallEndBit("Name", "BitStem", "ShapeStem", Attributes,
   CuttingEdgeHeight, Diameter, Length, ShankDiameter)
 
+### <a name="fabtoolbits----getoperationkinds"></a>1.1 `FabBallEndBit.`getOperationKinds():
+
+FabBallEndBit.getOperationKinds(self) -> Tuple[str, ...]:
+
+Return the kind of operations by a FabBallEndBit.
+Returns:
+* (Tuple[str, ...]): The list of supported operations (e.g. "pocket", "drill", etc.)
+
 
 ## <a name="fabtoolbits--fabbullnosebit"></a>2 Class FabBullNoseBit:
 
@@ -76,6 +90,14 @@ Attributes:
 Constructor:
 * FabBullNoseBit("Name", "BitStem", "ShapeStem", Attributes,
   CuttingEdgeHeight, Diameter, Length, ShankDiameter)
+
+### <a name="fabtoolbits----getoperationkinds"></a>2.1 `FabBullNoseBit.`getOperationKinds():
+
+FabBullNoseBit.getOperationKinds(self) -> Tuple[str, ...]:
+
+Return the kind of operations by a FabBullNoseBit.
+Returns:
+* (Tuple[str, ...]): The list of supported operations (e.g. "pocket", "drill", etc.)
 
 
 ## <a name="fabtoolbits--fabchamferbit"></a>3 Class FabChamferBit:
@@ -96,6 +118,14 @@ Attributes:
 Constructor:
 * FabChamferBit("Name", "BitStem", "ShapeStem", Attributes,
   CuttingEdgeAngle, CuttingEdgeHeight, Diameter, Length, ShankDiameter, TipDiameter)
+
+### <a name="fabtoolbits----getoperationkinds"></a>3.1 `FabChamferBit.`getOperationKinds():
+
+FabChamferBit.getOperationKinds(self) -> Tuple[str, ...]:
+
+Return the kind of operations by a FabChamferBit.
+Returns:
+* (Tuple[str, ...]): The list of supported operations (e.g. "pocket", "drill", etc.)
 
 
 ## <a name="fabtoolbits--fabdovetailbit"></a>4 Class FabDoveTailBit:
@@ -153,6 +183,18 @@ Return the kind of operations by a FabDrillBit.
 Returns:
 * (Tuple[str, ...]): The list of supported operations (e.g. "pocket", "drill", etc.)
 
+### <a name="fabtoolbits----getbitpriority"></a>5.2 `FabDrillBit.`getBitPriority():
+
+FabDrillBit.getBitPriority(self, operation_kind: str, tracing: str = '') -> Union[float, NoneType]:
+
+Return operation priority for a FabEndMillBit.
+Arguments:
+* *operation_kind* (str): The kind of operation (e.g. "pocket", "drill", etc.).
+
+Returns:
+* (Optional[float]): The priority as a negative number, where more negative numbers
+  have a higher priority.
+
 
 ## <a name="fabtoolbits--fabendmillbit"></a>6 Class FabEndMillBit:
 
@@ -181,7 +223,7 @@ Returns:
 
 ### <a name="fabtoolbits----getbitpriority"></a>6.2 `FabEndMillBit.`getBitPriority():
 
-FabEndMillBit.getBitPriority(self, operation_kind: str) -> Union[float, NoneType]:
+FabEndMillBit.getBitPriority(self, operation_kind: str, tracing: str = '') -> Union[float, NoneType]:
 
 Return operation priority for a FabEndMillBit.
 Arguments:
@@ -207,6 +249,14 @@ Attributes:
 Constructor:
 * FabProbeBit("Name", "BitStem", "ShapeStem", Attributes, Diameter, Length, ShaftDiameter)
 
+### <a name="fabtoolbits----getoperationkinds"></a>7.1 `FabProbeBit.`getOperationKinds():
+
+FabProbeBit.getOperationKinds(self) -> Tuple[str, ...]:
+
+Return the kind of operations by a FabProbeBit.
+Returns:
+* (Tuple[str, ...]): The list of supported operations (e.g. "pocket", "drill", etc.)
+
 
 ## <a name="fabtoolbits--fabslittingsawbit"></a>8 Class FabSlittingSawBit:
 
@@ -227,6 +277,14 @@ Attributes:
 Constructor:
 * FabSlittingSawBit("Name", "BitStem", "ShapeStem", Attributes,
   BladeThickness, CapDiameter, CapHeight, Diameter, Length, ShankDiameter)
+
+### <a name="fabtoolbits----getoperationkinds"></a>8.1 `FabSlittingSawBit.`getOperationKinds():
+
+FabSlittingSawBit.getOperationKinds(self) -> Tuple[str, ...]:
+
+Return the kind of operations by a FabSlittingSawBit.
+Returns:
+* (Tuple[str, ...]): The list of supported operations (e.g. "pocket", "drill", etc.)
 
 
 ## <a name="fabtoolbits--fabthreadmillbit"></a>9 Class FabThreadMillBit:

@@ -1081,9 +1081,9 @@ class FabToolingFactory(object):
                           cutting_edge_angle="90 °", length="2.000 in",
                           shank_diameter="0.375 in", neck_diameter="0.250 in",
                           neck_height="0.625 in")
-        self.dove_tail(8, "3/8 in 45 ° Dove Tail", "3_8_in_45_deg_Dove_Tail", "HSS", flutes=6,
+        self.dove_tail(8, "3/8 in 45° Dove Tail", "3_8_in_45_deg_Dove_Tail", "HSS", flutes=6,
                        diameter="0.375 in", cutting_edge_height="0.125 in",
-                       cutting_edge_angle="45 °", length="2.125 in",
+                       cutting_edge_angle="45°", length="2.125 in",
                        shank_diameter="0.375 in", neck_diameter="0.0125 in",
                        neck_height="0.450 in")
         self.end_mill(9, "1/8 in End Mill", "1_8_in_End_Mill", "HSS", flutes=2,
