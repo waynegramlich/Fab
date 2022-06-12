@@ -855,10 +855,12 @@ class FabShops(object):
     * *Shops* (Tuple[FabShop, ...]: All available FabShop's.
     * *Machines* (Tuple[Tuple[FabShop, FabMachine, ...]: A tuple of all (FabShop, FabMachine) pairs.
     * *AllShopBits: (Tuple[FabShopBit, ...]): A tuple of a FabShopBit's.
+    * *ContourShopBits: (Tuple[FabShopBit, ...]):
+      A tuple of FabShopBit's suitable for exterior contour contouring.
+    * *CounterSinkShopBits: (Tuple[TFabShopBit, ...):
+      A tuple of FabShopBit's suitable for countersinking.
     * *DrillShipBits (Tuple[FabShopBit, ...]):
       A tuple of FabShopBit's suitable for exterior drilling.
-    * *PerimeterShopBits: (Tuple[FabShopBit, ...]):
-      A tuple of FabShopBit's suitable for exterior perimeter contouring.
     * *PocketShopBits: (Tuple[FabShopBit, ...]): A tuple of FabShopBit's suitable for pocketing.
 
     Constructor:
@@ -869,9 +871,11 @@ class FabShops(object):
     tracing: str = ""  # TODO(remove)
     ShopMachines: Tuple[Tuple[FabShop, FabMachine], ...] = field(init=False, repr=False)
     AllShopBits: Tuple[Fab_ShopBit, ...] = field(init=False, repr=False)
+    CounterSinkShopBits: Tuple[Fab_ShopBit, ...] = field(init=False, repr=False)
     DrillShopBits: Tuple[Fab_ShopBit, ...] = field(init=False, repr=False)
-    PerimeterShopBits: Tuple[Fab_ShopBit, ...] = field(init=False, repr=False)
+    LowerChamferShopBits: Tuple[Fab_ShopBit, ...] = field(init=False, repr=False)
     PocketShopBits: Tuple[Fab_ShopBit, ...] = field(init=False, repr=False)
+    UpperChamferShopBits: Tuple[Fab_ShopBit, ...] = field(init=False, repr=False)
 
     # FabShops.__post_init__():
     def __post_init__(self) -> None:
@@ -881,16 +885,18 @@ class FabShops(object):
             print(f"{tracing}=>FabShops.__post_init__().")
 
         all_shop_bits: List[Fab_ShopBit] = []
+        countersink_shop_bits: List[Fab_ShopBit] = []
         drill_shop_bits: List[Fab_ShopBit] = []
         lower_chamfer_shop_bits: List[Fab_ShopBit] = []
-        perimeter_shop_bits: List[Fab_ShopBit] = []
+        contour_shop_bits: List[Fab_ShopBit] = []
         pocket_shop_bits: List[Fab_ShopBit] = []
         upper_chamfer_shop_bits: List[Fab_ShopBit] = []
 
         operations_table: Dict[str, List[Fab_ShopBit]] = {
+            "countersink": countersink_shop_bits,
             "drill": drill_shop_bits,
             "lower_chamfer": lower_chamfer_shop_bits,
-            "perimeter": perimeter_shop_bits,
+            "contour": contour_shop_bits,
             "pocket": pocket_shop_bits,
             "upper_chamfer": upper_chamfer_shop_bits,
         }
@@ -921,10 +927,13 @@ class FabShops(object):
                             operations_table[operation_kind].append(shop_bit)
                             all_shop_bits.append(shop_bit)
 
-        self.AllShopBits = tuple(all_shop_bits)
-        self.DrillShopBits = tuple(drill_shop_bits)
-        self.PerimeterShopBits = tuple(perimeter_shop_bits)
-        self.PocketShopBits = tuple(pocket_shop_bits)
+        self.AllShopBits = tuple(sorted(all_shop_bits))
+        self.ContourShopBits = tuple(sorted(contour_shop_bits))
+        self.CounterSinkShopBits = tuple(sorted(countersink_shop_bits))
+        self.DrillShopBits = tuple(sorted(drill_shop_bits))
+        self.LowerChamferShopBits = tuple(sorted(lower_chamfer_shop_bits))
+        self.PocketShopBits = tuple(sorted(pocket_shop_bits))
+        self.UpperChamferShopBits = tuple(sorted(upper_chamfer_shop_bits))
         if tracing:
             print(f"{tracing}<=FabShops.__post_init__()")
 
@@ -952,9 +961,12 @@ class FabShops(object):
         shops: FabShops = FabShops.getExample(tracing=next_tracing)
         if tracing:
             print(f"{tracing}{len(shops.AllShopBits)=}")
+            print(f"{tracing}{len(shops.CounterSinkShopBits)=}")
             print(f"{tracing}{len(shops.DrillShopBits)=}")
-            print(f"{tracing}{len(shops.PerimeterShopBits)=}")
+            print(f"{tracing}{len(shops.ContourShopBits)=}")
+            print(f"{tracing}{len(shops.LowerChamferShopBits)=}")
             print(f"{tracing}{len(shops.PocketShopBits)=}")
+            print(f"{tracing}{len(shops.UpperChamferShopBits)=}")
 
         if tracing:
             print(f"{tracing}<=FabShops._unit_tests()")

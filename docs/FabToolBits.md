@@ -44,8 +44,10 @@ Both FabShape and FabAttributes are also defined in the FabTemplates module as w
   * 8.1 [getOperationKinds()](#fabtoolbits----getoperationkinds): Return the kind of operations by a FabSlittingSawBit.
 * 9 Class: [FabThreadMillBit](#fabtoolbits--fabthreadmillbit):
   * 9.1 [getOperationKinds()](#fabtoolbits----getoperationkinds): Return the kind of operations by a FabVBit.
+  * 9.2 [getBitPriority()](#fabtoolbits----getbitpriority): Return operation priority for a FabEndThreadMillBit.
 * 10 Class: [FabVBit](#fabtoolbits--fabvbit):
   * 10.1 [getOperationKinds()](#fabtoolbits----getoperationkinds): Return the kind of operations by a FabVBit.
+  * 10.2 [getBitPriority()](#fabtoolbits----getbitpriority): Return operation priority for a FabEndMillBit.
 
 ## <a name="fabtoolbits--fabballendbit"></a>1 Class FabBallEndBit:
 
@@ -315,6 +317,18 @@ Return the kind of operations by a FabVBit.
 Returns:
 * (Tuple[str, ...]): The list of supported operations (e.g. "pocket", "drill", etc.)
 
+### <a name="fabtoolbits----getbitpriority"></a>9.2 `FabThreadMillBit.`getBitPriority():
+
+FabThreadMillBit.getBitPriority(self, operation_kind: str, tracing: str = '') -> Union[float, NoneType]:
+
+Return operation priority for a FabEndThreadMillBit.
+Arguments:
+* *operation_kind* (str): The kind of operation (e.g. "pocket", "drill", etc.).
+
+Returns:
+* (Optional[float]): The priority as a negative number, where more negative numbers
+  have a higher priority.
+
 
 ## <a name="fabtoolbits--fabvbit"></a>10 Class FabVBit:
 
@@ -342,6 +356,18 @@ FabVBit.getOperationKinds(self) -> Tuple[str, ...]:
 Return the kind of operations by a FabVBit.
 Returns:
 * (Tuple[str, ...]): The list of supported operations (e.g. "pocket", "drill", etc.)
+
+### <a name="fabtoolbits----getbitpriority"></a>10.2 `FabVBit.`getBitPriority():
+
+FabVBit.getBitPriority(self, operation_kind: str, tracing: str = '') -> Union[float, NoneType]:
+
+Return operation priority for a FabEndMillBit.
+Arguments:
+* *operation_kind* (str): The kind of operation (e.g. "pocket", "drill", etc.).
+
+Returns:
+* (Optional[float]): The priority as a negative number, where more negative numbers
+  have a higher priority.
 
 
 

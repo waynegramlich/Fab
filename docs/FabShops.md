@@ -191,10 +191,12 @@ Attributes:
 * *Shops* (Tuple[FabShop, ...]: All available FabShop's.
 * *Machines* (Tuple[Tuple[FabShop, FabMachine, ...]: A tuple of all (FabShop, FabMachine) pairs.
 * *AllShopBits: (Tuple[FabShopBit, ...]): A tuple of a FabShopBit's.
+* *ContourShopBits: (Tuple[FabShopBit, ...]):
+  A tuple of FabShopBit's suitable for exterior contour contouring.
+* *CounterSinkShopBits: (Tuple[TFabShopBit, ...):
+  A tuple of FabShopBit's suitable for countersinking.
 * *DrillShipBits (Tuple[FabShopBit, ...]):
   A tuple of FabShopBit's suitable for exterior drilling.
-* *PerimeterShopBits: (Tuple[FabShopBit, ...]):
-  A tuple of FabShopBit's suitable for exterior perimeter contouring.
 * *PocketShopBits: (Tuple[FabShopBit, ...]): A tuple of FabShopBit's suitable for pocketing.
 
 Constructor:

@@ -424,7 +424,7 @@ class FabDrillBit(FabBit):
         cutting_edge_length: Union[float, int] = self.getNumber("Length")
         priority = -diameter * flutes * cutting_edge_length
         if tracing:
-            print(f"{tracing}FabDrillBit.getPriority('{operation_kind}')=>{priority}")
+            print(f"{tracing}FabDrillBit.getBitPriority('{operation_kind}')=>{priority}")
         return priority
 
     # FabDrillBit._unit_tests():
@@ -489,7 +489,7 @@ class FabEndMillBit(FabBit):
         Returns:
         * (Tuple[str, ...]): The list of supported operations (e.g. "pocket", "drill", etc.)
         """
-        return ("perimeter", "pocket")
+        return ("contour", "pocket")
 
     # FabEndMillBit.getExample():
     @staticmethod
@@ -745,6 +745,29 @@ class FabThreadMillBit(FabBit):
         """
         return ("lower_chamfer", "upper_chamfer")
 
+    # FabThreadMillBit.getBitPriority():
+    def getBitPriority(self, operation_kind: str, tracing: str = "") -> Optional[float]:
+        """Return operation priority for a FabEndThreadMillBit.
+
+        Arguments:
+        * *operation_kind* (str): The kind of operation (e.g. "pocket", "drill", etc.).
+
+        Returns:
+        * (Optional[float]): The priority as a negative number, where more negative numbers
+          have a higher priority.
+        """
+        operation_kinds: Tuple[str, ...] = self.getOperationKinds()
+        assert operation_kind in operation_kinds, (
+            f"FabThreadMillBit.getBitPriority(): {operation_kind} is not one of {operation_kinds}")
+        priority: Optional[float] = None
+        diameter: Union[float, int] = self.getNumber("Diameter")
+        flutes: Union[float, int] = self.getNumber("Flutes")
+        cutting_edge_length: Union[float, int] = self.getNumber("Length")
+        priority = -diameter * flutes * cutting_edge_length
+        if tracing:
+            print(f"{tracing}FabThreadMillBit.getBitPriority('{operation_kind}')=>{priority}")
+        return priority
+
     # FabThreadMillBit._unit_tests():
     @staticmethod
     def _unit_tests(tracing: str = "") -> None:
@@ -814,7 +837,31 @@ class FabVBit(FabBit):
         Returns:
         * (Tuple[str, ...]): The list of supported operations (e.g. "pocket", "drill", etc.)
         """
-        return ("perimeter",)
+        return ("contour", "countersink", "upper_chamfer")
+
+    # FabDrillBit.getBitPriority():
+    def getBitPriority(self, operation_kind: str, tracing: str = "") -> Optional[float]:
+        """Return operation priority for a FabEndMillBit.
+
+        Arguments:
+        * *operation_kind* (str): The kind of operation (e.g. "pocket", "drill", etc.).
+
+        Returns:
+        * (Optional[float]): The priority as a negative number, where more negative numbers
+          have a higher priority.
+        """
+        operation_kinds: Tuple[str, ...] = self.getOperationKinds()
+        assert operation_kind in operation_kinds, (
+            "FabEndMillBit.getDrillBitPriority(): "
+            f"{operation_kind} is not one of {operation_kinds}")
+        priority: Optional[float] = None
+        diameter: Union[float, int] = self.getNumber("Diameter")
+        flutes: Union[float, int] = self.getNumber("Flutes")
+        cutting_edge_length: Union[float, int] = self.getNumber("Length")
+        priority = -diameter * flutes * cutting_edge_length
+        if tracing:
+            print(f"{tracing}FabDrillBit.getPriority('{operation_kind}')=>{priority}")
+        return priority
 
     # FabVBit.getExample():
     @staticmethod

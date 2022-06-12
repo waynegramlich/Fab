@@ -288,7 +288,6 @@ class FabBits(object):
                 except KeyError:  # pragma: no unit cover
                     continue
                 assert bit == previous_bit, (bit, previous_bit)
-                #     raise RuntimeError(f"Bit '{bit.Name} already exists with different content'")
 
         # Write any new bits:
         bits_directory.mkdir(parents=True, exist_ok=True)
@@ -372,8 +371,10 @@ class FabBits(object):
         with tempfile.TemporaryDirectory() as temporary_directory:
             assert isinstance(temporary_directory, str), temporary_directory
             temporary_tools_directory: PathFile = PathFile(temporary_directory) / "Tools"
-            bits.write(temporary_tools_directory)
-            bits.write(temporary_tools_directory)  # The 2nd call should succeed without error.
+            bits.write(temporary_tools_directory, tracing=next_tracing)
+            # The 2nd call should succeed without error:
+            bits.write(temporary_tools_directory, tracing=next_tracing)
+
         index: int
         bit: FabBit
         for index, bit in enumerate(bits.Bits):
@@ -819,7 +820,7 @@ class FabToolingFactory(object):
     # FabToolingFactory.drill():
     def drill(self, tool_number: int, name: str, stem_name: str, material: str, flutes: int,
               diameter: Union[str, float], length: Union[str, float],
-              tip_angle: Union[str, float], is_center_cut: bool,
+              tip_angle: Union[str, float], split_point: bool,
               maximum_depth: Union[str, float]) -> None:
         """Add a drill to FabToolingFactory:
 
@@ -832,13 +833,13 @@ class FabToolingFactory(object):
         * *diameter* (Union[str, float]): The drill diameter as string (mm/inch) or a float (mm).
         * *length* (Union[str, float]): The overall length of the drill.
         * *tip_angle* (Union[str, float): The drill point tip angle in degrees.
-        * *is_center_cut* (bool): True for center cut drills and False otherwise.
+        * *split_point* (bool): True for split point drills and False otherwise.
         * *maximum_depth* (Union[str, float]): The maximum drilling depth.
         """
         attributes: FabAttributes = FabAttributes.fromJSON({
             "Material": material,
             "Flutes": flutes,
-            "IsCenterCut": is_center_cut,
+            "SplitPoint": split_point,
             "MaximumDepth": maximum_depth,
         })
         drill_bit: FabDrillBit = FabDrillBit(name, stem_name, "drill", attributes,
@@ -1192,6 +1193,7 @@ def main(tracing: str) -> None:
     FabLibraries._unit_tests(tracing=next_tracing)
     FabTooling._unit_tests(tracing=next_tracing)
     FabToolingFactory._unit_tests(tracing=next_tracing)
+
     if tracing:
         print(f"{tracing}<=main()")
 

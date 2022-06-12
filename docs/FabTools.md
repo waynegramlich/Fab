@@ -211,7 +211,7 @@ Attributes:
 
 ### <a name="fabtools----drill"></a>5.1 `FabToolingFactory.`drill():
 
-FabToolingFactory.drill(self, tool_number: int, name: str, stem_name: str, material: str, flutes: int, diameter: Union[str, float], length: Union[str, float], tip_angle: Union[str, float], is_center_cut: bool, maximum_depth: Union[str, float]) -> None:
+FabToolingFactory.drill(self, tool_number: int, name: str, stem_name: str, material: str, flutes: int, diameter: Union[str, float], length: Union[str, float], tip_angle: Union[str, float], split_point: bool, maximum_depth: Union[str, float]) -> None:
 
 Add a drill to FabToolingFactory:
 Arguments:
@@ -223,7 +223,7 @@ Arguments:
 * *diameter* (Union[str, float]): The drill diameter as string (mm/inch) or a float (mm).
 * *length* (Union[str, float]): The overall length of the drill.
 * *tip_angle* (Union[str, float): The drill point tip angle in degrees.
-* *is_center_cut* (bool): True for center cut drills and False otherwise.
+* *split_point* (bool): True for split point drills and False otherwise.
 * *maximum_depth* (Union[str, float]): The maximum drilling depth.
 
 ### <a name="fabtools----double-angle"></a>5.2 `FabToolingFactory.`double_angle():
