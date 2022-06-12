@@ -275,7 +275,7 @@ class Fab_Operation(object):
     _Mount: "FabMount" = field(repr=False, compare=False)
     ToolController: Optional[FabToolController] = field(init=False, repr=False)
     ToolControllerIndex: int = field(init=False)
-    _JsonEnabled: bool = field(init=False)
+    JsonEnabled: bool = field(init=False)
     _Active: bool = field(init=False)
     Prefix: Optional[Fab_Prefix] = field(init=False, repr=False)
 
@@ -287,7 +287,7 @@ class Fab_Operation(object):
         #   raise RuntimeError("Fab_Operation.__post_init__(): {type(self._Mount)} is not FabMount")
         self.ToolController = None
         self.ToolControllerIndex = -1  # Unassigned.
-        self._JsonEnabled = True
+        self.JsonEnabled = True
         self._Active = True
         self.Prefix = None
 
@@ -345,12 +345,6 @@ class Fab_Operation(object):
     def Name(self) -> str:
         """Return the operation name."""
         return self.get_name()
-
-    # Fab_Operation.Name():
-    @property
-    def JsonEnabled(self) -> bool:
-        """Return the operation name."""
-        return self._JsonEnabled
 
     # Fab_Operation.get_geometries_hash():
     def get_geometries_hash(
@@ -942,7 +936,7 @@ class Fab_Hole(Fab_Operation):
         # Create a new solid that encloses all of the holes:
         z_axis: Vector = Vector(0.0, 0.0, 1.0)
         if (plane.UnitNormal - z_axis).Length > 1.0e-8:
-            self._JsonEnabled = False
+            self.JsonEnabled = False
         else:
             # Start with a new *holes_plane* and *holes_query*:
             self.StartDepth = plane.Distance
