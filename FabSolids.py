@@ -834,10 +834,10 @@ class Fab_Hole(Fab_Operation):
     * Fab_Hole(Mount, Key, Centers, Name, Depth)
     """
 
+    _Name: str  # Hole name
     _Key: Fab_HoleKey
     Centers: Tuple[Vector, ...]  # The Center (start point) of the drils
     Join: FabJoin = field(repr=False)  # The associated FabJoin
-    _Name: str  # Hole name
     Depth: float  # Hole depth
     HolesCount: int = field(init=False)  # Number of holes in this opertation
     StartDepth: float = field(init=False)
@@ -849,10 +849,10 @@ class Fab_Hole(Fab_Operation):
         """Perform final initialization of Fab_Hole"""
 
         super().__post_init__()
+        assert isinstance(self._Name, str), self._Name
         assert isinstance(self._Key, Fab_HoleKey), self._Key
         assert isinstance(self.Centers, tuple), self.Centers
         assert isinstance(self.Join, FabJoin), self.Join
-        assert isinstance(self._Name, str), self._Name
         self.Depth = 0.0
         self.HolesCount = 0
         self.StartDepth = 0.0
@@ -1403,7 +1403,7 @@ class FabMount(object):
             for join, join_index, trimmed_start, hole_name in hole_infos:
                 trimmed_starts.append(trimmed_start)
             centers: Tuple[Vector, ...] = tuple(trimmed_starts)
-            grouped_hole = Fab_Hole(self, hole_key, centers, join, hole_name, hole_key.Depth)
+            grouped_hole = Fab_Hole(self, hole_name, hole_key, centers, join, hole_key.Depth)
             grouped_holes.append(grouped_hole)
 
         hole_index: int
