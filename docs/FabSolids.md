@@ -289,7 +289,17 @@ Return JSON dictionary for Fab_Extrude.
 
 ## <a name="fabsolids--fab-hole"></a>5 Class Fab_Hole:
 
-FabDrill helper class that represents a hole.
+FabDrill helper class that represents one or more holes related holes.
+Attributes:
+* Mount (FabMount): The FabMount for the hole operation.
+* Key (FabHoleKey): The hole key used for grouping holes.
+* Join (FabJoin): The associated FabJoin the produced the hole.
+* Centers (Tuple[Vector, ...]): The associated start centers.
+* Name (str): The hole name.
+* Depth (str): The hole depth.
+
+Constructor:
+* Fab_Hole(Mount, Key, Centers, Name, Depth)
 
 ### <a name="fabsolids----get-name"></a>5.1 `Fab_Hole.`get_name():
 
@@ -353,6 +363,9 @@ Attributes:
 * *Active* (bool):
   If True, the resulting operation is performed.  About the only time this is set to False
   is for an extrude of stock material like a C channel, I beam, etc.  (Default: True)
+
+Constructor:
+* Fab_Operation(Mount)
 
 ### <a name="fabsolids----set-tool-controller"></a>7.1 `Fab_Operation.`set_tool_controller():
 

@@ -267,6 +267,9 @@ class Fab_Operation(object):
       If True, the resulting operation is performed.  About the only time this is set to False
       is for an extrude of stock material like a C channel, I beam, etc.  (Default: True)
 
+    Constructor:
+    * Fab_Operation(Mount)
+
     """
 
     _Mount: "FabMount" = field(repr=False, compare=False)
@@ -823,7 +826,19 @@ class Fab_HoleKey(object):
 # Fab_Hole:
 @dataclass
 class Fab_Hole(Fab_Operation):
-    """Fab_Hole: FabDrill helper class that represents a hole."""
+    """Fab_Hole: FabDrill helper class that represents one or more holes related holes.
+
+    Attributes:
+    * Mount (FabMount): The FabMount for the hole operation.
+    * Key (FabHoleKey): The hole key used for grouping holes.
+    * Join (FabJoin): The associated FabJoin the produced the hole.
+    * Centers (Tuple[Vector, ...]): The associated start centers.
+    * Name (str): The hole name.
+    * Depth (str): The hole depth.
+
+    Constructor:
+    * Fab_Hole(Mount, Key, Centers, Name, Depth)
+    """
 
     _Key: Fab_HoleKey
     Centers: Tuple[Vector, ...]  # The Center (start point) of the drils
@@ -849,12 +864,6 @@ class Fab_Hole(Fab_Operation):
         self.StartDepth = 0.0
         self.StepFile = ""
         self.Prefix = self._Mount.lookup_prefix(self._Name)
-
-    # Fab_Hole.Key():
-    @property
-    def Key(self) -> Fab_HoleKey:
-        """Return a Hole key."""
-        return self._Key
 
     # Fab_Hole.get_name()
     def get_name(self) -> str:
@@ -1339,14 +1348,18 @@ class FabMount(object):
         if tracing:
             print(f"{tracing}=>FabMount({self.Name}).drill_joins(|{len(joins)}|")
 
-        mount_contact: Vector = self._Contact
+        # mount_contact: Vector = self._Contact
         mount_normal: Vector = self._Normal / self._Normal.Length
-        mount_plane: Fab_Plane = Fab_Plane(mount_contact, mount_normal)
+        # mount_plane: Fab_Plane = Fab_Plane(mount_contact, mount_normal)
         mount_depth: float = self._Depth
         solid: "FabSolid" = self._Solid
 
-        # intersect_joins: List[FabJoin] = []
-        holes: List[Fab_Hole] = []
+        # Collects compatible holes in *hole_groups*:
+        HoleInfo = Tuple[FabJoin, int, Vector, str]  # (join, joint_index, trimmed_start, name)
+        hole_info: HoleInfo
+        hole_groups: Dict[Fab_HoleKey, List[HoleInfo]] = {}
+        hole_name: str
+        hole_key: Fab_HoleKey
         join_index: int  # Used for forcing individual drill operations (see below):
         for join_index, join in enumerate(joins):
             assert isinstance(join, FabJoin), f"{type(join)} is not a FabJoin"
@@ -1363,7 +1376,6 @@ class FabMount(object):
                 trimmed_end: Vector
                 intersect, trimmed_start, trimmed_end = solid.intersect(join_start, join_end)
                 if intersect:
-                    mount_start: Vector = mount_plane.point_project(join_start)
                     trimmed_length: float = (trimmed_start - trimmed_end).Length
                     trimmed_depth: float = min(trimmed_length, mount_depth)
                     if tracing:
@@ -1379,36 +1391,25 @@ class FabMount(object):
                         print(f"{tracing}{mount_depth=} {trimmed_depth=}")
                     assert trimmed_depth > 0.0, trimmed_depth
                     # unique: int = -1 if mount_z_aligned else join_index
-                    hole_name: str = f"{joins_name}_{join_index}"
-                    hole_key: Fab_HoleKey = Fab_HoleKey(
-                        fasten.ThreadName, kind, trimmed_depth, is_top)
-                    hole: Fab_Hole = Fab_Hole(
-                        self, hole_key, (mount_start,), join, hole_name, trimmed_start)
-                    if tracing:
-                        print(f"{tracing}Append {hole=}")
-                    holes.append(hole)
+                    hole_name = f"{joins_name}_{join_index}"
+                    hole_key = Fab_HoleKey(fasten.ThreadName, kind, trimmed_depth, is_top)
 
-        # Group *holes* into *hole_groups* base on their *key*:
-        key: Fab_HoleKey
-        hole_groups: Dict[Fab_HoleKey, List[Fab_Hole]] = {}
-        for hole in holes:
-            key = hole.Key
-            if key not in hole_groups:
-                hole_groups[key] = []
-            hole_groups[key].append(hole)
+                    # Compatible *trimmed_start*'s are collected in *hole_groups*:
+                    if hole_key not in hole_groups:
+                        hole_groups[hole_key] = []
+                    hole_info = (join, join_index, trimmed_start, hole_name)
+                    hole_groups[hole_key].append(hole_info)
 
         # Create *grouped_holes* where each *group_hole* has the same *key*.
         grouped_holes: List[Fab_Hole] = []
-        group_holes: List[Fab_Hole]
-        for group_holes in hole_groups.values():
-            group_hole: Fab_Hole
-            group_centers: List[Vector] = []
-            for group_hole in group_holes:
-                group_centers.extend(group_hole.Centers)
-            grouped_hole: Fab_Hole = Fab_Hole(
-                group_hole.Mount, group_hole._Key, tuple(group_centers),
-                group_hole.Join, f"{group_hole.Name}_", trimmed_start
-            )
+        grouped_hole: Fab_Hole
+        hole_infos: List[HoleInfo]
+        for hole_key, hole_infos in hole_groups.items():
+            trimmed_starts: List[Vector] = []
+            for join, join_index, trimmed_start, hole_name in hole_infos:
+                trimmed_starts.append(trimmed_start)
+            centers: Tuple[Vector, ...] = tuple(trimmed_starts)
+            grouped_hole = Fab_Hole(self, hole_key, centers, join, hole_name, hole_key.Depth)
             grouped_holes.append(grouped_hole)
 
         hole_index: int
