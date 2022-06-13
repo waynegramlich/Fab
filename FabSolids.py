@@ -835,7 +835,7 @@ class Fab_Hole(Fab_Operation):
     * Fab_Hole(Mount, Name, Key, Centers, Name, Depth)
     """
 
-    _Key: Fab_HoleKey
+    Key: Fab_HoleKey
     Centers: Tuple[Vector, ...]  # The Center (start point) of the drils
     Join: FabJoin = field(repr=False)  # The associated FabJoin
     Depth: float  # Hole depth
@@ -850,7 +850,7 @@ class Fab_Hole(Fab_Operation):
 
         super().__post_init__()
         assert isinstance(self.Name, str), self.Name
-        assert isinstance(self._Key, Fab_HoleKey), self._Key
+        assert isinstance(self.Key, Fab_HoleKey), self.Key
         assert isinstance(self.Centers, tuple), self.Centers
         assert isinstance(self.Join, FabJoin), self.Join
         self.Depth = 0.0
@@ -869,7 +869,7 @@ class Fab_Hole(Fab_Operation):
         """Return Fab_Hole hash."""
         hashes: List[Any] = [
             "Fab_Hole",
-            self._Key.get_hash(),
+            self.Key.get_hash(),
             self.Join.get_hash(),
         ]
         center: Vector
@@ -894,7 +894,7 @@ class Fab_Hole(Fab_Operation):
         plane: Fab_Plane = geometry_context.Plane
         query: Fab_Query = geometry_context.Query
 
-        key: Fab_HoleKey = self._Key
+        key: Fab_HoleKey = self.Key
         kind: str = key.Kind
         join: FabJoin = self.Join
         depth: float = key.Depth
