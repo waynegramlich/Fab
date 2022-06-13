@@ -272,7 +272,7 @@ class Fab_Operation(object):
 
     """
 
-    _Mount: "FabMount" = field(repr=False, compare=False)
+    Mount: "FabMount" = field(repr=False, compare=False)
     Name: str
     ToolController: Optional[FabToolController] = field(init=False, repr=False)
     ToolControllerIndex: int = field(init=False)
@@ -284,8 +284,8 @@ class Fab_Operation(object):
     def __post_init__(self) -> None:
         """Initialize Fab_Operation."""
         # TODO: Enable check:
-        # if not self._Mount.is_mount():
-        #   raise RuntimeError("Fab_Operation.__post_init__(): {type(self._Mount)} is not FabMount")
+        # if not self.Mount.is_mount():
+        #   raise RuntimeError("Fab_Operation.__post_init__(): {type(self.Mount)} is not FabMount")
         self.ToolController = None
         self.ToolControllerIndex = -1  # Unassigned.
         self.JsonEnabled = True
@@ -332,12 +332,6 @@ class Fab_Operation(object):
         raise RuntimeError(
             f"Fab_Operation().get_hash() not implemented "
             f"for {type(self)}")  # pragma: no unit cover
-
-    # Fab_Operation.Mount():
-    @property
-    def Mount(self) -> "FabMount":
-        """Return Fab_Operation FabMount."""
-        return self._Mount
 
     # Fab_Operation.get_geometries_hash():
     def get_geometries_hash(
@@ -437,7 +431,7 @@ class Fab_Extrude(Fab_Operation):
         self._StepDown = 3.0
         self._FinalDepth = -self.Depth
         self.Active = self._Contour
-        self.Prefix = self._Mount.lookup_prefix(self.Name)
+        self.Prefix = self.Mount.lookup_prefix(self.Name)
 
     # Fab_Extrude.Geometry():
     @property
@@ -611,7 +605,7 @@ class Fab_Pocket(Fab_Operation):
         self._StartDepth = max(top_depth - step_depth, final_depth)
         self._StepDown = step_down
         self._FinalDepth = final_depth
-        self.Prefix = self._Mount.lookup_prefix(self.Name)
+        self.Prefix = self.Mount.lookup_prefix(self.Name)
 
     # Fab_Pocket.Geometries():
     def Geometries(self) -> Tuple[FabGeometry, ...]:
@@ -837,7 +831,7 @@ class Fab_Hole(Fab_Operation):
         self.HolesCount = 0
         self.StartDepth = 0.0
         self.StepFile = ""
-        self.Prefix = self._Mount.lookup_prefix(self.Name)
+        self.Prefix = self.Mount.lookup_prefix(self.Name)
 
     # Fab_Hole.get_kind():
     def get_kind(self) -> str:
@@ -1385,7 +1379,7 @@ class FabMount(object):
         for hole_index, hole in enumerate(grouped_holes):
             if tracing:
                 print(f"{tracing}Hole[{hole_index}]: record_operation({hole})")
-            self.Prefix = hole._Mount.lookup_prefix(self._Name)
+            self.Prefix = hole.Mount.lookup_prefix(self._Name)
             self.record_operation(hole)
 
         if tracing:
