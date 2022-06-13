@@ -324,9 +324,7 @@ class Fab_Operation(object):
     # Fab_Operation.get_name():
     def get_name(self) -> str:
         """Return Fab_Operation name."""
-        raise RuntimeError(
-            f"Fab_Operation().get_name() not implemented "
-            f"for {type(self)}")  # pragma: no unit cover
+        return self._Name
 
     # Fab_Operation.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:
@@ -458,11 +456,6 @@ class Fab_Extrude(Fab_Operation):
     def Depth(self) -> float:
         """Return the Depth."""
         return self._Depth
-
-    # Fab_Extrude.get_name():
-    def get_name(self) -> str:
-        """Return Fab_Extrude name."""
-        return self._Name
 
     # Fab_Extrude.get_kind():
     def get_kind(self) -> str:
@@ -648,11 +641,6 @@ class Fab_Pocket(Fab_Operation):
         for geometry in self._Geometries:
             hashes.append(geometry.get_hash())
         return tuple(hashes)
-
-    # Fab_Pocket.get_name():
-    def get_name(self) -> str:
-        """Return Fab_Pocket name."""
-        return self._Name
 
     # Fab_Pocket.get_kind():
     def get_kind(self) -> str:
@@ -856,11 +844,6 @@ class Fab_Hole(Fab_Operation):
         self.StartDepth = 0.0
         self.StepFile = ""
         self.Prefix = self._Mount.lookup_prefix(self._Name)
-
-    # Fab_Hole.get_name()
-    def get_name(self) -> str:
-        """Return Fab_Hole name."""
-        return self._Name
 
     # Fab_Hole.get_kind():
     def get_kind(self) -> str:

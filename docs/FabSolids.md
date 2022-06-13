@@ -31,17 +31,15 @@ This internal classes are managed by FabMount methods.
 * 3 Class: [FabStock](#fabsolids--fabstock):
   * 3.1 [enclose()](#fabsolids----enclose): Wrap some stock material around a FabBox.
 * 4 Class: [Fab_Extrude](#fabsolids--fab-extrude):
-  * 4.1 [get_name()](#fabsolids----get-name): Return Fab_Extrude name.
-  * 4.2 [get_kind()](#fabsolids----get-kind): Return Fab_Extrude kind.
-  * 4.3 [get_hash()](#fabsolids----get-hash): Return hash for Fab_Extrude operation.
-  * 4.4 [post_produce2()](#fabsolids----post-produce2): Produce the Extrude.
-  * 4.5 [to_json()](#fabsolids----to-json): Return JSON dictionary for Fab_Extrude.
+  * 4.1 [get_kind()](#fabsolids----get-kind): Return Fab_Extrude kind.
+  * 4.2 [get_hash()](#fabsolids----get-hash): Return hash for Fab_Extrude operation.
+  * 4.3 [post_produce2()](#fabsolids----post-produce2): Produce the Extrude.
+  * 4.4 [to_json()](#fabsolids----to-json): Return JSON dictionary for Fab_Extrude.
 * 5 Class: [Fab_Hole](#fabsolids--fab-hole):
-  * 5.1 [get_name()](#fabsolids----get-name): Return Fab_Hole name.
-  * 5.2 [get_kind()](#fabsolids----get-kind): Return Fab_Hole kind.
-  * 5.3 [get_hash()](#fabsolids----get-hash): Return Fab_Hole hash.
-  * 5.4 [post_produce2()](#fabsolids----post-produce2): Perform Fab_Hole phase 1 post production.
-  * 5.5 [to_json()](#fabsolids----to-json): Return the FabHole JSON.
+  * 5.1 [get_kind()](#fabsolids----get-kind): Return Fab_Hole kind.
+  * 5.2 [get_hash()](#fabsolids----get-hash): Return Fab_Hole hash.
+  * 5.3 [post_produce2()](#fabsolids----post-produce2): Perform Fab_Hole phase 1 post production.
+  * 5.4 [to_json()](#fabsolids----to-json): Return the FabHole JSON.
 * 6 Class: [Fab_HoleKey](#fabsolids--fab-holekey):
   * 6.1 [get_hash()](#fabsolids----get-hash): Return a hash tuple for a Fab_HoleKey.
 * 7 Class: [Fab_Operation](#fabsolids--fab-operation):
@@ -59,10 +57,9 @@ This internal classes are managed by FabMount methods.
   * 10.1 [Geometries()](#fabsolids----geometries): Return the original Geometry.
   * 10.2 [Depth()](#fabsolids----depth): Return the original Depth.
   * 10.3 [get_hash()](#fabsolids----get-hash): Return Fab_Pocket hash.
-  * 10.4 [get_name()](#fabsolids----get-name): Return Fab_Pocket name.
-  * 10.5 [get_kind()](#fabsolids----get-kind): Return Fab_Pocket kind.
-  * 10.6 [post_produce2()](#fabsolids----post-produce2): Produce the Pocket.
-  * 10.7 [to_json()](#fabsolids----to-json): Return JSON dictionary for Fab_Extrude.
+  * 10.4 [get_kind()](#fabsolids----get-kind): Return Fab_Pocket kind.
+  * 10.5 [post_produce2()](#fabsolids----post-produce2): Produce the Pocket.
+  * 10.6 [to_json()](#fabsolids----to-json): Return JSON dictionary for Fab_Extrude.
 
 ## <a name="fabsolids--fabmount"></a>1 Class FabMount:
 
@@ -256,31 +253,25 @@ Attributes:
 * *Contour* (bool): If True and profile CNC contour path is performed; otherwise, no profile
   is performed.
 
-### <a name="fabsolids----get-name"></a>4.1 `Fab_Extrude.`get_name():
-
-Fab_Extrude.get_name(self) -> str:
-
-Return Fab_Extrude name.
-
-### <a name="fabsolids----get-kind"></a>4.2 `Fab_Extrude.`get_kind():
+### <a name="fabsolids----get-kind"></a>4.1 `Fab_Extrude.`get_kind():
 
 Fab_Extrude.get_kind(self) -> str:
 
 Return Fab_Extrude kind.
 
-### <a name="fabsolids----get-hash"></a>4.3 `Fab_Extrude.`get_hash():
+### <a name="fabsolids----get-hash"></a>4.2 `Fab_Extrude.`get_hash():
 
 Fab_Extrude.get_hash(self) -> Tuple[Any, ...]:
 
 Return hash for Fab_Extrude operation.
 
-### <a name="fabsolids----post-produce2"></a>4.4 `Fab_Extrude.`post_produce2():
+### <a name="fabsolids----post-produce2"></a>4.3 `Fab_Extrude.`post_produce2():
 
 Fab_Extrude.post_produce2(self, produce_state: FabNodes.Fab_ProduceState, tracing: str = '') -> None:
 
 Produce the Extrude.
 
-### <a name="fabsolids----to-json"></a>4.5 `Fab_Extrude.`to_json():
+### <a name="fabsolids----to-json"></a>4.4 `Fab_Extrude.`to_json():
 
 Fab_Extrude.to_json(self) -> Dict[str, Any]:
 
@@ -301,31 +292,25 @@ Attributes:
 Constructor:
 * Fab_Hole(Mount, Key, Centers, Name, Depth)
 
-### <a name="fabsolids----get-name"></a>5.1 `Fab_Hole.`get_name():
-
-Fab_Hole.get_name(self) -> str:
-
-Return Fab_Hole name.
-
-### <a name="fabsolids----get-kind"></a>5.2 `Fab_Hole.`get_kind():
+### <a name="fabsolids----get-kind"></a>5.1 `Fab_Hole.`get_kind():
 
 Fab_Hole.get_kind(self) -> str:
 
 Return Fab_Hole kind.
 
-### <a name="fabsolids----get-hash"></a>5.3 `Fab_Hole.`get_hash():
+### <a name="fabsolids----get-hash"></a>5.2 `Fab_Hole.`get_hash():
 
 Fab_Hole.get_hash(self) -> Tuple[Any, ...]:
 
 Return Fab_Hole hash.
 
-### <a name="fabsolids----post-produce2"></a>5.4 `Fab_Hole.`post_produce2():
+### <a name="fabsolids----post-produce2"></a>5.3 `Fab_Hole.`post_produce2():
 
 Fab_Hole.post_produce2(self, produce_state: FabNodes.Fab_ProduceState, tracing: str = '') -> None:
 
 Perform Fab_Hole phase 1 post production.
 
-### <a name="fabsolids----to-json"></a>5.5 `Fab_Hole.`to_json():
+### <a name="fabsolids----to-json"></a>5.4 `Fab_Hole.`to_json():
 
 Fab_Hole.to_json(self) -> Dict[str, Any]:
 
@@ -456,25 +441,19 @@ Fab_Pocket.get_hash(self) -> Tuple[Any, ...]:
 
 Return Fab_Pocket hash.
 
-### <a name="fabsolids----get-name"></a>10.4 `Fab_Pocket.`get_name():
-
-Fab_Pocket.get_name(self) -> str:
-
-Return Fab_Pocket name.
-
-### <a name="fabsolids----get-kind"></a>10.5 `Fab_Pocket.`get_kind():
+### <a name="fabsolids----get-kind"></a>10.4 `Fab_Pocket.`get_kind():
 
 Fab_Pocket.get_kind(self) -> str:
 
 Return Fab_Pocket kind.
 
-### <a name="fabsolids----post-produce2"></a>10.6 `Fab_Pocket.`post_produce2():
+### <a name="fabsolids----post-produce2"></a>10.5 `Fab_Pocket.`post_produce2():
 
 Fab_Pocket.post_produce2(self, produce_state: FabNodes.Fab_ProduceState, tracing: str = '') -> None:
 
 Produce the Pocket.
 
-### <a name="fabsolids----to-json"></a>10.7 `Fab_Pocket.`to_json():
+### <a name="fabsolids----to-json"></a>10.6 `Fab_Pocket.`to_json():
 
 Fab_Pocket.to_json(self) -> Dict[str, Any]:
 
