@@ -255,8 +255,10 @@ class Fab_Operation(object):
     """Fab_Operation: An base class for FabMount operations.
 
     Attributes:
-    * *Mount* (FabMount):
-      The FabMount to use for performing operations.
+    * *Mount* (FabMount): The FabMount to use for performing operations.
+    * *Name* (str): The name of the Fab_Operation.
+
+    Extra Computed Attributes:
     * *ToolController* (Optional[FabToolController]):
       The tool controller (i.e. speeds, feeds, etc.) to use. (Default: None)
     * *ToolControllerIndex* (int):
@@ -266,9 +268,11 @@ class Fab_Operation(object):
     * *Active* (bool):
       If True, the resulting operation is performed.  About the only time this is set to False
       is for an extrude of stock material like a C channel, I beam, etc.  (Default: True)
+    * *Prefix* (Fab_Prefix):
+      The prefix information to use for file name generation.
 
     Constructor:
-    * Fab_Operation(Mount)
+    * Fab_Operation(Mount, "Name")
 
     """
 
@@ -378,14 +382,19 @@ class Fab_Extrude(Fab_Operation):
     """Fab_Extrude: Represents and extrude operation.
 
     Attributes:
-    * *Name* (str): The operation name.
+    * *Mount* (FabMount): The FabMount to use for performing operations.
+    * *Name* (str): The FabExtrude operation name.
     * *Geometry* (Union[FabGeometry, Tuple[FabGeometry, ...]):
       The FabGeometry (i.e. FabPolygon or FabCircle) or a tuple of FabGeometry's to extrude with.
       When the tuple is used, the largest FabGeometry (which is traditionally the first one)
       is the outside of the extrusion, and the rest are "pockets".  This is useful for tubes.
     * *Depth* (float): The depth to extrude to in millimeters.
-    * *Contour* (bool): If True and profile CNC contour path is performed; otherwise, no profile
-      is performed.
+    * *Contour* (bool):
+      If True and profile CNC contour path is performed; otherwise, no profile is performed.
+    See Fab_Operation for extra computed Attributes.
+
+    Constructor:
+    * Fab_Extrude(Mount, "Name", Geometry, Depth, Contour)
 
     """
 
@@ -537,13 +546,25 @@ class Fab_Pocket(Fab_Operation):
     """Fab_Pocket: Represents a pocketing operation.
 
     Attributes:
-    * *Name* (str): The operation name.
+    * Mount (FabMount): The FabMount to use for pocketing.
+    * Name (str): The operation name.
+    * Geometries (Tuple[FabGeometry, ...]):
+      The FabGeomety's that specify the pocket.  The first one must be the outer most pocket
+      contour.  The remaining FabGeometries must be pocket "islands".  All islands must be
+      contained by the outer most pocket contour and islands must not overlap.
+    * Depth (float): The pocket depth in millimeters.
+
+    Extra Computed Attributes:
     * *Geometries* (Tuple[FabGeometry, ...]):
        The Polygon or Circle to pocket.  If a tuple is given, first FabGeometry in the tuple
        specifies the pocket exterior, and the remaining FabGeometry's specify islands of
        material within the pocket that must not be removed.
     * *Depth* (float): The pocket depth in millimeters.
     * *Bottom_Path* (str): The the path to the generated Pocket bottom STEP file.
+    See Fab_Operation for extra computed Attributes.
+
+    Constructor:
+    * Fab_Pocket(Mount, Name, Geometries, Depth)
 
     """
 
@@ -799,14 +820,19 @@ class Fab_Hole(Fab_Operation):
 
     Attributes:
     * Mount (FabMount): The FabMount for the hole operation.
+    * Name (str)
     * Key (FabHoleKey): The hole key used for grouping holes.
     * Join (FabJoin): The associated FabJoin the produced the hole.
     * Centers (Tuple[Vector, ...]): The associated start centers.
     * Name (str): The hole name.
     * Depth (str): The hole depth.
 
+    Computed Attributes:
+    * HolesCount (int): The number of complatible holes.
+    * StartDepth (float): The starting depth in millimeters from the mount plane.
+
     Constructor:
-    * Fab_Hole(Mount, Key, Centers, Name, Depth)
+    * Fab_Hole(Mount, Name, Key, Centers, Name, Depth)
     """
 
     _Key: Fab_HoleKey
