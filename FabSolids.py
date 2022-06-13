@@ -30,9 +30,10 @@ from FabJoins import FabFasten, FabJoin
 from FabNodes import FabBox, FabNode, Fab_Prefix, Fab_ProduceState
 # from FabShops import FabCNC, FabMachine, FabShop
 # from FabTools import FabLibrary
-# from FabToolBits import FabEndMillBit
-# from FabToolTemplates import FabAttributes, FabBit
+from FabToolBits import FabDrillBit  # FabEndMillBit
+from FabToolTemplates import FabBit
 from FabUtilities import FabColor, FabToolController
+from FabShops import Fab_ShopBit, FabShops
 
 # The *_suppress_stdout* function is based on code from:
 #   [I/O Redirect](https://stackoverflow.com/questions/4675728/redirect-stdout-to-a-file-in-python)
@@ -282,6 +283,7 @@ class Fab_Operation(object):
     JsonEnabled: bool = field(init=False)
     Active: bool = field(init=False)
     Prefix: Optional[Fab_Prefix] = field(init=False, repr=False)
+    ShopBits: Tuple[Fab_ShopBit, ...] = field(init=False, repr=False)
 
     # Fab_Operation.__post_init__():
     def __post_init__(self) -> None:
@@ -294,6 +296,7 @@ class Fab_Operation(object):
         self.JsonEnabled = True
         self.Active = True
         self.Prefix = None
+        self.ShopBits = ()
 
     # Fab_Operation.get_tool_controller():
     # def get_tool_controller(self) -> FabToolController:
@@ -347,6 +350,11 @@ class Fab_Operation(object):
         for geometry in geometries:
             hashes.append(geometry.get_hash())
         return tuple(hashes)
+
+    # Fab_Operation.setShopBits():
+    def setShopBits(self, shop_bits: List[Fab_ShopBit]) -> None:
+        """Set the Fab_Operation ShopBits attribute."""
+        self.ShopBits = tuple(shop_bits)
 
     # Fab_Operation.produce():
     def produce(self, tracing: str = "") -> Tuple[str, ...]:
@@ -622,9 +630,9 @@ class Fab_Pocket(Fab_Operation):
         top_depth: float = plane.Distance
         final_depth: float = top_depth - self._Depth
         delta_depth: float = top_depth - final_depth
-        tool_edge_height: float = 30.00  # TODO: Fix
-        if delta_depth > tool_edge_height:
-            raise RuntimeError("FIXME")  # pragma: no unit cover
+        # tool_edge_height: float = 30.00  # TODO: Fix
+        # if delta_depth > tool_edge_height:
+        #     raise RuntimeError("FIXME")  # pragma: no unit cover
 
         tool_diameter: float = 5.00  # TODO: Fix
         step_depth: float = tool_diameter / 2.0
@@ -886,6 +894,52 @@ class Fab_Hole(Fab_Operation):
             hashes.append(f"{center.y:.6f}")
             hashes.append(f"{center.z:.6f}")
         return tuple(hashes)
+
+    # Fab_Hole.post_produce1():
+    def post_produce1(
+            self, produce_state: Fab_ProduceState,
+            expanded_operations: "List[Fab_Operation]", tracing: str = "") -> None:
+        """Expand simple operations as approprated."""
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>Fab_Hole.post_produce1()")
+
+        # Extract the desired drill *depth* and *diameter*:
+        kind: str = self.Key.Kind
+        depth: float = self.Key.Depth
+        # TODO: Extend *depth* to deal with through holes.
+        diameter: float = self.Join.Fasten.get_diameter(kind)
+
+        # Search *drill_shop_bits* and fill in *matching_shop_bits*:
+        shops: FabShops = produce_state.Shops
+        matching_shop_bits: List[Fab_ShopBit] = []
+        drill_shop_bits: Tuple[Fab_ShopBit, ...] = shops.DrillShopBits
+        drill_shop_bit: Fab_ShopBit
+        for drill_shop_bit in drill_shop_bits:
+            drill_bit: FabBit = drill_shop_bit.Bit
+            assert isinstance(drill_bit, FabDrillBit)
+            drill_bit_length: Union[float, int] = drill_bit.getNumber("Length")
+            drill_bit_diameter: Union[float, int] = drill_bit.getNumber("Diameter")
+            if depth <= drill_bit_length and abs(diameter - drill_bit_diameter) < 0.0001:  # mm
+                matching_shop_bits.append(drill_shop_bit)
+
+        # If there is least one drill bit, use it; otherwise, convert everything FabPocket's:
+        if matching_shop_bits:
+            self.setShopBits(matching_shop_bits)
+            expanded_operations.append(self)
+        else:
+            # Create a FabPocket for each hole *center*:
+            normal: Vector = self.Mount.Normal
+            center: Vector
+            index: int
+            for index, center in enumerate(self.Centers):
+                circle_geometry: FabCircle = FabCircle(center, normal, diameter)
+                pocket_name: str = f"{self.Name}_{index}"
+                pocket: Fab_Pocket = Fab_Pocket(self.Mount, pocket_name, (circle_geometry,), depth)
+                pocket.post_produce1(produce_state, expanded_operations, tracing=next_tracing)
+
+        if tracing:
+            print(f"{tracing}<=Fab_Hole.post_produce1()")
 
     # Fab_Hole.post_produce2():
     def post_produce2(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:

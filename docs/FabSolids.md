@@ -40,8 +40,9 @@ This internal classes are managed by FabMount methods.
 * 5 Class: [Fab_Hole](#fabsolids--fab-hole):
   * 5.1 [get_kind()](#fabsolids----get-kind): Return Fab_Hole kind.
   * 5.2 [get_hash()](#fabsolids----get-hash): Return Fab_Hole hash.
-  * 5.3 [post_produce2()](#fabsolids----post-produce2): Perform Fab_Hole phase 1 post production.
-  * 5.4 [to_json()](#fabsolids----to-json): Return the FabHole JSON.
+  * 5.3 [post_produce1()](#fabsolids----post-produce1): Expand simple operations as approprated.
+  * 5.4 [post_produce2()](#fabsolids----post-produce2): Perform Fab_Hole phase 1 post production.
+  * 5.5 [to_json()](#fabsolids----to-json): Return the FabHole JSON.
 * 6 Class: [Fab_HoleKey](#fabsolids--fab-holekey):
   * 6.1 [get_hash()](#fabsolids----get-hash): Return a hash tuple for a Fab_HoleKey.
 * 7 Class: [Fab_Operation](#fabsolids--fab-operation):
@@ -50,10 +51,11 @@ This internal classes are managed by FabMount methods.
   * 7.3 [get_name()](#fabsolids----get-name): Return Fab_Operation name.
   * 7.4 [get_hash()](#fabsolids----get-hash): Return Fab_Operation hash.
   * 7.5 [get_geometries_hash()](#fabsolids----get-geometries-hash): Return hash of FabGeometry's.
-  * 7.6 [produce()](#fabsolids----produce): Return the operation sort key.
-  * 7.7 [post_produce1()](#fabsolids----post-produce1): Expand simple operations as approprated.
-  * 7.8 [post_produce2()](#fabsolids----post-produce2): NO DOC STRING!
-  * 7.9 [to_json()](#fabsolids----to-json): Return a base JSON dictionary for an Fab_Operation.
+  * 7.6 [setShopBits()](#fabsolids----setshopbits): Set the Fab_Operation ShopBits attribute.
+  * 7.7 [produce()](#fabsolids----produce): Return the operation sort key.
+  * 7.8 [post_produce1()](#fabsolids----post-produce1): Expand simple operations as approprated.
+  * 7.9 [post_produce2()](#fabsolids----post-produce2): NO DOC STRING!
+  * 7.10 [to_json()](#fabsolids----to-json): Return a base JSON dictionary for an Fab_Operation.
 * 8 Class: [Fab_OperationKind](#fabsolids--fab-operationkind):
 * 9 Class: [Fab_OperationOrder](#fabsolids--fab-operationorder):
 * 10 Class: [Fab_Pocket](#fabsolids--fab-pocket):
@@ -329,13 +331,19 @@ Fab_Hole.get_hash(self) -> Tuple[Any, ...]:
 
 Return Fab_Hole hash.
 
-### <a name="fabsolids----post-produce2"></a>5.3 `Fab_Hole.`post_produce2():
+### <a name="fabsolids----post-produce1"></a>5.3 `Fab_Hole.`post_produce1():
+
+Fab_Hole.post_produce1(self, produce_state: FabNodes.Fab_ProduceState, expanded_operations: 'List[Fab_Operation]', tracing: str = '') -> None:
+
+Expand simple operations as approprated.
+
+### <a name="fabsolids----post-produce2"></a>5.4 `Fab_Hole.`post_produce2():
 
 Fab_Hole.post_produce2(self, produce_state: FabNodes.Fab_ProduceState, tracing: str = '') -> None:
 
 Perform Fab_Hole phase 1 post production.
 
-### <a name="fabsolids----to-json"></a>5.4 `Fab_Hole.`to_json():
+### <a name="fabsolids----to-json"></a>5.5 `Fab_Hole.`to_json():
 
 Fab_Hole.to_json(self) -> Dict[str, Any]:
 
@@ -411,25 +419,31 @@ Fab_Operation.get_geometries_hash(self, geometries: Union[FabGeometries.FabGeome
 
 Return hash of FabGeometry's.
 
-### <a name="fabsolids----produce"></a>7.6 `Fab_Operation.`produce():
+### <a name="fabsolids----setshopbits"></a>7.6 `Fab_Operation.`setShopBits():
+
+Fab_Operation.setShopBits(self, shop_bits: List[FabShops.Fab_ShopBit]) -> None:
+
+Set the Fab_Operation ShopBits attribute.
+
+### <a name="fabsolids----produce"></a>7.7 `Fab_Operation.`produce():
 
 Fab_Operation.produce(self, tracing: str = '') -> Tuple[str, ...]:
 
 Return the operation sort key.
 
-### <a name="fabsolids----post-produce1"></a>7.7 `Fab_Operation.`post_produce1():
+### <a name="fabsolids----post-produce1"></a>7.8 `Fab_Operation.`post_produce1():
 
 Fab_Operation.post_produce1(self, produce_state: FabNodes.Fab_ProduceState, expanded_operations: 'List[Fab_Operation]', tracing: str = '') -> None:
 
 Expand simple operations as approprated.
 
-### <a name="fabsolids----post-produce2"></a>7.8 `Fab_Operation.`post_produce2():
+### <a name="fabsolids----post-produce2"></a>7.9 `Fab_Operation.`post_produce2():
 
 Fab_Operation.post_produce2(self, produce_state: FabNodes.Fab_ProduceState, tracing: str = '') -> None:
 
 NO DOC STRING!
 
-### <a name="fabsolids----to-json"></a>7.9 `Fab_Operation.`to_json():
+### <a name="fabsolids----to-json"></a>7.10 `Fab_Operation.`to_json():
 
 Fab_Operation.to_json(self) -> Dict[str, Any]:
 
