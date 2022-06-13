@@ -13,21 +13,23 @@ This internal classes are managed by FabMount methods.
   * 1.2 [get_hash()](#fabsolids----get-hash): Return a has the current contents of a FabMount.
   * 1.3 [record_operation()](#fabsolids----record-operation): Record an operation to a FabMount.
   * 1.4 [set_geometry_group()](#fabsolids----set-geometry-group): Set the FabMount GeometryGroup need for the FabGeometryContex.
-  * 1.5 [post_produce2()](#fabsolids----post-produce2): Perform FabMount phase 1 post procduction.
-  * 1.6 [to_json()](#fabsolids----to-json): Return FabMount JSON structure.
-  * 1.7 [extrude()](#fabsolids----extrude): Perform a extrude operation.
-  * 1.8 [pocket()](#fabsolids----pocket): Perform a pocket operation.
-  * 1.9 [drill_joins()](#fabsolids----drill-joins): Drill some FabJoin's into a FabMount.
+  * 1.5 [post_produce1()](#fabsolids----post-produce1): Expand and transform operations.
+  * 1.6 [post_produce2()](#fabsolids----post-produce2): Perform FabMount phase 1 post procduction.
+  * 1.7 [to_json()](#fabsolids----to-json): Return FabMount JSON structure.
+  * 1.8 [extrude()](#fabsolids----extrude): Perform a extrude operation.
+  * 1.9 [pocket()](#fabsolids----pocket): Perform a pocket operation.
+  * 1.10 [drill_joins()](#fabsolids----drill-joins): Drill some FabJoin's into a FabMount.
 * 2 Class: [FabSolid](#fabsolids--fabsolid):
   * 2.1 [lookup_prefix()](#fabsolids----lookup-prefix): Return the Fab_Prefix for a mount/operation name pair.
   * 2.2 [to_json()](#fabsolids----to-json): Return FabProject JSON structure.
   * 2.3 [set_body()](#fabsolids----set-body): Set the BodyBase of a FabSolid.
   * 2.4 [is_solid()](#fabsolids----is-solid):  Return True if FabNode is a FabAssembly.
   * 2.5 [pre_produce()](#fabsolids----pre-produce): Perform FabSolid pre production.
-  * 2.6 [get_hash()](#fabsolids----get-hash): Return FabSolid hash.
-  * 2.7 [mount()](#fabsolids----mount): Return a new FabMount.
-  * 2.8 [drill_joins()](#fabsolids----drill-joins): Apply drill FabJoin holes for a FabSolid.
-  * 2.9 [post_produce2()](#fabsolids----post-produce2): Perform FabSolid Phase1 post production.
+  * 2.6 [post_produce1()](#fabsolids----post-produce1): Perform FabSolid pre production.
+  * 2.7 [get_hash()](#fabsolids----get-hash): Return FabSolid hash.
+  * 2.8 [mount()](#fabsolids----mount): Return a new FabMount.
+  * 2.9 [drill_joins()](#fabsolids----drill-joins): Apply drill FabJoin holes for a FabSolid.
+  * 2.10 [post_produce2()](#fabsolids----post-produce2): Perform FabSolid Phase1 post production.
 * 3 Class: [FabStock](#fabsolids--fabstock):
   * 3.1 [enclose()](#fabsolids----enclose): Wrap some stock material around a FabBox.
 * 4 Class: [Fab_Extrude](#fabsolids--fab-extrude):
@@ -49,8 +51,9 @@ This internal classes are managed by FabMount methods.
   * 7.4 [get_hash()](#fabsolids----get-hash): Return Fab_Operation hash.
   * 7.5 [get_geometries_hash()](#fabsolids----get-geometries-hash): Return hash of FabGeometry's.
   * 7.6 [produce()](#fabsolids----produce): Return the operation sort key.
-  * 7.7 [post_produce2()](#fabsolids----post-produce2): NO DOC STRING!
-  * 7.8 [to_json()](#fabsolids----to-json): Return a base JSON dictionary for an Fab_Operation.
+  * 7.7 [post_produce1()](#fabsolids----post-produce1): Expand simple operations as approprated.
+  * 7.8 [post_produce2()](#fabsolids----post-produce2): NO DOC STRING!
+  * 7.9 [to_json()](#fabsolids----to-json): Return a base JSON dictionary for an Fab_Operation.
 * 8 Class: [Fab_OperationKind](#fabsolids--fab-operationkind):
 * 9 Class: [Fab_OperationOrder](#fabsolids--fab-operationorder):
 * 10 Class: [Fab_Pocket](#fabsolids--fab-pocket):
@@ -102,25 +105,31 @@ FabMount.set_geometry_group(self, geometry_group: Any) -> None:
 
 Set the FabMount GeometryGroup need for the FabGeometryContex.
 
-### <a name="fabsolids----post-produce2"></a>1.5 `FabMount.`post_produce2():
+### <a name="fabsolids----post-produce1"></a>1.5 `FabMount.`post_produce1():
+
+FabMount.post_produce1(self, produce_state: FabNodes.Fab_ProduceState, tracing: str = '') -> None:
+
+Expand and transform operations.
+
+### <a name="fabsolids----post-produce2"></a>1.6 `FabMount.`post_produce2():
 
 FabMount.post_produce2(self, produce_state: FabNodes.Fab_ProduceState, tracing: str = '') -> None:
 
 Perform FabMount phase 1 post procduction.
 
-### <a name="fabsolids----to-json"></a>1.6 `FabMount.`to_json():
+### <a name="fabsolids----to-json"></a>1.7 `FabMount.`to_json():
 
 FabMount.to_json(self) -> Dict[str, Any]:
 
 Return FabMount JSON structure.
 
-### <a name="fabsolids----extrude"></a>1.7 `FabMount.`extrude():
+### <a name="fabsolids----extrude"></a>1.8 `FabMount.`extrude():
 
 FabMount.extrude(self, name: str, shapes: Union[FabGeometries.FabGeometry, Tuple[FabGeometries.FabGeometry, ...]], depth: float, contour: bool = True, tracing: str = '') -> None:
 
 Perform a extrude operation.
 
-### <a name="fabsolids----pocket"></a>1.8 `FabMount.`pocket():
+### <a name="fabsolids----pocket"></a>1.9 `FabMount.`pocket():
 
 FabMount.pocket(self, name: str, shapes: Union[FabGeometries.FabGeometry, Tuple[FabGeometries.FabGeometry, ...]], depth: float, tracing: str = '') -> None:
 
@@ -132,7 +141,7 @@ Arguments:
   the pocket boundary.
 * *depth* (float): The pocket depth in millimeters from the mount plane.
 
-### <a name="fabsolids----drill-joins"></a>1.9 `FabMount.`drill_joins():
+### <a name="fabsolids----drill-joins"></a>1.10 `FabMount.`drill_joins():
 
 FabMount.drill_joins(self, joins_name: str, joins: Union[FabJoins.FabJoin, Sequence[FabJoins.FabJoin]], tracing: str = '') -> None:
 
@@ -180,19 +189,25 @@ FabSolid.pre_produce(self, produce_state: FabNodes.Fab_ProduceState) -> None:
 
 Perform FabSolid pre production.
 
-### <a name="fabsolids----get-hash"></a>2.6 `FabSolid.`get_hash():
+### <a name="fabsolids----post-produce1"></a>2.6 `FabSolid.`post_produce1():
+
+FabSolid.post_produce1(self, produce_state: FabNodes.Fab_ProduceState, tracing: str = '') -> None:
+
+Perform FabSolid pre production.
+
+### <a name="fabsolids----get-hash"></a>2.7 `FabSolid.`get_hash():
 
 FabSolid.get_hash(self) -> Tuple[Any, ...]:
 
 Return FabSolid hash.
 
-### <a name="fabsolids----mount"></a>2.7 `FabSolid.`mount():
+### <a name="fabsolids----mount"></a>2.8 `FabSolid.`mount():
 
 FabSolid.mount(self, name: str, contact: cadquery.occ_impl.geom.Vector, normal: cadquery.occ_impl.geom.Vector, orient: cadquery.occ_impl.geom.Vector, depth: float, tracing: str = '') -> FabSolids.FabMount:
 
 Return a new FabMount.
 
-### <a name="fabsolids----drill-joins"></a>2.8 `FabSolid.`drill_joins():
+### <a name="fabsolids----drill-joins"></a>2.9 `FabSolid.`drill_joins():
 
 FabSolid.drill_joins(self, name: str, joins: Sequence[FabJoins.FabJoin], mounts: Union[Sequence[FabSolids.FabMount], NoneType] = None) -> None:
 
@@ -213,7 +228,7 @@ Arguments:
 
 For now, please call this method after all FabMount's are created.
 
-### <a name="fabsolids----post-produce2"></a>2.9 `FabSolid.`post_produce2():
+### <a name="fabsolids----post-produce2"></a>2.10 `FabSolid.`post_produce2():
 
 FabSolid.post_produce2(self, produce_state: FabNodes.Fab_ProduceState, tracing: str = '') -> None:
 
@@ -402,13 +417,19 @@ Fab_Operation.produce(self, tracing: str = '') -> Tuple[str, ...]:
 
 Return the operation sort key.
 
-### <a name="fabsolids----post-produce2"></a>7.7 `Fab_Operation.`post_produce2():
+### <a name="fabsolids----post-produce1"></a>7.7 `Fab_Operation.`post_produce1():
+
+Fab_Operation.post_produce1(self, produce_state: FabNodes.Fab_ProduceState, expanded_operations: 'List[Fab_Operation]', tracing: str = '') -> None:
+
+Expand simple operations as approprated.
+
+### <a name="fabsolids----post-produce2"></a>7.8 `Fab_Operation.`post_produce2():
 
 Fab_Operation.post_produce2(self, produce_state: FabNodes.Fab_ProduceState, tracing: str = '') -> None:
 
 NO DOC STRING!
 
-### <a name="fabsolids----to-json"></a>7.8 `Fab_Operation.`to_json():
+### <a name="fabsolids----to-json"></a>7.9 `Fab_Operation.`to_json():
 
 Fab_Operation.to_json(self) -> Dict[str, Any]:
 

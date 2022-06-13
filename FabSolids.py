@@ -354,7 +354,16 @@ class Fab_Operation(object):
         raise NotImplementedError(
             f"{type(self)}.produce() is not implemented")  # pragma: no unit cover
 
-    # Fab_Operation.post_produce2():
+    # Fab_Operation.post_produce1():
+    def post_produce1(
+            self, produce_state: Fab_ProduceState,
+            expanded_operations: "List[Fab_Operation]", tracing: str = "") -> None:
+        """Expand simple operations as approprated."""
+        expanded_operations.append(self)
+        if tracing:
+            print(f"{tracing}<=>{type(self)}.post_produce1()")
+
+    # Fab_Operation.post_produce2():x
     def post_produce2(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
         raise NotImplementedError(
             f"{type(self)}.post_produce2() is not implemented")  # pragma: no unit cover
@@ -1182,6 +1191,25 @@ class FabMount(object):
         """Set the FabMount GeometryGroup need for the FabGeometryContex."""
         self._GeometryContext.set_geometry_group(geometry_group)  # pragma: no unit covert
 
+    # FabMount.post_produce1():
+    def post_produce1(
+            self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
+        """Expand and transform operations."""
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabMount.post_produce1('{self.Name}'):")
+
+        operations: List[Fab_Operation] = self._Operations
+        before_operations_size: int = len(operations)
+        expanded_operations: List[Fab_Operation] = []
+        operation: Fab_Operation
+        for operation in self._Operations:
+            operation.post_produce1(produce_state, expanded_operations, tracing=next_tracing)
+        self._Operations = expanded_operations
+        if tracing:
+            print(f"{tracing}=>FabMount.post_produce1('{self.Name}'): "
+                  f"|{before_operations_size}| => |{len(expanded_operations)}|")
+
     # FabMount.post_produce2():
     def post_produce2(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
         """Perform FabMount phase 1 post procduction."""
@@ -1605,6 +1633,21 @@ class FabSolid(FabNode):
         if tracing:
             print(f"{tracing}{len(self._Mounts)=}")
             print(f"{tracing}<=FabSolid({self.Label}).pre_produce()")
+
+    # FabSolid.post_produce1():
+    def post_produce1(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
+        """Perform FabSolid pre production."""
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabSolid({self.Label}).post_produce1()")
+
+        # Expand the operations for each *mount*:
+        mount: FabMount
+        for mount in self._Mounts:
+            mount.post_produce1(produce_state, tracing=next_tracing)
+
+        if tracing:
+            print(f"{tracing}<=FabSolid({self.Label}).post_produce1()")
 
     # FabSolid.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:
