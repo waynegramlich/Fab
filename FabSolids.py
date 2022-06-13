@@ -273,6 +273,7 @@ class Fab_Operation(object):
     """
 
     _Mount: "FabMount" = field(repr=False, compare=False)
+    _Name: str
     ToolController: Optional[FabToolController] = field(init=False, repr=False)
     ToolControllerIndex: int = field(init=False)
     JsonEnabled: bool = field(init=False)
@@ -402,7 +403,6 @@ class Fab_Extrude(Fab_Operation):
 
     """
 
-    _Name: str
     _Geometry: Union[FabGeometry, Tuple[FabGeometry, ...]] = field(compare=False)
     _Depth: float
     _Contour: bool
@@ -566,7 +566,6 @@ class Fab_Pocket(Fab_Operation):
 
     """
 
-    _Name: str
     _Geometries: Tuple[FabGeometry, ...] = field(compare=False)
     _Depth: float
     # TODO: Make _Geometries be comparable.
@@ -834,7 +833,6 @@ class Fab_Hole(Fab_Operation):
     * Fab_Hole(Mount, Key, Centers, Name, Depth)
     """
 
-    _Name: str  # Hole name
     _Key: Fab_HoleKey
     Centers: Tuple[Vector, ...]  # The Center (start point) of the drils
     Join: FabJoin = field(repr=False)  # The associated FabJoin
