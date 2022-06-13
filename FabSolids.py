@@ -273,7 +273,7 @@ class Fab_Operation(object):
     """
 
     _Mount: "FabMount" = field(repr=False, compare=False)
-    _Name: str
+    Name: str
     ToolController: Optional[FabToolController] = field(init=False, repr=False)
     ToolControllerIndex: int = field(init=False)
     JsonEnabled: bool = field(init=False)
@@ -324,7 +324,7 @@ class Fab_Operation(object):
     # Fab_Operation.get_name():
     def get_name(self) -> str:
         """Return Fab_Operation name."""
-        return self._Name
+        return self.Name
 
     # Fab_Operation.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:
@@ -338,12 +338,6 @@ class Fab_Operation(object):
     def Mount(self) -> "FabMount":
         """Return Fab_Operation FabMount."""
         return self._Mount
-
-    # Fab_Operation.Name():
-    @property
-    def Name(self) -> str:
-        """Return the operation name."""
-        return self.get_name()
 
     # Fab_Operation.get_geometries_hash():
     def get_geometries_hash(
@@ -443,7 +437,7 @@ class Fab_Extrude(Fab_Operation):
         self._StepDown = 3.0
         self._FinalDepth = -self.Depth
         self.Active = self._Contour
-        self.Prefix = self._Mount.lookup_prefix(self._Name)
+        self.Prefix = self._Mount.lookup_prefix(self.Name)
 
     # Fab_Extrude.Geometry():
     @property
@@ -467,7 +461,7 @@ class Fab_Extrude(Fab_Operation):
         """Return hash for Fab_Extrude operation."""
         return (
             "Fab_Extrude",
-            self._Name,
+            self.Name,
             f"{self._Depth:.6f}",
             self.get_geometries_hash(self._Geometries),
         )
@@ -617,7 +611,7 @@ class Fab_Pocket(Fab_Operation):
         self._StartDepth = max(top_depth - step_depth, final_depth)
         self._StepDown = step_down
         self._FinalDepth = final_depth
-        self.Prefix = self._Mount.lookup_prefix(self._Name)
+        self.Prefix = self._Mount.lookup_prefix(self.Name)
 
     # Fab_Pocket.Geometries():
     def Geometries(self) -> Tuple[FabGeometry, ...]:
@@ -634,7 +628,7 @@ class Fab_Pocket(Fab_Operation):
         """Return Fab_Pocket hash."""
         hashes: List[Any] = [
             "Fab_Pocket",
-            self._Name,
+            self.Name,
             f"{self._Depth:.6f}",
         ]
         geometry: FabGeometry
@@ -835,7 +829,7 @@ class Fab_Hole(Fab_Operation):
         """Perform final initialization of Fab_Hole"""
 
         super().__post_init__()
-        assert isinstance(self._Name, str), self._Name
+        assert isinstance(self.Name, str), self.Name
         assert isinstance(self._Key, Fab_HoleKey), self._Key
         assert isinstance(self.Centers, tuple), self.Centers
         assert isinstance(self.Join, FabJoin), self.Join
@@ -843,7 +837,7 @@ class Fab_Hole(Fab_Operation):
         self.HolesCount = 0
         self.StartDepth = 0.0
         self.StepFile = ""
-        self.Prefix = self._Mount.lookup_prefix(self._Name)
+        self.Prefix = self._Mount.lookup_prefix(self.Name)
 
     # Fab_Hole.get_kind():
     def get_kind(self) -> str:
