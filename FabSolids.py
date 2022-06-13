@@ -13,7 +13,6 @@ This internal classes are managed by FabMount methods.
 import sys
 import math
 
-from collections import OrderedDict
 from enum import IntEnum, auto
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -474,7 +473,7 @@ class Fab_Extrude(Fab_Operation):
         """Produce the Extrude."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>Fab_Extrude.produce1('{self.Name}')")
+            print(f"{tracing}=>Fab_Extrude.produce2('{self.Name}')")
 
         # Extract the *part_geometries* and create the associated *shape_binder*:
         mount: FabMount = self.Mount
@@ -1048,7 +1047,7 @@ class FabMount(object):
     _Orient: Vector
     _Depth: float
     _Query: Fab_Query
-    _Operations: "OrderedDict[str, Fab_Operation]" = field(init=False, repr=False)
+    _Operations: List[Fab_Operation] = field(init=False, repr=False)
     _Copy: Vector = field(init=False, repr=False)  # Used for making private copies of Vector's
     _Tracing: str = field(init=False, repr=False)
     _GeometryContext: Fab_GeometryContext = field(init=False, repr=False)
@@ -1081,7 +1080,7 @@ class FabMount(object):
         self._Copy = copy
         self._Contact = self._Contact + copy
         self._Normal = self._Normal + copy
-        self._Operations = OrderedDict()
+        self._Operations = []
         # Vector metheds like to modify Vector contents; force copies beforehand:
         self._Plane: Fab_Plane = Fab_Plane(self._Contact, self._Normal)  # , tracing=next_tracing)
         self._Orient = self._Plane.point_project(self._Orient)
@@ -1165,7 +1164,7 @@ class FabMount(object):
             f"{self._Depth:.6f}",
         ]
         operation: Fab_Operation
-        for operation in self._Operations.values():
+        for operation in self._Operations:
             hashes.append(operation.get_hash())
         return tuple(hashes)
 
@@ -1176,7 +1175,7 @@ class FabMount(object):
             raise RuntimeError(
                 f"FabMount.add_operation({self._Name}).{type(operation)} "
                 "is not an Fab_Operation")  # pragma: no unit cover
-        self._Operations[operation.Name] = operation
+        self._Operations.append(operation)
 
     # FabMount.set_geometry_group():
     def set_geometry_group(self, geometry_group: Any) -> None:
@@ -1191,7 +1190,7 @@ class FabMount(object):
             print(f"{tracing}=>FabMount.post_produce2('{self.Name}')")
 
         # If there are no *operations* there is nothing to do:
-        operations: OrderedDict[str, Fab_Operation] = self._Operations
+        operations: List[Fab_Operation] = self._Operations
         if operations:
             # Create the Fab_Plane used for the drawing support.
             plane: Fab_Plane = self.Plane
@@ -1215,11 +1214,10 @@ class FabMount(object):
 
             # Process each *operation* in *operations*:
             operation_index: int = 0
-            operation_name: str
             operation: Fab_Operation
-            for operation_name, operation in operations.items():
+            for operation in operations:
                 if tracing:
-                    print(f"{tracing}Operation[{operation_name}]:")
+                    print(f"{tracing}Operation[{operation.Name}]:")
                 produce_state.OperationIndex = operation_index
                 operation.post_produce2(produce_state, tracing=next_tracing)
                 operation_index += 1
@@ -1233,10 +1231,9 @@ class FabMount(object):
     def to_json(self) -> Dict[str, Any]:
         """Return FabMount JSON structure."""
         json_operations: List[Any] = []
-        operations: OrderedDict[str, Fab_Operation] = self._Operations
-        name: str
+        operations: List[Fab_Operation] = self._Operations
         operation: Fab_Operation
-        for name, operation in operations.items():
+        for operation in operations:
             if isinstance(operation, (Fab_Extrude, Fab_Pocket, Fab_Hole)):
                 if operation.JsonEnabled:
                     json_operations.append(operation.to_json())
@@ -1429,7 +1426,7 @@ class FabSolid(FabNode):
 
     Material: str
     Color: str
-    _Mounts: "OrderedDict[str, FabMount]" = field(init=False, repr=False)
+    _Mounts: List[FabMount] = field(init=False, repr=False)
     _GeometryGroup: Optional[Any] = field(init=False, repr=False)
     _Body: Optional[Any] = field(init=False, repr=False)  # TODO: remove?
     _Query: Fab_Query = field(init=False, repr=False)
@@ -1453,7 +1450,7 @@ class FabSolid(FabNode):
         origin: Vector = Vector(0.0, 0.0, 0.0)
         z_axis: Vector = Vector(0.0, 0.0, 1.0)
         initial_plane: Fab_Plane = Fab_Plane(origin, z_axis)  # , tracing=next_tracing)
-        self._Mounts = OrderedDict()
+        self._Mounts = []
         self._GeometryGroup = None
         self._Body = None
         self._Query = Fab_Query(initial_plane)
@@ -1581,7 +1578,7 @@ class FabSolid(FabNode):
         json_mounts: List[Any] = []
         name: str
         mount: FabMount
-        for mount in self._Mounts.values():
+        for mount in self._Mounts:
             # Skip mount if it has no operations.
             if len(mount._Operations) > 0:
                 json_mounts.append(mount.to_json())
@@ -1604,7 +1601,7 @@ class FabSolid(FabNode):
         tracing: str = self.Tracing
         if tracing:
             print(f"{tracing}=>FabSolid({self.Label}).pre_produce()")
-        self._Mounts = OrderedDict()
+        self._Mounts = []
         if tracing:
             print(f"{tracing}{len(self._Mounts)=}")
             print(f"{tracing}<=FabSolid({self.Label}).pre_produce()")
@@ -1618,7 +1615,7 @@ class FabSolid(FabNode):
             self.Color,
         ]
         mount: FabMount
-        for mount in self._Mounts.values():
+        for mount in self._Mounts:
             hashes.append(mount.get_hash())
         return tuple(hashes)
 
@@ -1629,10 +1626,10 @@ class FabSolid(FabNode):
         if tracing:
             print(f"{tracing}=>FabSolid({self.Label}).mount('{name}', ...)")
 
-        mounts: "OrderedDict[str, FabMount]" = self._Mounts
+        mounts: List[FabMount] = self._Mounts
         self.LastMountPrefix = None
         fab_mount: FabMount = FabMount(name, self, contact, normal, orient, depth, self._Query)
-        mounts[name] = fab_mount
+        mounts.append(fab_mount)
 
         if tracing:
             print(f"{tracing}=>FabSolid({self.Label}).mount('{name}', ...)=>{fab_mount}")
@@ -1665,7 +1662,7 @@ class FabSolid(FabNode):
             print(f"{tracing}=>FabSolid({self.Label}).drill_joins('{name}', *)")
 
         if mounts is None:
-            mounts = tuple(self._Mounts.values())
+            mounts = tuple(self._Mounts)
         mount: FabMount
         for mount in mounts:
             mount.drill_joins(name, joins, tracing=next_tracing)
@@ -1699,14 +1696,14 @@ class FabSolid(FabNode):
 
         # Perform all of the mount operations if unable to *use_cached_step*:
         if not use_cached_step:
-            mounts: "OrderedDict[str, FabMount]" = self._Mounts
+            mounts: List[FabMount] = self._Mounts
             if tracing:
                 print(f"{tracing}Iterate over |{len(mounts)}| mounts")
             mount_name: str
             mount: FabMount
-            for mount_name, mount in mounts.items():
+            for mount in mounts:
                 if tracing:
-                    print(f"{tracing}[{mount_name}]: process")
+                    print(f"{tracing}[{mount._Name}]: process")
                 mount.post_produce2(produce_state, tracing=next_tracing)
 
         # CadQuery workplanes do not have a color, but Assemblies do.
