@@ -59,12 +59,11 @@ This internal classes are managed by FabMount methods.
 * 8 Class: [Fab_OperationKind](#fabsolids--fab-operationkind):
 * 9 Class: [Fab_OperationOrder](#fabsolids--fab-operationorder):
 * 10 Class: [Fab_Pocket](#fabsolids--fab-pocket):
-  * 10.1 [Geometries()](#fabsolids----geometries): Return the original Geometry.
-  * 10.2 [Depth()](#fabsolids----depth): Return the original Depth.
-  * 10.3 [get_hash()](#fabsolids----get-hash): Return Fab_Pocket hash.
-  * 10.4 [get_kind()](#fabsolids----get-kind): Return Fab_Pocket kind.
-  * 10.5 [post_produce2()](#fabsolids----post-produce2): Produce the Pocket.
-  * 10.6 [to_json()](#fabsolids----to-json): Return JSON dictionary for Fab_Extrude.
+  * 10.1 [xpost_produce1()](#fabsolids----xpost-produce1): Expand simple operations as approprated.
+  * 10.2 [get_hash()](#fabsolids----get-hash): Return Fab_Pocket hash.
+  * 10.3 [get_kind()](#fabsolids----get-kind): Return Fab_Pocket kind.
+  * 10.4 [post_produce2()](#fabsolids----post-produce2): Produce the Pocket.
+  * 10.5 [to_json()](#fabsolids----to-json): Return JSON dictionary for Fab_Extrude.
 
 ## <a name="fabsolids--fabmount"></a>1 Class FabMount:
 
@@ -484,37 +483,31 @@ See Fab_Operation for extra computed Attributes.
 Constructor:
 * Fab_Pocket(Mount, Name, Geometries, Depth)
 
-### <a name="fabsolids----geometries"></a>10.1 `Fab_Pocket.`Geometries():
+### <a name="fabsolids----xpost-produce1"></a>10.1 `Fab_Pocket.`xpost_produce1():
 
-Fab_Pocket.Geometries(self) -> Tuple[FabGeometries.FabGeometry, ...]:
+Fab_Pocket.xpost_produce1(self, produce_state: FabNodes.Fab_ProduceState, expanded_operations: 'List[Fab_Operation]', tracing: str = '') -> None:
 
-Return the original Geometry.
+Expand simple operations as approprated.
 
-### <a name="fabsolids----depth"></a>10.2 `Fab_Pocket.`Depth():
-
-Fab_Pocket.Depth(self) -> float:
-
-Return the original Depth.
-
-### <a name="fabsolids----get-hash"></a>10.3 `Fab_Pocket.`get_hash():
+### <a name="fabsolids----get-hash"></a>10.2 `Fab_Pocket.`get_hash():
 
 Fab_Pocket.get_hash(self) -> Tuple[Any, ...]:
 
 Return Fab_Pocket hash.
 
-### <a name="fabsolids----get-kind"></a>10.4 `Fab_Pocket.`get_kind():
+### <a name="fabsolids----get-kind"></a>10.3 `Fab_Pocket.`get_kind():
 
 Fab_Pocket.get_kind(self) -> str:
 
 Return Fab_Pocket kind.
 
-### <a name="fabsolids----post-produce2"></a>10.5 `Fab_Pocket.`post_produce2():
+### <a name="fabsolids----post-produce2"></a>10.4 `Fab_Pocket.`post_produce2():
 
 Fab_Pocket.post_produce2(self, produce_state: FabNodes.Fab_ProduceState, tracing: str = '') -> None:
 
 Produce the Pocket.
 
-### <a name="fabsolids----to-json"></a>10.6 `Fab_Pocket.`to_json():
+### <a name="fabsolids----to-json"></a>10.5 `Fab_Pocket.`to_json():
 
 Fab_Pocket.to_json(self) -> Dict[str, Any]:
 

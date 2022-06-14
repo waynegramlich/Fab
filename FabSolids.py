@@ -25,12 +25,12 @@ from cadquery import Vector  # type: ignore
 # import Part  # type: ignore
 
 from FabGeometries import (
-    FabCircle, FabGeometry, Fab_GeometryContext, Fab_Plane, Fab_Query)
+    FabCircle, FabGeometry, Fab_GeometryContext, Fab_GeometryInfo, Fab_Plane, Fab_Query)
 from FabJoins import FabFasten, FabJoin
 from FabNodes import FabBox, FabNode, Fab_Prefix, Fab_ProduceState
 # from FabShops import FabCNC, FabMachine, FabShop
 # from FabTools import FabLibrary
-from FabToolBits import FabDrillBit  # FabEndMillBit
+from FabToolBits import FabDrillBit, FabEndMillBit
 from FabToolTemplates import FabBit
 from FabUtilities import FabColor, FabToolController
 from FabShops import Fab_ShopBit, FabShops
@@ -142,7 +142,7 @@ class FabStock(object):
     @staticmethod
     def _unit_tests() -> None:
         """FabStock unit tests."""
-        inch: float = 2.54
+        inch: float = 25.4
         quarter_inch = inch / 4.0
         eight_inch = inch / 8.0
         stock: FabStock = FabStock(
@@ -644,12 +644,80 @@ class Fab_Pocket(Fab_Operation):
         self._FinalDepth = final_depth
         self.Prefix = self.Mount.lookup_prefix(self.Name)
 
+    # Fab_Pocket.post_produce1():
+    def xpost_produce1(
+            self, produce_state: Fab_ProduceState,
+            expanded_operations: "List[Fab_Operation]", tracing: str = "") -> None:
+        """Expand simple operations as approprated."""
+        # next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>Fab_Pocket.post_produce1()")
+
+        depth: float = self.Depth
+        geometries: Tuple[FabGeometry, ...] = self._Geometries
+        exterior: FabGeometry = geometries[0]
+        plane: Fab_Plane = self.Mount.Plane
+
+        area: float
+        perimeter: float
+        internal_radius: float
+        external_radius: float
+        area, perimeter, internal_radius, external_radius = (
+            exterior.get_geometry_info(plane))
+        if tracing:
+            print(f"{tracing}{area=} {perimeter=} {internal_radius=} {external_radius=}")
+
+        exterior_info: Fab_GeometryInfo = Fab_GeometryInfo(exterior, plane)
+        # This is counter intuitive.  For a pocket, the external perimeter of geometry is
+        # traversed.  The external corners of the polygon are actually internal corners
+        # for pocketing purposes.
+        external_radius = exterior_info.MinimumExternalRadius
+        assert external_radius > 0.0, external_radius
+        maximum_diameter = 2.0 * external_radius
+        if tracing:
+            print(f"{tracing}")
+            print(f"{tracing}{self.Name=} {maximum_diameter=} {depth=}")
+
+        # Search *drill_shop_bits* and fill in *matching_shop_bits*:
+        shops: FabShops = produce_state.Shops
+        pocket_shop_bits: Tuple[Fab_ShopBit, ...] = shops.PocketShopBits
+        pocket_shop_bit: Fab_ShopBit
+        matching_shop_bits: List[Fab_ShopBit] = []
+        index: int
+        for index, pocket_shop_bit in enumerate(pocket_shop_bits):
+            end_mill_bit: FabBit = pocket_shop_bit.Bit
+            if tracing:
+                print(f"{tracing}EndMill[{index}]: {end_mill_bit.Name}")
+            assert isinstance(end_mill_bit, FabEndMillBit)
+            end_mill_bit_length: Union[float, int] = end_mill_bit.getNumber("Length")
+            end_mill_bit_diameter: Union[float, int] = end_mill_bit.getNumber("Diameter")
+            length_ok: bool = depth <= end_mill_bit_length
+            diameter_ok: bool = end_mill_bit_diameter <= maximum_diameter
+            if tracing:
+                print(f"{tracing}{depth=} {end_mill_bit_length}")
+                print(f"{tracing}{maximum_diameter=} {end_mill_bit_diameter=}")
+                print(f"{tracing}{length_ok=} {diameter_ok=}")
+            if length_ok and diameter_ok:
+                if tracing:
+                    print(f"{tracing}Match!")
+                matching_shop_bits.append(pocket_shop_bit)
+
+        # For now, fail horribly if there are no *matching_shop_bits*:
+        # assert len(matching_shop_bits) > 0
+        self.setShopBits(matching_shop_bits)
+        expanded_operations.append(self)
+
+        if tracing:
+            print(f"{tracing}<=Fab_Pocket.post_produce1()")
+
     # Fab_Pocket.Geometries():
+    @property
     def Geometries(self) -> Tuple[FabGeometry, ...]:
         """Return the original Geometry."""
         return self._Geometries  # pragma: no unit cover
 
     # Fab_Pocket.Depth():
+    @property
     def Depth(self) -> float:
         """Return the original Depth."""
         return self._Depth  # pragma: no unit cover
@@ -1693,7 +1761,7 @@ class FabSolid(FabNode):
         """Perform FabSolid pre production."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>FabSolid({self.Label}).post_produce1()")
+            print(f"{tracing}=>FabSolid.post_produce1({self.Label})")
 
         # Expand the operations for each *mount*:
         mount: FabMount
@@ -1701,7 +1769,7 @@ class FabSolid(FabNode):
             mount.post_produce1(produce_state, tracing=next_tracing)
 
         if tracing:
-            print(f"{tracing}<=FabSolid({self.Label}).post_produce1()")
+            print(f"{tracing}<=FabSolid.post_produce1({self.Label})")
 
     # FabSolid.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:

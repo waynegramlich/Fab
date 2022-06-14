@@ -441,7 +441,7 @@ class FabBit(object):
                 if units == "mm":
                     pass
                 elif units == "in":
-                    value *= 2.54
+                    value *= 25.4
                 else:
                     raise RuntimeError(
                         f"FabBit.getNumber('{attribute_name}'): Unrecognized units '{units}'")
@@ -537,7 +537,7 @@ class FabBit(object):
         assert bit.getNumber("float1") == 123.456
         assert bit.getNumber("float2") == 123.456
         assert bit.getNumber("mm_test") == 1.0
-        assert bit.getNumber("in_test") == 2.54
+        assert bit.getNumber("in_test") == 25.4
         assert bit.getNumber("RandomNumber") == 17
 
         # Exception tests:
