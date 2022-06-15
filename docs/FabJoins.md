@@ -64,6 +64,7 @@ hardware.
   * 1.1 [get_hash()](#fabjoins----get-hash): Return FabFasten hash.
   * 1.2 [get_diameter()](#fabjoins----get-diameter): Return actual diameter based on request hole kind.
 * 2 Class: [FabHead](#fabjoins--fabhead):
+  * 2.1 [get_hash()](#fabjoins----get-hash): Return FabHead hash value.
 * 3 Class: [FabJoin](#fabjoins--fabjoin):
   * 3.1 [get_hash()](#fabjoins----get-hash): Return FabJoin hash.
   * 3.2 [normal_aligned()](#fabjoins----normal-aligned): Return whether the normal is aligned with the FabJoin.
@@ -114,6 +115,12 @@ Attributes:
 
 Constructor:
 * FabHead(Name, Detail, Material, Shape, Drive)
+
+### <a name="fabjoins----get-hash"></a>2.1 `FabHead.`get_hash():
+
+FabHead.get_hash(self) -> Tuple[Any, ...]:
+
+Return FabHead hash value.
 
 
 ## <a name="fabjoins--fabjoin"></a>3 Class FabJoin:

@@ -322,8 +322,10 @@ class Fab_Fastener(object):
 
     # Fab_Fastener._unit_tests():
     @staticmethod
-    def _unit_tests() -> None:
+    def _unit_tests(tracing: str = "") -> None:
         """Perform Unit tests for Fab_Fastener."""
+        if tracing:
+            print(f"{tracing}=>Fab_Fastener._unit_tests()")
         fastener: Fab_Fastener = Fab_Fastener(
             "Test_Fastener", 0.50, "0.5mm drill", 0.75, "0.75mm drill",
             1.00, "1.00mm Drill", 1.10, "1.10mm Drill")
@@ -336,6 +338,8 @@ class Fab_Fastener(object):
         assert fastener.CloseDrill == "1.00mm Drill"
         assert fastener.StandardDiameter == 1.10
         assert fastener.StandardDrill == "1.10mm Drill"
+        if tracing:
+            print(f"{tracing}<=Fab_Fastener._unit_tests()")
 
 
 # Fab_FastenTables:
@@ -806,8 +810,11 @@ class Fab_FastenTables(object):
 
     # Fab_FastenTables._unit_tests():
     @staticmethod
-    def _unit_tests():
+    def _unit_tests(tracing: str = ""):
         """Perform Fab_FastenTables unit tests."""
+        if tracing:
+            print(f"{tracing}=>Fab_FastenTables._unit_tests()")
+
         def check(flags: str, name: str, test: str) -> None:
             """Match a drill name to some flags."""
             fractional: bool = Fab_FastenTables.is_fractional_drill(name)
@@ -869,6 +876,8 @@ class Fab_FastenTables(object):
         assert Fab_FastenTables.fractional_value("1") == 1.0
         assert Fab_FastenTables.fractional_value("1/2") == 0.50
         assert Fab_FastenTables.fractional_value("1-1/2") == 1.50
+        if tracing:
+            print(f"{tracing}<=Fab_FastenTables._unit_tests()")
 
 
 # FabOption:
@@ -901,13 +910,17 @@ class FabOption(object):
 
     # FabOption._unit_tests():
     @staticmethod
-    def _unit_tests() -> None:
+    def _unit_tests(tracing: str = "") -> None:
         """Run FabOption unit tests."""
+        if tracing:
+            print(f"{tracing}=>FabOption._unit_tests()")
         name: str = "name"
         detail: str = "detail"
         option: FabOption = FabOption(name, detail)
         assert option.Name == name
         assert option.Detail == detail
+        if tracing:
+            print(f"{tracing}<=FabOption._unit_tests()")
 
 
 # FabHead:
@@ -960,10 +973,19 @@ class FabHead(FabOption):
         assert self.Shape in FabHead.HEADS, "f{self.Shape} is not one of {FabHead.HEADS}"
         assert self.Drive in FabHead.DRIVES, "f{self.Drive} is not one of {FabHead.DRIVES}"
 
+    # FabHead.get_hash():
+    def get_hash(self) -> Tuple[Any, ...]:
+        """Return FabHead hash value."""
+        material_hash: Any = self.Material.get_hash()
+        head_hash: Tuple[Any, ...] = (material_hash, self.Shape, self.Drive)
+        return head_hash
+
     # FabHead._unit_tests():
     @staticmethod
-    def _unit_tests() -> None:
+    def _unit_tests(tracing: str = "") -> None:
         """Run FabHead unit tests."""
+        if tracing:
+            print(f"{tracing}=>FabHead._unit_tests()")
         name: str = "PH"
         detail: str = "Brass Philips Pan Head"
         material: FabMaterial = FabMaterial(("Brass",), "orange")
@@ -975,6 +997,8 @@ class FabHead(FabOption):
         assert apex_head.Material is material, apex_head.Material
         assert apex_head.Shape == shape, apex_head.Shape
         assert apex_head.Drive == drive, apex_head.Drive
+        if tracing:
+            print(f"{tracing}<=FabHead._unit_tests()")
 
 
 # FabNut:
@@ -1014,8 +1038,10 @@ class FabNut(FabOption):
 
     # FabNut._unit_tests():
     @staticmethod
-    def _unit_tests() -> None:
+    def _unit_tests(tracing: str = "") -> None:
         """Run FabNut unit tests."""
+        if tracing:
+            print(f"{tracing}=>FabNut._unit_tests()")
         # Create the FabNut:
         name: str = "M3Nut"
         detail: str = "Brass M3 Hex Nut"
@@ -1032,6 +1058,8 @@ class FabNut(FabOption):
         assert nut.Width == width, nut.Width
         assert nut.Thickness == thickness, nut.Thickness
         assert nut.Material == material, nut.Material
+        if tracing:
+            print(f"{tracing}<=FabNut._unit_tests()")
 
 
 # FabWasher:
@@ -1090,9 +1118,11 @@ class FabWasher(FabOption):
 
     # FabWasher._unit_tests():
     @staticmethod
-    def _unit_tests() -> None:
+    def _unit_tests(tracing: str = "") -> None:
         """Perform FabWasher unit tests."""
         # Create the *washer*:
+        if tracing:
+            print(f"{tracing}=>FabWasher._unit_tests()")
         name: str = "W6x.5"
         detail: str = "M3 Washer (InsideDiameter=3.2 OutsideDiameter=6, Thickness=.5)"
         inner: float = 3.2
@@ -1110,6 +1140,8 @@ class FabWasher(FabOption):
         assert washer.Thickness == thickness, washer.Thickness
         assert washer.Material is material, washer.Material
         assert washer.Kind == kind, washer.Kind
+        if tracing:
+            print(f"{tracing}<=FabWasher._unit_tests()")
 
 
 # FabFasten:
@@ -1364,8 +1396,10 @@ class FabFasten(object):
 
     # FabFasten._unit_tests():
     @staticmethod
-    def _unit_tests() -> None:
+    def _unit_tests(tracing: str = "") -> None:
         """Run FabFasten unit tests."""
+        if tracing:
+            print(f"{tracing}=>FabFasten._unit_tests()")
         name: str = "#4-40"
         fasten: FabFasten = FabFasten(name, "#4-40", ())
 
@@ -1380,6 +1414,8 @@ class FabFasten(object):
         assert is_close(fasten.get_diameter("close"), 2.9464)
         assert is_close(fasten.get_diameter("standard"), 3.2639)
         assert isinstance(fasten.get_hash(), tuple), fasten.get_hash()
+        if tracing:
+            print(f"{tracing}<=FabFasten._unit_tests()")
 
 
 # FabJoin:
@@ -1402,24 +1438,6 @@ class FabJoin(object):
     _Fasten: FabFasten  # Parent FabFasten
     _Start: Vector  # Start point (near screw/bolt head)
     _End: Vector  # End point (ene screw/bolt tip)
-
-    # FabJoin.get_hash():
-    def get_hash(self) -> Tuple[Any, ...]:
-        """Return FabJoin hash."""
-        start: Vector = self._Start
-        end: Vector = self._End
-        hashes: Tuple[Union[int, str, Tuple[Any, ...]], ...] = (
-            "FabJoin",
-            self._Name,
-            self._Fasten.get_hash(),
-            f"{start.x:.6f}",
-            f"{start.y:.6f}",
-            f"{start.z:.6f}",
-            f"{end.x:.6f}",
-            f"{end.y:.6f}",
-            f"{end.z:.6f}",
-        )
-        return hashes
 
     # FabJoin.__post_init__():
     def __post_init__(self) -> None:
@@ -1453,6 +1471,24 @@ class FabJoin(object):
         """Return FabJoin end point."""
         return self._End
 
+    # FabJoin.get_hash():
+    def get_hash(self) -> Tuple[Any, ...]:
+        """Return FabJoin hash."""
+        start: Vector = self._Start
+        end: Vector = self._End
+        hashes: Tuple[Union[int, str, Tuple[Any, ...]], ...] = (
+            "FabJoin",
+            self._Name,
+            self._Fasten.get_hash(),
+            f"{start.x:.6f}",
+            f"{start.y:.6f}",
+            f"{start.z:.6f}",
+            f"{end.x:.6f}",
+            f"{end.y:.6f}",
+            f"{end.z:.6f}",
+        )
+        return hashes
+
     # FabJoin.normal_aligned():
     def normal_aligned(self, test_normal: Vector) -> bool:
         """Return whether the normal is aligned with the FabJoin."""
@@ -1464,31 +1500,52 @@ class FabJoin(object):
         opposite_direction: bool = (join_normal + test_normal).Length < EPSILON
         return same_direction or opposite_direction
 
+    # FabJoin._unit_tests():
     @staticmethod
-    def _unit_tests() -> None:
+    def _unit_tests(tracing: str = "") -> None:
         """Run FabJoint unit tests."""
+        if tracing:
+            print(f"{tracing}=>FabJoin._unit_tests()")
+
         brass: FabMaterial = FabMaterial(("brass",), "orange")
-        apex_head: FabHead = FabHead("PH", "Brass Philips Pan Head",
-                                           brass, FabHead.PAN_HEAD, FabHead.PHILIPS_DRIVE)
-        options: Tuple[FabOption, ...] = (apex_head,)
-        apex_fasten: FabFasten = FabFasten("Test", "#4-40", options)
+        head: FabHead = FabHead("PH", "Brass Philips Pan Head",
+                                brass, FabHead.PAN_HEAD, FabHead.PHILIPS_DRIVE)
+        options: Tuple[FabOption, ...] = (head,)
+        fasten: FabFasten = FabFasten("Test", "#4-40", options)
         start: Vector = Vector(0, 0, 0)
         stop: Vector = Vector(1, 1, 1)
-        apex_join: FabJoin = FabJoin("Test", apex_fasten, start, stop)
-        _ = apex_join
+        join: FabJoin = FabJoin("Test", fasten, start, stop)
+        join_hash: Tuple[Any, ...] = join.get_hash()
+        want_hash: Tuple[Any, ...] = (
+            'FabJoin', 'Test',
+            ('FabFasten', 'Test', '#4-40', ((('brass',), 'orange'), 'Pan', 'Philips')),
+            '0.000000', '0.000000', '0.000000', '1.000000', '1.000000', '1.000000',
+        )
+        assert join_hash == want_hash, join_hash
+
+        if tracing:
+            print(f"{tracing}<=FabJoin._unit_tests()")
 
 
-def _unit_tests() -> None:
+# FabJoins.main():
+def main(tracing: str = "") -> None:
     """Run unit tests."""
-    Fab_FastenTables._unit_tests()
-    Fab_Fastener._unit_tests()
-    FabOption._unit_tests()
-    FabHead._unit_tests()
-    FabFasten._unit_tests()
-    FabNut._unit_tests()
-    FabWasher._unit_tests()
-    FabJoin._unit_tests()
+    next_tracing: str = tracing + " " if tracing else ""
+    if tracing:
+        print(f"{tracing}=>FabJoins.main()")
+
+    Fab_Fastener._unit_tests(tracing=next_tracing)
+    Fab_FastenTables._unit_tests(tracing=next_tracing)
+    FabOption._unit_tests(tracing=next_tracing)
+    FabHead._unit_tests(tracing=next_tracing)
+    FabNut._unit_tests(tracing=next_tracing)
+    FabWasher._unit_tests(tracing=next_tracing)
+    FabFasten._unit_tests(tracing=next_tracing)
+    FabJoin._unit_tests(tracing=next_tracing)
+
+    if tracing:
+        print(f"{tracing}<=FabJoins.main()")
 
 
 if __name__ == "__main__":
-    _unit_tests()
+    main(tracing=" ")

@@ -1069,22 +1069,26 @@ class FabCircle(FabGeometry):
         if tracing:
             print(f"{tracing}=>FabCircle._unit_tests()")
 
-        normal: Vector = Vector(0, 0, 1)
+        origin: Vector = Vector()
+        z_axis: Vector = Vector(0, 0, 1)
         center: Vector = Vector(1, 2, 3)
+        plane: Fab_Plane = Fab_Plane(origin, z_axis)
         try:
-            FabCircle(center, normal, 0.0)
+            FabCircle(center, z_axis, 0.0)
             assert False
         except ValueError as value_error:
             assert str(value_error) == "Diameter (0.0) must be positive.", value_error
         try:
-            FabCircle(center, normal, -1.0)
+            FabCircle(center, z_axis, -1.0)
             assert False
         except ValueError as value_error:
             assert str(value_error) == "Diameter (-1.0) must be positive.", value_error
-        circle: FabCircle = FabCircle(center, normal, 1.0)
+        circle: FabCircle = FabCircle(center, z_axis, 1.0)
         box: FabBox = circle.Box
         assert box.TNE == Vector(1.5, 2.0, 3.0)
         assert box.BSW == Vector(0.5, 1.5, 3.0)
+
+        _ = circle.project_to_plane(plane)
 
         if tracing:
             print(f"{tracing}<=FabCircle._unit_tests()")

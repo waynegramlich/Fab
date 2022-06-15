@@ -215,7 +215,8 @@ class Box(FabAssembly):
                             Depth=depth, Material=material, Color="pink")
         self.West = BoxSide("West", self, Normal=-x_axis, Orient=y_axis,
                             Depth=depth, Material=material, Color="cyan")
-        self.Fasten = FabFasten("BoxFasten", "M3x.5", ())  # No options yet.
+        # self.Fasten = FabFasten("BoxFasten", "M3x.5", ())  # No options yet.
+        self.Fasten = FabFasten("BoxFasten", "#4-40", ())  # No options yet.
 
         if tracing:
             print(f"{tracing}<=Box({self.Label}).__post_init__()")

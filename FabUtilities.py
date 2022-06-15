@@ -390,7 +390,7 @@ class FabMaterial(object):
 
     _ChipLoadTable: ClassVar[Dict[str, List[Tuple[float, float]]]] = {}
 
-    # FabUtilities.__post_init__():
+    # FabMaterial.__post_init__():
     def __post_init__(self) -> None:
         """Finish initialized FabMaterial."""
         tracing: str = ""  # Manually set to non-empty string to trace:
@@ -502,6 +502,11 @@ class FabMaterial(object):
             print(f"{tracing}=>FabMaterial.getChipLoad()=>{chip_load:.5f}")
         return chip_load
 
+    # FabMaterial.get_hash():
+    def get_hash(self) -> Tuple[Any, ...]:
+        """Return an immutable hash for a FabMaterial."""
+        return (self.Name, self.Color)
+
     # FabMaterial._unit_tests()
     @staticmethod
     def _unit_tests(tracing: str = "") -> None:
@@ -514,6 +519,8 @@ class FabMaterial(object):
         material: FabMaterial = FabMaterial(name, color)
         material.Name == name, material.Name
         material.Color == color, material.Color
+        material_hash: Tuple[Any, ...] = material.get_hash()
+        assert material_hash == (("Aluminum",), "orange"), material_hash
 
         def check(test_name: str, material: FabMaterial,
                   diameter: float, desired_chip_load: float) -> None:

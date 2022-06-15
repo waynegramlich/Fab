@@ -76,7 +76,7 @@ def _suppress_stdout() -> Generator:
 # FabStock:
 @dataclass
 class FabStock(object):
-    """FabStock: Represents the stock matereial for machine a part from.
+    """FabStock: Represents the stock material to machine a part from.
 
     Attributes:
     * *Name* (str): The FabStock Name.
@@ -140,8 +140,11 @@ class FabStock(object):
 
     # FabStock._unit_tests():
     @staticmethod
-    def _unit_tests() -> None:
-        """FabStock unit tests."""
+    def _unit_tests(tracing: str = "") -> None:
+        """Run FabStock unit tests."""
+        if tracing:
+            print(f"{tracing}=>FabStock._unit_tests()")
+
         inch: float = 25.4
         quarter_inch = inch / 4.0
         eight_inch = inch / 8.0
@@ -160,10 +163,14 @@ class FabStock(object):
         )
         box: FabBox = FabBox()
         box.enclose([Vector(0, 0, 0), Vector(inch, inch, quarter_inch)])
-        print(f"{box.BSW=} {box.TNE=}")
+        if tracing:
+            print(f"{tracing}{box.BSW=} {box.TNE=}")
         results: Tuple[Vector, Vector] = stock.enclose(box)
-        print(f"{results=}")
-        _ = results
+        if tracing:
+            print(f"{tracing}{results=}")
+
+        if tracing:
+            print(f"{tracing}<=FabStock._unit_tests()")
 
 
 # Fab_OperationOrder:
@@ -192,8 +199,11 @@ class Fab_OperationOrder(IntEnum):
     LAST = auto()
 
     @staticmethod
-    def _unit_tests() -> None:
+    def _unit_tests(tracing: str = "") -> None:
         """Perform unit tests on Fab_OperationOrder."""
+        if tracing:
+            print(f"{tracing}=>FabOperatoinOrder._unit_tests()")
+
         none = Fab_OperationOrder.NONE
         mount = Fab_OperationOrder.MOUNT
         pin = Fab_OperationOrder.DOWEL_PIN
@@ -221,6 +231,9 @@ class Fab_OperationOrder(IntEnum):
         assert mill_dove_tail_chamfer < double_angle_v_groove < double_angle_chamfer
         assert double_angle_chamfer < drill < tap < vertical_lathe < slide < last
 
+        if tracing:
+            print(f"{tracing}<=FabOperatoinOrder._unit_tests()")
+
 
 # Fab_OperationKind:
 class Fab_OperationKind(IntEnum):
@@ -234,9 +247,13 @@ class Fab_OperationKind(IntEnum):
     VERTICAL_LATHE = auto()
     SLIDE = auto()
 
+    # OperationKind._unit_tests()
     @staticmethod
-    def _unit_tests() -> None:
-        """Perform unit tests on Fab_OperationKinde."""
+    def _unit_tests(tracing: str = "") -> None:
+        """Perform unit tests on Fab_OperationKind."""
+        if tracing:
+            print(f"{tracing}=>OperationKind._unit_tests()")
+
         contour = Fab_OperationKind.CONTOUR
         dowel_pin = Fab_OperationKind.DOWEL_PIN
         drill = Fab_OperationKind.DRILL
@@ -247,6 +264,9 @@ class Fab_OperationKind(IntEnum):
         slide = Fab_OperationKind.SLIDE
         assert contour < dowel_pin < drill < round_pocket < simple_exterior < simple_pocket
         assert simple_pocket < vertical_lathe < slide
+
+        if tracing:
+            print(f"{tracing}<=OperationKind._unit_tests()")
 
 
 # Fab_Operation:
@@ -645,7 +665,7 @@ class Fab_Pocket(Fab_Operation):
         self.Prefix = self.Mount.lookup_prefix(self.Name)
 
     # Fab_Pocket.post_produce1():
-    def xpost_produce1(
+    def post_produce1(
             self, produce_state: Fab_ProduceState,
             expanded_operations: "List[Fab_Operation]", tracing: str = "") -> None:
         """Expand simple operations as approprated."""
@@ -895,6 +915,24 @@ class Fab_HoleKey(object):
             f"{self.Depth:.6f}",
             self.IsTop,
         )
+
+    # Fab_HoleKey._unit_tests():
+    @staticmethod
+    def _unit_tests(tracing: str = ""):
+        """Run unit tests for Fab_HoleKey."""
+        if tracing:
+            print(f"{tracing}=>Fab_HoleKey._unit_tests()")
+
+        hole_key: Fab_HoleKey = Fab_HoleKey("#4-40", "close", 10.0, True)
+        assert hole_key.ThreadName == "#4-40"
+        assert hole_key.Kind == "close"
+        assert hole_key.Depth == 10.0
+        assert hole_key.IsTop
+        hole_key_hash: Tuple[Any, ...] = hole_key.get_hash()
+        assert hole_key_hash == ("#4-40", "close", "10.000000", True), hole_key_hash
+
+        if tracing:
+            print(f"{tracing}<=Fab_HoleKey._unit_tests()")
 
 
 # Fab_Hole:
@@ -1901,8 +1939,10 @@ class FabSolid(FabNode):
 
     # FabSolid._unit_tests():
     @staticmethod
-    def _unit_tests() -> None:
-        pass
+    def _unit_tests(tracing: str = "") -> None:
+        """Run FabSolid unit tests."""
+        if tracing:
+            print(f"{tracing}<=>FabSolid._unit_tests()")
 
 
 # TODO: Remove
@@ -1914,12 +1954,21 @@ def visibility_set(element: Any, new_value: bool = True, tracing: str = "") -> N
 
 
 # TODO: Add unit tests.
-def main() -> None:
-    Fab_OperationOrder._unit_tests()
-    Fab_OperationKind._unit_tests()
-    FabStock._unit_tests()
-    FabSolid._unit_tests()
+def main(tracing: str = "") -> None:
+    """Run unit tests for FabSolids module."""
+    next_tracing: str = tracing + " " if tracing else ""
+    if tracing:
+        print(f"{tracing}=>FabSolids.main()")
+
+    Fab_HoleKey._unit_tests(tracing=next_tracing)
+    Fab_OperationOrder._unit_tests(tracing=next_tracing)
+    Fab_OperationKind._unit_tests(tracing=next_tracing)
+    FabStock._unit_tests(tracing=next_tracing)
+    FabSolid._unit_tests(tracing=next_tracing)
+
+    if tracing:
+        print(f"{tracing}<=FabSolids.main()")
 
 
 if __name__ == "__main__":
-    main()
+    main(tracing=" ")

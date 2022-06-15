@@ -59,7 +59,7 @@ This internal classes are managed by FabMount methods.
 * 8 Class: [Fab_OperationKind](#fabsolids--fab-operationkind):
 * 9 Class: [Fab_OperationOrder](#fabsolids--fab-operationorder):
 * 10 Class: [Fab_Pocket](#fabsolids--fab-pocket):
-  * 10.1 [xpost_produce1()](#fabsolids----xpost-produce1): Expand simple operations as approprated.
+  * 10.1 [post_produce1()](#fabsolids----post-produce1): Expand simple operations as approprated.
   * 10.2 [get_hash()](#fabsolids----get-hash): Return Fab_Pocket hash.
   * 10.3 [get_kind()](#fabsolids----get-kind): Return Fab_Pocket kind.
   * 10.4 [post_produce2()](#fabsolids----post-produce2): Produce the Pocket.
@@ -238,7 +238,7 @@ Perform FabSolid Phase1 post production.
 
 ## <a name="fabsolids--fabstock"></a>3 Class FabStock:
 
-Represents the stock matereial for machine a part from.
+Represents the stock material to machine a part from.
 Attributes:
 * *Name* (str): The FabStock Name.
 * *StockIncrements* (Vector):
@@ -483,9 +483,9 @@ See Fab_Operation for extra computed Attributes.
 Constructor:
 * Fab_Pocket(Mount, Name, Geometries, Depth)
 
-### <a name="fabsolids----xpost-produce1"></a>10.1 `Fab_Pocket.`xpost_produce1():
+### <a name="fabsolids----post-produce1"></a>10.1 `Fab_Pocket.`post_produce1():
 
-Fab_Pocket.xpost_produce1(self, produce_state: FabNodes.Fab_ProduceState, expanded_operations: 'List[Fab_Operation]', tracing: str = '') -> None:
+Fab_Pocket.post_produce1(self, produce_state: FabNodes.Fab_ProduceState, expanded_operations: 'List[Fab_Operation]', tracing: str = '') -> None:
 
 Expand simple operations as approprated.
 
