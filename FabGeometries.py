@@ -105,7 +105,7 @@ class FabPlane(object):
         assert isinstance(unrotated_x_direction, Vector), unrotated_x_direction
         x_direction: Vector = unrotated_x_direction - origin
         self._XDirection = x_direction
-        # Now the Plane* can be created:
+        # Now the CadQuery plane can be created:
         self._Plane = cq.Plane(origin=origin, normal=normal, xDir=x_direction)
 
         if tracing:
@@ -130,8 +130,8 @@ class FabPlane(object):
             f"{normal.z:.6f}",
         )
 
-    # FabPlane.point_project():
-    def point_project(self, point: Vector) -> Vector:
+    # FabPlane.projectPoint():
+    def projectPoint(self, point: Vector) -> Vector:
         """Project a point onto a plane."""
         assert isinstance(point, Vector), point
         projected_point: Vector = cast(Vector, None)
@@ -510,7 +510,7 @@ class Fab_Circle(Fab_Geometry):
         if tracing:
             print(f"{tracing}=>Fab_Circle.produce()")
         plane: FabPlane = geometry_context.Plane
-        center_on_plane: Vector = plane.point_project(self.Center)
+        center_on_plane: Vector = plane.projectPoint(self.Center)
         part_circle: Any = None
         query: Fab_Query = geometry_context.Query
         query.circle(center_on_plane, self.Diameter / 2, tracing=next_tracing)
@@ -742,7 +742,7 @@ class Fab_Fillet(object):
 
         """
         # FreeCAD Vector metheds like to modify Vector contents; force copies beforehand:
-        self.Apex = plane.point_project(self.Apex)
+        self.Apex = plane.projectPoint(self.Apex)
 
     # Fab_Fillet.compute_fillet_area_perimeter():
     def compute_fillet_area_perimeter(self, tracing: str = "") -> Tuple[float, float]:
@@ -1054,7 +1054,7 @@ class FabCircle(FabGeometry):
         if tracing:
             print(f"{tracing}=>FabCircle.project_to_plane({plane})")
         center: Vector = self.Center
-        new_center: Vector = plane.point_project(center)
+        new_center: Vector = plane.projectPoint(center)
         new_circle: "FabCircle" = FabCircle(plane, new_center, self.Diameter)
         if tracing:
             print(f"{tracing}<=FabCircle.project_to_plane({plane}) => {new_circle}")
@@ -1340,8 +1340,8 @@ class FabPolygon(FabGeometry):
 
             line: Optional[Fab_Line] = fillet.Line
             if line:
-                projected_start: Vector = plane.point_project(line.Start)
-                projected_finish: Vector = plane.point_project(line.Finish)
+                projected_start: Vector = plane.projectPoint(line.Start)
+                projected_finish: Vector = plane.projectPoint(line.Finish)
                 line_length: float = (projected_finish - projected_start).Length
                 perimeter += line_length
                 if tracing:
@@ -1424,14 +1424,14 @@ class FabPolygon(FabGeometry):
         projected_corners: List[Union[Vector, Tuple[Vector, Union[int, float]]]] = []
         for corner in self.Corners:
             if isinstance(corner, Vector):
-                projected_corners.append(plane.point_project(corner))  # pragma: no unit cover
+                projected_corners.append(plane.projectPoint(corner))  # pragma: no unit cover
             elif isinstance(corner, tuple):
                 assert len(corner) == 2
                 point: Any = corner[0]
                 radius: Any = corner[1]
                 assert isinstance(point, Vector)
                 assert isinstance(radius, (int, float))
-                projected_corners.append(plane.point_project(point))
+                projected_corners.append(plane.projectPoint(point))
         projected_polygon: "FabPolygon" = FabPolygon(plane, tuple(projected_corners))
         if tracing:
             print(f"{tracing}<=FabPolygon.project_to_plane({plane})=>*")

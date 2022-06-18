@@ -15,7 +15,7 @@
   * 2.4 [get_geometry_info()](#fabgeometries----get-geometry-info): Return information about FabGeometry.
 * 3 Class: [FabPlane](#fabgeometries--fabplane):
   * 3.1 [get_hash()](#fabgeometries----get-hash): Return a FabPlane hash value.
-  * 3.2 [point_project()](#fabgeometries----point-project): Project a point onto a plane.
+  * 3.2 [projectPoint()](#fabgeometries----projectpoint): Project a point onto a plane.
   * 3.3 [adjust()](#fabgeometries----adjust): Return a new FabPlane that has been adjusted up/down the normal by a delta.
   * 3.4 [rotate_to_z_axis()](#fabgeometries----rotate-to-z-axis): Rotate a point around the origin until the normal aligns with the +Z axis.
 * 4 Class: [FabPolygon](#fabgeometries--fabpolygon):
@@ -163,9 +163,9 @@ FabPlane.get_hash(self) -> Tuple[Any, ...]:
 
 Return a FabPlane hash value.
 
-### <a name="fabgeometries----point-project"></a>3.2 `FabPlane.`point_project():
+### <a name="fabgeometries----projectpoint"></a>3.2 `FabPlane.`projectPoint():
 
-FabPlane.point_project(self, point: cadquery.occ_impl.geom.Vector) -> cadquery.occ_impl.geom.Vector:
+FabPlane.projectPoint(self, point: cadquery.occ_impl.geom.Vector) -> cadquery.occ_impl.geom.Vector:
 
 Project a point onto a plane.
 

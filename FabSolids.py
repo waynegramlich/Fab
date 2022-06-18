@@ -1251,7 +1251,7 @@ class FabMount(object):
         self._Operations = []
         # Vector metheds like to modify Vector contents; force copies beforehand:
         self._Plane: FabPlane = FabPlane(self._Contact, self._Normal)  # , tracing=next_tracing)
-        self._Orient = self._Plane.point_project(self._Orient)
+        self._Orient = self._Plane.projectPoint(self._Orient)
         self._GeometryContext = Fab_GeometryContext(self._Plane, self._Query)
         self._AppDatumPlane = None
         self._GuiDatumPlane = None
