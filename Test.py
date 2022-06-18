@@ -109,7 +109,7 @@ class BoxSide(FabSolid):
             (contact - half_length + half_width, radius),
         )
 
-        polygon: FabPolygon = FabPolygon(corners)
+        polygon: FabPolygon = FabPolygon(plane, corners)
         mount.extrude(f"{name}Extrude", polygon, depth, contour=self.Contour)
 
         # Create all of the *screws*:
@@ -326,7 +326,6 @@ class TestSolid(FabSolid):
         depth2: float = depth / 2.0
         _ = depth2
         top_origin: Vector = Vector(0.0, 0.0, 55.0)
-        normal: Vector = Vector(0, 0, 1)
         dt: Vector = self.DT
         dn: Vector = self.DN
         top_plane: FabPlane = FabPlane(top_origin, dt)
@@ -340,7 +339,7 @@ class TestSolid(FabSolid):
         # Perform the first Extrude:
         z_offset: float = top_origin.z
         extrude_fillet_radius: float = 10.0
-        extrude_polygon: FabPolygon = FabPolygon((
+        extrude_polygon: FabPolygon = FabPolygon(top_plane, (
             (Vector(wx, sy, z_offset), extrude_fillet_radius),  # SW
             (Vector(ex, sy, z_offset), extrude_fillet_radius),  # SE
             (Vector(ex, ny, z_offset), extrude_fillet_radius),  # NE
@@ -353,7 +352,7 @@ class TestSolid(FabSolid):
         features: Tuple[str, ...] = ("LPP", "RPP", "RCP", "CCP", "DSH")  # Enable all *features*
         # features = ("RPP",)  # Down select to specific *features*
         if "LPP" in features:  # Left Polygon Pocket
-            left_polygon: FabPolygon = FabPolygon((
+            left_polygon: FabPolygon = FabPolygon(top_plane, (
                 (Vector(-30, -10, z_offset), pocket_fillet_radius),  # SW
                 (Vector(-10, -10, z_offset), pocket_fillet_radius),  # SE
                 (Vector(-10, 10, z_offset), pocket_fillet_radius),  # NE
@@ -362,7 +361,7 @@ class TestSolid(FabSolid):
             top_mount.pocket("LeftPocket", left_polygon, depth2)
 
         if "RPP" in features:  # Right Polygon Pocket
-            right_pocket: FabPolygon = FabPolygon((
+            right_pocket: FabPolygon = FabPolygon(top_plane, (
                 (Vector(10, -10, z_offset), pocket_fillet_radius),  # SW
                 (Vector(30, -10, z_offset), pocket_fillet_radius),  # SE
                 (Vector(30, 10, z_offset), pocket_fillet_radius),  # NE
@@ -371,11 +370,11 @@ class TestSolid(FabSolid):
             top_mount.pocket("RightPocket", right_pocket, depth2)
 
         if "RCP" in features:  # Right Circle Pocket
-            right_circle: FabCircle = FabCircle(Vector(20, 0, z_offset), normal, 10)
+            right_circle: FabCircle = FabCircle(top_plane, Vector(20, 0, z_offset), 10)
             top_mount.pocket("RightCircle", right_circle, depth)
 
         if "CCP" in features:  # Center Circle Pocket
-            center_circle: FabCircle = FabCircle(Vector(0, 0, z_offset), normal, 10)
+            center_circle: FabCircle = FabCircle(top_plane, Vector(0, 0, z_offset), 10)
             top_mount.pocket("CenterCircle", center_circle, depth2)
             screw_start: Vector = Vector(0.0, -10.0, z_offset)
             screw_end: Vector = Vector(0.0, -10.0, z_offset - depth)

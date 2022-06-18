@@ -14,9 +14,10 @@
   * 2.3 [project_to_plane()](#fabgeometries----project-to-plane): Return a new FabGeometry projected onto a plane.
   * 2.4 [get_geometry_info()](#fabgeometries----get-geometry-info): Return information about FabGeometry.
 * 3 Class: [FabPlane](#fabgeometries--fabplane):
-  * 3.1 [point_project()](#fabgeometries----point-project): Project a point onto a plane.
-  * 3.2 [adjust()](#fabgeometries----adjust): Return a new FabPlane that has been adjusted up/down the normal by a delta.
-  * 3.3 [rotate_to_z_axis()](#fabgeometries----rotate-to-z-axis): Rotate a point around the origin until the normal aligns with the +Z axis.
+  * 3.1 [get_hash()](#fabgeometries----get-hash): Return a FabPlane hash value.
+  * 3.2 [point_project()](#fabgeometries----point-project): Project a point onto a plane.
+  * 3.3 [adjust()](#fabgeometries----adjust): Return a new FabPlane that has been adjusted up/down the normal by a delta.
+  * 3.4 [rotate_to_z_axis()](#fabgeometries----rotate-to-z-axis): Rotate a point around the origin until the normal aligns with the +Z axis.
 * 4 Class: [FabPolygon](#fabgeometries--fabpolygon):
   * 4.1 [get_geometry_info()](#fabgeometries----get-geometry-info): Return the values needed for a FabGeometry_Info from a FabPolygon.
   * 4.2 [get_hash()](#fabgeometries----get-hash): Return the FabPolygon Hash.
@@ -57,14 +58,14 @@
 
 ## <a name="fabgeometries--fabcircle"></a>1 Class FabCircle:
 
-A circle with a center and a radius.
-This is actually a sphere of at a specified location and diameter.  It gets cut into
-circle later on.
-
+Represents a circle on a plane.
 Attributes:
-* *Center* (Vector): The circle center.
-* *Normal* (Vector): The normal to circle plane.
-* *Diameter* (float): The diameter in millimeters.
+* *Plane* (FabPlane): The plane the circle center is projected onto.
+* *Center* (Vector): The circle center point.
+* *Diameter* (float): The circle diameter in millimeters.
+
+Constructor:
+* FabCircle(Plane, Center, Diameter)
 
 ### <a name="fabgeometries----get-hash"></a>1.1 `FabCircle.`get_hash():
 
@@ -113,6 +114,8 @@ Return the FabPolygon lines and arcs.
 ## <a name="fabgeometries--fabgeometry"></a>2 Class FabGeometry:
 
 The base class for FabPolygon and FabCircle.
+Attributes:
+* *Plane* (FabPlane): The plane to project the geometry onto.
 
 ### <a name="fabgeometries----get-hash"></a>2.1 `FabGeometry.`get_hash():
 
@@ -154,19 +157,25 @@ An immutable Plane class.
 * *Contact* (Vector):  Some contact point that anywhere in the plane.
 * *Normal* (Vector): The normal to the plane.
 
-### <a name="fabgeometries----point-project"></a>3.1 `FabPlane.`point_project():
+### <a name="fabgeometries----get-hash"></a>3.1 `FabPlane.`get_hash():
+
+FabPlane.get_hash(self) -> Tuple[Any, ...]:
+
+Return a FabPlane hash value.
+
+### <a name="fabgeometries----point-project"></a>3.2 `FabPlane.`point_project():
 
 FabPlane.point_project(self, point: cadquery.occ_impl.geom.Vector) -> cadquery.occ_impl.geom.Vector:
 
 Project a point onto a plane.
 
-### <a name="fabgeometries----adjust"></a>3.2 `FabPlane.`adjust():
+### <a name="fabgeometries----adjust"></a>3.3 `FabPlane.`adjust():
 
 FabPlane.adjust(self, delta: float) -> 'FabPlane':
 
 Return a new FabPlane that has been adjusted up/down the normal by a delta.
 
-### <a name="fabgeometries----rotate-to-z-axis"></a>3.3 `FabPlane.`rotate_to_z_axis():
+### <a name="fabgeometries----rotate-to-z-axis"></a>3.4 `FabPlane.`rotate_to_z_axis():
 
 FabPlane.rotate_to_z_axis(self, point: cadquery.occ_impl.geom.Vector, reversed: bool = False, tracing: str = '') -> cadquery.occ_impl.geom.Vector:
 
@@ -182,31 +191,32 @@ Returns:
 ## <a name="fabgeometries--fabpolygon"></a>4 Class FabPolygon:
 
 An immutable polygon with rounded corners.
-    A FabPolygon is represented as a sequence of corners (i.e. a Vector) where each corner can
-    optionally be filleted with a radius.  In order to make it easier to use, a corner can be
-    specified as simple Vector or as a tuple that specifies a Vector and a radius.  The radius
-    is in millimeters and can be provided as either a Python int or float.  When an explicit
-    fillet radius is not specified, higher levels in the software stack will typically substitute
-x    in a deburr radius for external corners and an internal tool radius for internal corners.
-    FabPolygon's are frozen and can not be modified after creation.  Since Vector's are mutable,
-    a copy of each vector stored inside the FabPolygon.
+A FabPolygon is represented as a sequence of corners (i.e. a Vector) where each corner can
+optionally be filleted with a radius.  In order to make it easier to use, a corner can be
+specified either as simple Vector or as a tuple that specifies both a Vector and a radius.
+The radius is in millimeters and can be provided as either a Python int or float.  When an
+explicit fillet radius is not specified, higher levels in the software stack *may* substitute
+in a deburr radius for external corners and an internal tool radius for internal corners.
+FabPolygon's are frozen and can not be modified after creation.  Since Vector's are mutable,
+a private copy of each vector stored inside the FabPolygon.
 
-    Attributes:
-    * *Corners* (Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]):
-      See description below for more on corners.
+Attributes:
+* *Plane* (FabPlane: The plane that all of the corners are projected onto.
+* *Corners* (Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]):
+  See description below for more on corners.
 
-    Constructor:
-    * FabPolygon(Corners):
+Constructor:
+* FabPolygon(Plane, Corners):
 
-    Example:
-    ```
-         polygon: FabPolyon = FabPolygon((
-             Vector(-10, -10, 0),  # Lower left (no radius)
-             Vector(10, -10, 0),  # Lower right (no radius)
-             (Vector(10, 10, 0), 5),  # Upper right (5mm radius)
-             (Vector(-0, 10, 0), 5.5),  # Upper right (5.5mm radius)
-         ), "Name")
-    ```
+Example:
+```
+     polygon: FabPolygon = FabPolygon((
+         Vector(-10, -10, 0),  # Lower left (no radius)
+         Vector(10, -10, 0),  # Lower right (no radius)
+         (Vector(10, 10, 0), 5),  # Upper right (5mm radius)
+         (Vector(-0, 10, 0), 5.5),  # Upper right (5.5mm radius)
+     ), "Name")
+```
 
 ### <a name="fabgeometries----get-geometry-info"></a>4.1 `FabPolygon.`get_geometry_info():
 

@@ -1035,11 +1035,11 @@ class Fab_Hole(Fab_Operation):
             expanded_operations.append(self)
         else:
             # Create a FabPocket for each hole *center*:
-            normal: Vector = self.Mount.Normal
+            mount_plane: FabPlane = self.Mount.Plane
             center: Vector
             index: int
             for index, center in enumerate(self.Centers):
-                circle_geometry: FabCircle = FabCircle(center, normal, diameter)
+                circle_geometry: FabCircle = FabCircle(mount_plane, center, diameter)
                 pocket_name: str = f"{self.Name}_{index}"
                 pocket: Fab_Pocket = Fab_Pocket(self.Mount, pocket_name, (circle_geometry,), depth)
                 pocket.post_produce1(produce_state, expanded_operations, tracing=next_tracing)
@@ -1058,7 +1058,6 @@ class Fab_Hole(Fab_Operation):
         # Unpack the *mount* and associated *geometry_context*:
         mount: FabMount = self.Mount
         geometry_context: Fab_GeometryContext = mount._GeometryContext
-        mount_normal: Vector = mount.Normal
         plane: FabPlane = geometry_context.Plane
         query: Fab_Query = geometry_context.Query
 
@@ -1080,7 +1079,7 @@ class Fab_Hole(Fab_Operation):
         index: int
         center: Vector
         for index, center in enumerate(self.Centers):
-            circle: FabCircle = FabCircle(center, mount_normal, diameter)
+            circle: FabCircle = FabCircle(plane, center, diameter)
             projected_circle: FabCircle = circle.project_to_plane(plane, tracing=next_tracing)
             projected_center: Vector = projected_circle.Center
             rotated_center: Vector = plane.rotate_to_z_axis(projected_center, tracing=next_tracing)

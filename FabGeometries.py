@@ -115,6 +115,21 @@ class FabPlane(object):
             print(f"{tracing}{self._Plane=}")
             print(f"{tracing}<=FabPlane.__post_init__({self._Contact}, {self._Normal})")
 
+    # FabPlane.get_hash():
+    def get_hash(self) -> Tuple[Any, ...]:
+        """Return a FabPlane hash value."""
+        contact: Vector = self.Contact
+        normal: Vector = self.Normal
+        return (
+            "FabPlane",
+            f"{contact.x:.6f}",
+            f"{contact.y:.6f}",
+            f"{contact.z:.6f}",
+            f"{normal.x:.6f}",
+            f"{normal.y:.6f}",
+            f"{normal.z:.6f}",
+        )
+
     # FabPlane.point_project():
     def point_project(self, point: Vector) -> Vector:
         """Project a point onto a plane."""
@@ -865,12 +880,19 @@ class Fab_Fillet(object):
 # FabGeometry:
 @dataclass(frozen=True)
 class FabGeometry(object):
-    """FabGeometry: The base class for FabPolygon and FabCircle."""
+    """FabGeometry: The base class for FabPolygon and FabCircle.
+
+    Attributes:
+    * *Plane* (FabPlane): The plane to project the geometry onto.
+
+    """
+
+    Plane: FabPlane
 
     # FabGeometry.__post_init__():
     def __post_init__(self) -> None:
         """Finish initializing a FaabGeometry."""
-        pass
+        check_type("FabGeometry.Plane:", self.Plane, FabPlane)
 
     # FabGeometry.Box():
     @property
@@ -915,46 +937,45 @@ class FabGeometry(object):
 # FabCircle:
 @dataclass(frozen=True)
 class FabCircle(FabGeometry):
-    """FabCircle: A circle with a center and a radius.
-
-    This is actually a sphere of at a specified location and diameter.  It gets cut into
-    circle later on.
+    """FabCircle: Represents a circle on a plane.
 
     Attributes:
-    * *Center* (Vector): The circle center.
-    * *Normal* (Vector): The normal to circle plane.
-    * *Diameter* (float): The diameter in millimeters.
+    * *Plane* (FabPlane): The plane the circle center is projected onto.
+    * *Center* (Vector): The circle center point.
+    * *Diameter* (float): The circle diameter in millimeters.
+
+    Constructor:
+    * FabCircle(Plane, Center, Diameter)
 
     """
 
     Center: Vector
-    Normal: Vector
     Diameter: float
 
     # FabCircle.__post_init__():
     def __post_init__(self) -> None:
         """Finish initializing a FabCircle."""
         super().__post_init__()
+        check_type("FabCircle.Center", self.Center, Vector)
+        check_type("FabCircle.Diameter", self.Diameter, float)
         if self.Diameter <= 0.0:
             raise ValueError(f"Diameter ({self.Diameter}) must be positive.")
+
+        # Make private copy of *Center*.
         # (Why __setattr__?)[https://stackoverflow.com/questions/53756788]
         copy: Vector = Vector()
         object.__setattr__(self, "Center", self.Center + copy)  # Makes a copy.
-        object.__setattr__(self, "Normal", self.Normal + copy)  # Makes a copy.
 
     # FabCircle.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:
         """Feturn FabCircle hash."""
         center: Vector = self.Center
-        normal: Vector = self.Normal
         hashes: Tuple[Union[int, str, Tuple[Any, ...]], ...] = (
             "FabCircle.get_hash",
+            self.Plane.get_hash(),
             f"{center.x:.6f}",
             f"{center.y:.6f}",
             f"{center.z:.6f}",
-            f"{normal.x:.6f}",
-            f"{normal.y:.6f}",
-            f"{normal.z:.6f}",
             f"{self.Diameter:.6f}",
         )
         return hashes
@@ -998,7 +1019,8 @@ class FabCircle(FabGeometry):
         # on quaternions that is better, but the code below should be more than adequate.
         EPSILON = 1.0e-8
         copy: Vector = Vector()
-        normal: Vector = self.Normal / self.Normal.Length
+        normal: Vector = self.Plane.Normal / self.Plane.Normal.Length
+
         nx: float = normal.x
         ny: float = normal.y
         nz: float = normal.z
@@ -1033,7 +1055,7 @@ class FabCircle(FabGeometry):
             print(f"{tracing}=>FabCircle.project_to_plane({plane})")
         center: Vector = self.Center
         new_center: Vector = plane.point_project(center)
-        new_circle: "FabCircle" = FabCircle(new_center, plane.Normal, self.Diameter)
+        new_circle: "FabCircle" = FabCircle(plane, new_center, self.Diameter)
         if tracing:
             print(f"{tracing}<=FabCircle.project_to_plane({plane}) => {new_circle}")
         return new_circle
@@ -1071,24 +1093,24 @@ class FabCircle(FabGeometry):
 
         origin: Vector = Vector()
         z_axis: Vector = Vector(0, 0, 1)
+        xy_plane: FabPlane = FabPlane(origin, z_axis)
         center: Vector = Vector(1, 2, 3)
-        plane: FabPlane = FabPlane(origin, z_axis)
         try:
-            FabCircle(center, z_axis, 0.0)
+            FabCircle(xy_plane, center, 0.0)
             assert False
         except ValueError as value_error:
             assert str(value_error) == "Diameter (0.0) must be positive.", value_error
         try:
-            FabCircle(center, z_axis, -1.0)
+            FabCircle(xy_plane, center, -1.0)
             assert False
         except ValueError as value_error:
             assert str(value_error) == "Diameter (-1.0) must be positive.", value_error
-        circle: FabCircle = FabCircle(center, z_axis, 1.0)
+        circle: FabCircle = FabCircle(xy_plane, center, 1.0)
         box: FabBox = circle.Box
         assert box.TNE == Vector(1.5, 2.0, 3.0)
         assert box.BSW == Vector(0.5, 1.5, 3.0)
 
-        _ = circle.project_to_plane(plane)
+        _ = circle.project_to_plane(xy_plane)  # TODO: Remove project_to_plane()
 
         if tracing:
             print(f"{tracing}<=FabCircle._unit_tests()")
@@ -1101,23 +1123,24 @@ class FabPolygon(FabGeometry):
 
     A FabPolygon is represented as a sequence of corners (i.e. a Vector) where each corner can
     optionally be filleted with a radius.  In order to make it easier to use, a corner can be
-    specified as simple Vector or as a tuple that specifies a Vector and a radius.  The radius
-    is in millimeters and can be provided as either a Python int or float.  When an explicit
-    fillet radius is not specified, higher levels in the software stack will typically substitute
-x    in a deburr radius for external corners and an internal tool radius for internal corners.
+    specified either as simple Vector or as a tuple that specifies both a Vector and a radius.
+    The radius is in millimeters and can be provided as either a Python int or float.  When an
+    explicit fillet radius is not specified, higher levels in the software stack *may* substitute
+    in a deburr radius for external corners and an internal tool radius for internal corners.
     FabPolygon's are frozen and can not be modified after creation.  Since Vector's are mutable,
-    a copy of each vector stored inside the FabPolygon.
+    a private copy of each vector stored inside the FabPolygon.
 
     Attributes:
+    * *Plane* (FabPlane: The plane that all of the corners are projected onto.
     * *Corners* (Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]):
       See description below for more on corners.
 
     Constructor:
-    * FabPolygon(Corners):
+    * FabPolygon(Plane, Corners):
 
     Example:
     ```
-         polygon: FabPolyon = FabPolygon((
+         polygon: FabPolygon = FabPolygon((
              Vector(-10, -10, 0),  # Lower left (no radius)
              Vector(10, -10, 0),  # Lower right (no radius)
              (Vector(10, 10, 0), 5),  # Upper right (5mm radius)
@@ -1409,7 +1432,7 @@ x    in a deburr radius for external corners and an internal tool radius for int
                 assert isinstance(point, Vector)
                 assert isinstance(radius, (int, float))
                 projected_corners.append(plane.point_project(point))
-        projected_polygon: "FabPolygon" = FabPolygon(tuple(projected_corners))
+        projected_polygon: "FabPolygon" = FabPolygon(plane, tuple(projected_corners))
         if tracing:
             print(f"{tracing}<=FabPolygon.project_to_plane({plane})=>*")
         return projected_polygon
@@ -1564,12 +1587,12 @@ x    in a deburr radius for external corners and an internal tool radius for int
         z_axis: Vector = Vector(0.0, 0.0, 1.0)
         xy_plane: FabPlane = FabPlane(origin, z_axis)
 
-        polygon1: FabPolygon = FabPolygon(corners)
+        polygon1: FabPolygon = FabPolygon(xy_plane, corners)
         info1: Fab_GeometryInfo = Fab_GeometryInfo(polygon1, xy_plane, tracing=next_tracing)
         info1._check(test_name, desired_area, desired_perimeter,
                      desired_internal_radius, desired_external_radius, tracing=next_tracing)
 
-        polygon2: FabPolygon = FabPolygon(tuple(reversed(corners)))
+        polygon2: FabPolygon = FabPolygon(xy_plane, tuple(reversed(corners)))
         info2: Fab_GeometryInfo = Fab_GeometryInfo(polygon2, xy_plane)
         info2._check(test_name, desired_area, desired_perimeter,
                      desired_internal_radius, desired_external_radius, tracing=next_tracing)
@@ -2003,7 +2026,7 @@ class Fab_GeometryInfo(object):
             z_axis: Vector = Vector(0.0, 0.0, 1.0)
             xy_plane: FabPlane = FabPlane(origin, z_axis)
             pi: float = math.pi
-            circle: FabCircle = FabCircle(origin, z_axis, 2.0 * radius)
+            circle: FabCircle = FabCircle(xy_plane, origin, 2.0 * radius)
             info: Fab_GeometryInfo = Fab_GeometryInfo(circle, xy_plane)
             close(info.MinimumInternalRadius, -1.0)
             close(info.MinimumExternalRadius, radius)
