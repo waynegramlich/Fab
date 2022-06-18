@@ -25,7 +25,7 @@ from cadquery import Vector  # type: ignore
 # import Part  # type: ignore
 
 from FabGeometries import (
-    FabCircle, FabGeometry, Fab_GeometryContext, Fab_GeometryInfo, Fab_Plane, Fab_Query)
+    FabCircle, FabGeometry, Fab_GeometryContext, Fab_GeometryInfo, FabPlane, Fab_Query)
 from FabJoins import FabFasten, FabJoin
 from FabNodes import FabBox, FabNode, Fab_Prefix, Fab_ProduceState
 # from FabShops import FabCNC, FabMachine, FabShop
@@ -524,7 +524,7 @@ class Fab_Extrude(Fab_Operation):
         geometry_context.Query.extrude(self.Depth, tracing=next_tracing)
 
         # Do Contour computations:
-        plane: Fab_Plane = geometry_context.Plane
+        plane: FabPlane = geometry_context.Plane
         normal: Vector = plane.Normal
         origin: Vector = plane.Origin
         distance: float = origin.Length
@@ -646,7 +646,7 @@ class Fab_Pocket(Fab_Operation):
         # Unpack some values from *mount*:
         mount: FabMount = self.Mount
         geometry_context: Fab_GeometryContext = mount._GeometryContext
-        plane: Fab_Plane = geometry_context.Plane
+        plane: FabPlane = geometry_context.Plane
         top_depth: float = plane.Distance
         final_depth: float = top_depth - self._Depth
         delta_depth: float = top_depth - final_depth
@@ -676,7 +676,7 @@ class Fab_Pocket(Fab_Operation):
         depth: float = self.Depth
         geometries: Tuple[FabGeometry, ...] = self._Geometries
         exterior: FabGeometry = geometries[0]
-        plane: Fab_Plane = self.Mount.Plane
+        plane: FabPlane = self.Mount.Plane
 
         area: float
         perimeter: float
@@ -1059,7 +1059,7 @@ class Fab_Hole(Fab_Operation):
         mount: FabMount = self.Mount
         geometry_context: Fab_GeometryContext = mount._GeometryContext
         mount_normal: Vector = mount.Normal
-        plane: Fab_Plane = geometry_context.Plane
+        plane: FabPlane = geometry_context.Plane
         query: Fab_Query = geometry_context.Query
 
         key: Fab_HoleKey = self.Key
@@ -1104,7 +1104,7 @@ class Fab_Hole(Fab_Operation):
             # Start with a new *holes_plane* and *holes_query*:
             self.StartDepth = plane.Distance
             holes_contact: Vector = Vector(0.0, 0.0, self.StartDepth)
-            holes_plane: Fab_Plane = Fab_Plane(holes_contact, z_axis)
+            holes_plane: FabPlane = FabPlane(holes_contact, z_axis)
             holes_query: Fab_Query = Fab_Query(holes_plane)
             self.StartDepth = plane.Distance
 
@@ -1197,7 +1197,7 @@ class FabMount(object):
     to which the 2D FabGeometry's are mapped onto prior to performing each operation.
 
     Attributes:
-    * *Name*: (str): The name of the Fab_Plane.
+    * *Name*: (str): The name of the FabPlane.
     * *Solid*: (FabSolid): The FabSolid to work on.
     * *Contact* (Vector): A point on the mount plane.
     * *Normal* (Vector): A normal to the mount plane
@@ -1222,7 +1222,7 @@ class FabMount(object):
     _GeometryContext: Fab_GeometryContext = field(init=False, repr=False)
     _AppDatumPlane: Any = field(init=False, repr=False)  # TODO: Remove
     _GuiDatumPlane: Any = field(init=False, repr=False)  # TODO: Remove
-    _Plane: Fab_Plane = field(init=False, repr=False)
+    _Plane: FabPlane = field(init=False, repr=False)
     Prefix: Optional[Fab_Prefix] = field(init=False, repr=False)
 
     # FabMount.__post_init__():
@@ -1251,7 +1251,7 @@ class FabMount(object):
         self._Normal = self._Normal + copy
         self._Operations = []
         # Vector metheds like to modify Vector contents; force copies beforehand:
-        self._Plane: Fab_Plane = Fab_Plane(self._Contact, self._Normal)  # , tracing=next_tracing)
+        self._Plane: FabPlane = FabPlane(self._Contact, self._Normal)  # , tracing=next_tracing)
         self._Orient = self._Plane.point_project(self._Orient)
         self._GeometryContext = Fab_GeometryContext(self._Plane, self._Query)
         self._AppDatumPlane = None
@@ -1301,8 +1301,8 @@ class FabMount(object):
 
     # FabMount.Plane:
     @property
-    def Plane(self) -> Fab_Plane:
-        """Return the Fab_Plane."""
+    def Plane(self) -> FabPlane:
+        """Return the FabPlane."""
         return self._Plane
 
     # FabMount.Depth:
@@ -1380,9 +1380,9 @@ class FabMount(object):
         # If there are no *operations* there is nothing to do:
         operations: List[Fab_Operation] = self._Operations
         if operations:
-            # Create the Fab_Plane used for the drawing support.
-            plane: Fab_Plane = self.Plane
-            assert isinstance(plane, Fab_Plane), plane
+            # Create the FabPlane used for the drawing support.
+            plane: FabPlane = self.Plane
+            assert isinstance(plane, FabPlane), plane
             contact: Vector = plane.Contact
             normal: Vector = plane.Normal
 
@@ -1451,8 +1451,8 @@ class FabMount(object):
         top_contact: Vector = self._Contact
         normal: Vector = self._Normal / self._Normal.Length
         bottom_contact: Vector = top_contact - depth * normal
-        top_plane: Fab_Plane = Fab_Plane(top_contact, normal)
-        bottom_plane: Fab_Plane = Fab_Plane(bottom_contact, normal)
+        top_plane: FabPlane = FabPlane(top_contact, normal)
+        bottom_plane: FabPlane = FabPlane(bottom_contact, normal)
         if tracing:
             print(f"{tracing}{top_contact=} {normal=} {bottom_contact=}")
 
@@ -1524,7 +1524,7 @@ class FabMount(object):
 
         # mount_contact: Vector = self._Contact
         mount_normal: Vector = self._Normal / self._Normal.Length
-        # mount_plane: Fab_Plane = Fab_Plane(mount_contact, mount_normal)
+        # mount_plane: FabPlane = FabPlane(mount_contact, mount_normal)
         mount_depth: float = self._Depth
         solid: "FabSolid" = self._Solid
 
@@ -1637,7 +1637,7 @@ class FabSolid(FabNode):
         # Initial WorkPlane does not matter, it gets set by FabMount.
         origin: Vector = Vector(0.0, 0.0, 0.0)
         z_axis: Vector = Vector(0.0, 0.0, 1.0)
-        initial_plane: Fab_Plane = Fab_Plane(origin, z_axis)  # , tracing=next_tracing)
+        initial_plane: FabPlane = FabPlane(origin, z_axis)  # , tracing=next_tracing)
         self._Mounts = []
         self._GeometryGroup = None
         self._Body = None
