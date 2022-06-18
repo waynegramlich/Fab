@@ -852,7 +852,7 @@ class Fab_Fillet(object):
         sw_fillet: Fab_Fillet = Fab_Fillet(sw_corner, radius)
         se_fillet: Fab_Fillet = Fab_Fillet(se_corner, radius)
 
-        # Provide before/after Fab_Fillets:
+        # Provide before/after _Fillets:
         ne_fillet.Before = se_fillet
         nw_fillet.Before = ne_fillet
         sw_fillet.Before = nw_fillet
@@ -1150,11 +1150,18 @@ class FabPolygon(FabGeometry):
     ```
     """
 
-    _Corners: Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]
+    _Corners: Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...] = field(
+        compare=False)
+
+    # Computed attributes:
     _CopiedCorners: Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...] = field(
-        init=False, repr=False)
-    _ProjectedCorners: Tuple[Tuple[Vector, float], ...] = field(init=False, repr=False)
-    Fab_Fillets: Tuple[Fab_Fillet, ...] = field(init=False, repr=False)  # TODO make Private
+        init=False, repr=False, compare=True)
+    _ProjectedCorners: Tuple[Tuple[Vector, float], ...] = field(
+        init=False, repr=False, compare=False)
+    _Box: FabBox = field(
+        init=False, repr=False, compare=False)
+    _Fillets: Tuple[Fab_Fillet, ...] = field(
+        init=False, repr=False, compare=False)  # TODO make Private
 
     EPSILON = 1.0e-8
 
@@ -1181,7 +1188,6 @@ class FabPolygon(FabGeometry):
                    Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...])
 
         # Copy *_Corners* into *original_corners* and fill in *projected_corners*:
-        copy: Vector = Vector()  # Vector's are mutable, use *copy* to make a private Vector copy.
         copied_corners: List[Union[Vector, Tuple[Vector, Union[int, float]]]] = []
         projected_corners: List[Tuple[Vector, float]] = []
         original_corner: Union[Vector, Tuple[Vector, Union[int, float]]]
@@ -1196,32 +1202,30 @@ class FabPolygon(FabGeometry):
                 apex, radius = (original_corner[0], float(original_corner[1]))
             projected_apex: Vector = plane.projectPoint(apex)
             projected_corners.append((projected_apex, radius))
-        assert len(self._Corners) == len(copied_corners)
-        assert len(self._Corners) == len(projected_corners)
 
-        corner: Union[Vector, Tuple[Vector, Union[int, float]]]
+        # Compute the *box* that encloses the projected points.:
+        corner: Tuple[Vector, float]
+        box_points: List[Vector] = [corner[0] for corner in projected_corners]
+        box: FabBox = FabBox()
+        box.enclose(box_points)
+
         fillets: List[Fab_Fillet] = []
         fillet: Fab_Fillet
         # TODO: Check for polygon points that are colinear.
         # TODO: Check for polygon corners with overlapping radii.
         index: int
-        for index, corner in enumerate(self._Corners):
-            if isinstance(corner, Vector):
-                fillet = Fab_Fillet(corner + copy, 0.0)
-            elif isinstance(corner, tuple):
-                check_type(f"Corner[{index}]:", corner, Tuple[Vector, Union[int, float]])
-                fillet = Fab_Fillet(corner[0] + copy, float(corner[1]))
-            else:
-                raise ValueError(
-                    f"Polygon Corner[{index}] is {corner} which is neither a Vector nor "
-                    "(Vector, radius) tuple.")  # pragma: no unit cover
+        for index, corner in enumerate(projected_corners):
+            # TODO: remove the check_type:
+            check_type(f"Corner[{index}]:", corner, Tuple[Vector, float])
+            fillet = Fab_Fillet(corner[0], corner[1])
             fillets.append(fillet)
 
         # This is the only way to initialize a field in a frozen data class:
         # See: [Why __setattr__?](https://stackoverflow.com/questions/53756788)
+        object.__setattr__(self, "_Box", box)
         object.__setattr__(self, "_CopiedCorners", tuple(copied_corners))
         object.__setattr__(self, "_ProjectedCorners", tuple(projected_corners))
-        object.__setattr__(self, "Fab_Fillets", tuple(fillets))
+        object.__setattr__(self, "_Fillets", tuple(fillets))
 
         # Double link the fillets and look for errors:
         self._double_link()
@@ -1262,20 +1266,7 @@ class FabPolygon(FabGeometry):
     @property
     def Box(self) -> FabBox:
         """Return FabBox that encloses FabPolygon."""
-        points: List[Vector] = []
-        corner: Union[Vector, Tuple[Vector, Union[int, float]]]
-        for corner in self.Corners:
-            if isinstance(corner, Vector):
-                points.append(corner)
-            elif isinstance(corner, tuple) and len(corner) == 2:  # pragma: no unit cover
-                point: Any = corner[0]
-                assert isinstance(point, Vector)
-                points.append(point)
-            else:
-                assert False, f"Bad corner: {corner}"
-        box: FabBox = FabBox()
-        box.enclose(points)
-        return box
+        return self._Box
 
     # FabPolygon.compute_polgyon_area():
     @staticmethod
@@ -1348,11 +1339,11 @@ class FabPolygon(FabGeometry):
         # Fill in the contents of the FabFillet's:
         geometry_context: Fab_GeometryContext = Fab_GeometryContext(xy_plane, query)
         _ = self.produce(geometry_context, "prefix", 0)
-        # Now the Fab_Fillets are filled in.
+        # Now the _Fillets are filled in.
 
         # Step 1: Project the Apex points from *plane* to the XY plane.
         fillet: Fab_Fillet
-        for fillet in self.Fab_Fillets:
+        for fillet in self._Fillets:
             fillet.ProjectedApex = plane.rotate_to_z_axis(fillet.Apex)
 
         # Step 2: Compute the *maximum_radius* and *total_angle* of turning at each *fillet*:
@@ -1366,7 +1357,7 @@ class FabPolygon(FabGeometry):
         negative_radius: float = -1.0
         perimeter: float = 0.0
         index: int
-        for index, fillet in enumerate(self.Fab_Fillets):
+        for index, fillet in enumerate(self._Fillets):
             before_apex: Vector = fillet.Before.ProjectedApex
             at_apex: Vector = fillet.ProjectedApex
             after_apex: Vector = fillet.After.ProjectedApex
@@ -1499,7 +1490,7 @@ class FabPolygon(FabGeometry):
     # FabPolygon._double_link():
     def _double_link(self) -> None:
         """Double link the Fab_Fillet's together."""
-        fillets: Tuple[Fab_Fillet, ...] = self.Fab_Fillets
+        fillets: Tuple[Fab_Fillet, ...] = self._Fillets
         size: int = len(fillets)
         fillet: Fab_Fillet
         index: int
@@ -1511,7 +1502,7 @@ class FabPolygon(FabGeometry):
     def _radii_check(self) -> str:
         """Check for radius overlap errors."""
         at_fillet: Fab_Fillet
-        for at_fillet in self.Fab_Fillets:
+        for at_fillet in self._Fillets:
             before_fillet: Fab_Fillet = at_fillet.Before
             actual_distance: float = (before_fillet.Apex - at_fillet.Apex).Length
             radii_distance: float = before_fillet.Radius + at_fillet.Radius
@@ -1528,7 +1519,7 @@ class FabPolygon(FabGeometry):
         at_fillet: Fab_Fillet
         epsilon: float = FabPolygon.EPSILON
         degrees180: float = math.pi
-        for at_fillet in self.Fab_Fillets:
+        for at_fillet in self._Fillets:
             before_apex: Vector = at_fillet.Before.Apex
             at_apex: Vector = at_fillet.Apex
             after_apex: Vector = at_fillet.After.Apex
@@ -1544,7 +1535,7 @@ class FabPolygon(FabGeometry):
     def _compute_arcs(self) -> None:
         """Create any Arc's needed for non-zero radius Fab_Fillet's."""
         fillet: Fab_Fillet
-        for fillet in self.Fab_Fillets:
+        for fillet in self._Fillets:
             if fillet.Radius > 0.0:
                 fillet.Arc = fillet.compute_arc()
 
@@ -1552,7 +1543,7 @@ class FabPolygon(FabGeometry):
     def _compute_lines(self) -> None:
         """Create Create any Line's need for Fab_Fillet's."""
         fillet: Fab_Fillet
-        for fillet in self.Fab_Fillets:
+        for fillet in self._Fillets:
             before: Fab_Fillet = fillet.Before
             start: Vector = before.Arc.Finish if before.Arc else before.Apex
             finish: Vector = fillet.Arc.Start if fillet.Arc else fillet.Apex
@@ -1564,7 +1555,7 @@ class FabPolygon(FabGeometry):
         """Return the FabPolygon lines and arcs."""
         geometries: List[Fab_Geometry] = []
         fillet: Fab_Fillet
-        for fillet in self.Fab_Fillets:
+        for fillet in self._Fillets:
             geometries.extend(fillet.get_geometries())
         return tuple(geometries)
 
@@ -1577,7 +1568,7 @@ class FabPolygon(FabGeometry):
 
         """
         fillet: Fab_Fillet
-        for fillet in self.Fab_Fillets:
+        for fillet in self._Fillets:
             fillet.plane_2d_project(plane)
 
     # FabPolygon.produce():
@@ -1712,6 +1703,11 @@ class FabPolygon(FabGeometry):
         assert polygon1.Corners != corners
         assert polygon1.Corners == copied_corners
         assert polygon1.ProjectedCorners == projected_corners
+
+        # Verify Box property works:
+        box: FabBox = polygon1.Box
+        assert box.BSW == Vector(-10.0, -10.0, 0.0), box.BSW
+        assert box.TNE == Vector(10.0, 10.0, 0.0), box.TNE
 
         # The area compute method is pretty involved and requires extensive unit tests.
 
