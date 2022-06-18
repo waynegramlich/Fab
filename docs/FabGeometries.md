@@ -203,14 +203,15 @@ a private copy of each vector stored inside the FabPolygon.
 Attributes:
 * *Plane* (FabPlane: The plane that all of the corners are projected onto.
 * *Corners* (Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]):
-  See description below for more on corners.
+  See description immediately above for more on corners.
 
 Constructor:
 * FabPolygon(Plane, Corners):
 
 Example:
 ```
-     polygon: FabPolygon = FabPolygon((
+     xy_plane: FabPlane = FabPlane(Vector(0, 0, 0), Vector(0, 0, 1))
+     polygon: FabPolygon = FabPolygon(xy_plane, (
          Vector(-10, -10, 0),  # Lower left (no radius)
          Vector(10, -10, 0),  # Lower right (no radius)
          (Vector(10, 10, 0), 5),  # Upper right (5mm radius)

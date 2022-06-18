@@ -8,7 +8,7 @@
 
 from dataclasses import dataclass, field
 import math
-from typeguard import check_argument_types, check_type
+from typeguard import check_type
 from typing import Any, cast, Callable, List, Optional, Sequence, Tuple, Union
 
 import cadquery as cq  # type: ignore
@@ -1133,14 +1133,15 @@ class FabPolygon(FabGeometry):
     Attributes:
     * *Plane* (FabPlane: The plane that all of the corners are projected onto.
     * *Corners* (Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]):
-      See description below for more on corners.
+      See description immediately above for more on corners.
 
     Constructor:
     * FabPolygon(Plane, Corners):
 
     Example:
     ```
-         polygon: FabPolygon = FabPolygon((
+         xy_plane: FabPlane = FabPlane(Vector(0, 0, 0), Vector(0, 0, 1))
+         polygon: FabPolygon = FabPolygon(xy_plane, (
              Vector(-10, -10, 0),  # Lower left (no radius)
              Vector(10, -10, 0),  # Lower right (no radius)
              (Vector(10, 10, 0), 5),  # Upper right (5mm radius)
@@ -1149,10 +1150,24 @@ class FabPolygon(FabGeometry):
     ```
     """
 
-    Corners: Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]
+    _Corners: Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]
+    _CopiedCorners: Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...] = field(
+        init=False, repr=False)
+    _ProjectedCorners: Tuple[Tuple[Vector, float], ...] = field(init=False, repr=False)
     Fab_Fillets: Tuple[Fab_Fillet, ...] = field(init=False, repr=False)  # TODO make Private
 
     EPSILON = 1.0e-8
+
+    # FabPolygon._copyCorner():
+    @staticmethod
+    def _copyCorner(
+            corner: Union[Vector, Tuple[Vector, Union[int, float]]]
+    ) -> Union[Vector, Tuple[Vector, Union[int, float]]]:
+        """Return a copy of an original corner."""
+        copy: Vector = Vector()
+        copied_corner: Union[Vector, Tuple[Vector, Union[int, float]]] = (
+            corner + copy if isinstance(corner, Vector) else (corner[0] + copy, corner[1]))
+        return copied_corner
 
     # FabPolygon.__post_init__():
     def __post_init__(self) -> None:
@@ -1160,15 +1175,37 @@ class FabPolygon(FabGeometry):
         tracing: str = ""  # Edit to enable tracing.
         if tracing:
             print(f"{tracing}=>FabPolygon.__post_init__()")
-        assert check_argument_types()
+
+        super().__post_init__()
+        check_type("FabPolygon.Corners", self._Corners,
+                   Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...])
+
+        # Copy *_Corners* into *original_corners* and fill in *projected_corners*:
+        copy: Vector = Vector()  # Vector's are mutable, use *copy* to make a private Vector copy.
+        copied_corners: List[Union[Vector, Tuple[Vector, Union[int, float]]]] = []
+        projected_corners: List[Tuple[Vector, float]] = []
+        original_corner: Union[Vector, Tuple[Vector, Union[int, float]]]
+        plane: FabPlane = self.Plane
+        for original_corner in self._Corners:
+            copied_corners.append(FabPolygon._copyCorner(original_corner))
+            apex: Vector
+            radius: float
+            if isinstance(original_corner, Vector):
+                apex, radius = original_corner, 0.0
+            else:
+                apex, radius = (original_corner[0], float(original_corner[1]))
+            projected_apex: Vector = plane.projectPoint(apex)
+            projected_corners.append((projected_apex, radius))
+        assert len(self._Corners) == len(copied_corners)
+        assert len(self._Corners) == len(projected_corners)
+
         corner: Union[Vector, Tuple[Vector, Union[int, float]]]
         fillets: List[Fab_Fillet] = []
         fillet: Fab_Fillet
         # TODO: Check for polygon points that are colinear.
         # TODO: Check for polygon corners with overlapping radii.
-        copy: Vector = Vector()  # Vector's are mutable, add *copy* to make a private Vector copy.
         index: int
-        for index, corner in enumerate(self.Corners):
+        for index, corner in enumerate(self._Corners):
             if isinstance(corner, Vector):
                 fillet = Fab_Fillet(corner + copy, 0.0)
             elif isinstance(corner, tuple):
@@ -1182,6 +1219,8 @@ class FabPolygon(FabGeometry):
 
         # This is the only way to initialize a field in a frozen data class:
         # See: [Why __setattr__?](https://stackoverflow.com/questions/53756788)
+        object.__setattr__(self, "_CopiedCorners", tuple(copied_corners))
+        object.__setattr__(self, "_ProjectedCorners", tuple(projected_corners))
         object.__setattr__(self, "Fab_Fillets", tuple(fillets))
 
         # Double link the fillets and look for errors:
@@ -1198,6 +1237,26 @@ class FabPolygon(FabGeometry):
         # self._compute_lines()
         if tracing:
             print(f"{tracing}<=FabPolygon.__post_init__()")
+
+    # FabPolygon.Corners:
+    @property
+    def Corners(self) -> Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]:
+        """Return a copy of original corners."""
+        corner: Union[Vector, Tuple[Vector, Union[int, float]]]
+        copied_corners: List[Union[Vector, Tuple[Vector, Union[int, float]]]] = [
+            FabPolygon._copyCorner(corner) for corner in self._CopiedCorners]
+        assert len(self._Corners) == len(copied_corners)
+        return tuple(copied_corners)
+
+    # FabPolygon.ProjectedCorners:
+    @property
+    def ProjectedCorners(self) -> Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]:
+        """Return corners after they have been projected onto the FabPolygon plane."""
+        copy: Vector = Vector()
+        corner: Tuple[Vector, float]
+        projected_corners_copy: List[Union[Vector, float]] = [
+            (corner[0] + copy, corner[1]) for corner in self._ProjectedCorners]
+        return tuple(projected_corners_copy)
 
     # FabPolygon.Box:
     @property
@@ -1610,7 +1669,51 @@ class FabPolygon(FabGeometry):
         if tracing:
             print(f"{tracing}=>FabPolygon._unit_tests()")
 
-        # The area compute method is pretty involved and requires extensivie unit tests.
+        # Create *corners* and a *copied_corners:
+        ne_corner: Vector = Vector(10, 10, 0)  # On XY Plane (no radius)
+        nw_corner: Vector = Vector(-10, 10, 1)  # Above XY Plane (no radius)
+        sw_corner: Tuple[Vector, int] = (Vector(-10, -10, 0), 2)  # On XY Plane (integer radius)
+        se_corner: Tuple[Vector, float] = (
+            Vector(10, -10, 2), 3.4)  # Above X/Y Plane (float radius)
+
+        copy: Vector = Vector()
+        corners: Tuple[Union[Vector, Tuple[Vector, Union[float, int]]], ...] = (
+            ne_corner, nw_corner, sw_corner, se_corner)
+        copied_corners: Tuple[Union[Vector, Tuple[Vector, Union[float, int]]], ...] = (
+            ne_corner + copy,
+            nw_corner + copy,
+            (sw_corner[0] + copy, sw_corner[1]),
+            (se_corner[0] + copy, se_corner[1]),
+        )
+        assert corners == copied_corners
+
+        # Create *projected_corners*:
+        projected_ne_corner: Tuple[Vector, float] = (Vector(10, 10, 0), 0.0)
+        projected_nw_corner: Tuple[Vector, float] = (Vector(-10, 10, 0), 0.0)
+        projected_sw_corner: Tuple[Vector, float] = (Vector(-10, -10, 0), 2.0)
+        projected_se_corner: Tuple[Vector, float] = (Vector(10, -10, 0), 3.4)
+        projected_corners: Tuple[Tuple[Vector, float], ...] = (
+            projected_ne_corner, projected_nw_corner, projected_sw_corner, projected_se_corner)
+
+        # Create *polygon1* and verify that has valid values:
+        origin: Vector = Vector()
+        z_axis: Vector = Vector(0, 0, 1)
+        xy_plane: FabPlane = FabPlane(origin, z_axis)
+        polygon1: FabPolygon = FabPolygon(xy_plane, corners)
+        assert polygon1.Corners == corners
+        assert polygon1.Corners == copied_corners
+        assert polygon1.ProjectedCorners == projected_corners
+
+        # Now mutate the original *corners* and verify that the mutations did not get:
+        ne_corner.x = 1.2
+        nw_corner.y = 3.4
+        sw_corner[0].x = 5.6
+        se_corner[0].z = 7.8
+        assert polygon1.Corners != corners
+        assert polygon1.Corners == copied_corners
+        assert polygon1.ProjectedCorners == projected_corners
+
+        # The area compute method is pretty involved and requires extensive unit tests.
 
         # Create 16 corners using the following naming [NS][EW][IONEWS], where
         # * N=>North
