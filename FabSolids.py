@@ -1823,15 +1823,26 @@ class FabSolid(FabNode):
         return tuple(hashes)
 
     # FabSolid.mount():
-    def mount(self, name: str, contact: Vector, normal: Vector, orient: Vector,
+    def mount(self, name: str, plane: FabPlane, orient: Vector,
               depth: float, tracing: str = "") -> FabMount:
-        """Return a new FabMount."""
+        """Add a new FabMount to ae FabSolid.
+
+        Arguments:
+        * *name* (str): The name of the mount.
+        * *plane* (FabPlane): The FabMount plane.
+        * *orient* (Vector): The orientation of the FabMount for CNC operations.
+
+        Returns:
+        * (FabMount): The Resulting FabMount object.
+
+        """
         if tracing:
             print(f"{tracing}=>FabSolid({self.Label}).mount('{name}', ...)")
 
         mounts: List[FabMount] = self._Mounts
         self.LastMountPrefix = None
-        fab_mount: FabMount = FabMount(name, self, contact, normal, orient, depth, self._Query)
+        fab_mount: FabMount = FabMount(
+            name, self, plane.Contact, plane.Normal, orient, depth, self._Query)
         mounts.append(fab_mount)
 
         if tracing:

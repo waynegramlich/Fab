@@ -150,8 +150,8 @@ Returns:
 
 ## <a name="fabgeometries--fabplane"></a>3 Class FabPlane:
 
-A Plane class.
-* *Contact* (Vector):  The contact point of the plane.
+An immutable Plane class.
+* *Contact* (Vector):  Some contact point that anywhere in the plane.
 * *Normal* (Vector): The normal to the plane.
 
 ### <a name="fabgeometries----point-project"></a>3.1 `FabPlane.`point_project():

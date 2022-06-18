@@ -19,15 +19,15 @@ from FabNodes import FabBox
 # FabPlane:
 @dataclass
 class FabPlane(object):
-    """FabPlane: A Plane class.
+    """FabPlane: An immutable Plane class.
 
-    * *Contact* (Vector):  The contact point of the plane.
+    * *Contact* (Vector):  Some contact point that anywhere in the plane.
     * *Normal* (Vector): The normal to the plane.
     """
 
     _Contact: Vector
     _Normal: Vector
-    tracing: str = ""  # TODO: Remove. For dataclass sub-classing, optional value are disallowed.)
+    tracing: str = ""  # TODO: Remove. For dataclass sub-classing, optional values are disallowed.)
     _UnitNormal: Vector = field(init=False, repr=False)
     _Distance: float = field(init=False, repr=False)
     _Copy: Vector = field(init=False, repr=False)
@@ -67,7 +67,7 @@ class FabPlane(object):
             print(f"{tracing}=>FabPlane.__post_init__({self._Contact}, {self._Normal})")
         next_tracing: str = tracing + " " if tracing else ""
 
-        copy: Vector = Vector(0.0, 0.0, 0.0)
+        copy: Vector = Vector()
         contact: Vector = self._Contact + copy  # C
         normal: Vector = self._Normal + copy   # N
         d: float = normal.dot(contact)  # d = N . C
@@ -128,13 +128,13 @@ class FabPlane(object):
     # FabPlane.Contact():
     @property
     def Contact(self) -> Vector:
-        """Return FabPlane Contact."""
+        """Return the FabPlane Contact."""
         return self._Contact + self._Copy
 
     # FabPlane.Normal():
     @property
     def Normal(self) -> Vector:
-        """Return FabPlane Normal."""
+        """Return the FabPlane Normal."""
         return self._Normal + self._Copy
 
     # FabPlane.UnitNormal():

@@ -12,7 +12,7 @@ from pathlib import Path as PathFile
 from cadquery import Vector  # type: ignore
 
 # Fab library imports:
-from FabGeometries import FabCircle, FabPolygon
+from FabGeometries import FabCircle, FabPlane, FabPolygon
 from FabJoins import FabFasten, FabJoin
 from FabNodes import FabNode  # This should not be needed see cast in BoxSide.produce()
 from FabProjects import FabAssembly, FabDocument, FabProject
@@ -100,7 +100,8 @@ class BoxSide(FabSolid):
         half_width: Vector = self.HalfWidth
         radius: float = 0.5
         all_screws: Tuple[FabJoin, ...] = box.get_all_screws()
-        mount: FabMount = self.mount(f"{name}FaceMount", contact, self.Normal, self.Orient, depth)
+        plane: FabPlane = FabPlane(contact, self.Normal)
+        mount: FabMount = self.mount(f"{name}FaceMount", plane, self.Orient, depth)
         corners: Tuple[Vector, ...] = (
             (contact + half_length + half_width, radius),
             (contact + half_length - half_width, radius),
@@ -133,9 +134,9 @@ class BoxSide(FabSolid):
         for direction in (self.HalfLength, -self.HalfLength, self.HalfWidth, -self.HalfWidth):
             edge_normal: Vector = direction / direction.Length
             random_orient: Vector = (self.Normal + copy).cross(direction + copy)
+            plane = FabPlane(contact + direction, edge_normal)
             edge_mount: FabMount = self.mount(
-                f"{name}Edge{edge_index}Mount", contact + direction,
-                edge_normal, random_orient, depth)
+                f"{name}Edge{edge_index}Mount", plane, random_orient, depth)
             edge_mounts.append(edge_mount)
             edge_index += 1
         if self.Drill:
@@ -328,7 +329,8 @@ class TestSolid(FabSolid):
         normal: Vector = Vector(0, 0, 1)
         dt: Vector = self.DT
         dn: Vector = self.DN
-        top_mount: FabMount = self.mount("Top", top_origin, dt, dn, depth, tracing=tracing)
+        top_plane: FabPlane = FabPlane(top_origin, dt)
+        top_mount: FabMount = self.mount("Top", top_plane, dn, depth, tracing=tracing)
 
         wx: float = -40.0
         ex: float = 40.0
@@ -387,7 +389,8 @@ class TestSolid(FabSolid):
             n: Vector = self.N
             de: Vector = self.DE
             dy: Vector = self.YMax - self.YMin  # FIXME: use self.DY instead.
-            north_mount: FabMount = self.mount("NorthX", n, dn, de, dy, tracing=tracing)
+            north_plane: FabPlane = FabPlane(n, dn)
+            north_mount: FabMount = self.mount("NorthX", north_plane, de, dy, tracing=tracing)
             self.ScrewN: FabJoin = FabJoin("ScrewN", self.Fasten, north_start, north_end)
             north_mount.drill_joins("ScrewN", (self.ScrewN,), tracing=next_tracing)
 

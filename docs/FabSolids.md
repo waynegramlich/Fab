@@ -27,7 +27,7 @@ This internal classes are managed by FabMount methods.
   * 2.5 [pre_produce()](#fabsolids----pre-produce): Perform FabSolid pre production.
   * 2.6 [post_produce1()](#fabsolids----post-produce1): Perform FabSolid pre production.
   * 2.7 [get_hash()](#fabsolids----get-hash): Return FabSolid hash.
-  * 2.8 [mount()](#fabsolids----mount): Return a new FabMount.
+  * 2.8 [mount()](#fabsolids----mount): Add a new FabMount to ae FabSolid.
   * 2.9 [drill_joins()](#fabsolids----drill-joins): Apply drill FabJoin holes for a FabSolid.
   * 2.10 [post_produce2()](#fabsolids----post-produce2): Perform FabSolid Phase1 post production.
 * 3 Class: [FabStock](#fabsolids--fabstock):
@@ -204,9 +204,16 @@ Return FabSolid hash.
 
 ### <a name="fabsolids----mount"></a>2.8 `FabSolid.`mount():
 
-FabSolid.mount(self, name: str, contact: cadquery.occ_impl.geom.Vector, normal: cadquery.occ_impl.geom.Vector, orient: cadquery.occ_impl.geom.Vector, depth: float, tracing: str = '') -> FabSolids.FabMount:
+FabSolid.mount(self, name: str, plane: FabGeometries.FabPlane, orient: cadquery.occ_impl.geom.Vector, depth: float, tracing: str = '') -> FabSolids.FabMount:
 
-Return a new FabMount.
+Add a new FabMount to ae FabSolid.
+Arguments:
+* *name* (str): The name of the mount.
+* *plane* (FabPlane): The FabMount plane.
+* *orient* (Vector): The orientation of the FabMount for CNC operations.
+
+Returns:
+* (FabMount): The Resulting FabMount object.
 
 ### <a name="fabsolids----drill-joins"></a>2.9 `FabSolid.`drill_joins():
 
