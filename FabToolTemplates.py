@@ -427,7 +427,7 @@ class FabBit(object):
                 character: str
                 number: str = attribute_value
                 for index, character in enumerate(attribute_value):
-                    if character.isalpha():
+                    if character.isalpha() or character == "°":
                         units = attribute_value[index:].lower().strip()
                         number = attribute_value[:index]
                         break
@@ -438,7 +438,7 @@ class FabBit(object):
                         f"FabBit.getNumber('{attribute_name}'): "
                         f"Could not convert '{attribute_value}' into a number")
                 assert isinstance(value, float), attribute_value
-                if units == "mm":
+                if units in ("mm", "°", "deg"):
                     pass
                 elif units == "in":
                     value *= 25.4

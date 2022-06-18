@@ -343,11 +343,58 @@ Attributes:
 * *Diameter* (Union[str, float]): The V bit outer diameter.
 * *Length* (Union[str, float]): The total length of the V bit.
 * *ShankDiameter: (Union[str, float]): The V bit shank diameter.
-* *TipDiameter* (Union[str, float]): The tip radius of the V bit
+* *TipDiameter* (Union[str, float]): The tip diameter of the V bit
+
+Computed Attributes:
+* *AngleCuttingEdgeHeight* (float): The angled cutting edge height.
+* *VerticalCuttingEdgeHeight* (float): The angled cutting edge height.
 
 Constructor:
 * FabVBit("Name", "BitStem", "ShapeStem", Attributes,
   CuttingEdgeAngle, CuttingEdgeHeight, Diameter, Length, ShankDiameter, TipDiameter)
+
+Crude ASCII bit diagram:
+```
+           |                       |
+           |<--------- D --------->|
+           |                       |
+           |    +*************+ <--+-------------
+           |    *             *    |          ^
+           |    *             *    |          |
+           |    *             *    |          |
+           |    *             *    |          |
+                *             *               |
+     ----- +****+             +****+ -------  |
+       ^   *                       *    ^     |
+       |   *                       *    |     |
+       |   *                       *   VCEH   |
+       |   *                       *    |     |
+       |   *                       *    v     |
+       |   +             A.........B -------  L
+      CEH   *            .        *     ^     |
+       |     *           .       *      |     |
+       |      *                 *       |     |
+       |       *<--<CEA--+---->*        |     |
+       |        *        .    *        ACEH   |
+       |         *       .   *          |     |
+       |          *      .  *           |     |
+       |           *     . *            |     |
+       v            *     *             v     v
+     --------------- +***C ----------------------
+
+                     |   |
+              TD --->|   |<---
+                     |   |
+
+    D = Diameter Diameter
+    CEH = Cutting Edge Height
+    VCEH = Vertical Cutting Edge Height
+    ACEH = Angle Cutting Edge Height (computed from CEA, D
+    TD = Tip Diameter
+    <CEA = Cutting Edge Angle (i.e. the point angle)
+    L = Length (i.e. OAL = Overall Length)
+    A/B/C = Points on right triangle where |AC|=ACEH and |AB|=(D-TD)/2
+```
 
 ### <a name="fabtoolbits----getoperationkinds"></a>10.1 `FabVBit.`getOperationKinds():
 

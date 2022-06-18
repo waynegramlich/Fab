@@ -28,9 +28,11 @@ Both FabShape and FabAttributes are also defined in the FabTemplates module as w
 
 # <--------------------------------------- 100 characters ---------------------------------------> #
 
+from dataclasses import dataclass
+import math
 from typeguard import check_type
 from typing import Any, Optional, Tuple, Union
-from dataclasses import dataclass
+
 from FabToolTemplates import FabAttributes, FabBit, FabBitTemplates
 
 
@@ -805,11 +807,58 @@ class FabVBit(FabBit):
     * *Diameter* (Union[str, float]): The V bit outer diameter.
     * *Length* (Union[str, float]): The total length of the V bit.
     * *ShankDiameter: (Union[str, float]): The V bit shank diameter.
-    * *TipDiameter* (Union[str, float]): The tip radius of the V bit
+    * *TipDiameter* (Union[str, float]): The tip diameter of the V bit
+
+    Computed Attributes:
+    * *AngleCuttingEdgeHeight* (float): The angled cutting edge height.
+    * *VerticalCuttingEdgeHeight* (float): The angled cutting edge height.
 
     Constructor:
     * FabVBit("Name", "BitStem", "ShapeStem", Attributes,
       CuttingEdgeAngle, CuttingEdgeHeight, Diameter, Length, ShankDiameter, TipDiameter)
+
+    Crude ASCII bit diagram:
+    ```
+               |                       |
+               |<--------- D --------->|
+               |                       |
+               |    +*************+ <--+-------------
+               |    *             *    |          ^
+               |    *             *    |          |
+               |    *             *    |          |
+               |    *             *    |          |
+                    *             *               |
+         ----- +****+             +****+ -------  |
+           ^   *                       *    ^     |
+           |   *                       *    |     |
+           |   *                       *   VCEH   |
+           |   *                       *    |     |
+           |   *                       *    v     |
+           |   +             A.........B -------  L
+          CEH   *            .        *     ^     |
+           |     *           .       *      |     |
+           |      *                 *       |     |
+           |       *<--<CEA--+---->*        |     |
+           |        *        .    *        ACEH   |
+           |         *       .   *          |     |
+           |          *      .  *           |     |
+           |           *     . *            |     |
+           v            *     *             v     v
+         --------------- +***C ----------------------
+
+                         |   |
+                  TD --->|   |<---
+                         |   |
+
+        D = Diameter Diameter
+        CEH = Cutting Edge Height
+        VCEH = Vertical Cutting Edge Height
+        ACEH = Angle Cutting Edge Height (computed from CEA, D
+        TD = Tip Diameter
+        <CEA = Cutting Edge Angle (i.e. the point angle)
+        L = Length (i.e. OAL = Overall Length)
+        A/B/C = Points on right triangle where |AC|=ACEH and |AB|=(D-TD)/2
+    ```
     """
 
     CuttingEdgeAngle: Union[str, float]
@@ -829,6 +878,26 @@ class FabVBit(FabBit):
         check_type("FabVBit.Length", self.Length, Union[float, str])
         check_type("FabVBit.ShankDiameter", self.ShankDiameter, Union[float, str])
         check_type("FabVBit.TipDiameter", self.TipDiameter, Union[float, str])
+
+    # FabVBit.AngleCuttingEdgeHeight():
+    @property
+    def AngleCuttingEdgeHeight(self) -> float:
+        """Return the height of the FabVBit cutting edge."""
+        # Compute *AngleCuttingHeight*.
+        # The triangle vertcies the triangle the interest are labeled A, B, C in the diagram above.
+        # Notation: <ABC = the angle from A to C with B as the vertex.
+        #
+        # (1) |AC|/sin(<ABC) = |AB|/sin(<ACB)           # Law of sines
+        # (1) |AC| = |AB| * sin(<ABC)) / sin(<ACB)      # Rearrange (1)
+        # (2) <ABC = 90° - <ACB                         # Right triangle
+        # (3) |AC| = sin(<ABC) * |AB|/sin(<ACB)         # From (1)
+        # (4) |AC| = sin(90° - <ACB) * |AB|/sin(<ACB)   # Substitute (2) into (3)
+        radius: float = self.getNumber("Diameter") / 2.0
+        tip_radius: float = self.getNumber("TipDiameter") / 2.0  # |AB|
+        slant_angle: float = self.getNumber("CuttingEdgeAngle") / 2.0  # < ACB
+        degrees90: float = math.pi / 2.0  # 180°
+        xxx: float = radius - tip_radius
+        return xxx * math.sin(degrees90 - slant_angle) / math.sin(slant_angle)  # Using (4)
 
     # FabVBit.getOperationKinds():
     def getOperationKinds(self) -> Tuple[str, ...]:
@@ -891,6 +960,8 @@ class FabVBit(FabBit):
             "Flutes": 4,
             "Material": "HSS",
         }), v_bit.Attributes
+        want: float = 2.7781633070260057
+        assert abs(v_bit.AngleCuttingEdgeHeight - want) < 1.0e-8, v_bit.AngleCuttingEdgeHeight
         if tracing:
             print(f"{tracing}<=FabVBit._unit_tests()")
 
