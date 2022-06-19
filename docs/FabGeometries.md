@@ -41,6 +41,7 @@
   * 9.2 [copy_with_plane_adjust()](#fabgeometries----copy-with-plane-adjust): Return a Fab_GeometryContext copy with the plane adjusted up/down.
   * 9.3 [set_geometry_group()](#fabgeometries----set-geometry-group): Set the GeometryContext geometry group.
 * 10 Class: [Fab_GeometryInfo](#fabgeometries--fab-geometryinfo):
+  * 10.1 [toTuple()](#fabgeometries----totuple): Return the area, perimeter, internal/external radius for a FabGeometry.
 * 11 Class: [Fab_Line](#fabgeometries--fab-line):
   * 11.1 [get_start()](#fabgeometries----get-start): Return the start point of the Fab_Line.
   * 11.2 [produce()](#fabgeometries----produce): Return line segment after moving it into Geometry group.
@@ -405,6 +406,18 @@ Attributes:
 
 Constructor:
 * Fab_GeometryInfo(Geometry)
+
+### <a name="fabgeometries----totuple"></a>10.1 `Fab_GeometryInfo.`toTuple():
+
+Fab_GeometryInfo.toTuple(self) -> Tuple[float, float, float, float]:
+
+Return the area, perimeter, internal/external radius for a FabGeometry.
+Returns:
+* (float): The area in square millimeters.
+* (float): The perimeter in millimeters.
+* (float):
+  The minimum internal radius in millimeters or -1.0 if there are now internal corners.
+* (float): The minimum external radius in millimeters.
 
 
 ## <a name="fabgeometries--fab-line"></a>11 Class Fab_Line:

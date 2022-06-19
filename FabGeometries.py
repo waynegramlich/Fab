@@ -2052,6 +2052,20 @@ class Fab_GeometryInfo(object):
     MinimumInternalRadius: float = field(init=False)  # Filled in by __post_init__()
     MinimumExternalRadius: float = field(init=False)  # Filled in by __post_init__()
 
+    # Fab_GeometryInfo.toTuple():
+    def toTuple(self) -> Tuple[float, float, float, float]:
+        """Return the area, perimeter, internal/external radius for a FabGeometry.
+
+        Returns:
+        * (float): The area in square millimeters.
+        * (float): The perimeter in millimeters.
+        * (float):
+          The minimum internal radius in millimeters or -1.0 if there are now internal corners.
+        * (float): The minimum external radius in millimeters.
+
+        """
+        return (self.Area, self.Perimeter, self.MinimumInternalRadius, self.MinimumExternalRadius)
+
     # Fab_GeometryInfo.__post_init__():
     def __post_init__(self) -> None:
         """Finish initializing Fab_GeometryInfo."""
@@ -2132,10 +2146,19 @@ class Fab_GeometryInfo(object):
             pi: float = math.pi
             circle: FabCircle = FabCircle(xy_plane, origin, 2.0 * radius)
             info: Fab_GeometryInfo = Fab_GeometryInfo(circle)
+            close(info.Area, pi * radius * radius)
+            close(info.Perimeter, 2.0 * pi * radius)
             close(info.MinimumInternalRadius, -1.0)
             close(info.MinimumExternalRadius, radius)
-            close(info.Perimeter, 2.0 * pi * radius)
-            close(info.Area, pi * radius * radius)
+            area: float
+            perimeter: float
+            minimum_internal_radius: float
+            maximum_external_radius: float
+            area, perimeter, minimum_internal_radius, maximum_external_radius = info.toTuple()
+            close(area, pi * radius * radius)
+            close(perimeter, 2.0 * pi * radius)
+            close(minimum_internal_radius, -1)
+            close(maximum_external_radius, radius)
 
         circle_check(1.0)
         circle_check(2.0)
