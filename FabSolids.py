@@ -25,8 +25,7 @@ from cadquery import Vector  # type: ignore
 # import Part  # type: ignore
 
 from FabGeometries import (
-    FabCircle, FabGeometry, Fab_GeometryContext, FabGeometryInfo, Fab_GeometryInfo,
-    FabPlane, Fab_Query
+    FabCircle, FabGeometry, Fab_GeometryContext, FabGeometryInfo, FabPlane, Fab_Query
 )
 from FabJoins import FabFasten, FabJoin
 from FabNodes import FabBox, FabNode, Fab_Prefix, Fab_ProduceState
@@ -678,15 +677,14 @@ class Fab_Pocket(Fab_Operation):
         depth: float = self.Depth
         geometries: Tuple[FabGeometry, ...] = self._Geometries
         exterior: FabGeometry = geometries[0]
-        info: FabGeometryInfo = exterior.getGeometryInfo()
+        exterior_info: FabGeometryInfo = exterior.getGeometryInfo()
         if tracing:
-            area: float = info.Area
-            perimeter: float = info.Perimeter
-            internal_radius: float = info.MinimumInternalRadius
-            external_radius: float = info.MinimumInternalRadius
+            area: float = exterior_info.Area
+            perimeter: float = exterior_info.Perimeter
+            internal_radius: float = exterior_info.MinimumInternalRadius
+            external_radius: float = exterior_info.MinimumInternalRadius
             print(f"{tracing}{area=} {perimeter=} {internal_radius=} {external_radius=}")
 
-        exterior_info: Fab_GeometryInfo = Fab_GeometryInfo(exterior)
         # This is counter intuitive.  For a pocket, the external perimeter of geometry is
         # traversed.  The external corners of the polygon are actually internal corners
         # for pocketing purposes.
@@ -812,7 +810,7 @@ class Fab_Pocket(Fab_Operation):
 
         # Step 2: Now deal with finding acceptable tool bits from *machines* in *shops*:
         # pocket_geometry: FabGeometry = self._Geometries[0]
-        # pocket_info: Fab_GeometryInfo = Fab_GeometryInfo(pocket_geometry)
+        # pocket_info: FabGeometryInfo = pocket_geometry.GetGeometryInfo()
         # _ = pocket_info
 
         tool_controller: FabToolController = FabToolController(
