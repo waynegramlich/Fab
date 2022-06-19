@@ -66,6 +66,8 @@ Attributes:
 * *Center* (Vector): The circle center after it has been projected.
 * *Diameter* (float): The circle diameter in millimeters.
 * *Box* (FabBox): The box that encloses FabCircle
+* *GeometryInfo* (FabGeometryInfo):
+   The geometry information about the FabCircle (e.g. Area, Perimeter, etc.)
 
 Constructor:
 * FabCircle(Plane, Center, Diameter)
@@ -113,6 +115,8 @@ Return the FabPolygon lines and arcs.
 The base class for FabPolygon and FabCircle.
 Attributes:
 * *Plane* (FabPlane): The plane to project the geometry onto.
+* *Box* (FabBox): A 3D box that encloses the gemetery.
+* *GeometryInfo* (FabGeometryInfo): The geometry information (e.g. area, peremeteter, etc.)
 
 ### <a name="fabgeometries----get-hash"></a>2.1 `FabGeometry.`get_hash():
 

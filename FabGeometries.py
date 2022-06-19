@@ -929,6 +929,8 @@ class FabGeometry(object):
 
     Attributes:
     * *Plane* (FabPlane): The plane to project the geometry onto.
+    * *Box* (FabBox): A 3D box that encloses the gemetery.
+    * *GeometryInfo* (FabGeometryInfo): The geometry information (e.g. area, peremeteter, etc.)
 
     """
 
@@ -944,6 +946,12 @@ class FabGeometry(object):
     def Box(self) -> FabBox:
         """Return a FabBox that encloses the FabGeometry."""
         raise NotImplementedError(f"{type(self)}.Box() is not implemented")
+
+    # FabGeometry.GeometryInfo:
+    @property
+    def GeometryInfo(self) -> FabGeometryInfo:
+        """Return the FabGeometryInfo associated with a FabGeometry."""
+        raise NotImplementedError(f"{type(self)}.GeometryInfo() is not implemented")
 
     # FabGeometry.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:
@@ -981,6 +989,8 @@ class FabCircle(FabGeometry):
     * *Center* (Vector): The circle center after it has been projected.
     * *Diameter* (float): The circle diameter in millimeters.
     * *Box* (FabBox): The box that encloses FabCircle
+    * *GeometryInfo* (FabGeometryInfo):
+       The geometry information about the FabCircle (e.g. Area, Perimeter, etc.)
 
     Constructor:
     * FabCircle(Plane, Center, Diameter)
@@ -992,6 +1002,7 @@ class FabCircle(FabGeometry):
     _ProjectedCenter: Vector = field(init=False, repr=False, compare=False)
     _Copy: Vector = field(init=False, repr=False, compare=False)
     _Box: FabBox = field(init=False, repr=False, compare=False)
+    _GeometryInfo: FabGeometryInfo = field(init=False, repr=False, compare=False)
 
     # FabCircle.__post_init__():
     def __post_init__(self) -> None:
@@ -1031,13 +1042,14 @@ class FabCircle(FabGeometry):
         corner4: Vector = projected_center - radius * perpendicular1
         box: FabBox = FabBox()
         box.enclose((corner1, corner2, corner3, corner4))
+        geometry_info: FabGeometryInfo = self.getGeometryInfo()
 
-        # Make private copy of *Center*.
         # (Why __setattr__?)[https://stackoverflow.com/questions/53756788]
-        object.__setattr__(self, "_Center", center)
+        object.__setattr__(self, "_Center", center + copy)
         object.__setattr__(self, "_Copy", copy)
         object.__setattr__(self, "_Box", box)
         object.__setattr__(self, "_ProjectedCenter", projected_center)
+        object.__setattr__(self, "_GeometryInfo", geometry_info)
 
     # FabCircle.Box():
     @property
@@ -1050,6 +1062,12 @@ class FabCircle(FabGeometry):
     def Center(self) -> Vector:
         """Return the projected FabCircle center point."""
         return self._Center + self._Copy
+
+    # FabCicle.GeometryInfo():
+    @property
+    def GeometryInfo(self) -> FabGeometryInfo:
+        """Return the geometry information for a FabCircle."""
+        return self._GeometryInfo
 
     # FabCircle.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:
@@ -1155,10 +1173,22 @@ class FabCircle(FabGeometry):
         except ValueError as value_error:
             assert str(value_error) == "Diameter (-1.0) must be positive.", value_error
 
+        radius: float = 0.5
         circle: FabCircle = FabCircle(xy_plane, center, 1.0)
         assert circle.Diameter == 1.0, circle.Diameter
         assert circle.Box.TNE == Vector(1.5, 2.0, 0.0), circle.Box.TNE
         assert circle.Box.BSW == Vector(0.5, 1.5, 0.0), circle.Box.BSW
+
+        def close(value1: float, value2: float) -> bool:
+            """Return whether two floats are close."""
+            return abs(value1 - value2) < 1.0e-8
+
+        circle_info: FabGeometryInfo = circle.GeometryInfo
+        pi: float = math.pi
+        assert close(circle_info.Area, pi * radius * radius)
+        assert close(circle_info.Perimeter, 2.0 * pi * radius)
+        assert circle_info.MinimumInternalRadius == -1.0
+        assert circle_info.MinimumExternalRadius == radius
 
         if tracing:
             print(f"{tracing}<=FabCircle._unit_tests()")
