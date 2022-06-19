@@ -587,7 +587,7 @@ class Fab_Fillet(object):
     After: "Fab_Fillet" = field(init=False, repr=False)  # Filled in by __post_init__()
     Arc: Optional["Fab_Arc"] = field(init=False, default=None)  # Filled in by compute_arcs()
     Line: Optional["Fab_Line"] = field(init=False, default=None)  # Filled in by compute_lines()
-    ProjectedApex: Vector = field(init=False, repr=False)  # Used by get_geometry_info()
+    ProjectedApex: Vector = field(init=False, repr=False)  # Used by getGeometryInfo()
 
     # Fab_Fillet.__post_init__():
     def __post_init__(self) -> None:
@@ -916,9 +916,8 @@ class FabGeometry(object):
         """Return a new FabGeometry projected onto a plane."""
         raise NotImplementedError(f"{type(self)}.projectToPlane is not implemented")
 
-    # FabGeometry.get_geometry_info():
-    def get_geometry_info(
-            self, plane: FabPlane, tracing: str = "") -> Tuple[float, float, float, float]:
+    # FabGeometry.getGeometryInfo():
+    def getGeometryInfo(self, tracing: str = "") -> Tuple[float, float, float, float]:
         """Return information about FabGeometry.
 
         Arguments:
@@ -931,7 +930,7 @@ class FabGeometry(object):
           The minimum internal radius in millimeters. -1.0 means there is no internal radius.
         * (float): The minimum external radius in millimeters. 0 means that all corners are "sharp".
         """
-        raise NotImplementedError(f"{type(self)}.get_geometry_info is not implemented")
+        raise NotImplementedError(f"{type(self)}.getGeometryInfo is not implemented")
 
 
 # FabCircle:
@@ -1028,9 +1027,8 @@ class FabCircle(FabGeometry):
         )
         return hashes
 
-    # FabCircle.get_geometry_info():
-    def get_geometry_info(
-            self, plane: FabPlane, tracing: str = "") -> Tuple[float, float, float, float]:
+    # FabCircle.getGeometryInfo():
+    def getGeometryInfo(self, tracing: str = "") -> Tuple[float, float, float, float]:
         """Return information about FabGeometry.
 
         Arguments:
@@ -1044,7 +1042,7 @@ class FabCircle(FabGeometry):
 
         """
         if tracing:
-            print("{tracing}=>FabCircle.get_geometry_info(*))")
+            print("{tracing}=>FabCircle.getGeometryInfo(*))")
         pi: float = math.pi
         radius: float = self.Diameter / 2.0
         area: float = pi * radius * radius
@@ -1052,7 +1050,7 @@ class FabCircle(FabGeometry):
         minimum_internal_radius: float = -1.0
         minimum_external_radius: float = radius
         if tracing:
-            print(f"{tracing}=>FabCircle.get_geometry_info(*))=>"
+            print(f"{tracing}=>FabCircle.getGeometryInfo(*))=>"
                   f"({area}, {perimeter}, {minimum_internal_radius}, {minimum_external_radius})")
         return area, perimeter, minimum_internal_radius, minimum_external_radius
 
@@ -1323,13 +1321,9 @@ class FabPolygon(FabGeometry):
             print(f"{tracing}<=_compute_polygon_area({points})=>{area}")
         return area
 
-    # FabPolygon.get_geometry_info():
-    def get_geometry_info(
-            self, plane: FabPlane, tracing: str = "") -> Tuple[float, float, float, float]:
+    # FabPolygon.getGeometryInfo():
+    def getGeometryInfo(self, tracing: str = "") -> Tuple[float, float, float, float]:
         """Return the values needed for a FabGeometry_Info from a FabPolygon.
-
-        Method Arguments:
-        * *plane* (FabPlane): The FabPolygon projection to use for Area computation.
 
         Returns:
         * (float): The area of the projected FabPolygon.
@@ -1342,7 +1336,7 @@ class FabPolygon(FabGeometry):
         """
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>FabPolygon.get_geometry_info(*)")
+            print(f"{tracing}=>FabPolygon.getGeometryInfo(*)")
 
         # In order to finish filling in Fab_Fillet's, a *geometry_context* is needed.
         origin: Vector = Vector(0.0, 0.0, 0.0)
@@ -1357,7 +1351,7 @@ class FabPolygon(FabGeometry):
         # Step 1: Project the Apex points from *plane* to the XY plane.
         fillet: Fab_Fillet
         for fillet in self._Fillets:
-            fillet.ProjectedApex = plane.rotate_to_z_axis(fillet.Apex)
+            fillet.ProjectedApex = self.Plane.rotate_to_z_axis(fillet.Apex)
 
         # Step 2: Compute the *maximum_radius* and *total_angle* of turning at each *fillet*:
         pi: float = math.pi
@@ -1403,8 +1397,8 @@ class FabPolygon(FabGeometry):
 
             line: Optional[Fab_Line] = fillet.Line
             if line:
-                projected_start: Vector = plane.projectPoint(line.Start)
-                projected_finish: Vector = plane.projectPoint(line.Finish)
+                projected_start: Vector = self.Plane.projectPoint(line.Start)
+                projected_finish: Vector = self.Plane.projectPoint(line.Finish)
                 line_length: float = (projected_finish - projected_start).Length
                 perimeter += line_length
                 if tracing:
@@ -1449,7 +1443,7 @@ class FabPolygon(FabGeometry):
             internal_radius, external_radius = positive_radius, negative_radius
 
         if tracing:
-            print(f"{tracing}<=FabPolygon.get_geometry_info()=>"
+            print(f"{tracing}<=FabPolygon.getGeometryInfo()=>"
                   f"({area:.3f}, {perimeter:.3f}, {internal_radius:.3f}, {external_radius:.3f})")
         return area, perimeter, internal_radius, external_radius
 
@@ -1651,12 +1645,12 @@ class FabPolygon(FabGeometry):
         xy_plane: FabPlane = FabPlane(origin, z_axis)
 
         polygon1: FabPolygon = FabPolygon(xy_plane, corners)
-        info1: Fab_GeometryInfo = Fab_GeometryInfo(polygon1, xy_plane, tracing=next_tracing)
+        info1: Fab_GeometryInfo = Fab_GeometryInfo(polygon1, tracing=next_tracing)
         info1._check(test_name, desired_area, desired_perimeter,
                      desired_internal_radius, desired_external_radius, tracing=next_tracing)
 
         polygon2: FabPolygon = FabPolygon(xy_plane, tuple(reversed(corners)))
-        info2: Fab_GeometryInfo = Fab_GeometryInfo(polygon2, xy_plane)
+        info2: Fab_GeometryInfo = Fab_GeometryInfo(polygon2)
         info2._check(test_name, desired_area, desired_perimeter,
                      desired_internal_radius, desired_external_radius, tracing=next_tracing)
 
@@ -2040,7 +2034,6 @@ class Fab_GeometryInfo(object):
 
     Attributes:
     * Geometry (FabGeometry): The FabGeometry object used.
-    * Plane (FabPlane): The geometry plane to project onto.
     * Area (float): The geometry area in square millimeters.
     * Perimeter (float): The perimeter length in millimetes.
     * MinimumInternalRadius:
@@ -2053,7 +2046,6 @@ class Fab_GeometryInfo(object):
     """
 
     Geometry: FabGeometry
-    Plane: FabPlane
     tracing: str = ""  # TODO: remove for debugging only
     Area: float = field(init=False)  # Filled in by __post_init__()
     Perimeter: float = field(init=False)  # Filled in by __post_init__()
@@ -2071,7 +2063,7 @@ class Fab_GeometryInfo(object):
         check_type("Fab_GeometryInfo.Geometry", self.Geometry, FabGeometry)
         check_type("Fab_GeometryInfo.Geometry", self.Geometry, FabGeometry)
         self.Area, self.Perimeter, self.MinimumInternalRadius, self.MinimumExternalRadius = (
-            self.Geometry.get_geometry_info(self.Plane, tracing=next_tracing))
+            self.Geometry.getGeometryInfo(tracing=next_tracing))
         if tracing:
             print(f"{tracing}<=Fab_GeometryInfo.__post_init__()")
 
@@ -2139,7 +2131,7 @@ class Fab_GeometryInfo(object):
             xy_plane: FabPlane = FabPlane(origin, z_axis)
             pi: float = math.pi
             circle: FabCircle = FabCircle(xy_plane, origin, 2.0 * radius)
-            info: Fab_GeometryInfo = Fab_GeometryInfo(circle, xy_plane)
+            info: Fab_GeometryInfo = Fab_GeometryInfo(circle)
             close(info.MinimumInternalRadius, -1.0)
             close(info.MinimumExternalRadius, radius)
             close(info.Perimeter, 2.0 * pi * radius)

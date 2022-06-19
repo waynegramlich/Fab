@@ -4,7 +4,7 @@
 
 * 1 Class: [FabCircle](#fabgeometries--fabcircle):
   * 1.1 [get_hash()](#fabgeometries----get-hash): Return FabCircle hash.
-  * 1.2 [get_geometry_info()](#fabgeometries----get-geometry-info): Return information about FabGeometry.
+  * 1.2 [getGeometryInfo()](#fabgeometries----getgeometryinfo): Return information about FabGeometry.
   * 1.3 [projectToPlane()](#fabgeometries----projecttoplane): Return a new FabCircle projected onto a plane.
   * 1.4 [produce()](#fabgeometries----produce): Produce the FreeCAD objects needed for FabPolygon.
   * 1.5 [get_geometries()](#fabgeometries----get-geometries): Return the FabPolygon lines and arcs.
@@ -12,14 +12,14 @@
   * 2.1 [get_hash()](#fabgeometries----get-hash): Return FabGeometry hash.
   * 2.2 [produce()](#fabgeometries----produce): Produce the necessary FreeCAD objects for the FabGeometry.
   * 2.3 [projectToPlane()](#fabgeometries----projecttoplane): Return a new FabGeometry projected onto a plane.
-  * 2.4 [get_geometry_info()](#fabgeometries----get-geometry-info): Return information about FabGeometry.
+  * 2.4 [getGeometryInfo()](#fabgeometries----getgeometryinfo): Return information about FabGeometry.
 * 3 Class: [FabPlane](#fabgeometries--fabplane):
   * 3.1 [get_hash()](#fabgeometries----get-hash): Return a FabPlane hash value.
   * 3.2 [projectPoint()](#fabgeometries----projectpoint): Project a point onto a plane.
   * 3.3 [adjust()](#fabgeometries----adjust): Return a new FabPlane that has been adjusted up/down the normal by a delta.
   * 3.4 [rotate_to_z_axis()](#fabgeometries----rotate-to-z-axis): Rotate a point around the origin until the normal aligns with the +Z axis.
 * 4 Class: [FabPolygon](#fabgeometries--fabpolygon):
-  * 4.1 [get_geometry_info()](#fabgeometries----get-geometry-info): Return the values needed for a FabGeometry_Info from a FabPolygon.
+  * 4.1 [getGeometryInfo()](#fabgeometries----getgeometryinfo): Return the values needed for a FabGeometry_Info from a FabPolygon.
   * 4.2 [get_hash()](#fabgeometries----get-hash): Return the FabPolygon Hash.
   * 4.3 [projectToPlane()](#fabgeometries----projecttoplane): Return nre FabPolygon projected onto a plane.
   * 4.4 [get_geometries()](#fabgeometries----get-geometries): Return the FabPolygon lines and arcs.
@@ -74,9 +74,9 @@ FabCircle.get_hash(self) -> Tuple[Any, ...]:
 
 Return FabCircle hash.
 
-### <a name="fabgeometries----get-geometry-info"></a>1.2 `FabCircle.`get_geometry_info():
+### <a name="fabgeometries----getgeometryinfo"></a>1.2 `FabCircle.`getGeometryInfo():
 
-FabCircle.get_geometry_info(self, plane: FabGeometries.FabPlane, tracing: str = '') -> Tuple[float, float, float, float]:
+FabCircle.getGeometryInfo(self, tracing: str = '') -> Tuple[float, float, float, float]:
 
 Return information about FabGeometry.
 Arguments:
@@ -136,9 +136,9 @@ FabGeometry.projectToPlane(self, plane: FabGeometries.FabPlane) -> 'FabGeometry'
 
 Return a new FabGeometry projected onto a plane.
 
-### <a name="fabgeometries----get-geometry-info"></a>2.4 `FabGeometry.`get_geometry_info():
+### <a name="fabgeometries----getgeometryinfo"></a>2.4 `FabGeometry.`getGeometryInfo():
 
-FabGeometry.get_geometry_info(self, plane: FabGeometries.FabPlane, tracing: str = '') -> Tuple[float, float, float, float]:
+FabGeometry.getGeometryInfo(self, tracing: str = '') -> Tuple[float, float, float, float]:
 
 Return information about FabGeometry.
 Arguments:
@@ -220,14 +220,11 @@ Example:
      ), "Name")
 ```
 
-### <a name="fabgeometries----get-geometry-info"></a>4.1 `FabPolygon.`get_geometry_info():
+### <a name="fabgeometries----getgeometryinfo"></a>4.1 `FabPolygon.`getGeometryInfo():
 
-FabPolygon.get_geometry_info(self, plane: FabGeometries.FabPlane, tracing: str = '') -> Tuple[float, float, float, float]:
+FabPolygon.getGeometryInfo(self, tracing: str = '') -> Tuple[float, float, float, float]:
 
 Return the values needed for a FabGeometry_Info from a FabPolygon.
-Method Arguments:
-* *plane* (FabPlane): The FabPolygon projection to use for Area computation.
-
 Returns:
 * (float): The area of the projected FabPolygon.
 * (float): The polygon perimeter in millimeters with rounded corners.
@@ -399,7 +396,6 @@ Set the GeometryContext geometry group.
 Information about a FabGeomtry object.
 Attributes:
 * Geometry (FabGeometry): The FabGeometry object used.
-* Plane (FabPlane): The geometry plane to project onto.
 * Area (float): The geometry area in square millimeters.
 * Perimeter (float): The perimeter length in millimetes.
 * MinimumInternalRadius:

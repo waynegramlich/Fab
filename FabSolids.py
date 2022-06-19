@@ -676,18 +676,16 @@ class Fab_Pocket(Fab_Operation):
         depth: float = self.Depth
         geometries: Tuple[FabGeometry, ...] = self._Geometries
         exterior: FabGeometry = geometries[0]
-        plane: FabPlane = self.Mount.Plane
 
         area: float
         perimeter: float
         internal_radius: float
         external_radius: float
-        area, perimeter, internal_radius, external_radius = (
-            exterior.get_geometry_info(plane))
+        area, perimeter, internal_radius, external_radius = exterior.getGeometryInfo()
         if tracing:
             print(f"{tracing}{area=} {perimeter=} {internal_radius=} {external_radius=}")
 
-        exterior_info: Fab_GeometryInfo = Fab_GeometryInfo(exterior, plane)
+        exterior_info: Fab_GeometryInfo = Fab_GeometryInfo(exterior)
         # This is counter intuitive.  For a pocket, the external perimeter of geometry is
         # traversed.  The external corners of the polygon are actually internal corners
         # for pocketing purposes.
