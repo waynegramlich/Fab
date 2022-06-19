@@ -12,7 +12,7 @@
   * 2.1 [get_hash()](#fabgeometries----get-hash): Return FabGeometry hash.
   * 2.2 [produce()](#fabgeometries----produce): Produce the necessary FreeCAD objects for the FabGeometry.
   * 2.3 [projectToPlane()](#fabgeometries----projecttoplane): Return a new FabGeometry projected onto a plane.
-  * 2.4 [getGeometryInfo()](#fabgeometries----getgeometryinfo): Return information about FabGeometry.
+  * 2.4 [getGeometryInfo()](#fabgeometries----getgeometryinfo): Return FabGeometryInfo about FabGeometry.
 * 3 Class: [FabGeometryInfo](#fabgeometries--fabgeometryinfo):
 * 4 Class: [FabPlane](#fabgeometries--fabplane):
   * 4.1 [get_hash()](#fabgeometries----get-hash): Return a FabPlane hash value.
@@ -20,7 +20,7 @@
   * 4.3 [adjust()](#fabgeometries----adjust): Return a new FabPlane that has been adjusted up/down the normal by a delta.
   * 4.4 [rotate_to_z_axis()](#fabgeometries----rotate-to-z-axis): Rotate a point around the origin until the normal aligns with the +Z axis.
 * 5 Class: [FabPolygon](#fabgeometries--fabpolygon):
-  * 5.1 [getGeometryInfo()](#fabgeometries----getgeometryinfo): Return the values needed for a FabGeometry_Info from a FabPolygon.
+  * 5.1 [getGeometryInfo()](#fabgeometries----getgeometryinfo): Return the FabGeometryInfo for a FabPolygon.
   * 5.2 [get_hash()](#fabgeometries----get-hash): Return the FabPolygon Hash.
   * 5.3 [projectToPlane()](#fabgeometries----projecttoplane): Return nre FabPolygon projected onto a plane.
   * 5.4 [get_geometries()](#fabgeometries----get-geometries): Return the FabPolygon lines and arcs.
@@ -78,17 +78,11 @@ Return FabCircle hash.
 
 ### <a name="fabgeometries----getgeometryinfo"></a>1.2 `FabCircle.`getGeometryInfo():
 
-FabCircle.getGeometryInfo(self, tracing: str = '') -> Tuple[float, float, float, float]:
+FabCircle.getGeometryInfo(self, tracing: str = '') -> FabGeometries.FabGeometryInfo:
 
 Return information about FabGeometry.
-Arguments:
-* *plane* (FabPlane): The plane to project FabGeometry onto.
-
 Returns:
-* (float): The circle area in square millimeters.
-* (float): The perimeter length in millimeters.
-* (float): -1 since there are no internal radius corners for a circle.
-* (float): The circle radius in millimeters.
+* (FabGeometryInfo): The geometry information.
 
 ### <a name="fabgeometries----projecttoplane"></a>1.3 `FabCircle.`projectToPlane():
 
@@ -140,18 +134,11 @@ Return a new FabGeometry projected onto a plane.
 
 ### <a name="fabgeometries----getgeometryinfo"></a>2.4 `FabGeometry.`getGeometryInfo():
 
-FabGeometry.getGeometryInfo(self, tracing: str = '') -> Tuple[float, float, float, float]:
+FabGeometry.getGeometryInfo(self, tracing: str = '') -> FabGeometries.FabGeometryInfo:
 
-Return information about FabGeometry.
-Arguments:
-* *plane* (FabPlane): The plane to project the FabGeometry onto.
-
+Return FabGeometryInfo about FabGeometry.
 Returns:
-* (float): The geometry area in square millimeters.
-* (float): The perimeter length in millimeters.
-* (float):
-  The minimum internal radius in millimeters. -1.0 means there is no internal radius.
-* (float): The minimum external radius in millimeters. 0 means that all corners are "sharp".
+* (FabGeometryInfo): The geometry information.
 
 
 ## <a name="fabgeometries--fabgeometryinfo"></a>3 Class FabGeometryInfo:
@@ -239,16 +226,11 @@ Example:
 
 ### <a name="fabgeometries----getgeometryinfo"></a>5.1 `FabPolygon.`getGeometryInfo():
 
-FabPolygon.getGeometryInfo(self, tracing: str = '') -> Tuple[float, float, float, float]:
+FabPolygon.getGeometryInfo(self, tracing: str = '') -> FabGeometries.FabGeometryInfo:
 
-Return the values needed for a FabGeometry_Info from a FabPolygon.
+Return the FabGeometryInfo for a FabPolygon.
 Returns:
-* (float): The area of the projected FabPolygon.
-* (float): The polygon perimeter in millimeters with rounded corners.
-* (float):
-  The minimum internal radius corners for the polygon.
-  -1.0 means no internal corners.
-* (float): The minimum external radius corners for the polygon.
+* (FabGeometryInfo): The geometry information.
 
 ### <a name="fabgeometries----get-hash"></a>5.2 `FabPolygon.`get_hash():
 

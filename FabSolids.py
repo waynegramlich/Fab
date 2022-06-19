@@ -25,7 +25,9 @@ from cadquery import Vector  # type: ignore
 # import Part  # type: ignore
 
 from FabGeometries import (
-    FabCircle, FabGeometry, Fab_GeometryContext, Fab_GeometryInfo, FabPlane, Fab_Query)
+    FabCircle, FabGeometry, Fab_GeometryContext, FabGeometryInfo, Fab_GeometryInfo,
+    FabPlane, Fab_Query
+)
 from FabJoins import FabFasten, FabJoin
 from FabNodes import FabBox, FabNode, Fab_Prefix, Fab_ProduceState
 # from FabShops import FabCNC, FabMachine, FabShop
@@ -676,13 +678,12 @@ class Fab_Pocket(Fab_Operation):
         depth: float = self.Depth
         geometries: Tuple[FabGeometry, ...] = self._Geometries
         exterior: FabGeometry = geometries[0]
-
-        area: float
-        perimeter: float
-        internal_radius: float
-        external_radius: float
-        area, perimeter, internal_radius, external_radius = exterior.getGeometryInfo()
+        info: FabGeometryInfo = exterior.getGeometryInfo()
         if tracing:
+            area: float = info.Area
+            perimeter: float = info.Perimeter
+            internal_radius: float = info.MinimumInternalRadius
+            external_radius: float = info.MinimumInternalRadius
             print(f"{tracing}{area=} {perimeter=} {internal_radius=} {external_radius=}")
 
         exterior_info: Fab_GeometryInfo = Fab_GeometryInfo(exterior)
