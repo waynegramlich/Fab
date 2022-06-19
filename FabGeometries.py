@@ -2027,19 +2027,58 @@ class FabPolygon(FabGeometry):
             print(f"{tracing}<=FabPolygon._unit_tests()")
 
 
+# FabGeometryInfo:
+@dataclass(frozen=True)
+class FabGeometryInfo(object):
+    """FabGeometryInfo: Geometric information about area, peremiter, etc.
+
+    Attributes:
+    * Area (float): The geometry area in square millimeters.
+    * Perimeter (float): The perimeter length in millimeters.
+    * MinimumInternalRadius:
+      The minimum internal corner radius in millimeters. -1.0 means there are not internal corners
+    * MinimumExternalRadius:
+      The minimum external corner radius in millimeters, or for circles, this is the circle radius.
+
+    Constructor:
+    * FabGeometryInfo(Area, Perimeter, MinimumInternalRadius, MinimumExternalRadius)
+
+    """
+    Area: float
+    Perimeter: float
+    MinimumInternalRadius: float
+    MinimumExternalRadius: float
+
+    # FabGeometryInfo.__post_init__():
+    def __post_init__(self) -> None:
+        """Finish initializing a FabGeometryInfo."""
+        check_type("FabGeometryInfo.Area", self.Area, float)
+        check_type("FabGeometryInfo.Perimeter", self.Perimeter, float)
+        check_type("FabGeometryInfo.MinimumInternalRadius", self.MinimumInternalRadius, float)
+        check_type("FabGeometryInfo.MinimumExternalRadius", self.MinimumExternalRadius, float)
+
+    # FabGeometryInfo._unit_tests():
+    @staticmethod
+    def _unit_tests(tracing: str = "") -> None:
+        """Run FabGeometryInfo unit tests."""
+        if tracing:
+            print(f"{tracing}=>FabGeometryInfo._unit_tests()")
+        geometry_info: FabGeometryInfo = FabGeometryInfo(1.0, 2.0, 3.0, 4.0)
+        assert geometry_info.Area == 1.0
+        assert geometry_info.Perimeter == 2.0
+        assert geometry_info.MinimumInternalRadius == 3.0
+        assert geometry_info.MinimumExternalRadius == 4.0
+        if tracing:
+            print(f"{tracing}<=FabGeometryInfo._unit_tests()")
+
+
 # Fab_GeometryInfo:
 @dataclass
 class Fab_GeometryInfo(object):
-    """Fab_GeometryInfo: Information about a FabGeomtry object.
+    """Fab_GeometryInfo: Information about a FabGeometry object.
 
     Attributes:
     * Geometry (FabGeometry): The FabGeometry object used.
-    * Area (float): The geometry area in square millimeters.
-    * Perimeter (float): The perimeter length in millimetes.
-    * MinimumInternalRadius:
-      The minimum internal radius in millimeters. -1.0 means there is no internal radius.
-    * MinimumExternalRadius:
-      The minimum external radius in millimeters.
 
     Constructor:
     * Fab_GeometryInfo(Geometry)
@@ -2387,6 +2426,7 @@ def main(tracing: str = "") -> None:
     Fab_Fillet._unit_tests(tracing=next_tracing)
     FabCircle._unit_tests(tracing=next_tracing)
     FabPolygon._unit_tests(tracing=next_tracing)
+    FabGeometryInfo._unit_tests(tracing=next_tracing)
     Fab_GeometryInfo._unit_tests(tracing)
     if tracing:
         print(f"{tracing}<=FabGeometries.main()")
