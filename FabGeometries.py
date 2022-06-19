@@ -911,10 +911,10 @@ class FabGeometry(object):
         """Produce the necessary FreeCAD objects for the FabGeometry."""
         raise NotImplementedError(f"{type(self)}.produce() is not implemented")
 
-    # FabGeometry.project_to_plane():
-    def project_to_plane(self, plane: FabPlane) -> "FabGeometry":
+    # FabGeometry.projectToPlane():
+    def projectToPlane(self, plane: FabPlane) -> "FabGeometry":
         """Return a new FabGeometry projected onto a plane."""
-        raise NotImplementedError(f"{type(self)}.project_to_plane is not implemented")
+        raise NotImplementedError(f"{type(self)}.projectToPlane is not implemented")
 
     # FabGeometry.get_geometry_info():
     def get_geometry_info(
@@ -1056,8 +1056,8 @@ class FabCircle(FabGeometry):
                   f"({area}, {perimeter}, {minimum_internal_radius}, {minimum_external_radius})")
         return area, perimeter, minimum_internal_radius, minimum_external_radius
 
-    # FabCircle.project_to_plane():
-    def project_to_plane(self, plane: FabPlane, tracing: str = "") -> "FabCircle":
+    # FabCircle.projectToPlane():
+    def projectToPlane(self, plane: FabPlane, tracing: str = "") -> "FabCircle":
         """Return a new FabCircle projected onto a plane.
 
         Arguments:
@@ -1068,12 +1068,12 @@ class FabCircle(FabGeometry):
 
         """
         if tracing:
-            print(f"{tracing}=>FabCircle.project_to_plane({plane})")
+            print(f"{tracing}=>FabCircle.projectToPlane({plane})")
         center: Vector = self.Center
         new_center: Vector = plane.projectPoint(center)
         new_circle: "FabCircle" = FabCircle(plane, new_center, self.Diameter)
         if tracing:
-            print(f"{tracing}<=FabCircle.project_to_plane({plane}) => {new_circle}")
+            print(f"{tracing}<=FabCircle.projectToPlane({plane}) => {new_circle}")
         return new_circle
 
     # FabCircle.produce():
@@ -1470,8 +1470,8 @@ class FabPolygon(FabGeometry):
             hashes.append(f"{radius:.6f}")
         return tuple(hashes)
 
-    # FabPolygon.project_to_plane():
-    def project_to_plane(self, plane: FabPlane, tracing: str = "") -> "FabPolygon":
+    # FabPolygon.projectToPlane():
+    def projectToPlane(self, plane: FabPlane, tracing: str = "") -> "FabPolygon":
         """Return nre FabPolygon projected onto a plane.
 
         Arguments:
@@ -1482,7 +1482,7 @@ class FabPolygon(FabGeometry):
 
         """
         if tracing:
-            print(f"{tracing}=>FabPolygon.project_to_plane({plane})")
+            print(f"{tracing}=>FabPolygon.projectToPlane({plane})")
         corner: Union[Vector, Tuple[Vector, Union[int, float]]]
         projected_corners: List[Union[Vector, Tuple[Vector, Union[int, float]]]] = []
         for corner in self.Corners:
@@ -1497,7 +1497,7 @@ class FabPolygon(FabGeometry):
                 projected_corners.append(plane.projectPoint(point))
         projected_polygon: "FabPolygon" = FabPolygon(plane, tuple(projected_corners))
         if tracing:
-            print(f"{tracing}<=FabPolygon.project_to_plane({plane})=>*")
+            print(f"{tracing}<=FabPolygon.projectToPlane({plane})=>*")
         return projected_polygon
 
     # FabPolygon._double_link():

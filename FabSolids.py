@@ -1080,7 +1080,7 @@ class Fab_Hole(Fab_Operation):
         center: Vector
         for index, center in enumerate(self.Centers):
             circle: FabCircle = FabCircle(plane, center, diameter)
-            projected_circle: FabCircle = circle.project_to_plane(plane, tracing=next_tracing)
+            projected_circle: FabCircle = circle.projectToPlane(plane, tracing=next_tracing)
             projected_center: Vector = projected_circle.Center
             rotated_center: Vector = plane.rotate_to_z_axis(projected_center, tracing=next_tracing)
             rotated_centers.append(rotated_center)
@@ -1466,8 +1466,8 @@ class FabMount(object):
         for geometry in geometries:
             # if tracing:
             #     print(f"{tracing}{geometry=}")
-            boxes.append(geometry.project_to_plane(top_plane).Box)
-            boxes.append(geometry.project_to_plane(bottom_plane).Box)
+            boxes.append(geometry.projectToPlane(top_plane).Box)
+            boxes.append(geometry.projectToPlane(bottom_plane).Box)
         self._Solid.enclose(boxes)
 
         # Create and record the *extrude*:
