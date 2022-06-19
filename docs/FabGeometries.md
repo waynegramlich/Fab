@@ -3,7 +3,7 @@
 ## Table of Contents (alphabetical order):
 
 * 1 Class: [FabCircle](#fabgeometries--fabcircle):
-  * 1.1 [get_hash()](#fabgeometries----get-hash): Feturn FabCircle hash.
+  * 1.1 [get_hash()](#fabgeometries----get-hash): Return FabCircle hash.
   * 1.2 [get_geometry_info()](#fabgeometries----get-geometry-info): Return information about FabGeometry.
   * 1.3 [project_to_plane()](#fabgeometries----project-to-plane): Return a new FabCircle projected onto a plane.
   * 1.4 [produce()](#fabgeometries----produce): Produce the FreeCAD objects needed for FabPolygon.
@@ -61,8 +61,9 @@
 Represents a circle on a plane.
 Attributes:
 * *Plane* (FabPlane): The plane the circle center is projected onto.
-* *Center* (Vector): The circle center point.
+* *Center* (Vector): The circle center after it has been projected.
 * *Diameter* (float): The circle diameter in millimeters.
+* *Box* (FabBox): The box that encloses FabCircle
 
 Constructor:
 * FabCircle(Plane, Center, Diameter)
@@ -71,7 +72,7 @@ Constructor:
 
 FabCircle.get_hash(self) -> Tuple[Any, ...]:
 
-Feturn FabCircle hash.
+Return FabCircle hash.
 
 ### <a name="fabgeometries----get-geometry-info"></a>1.2 `FabCircle.`get_geometry_info():
 

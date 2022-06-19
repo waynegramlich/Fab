@@ -941,34 +941,82 @@ class FabCircle(FabGeometry):
 
     Attributes:
     * *Plane* (FabPlane): The plane the circle center is projected onto.
-    * *Center* (Vector): The circle center point.
+    * *Center* (Vector): The circle center after it has been projected.
     * *Diameter* (float): The circle diameter in millimeters.
+    * *Box* (FabBox): The box that encloses FabCircle
 
     Constructor:
     * FabCircle(Plane, Center, Diameter)
 
     """
 
-    Center: Vector
+    _Center: Vector
     Diameter: float
+    _ProjectedCenter: Vector = field(init=False, repr=False, compare=False)
+    _Copy: Vector = field(init=False, repr=False, compare=False)
+    _Box: FabBox = field(init=False, repr=False, compare=False)
 
     # FabCircle.__post_init__():
     def __post_init__(self) -> None:
         """Finish initializing a FabCircle."""
         super().__post_init__()
-        check_type("FabCircle.Center", self.Center, Vector)
+        check_type("FabCircle.Center", self._Center, Vector)
         check_type("FabCircle.Diameter", self.Diameter, float)
         if self.Diameter <= 0.0:
             raise ValueError(f"Diameter ({self.Diameter}) must be positive.")
 
+        # Compute the *box* attribute:
+        # A perpendicular to the normal is needed, so please see:
+        #     [Find Perpendicular](https://math.stackexchange.com/questions/137362/
+        #     how-to-find-perpendicular-vector-to-another-vector)
+        # The response from Joe Strout is used.  There is probably an alternate solution based
+        # on quaternions that is better, but the code below should be more than adequate.
+        EPSILON = 1.0e-8
+        copy: Vector = Vector()
+        normal: Vector = self.Plane.Normal / self.Plane.Normal.Length
+
+        nx: float = normal.x
+        ny: float = normal.y
+        nz: float = normal.z
+        xy_close: bool = abs(nx - ny) < EPSILON
+        perpendicular1: Vector = (
+            Vector(-nz, 0, nx) if xy_close else Vector(-ny, nx, 0))
+        perpendicular1 = perpendicular1 / perpendicular1.Length
+        perpendicular2: Vector = (normal + copy).cross(perpendicular1 + copy)
+
+        center: Vector = self._Center + copy
+        projected_center: Vector = self.Plane.projectPoint(center)
+
+        radius: float = self.Diameter / 2.0
+        corner1: Vector = projected_center + radius * perpendicular1
+        corner2: Vector = projected_center + radius * perpendicular2
+        corner3: Vector = projected_center - radius * perpendicular1
+        corner4: Vector = projected_center - radius * perpendicular1
+        box: FabBox = FabBox()
+        box.enclose((corner1, corner2, corner3, corner4))
+
         # Make private copy of *Center*.
         # (Why __setattr__?)[https://stackoverflow.com/questions/53756788]
-        copy: Vector = Vector()
-        object.__setattr__(self, "Center", self.Center + copy)  # Makes a copy.
+        object.__setattr__(self, "_Center", center)
+        object.__setattr__(self, "_Copy", copy)
+        object.__setattr__(self, "_Box", box)
+        object.__setattr__(self, "_ProjectedCenter", projected_center)
+
+    # FabCircle.Box():
+    @property
+    def Box(self) -> FabBox:
+        """Return the FabBox that encloses FabCircle."""
+        return self._Box
+
+    # FabCircle.Center():
+    @property
+    def Center(self) -> Vector:
+        """Return the projected FabCircle center point."""
+        return self._Center + self._Copy
 
     # FabCircle.get_hash():
     def get_hash(self) -> Tuple[Any, ...]:
-        """Feturn FabCircle hash."""
+        """Return FabCircle hash."""
         center: Vector = self.Center
         hashes: Tuple[Union[int, str, Tuple[Any, ...]], ...] = (
             "FabCircle.get_hash",
@@ -1007,38 +1055,6 @@ class FabCircle(FabGeometry):
             print(f"{tracing}=>FabCircle.get_geometry_info(*))=>"
                   f"({area}, {perimeter}, {minimum_internal_radius}, {minimum_external_radius})")
         return area, perimeter, minimum_internal_radius, minimum_external_radius
-
-    # FabCircle.Box():
-    @property
-    def Box(self) -> FabBox:
-        """Return a FabBox that encloses the FabGeometry."""
-        # A perpendicular to the normal is needed:
-        # https://math.stackexchange.com/questions/137362/
-        # how-to-find-perpendicular-vector-to-another-vector
-        # The response from Joe Strout is used.  There is probably an alternate solution based
-        # on quaternions that is better, but the code below should be more than adequate.
-        EPSILON = 1.0e-8
-        copy: Vector = Vector()
-        normal: Vector = self.Plane.Normal / self.Plane.Normal.Length
-
-        nx: float = normal.x
-        ny: float = normal.y
-        nz: float = normal.z
-        xy_close: bool = abs(nx - ny) < EPSILON
-        perpendicular1: Vector = (
-            Vector(-nz, 0, nx) if xy_close else Vector(-ny, nx, 0))
-        perpendicular1 = perpendicular1 / perpendicular1.Length
-        perpendicular2: Vector = (normal + copy).cross(perpendicular1 + copy)
-
-        center: Vector = self.Center
-        radius: float = self.Diameter / 2.0
-        corner1: Vector = center + radius * perpendicular1
-        corner2: Vector = center + radius * perpendicular2
-        corner3: Vector = center - radius * perpendicular1
-        corner4: Vector = center - radius * perpendicular1
-        box: FabBox = FabBox()
-        box.enclose((corner1, corner2, corner3, corner4))
-        return box
 
     # FabCircle.project_to_plane():
     def project_to_plane(self, plane: FabPlane, tracing: str = "") -> "FabCircle":
@@ -1105,12 +1121,11 @@ class FabCircle(FabGeometry):
             assert False
         except ValueError as value_error:
             assert str(value_error) == "Diameter (-1.0) must be positive.", value_error
-        circle: FabCircle = FabCircle(xy_plane, center, 1.0)
-        box: FabBox = circle.Box
-        assert box.TNE == Vector(1.5, 2.0, 3.0)
-        assert box.BSW == Vector(0.5, 1.5, 3.0)
 
-        _ = circle.project_to_plane(xy_plane)  # TODO: Remove project_to_plane()
+        circle: FabCircle = FabCircle(xy_plane, center, 1.0)
+        assert circle.Diameter == 1.0, circle.Diameter
+        assert circle.Box.TNE == Vector(1.5, 2.0, 0.0), circle.Box.TNE
+        assert circle.Box.BSW == Vector(0.5, 1.5, 0.0), circle.Box.BSW
 
         if tracing:
             print(f"{tracing}<=FabCircle._unit_tests()")
@@ -1211,12 +1226,10 @@ class FabPolygon(FabGeometry):
 
         fillets: List[Fab_Fillet] = []
         fillet: Fab_Fillet
-        # TODO: Check for polygon points that are colinear.
-        # TODO: Check for polygon corners with overlapping radii.
         index: int
         for index, corner in enumerate(projected_corners):
             # TODO: remove the check_type:
-            check_type(f"Corner[{index}]:", corner, Tuple[Vector, float])
+            check_type(f"FabPolygon.Corner[{index}]:", corner, Tuple[Vector, float])
             fillet = Fab_Fillet(corner[0], corner[1])
             fillets.append(fillet)
 
