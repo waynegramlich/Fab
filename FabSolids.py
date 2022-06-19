@@ -806,6 +806,7 @@ class Fab_Pocket(Fab_Operation):
             # Use Fab_Steps to manage duplicates.
             with _suppress_stdout():
                 bottom_assembly.save(str(bottom_path), "STEP")
+        assert bottom_path.exists()
         self._BottomPath = bottom_path
 
         # Step 2: Now deal with finding acceptable tool bits from *machines* in *shops*:
@@ -848,9 +849,6 @@ class Fab_Pocket(Fab_Operation):
         offset_patterns: Tuple[str, ...] = (
             "Grid", "Line", "Offset", "Spiral", "Triangle", "ZigZag", "ZigZagOffset")
         start_ats: Tuple[str, ...] = ("Center", "Edge")
-        if bottom_path is None:
-            raise RuntimeError(
-                "Fab_Pocket.to_json(): no bottom path is set yet.")  # pragma: no unit cover
 
         start_depth: float = self._StartDepth
         step_down: float = self._StepDown
@@ -1882,14 +1880,13 @@ class FabSolid(FabNode):
 
     # FabSolid.post_produce2():
     def post_produce2(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
-        """Perform FabSolid Phase1 post production."""
+        """Perform FabSolid Phase2 post production."""
         tracing = self.Tracing  # Ignore *tracing* argument.
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabSolid.post_produce2('{self.Label}')")
 
         # Deterimine whether it is possible to *use_cached_step*:
-        use_cached_step: bool = False
         step_path: Path = cast(Path, None)  # Force runtime error if used.
         # This was a shocker.  It turns out that __hash__() methods are not necessarily
         # consistent between Python runs.  In other words  __hash__() is non-deterministic.
@@ -1900,6 +1897,7 @@ class FabSolid(FabNode):
         assert isinstance(prefix, Fab_Prefix)
         solid_name: str = f"{prefix.to_string()}__{self.Label}"
         step_path = produce_state.Steps.activate(solid_name, hash_tuple)
+        use_cached_step: bool = False
         if step_path.exists():
             use_cached_step = True  # pragma: no unit cover
         self._StepFile = step_path

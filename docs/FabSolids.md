@@ -29,7 +29,7 @@ This internal classes are managed by FabMount methods.
   * 2.7 [get_hash()](#fabsolids----get-hash): Return FabSolid hash.
   * 2.8 [mount()](#fabsolids----mount): Add a new FabMount to ae FabSolid.
   * 2.9 [drill_joins()](#fabsolids----drill-joins): Apply drill FabJoin holes for a FabSolid.
-  * 2.10 [post_produce2()](#fabsolids----post-produce2): Perform FabSolid Phase1 post production.
+  * 2.10 [post_produce2()](#fabsolids----post-produce2): Perform FabSolid Phase2 post production.
 * 3 Class: [FabStock](#fabsolids--fabstock):
   * 3.1 [enclose()](#fabsolids----enclose): Wrap some stock material around a FabBox.
 * 4 Class: [Fab_Extrude](#fabsolids--fab-extrude):
@@ -240,7 +240,7 @@ For now, please call this method after all FabMount's are created.
 
 FabSolid.post_produce2(self, produce_state: FabNodes.Fab_ProduceState, tracing: str = '') -> None:
 
-Perform FabSolid Phase1 post production.
+Perform FabSolid Phase2 post production.
 
 
 ## <a name="fabsolids--fabstock"></a>3 Class FabStock:

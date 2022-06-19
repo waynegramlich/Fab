@@ -19,7 +19,7 @@ from typeguard import check_argument_types, check_type
 import cadquery as cq  # type: ignore
 from cadquery import Vector  # type: ignore
 
-from FabNodes import FabNode, Fab_Prefix, Fab_ProduceState, Fab_Steps
+from FabNodes import FabNode, Fab_Prefix, Fab_ProduceState
 from FabShops import FabShops
 from FabSolids import FabSolid
 
@@ -386,9 +386,6 @@ class FabProject(FabNode):
                 print()
                 print(f"{tracing}Project({self.Label}).run(): Phase 2: Construct")
 
-            fab_steps: Fab_Steps = Fab_Steps(Path("/tmp"))
-            fab_steps.scan()
-
             if tracing:
                 print(f"{tracing}Phase 2A: post_produce1(*, '{step_directory}'):")
             del errors[:]  # Clear *errors*
@@ -400,7 +397,6 @@ class FabProject(FabNode):
             del errors[:]  # Clear *errors*
             for node in all_nodes:
                 node.post_produce2(produce_state)
-            fab_steps.flush_inactives()
 
             if tracing:
                 print(f"{tracing}Phase 2C: post_produce3():")
@@ -411,6 +407,8 @@ class FabProject(FabNode):
         json_file: IO[str]
         with open(f"/tmp/{self.Label}.json", "w") as json_file:
             json_file.write(json.dumps(top_json, indent=2, sort_keys=True))
+
+        produce_state.Steps.flush_inactives()
 
         # Output any *errors*:
         if errors:  # pragma: no unit cover
