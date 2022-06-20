@@ -869,19 +869,19 @@ class Fab_Fillet(object):
             # *arc_points* defines a diamond shaped polygon that sweeps from the arc start,
             # to the arc apex, to the arc finish.  Compute *diamond_area*:
             arc_points: Tuple[Vector, ...] = (
-                arc.Center,
-                arc.Start,
-                arc.Apex,
-                arc.Finish,
+                arc.StartXY,
+                arc.ApexXY,
+                arc.FinishXY,
+                arc.CenterXY,
             )
             diamond_area: float = FabPolygon._compute_polygon_area(arc_points)
             if tracing:
-                print(f"{tracing}{diamond_area=:.3f}")
+                print(f"{tracing}{diamond_area=:.5f}")
 
             # Compute *sweep_angle*, the angle that sweeps from start to finish:
-            start: Vector = arc.Start - arc.Apex
+            start: Vector = arc.StartXY - arc.ApexXY
             start_angle: float = math.atan2(start.y, start.x)
-            finish: Vector = arc.Finish - arc.Apex
+            finish: Vector = arc.FinishXY - arc.ApexXY
             finish_angle: float = math.atan2(finish.y, finish.x)
             sweep_angle: float = abs(finish_angle - start_angle)
 
@@ -893,9 +893,9 @@ class Fab_Fillet(object):
             while sweep_angle < -pi:
                 sweep_angle += pi2  # pragma: no unit cover
             sweep_angle = abs(sweep_angle)
-            assert 0.0 <= sweep_angle <= pi, f"{math.degrees(sweep_angle)=:.3f}"
+            assert 0.0 <= sweep_angle <= pi, f"{math.degrees(sweep_angle)=:.5f}"
             if tracing:
-                print(f"{tracing}{math.degrees(sweep_angle)=:.3f} {sweep_angle=:.3f}")
+                print(f"{tracing}{math.degrees(sweep_angle)=:.5f} {sweep_angle=:.5f}")
 
             # Add the *sweep_area* to *total_fillet_area*:
             radius: float = arc.Radius
@@ -907,17 +907,17 @@ class Fab_Fillet(object):
             diameter: float = pi2 * radius
             fraction: float = sweep_angle / pi2
             fillet_perimeter = diameter * fraction
-            assert fillet_area >= 0.0, fillet_area
             if tracing:
-                print(f"{tracing}{circle_area=:.3f} {sweep_area=:.3f} {fillet_area=:.3f} ")
-                print(f"{tracing}{diameter=:.3f} {fraction=:.3f} {fillet_perimeter=:.3f}")
+                print(f"{tracing}{circle_area=:.5f} {sweep_area=:.5f} {fillet_area=:.5f} ")
+                print(f"{tracing}{diameter=:.5f} {fraction=:.5f} {fillet_perimeter=:.5f}")
+            assert fillet_area >= 0.0
         else:
             if tracing:
                 print(f"{tracing}No arc")
 
         if tracing:
             print(f"{tracing}<=Fab_Fillet.compute_fillet_area_perimeter()=>"
-                  f"{fillet_area=:.3f}, {fillet_perimeter=:.3f}")
+                  f"{fillet_area=:.5f}, {fillet_perimeter=:.5f}")
         return fillet_area, fillet_perimeter
 
     # Fab_Fillet.get_geometries():
@@ -1378,6 +1378,8 @@ class FabPolygon(FabGeometry):
         self._compute_arcs()
         self._compute_lines()
 
+        _ = self.getGeometryInfo()
+
         if tracing:
             print(f"{tracing}<=FabPolygon.__post_init__()")
 
@@ -1500,7 +1502,7 @@ class FabPolygon(FabGeometry):
             fillet_area, fillet_perimeter = (
                 fillet.compute_fillet_area_perimeter(tracing=next_tracing))
             if tracing:
-                print(f"{tracing}perimeter += {fillet_perimeter=:.3f}")
+                print(f"{tracing}perimeter += {fillet_perimeter=:.5f}")
             perimeter += fillet_perimeter
 
             line: Optional[Fab_Line] = fillet.Line
