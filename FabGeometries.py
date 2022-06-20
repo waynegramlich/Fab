@@ -463,8 +463,12 @@ class Fab_GeometryContext(object):
 class Fab_Geometry(object):
     """Fab_Geometry: An Internal base class for Fab_Arc, Fab_Circle, and Fab_Line.
 
-    All Fab_Geometry classes are immutable (i.e. frozen.)
+    Attributes:
+    * Plane* (FabPlane): The plane onto which the geo
+
     """
+
+    # Plane: FabPlane
 
     # Fab_Geometry.__post_init__():
     def __post_init__(self) -> None:
@@ -610,15 +614,18 @@ class Fab_Fillet(object):
     """Fab_Fillet: An object that represents one fillet of a FabPolygon.
 
     Attributes:
+    * *Plane* (FabPlane): The plane onto which the fillet is projected.
     * *Apex* (Vector): The apex corner point for the fillet.
     * *Radius* (float): The fillet radius in millimeters.
     * *Before* (Fab_Fillet): The previous Fab_Fillet in the FabPolygon.
     * *After* (Fab_Fillet): The next Fab_Fillet in the FabPolygon.
     * *Arc* (Optional[Fab_Arc]): The fillet Arc if Radius is non-zero.
     * *Line* (Optional[Fab_Line]): The line that connects to the previous Fab_Fillet
+    * *XYPlaneApex* (Vector): The Apex projected onto a plane parallel to the XY plane.
 
     """
 
+    Plane: FabPlane
     Apex: Vector
     Radius: float
     Before: "Fab_Fillet" = field(init=False, repr=False)  # Filled in by __post_init__()
@@ -872,6 +879,10 @@ class Fab_Fillet(object):
         if tracing:
             print(f"{tracing}=>Fab_Fillet._unit_tests()")
 
+        origin: Vector = Vector(0, 0, 0)
+        z_axis: Vector = Vector(0, 0, 1)
+        xy_plane: FabPlane = FabPlane(origin, z_axis)
+
         # Create 4 corners centered.
         dx: float = Vector(20.0, 0.0, 0.0)
         dy: float = Vector(0.0, 10.0, 0.0)
@@ -885,10 +896,10 @@ class Fab_Fillet(object):
         se_corner: Vector = Vector(center + dx - dy)
 
         # Create the Fab_Fillet's:
-        ne_fillet: Fab_Fillet = Fab_Fillet(ne_corner, radius)
-        nw_fillet: Fab_Fillet = Fab_Fillet(nw_corner, radius)
-        sw_fillet: Fab_Fillet = Fab_Fillet(sw_corner, radius)
-        se_fillet: Fab_Fillet = Fab_Fillet(se_corner, radius)
+        ne_fillet: Fab_Fillet = Fab_Fillet(xy_plane, ne_corner, radius)
+        nw_fillet: Fab_Fillet = Fab_Fillet(xy_plane, nw_corner, radius)
+        sw_fillet: Fab_Fillet = Fab_Fillet(xy_plane, sw_corner, radius)
+        se_fillet: Fab_Fillet = Fab_Fillet(xy_plane, se_corner, radius)
 
         # Provide before/after _Fillets:
         ne_fillet.Before = se_fillet
@@ -1291,7 +1302,7 @@ class FabPolygon(FabGeometry):
         for index, corner in enumerate(projected_corners):
             # TODO: remove the check_type:
             check_type(f"FabPolygon.Corner[{index}]:", corner, Tuple[Vector, float])
-            fillet = Fab_Fillet(corner[0], corner[1])
+            fillet = Fab_Fillet(plane, corner[0], corner[1])
             fillets.append(fillet)
         object.__setattr__(self, "_Fillets", tuple(fillets))
 

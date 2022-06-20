@@ -305,12 +305,14 @@ Return line segment after moving it into Geometry group.
 
 An object that represents one fillet of a FabPolygon.
 Attributes:
+* *Plane* (FabPlane): The plane onto which the fillet is projected.
 * *Apex* (Vector): The apex corner point for the fillet.
 * *Radius* (float): The fillet radius in millimeters.
 * *Before* (Fab_Fillet): The previous Fab_Fillet in the FabPolygon.
 * *After* (Fab_Fillet): The next Fab_Fillet in the FabPolygon.
 * *Arc* (Optional[Fab_Arc]): The fillet Arc if Radius is non-zero.
 * *Line* (Optional[Fab_Line]): The line that connects to the previous Fab_Fillet
+* *XYPlaneApex* (Vector): The Apex projected onto a plane parallel to the XY plane.
 
 ### <a name="fabgeometries----compute-arc"></a>8.1 `Fab_Fillet.`compute_arc():
 
@@ -350,7 +352,8 @@ NO DOC STRING!
 ## <a name="fabgeometries--fab-geometry"></a>9 Class Fab_Geometry:
 
 An Internal base class for Fab_Arc, Fab_Circle, and Fab_Line.
-All Fab_Geometry classes are immutable (i.e. frozen.)
+Attributes:
+* Plane* (FabPlane): The plane onto which the geo
 
 ### <a name="fabgeometries----produce"></a>9.1 `Fab_Geometry.`produce():
 
