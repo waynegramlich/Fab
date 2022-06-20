@@ -502,8 +502,8 @@ class FabMaterial(object):
             print(f"{tracing}=>FabMaterial.getChipLoad()=>{chip_load:.5f}")
         return chip_load
 
-    # FabMaterial.get_hash():
-    def get_hash(self) -> Tuple[Any, ...]:
+    # FabMaterial.getHash():
+    def getHash(self) -> Tuple[Any, ...]:
         """Return an immutable hash for a FabMaterial."""
         return (self.Name, self.Color)
 
@@ -519,7 +519,7 @@ class FabMaterial(object):
         material: FabMaterial = FabMaterial(name, color)
         material.Name == name, material.Name
         material.Color == color, material.Color
-        material_hash: Tuple[Any, ...] = material.get_hash()
+        material_hash: Tuple[Any, ...] = material.getHash()
         assert material_hash == (("Aluminum",), "orange"), material_hash
 
         def check(test_name: str, material: FabMaterial,

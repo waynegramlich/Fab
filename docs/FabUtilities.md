@@ -14,7 +14,7 @@ The Utility classes are:
 * 1 Class: [FabColor](#fabutilities--fabcolor):
 * 2 Class: [FabMaterial](#fabutilities--fabmaterial):
   * 2.1 [getChipLoad()](#fabutilities----getchipload): Return FabMatrial chip load.
-  * 2.2 [get_hash()](#fabutilities----get-hash): Return an immutable hash for a FabMaterial.
+  * 2.2 [getHash()](#fabutilities----gethash): Return an immutable hash for a FabMaterial.
 * 3 Class: [FabToolController](#fabutilities--fabtoolcontroller):
   * 3.1 [to_json()](#fabutilities----to-json): Return a dictionary containing the controller information.
 
@@ -46,9 +46,9 @@ Arguments:
 Returns:
 * (float): The chipload in millimeters.
 
-### <a name="fabutilities----get-hash"></a>2.2 `FabMaterial.`get_hash():
+### <a name="fabutilities----gethash"></a>2.2 `FabMaterial.`getHash():
 
-FabMaterial.get_hash(self) -> Tuple[Any, ...]:
+FabMaterial.getHash(self) -> Tuple[Any, ...]:
 
 Return an immutable hash for a FabMaterial.
 

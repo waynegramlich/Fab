@@ -10,7 +10,7 @@ This internal classes are managed by FabMount methods.
 
 * 1 Class: [FabMount](#fabsolids--fabmount):
   * 1.1 [lookup_prefix()](#fabsolids----lookup-prefix): Return the Fab_Prefix for an operation.
-  * 1.2 [get_hash()](#fabsolids----get-hash): Return a has the current contents of a FabMount.
+  * 1.2 [getHash()](#fabsolids----gethash): Return a has the current contents of a FabMount.
   * 1.3 [record_operation()](#fabsolids----record-operation): Record an operation to a FabMount.
   * 1.4 [set_geometry_group()](#fabsolids----set-geometry-group): Set the FabMount GeometryGroup need for the FabGeometryContex.
   * 1.5 [post_produce1()](#fabsolids----post-produce1): Expand and transform operations.
@@ -26,7 +26,7 @@ This internal classes are managed by FabMount methods.
   * 2.4 [is_solid()](#fabsolids----is-solid):  Return True if FabNode is a FabAssembly.
   * 2.5 [pre_produce()](#fabsolids----pre-produce): Perform FabSolid pre production.
   * 2.6 [post_produce1()](#fabsolids----post-produce1): Perform FabSolid pre production.
-  * 2.7 [get_hash()](#fabsolids----get-hash): Return FabSolid hash.
+  * 2.7 [getHash()](#fabsolids----gethash): Return FabSolid hash.
   * 2.8 [mount()](#fabsolids----mount): Add a new FabMount to ae FabSolid.
   * 2.9 [drill_joins()](#fabsolids----drill-joins): Apply drill FabJoin holes for a FabSolid.
   * 2.10 [post_produce2()](#fabsolids----post-produce2): Perform FabSolid Phase2 post production.
@@ -34,22 +34,22 @@ This internal classes are managed by FabMount methods.
   * 3.1 [enclose()](#fabsolids----enclose): Wrap some stock material around a FabBox.
 * 4 Class: [Fab_Extrude](#fabsolids--fab-extrude):
   * 4.1 [get_kind()](#fabsolids----get-kind): Return Fab_Extrude kind.
-  * 4.2 [get_hash()](#fabsolids----get-hash): Return hash for Fab_Extrude operation.
+  * 4.2 [getHash()](#fabsolids----gethash): Return hash for Fab_Extrude operation.
   * 4.3 [post_produce2()](#fabsolids----post-produce2): Produce the Extrude.
   * 4.4 [to_json()](#fabsolids----to-json): Return JSON dictionary for Fab_Extrude.
 * 5 Class: [Fab_Hole](#fabsolids--fab-hole):
   * 5.1 [get_kind()](#fabsolids----get-kind): Return Fab_Hole kind.
-  * 5.2 [get_hash()](#fabsolids----get-hash): Return Fab_Hole hash.
+  * 5.2 [getHash()](#fabsolids----gethash): Return Fab_Hole hash.
   * 5.3 [post_produce1()](#fabsolids----post-produce1): Expand simple operations as approprated.
   * 5.4 [post_produce2()](#fabsolids----post-produce2): Perform Fab_Hole phase 1 post production.
   * 5.5 [to_json()](#fabsolids----to-json): Return the FabHole JSON.
 * 6 Class: [Fab_HoleKey](#fabsolids--fab-holekey):
-  * 6.1 [get_hash()](#fabsolids----get-hash): Return a hash tuple for a Fab_HoleKey.
+  * 6.1 [getHash()](#fabsolids----gethash): Return a hash tuple for a Fab_HoleKey.
 * 7 Class: [Fab_Operation](#fabsolids--fab-operation):
   * 7.1 [set_tool_controller()](#fabsolids----set-tool-controller): Set the Fab_Operation tool controller and associated index.
   * 7.2 [get_kind()](#fabsolids----get-kind): Return Fab_Operation kind.
   * 7.3 [get_name()](#fabsolids----get-name): Return Fab_Operation name.
-  * 7.4 [get_hash()](#fabsolids----get-hash): Return Fab_Operation hash.
+  * 7.4 [getHash()](#fabsolids----gethash): Return Fab_Operation hash.
   * 7.5 [get_geometries_hash()](#fabsolids----get-geometries-hash): Return hash of FabGeometry's.
   * 7.6 [setShopBits()](#fabsolids----setshopbits): Set the Fab_Operation ShopBits attribute.
   * 7.7 [produce()](#fabsolids----produce): Return the operation sort key.
@@ -60,7 +60,7 @@ This internal classes are managed by FabMount methods.
 * 9 Class: [Fab_OperationOrder](#fabsolids--fab-operationorder):
 * 10 Class: [Fab_Pocket](#fabsolids--fab-pocket):
   * 10.1 [post_produce1()](#fabsolids----post-produce1): Expand simple operations as approprated.
-  * 10.2 [get_hash()](#fabsolids----get-hash): Return Fab_Pocket hash.
+  * 10.2 [getHash()](#fabsolids----gethash): Return Fab_Pocket hash.
   * 10.3 [get_kind()](#fabsolids----get-kind): Return Fab_Pocket kind.
   * 10.4 [post_produce2()](#fabsolids----post-produce2): Produce the Pocket.
   * 10.5 [to_json()](#fabsolids----to-json): Return JSON dictionary for Fab_Extrude.
@@ -88,9 +88,9 @@ FabMount.lookup_prefix(self, operation_name: str) -> FabNodes.Fab_Prefix:
 
 Return the Fab_Prefix for an operation.
 
-### <a name="fabsolids----get-hash"></a>1.2 `FabMount.`get_hash():
+### <a name="fabsolids----gethash"></a>1.2 `FabMount.`getHash():
 
-FabMount.get_hash(self) -> Tuple[Any, ...]:
+FabMount.getHash(self) -> Tuple[Any, ...]:
 
 Return a has the current contents of a FabMount.
 
@@ -196,9 +196,9 @@ FabSolid.post_produce1(self, produce_state: FabNodes.Fab_ProduceState, tracing: 
 
 Perform FabSolid pre production.
 
-### <a name="fabsolids----get-hash"></a>2.7 `FabSolid.`get_hash():
+### <a name="fabsolids----gethash"></a>2.7 `FabSolid.`getHash():
 
-FabSolid.get_hash(self) -> Tuple[Any, ...]:
+FabSolid.getHash(self) -> Tuple[Any, ...]:
 
 Return FabSolid hash.
 
@@ -287,9 +287,9 @@ Fab_Extrude.get_kind(self) -> str:
 
 Return Fab_Extrude kind.
 
-### <a name="fabsolids----get-hash"></a>4.2 `Fab_Extrude.`get_hash():
+### <a name="fabsolids----gethash"></a>4.2 `Fab_Extrude.`getHash():
 
-Fab_Extrude.get_hash(self) -> Tuple[Any, ...]:
+Fab_Extrude.getHash(self) -> Tuple[Any, ...]:
 
 Return hash for Fab_Extrude operation.
 
@@ -331,9 +331,9 @@ Fab_Hole.get_kind(self) -> str:
 
 Return Fab_Hole kind.
 
-### <a name="fabsolids----get-hash"></a>5.2 `Fab_Hole.`get_hash():
+### <a name="fabsolids----gethash"></a>5.2 `Fab_Hole.`getHash():
 
-Fab_Hole.get_hash(self) -> Tuple[Any, ...]:
+Fab_Hole.getHash(self) -> Tuple[Any, ...]:
 
 Return Fab_Hole hash.
 
@@ -365,9 +365,9 @@ Attributes:
 * *Depth* (float): The hole depth.
 * *IsTop* (bool): True when hole is the top of the fastener for countersink and counterboring.
 
-### <a name="fabsolids----get-hash"></a>6.1 `Fab_HoleKey.`get_hash():
+### <a name="fabsolids----gethash"></a>6.1 `Fab_HoleKey.`getHash():
 
-Fab_HoleKey.get_hash(self) -> Tuple[Any, ...]:
+Fab_HoleKey.getHash(self) -> Tuple[Any, ...]:
 
 Return a hash tuple for a Fab_HoleKey.
 
@@ -413,9 +413,9 @@ Fab_Operation.get_name(self) -> str:
 
 Return Fab_Operation name.
 
-### <a name="fabsolids----get-hash"></a>7.4 `Fab_Operation.`get_hash():
+### <a name="fabsolids----gethash"></a>7.4 `Fab_Operation.`getHash():
 
-Fab_Operation.get_hash(self) -> Tuple[Any, ...]:
+Fab_Operation.getHash(self) -> Tuple[Any, ...]:
 
 Return Fab_Operation hash.
 
@@ -496,9 +496,9 @@ Fab_Pocket.post_produce1(self, produce_state: FabNodes.Fab_ProduceState, expande
 
 Expand simple operations as approprated.
 
-### <a name="fabsolids----get-hash"></a>10.2 `Fab_Pocket.`get_hash():
+### <a name="fabsolids----gethash"></a>10.2 `Fab_Pocket.`getHash():
 
-Fab_Pocket.get_hash(self) -> Tuple[Any, ...]:
+Fab_Pocket.getHash(self) -> Tuple[Any, ...]:
 
 Return Fab_Pocket hash.
 

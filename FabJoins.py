@@ -902,11 +902,11 @@ class FabOption(object):
         check_type("FabOption.Name", self.Name, str)
         check_type("FabOption.Detail", self.Detail, str)
 
-    # FabOption.get_hash():
-    def get_hash(self) -> Tuple[Any, ...]:
+    # FabOption.getHash():
+    def getHash(self) -> Tuple[Any, ...]:
         """Return FabOption hash."""
         raise RuntimeError(
-            f"get_hash() is not implemented for {type(self)}")  # pragma: no unit cover
+            f"getHash() is not implemented for {type(self)}")  # pragma: no unit cover
 
     # FabOption._unit_tests():
     @staticmethod
@@ -973,10 +973,10 @@ class FabHead(FabOption):
         assert self.Shape in FabHead.HEADS, "f{self.Shape} is not one of {FabHead.HEADS}"
         assert self.Drive in FabHead.DRIVES, "f{self.Drive} is not one of {FabHead.DRIVES}"
 
-    # FabHead.get_hash():
-    def get_hash(self) -> Tuple[Any, ...]:
+    # FabHead.getHash():
+    def getHash(self) -> Tuple[Any, ...]:
         """Return FabHead hash value."""
-        material_hash: Any = self.Material.get_hash()
+        material_hash: Any = self.Material.getHash()
         head_hash: Tuple[Any, ...] = (material_hash, self.Shape, self.Drive)
         return head_hash
 
@@ -1362,8 +1362,8 @@ class FabFasten(object):
         check_type("FabFasten.ThreadName", self.ThreadName, str)
         check_type("FabFasten.Options", self.Options, Tuple[FabOption, ...])
 
-    # FabFasten.get_hash():
-    def get_hash(self) -> Tuple[Any, ...]:
+    # FabFasten.getHash():
+    def getHash(self) -> Tuple[Any, ...]:
         """Return FabFasten hash."""
         hashes: List[Union[int, str, Tuple[Any, ...]]] = [
             "FabFasten",
@@ -1372,7 +1372,7 @@ class FabFasten(object):
         ]
         option: FabOption
         for option in self.Options:
-            hashes.append(option.get_hash())  # pragma: no unit cover
+            hashes.append(option.getHash())  # pragma: no unit cover
         return tuple(hashes)
 
     # FabFasten.get_diameter():
@@ -1413,7 +1413,7 @@ class FabFasten(object):
         assert is_close(fasten.get_diameter("thread"), 2.2606)
         assert is_close(fasten.get_diameter("close"), 2.9464)
         assert is_close(fasten.get_diameter("standard"), 3.2639)
-        assert isinstance(fasten.get_hash(), tuple), fasten.get_hash()
+        assert isinstance(fasten.getHash(), tuple), fasten.getHash()
         if tracing:
             print(f"{tracing}<=FabFasten._unit_tests()")
 
@@ -1471,15 +1471,15 @@ class FabJoin(object):
         """Return FabJoin end point."""
         return self._End
 
-    # FabJoin.get_hash():
-    def get_hash(self) -> Tuple[Any, ...]:
+    # FabJoin.getHash():
+    def getHash(self) -> Tuple[Any, ...]:
         """Return FabJoin hash."""
         start: Vector = self._Start
         end: Vector = self._End
         hashes: Tuple[Union[int, str, Tuple[Any, ...]], ...] = (
             "FabJoin",
             self._Name,
-            self._Fasten.get_hash(),
+            self._Fasten.getHash(),
             f"{start.x:.6f}",
             f"{start.y:.6f}",
             f"{start.z:.6f}",
@@ -1515,7 +1515,7 @@ class FabJoin(object):
         start: Vector = Vector(0, 0, 0)
         stop: Vector = Vector(1, 1, 1)
         join: FabJoin = FabJoin("Test", fasten, start, stop)
-        join_hash: Tuple[Any, ...] = join.get_hash()
+        join_hash: Tuple[Any, ...] = join.getHash()
         want_hash: Tuple[Any, ...] = (
             'FabJoin', 'Test',
             ('FabFasten', 'Test', '#4-40', ((('brass',), 'orange'), 'Pan', 'Philips')),

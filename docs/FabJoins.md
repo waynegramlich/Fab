@@ -61,16 +61,16 @@ hardware.
 ## Table of Contents (alphabetical order):
 
 * 1 Class: [FabFasten](#fabjoins--fabfasten):
-  * 1.1 [get_hash()](#fabjoins----get-hash): Return FabFasten hash.
+  * 1.1 [getHash()](#fabjoins----gethash): Return FabFasten hash.
   * 1.2 [get_diameter()](#fabjoins----get-diameter): Return actual diameter based on request hole kind.
 * 2 Class: [FabHead](#fabjoins--fabhead):
-  * 2.1 [get_hash()](#fabjoins----get-hash): Return FabHead hash value.
+  * 2.1 [getHash()](#fabjoins----gethash): Return FabHead hash value.
 * 3 Class: [FabJoin](#fabjoins--fabjoin):
-  * 3.1 [get_hash()](#fabjoins----get-hash): Return FabJoin hash.
+  * 3.1 [getHash()](#fabjoins----gethash): Return FabJoin hash.
   * 3.2 [normal_aligned()](#fabjoins----normal-aligned): Return whether the normal is aligned with the FabJoin.
 * 4 Class: [FabNut](#fabjoins--fabnut):
 * 5 Class: [FabOption](#fabjoins--faboption):
-  * 5.1 [get_hash()](#fabjoins----get-hash): Return FabOption hash.
+  * 5.1 [getHash()](#fabjoins----gethash): Return FabOption hash.
 * 6 Class: [FabWasher](#fabjoins--fabwasher):
 * 7 Class: [Fab_DrillChoice](#fabjoins--fab-drillchoice):
 * 8 Class: [Fab_DrillTap](#fabjoins--fab-drilltap):
@@ -90,9 +90,9 @@ Attributes:
 Constructor:
 * FabFasten(Name, ThreadName, Options)
 
-### <a name="fabjoins----get-hash"></a>1.1 `FabFasten.`get_hash():
+### <a name="fabjoins----gethash"></a>1.1 `FabFasten.`getHash():
 
-FabFasten.get_hash(self) -> Tuple[Any, ...]:
+FabFasten.getHash(self) -> Tuple[Any, ...]:
 
 Return FabFasten hash.
 
@@ -116,9 +116,9 @@ Attributes:
 Constructor:
 * FabHead(Name, Detail, Material, Shape, Drive)
 
-### <a name="fabjoins----get-hash"></a>2.1 `FabHead.`get_hash():
+### <a name="fabjoins----gethash"></a>2.1 `FabHead.`getHash():
 
-FabHead.get_hash(self) -> Tuple[Any, ...]:
+FabHead.getHash(self) -> Tuple[Any, ...]:
 
 Return FabHead hash value.
 
@@ -135,9 +135,9 @@ Attributes:
 Constructor:
 * FabJoin(Name, Fasten, Start, End)
 
-### <a name="fabjoins----get-hash"></a>3.1 `FabJoin.`get_hash():
+### <a name="fabjoins----gethash"></a>3.1 `FabJoin.`getHash():
 
-FabJoin.get_hash(self) -> Tuple[Any, ...]:
+FabJoin.getHash(self) -> Tuple[Any, ...]:
 
 Return FabJoin hash.
 
@@ -173,9 +173,9 @@ Attributes:
 Constructor:
 * This is meant to be sub-classed, so this class should never be constructed manually.
 
-### <a name="fabjoins----get-hash"></a>5.1 `FabOption.`get_hash():
+### <a name="fabjoins----gethash"></a>5.1 `FabOption.`getHash():
 
-FabOption.get_hash(self) -> Tuple[Any, ...]:
+FabOption.getHash(self) -> Tuple[Any, ...]:
 
 Return FabOption hash.
 

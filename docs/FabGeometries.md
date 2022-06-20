@@ -3,23 +3,23 @@
 ## Table of Contents (alphabetical order):
 
 * 1 Class: [FabCircle](#fabgeometries--fabcircle):
-  * 1.1 [get_hash()](#fabgeometries----get-hash): Return FabCircle hash.
+  * 1.1 [getHash()](#fabgeometries----gethash): Return FabCircle hash.
   * 1.2 [projectToPlane()](#fabgeometries----projecttoplane): Return a new FabCircle projected onto a plane.
   * 1.3 [produce()](#fabgeometries----produce): Produce the FreeCAD objects needed for FabPolygon.
   * 1.4 [get_geometries()](#fabgeometries----get-geometries): Return the FabPolygon lines and arcs.
 * 2 Class: [FabGeometry](#fabgeometries--fabgeometry):
-  * 2.1 [get_hash()](#fabgeometries----get-hash): Return FabGeometry hash.
+  * 2.1 [getHash()](#fabgeometries----gethash): Return FabGeometry hash.
   * 2.2 [produce()](#fabgeometries----produce): Produce the necessary FreeCAD objects for the FabGeometry.
   * 2.3 [projectToPlane()](#fabgeometries----projecttoplane): Return a new FabGeometry projected onto a plane.
 * 3 Class: [FabGeometryInfo](#fabgeometries--fabgeometryinfo):
 * 4 Class: [FabPlane](#fabgeometries--fabplane):
-  * 4.1 [get_hash()](#fabgeometries----get-hash): Return a FabPlane hash value.
+  * 4.1 [getHash()](#fabgeometries----gethash): Return a FabPlane hash value.
   * 4.2 [projectPoint()](#fabgeometries----projectpoint): Project a point onto a plane.
   * 4.3 [adjust()](#fabgeometries----adjust): Return a new FabPlane that has been adjusted up/down the normal by a delta.
   * 4.4 [rotate_to_z_axis()](#fabgeometries----rotate-to-z-axis): Rotate a point around the origin until the normal aligns with the +Z axis.
   * 4.5 [projectPointToXY()](#fabgeometries----projectpointtoxy): Project a rotated point onto the X/Y plane.
 * 5 Class: [FabPolygon](#fabgeometries--fabpolygon):
-  * 5.1 [get_hash()](#fabgeometries----get-hash): Return the FabPolygon Hash.
+  * 5.1 [getHash()](#fabgeometries----gethash): Return the FabPolygon Hash.
   * 5.2 [projectToPlane()](#fabgeometries----projecttoplane): Return nre FabPolygon projected onto a plane.
   * 5.3 [get_geometries()](#fabgeometries----get-geometries): Return the FabPolygon lines and arcs.
   * 5.4 [produce()](#fabgeometries----produce): Produce the FreeCAD objects needed for FabPolygon.
@@ -70,9 +70,9 @@ Attributes:
 Constructor:
 * FabCircle(Plane, Center, Diameter)
 
-### <a name="fabgeometries----get-hash"></a>1.1 `FabCircle.`get_hash():
+### <a name="fabgeometries----gethash"></a>1.1 `FabCircle.`getHash():
 
-FabCircle.get_hash(self) -> Tuple[Any, ...]:
+FabCircle.getHash(self) -> Tuple[Any, ...]:
 
 Return FabCircle hash.
 
@@ -108,9 +108,9 @@ Attributes:
 * *Box* (FabBox): A 3D box that encloses the gemetery.
 * *GeometryInfo* (FabGeometryInfo): The geometry information (e.g. area, peremeteter, etc.)
 
-### <a name="fabgeometries----get-hash"></a>2.1 `FabGeometry.`get_hash():
+### <a name="fabgeometries----gethash"></a>2.1 `FabGeometry.`getHash():
 
-FabGeometry.get_hash(self) -> Tuple[Any, ...]:
+FabGeometry.getHash(self) -> Tuple[Any, ...]:
 
 Return FabGeometry hash.
 
@@ -148,9 +148,9 @@ An immutable Plane class.
 * *Contact* (Vector):  Some contact point that anywhere in the plane.
 * *Normal* (Vector): The normal to the plane.
 
-### <a name="fabgeometries----get-hash"></a>4.1 `FabPlane.`get_hash():
+### <a name="fabgeometries----gethash"></a>4.1 `FabPlane.`getHash():
 
-FabPlane.get_hash(self) -> Tuple[Any, ...]:
+FabPlane.getHash(self) -> Tuple[Any, ...]:
 
 Return a FabPlane hash value.
 
@@ -227,9 +227,9 @@ Example:
      ), "Name")
 ```
 
-### <a name="fabgeometries----get-hash"></a>5.1 `FabPolygon.`get_hash():
+### <a name="fabgeometries----gethash"></a>5.1 `FabPolygon.`getHash():
 
-FabPolygon.get_hash(self) -> Tuple[Any, ...]:
+FabPolygon.getHash(self) -> Tuple[Any, ...]:
 
 Return the FabPolygon Hash.
 

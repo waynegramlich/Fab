@@ -160,8 +160,8 @@ class FabPlane(object):
             print(f"{tracing}{self._Plane=}")
             print(f"{tracing}<=FabPlane.__post_init__({self._Contact}, {self._Normal})")
 
-    # FabPlane.get_hash():
-    def get_hash(self) -> Tuple[Any, ...]:
+    # FabPlane.getHash():
+    def getHash(self) -> Tuple[Any, ...]:
         """Return a FabPlane hash value."""
         contact: Vector = self.Contact
         normal: Vector = self.Normal
@@ -1015,10 +1015,10 @@ class FabGeometry(object):
         """Return the FabGeometryInfo associated with a FabGeometry."""
         raise NotImplementedError(f"{type(self)}.GeometryInfo() is not implemented")
 
-    # FabGeometry.get_hash():
-    def get_hash(self) -> Tuple[Any, ...]:
+    # FabGeometry.getHash():
+    def getHash(self) -> Tuple[Any, ...]:
         """Return FabGeometry hash."""
-        raise NotImplementedError(f"{type(self)}.get_hash() is not implemented")
+        raise NotImplementedError(f"{type(self)}.getHash() is not implemented")
 
     # FabGeometry.produce():
     def produce(self, geometry_context: Fab_GeometryContext, prefix: str,
@@ -1131,13 +1131,13 @@ class FabCircle(FabGeometry):
         """Return the geometry information for a FabCircle."""
         return self._GeometryInfo
 
-    # FabCircle.get_hash():
-    def get_hash(self) -> Tuple[Any, ...]:
+    # FabCircle.getHash():
+    def getHash(self) -> Tuple[Any, ...]:
         """Return FabCircle hash."""
         center: Vector = self.Center
         hashes: Tuple[Union[int, str, Tuple[Any, ...]], ...] = (
-            "FabCircle.get_hash",
-            self.Plane.get_hash(),
+            "FabCircle.getHash",
+            self.Plane.getHash(),
             f"{center.x:.6f}",
             f"{center.y:.6f}",
             f"{center.z:.6f}",
@@ -1567,8 +1567,8 @@ class FabPolygon(FabGeometry):
                   f"({area:.3f}, {perimeter:.3f}, {internal_radius:.3f}, {external_radius:.3f})")
         return geometry_info
 
-    # FabPolygon.get_hash():
-    def get_hash(self) -> Tuple[Any, ...]:
+    # FabPolygon.getHash():
+    def getHash(self) -> Tuple[Any, ...]:
         """Return the FabPolygon Hash."""
         hashes: List[Union[int, str, Tuple[Any, ...]]] = ["FabPolygon"]
         corner: Union[Vector, Tuple[Vector, Union[int, float]]]

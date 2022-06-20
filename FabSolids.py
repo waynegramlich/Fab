@@ -353,11 +353,11 @@ class Fab_Operation(object):
         """Return Fab_Operation name."""
         return self.Name
 
-    # Fab_Operation.get_hash():
-    def get_hash(self) -> Tuple[Any, ...]:
+    # Fab_Operation.getHash():
+    def getHash(self) -> Tuple[Any, ...]:
         """Return Fab_Operation hash."""
         raise RuntimeError(
-            f"Fab_Operation().get_hash() not implemented "
+            f"Fab_Operation().getHash() not implemented "
             f"for {type(self)}")  # pragma: no unit cover
 
     # Fab_Operation.get_geometries_hash():
@@ -369,7 +369,7 @@ class Fab_Operation(object):
             geometries = (geometries,)  # pragma: no unit cover
         geometry: FabGeometry  # pragma: no unit cover
         for geometry in geometries:
-            hashes.append(geometry.get_hash())
+            hashes.append(geometry.getHash())
         return tuple(hashes)
 
     # Fab_Operation.setShopBits():
@@ -496,8 +496,8 @@ class Fab_Extrude(Fab_Operation):
         """Return Fab_Extrude kind."""
         return "Extrude"
 
-    # Fab_Extrude.get_hash():
-    def get_hash(self) -> Tuple[Any, ...]:
+    # Fab_Extrude.getHash():
+    def getHash(self) -> Tuple[Any, ...]:
         """Return hash for Fab_Extrude operation."""
         return (
             "Fab_Extrude",
@@ -739,8 +739,8 @@ class Fab_Pocket(Fab_Operation):
         """Return the original Depth."""
         return self._Depth  # pragma: no unit cover
 
-    # Fab_Pocket.get_hash():
-    def get_hash(self) -> Tuple[Any, ...]:
+    # Fab_Pocket.getHash():
+    def getHash(self) -> Tuple[Any, ...]:
         """Return Fab_Pocket hash."""
         hashes: List[Any] = [
             "Fab_Pocket",
@@ -749,7 +749,7 @@ class Fab_Pocket(Fab_Operation):
         ]
         geometry: FabGeometry
         for geometry in self._Geometries:
-            hashes.append(geometry.get_hash())
+            hashes.append(geometry.getHash())
         return tuple(hashes)
 
     # Fab_Pocket.get_kind():
@@ -901,8 +901,8 @@ class Fab_HoleKey(object):
         assert self.Depth > 0.0, self.Depth
         assert isinstance(self.IsTop, bool), self.IsTop
 
-    # Fab_HoleKey.get_hash():
-    def get_hash(self) -> Tuple[Any, ...]:
+    # Fab_HoleKey.getHash():
+    def getHash(self) -> Tuple[Any, ...]:
         """Return a hash tuple for a Fab_HoleKey."""
         return (
             self.ThreadName,
@@ -923,7 +923,7 @@ class Fab_HoleKey(object):
         assert hole_key.Kind == "close"
         assert hole_key.Depth == 10.0
         assert hole_key.IsTop
-        hole_key_hash: Tuple[Any, ...] = hole_key.get_hash()
+        hole_key_hash: Tuple[Any, ...] = hole_key.getHash()
         assert hole_key_hash == ("#4-40", "close", "10.000000", True), hole_key_hash
 
         if tracing:
@@ -981,13 +981,13 @@ class Fab_Hole(Fab_Operation):
         """Return Fab_Hole kind."""
         return "Drilling"
 
-    # Fab_Hole.get_hash():
-    def get_hash(self) -> Tuple[Any, ...]:
+    # Fab_Hole.getHash():
+    def getHash(self) -> Tuple[Any, ...]:
         """Return Fab_Hole hash."""
         hashes: List[Any] = [
             "Fab_Hole",
-            self.Key.get_hash(),
-            self.Join.get_hash(),
+            self.Key.getHash(),
+            self.Join.getHash(),
         ]
         center: Vector
         for center in self.Centers:
@@ -1137,7 +1137,7 @@ class Fab_Hole(Fab_Operation):
             assembly: cq.Assembly = cq.Assembly(
                 holes_query.WorkPlane, name=step_base_name, color=cq.Color(0.5, 0.5, 0.5, 1.0))
 
-            holes_path: Path = produce_state.Steps.activate(step_base_name, self.get_hash())
+            holes_path: Path = produce_state.Steps.activate(step_base_name, self.getHash())
             self.StepFile: str = str(holes_path)
 
             if not holes_path.exists():
@@ -1312,8 +1312,8 @@ class FabMount(object):
         prefix: Fab_Prefix = solid.lookup_prefix(self.Name, operation_name)
         return prefix
 
-    # FabMount.get_hash():
-    def get_hash(self) -> Tuple[Any, ...]:
+    # FabMount.getHash():
+    def getHash(self) -> Tuple[Any, ...]:
         """Return a has the current contents of a FabMount."""
         hashes: List[Any] = [
             "FabMount",
@@ -1328,7 +1328,7 @@ class FabMount(object):
         ]
         operation: Fab_Operation
         for operation in self._Operations:
-            hashes.append(operation.get_hash())
+            hashes.append(operation.getHash())
         return tuple(hashes)
 
     # FabMount.record_operation():
@@ -1803,8 +1803,8 @@ class FabSolid(FabNode):
         if tracing:
             print(f"{tracing}<=FabSolid.post_produce1({self.Label})")
 
-    # FabSolid.get_hash():
-    def get_hash(self) -> Tuple[Any, ...]:
+    # FabSolid.getHash():
+    def getHash(self) -> Tuple[Any, ...]:
         """Return FabSolid hash."""
         hashes: List[Any] = [
             "FabSolid",
@@ -1813,7 +1813,7 @@ class FabSolid(FabNode):
         ]
         mount: FabMount
         for mount in self._Mounts:
-            hashes.append(mount.get_hash())
+            hashes.append(mount.getHash())
         return tuple(hashes)
 
     # FabSolid.mount():
@@ -1892,7 +1892,7 @@ class FabSolid(FabNode):
         # consistent between Python runs.  In other words  __hash__() is non-deterministic.
         # Instead use one of the hashlib hash functions instead:
         #     hash_tuple => repr string => hashlib.sha256 => trim to 16 bytes
-        hash_tuple: Tuple[Any, ...] = self.get_hash()
+        hash_tuple: Tuple[Any, ...] = self.getHash()
         prefix: Fab_Prefix = self.Prefix
         assert isinstance(prefix, Fab_Prefix)
         solid_name: str = f"{prefix.to_string()}__{self.Label}"
