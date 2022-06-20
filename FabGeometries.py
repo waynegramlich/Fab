@@ -625,7 +625,7 @@ class Fab_Fillet(object):
     After: "Fab_Fillet" = field(init=False, repr=False)  # Filled in by __post_init__()
     Arc: Optional["Fab_Arc"] = field(init=False, default=None)  # Filled in by compute_arcs()
     Line: Optional["Fab_Line"] = field(init=False, default=None)  # Filled in by compute_lines()
-    ProjectedApex: Vector = field(init=False, repr=False)  # Used by getGeometryInfo()
+    XYPlaneApex: Vector = field(init=False, repr=False)  # Used by getGeometryInfo()
 
     # Fab_Fillet.__post_init__():
     def __post_init__(self) -> None:
@@ -1306,6 +1306,7 @@ class FabPolygon(FabGeometry):
 
         self._compute_arcs()
         self._compute_lines()
+
         if tracing:
             print(f"{tracing}<=FabPolygon.__post_init__()")
 
@@ -1402,7 +1403,7 @@ class FabPolygon(FabGeometry):
         # Step 1: Project the Apex points from *plane* to the XY plane.
         fillet: Fab_Fillet
         for fillet in self._Fillets:
-            fillet.ProjectedApex = self.Plane.rotate_to_z_axis(fillet.Apex)
+            fillet.XYPlaneApex = self.Plane.rotate_to_z_axis(fillet.Apex)
 
         # Step 2: Compute the *maximum_radius* and *total_angle* of turning at each *fillet*:
         pi: float = math.pi
@@ -1416,9 +1417,9 @@ class FabPolygon(FabGeometry):
         perimeter: float = 0.0
         index: int
         for index, fillet in enumerate(self._Fillets):
-            before_apex: Vector = fillet.Before.ProjectedApex
-            at_apex: Vector = fillet.ProjectedApex
-            after_apex: Vector = fillet.After.ProjectedApex
+            before_apex: Vector = fillet.Before.XYPlaneApex
+            at_apex: Vector = fillet.XYPlaneApex
+            after_apex: Vector = fillet.After.XYPlaneApex
             polygon_points.append(at_apex)
 
             before: Vector = at_apex - before_apex
@@ -1569,8 +1570,8 @@ class FabPolygon(FabGeometry):
             if radii_distance > actual_distance:
                 return (f"Requested radii distance {radii_distance}mm "
                         f"(={before_fillet.Radius}+{at_fillet.Radius}) < "
-                        "{actual_distance}mm between {at_fillet.Before} and "
-                        "{after_fillet.After}")  # pragma: no unit cover
+                        f"{actual_distance}mm between {at_fillet.Before} and "
+                        f"{at_fillet.After}")  # pragma: no unit cover
         return ""
 
     # FabPolygon._colinear_check():
@@ -1749,6 +1750,7 @@ class FabPolygon(FabGeometry):
         z_axis: Vector = Vector(0, 0, 1)
         xy_plane: FabPlane = FabPlane(origin, z_axis)
         polygon1: FabPolygon = FabPolygon(xy_plane, corners)
+        # _ = polygon1.getGeometryInfo()
         assert polygon1.Corners == corners
         assert polygon1.Corners == copied_corners
         assert polygon1.ProjectedCorners == projected_corners
