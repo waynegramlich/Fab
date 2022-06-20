@@ -255,7 +255,7 @@ Returns:
 
 ### <a name="fabgeometries----get-geometries"></a>5.4 `FabPolygon.`get_geometries():
 
-FabPolygon.get_geometries(self, contact: cadquery.occ_impl.geom.Vector, Normal: cadquery.occ_impl.geom.Vector) -> Tuple[FabGeometries.Fab_Geometry, ...]:
+FabPolygon.get_geometries(self) -> Tuple[FabGeometries.Fab_Geometry, ...]:
 
 Return the FabPolygon lines and arcs.
 

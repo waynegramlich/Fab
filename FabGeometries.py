@@ -393,6 +393,7 @@ class Fab_GeometryContext(object):
 
     """
 
+    # TODO: Internal classes should not have preceding underscores internal class.
     _Plane: FabPlane
     _Query: "Fab_Query"
     _geometry_group: Optional[Any] = field(init=False, repr=False)  # TODO: Is this used any more?
@@ -400,17 +401,9 @@ class Fab_GeometryContext(object):
 
     # Fab_GeometryContext.__post_init__():
     def __post_init__(self) -> None:
-        """Initialize FabGeometryContex."""
-
-        if not isinstance(self._Plane, FabPlane):
-            raise RuntimeError(
-                f"Fab_GeometryContext.__post_init__(): "
-                f"{type(self._Plane)} is not a FabPlane")  # pragma: no unit cover
-        if not isinstance(self._Query, Fab_Query):
-            raise RuntimeError(
-                "Fab_GeometryContext.__post_init__(): "
-                f"{type(self._Query)} is not a Fab_Query")  # pragma: no unit cover
-
+        """Initialize FabGeometryContext."""
+        check_type("Fab_GeometryContext._Plane", self._Plane, FabPlane)
+        check_type("Fab_GeometryContext._Query", self._Query, Fab_Query)
         copy: Vector = Vector()
         self._copy: Vector = copy
         self._GeometryGroup = None  # Set with set_geometry_group() method
@@ -1280,12 +1273,17 @@ class FabPolygon(FabGeometry):
                 apex, radius = (original_corner[0], float(original_corner[1]))
             projected_apex: Vector = plane.projectPoint(apex)
             projected_corners.append((projected_apex, radius))
+        # This is the only way to initialize a field in a frozen data class:
+        # See: [Why __setattr__?](https://stackoverflow.com/questions/53756788)
+        object.__setattr__(self, "_CopiedCorners", tuple(copied_corners))
+        object.__setattr__(self, "_ProjectedCorners", tuple(projected_corners))
 
         # Compute the *box* that encloses the projected points.:
         corner: Tuple[Vector, float]
         box_points: List[Vector] = [corner[0] for corner in projected_corners]
         box: FabBox = FabBox()
         box.enclose(box_points)
+        object.__setattr__(self, "_Box", box)
 
         fillets: List[Fab_Fillet] = []
         fillet: Fab_Fillet
@@ -1295,12 +1293,6 @@ class FabPolygon(FabGeometry):
             check_type(f"FabPolygon.Corner[{index}]:", corner, Tuple[Vector, float])
             fillet = Fab_Fillet(corner[0], corner[1])
             fillets.append(fillet)
-
-        # This is the only way to initialize a field in a frozen data class:
-        # See: [Why __setattr__?](https://stackoverflow.com/questions/53756788)
-        object.__setattr__(self, "_Box", box)
-        object.__setattr__(self, "_CopiedCorners", tuple(copied_corners))
-        object.__setattr__(self, "_ProjectedCorners", tuple(projected_corners))
         object.__setattr__(self, "_Fillets", tuple(fillets))
 
         # Double link the fillets and look for errors:
@@ -1312,9 +1304,8 @@ class FabPolygon(FabGeometry):
         if colinear_error:
             raise ValueError(colinear_error)  # pragma: no unit cover
 
-        # These checks are repeated after 2D projection.
-        # self._compute_arcs()
-        # self._compute_lines()
+        self._compute_arcs()
+        self._compute_lines()
         if tracing:
             print(f"{tracing}<=FabPolygon.__post_init__()")
 
@@ -1620,7 +1611,7 @@ class FabPolygon(FabGeometry):
                 fillet.Line = Fab_Line(start, finish)
 
     # FabPolygon.get_geometries():
-    def get_geometries(self, contact: Vector, Normal: Vector) -> Tuple[Fab_Geometry, ...]:
+    def get_geometries(self) -> Tuple[Fab_Geometry, ...]:
         """Return the FabPolygon lines and arcs."""
         geometries: List[Fab_Geometry] = []
         fillet: Fab_Fillet
@@ -1650,9 +1641,7 @@ class FabPolygon(FabGeometry):
             print(f"{tracing}=>FabPolygon.produce(*, '{prefix}', {index})")
         part_geometry: Any
         assert isinstance(geometry_context, Fab_GeometryContext), geometry_context
-        plane_contact: Vector = geometry_context.Plane.Contact
-        plane_normal: Vector = geometry_context.Plane.Normal
-        plane: FabPlane = FabPlane(plane_contact, plane_normal)
+        plane: FabPlane = geometry_context.Plane
 
         # Use *contact*/*normal* for 2D projection:
         self._plane_2d_project(plane)
@@ -1670,7 +1659,7 @@ class FabPolygon(FabGeometry):
         self._compute_lines()
 
         # Extract the geometries using *contact* and *normal* to specify the projection plane:
-        geometries: Tuple[Fab_Geometry, ...] = self.get_geometries(plane_contact, plane_normal)
+        geometries: Tuple[Fab_Geometry, ...] = self.get_geometries()
         part_geometries: List[Any] = []
 
         if not geometries:
