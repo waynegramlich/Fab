@@ -12,7 +12,7 @@ This internal classes are managed by FabMount methods.
   * 1.1 [lookup_prefix()](#fabsolids----lookup-prefix): Return the Fab_Prefix for an operation.
   * 1.2 [getHash()](#fabsolids----gethash): Return a has the current contents of a FabMount.
   * 1.3 [record_operation()](#fabsolids----record-operation): Record an operation to a FabMount.
-  * 1.4 [set_geometry_group()](#fabsolids----set-geometry-group): Set the FabMount GeometryGroup need for the FabGeometryContex.
+  * 1.4 [setGeometryGroup()](#fabsolids----setgeometrygroup): Set the FabMount GeometryGroup need for the FabGeometryContex.
   * 1.5 [post_produce1()](#fabsolids----post-produce1): Expand and transform operations.
   * 1.6 [post_produce2()](#fabsolids----post-produce2): Perform FabMount phase 1 post procduction.
   * 1.7 [to_json()](#fabsolids----to-json): Return FabMount JSON structure.
@@ -100,9 +100,9 @@ FabMount.record_operation(self, operation: FabSolids.Fab_Operation) -> None:
 
 Record an operation to a FabMount.
 
-### <a name="fabsolids----set-geometry-group"></a>1.4 `FabMount.`set_geometry_group():
+### <a name="fabsolids----setgeometrygroup"></a>1.4 `FabMount.`setGeometryGroup():
 
-FabMount.set_geometry_group(self, geometry_group: Any) -> None:
+FabMount.setGeometryGroup(self, geometry_group: Any) -> None:
 
 Set the FabMount GeometryGroup need for the FabGeometryContex.
 

@@ -6,7 +6,7 @@
   * 1.1 [getHash()](#fabgeometries----gethash): Return FabCircle hash.
   * 1.2 [projectToPlane()](#fabgeometries----projecttoplane): Return a new FabCircle projected onto a plane.
   * 1.3 [produce()](#fabgeometries----produce): Produce the FreeCAD objects needed for FabPolygon.
-  * 1.4 [get_geometries()](#fabgeometries----get-geometries): Return the FabPolygon lines and arcs.
+  * 1.4 [getGeometries()](#fabgeometries----getgeometries): Return the FabPolygon lines and arcs.
 * 2 Class: [FabGeometry](#fabgeometries--fabgeometry):
   * 2.1 [getHash()](#fabgeometries----gethash): Return FabGeometry hash.
   * 2.2 [produce()](#fabgeometries----produce): Produce the necessary FreeCAD objects for the FabGeometry.
@@ -22,7 +22,7 @@
   * 5.1 [getHash()](#fabgeometries----gethash): Return the FabPolygon Hash.
   * 5.2 [projectToPlane()](#fabgeometries----projecttoplane): Return nre FabPolygon projected onto a plane.
   * 5.3 [doubleLink()](#fabgeometries----doublelink): Double link the Fab_Fillet's together.
-  * 5.4 [get_geometries()](#fabgeometries----get-geometries): Return the FabPolygon lines and arcs.
+  * 5.4 [getGeometries()](#fabgeometries----getgeometries): Return the FabPolygon lines and arcs.
   * 5.5 [produce()](#fabgeometries----produce): Produce the FreeCAD objects needed for FabPolygon.
 * 6 Class: [Fab_Arc](#fabgeometries--fab-arc):
   * 6.1 [produce()](#fabgeometries----produce): Return line segment after moving it into Geometry group.
@@ -31,15 +31,15 @@
 * 8 Class: [Fab_Fillet](#fabgeometries--fab-fillet):
   * 8.1 [compute_arc()](#fabgeometries----compute-arc): Return the arc associated with a Fab_Fillet with non-zero radius.
   * 8.2 [plane_2d_project()](#fabgeometries----plane-2d-project): Project the Apex onto a plane.
-  * 8.3 [compute_fillet_area_perimeter()](#fabgeometries----compute-fillet-area-perimeter): Return the excluded fillet area and the perimeter for a Fab_Fillet.
-  * 8.4 [get_geometries()](#fabgeometries----get-geometries): NO DOC STRING!
+  * 8.3 [computeFilletAreaPerimeter()](#fabgeometries----computefilletareaperimeter): Return the excluded fillet area and the perimeter for a Fab_Fillet.
+  * 8.4 [getGeometries()](#fabgeometries----getgeometries): NO DOC STRING!
 * 9 Class: [Fab_Geometry](#fabgeometries--fab-geometry):
   * 9.1 [produce()](#fabgeometries----produce): NO DOC STRING!
   * 9.2 [getStart()](#fabgeometries----getstart): Return start point of geometry.
 * 10 Class: [Fab_GeometryContext](#fabgeometries--fab-geometrycontext):
   * 10.1 [copy()](#fabgeometries----copy): Return a Fab_GeometryContext copy.
   * 10.2 [copyWithPlaneAdjust()](#fabgeometries----copywithplaneadjust): Return a Fab_GeometryContext copy with the plane adjusted up/down.
-  * 10.3 [set_geometry_group()](#fabgeometries----set-geometry-group): Set the GeometryContext geometry group.
+  * 10.3 [setGeometryGroup()](#fabgeometries----setgeometrygroup): Set the GeometryContext geometry group.
 * 11 Class: [Fab_GeometryInfo](#fabgeometries--fab-geometryinfo):
   * 11.1 [toTuple()](#fabgeometries----totuple): Return the area, perimeter, internal/external radius for a FabGeometry.
 * 12 Class: [Fab_Line](#fabgeometries--fab-line):
@@ -55,7 +55,7 @@
   * 13.7 [move_to()](#fabgeometries----move-to): Draw a line to a point.
   * 13.8 [show()](#fabgeometries----show): Print a detailed dump of a Fab_Query.
   * 13.9 [subtract()](#fabgeometries----subtract): Subtract one solid form a Fab_Query.
-  * 13.10 [three_point_arc()](#fabgeometries----three-point-arc): Draw a three point arc.
+  * 13.10 [threePointArc()](#fabgeometries----threepointarc): Draw a three point arc.
 
 ## <a name="fabgeometries--fabcircle"></a>1 Class FabCircle:
 
@@ -94,9 +94,9 @@ FabCircle.produce(self, geometry_context: FabGeometries.Fab_GeometryContext, pre
 
 Produce the FreeCAD objects needed for FabPolygon.
 
-### <a name="fabgeometries----get-geometries"></a>1.4 `FabCircle.`get_geometries():
+### <a name="fabgeometries----getgeometries"></a>1.4 `FabCircle.`getGeometries():
 
-FabCircle.get_geometries(self) -> Tuple[FabGeometries.Fab_Geometry, ...]:
+FabCircle.getGeometries(self) -> Tuple[FabGeometries.Fab_Geometry, ...]:
 
 Return the FabPolygon lines and arcs.
 
@@ -251,9 +251,9 @@ FabPolygon.doubleLink(self) -> None:
 
 Double link the Fab_Fillet's together.
 
-### <a name="fabgeometries----get-geometries"></a>5.4 `FabPolygon.`get_geometries():
+### <a name="fabgeometries----getgeometries"></a>5.4 `FabPolygon.`getGeometries():
 
-FabPolygon.get_geometries(self) -> Tuple[FabGeometries.Fab_Geometry, ...]:
+FabPolygon.getGeometries(self) -> Tuple[FabGeometries.Fab_Geometry, ...]:
 
 Return the FabPolygon lines and arcs.
 
@@ -334,9 +334,9 @@ Arguments:
 
 Modifies Fab_Fillet.
 
-### <a name="fabgeometries----compute-fillet-area-perimeter"></a>8.3 `Fab_Fillet.`compute_fillet_area_perimeter():
+### <a name="fabgeometries----computefilletareaperimeter"></a>8.3 `Fab_Fillet.`computeFilletAreaPerimeter():
 
-Fab_Fillet.compute_fillet_area_perimeter(self, tracing: str = '') -> Tuple[float, float]:
+Fab_Fillet.computeFilletAreaPerimeter(self, tracing: str = '') -> Tuple[float, float]:
 
 Return the excluded fillet area and the perimeter for a Fab_Fillet.
 To be more concise, the fillet_area is the area outside of the fillet arc, but inside
@@ -346,9 +346,9 @@ Returns:
 * (float): The excluded area of a fillet (i.e. the area not under the arc segment.)
 * (float): The length the of the arc segment.
 
-### <a name="fabgeometries----get-geometries"></a>8.4 `Fab_Fillet.`get_geometries():
+### <a name="fabgeometries----getgeometries"></a>8.4 `Fab_Fillet.`getGeometries():
 
-Fab_Fillet.get_geometries(self) -> Tuple[FabGeometries.Fab_Geometry, ...]:
+Fab_Fillet.getGeometries(self) -> Tuple[FabGeometries.Fab_Geometry, ...]:
 
 NO DOC STRING!
 
@@ -380,7 +380,7 @@ Attributes:
 * *Query* (Fab_Query): The CadQuery Workplane wrapper to use.
 * *_GeometryGroup*: (App.DocumentObjectGroup):
   The FreeCAD group to store FreeCAD Geometry objects into.
-  This field needs to be set prior to use with set_geometry_group() method.
+  This field needs to be set prior to use with setGeometryGroup() method.
 
 ### <a name="fabgeometries----copy"></a>10.1 `Fab_GeometryContext.`copy():
 
@@ -394,9 +394,9 @@ Fab_GeometryContext.copyWithPlaneAdjust(self, delta: float, tracing: str = '') -
 
 Return a Fab_GeometryContext copy with the plane adjusted up/down.
 
-### <a name="fabgeometries----set-geometry-group"></a>10.3 `Fab_GeometryContext.`set_geometry_group():
+### <a name="fabgeometries----setgeometrygroup"></a>10.3 `Fab_GeometryContext.`setGeometryGroup():
 
-Fab_GeometryContext.set_geometry_group(self, geometry_group: Any) -> None:
+Fab_GeometryContext.setGeometryGroup(self, geometry_group: Any) -> None:
 
 Set the GeometryContext geometry group.
 
@@ -513,9 +513,9 @@ Fab_Query.subtract(self, remove_solid: 'Fab_Query', tracing: str = '') -> None:
 
 Subtract one solid form a Fab_Query.
 
-### <a name="fabgeometries----three-point-arc"></a>13.10 `Fab_Query.`three_point_arc():
+### <a name="fabgeometries----threepointarc"></a>13.10 `Fab_Query.`threePointArc():
 
-Fab_Query.three_point_arc(self, middle: cadquery.occ_impl.geom.Vector, end: cadquery.occ_impl.geom.Vector, for_construction: bool = False, tracing: str = '') -> None:
+Fab_Query.threePointArc(self, middle: cadquery.occ_impl.geom.Vector, end: cadquery.occ_impl.geom.Vector, for_construction: bool = False, tracing: str = '') -> None:
 
 Draw a three point arc.
 

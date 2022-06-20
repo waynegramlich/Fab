@@ -409,7 +409,7 @@ class Fab_GeometryContext(object):
     * *Query* (Fab_Query): The CadQuery Workplane wrapper to use.
     * *_GeometryGroup*: (App.DocumentObjectGroup):
       The FreeCAD group to store FreeCAD Geometry objects into.
-      This field needs to be set prior to use with set_geometry_group() method.
+      This field needs to be set prior to use with setGeometryGroup() method.
 
     """
 
@@ -426,7 +426,7 @@ class Fab_GeometryContext(object):
         check_type("Fab_GeometryContext._Query", self._Query, Fab_Query)
         copy: Vector = Vector()
         self._copy: Vector = copy
-        self._GeometryGroup = None  # Set with set_geometry_group() method
+        self._GeometryGroup = None  # Set with setGeometryGroup() method
 
     # Fab_GeometryContext.Plane():
     @property
@@ -469,8 +469,8 @@ class Fab_GeometryContext(object):
         new_query: Fab_Query = Fab_Query(adjusted_plane)
         return Fab_GeometryContext(adjusted_plane, new_query)
 
-    # Fab_GeometryContext.set_geometry_Group():
-    def set_geometry_group(self, geometry_group: Any) -> None:
+    # Fab_GeometryContext.setGeometryGroup():
+    def setGeometryGroup(self, geometry_group: Any) -> None:
         """Set the GeometryContext geometry group."""
         # if not isinstance(geometry_group, App.DocumentObjectGroup):
         #     raise RuntimeError(f"Fab_GeometryContext.set_geometry_grouop(): "
@@ -564,7 +564,7 @@ class Fab_Arc(Fab_Geometry):
         plane: FabPlane = geometry_context._Plane
         rotated_middle: Vector = plane.rotateToZAxis(self.Middle, tracing=next_tracing)
         rotated_finish: Vector = plane.rotateToZAxis(self.Finish, tracing=next_tracing)
-        geometry_context.Query.three_point_arc(
+        geometry_context.Query.threePointArc(
             rotated_middle, rotated_finish, tracing=next_tracing)
 
         if tracing:
@@ -847,8 +847,8 @@ class Fab_Fillet(object):
         # FreeCAD Vector metheds like to modify Vector contents; force copies beforehand:
         self.Apex = plane.projectPoint(self.Apex)
 
-    # Fab_Fillet.compute_fillet_area_perimeter():
-    def compute_fillet_area_perimeter(self, tracing: str = "") -> Tuple[float, float]:
+    # Fab_Fillet.computeFilletAreaPerimeter():
+    def computeFilletAreaPerimeter(self, tracing: str = "") -> Tuple[float, float]:
         """Return the excluded fillet area and the perimeter for a Fab_Fillet.
 
         To be more concise, the fillet_area is the area outside of the fillet arc, but inside
@@ -860,7 +860,7 @@ class Fab_Fillet(object):
 
         """
         if tracing:
-            print(f"{tracing}=>Fab_Fillet.compute_fillet_area_perimeter()")
+            print(f"{tracing}=>Fab_Fillet.computeFilletAreaPerimeter()")
         fillet_area: float = 0.0
         fillet_perimeter: float = 0.0
 
@@ -874,7 +874,7 @@ class Fab_Fillet(object):
                 arc.FinishXY,
                 arc.CenterXY,
             )
-            diamond_area: float = FabPolygon._compute_polygon_area(arc_points)
+            diamond_area: float = FabPolygon._computePolygonArea(arc_points)
             if tracing:
                 print(f"{tracing}{diamond_area=:.5f}")
 
@@ -916,12 +916,12 @@ class Fab_Fillet(object):
                 print(f"{tracing}No arc")
 
         if tracing:
-            print(f"{tracing}<=Fab_Fillet.compute_fillet_area_perimeter()=>"
+            print(f"{tracing}<=Fab_Fillet.computeFilletAreaPerimeter()=>"
                   f"{fillet_area=:.5f}, {fillet_perimeter=:.5f}")
         return fillet_area, fillet_perimeter
 
-    # Fab_Fillet.get_geometries():
-    def get_geometries(self) -> Tuple[Fab_Geometry, ...]:
+    # Fab_Fillet.getGeometries():
+    def getGeometries(self) -> Tuple[Fab_Geometry, ...]:
         geometries: List[Fab_Geometry] = []
         if self.Line:
             geometries.append(self.Line)
@@ -1197,7 +1197,7 @@ class FabCircle(FabGeometry):
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabCircle.produce()")
-        geometries: Tuple[Fab_Geometry, ...] = self.get_geometries()
+        geometries: Tuple[Fab_Geometry, ...] = self.getGeometries()
         geometry: Fab_Geometry
         part_geometries: List[Any] = []
         for index, geometry in enumerate(geometries):
@@ -1209,8 +1209,8 @@ class FabCircle(FabGeometry):
             print(f"{tracing}<=FabCircle.produce()")
         return tuple(part_geometries)
 
-    # FabCircle.get_geometries():
-    def get_geometries(self) -> Tuple[Fab_Geometry, ...]:
+    # FabCircle.getGeometries():
+    def getGeometries(self) -> Tuple[Fab_Geometry, ...]:
         """Return the FabPolygon lines and arcs."""
         return (Fab_Circle(self.Plane, self.Center, self.Diameter),)
 
@@ -1417,12 +1417,12 @@ class FabPolygon(FabGeometry):
         """Return FabGeometryInfo for FabPolygon."""
         return self._GeometryInfo
 
-    # FabPolygon._compute_polgyon_area():
+    # FabPolygon._computePolgyonArea():
     @staticmethod
-    def _compute_polygon_area(points: Sequence[Vector], tracing: str = "") -> float:
+    def _computePolygonArea(points: Sequence[Vector], tracing: str = "") -> float:
         """Compute that area of an irregular polygon."""
         if tracing:
-            print(f"{tracing}=>FabPolygon_compute_polygon_ares({points})")
+            print(f"{tracing}=>FabPolygonArea({points})")
 
         # References:
         # * [Polygon Area](https://www.mathsisfun.com/geometry/area-irregular-polygons.html)
@@ -1456,7 +1456,7 @@ class FabPolygon(FabGeometry):
         # the *area* can be either positive or negative.  Make it positive.
         area = abs(area)
         if tracing:
-            print(f"{tracing}<=_compute_polygon_area({points})=>{area}")
+            print(f"{tracing}<=_computePolygonArea({points})=>{area}")
         return area
 
     # FabPolygon._computeGeometryInfo():
@@ -1508,7 +1508,7 @@ class FabPolygon(FabGeometry):
             fillet_area: float
             fillet_perimeter: float
             fillet_area, fillet_perimeter = (
-                fillet.compute_fillet_area_perimeter(tracing=next_tracing))
+                fillet.computeFilletAreaPerimeter(tracing=next_tracing))
             if tracing:
                 print(f"{tracing}perimeter += {fillet_perimeter=:.5f}")
             perimeter += fillet_perimeter
@@ -1522,7 +1522,7 @@ class FabPolygon(FabGeometry):
                 if tracing:
                     print(f"{tracing}perimeter += {line_length=:.3f}")
 
-            def update_radius(radius, fillet: Fab_Fillet) -> float:
+            def updateRadius(radius, fillet: Fab_Fillet) -> float:
                 """Update the minimum radius."""
                 arc: Optional[Fab_Arc] = fillet.Arc
                 arc_radius: float = arc.Radius if arc else 0.0
@@ -1531,10 +1531,10 @@ class FabPolygon(FabGeometry):
 
             if delta_angle > 0.0:
                 positive_fillet_area += fillet_area
-                positive_radius = update_radius(positive_radius, fillet)
+                positive_radius = updateRadius(positive_radius, fillet)
             else:
                 negative_fillet_area += fillet_area
-                negative_radius = update_radius(negative_radius, fillet)
+                negative_radius = updateRadius(negative_radius, fillet)
 
         if tracing:
             print(f"{tracing}{positive_fillet_area=:.3f} {positive_radius=:.3f}")
@@ -1546,7 +1546,7 @@ class FabPolygon(FabGeometry):
         assert abs(abs(total_angle) - degrees360) < epsilon, f"{math.degrees(total_angle)=:.3f}"
 
         # Update *area* that to deal with fillet rounding and produce final *geometry_info*:
-        area: float = FabPolygon._compute_polygon_area(polygon_points)
+        area: float = FabPolygon._computePolygonArea(polygon_points)
         if tracing:
             print(f"{tracing}Initial polygon {area=}")
         internal_radius: float = 0.0
@@ -1678,13 +1678,13 @@ class FabPolygon(FabGeometry):
             if (start - finish).Length > FabPolygon.EPSILON:
                 fillet.Line = Fab_Line(self.Plane, start, finish)
 
-    # FabPolygon.get_geometries():
-    def get_geometries(self) -> Tuple[Fab_Geometry, ...]:
+    # FabPolygon.getGeometries():
+    def getGeometries(self) -> Tuple[Fab_Geometry, ...]:
         """Return the FabPolygon lines and arcs."""
         geometries: List[Fab_Geometry] = []
         fillet: Fab_Fillet
         for fillet in self._Fillets:
-            geometries.extend(fillet.get_geometries())
+            geometries.extend(fillet.getGeometries())
         return tuple(geometries)
 
     # FabPolygon._plane_2d_project():
@@ -1727,7 +1727,7 @@ class FabPolygon(FabGeometry):
         self._computeLines()
 
         # Extract the geometries using *contact* and *normal* to specify the projection plane:
-        geometries: Tuple[Fab_Geometry, ...] = self.get_geometries()
+        geometries: Tuple[Fab_Geometry, ...] = self.getGeometries()
         part_geometries: List[Any] = []
 
         if not geometries:
@@ -2256,7 +2256,7 @@ class Fab_GeometryInfo(object):
             """Fail if two numbers are not  close."""
             assert abs(have - want) < 1.0e-8, f"{have=} != {want=}"
 
-        def circle_check(radius: float) -> None:
+        def circleCheck(radius: float) -> None:
             """Fail if a FabCircle computes incorrect Fab_GeometryInfo."""
             origin: Vector = Vector()
             z_axis: Vector = Vector(0.0, 0.0, 1.0)
@@ -2278,8 +2278,8 @@ class Fab_GeometryInfo(object):
             close(minimum_internal_radius, -1)
             close(maximum_external_radius, radius)
 
-        circle_check(1.0)
-        circle_check(2.0)
+        circleCheck(1.0)
+        circleCheck(2.0)
 
         if tracing:
             print(f"{tracing}<=Fab_GeometryInfo._unitTests()")
@@ -2421,28 +2421,28 @@ class Fab_Query(object):
         # This is basically copied from the section "An Introspective Example" in the
         # CadQuery documentation.
 
-        def tidy_repr(obj) -> str:
+        def tideRepr(obj) -> str:
             """ Shortens a default repr string."""
             return repr(obj).split('.')[-1].rstrip('>')
 
-        def _ctx_str(self):
+        def _ctxStr(self):
             return (
-                tidy_repr(self) + ":\n" +
+                tideRepr(self) + ":\n" +
                 f"{tracing}    pendingWires: {self.pendingWires}\n" +
                 f"{tracing}    pendingEdges: {self.pendingEdges}\n" +
                 f"{tracing}    tags: {self.tags}"
             )
 
-        def _plane_str(self) -> str:
+        def _planeStr(self) -> str:
             return (
-                tidy_repr(self) + ":\n" +
+                tideRepr(self) + ":\n" +
                 f"{tracing}    origin: {self.origin.toTuple()}\n" +
                 f"{tracing}    z direction: {self.zDir.toTuple()}"
             )
 
-        def _wp_str(self) -> str:
-            out = tidy_repr(self) + ":\n"
-            out += (f"{tracing}  parent: {tidy_repr(self.parent)}\n"
+        def _wpStr(self) -> str:
+            out = tideRepr(self) + ":\n"
+            out += (f"{tracing}  parent: {tideRepr(self.parent)}\n"
                     if self.parent else f"{tracing}  no parent\n")
             out += f"{tracing}  plane: {self.plane}\n"
             out += f"{tracing}  objects: {self.objects}\n"
@@ -2457,7 +2457,7 @@ class Fab_Query(object):
         )
 
         # Install *new_functions*
-        new_functions: Tuple[Any, Any, Any] = (_ctx_str, _plane_str, _wp_str)
+        new_functions: Tuple[Any, Any, Any] = (_ctxStr, _planeStr, _wpStr)
         (cq.cq.CQContext.__str__, cq.occ_impl.geom.Plane.__str__,
          cq.Workplane.__str__) = new_functions
 
@@ -2480,12 +2480,12 @@ class Fab_Query(object):
             remove_solid.WorkPlane
         )
 
-    # Fab_Query.three_point_arc():
-    def three_point_arc(self, middle: Vector, end: Vector,
-                        for_construction: bool = False, tracing: str = "") -> None:
+    # Fab_Query.threePointArc():
+    def threePointArc(self, middle: Vector, end: Vector,
+                      for_construction: bool = False, tracing: str = "") -> None:
         """Draw a three point arc."""
         if tracing:
-            print(f"{tracing}=>Fab_Query.three_point_arc({middle}), {end})")
+            print(f"{tracing}=>Fab_Query.threePointArc({middle}), {end})")
         middle_tuple: Tuple[float, float] = (middle.x, middle.y)
         end_tuple: Tuple[float, float] = (end.x, end.y)
         self._Query = (
@@ -2494,7 +2494,7 @@ class Fab_Query(object):
         )
         if tracing:
             print(f"{tracing}{middle_tuple=} {end_tuple=}")
-            print(f"{tracing}<=Fab_Query.three_point_arc({middle}), {end})")
+            print(f"{tracing}<=Fab_Query.threePointArc({middle}), {end})")
 
 
 def main(tracing: str = "") -> None:

@@ -1340,10 +1340,10 @@ class FabMount(object):
                 "is not an Fab_Operation")  # pragma: no unit cover
         self._Operations.append(operation)
 
-    # FabMount.set_geometry_group():
-    def set_geometry_group(self, geometry_group: Any) -> None:
+    # FabMount.setGeometryGroup():
+    def setGeometryGroup(self, geometry_group: Any) -> None:
         """Set the FabMount GeometryGroup need for the FabGeometryContex."""
-        self._GeometryContext.set_geometry_group(geometry_group)  # pragma: no unit covert
+        self._GeometryContext.setGeometryGroup(geometry_group)  # pragma: no unit covert
 
     # FabMount.post_produce1():
     def post_produce1(
