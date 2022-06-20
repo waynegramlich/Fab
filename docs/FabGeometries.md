@@ -19,6 +19,7 @@
   * 4.2 [projectPoint()](#fabgeometries----projectpoint): Project a point onto a plane.
   * 4.3 [adjust()](#fabgeometries----adjust): Return a new FabPlane that has been adjusted up/down the normal by a delta.
   * 4.4 [rotate_to_z_axis()](#fabgeometries----rotate-to-z-axis): Rotate a point around the origin until the normal aligns with the +Z axis.
+  * 4.5 [projectPointToXY()](#fabgeometries----projectpointtoxy): Project a rotated point onto the X/Y plane.
 * 5 Class: [FabPolygon](#fabgeometries--fabpolygon):
   * 5.1 [getGeometryInfo()](#fabgeometries----getgeometryinfo): Return the FabGeometryInfo for a FabPolygon.
   * 5.2 [get_hash()](#fabgeometries----get-hash): Return the FabPolygon Hash.
@@ -196,6 +197,22 @@ Arguments:
 Returns:
 * (Vector): The rotated vector position.
 
+### <a name="fabgeometries----projectpointtoxy"></a>4.5 `FabPlane.`projectPointToXY():
+
+FabPlane.projectPointToXY(self, unrotated_point: cadquery.occ_impl.geom.Vector) -> cadquery.occ_impl.geom.Vector:
+
+Project a rotated point onto the X/Y plane.
+Take a point do the following:
+1. Project the point onto the plane (i.e. *self*)
+2. Rotate the plane around the origin until it is parallel to the XY plane.
+3. Project the point down to the XY plane.
+
+Arguments:
+* *unrotated_point* (Vector): The point before rotation.
+
+Returns:
+* (Vector): The point projected point.
+
 
 ## <a name="fabgeometries--fabpolygon"></a>5 Class FabPolygon:
 
@@ -270,13 +287,18 @@ Produce the FreeCAD objects needed for FabPolygon.
 
 An internal representation an arc geometry.
 Attributes:
-* *Apex* (Vector): The fillet apex point.
+* *Apex* (Vector): The fillet apex point (i.e. corner.)
 * *Radius* (float): The arc radius in millimeters.
 * *Center* (Vector): The arc center point.
 * *Start* (Vector): The Arc start point.
 * *Middle* (Vector): The Arc midpoint.
 * *Finish* (Vector): The Arc finish point.
 
+* *ApexXY* (Vector): Apex projected onto the XY Plane.
+* *CenterXY* (Vector): The Center projected onto the XY Plane.
+* *StartXY* (Vector): The Start projected onto the XY Plane.
+* *MiddleXY* (Vector): The Middle projected onto the XY Plane
+* *FinishXY* (Vector): The Finish projected onto the XY Plane
 Constructor:
 * Fab_Arc(Apex, Radius, Center, Start, Middle, Finish)
 
@@ -293,6 +315,7 @@ An internal representation of a circle geometry.
 Attributes:
 * *Center (Vector): The circle center.
 * *Diameter (float): The circle diameter in millimeters.
+* *CenterXY* (Vector): Center projected onto XY plane.
 
 ### <a name="fabgeometries----produce"></a>7.1 `Fab_Circle.`produce():
 
@@ -423,8 +446,11 @@ Returns:
 
 An internal representation of a line segment geometry.
 Attributes:
-* *Start (Vector): The line segment start point.
-* *Finish (Vector): The line segment finish point.
+* *Plane* (FabPlane): The plane to project the line onto.
+* *Start* (Vector): The line segment start point.
+* *Finish* (Vector): The line segment finish point.
+* *StartXY* (Vector): Start projected onto XY plane.
+* *FinishXY* (Vector): Finish projected onto XY plane.
 
 Constructor:
 * Fab_Line(Start, Finish)

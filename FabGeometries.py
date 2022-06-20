@@ -378,6 +378,26 @@ class FabPlane(object):
             print(f"{tracing}<=FabPlane.rotate_to_z_axis({point})=>{rotated_point}")
         return rotated_point
 
+    # FabPlane.projectPointToXY():
+    def projectPointToXY(self, unrotated_point: Vector) -> Vector:
+        """Project a rotated point onto the X/Y plane.
+
+        Take a point do the following:
+        1. Project the point onto the plane (i.e. *self*)
+        2. Rotate the plane around the origin until it is parallel to the XY plane.
+        3. Project the point down to the XY plane.
+
+        Arguments:
+        * *unrotated_point* (Vector): The point before rotation.
+
+        Returns:
+        * (Vector): The point projected point.
+        """
+        projected_point: Vector = self.rotate_to_z_axis(unrotated_point)
+        # Shift down to X/Y plane:
+        projected_point.z = 0.0
+        return projected_point
+
 
 # Fab_GeometryContext:
 @dataclass
@@ -459,7 +479,7 @@ class Fab_GeometryContext(object):
 
 
 # Fab_Geometry:
-@dataclass(frozen=True)
+@dataclass
 class Fab_Geometry(object):
     """Fab_Geometry: An Internal base class for Fab_Arc, Fab_Circle, and Fab_Line.
 
@@ -487,18 +507,23 @@ class Fab_Geometry(object):
 
 
 # Fab_Arc:
-@dataclass(frozen=True)
+@dataclass
 class Fab_Arc(Fab_Geometry):
     """Fab_Arc: An internal representation an arc geometry.
 
     Attributes:
-    * *Apex* (Vector): The fillet apex point.
+    * *Apex* (Vector): The fillet apex point (i.e. corner.)
     * *Radius* (float): The arc radius in millimeters.
     * *Center* (Vector): The arc center point.
     * *Start* (Vector): The Arc start point.
     * *Middle* (Vector): The Arc midpoint.
     * *Finish* (Vector): The Arc finish point.
 
+    * *ApexXY* (Vector): Apex projected onto the XY Plane.
+    * *CenterXY* (Vector): The Center projected onto the XY Plane.
+    * *StartXY* (Vector): The Start projected onto the XY Plane.
+    * *MiddleXY* (Vector): The Middle projected onto the XY Plane
+    * *FinishXY* (Vector): The Finish projected onto the XY Plane
     Constructor:
     * Fab_Arc(Apex, Radius, Center, Start, Middle, Finish)
 
@@ -510,11 +535,22 @@ class Fab_Arc(Fab_Geometry):
     Start: Vector
     Middle: Vector
     Finish: Vector
+    ApexXY: Vector = field(init=False, repr=False, compare=False)
+    CenterXY: Vector = field(init=False, repr=False, compare=False)
+    StartXY: Vector = field(init=False, repr=False, compare=False)
+    MiddleXY: Vector = field(init=False, repr=False, compare=False)
+    FinishXY: Vector = field(init=False, repr=False, compare=False)
 
     # Fab_Arc.__post_init__():
     def __post_init__(self) -> None:
         """Finish initializing a Fab_Arc."""
         super().__post_init__()
+        plane: FabPlane = self.Plane
+        self.ApexXY = plane.projectPointToXY(self.Apex)
+        self.CenterXY = plane.projectPointToXY(self.Center)
+        self.StartXY = plane.projectPointToXY(self.Start)
+        self.MiddleXY = plane.projectPointToXY(self.Middle)
+        self.FinishXY = plane.projectPointToXY(self.Finish)
 
     # Fab_Arc.produce():
     def produce(self, geometry_context: Fab_GeometryContext, prefix: str,
@@ -536,23 +572,27 @@ class Fab_Arc(Fab_Geometry):
         return part_arc
 
 
-@dataclass(frozen=True)
+@dataclass
 class Fab_Circle(Fab_Geometry):
     """Fab_Circle: An internal representation of a circle geometry.
 
     Attributes:
     * *Center (Vector): The circle center.
     * *Diameter (float): The circle diameter in millimeters.
+    * *CenterXY* (Vector): Center projected onto XY plane.
 
     """
 
     Center: Vector
     Diameter: float
+    CenterXY: Vector = field(init=False, repr=False, compare=False)
 
     # Fab_Circle.__post_init__():
     def __post_init__(self) -> None:
         """Finish initializing a FabCircle."""
         super().__post_init__()
+        plane: FabPlane = self.Plane
+        self.CenterXY = plane.projectPointToXY(self.Center)
 
     # Fab_Circle.produce():
     def produce(self, geometry_context: Fab_GeometryContext, prefix: str,
@@ -573,13 +613,16 @@ class Fab_Circle(Fab_Geometry):
 
 
 # Fab_Line:
-@dataclass(frozen=True)
+@dataclass
 class Fab_Line(Fab_Geometry):
     """Fab_Line: An internal representation of a line segment geometry.
 
     Attributes:
-    * *Start (Vector): The line segment start point.
-    * *Finish (Vector): The line segment finish point.
+    * *Plane* (FabPlane): The plane to project the line onto.
+    * *Start* (Vector): The line segment start point.
+    * *Finish* (Vector): The line segment finish point.
+    * *StartXY* (Vector): Start projected onto XY plane.
+    * *FinishXY* (Vector): Finish projected onto XY plane.
 
     Constructor:
     * Fab_Line(Start, Finish)
