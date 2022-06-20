@@ -677,7 +677,7 @@ class Fab_Pocket(Fab_Operation):
         depth: float = self.Depth
         geometries: Tuple[FabGeometry, ...] = self._Geometries
         exterior: FabGeometry = geometries[0]
-        exterior_info: FabGeometryInfo = exterior.getGeometryInfo()
+        exterior_info: FabGeometryInfo = exterior.GeometryInfo
         if tracing:
             area: float = exterior_info.Area
             perimeter: float = exterior_info.Perimeter

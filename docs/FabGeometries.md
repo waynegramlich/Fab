@@ -4,15 +4,13 @@
 
 * 1 Class: [FabCircle](#fabgeometries--fabcircle):
   * 1.1 [get_hash()](#fabgeometries----get-hash): Return FabCircle hash.
-  * 1.2 [getGeometryInfo()](#fabgeometries----getgeometryinfo): Return information about FabGeometry.
-  * 1.3 [projectToPlane()](#fabgeometries----projecttoplane): Return a new FabCircle projected onto a plane.
-  * 1.4 [produce()](#fabgeometries----produce): Produce the FreeCAD objects needed for FabPolygon.
-  * 1.5 [get_geometries()](#fabgeometries----get-geometries): Return the FabPolygon lines and arcs.
+  * 1.2 [projectToPlane()](#fabgeometries----projecttoplane): Return a new FabCircle projected onto a plane.
+  * 1.3 [produce()](#fabgeometries----produce): Produce the FreeCAD objects needed for FabPolygon.
+  * 1.4 [get_geometries()](#fabgeometries----get-geometries): Return the FabPolygon lines and arcs.
 * 2 Class: [FabGeometry](#fabgeometries--fabgeometry):
   * 2.1 [get_hash()](#fabgeometries----get-hash): Return FabGeometry hash.
   * 2.2 [produce()](#fabgeometries----produce): Produce the necessary FreeCAD objects for the FabGeometry.
   * 2.3 [projectToPlane()](#fabgeometries----projecttoplane): Return a new FabGeometry projected onto a plane.
-  * 2.4 [getGeometryInfo()](#fabgeometries----getgeometryinfo): Return FabGeometryInfo about FabGeometry.
 * 3 Class: [FabGeometryInfo](#fabgeometries--fabgeometryinfo):
 * 4 Class: [FabPlane](#fabgeometries--fabplane):
   * 4.1 [get_hash()](#fabgeometries----get-hash): Return a FabPlane hash value.
@@ -21,11 +19,10 @@
   * 4.4 [rotate_to_z_axis()](#fabgeometries----rotate-to-z-axis): Rotate a point around the origin until the normal aligns with the +Z axis.
   * 4.5 [projectPointToXY()](#fabgeometries----projectpointtoxy): Project a rotated point onto the X/Y plane.
 * 5 Class: [FabPolygon](#fabgeometries--fabpolygon):
-  * 5.1 [getGeometryInfo()](#fabgeometries----getgeometryinfo): Return the FabGeometryInfo for a FabPolygon.
-  * 5.2 [get_hash()](#fabgeometries----get-hash): Return the FabPolygon Hash.
-  * 5.3 [projectToPlane()](#fabgeometries----projecttoplane): Return nre FabPolygon projected onto a plane.
-  * 5.4 [get_geometries()](#fabgeometries----get-geometries): Return the FabPolygon lines and arcs.
-  * 5.5 [produce()](#fabgeometries----produce): Produce the FreeCAD objects needed for FabPolygon.
+  * 5.1 [get_hash()](#fabgeometries----get-hash): Return the FabPolygon Hash.
+  * 5.2 [projectToPlane()](#fabgeometries----projecttoplane): Return nre FabPolygon projected onto a plane.
+  * 5.3 [get_geometries()](#fabgeometries----get-geometries): Return the FabPolygon lines and arcs.
+  * 5.4 [produce()](#fabgeometries----produce): Produce the FreeCAD objects needed for FabPolygon.
 * 6 Class: [Fab_Arc](#fabgeometries--fab-arc):
   * 6.1 [produce()](#fabgeometries----produce): Return line segment after moving it into Geometry group.
 * 7 Class: [Fab_Circle](#fabgeometries--fab-circle):
@@ -79,15 +76,7 @@ FabCircle.get_hash(self) -> Tuple[Any, ...]:
 
 Return FabCircle hash.
 
-### <a name="fabgeometries----getgeometryinfo"></a>1.2 `FabCircle.`getGeometryInfo():
-
-FabCircle.getGeometryInfo(self, tracing: str = '') -> FabGeometries.FabGeometryInfo:
-
-Return information about FabGeometry.
-Returns:
-* (FabGeometryInfo): The geometry information.
-
-### <a name="fabgeometries----projecttoplane"></a>1.3 `FabCircle.`projectToPlane():
+### <a name="fabgeometries----projecttoplane"></a>1.2 `FabCircle.`projectToPlane():
 
 FabCircle.projectToPlane(self, plane: FabGeometries.FabPlane, tracing: str = '') -> 'FabCircle':
 
@@ -98,13 +87,13 @@ Arguments:
 Returns:
 * (FabCircle): The newly projected FabCicle.
 
-### <a name="fabgeometries----produce"></a>1.4 `FabCircle.`produce():
+### <a name="fabgeometries----produce"></a>1.3 `FabCircle.`produce():
 
 FabCircle.produce(self, geometry_context: FabGeometries.Fab_GeometryContext, prefix: str, index: int, tracing: str = '') -> Tuple[Any, ...]:
 
 Produce the FreeCAD objects needed for FabPolygon.
 
-### <a name="fabgeometries----get-geometries"></a>1.5 `FabCircle.`get_geometries():
+### <a name="fabgeometries----get-geometries"></a>1.4 `FabCircle.`get_geometries():
 
 FabCircle.get_geometries(self) -> Tuple[FabGeometries.Fab_Geometry, ...]:
 
@@ -136,14 +125,6 @@ Produce the necessary FreeCAD objects for the FabGeometry.
 FabGeometry.projectToPlane(self, plane: FabGeometries.FabPlane) -> 'FabGeometry':
 
 Return a new FabGeometry projected onto a plane.
-
-### <a name="fabgeometries----getgeometryinfo"></a>2.4 `FabGeometry.`getGeometryInfo():
-
-FabGeometry.getGeometryInfo(self, tracing: str = '') -> FabGeometries.FabGeometryInfo:
-
-Return FabGeometryInfo about FabGeometry.
-Returns:
-* (FabGeometryInfo): The geometry information.
 
 
 ## <a name="fabgeometries--fabgeometryinfo"></a>3 Class FabGeometryInfo:
@@ -230,6 +211,7 @@ Attributes:
 * *Plane* (FabPlane: The plane that all of the corners are projected onto.
 * *Corners* (Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]):
   See description immediately above for more on corners.
+* *GeometryInfo* (FabGeometryInfo): The geometry information (e.g. area, perimeter, etc.)
 
 Constructor:
 * FabPolygon(Plane, Corners):
@@ -245,21 +227,13 @@ Example:
      ), "Name")
 ```
 
-### <a name="fabgeometries----getgeometryinfo"></a>5.1 `FabPolygon.`getGeometryInfo():
-
-FabPolygon.getGeometryInfo(self, tracing: str = '') -> FabGeometries.FabGeometryInfo:
-
-Return the FabGeometryInfo for a FabPolygon.
-Returns:
-* (FabGeometryInfo): The geometry information.
-
-### <a name="fabgeometries----get-hash"></a>5.2 `FabPolygon.`get_hash():
+### <a name="fabgeometries----get-hash"></a>5.1 `FabPolygon.`get_hash():
 
 FabPolygon.get_hash(self) -> Tuple[Any, ...]:
 
 Return the FabPolygon Hash.
 
-### <a name="fabgeometries----projecttoplane"></a>5.3 `FabPolygon.`projectToPlane():
+### <a name="fabgeometries----projecttoplane"></a>5.2 `FabPolygon.`projectToPlane():
 
 FabPolygon.projectToPlane(self, plane: FabGeometries.FabPlane, tracing: str = '') -> 'FabPolygon':
 
@@ -270,13 +244,13 @@ Arguments:
 Returns:
 * (FabPolyGon): The newly projected FabPolygon.
 
-### <a name="fabgeometries----get-geometries"></a>5.4 `FabPolygon.`get_geometries():
+### <a name="fabgeometries----get-geometries"></a>5.3 `FabPolygon.`get_geometries():
 
 FabPolygon.get_geometries(self) -> Tuple[FabGeometries.Fab_Geometry, ...]:
 
 Return the FabPolygon lines and arcs.
 
-### <a name="fabgeometries----produce"></a>5.5 `FabPolygon.`produce():
+### <a name="fabgeometries----produce"></a>5.4 `FabPolygon.`produce():
 
 FabPolygon.produce(self, geometry_context: FabGeometries.Fab_GeometryContext, prefix: str, index: int, tracing: str = '') -> Tuple[Any, ...]:
 
@@ -335,7 +309,7 @@ Attributes:
 * *After* (Fab_Fillet): The next Fab_Fillet in the FabPolygon.
 * *Arc* (Optional[Fab_Arc]): The fillet Arc if Radius is non-zero.
 * *Line* (Optional[Fab_Line]): The line that connects to the previous Fab_Fillet
-* *ApexXY* (Vector): The Apex projected onto a plane parallel to the XY plane.
+* *ApexXY* (Vector): The Apex projected onto the XY plane.
 
 ### <a name="fabgeometries----compute-arc"></a>8.1 `Fab_Fillet.`compute_arc():
 

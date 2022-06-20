@@ -679,18 +679,18 @@ class Fab_Fillet(object):
     * *After* (Fab_Fillet): The next Fab_Fillet in the FabPolygon.
     * *Arc* (Optional[Fab_Arc]): The fillet Arc if Radius is non-zero.
     * *Line* (Optional[Fab_Line]): The line that connects to the previous Fab_Fillet
-    * *ApexXY* (Vector): The Apex projected onto a plane parallel to the XY plane.
+    * *ApexXY* (Vector): The Apex projected onto the XY plane.
 
     """
 
     Plane: FabPlane
     Apex: Vector
     Radius: float
-    Before: "Fab_Fillet" = field(init=False, repr=False)  # Filled in by __post_init__()
-    After: "Fab_Fillet" = field(init=False, repr=False)  # Filled in by __post_init__()
-    Arc: Optional["Fab_Arc"] = field(init=False, default=None)  # Filled in by compute_arcs()
-    Line: Optional["Fab_Line"] = field(init=False, default=None)  # Filled in by compute_lines()
-    ApexXY: Vector = field(init=False, repr=False)  # Used by getGeometryInfo()
+    Before: "Fab_Fillet" = field(init=False, repr=False)
+    After: "Fab_Fillet" = field(init=False, repr=False)
+    Arc: Optional["Fab_Arc"] = field(init=False, default=None)
+    Line: Optional["Fab_Line"] = field(init=False, default=None)
+    ApexXY: Vector = field(init=False, repr=False)
 
     # Fab_Fillet.__post_init__():
     def __post_init__(self) -> None:
@@ -1026,20 +1026,19 @@ class FabGeometry(object):
         """Produce the necessary FreeCAD objects for the FabGeometry."""
         raise NotImplementedError(f"{type(self)}.produce() is not implemented")
 
-    # TODO: Remove this method.
     # FabGeometry.projectToPlane():
     def projectToPlane(self, plane: FabPlane) -> "FabGeometry":
         """Return a new FabGeometry projected onto a plane."""
         raise NotImplementedError(f"{type(self)}.projectToPlane is not implemented")
 
-    # FabGeometry.getGeometryInfo():
-    def getGeometryInfo(self, tracing: str = "") -> FabGeometryInfo:
-        """Return FabGeometryInfo about FabGeometry.
+    # FabGeometry._computeGeometryInfo():
+    def _computeGeometryInfo(self, tracing: str = "") -> FabGeometryInfo:
+        """Compute the FabGeometryInfo for FabGeometry.
 
         Returns:
         * (FabGeometryInfo): The geometry information.
         """
-        raise NotImplementedError(f"{type(self)}.getGeometryInfo is not implemented")
+        raise NotImplementedError(f"{type(self)}._computeGeometryInfo is not implemented")
 
 
 # FabCircle:
@@ -1105,7 +1104,7 @@ class FabCircle(FabGeometry):
         corner4: Vector = projected_center - radius * perpendicular1
         box: FabBox = FabBox()
         box.enclose((corner1, corner2, corner3, corner4))
-        geometry_info: FabGeometryInfo = self.getGeometryInfo()
+        geometry_info: FabGeometryInfo = self._computeGeometryInfo()
 
         # (Why __setattr__?)[https://stackoverflow.com/questions/53756788]
         object.__setattr__(self, "_Center", center + copy)
@@ -1146,8 +1145,8 @@ class FabCircle(FabGeometry):
         )
         return hashes
 
-    # FabCircle.getGeometryInfo():
-    def getGeometryInfo(self, tracing: str = "") -> FabGeometryInfo:
+    # FabCircle._computeGeometryInfo():
+    def _computeGeometryInfo(self, tracing: str = "") -> FabGeometryInfo:
         """Return information about FabGeometry.
 
         Returns:
@@ -1155,7 +1154,7 @@ class FabCircle(FabGeometry):
 
         """
         if tracing:
-            print("{tracing}=>FabCircle.getGeometryInfo(*))")
+            print("{tracing}=>FabCircle._computeGeometryInfo(*))")
 
         pi: float = math.pi
         radius: float = self.Diameter / 2.0
@@ -1167,7 +1166,7 @@ class FabCircle(FabGeometry):
             area, perimeter, minimum_internal_radius, minimum_external_radius)
 
         if tracing:
-            print(f"{tracing}=>FabCircle.getGeometryInfo(*))=>*")
+            print(f"{tracing}=>FabCircle._computeGeometryInfo(*))=>*")
         return geometry_info
 
     # TODO: Remove this method.
@@ -1276,6 +1275,7 @@ class FabPolygon(FabGeometry):
     * *Plane* (FabPlane: The plane that all of the corners are projected onto.
     * *Corners* (Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]):
       See description immediately above for more on corners.
+    * *GeometryInfo* (FabGeometryInfo): The geometry information (e.g. area, perimeter, etc.)
 
     Constructor:
     * FabPolygon(Plane, Corners):
@@ -1294,6 +1294,7 @@ class FabPolygon(FabGeometry):
 
     _Corners: Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...] = field(
         compare=False)
+    _GeometryInfo: FabGeometryInfo = field(init=False, repr=False, compare=False)
 
     # Computed attributes:
     _CopiedCorners: Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...] = field(
@@ -1375,10 +1376,11 @@ class FabPolygon(FabGeometry):
         if colinear_error:
             raise ValueError(colinear_error)  # pragma: no unit cover
 
+        # Compute *geometry_info*:
         self._compute_arcs()
         self._compute_lines()
-
-        _ = self.getGeometryInfo()
+        geometry_info: FabGeometryInfo = self._computeGeometryInfo()
+        object.__setattr__(self, "_GeometryInfo", geometry_info)
 
         if tracing:
             print(f"{tracing}<=FabPolygon.__post_init__()")
@@ -1393,7 +1395,7 @@ class FabPolygon(FabGeometry):
         assert len(self._Corners) == len(copied_corners)
         return tuple(copied_corners)
 
-    # FabPolygon.ProjectedCorners:
+    # FabPolygon.ProjectedCorners():
     @property
     def ProjectedCorners(self) -> Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]:
         """Return corners after they have been projected onto the FabPolygon plane."""
@@ -1403,13 +1405,19 @@ class FabPolygon(FabGeometry):
             (corner[0] + copy, corner[1]) for corner in self._ProjectedCorners]
         return tuple(projected_corners_copy)
 
-    # FabPolygon.Box:
+    # FabPolygon.Box():
     @property
     def Box(self) -> FabBox:
         """Return FabBox that encloses FabPolygon."""
         return self._Box
 
-    # FabPolygon.compute_polgyon_area():
+    # FabPolygon.GeometryInfo():
+    @property
+    def GeometryInfo(self) -> FabGeometryInfo:
+        """Return FabGeometryInfo for FabPolygon."""
+        return self._GeometryInfo
+
+    # FabPolygon._compute_polgyon_area():
     @staticmethod
     def _compute_polygon_area(points: Sequence[Vector], tracing: str = "") -> float:
         """Compute that area of an irregular polygon."""
@@ -1451,8 +1459,8 @@ class FabPolygon(FabGeometry):
             print(f"{tracing}<=_compute_polygon_area({points})=>{area}")
         return area
 
-    # FabPolygon.getGeometryInfo():
-    def getGeometryInfo(self, tracing: str = "") -> FabGeometryInfo:
+    # FabPolygon._computeGeometryInfo():
+    def _computeGeometryInfo(self, tracing: str = "") -> FabGeometryInfo:
         """Return the FabGeometryInfo for a FabPolygon.
 
         Returns:
@@ -2177,13 +2185,12 @@ class Fab_GeometryInfo(object):
         """Finish initializing Fab_GeometryInfo."""
         # Manually set *tracing* to debug.
         tracing: str = self.tracing
-        next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>Fab_GeometryInfo.__post_init__()")
 
         check_type("Fab_GeometryInfo.Geometry", self.Geometry, FabGeometry)
         check_type("Fab_GeometryInfo.Geometry", self.Geometry, FabGeometry)
-        info: FabGeometryInfo = self.Geometry.getGeometryInfo(tracing=next_tracing)
+        info: FabGeometryInfo = self.Geometry.GeometryInfo
         self.Area = info.Area
         self.Perimeter = info.Perimeter
         self.MinimumInternalRadius = info.MinimumInternalRadius

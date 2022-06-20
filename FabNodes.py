@@ -46,7 +46,7 @@ from dataclasses import dataclass, field
 import hashlib
 from pathlib import Path as PathFile
 from typing import Any, Dict, IO, List, Sequence, Set, Tuple, Union
-from typeguard import check_type
+from typeguard import check_type, check_argument_types
 
 from cadquery import Vector  # type: ignore
 
@@ -152,6 +152,7 @@ class FabBox(object):
           * ValueError: For bad or empty corners.
 
         """
+        assert check_argument_types()
         if not isinstance(bounds, (list, tuple)):
             raise RuntimeError(
                 f"{bounds} is {str(type(bounds))}, not List/Tuple")  # pragma: no unit cover
