@@ -148,7 +148,7 @@ Returns:
 
 ## <a name="fabgeometries--fabgeometryinfo"></a>3 Class FabGeometryInfo:
 
-Geometric information about area, peremiter, etc.
+Geometric information about area, perimeter, etc.
 Attributes:
 * Area (float): The geometry area in square millimeters.
 * Perimeter (float): The perimeter length in millimeters.

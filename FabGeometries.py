@@ -19,7 +19,7 @@ from FabNodes import FabBox
 # FabGeometryInfo:
 @dataclass(frozen=True)
 class FabGeometryInfo(object):
-    """FabGeometryInfo: Geometric information about area, peremiter, etc.
+    """FabGeometryInfo: Geometric information about area, perimeter, etc.
 
     Attributes:
     * Area (float): The geometry area in square millimeters.
@@ -1021,6 +1021,7 @@ class FabGeometry(object):
         """Produce the necessary FreeCAD objects for the FabGeometry."""
         raise NotImplementedError(f"{type(self)}.produce() is not implemented")
 
+    # TODO: Remove this method.
     # FabGeometry.projectToPlane():
     def projectToPlane(self, plane: FabPlane) -> "FabGeometry":
         """Return a new FabGeometry projected onto a plane."""
@@ -1164,6 +1165,7 @@ class FabCircle(FabGeometry):
             print(f"{tracing}=>FabCircle.getGeometryInfo(*))=>*")
         return geometry_info
 
+    # TODO: Remove this method.
     # FabCircle.projectToPlane():
     def projectToPlane(self, plane: FabPlane, tracing: str = "") -> "FabCircle":
         """Return a new FabCircle projected onto a plane.
@@ -1454,16 +1456,6 @@ class FabPolygon(FabGeometry):
         if tracing:
             print(f"{tracing}=>FabPolygon.getGeometryInfo(*)")
 
-        # In order to finish filling in Fab_Fillet's, a *geometry_context* is needed.
-        origin: Vector = Vector(0.0, 0.0, 0.0)
-        z_axis: Vector = Vector(0.0, 0.0, 1.0)
-        xy_plane = FabPlane(origin, z_axis)
-        query: Fab_Query = Fab_Query(xy_plane)  # Not used, but *geometry_context* needs it.
-        # Fill in the contents of the FabFillet's:
-        geometry_context: Fab_GeometryContext = Fab_GeometryContext(xy_plane, query)
-        _ = self.produce(geometry_context, "prefix", 0)
-        # Now the _Fillets are filled in.
-
         # Step 1: Project the Apex points from *plane* to the XY plane.
         fillet: Fab_Fillet
         for fillet in self._Fillets:
@@ -1582,6 +1574,7 @@ class FabPolygon(FabGeometry):
             hashes.append(f"{radius:.6f}")
         return tuple(hashes)
 
+    # TODO: Remove this method.
     # FabPolygon.projectToPlane():
     def projectToPlane(self, plane: FabPlane, tracing: str = "") -> "FabPolygon":
         """Return nre FabPolygon projected onto a plane.
