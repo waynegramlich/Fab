@@ -335,7 +335,7 @@ Attributes:
 * *After* (Fab_Fillet): The next Fab_Fillet in the FabPolygon.
 * *Arc* (Optional[Fab_Arc]): The fillet Arc if Radius is non-zero.
 * *Line* (Optional[Fab_Line]): The line that connects to the previous Fab_Fillet
-* *XYPlaneApex* (Vector): The Apex projected onto a plane parallel to the XY plane.
+* *ApexXY* (Vector): The Apex projected onto a plane parallel to the XY plane.
 
 ### <a name="fabgeometries----compute-arc"></a>8.1 `Fab_Fillet.`compute_arc():
 

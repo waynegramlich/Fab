@@ -630,11 +630,16 @@ class Fab_Line(Fab_Geometry):
 
     Start: Vector
     Finish: Vector
+    StartXY: Vector = field(init=False, repr=False, compare=False)
+    FinishXY: Vector = field(init=False, repr=False, compare=False)
 
     # Fab_Line.__post_init__(self):
     def __post_init__(self) -> None:
         """Finish initializing a Fab_Line."""
         super().__post_init__()
+        plane: FabPlane = self.Plane
+        self.StartXY = plane.projectPointToXY(self.Start)
+        self.FinishXY = plane.projectPointToXY(self.Finish)
 
     # Fab_Line.get_start():
     def get_start(self) -> Vector:
@@ -674,7 +679,7 @@ class Fab_Fillet(object):
     * *After* (Fab_Fillet): The next Fab_Fillet in the FabPolygon.
     * *Arc* (Optional[Fab_Arc]): The fillet Arc if Radius is non-zero.
     * *Line* (Optional[Fab_Line]): The line that connects to the previous Fab_Fillet
-    * *XYPlaneApex* (Vector): The Apex projected onto a plane parallel to the XY plane.
+    * *ApexXY* (Vector): The Apex projected onto a plane parallel to the XY plane.
 
     """
 
@@ -685,14 +690,14 @@ class Fab_Fillet(object):
     After: "Fab_Fillet" = field(init=False, repr=False)  # Filled in by __post_init__()
     Arc: Optional["Fab_Arc"] = field(init=False, default=None)  # Filled in by compute_arcs()
     Line: Optional["Fab_Line"] = field(init=False, default=None)  # Filled in by compute_lines()
-    XYPlaneApex: Vector = field(init=False, repr=False)  # Used by getGeometryInfo()
+    ApexXY: Vector = field(init=False, repr=False)  # Used by getGeometryInfo()
 
     # Fab_Fillet.__post_init__():
     def __post_init__(self) -> None:
         """Initialize Fab_Fillet."""
         self.Before = self
         self.After = self
-        self.RotatedApex = Vector()
+        self.ApexXY = self.Plane.projectPointToXY(self.Apex)
 
     # Fab_Fillet.compute_arc():
     def compute_arc(self, tracing: str = "") -> Fab_Arc:
@@ -1456,12 +1461,7 @@ class FabPolygon(FabGeometry):
         if tracing:
             print(f"{tracing}=>FabPolygon.getGeometryInfo(*)")
 
-        # Step 1: Project the Apex points from *plane* to the XY plane.
-        fillet: Fab_Fillet
-        for fillet in self._Fillets:
-            fillet.XYPlaneApex = self.Plane.rotate_to_z_axis(fillet.Apex)
-
-        # Step 2: Compute the *maximum_radius* and *total_angle* of turning at each *fillet*:
+        # Compute the *maximum_radius* and *total_angle* of turning at each *fillet*:
         pi: float = math.pi
         pi2: float = 2.0 * pi
         polygon_points: List[Vector] = []
@@ -1473,9 +1473,9 @@ class FabPolygon(FabGeometry):
         perimeter: float = 0.0
         index: int
         for index, fillet in enumerate(self._Fillets):
-            before_apex: Vector = fillet.Before.XYPlaneApex
-            at_apex: Vector = fillet.XYPlaneApex
-            after_apex: Vector = fillet.After.XYPlaneApex
+            before_apex: Vector = fillet.Before.ApexXY
+            at_apex: Vector = fillet.ApexXY
+            after_apex: Vector = fillet.After.ApexXY
             polygon_points.append(at_apex)
 
             before: Vector = at_apex - before_apex
@@ -1505,8 +1505,8 @@ class FabPolygon(FabGeometry):
 
             line: Optional[Fab_Line] = fillet.Line
             if line:
-                projected_start: Vector = self.Plane.projectPoint(line.Start)
-                projected_finish: Vector = self.Plane.projectPoint(line.Finish)
+                projected_start: Vector = line.StartXY
+                projected_finish: Vector = line.FinishXY
                 line_length: float = (projected_finish - projected_start).Length
                 perimeter += line_length
                 if tracing:
@@ -1535,7 +1535,7 @@ class FabPolygon(FabGeometry):
         epsilon: float = 1.0e-8
         assert abs(abs(total_angle) - degrees360) < epsilon, f"{math.degrees(total_angle)=:.3f}"
 
-        # Compute the *maximum_area* that does not deal with fillet rounding:
+        # Update *area* that to deal with fillet rounding and produce final *geometry_info*:
         area: float = FabPolygon._compute_polygon_area(polygon_points)
         if tracing:
             print(f"{tracing}Initial polygon {area=}")
@@ -1549,9 +1549,9 @@ class FabPolygon(FabGeometry):
             # Counter-Clockwise:
             area += positive_fillet_area - negative_fillet_area
             internal_radius, external_radius = positive_radius, negative_radius
-
         geometry_info: FabGeometryInfo = FabGeometryInfo(
             area, perimeter, internal_radius, external_radius)
+
         if tracing:
             print(f"{tracing}<=FabPolygon.getGeometryInfo()=>"
                   f"({area:.3f}, {perimeter:.3f}, {internal_radius:.3f}, {external_radius:.3f})")
