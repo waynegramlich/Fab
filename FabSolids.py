@@ -773,7 +773,7 @@ class Fab_Pocket(Fab_Operation):
         pocket_query: Fab_Query = pocket_context.Query
         if tracing:
             pocket_query.show("Pocket Context Before", tracing)
-        bottom_context: Fab_GeometryContext = geometry_context.copy_with_plane_adjust(
+        bottom_context: Fab_GeometryContext = geometry_context.copyWithPlaneAdjust(
             -self._Depth, tracing=next_tracing)
 
         # Step 1b: Transfer *geometries* to *pocket_context* and *bottom_context*:
@@ -1077,7 +1077,7 @@ class Fab_Hole(Fab_Operation):
             circle: FabCircle = FabCircle(plane, center, diameter)
             projected_circle: FabCircle = circle.projectToPlane(plane, tracing=next_tracing)
             projected_center: Vector = projected_circle.Center
-            rotated_center: Vector = plane.rotate_to_z_axis(projected_center, tracing=next_tracing)
+            rotated_center: Vector = plane.rotateToZAxis(projected_center, tracing=next_tracing)
             rotated_centers.append(rotated_center)
             x: float = projected_center.x
             y: float = projected_center.y

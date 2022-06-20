@@ -16,7 +16,7 @@
   * 4.1 [getHash()](#fabgeometries----gethash): Return a FabPlane hash value.
   * 4.2 [projectPoint()](#fabgeometries----projectpoint): Project a point onto a plane.
   * 4.3 [adjust()](#fabgeometries----adjust): Return a new FabPlane that has been adjusted up/down the normal by a delta.
-  * 4.4 [rotate_to_z_axis()](#fabgeometries----rotate-to-z-axis): Rotate a point around the origin until the normal aligns with the +Z axis.
+  * 4.4 [rotateToZAxis()](#fabgeometries----rotatetozaxis): Rotate a point around the origin until the normal aligns with the +Z axis.
   * 4.5 [projectPointToXY()](#fabgeometries----projectpointtoxy): Project a rotated point onto the X/Y plane.
 * 5 Class: [FabPolygon](#fabgeometries--fabpolygon):
   * 5.1 [getHash()](#fabgeometries----gethash): Return the FabPolygon Hash.
@@ -35,15 +35,15 @@
   * 8.4 [get_geometries()](#fabgeometries----get-geometries): NO DOC STRING!
 * 9 Class: [Fab_Geometry](#fabgeometries--fab-geometry):
   * 9.1 [produce()](#fabgeometries----produce): NO DOC STRING!
-  * 9.2 [get_start()](#fabgeometries----get-start): Return start point of geometry.
+  * 9.2 [getStart()](#fabgeometries----getstart): Return start point of geometry.
 * 10 Class: [Fab_GeometryContext](#fabgeometries--fab-geometrycontext):
   * 10.1 [copy()](#fabgeometries----copy): Return a Fab_GeometryContext copy.
-  * 10.2 [copy_with_plane_adjust()](#fabgeometries----copy-with-plane-adjust): Return a Fab_GeometryContext copy with the plane adjusted up/down.
+  * 10.2 [copyWithPlaneAdjust()](#fabgeometries----copywithplaneadjust): Return a Fab_GeometryContext copy with the plane adjusted up/down.
   * 10.3 [set_geometry_group()](#fabgeometries----set-geometry-group): Set the GeometryContext geometry group.
 * 11 Class: [Fab_GeometryInfo](#fabgeometries--fab-geometryinfo):
   * 11.1 [toTuple()](#fabgeometries----totuple): Return the area, perimeter, internal/external radius for a FabGeometry.
 * 12 Class: [Fab_Line](#fabgeometries--fab-line):
-  * 12.1 [get_start()](#fabgeometries----get-start): Return the start point of the Fab_Line.
+  * 12.1 [getStart()](#fabgeometries----getstart): Return the start point of the Fab_Line.
   * 12.2 [produce()](#fabgeometries----produce): Return line segment after moving it into Geometry group.
 * 13 Class: [Fab_Query](#fabgeometries--fab-query):
   * 13.1 [circle()](#fabgeometries----circle): Draw a circle to a point.
@@ -167,9 +167,9 @@ FabPlane.adjust(self, delta: float) -> 'FabPlane':
 
 Return a new FabPlane that has been adjusted up/down the normal by a delta.
 
-### <a name="fabgeometries----rotate-to-z-axis"></a>4.4 `FabPlane.`rotate_to_z_axis():
+### <a name="fabgeometries----rotatetozaxis"></a>4.4 `FabPlane.`rotateToZAxis():
 
-FabPlane.rotate_to_z_axis(self, point: cadquery.occ_impl.geom.Vector, reversed: bool = False, tracing: str = '') -> cadquery.occ_impl.geom.Vector:
+FabPlane.rotateToZAxis(self, point: cadquery.occ_impl.geom.Vector, reversed: bool = False, tracing: str = '') -> cadquery.occ_impl.geom.Vector:
 
 Rotate a point around the origin until the normal aligns with the +Z axis.
 Arguments:
@@ -365,9 +365,9 @@ Fab_Geometry.produce(self, geometry_context: FabGeometries.Fab_GeometryContext, 
 
 NO DOC STRING!
 
-### <a name="fabgeometries----get-start"></a>9.2 `Fab_Geometry.`get_start():
+### <a name="fabgeometries----getstart"></a>9.2 `Fab_Geometry.`getStart():
 
-Fab_Geometry.get_start(self) -> cadquery.occ_impl.geom.Vector:
+Fab_Geometry.getStart(self) -> cadquery.occ_impl.geom.Vector:
 
 Return start point of geometry.
 
@@ -388,9 +388,9 @@ Fab_GeometryContext.copy(self, tracing: str = '') -> 'Fab_GeometryContext':
 
 Return a Fab_GeometryContext copy.
 
-### <a name="fabgeometries----copy-with-plane-adjust"></a>10.2 `Fab_GeometryContext.`copy_with_plane_adjust():
+### <a name="fabgeometries----copywithplaneadjust"></a>10.2 `Fab_GeometryContext.`copyWithPlaneAdjust():
 
-Fab_GeometryContext.copy_with_plane_adjust(self, delta: float, tracing: str = '') -> 'Fab_GeometryContext':
+Fab_GeometryContext.copyWithPlaneAdjust(self, delta: float, tracing: str = '') -> 'Fab_GeometryContext':
 
 Return a Fab_GeometryContext copy with the plane adjusted up/down.
 
@@ -436,9 +436,9 @@ Attributes:
 Constructor:
 * Fab_Line(Start, Finish)
 
-### <a name="fabgeometries----get-start"></a>12.1 `Fab_Line.`get_start():
+### <a name="fabgeometries----getstart"></a>12.1 `Fab_Line.`getStart():
 
-Fab_Line.get_start(self) -> cadquery.occ_impl.geom.Vector:
+Fab_Line.getStart(self) -> cadquery.occ_impl.geom.Vector:
 
 Return the start point of the Fab_Line.
 
