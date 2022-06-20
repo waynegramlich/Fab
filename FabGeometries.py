@@ -468,7 +468,7 @@ class Fab_Geometry(object):
 
     """
 
-    # Plane: FabPlane
+    Plane: FabPlane
 
     # Fab_Geometry.__post_init__():
     def __post_init__(self) -> None:
@@ -511,6 +511,11 @@ class Fab_Arc(Fab_Geometry):
     Middle: Vector
     Finish: Vector
 
+    # Fab_Arc.__post_init__():
+    def __post_init__(self) -> None:
+        """Finish initializing a Fab_Arc."""
+        super().__post_init__()
+
     # Fab_Arc.produce():
     def produce(self, geometry_context: Fab_GeometryContext, prefix: str,
                 index: int, tracing: str = "") -> Any:
@@ -543,6 +548,11 @@ class Fab_Circle(Fab_Geometry):
 
     Center: Vector
     Diameter: float
+
+    # Fab_Circle.__post_init__():
+    def __post_init__(self) -> None:
+        """Finish initializing a FabCircle."""
+        super().__post_init__()
 
     # Fab_Circle.produce():
     def produce(self, geometry_context: Fab_GeometryContext, prefix: str,
@@ -765,7 +775,7 @@ class Fab_Fillet(object):
         #    delta_angle = -(pi2 - delta_angle)
         # arc: Fab_Arc = Fab_Arc(apex, radius, center, start, middle, finish,
         #                            start_angle, finish_angle, delta_angle)
-        arc: Fab_Arc = Fab_Arc(apex, radius, center, start, middle, finish)
+        arc: Fab_Arc = Fab_Arc(self.Plane, apex, radius, center, start, middle, finish)
 
         # Do a sanity check:
         # finish_angle = finish_angle % pi2
@@ -1153,7 +1163,7 @@ class FabCircle(FabGeometry):
     # FabCircle.get_geometries():
     def get_geometries(self) -> Tuple[Fab_Geometry, ...]:
         """Return the FabPolygon lines and arcs."""
-        return (Fab_Circle(self.Center, self.Diameter),)
+        return (Fab_Circle(self.Plane, self.Center, self.Diameter),)
 
     @staticmethod
     # FabCircle._unit_tests():
@@ -1620,7 +1630,7 @@ class FabPolygon(FabGeometry):
             start: Vector = before.Arc.Finish if before.Arc else before.Apex
             finish: Vector = fillet.Arc.Start if fillet.Arc else fillet.Apex
             if (start - finish).Length > FabPolygon.EPSILON:
-                fillet.Line = Fab_Line(start, finish)
+                fillet.Line = Fab_Line(self.Plane, start, finish)
 
     # FabPolygon.get_geometries():
     def get_geometries(self) -> Tuple[Fab_Geometry, ...]:
