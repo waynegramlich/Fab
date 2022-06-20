@@ -21,8 +21,9 @@
 * 5 Class: [FabPolygon](#fabgeometries--fabpolygon):
   * 5.1 [getHash()](#fabgeometries----gethash): Return the FabPolygon Hash.
   * 5.2 [projectToPlane()](#fabgeometries----projecttoplane): Return nre FabPolygon projected onto a plane.
-  * 5.3 [get_geometries()](#fabgeometries----get-geometries): Return the FabPolygon lines and arcs.
-  * 5.4 [produce()](#fabgeometries----produce): Produce the FreeCAD objects needed for FabPolygon.
+  * 5.3 [doubleLink()](#fabgeometries----doublelink): Double link the Fab_Fillet's together.
+  * 5.4 [get_geometries()](#fabgeometries----get-geometries): Return the FabPolygon lines and arcs.
+  * 5.5 [produce()](#fabgeometries----produce): Produce the FreeCAD objects needed for FabPolygon.
 * 6 Class: [Fab_Arc](#fabgeometries--fab-arc):
   * 6.1 [produce()](#fabgeometries----produce): Return line segment after moving it into Geometry group.
 * 7 Class: [Fab_Circle](#fabgeometries--fab-circle):
@@ -244,13 +245,19 @@ Arguments:
 Returns:
 * (FabPolyGon): The newly projected FabPolygon.
 
-### <a name="fabgeometries----get-geometries"></a>5.3 `FabPolygon.`get_geometries():
+### <a name="fabgeometries----doublelink"></a>5.3 `FabPolygon.`doubleLink():
+
+FabPolygon.doubleLink(self) -> None:
+
+Double link the Fab_Fillet's together.
+
+### <a name="fabgeometries----get-geometries"></a>5.4 `FabPolygon.`get_geometries():
 
 FabPolygon.get_geometries(self) -> Tuple[FabGeometries.Fab_Geometry, ...]:
 
 Return the FabPolygon lines and arcs.
 
-### <a name="fabgeometries----produce"></a>5.4 `FabPolygon.`produce():
+### <a name="fabgeometries----produce"></a>5.5 `FabPolygon.`produce():
 
 FabPolygon.produce(self, geometry_context: FabGeometries.Fab_GeometryContext, prefix: str, index: int, tracing: str = '') -> Tuple[Any, ...]:
 

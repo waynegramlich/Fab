@@ -46,19 +46,19 @@ class FabGeometryInfo(object):
         check_type("FabGeometryInfo.MinimumInternalRadius", self.MinimumInternalRadius, float)
         check_type("FabGeometryInfo.MinimumExternalRadius", self.MinimumExternalRadius, float)
 
-    # FabGeometryInfo._unit_tests():
+    # FabGeometryInfo._unitTests():
     @staticmethod
-    def _unit_tests(tracing: str = "") -> None:
+    def _unitTests(tracing: str = "") -> None:
         """Run FabGeometryInfo unit tests."""
         if tracing:
-            print(f"{tracing}=>FabGeometryInfo._unit_tests()")
+            print(f"{tracing}=>FabGeometryInfo._unitTests()")
         geometry_info: FabGeometryInfo = FabGeometryInfo(1.0, 2.0, 3.0, 4.0)
         assert geometry_info.Area == 1.0
         assert geometry_info.Perimeter == 2.0
         assert geometry_info.MinimumInternalRadius == 3.0
         assert geometry_info.MinimumExternalRadius == 4.0
         if tracing:
-            print(f"{tracing}<=FabGeometryInfo._unit_tests()")
+            print(f"{tracing}<=FabGeometryInfo._unitTests()")
 
 
 # FabPlane:
@@ -929,13 +929,13 @@ class Fab_Fillet(object):
             geometries.append(self.Arc)
         return tuple(geometries)
 
-    # Fab_Fillet._unit_tests():
+    # Fab_Fillet._unitTests():
     @staticmethod
-    def _unit_tests(tracing: str = "") -> None:
+    def _unitTests(tracing: str = "") -> None:
         """Run Fab_Fillet unit tests."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>Fab_Fillet._unit_tests()")
+            print(f"{tracing}=>Fab_Fillet._unitTests()")
 
         origin: Vector = Vector(0, 0, 0)
         z_axis: Vector = Vector(0, 0, 1)
@@ -981,7 +981,7 @@ class Fab_Fillet(object):
             se_fillet.compute_arc()
 
         if tracing:
-            print(f"{tracing}<=Fab_Fillet._unit_tests()")
+            print(f"{tracing}<=Fab_Fillet._unitTests()")
 
 
 # FabGeometry:
@@ -1215,11 +1215,11 @@ class FabCircle(FabGeometry):
         return (Fab_Circle(self.Plane, self.Center, self.Diameter),)
 
     @staticmethod
-    # FabCircle._unit_tests():
-    def _unit_tests(tracing: str = "") -> None:
+    # FabCircle._unitTests():
+    def _unitTests(tracing: str = "") -> None:
         """Run FabCircle unit tests."""
         if tracing:
-            print(f"{tracing}=>FabCircle._unit_tests()")
+            print(f"{tracing}=>FabCircle._unitTests()")
 
         origin: Vector = Vector()
         z_axis: Vector = Vector(0, 0, 1)
@@ -1254,7 +1254,7 @@ class FabCircle(FabGeometry):
         assert circle_info.MinimumExternalRadius == radius
 
         if tracing:
-            print(f"{tracing}<=FabCircle._unit_tests()")
+            print(f"{tracing}<=FabCircle._unitTests()")
 
 
 # FabPolygon:
@@ -1368,17 +1368,17 @@ class FabPolygon(FabGeometry):
         object.__setattr__(self, "_Fillets", tuple(fillets))
 
         # Double link the fillets and look for errors:
-        self._double_link()
-        radius_error: str = self._radii_check()
+        self.doubleLink()
+        radius_error: str = self._radiiCheck()
         if radius_error:
             raise ValueError(radius_error)  # pragma: no unit cover
-        colinear_error: str = self._colinear_check()
+        colinear_error: str = self._colinearCheck()
         if colinear_error:
             raise ValueError(colinear_error)  # pragma: no unit cover
 
         # Compute *geometry_info*:
-        self._compute_arcs()
-        self._compute_lines()
+        self._computeArcs()
+        self._computeLines()
         geometry_info: FabGeometryInfo = self._computeGeometryInfo()
         object.__setattr__(self, "_GeometryInfo", geometry_info)
 
@@ -1615,8 +1615,8 @@ class FabPolygon(FabGeometry):
             print(f"{tracing}<=FabPolygon.projectToPlane({plane})=>*")
         return projected_polygon
 
-    # FabPolygon._double_link():
-    def _double_link(self) -> None:
+    # FabPolygon.doubleLink():
+    def doubleLink(self) -> None:
         """Double link the Fab_Fillet's together."""
         fillets: Tuple[Fab_Fillet, ...] = self._Fillets
         size: int = len(fillets)
@@ -1626,8 +1626,8 @@ class FabPolygon(FabGeometry):
             fillet.Before = fillets[(index - 1) % size]
             fillet.After = fillets[(index + 1) % size]
 
-    # FabPolygon._radii_check():
-    def _radii_check(self) -> str:
+    # FabPolygon._radiiCheck():
+    def _radiiCheck(self) -> str:
         """Check for radius overlap errors."""
         at_fillet: Fab_Fillet
         for at_fillet in self._Fillets:
@@ -1641,8 +1641,8 @@ class FabPolygon(FabGeometry):
                         f"{at_fillet.After}")  # pragma: no unit cover
         return ""
 
-    # FabPolygon._colinear_check():
-    def _colinear_check(self) -> str:
+    # FabPolygon._colinearCheck():
+    def _colinearCheck(self) -> str:
         """Check for colinearity errors."""
         at_fillet: Fab_Fillet
         epsilon: float = FabPolygon.EPSILON
@@ -1659,16 +1659,16 @@ class FabPolygon(FabGeometry):
                         f"{after_apex}] are colinear")  # pragma: no unit cover
         return ""
 
-    # FabPolygon._compute_arcs():
-    def _compute_arcs(self) -> None:
+    # FabPolygon._computeArcs():
+    def _computeArcs(self) -> None:
         """Create any Arc's needed for non-zero radius Fab_Fillet's."""
         fillet: Fab_Fillet
         for fillet in self._Fillets:
             if fillet.Radius > 0.0:
                 fillet.Arc = fillet.compute_arc()
 
-    # FabPolygon._compute_lines():
-    def _compute_lines(self) -> None:
+    # FabPolygon._computeLines():
+    def _computeLines(self) -> None:
         """Create Create any Line's need for Fab_Fillet's."""
         fillet: Fab_Fillet
         for fillet in self._Fillets:
@@ -1715,16 +1715,16 @@ class FabPolygon(FabGeometry):
         self._plane_2d_project(plane)
 
         # Double check for radii and colinear errors that result from 2D projection:
-        radius_error: str = self._radii_check()
+        radius_error: str = self._radiiCheck()
         if radius_error:
             raise RuntimeError(radius_error)  # pragma: no unit cover
-        colinear_error: str = self._colinear_check()
+        colinear_error: str = self._colinearCheck()
         if colinear_error:
             raise RuntimeError(colinear_error)  # pragma: no unit covert
 
         # Now compute the arcs and lines:
-        self._compute_arcs()
-        self._compute_lines()
+        self._computeArcs()
+        self._computeLines()
 
         # Extract the geometries using *contact* and *normal* to specify the projection plane:
         geometries: Tuple[Fab_Geometry, ...] = self.get_geometries()
@@ -1778,13 +1778,13 @@ class FabPolygon(FabGeometry):
                   f"{desired_area:.3f}, {desired_perimeter:.3f}, "
                   f"{desired_internal_radius:.3f}, {desired_external_radius:.3f})")
 
-    # FabPolygon._unit_tests():
+    # FabPolygon._unitTests():
     @staticmethod
-    def _unit_tests(tracing: str = "") -> None:
+    def _unitTests(tracing: str = "") -> None:
         """Run FabPolygon unit tests."""
         # next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>FabPolygon._unit_tests()")
+            print(f"{tracing}=>FabPolygon._unitTests()")
 
         # Create *corners* and a *copied_corners:
         ne_corner: Vector = Vector(10, 10, 0)  # On XY Plane (no radius)
@@ -2144,7 +2144,7 @@ class FabPolygon(FabGeometry):
                                radius1, radius1)
 
         if tracing:
-            print(f"{tracing}<=FabPolygon._unit_tests()")
+            print(f"{tracing}<=FabPolygon._unitTests()")
 
 
 # Fab_GeometryInfo:
@@ -2245,12 +2245,12 @@ class Fab_GeometryInfo(object):
                   f"{desired_area:.3f}, {desired_perimeter:.3f}, "
                   f"{desired_internal_radius:.3f}, {desired_external_radius:.3f})")
 
-    # Fab_GeometryInfo._unit_tests():
+    # Fab_GeometryInfo._unitTests():
     @staticmethod
-    def _unit_tests(self, tracing: str = "") -> None:
+    def _unitTests(self, tracing: str = "") -> None:
         """Run Fab_GeometryInfo unit tests."""
         if tracing:
-            print(f"{tracing}=>Fab_GeometryInfo._unit_tests()")
+            print(f"{tracing}=>Fab_GeometryInfo._unitTests()")
 
         def close(have: float, want: float) -> None:
             """Fail if two numbers are not  close."""
@@ -2282,7 +2282,7 @@ class Fab_GeometryInfo(object):
         circle_check(2.0)
 
         if tracing:
-            print(f"{tracing}<=Fab_GeometryInfo._unit_tests()")
+            print(f"{tracing}<=Fab_GeometryInfo._unitTests()")
 
 
 # Fab_Query:
@@ -2502,11 +2502,11 @@ def main(tracing: str = "") -> None:
     next_tracing: str = tracing + " " if tracing else ""
     if tracing:
         print(f"{tracing}=>FabGeometries.main()")
-    Fab_Fillet._unit_tests(tracing=next_tracing)
-    FabCircle._unit_tests(tracing=next_tracing)
-    FabPolygon._unit_tests(tracing=next_tracing)
-    FabGeometryInfo._unit_tests(tracing=next_tracing)
-    Fab_GeometryInfo._unit_tests(tracing)
+    Fab_Fillet._unitTests(tracing=next_tracing)
+    FabCircle._unitTests(tracing=next_tracing)
+    FabPolygon._unitTests(tracing=next_tracing)
+    FabGeometryInfo._unitTests(tracing=next_tracing)
+    Fab_GeometryInfo._unitTests(tracing)
     if tracing:
         print(f"{tracing}<=FabGeometries.main()")
 
