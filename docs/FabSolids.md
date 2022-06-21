@@ -35,8 +35,9 @@ This internal classes are managed by FabMount methods.
 * 4 Class: [Fab_Extrude](#fabsolids--fab-extrude):
   * 4.1 [get_kind()](#fabsolids----get-kind): Return Fab_Extrude kind.
   * 4.2 [getHash()](#fabsolids----gethash): Return hash for Fab_Extrude operation.
-  * 4.3 [post_produce2()](#fabsolids----post-produce2): Produce the Extrude.
-  * 4.4 [to_json()](#fabsolids----to-json): Return JSON dictionary for Fab_Extrude.
+  * 4.3 [post_produce1()](#fabsolids----post-produce1): Expand simple operations as approprated.
+  * 4.4 [post_produce2()](#fabsolids----post-produce2): Produce the Extrude.
+  * 4.5 [to_json()](#fabsolids----to-json): Return JSON dictionary for Fab_Extrude.
 * 5 Class: [Fab_Hole](#fabsolids--fab-hole):
   * 5.1 [get_kind()](#fabsolids----get-kind): Return Fab_Hole kind.
   * 5.2 [getHash()](#fabsolids----gethash): Return Fab_Hole hash.
@@ -293,13 +294,19 @@ Fab_Extrude.getHash(self) -> Tuple[Any, ...]:
 
 Return hash for Fab_Extrude operation.
 
-### <a name="fabsolids----post-produce2"></a>4.3 `Fab_Extrude.`post_produce2():
+### <a name="fabsolids----post-produce1"></a>4.3 `Fab_Extrude.`post_produce1():
+
+Fab_Extrude.post_produce1(self, produce_state: FabNodes.Fab_ProduceState, expanded_operations: 'List[Fab_Operation]', tracing: str = '') -> None:
+
+Expand simple operations as approprated.
+
+### <a name="fabsolids----post-produce2"></a>4.4 `Fab_Extrude.`post_produce2():
 
 Fab_Extrude.post_produce2(self, produce_state: FabNodes.Fab_ProduceState, tracing: str = '') -> None:
 
 Produce the Extrude.
 
-### <a name="fabsolids----to-json"></a>4.4 `Fab_Extrude.`to_json():
+### <a name="fabsolids----to-json"></a>4.5 `Fab_Extrude.`to_json():
 
 Fab_Extrude.to_json(self) -> Dict[str, Any]:
 

@@ -506,6 +506,73 @@ class Fab_Extrude(Fab_Operation):
             self.get_geometries_hash(self._Geometries),
         )
 
+    # Fab_Extrude.post_produce1():
+    def post_produce1(
+            self, produce_state: Fab_ProduceState,
+            expanded_operations: "List[Fab_Operation]", tracing: str = "") -> None:
+        """Expand simple operations as approprated."""
+        tracing = "      "
+        # next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}<=>Fab_Extrude.post_produce1('{self.Name}')")
+
+        depth: float = self.Depth
+        geometries: Tuple[FabGeometry, ...] = self._Geometries
+        plane: FabPlane = self.Mount.Plane
+
+        # Split into *exterior* and *pockets* and process them differently.
+        exterior: FabGeometry = geometries[0]
+        pockets: Tuple[FabGeometry, ...] = geometries[1:]
+        _ = pockets
+
+        # Deal with *exterior_info* first:
+        exterior_info: FabGeometryInfo = exterior.GeometryInfo
+        if tracing:
+            print(f"{tracing}{plane=} {exterior=} {exterior_info=}")
+        area: float = exterior_info.Area
+        perimeter: float = exterior_info.Perimeter
+        internal_radius: float = exterior_info.MinimumInternalRadius
+        external_radius: float = exterior_info.MinimumExternalRadius
+        if tracing:
+            print(f"{tracing}{area=} {perimeter=} {internal_radius=} {external_radius=}")
+        internal_radius = max(0.0, exterior_info.MinimumInternalRadius)  # no internals: -1.0=>0.0
+        maximum_diameter = 2.0 * internal_radius
+        if tracing:
+            print(f"{tracing}")
+            print(f"{tracing}{self.Name=} {maximum_diameter=} {depth=}")
+
+        # Search *drill_shop_bits* and fill in *matching_shop_bits*:
+        shops: FabShops = produce_state.Shops
+        pocket_shop_bits: Tuple[Fab_ShopBit, ...] = shops.PocketShopBits
+        pocket_shop_bit: Fab_ShopBit
+        matching_shop_bits: List[Fab_ShopBit] = []
+        index: int
+        for index, pocket_shop_bit in enumerate(pocket_shop_bits):
+            end_mill_bit: FabBit = pocket_shop_bit.Bit
+            if tracing:
+                print(f"{tracing}EndMill[{index}]: {end_mill_bit.Name}")
+            assert isinstance(end_mill_bit, FabEndMillBit)
+            end_mill_bit_length: Union[float, int] = end_mill_bit.getNumber("Length")
+            end_mill_bit_diameter: Union[float, int] = end_mill_bit.getNumber("Diameter")
+            length_ok: bool = depth <= end_mill_bit_length
+            diameter_ok: bool = end_mill_bit_diameter <= maximum_diameter
+            if tracing:
+                print(f"{tracing}{depth=} {end_mill_bit_length}")
+                print(f"{tracing}{maximum_diameter=} {end_mill_bit_diameter=}")
+                print(f"{tracing}{length_ok=} {diameter_ok=}")
+            if length_ok and diameter_ok:
+                if tracing:
+                    print(f"{tracing}Match!")
+                matching_shop_bits.append(pocket_shop_bit)
+
+        # For now, fail horribly if there are no *matching_shop_bits*:
+        # assert len(matching_shop_bits) > 0
+        self.setShopBits(matching_shop_bits)
+        expanded_operations.append(self)
+
+        if tracing:
+            print(f"{tracing}<=Fab_Extrude.post_produce1('{self.Name}')")
+
     # Fab_Extrude.post_produce2():
     def post_produce2(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
         """Produce the Extrude."""
