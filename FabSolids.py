@@ -388,7 +388,7 @@ class Fab_Operation(object):
             self, produce_state: Fab_ProduceState,
             expanded_operations: "List[Fab_Operation]", tracing: str = "") -> None:
         """Expand simple operations as approprated."""
-        expanded_operations.append(self)
+        expanded_operations.append(self)  # pragma: no unit cover
         if tracing:
             print(f"{tracing}<=>{type(self)}.post_produce1()")
 
@@ -523,7 +523,6 @@ class Fab_Extrude(Fab_Operation):
         # Split into *exterior* and *pockets* and process them differently.
         exterior: FabGeometry = geometries[0]
         pockets: Tuple[FabGeometry, ...] = geometries[1:]
-        _ = pockets
 
         # Deal with *exterior_info* first:
         exterior_info: FabGeometryInfo = exterior.GeometryInfo
@@ -563,12 +562,17 @@ class Fab_Extrude(Fab_Operation):
             if length_ok and diameter_ok:
                 if tracing:
                     print(f"{tracing}Match!")
-                matching_shop_bits.append(pocket_shop_bit)
+                matching_shop_bits.append(pocket_shop_bit)  # pragma: no unit cover
 
         # For now, fail horribly if there are no *matching_shop_bits*:
         # assert len(matching_shop_bits) > 0
         self.setShopBits(matching_shop_bits)
         expanded_operations.append(self)
+
+        # Deal with *pockets*:
+        pocket: FabGeometry
+        for pocket in pockets:
+            self.post_produce1(produce_state, expanded_operations)  # pragma: no unit cover
 
         if tracing:
             print(f"{tracing}<=Fab_Extrude.post_produce1('{self.Name}')")
@@ -1352,7 +1356,7 @@ class FabMount(object):
     @property
     def Normal(self) -> Vector:
         """Return the FabMount normal."""
-        return self._Normal + self._Copy
+        return self._Normal + self._Copy  # pragma: no unit cover
 
     # FabMount.Orient:
     @property
