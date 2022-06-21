@@ -407,15 +407,18 @@ class FabDrillBit(FabBit):
         return ("drill",)
 
     # FabDrillBit.getBitPriority():
-    def getBitPriority(self, operation_kind: str, tracing: str = "") -> Optional[float]:
+    def getBitPriority(
+            self, operation_kind: str, depth: float, tracing: str = "") -> Optional[float]:
         """Return operation priority for a FabEndMillBit.
 
         Arguments:
         * *operation_kind* (str): The kind of operation (e.g. "pocket", "drill", etc.).
+        * *depth* (str): Depth of drill operation.
 
         Returns:
         * (Optional[float]): The priority as a negative number, where more negative numbers
-          have a higher priority.
+          have a higher priority.  None is returned if there is bit does not support either
+          the operation kind or depth.
         """
         operation_kinds: Tuple[str, ...] = self.getOperationKinds()
         assert operation_kind in operation_kinds, (
@@ -502,24 +505,39 @@ class FabEndMillBit(FabBit):
         return end_mill_bit
 
     # FabEndMillBit.getBitPriority():
-    def getBitPriority(self, operation_kind: str, tracing: str = "") -> Optional[float]:
+    def getBitPriority(
+            self, operation_kind: str, depth: float, tracing: str = "") -> Optional[float]:
         """Return operation priority for a FabEndMillBit.
 
         Arguments:
         * *operation_kind* (str): The kind of operation (e.g. "pocket", "drill", etc.).
+        * *depth* (str):
+          Depth of end-mill operation or 0.0 for a "generic" priority independent of depth.
 
         Returns:
         * (Optional[float]): The priority as a negative number, where more negative numbers
-          have a higher priority.
+          have a higher priority.  None is returned if there is bit does not support either
+          the *operation_kind* or *depth*.
         """
         operation_kinds: Tuple[str, ...] = self.getOperationKinds()
         assert operation_kind in operation_kinds, (
             f"FabEndMillBit.getBitPriority(): {operation_kind} is not one of {operation_kinds}")
-        priority: Optional[float] = None
+
+        # Compute an initial *single_pass_priority* independent of *depth*:
         diameter: Union[float, int] = self.getNumber("Diameter")
         flutes: Union[float, int] = self.getNumber("Flutes")
         cutting_edge_length: Union[float, int] = self.getNumber("CuttingEdgeHeight")
-        priority = -diameter * flutes * cutting_edge_length
+        single_pass_priority = diameter * flutes * cutting_edge_length
+
+        # When *depth* is specified, adjust *priority*:
+        priority: Optional[float] = None
+        if depth <= 0.0:
+            priority = -single_pass_priority
+        elif depth <= cutting_edge_length:
+            # 1/3 *diameter* is an ad hoc step depth:
+            steps: int = math.ceil(depth / (diameter / 3.0))
+            priority = -(float(steps) * single_pass_priority)
+            assert priority < 0.0, priority
         if tracing:
             print(f"{tracing}<=>FabEndMillBit.getBitPriority('{operation_kind}')=>{priority}")
         return priority
@@ -530,6 +548,7 @@ class FabEndMillBit(FabBit):
         """Perform FabEndMillBit unit tests."""
         if tracing:
             print(f"{tracing}=>FabEndMillBit._unit_tests()")
+
         end_mill_bit: FabEndMillBit = FabEndMillBit.getExample()
         assert end_mill_bit.Name == "5mm Endmill"
         assert end_mill_bit.BitStem == "5mm_Endmill"
@@ -542,6 +561,16 @@ class FabEndMillBit(FabBit):
             "Flutes": 2,
             "Material": "HSS",
         }), end_mill_bit.Attributes
+
+        generic_priority: Optional[float] = end_mill_bit.getBitPriority("pocket", 0.0)
+        actual_priority: Optional[float] = end_mill_bit.getBitPriority("pocket", 10.0)
+        too_deep_priority: Optional[float] = end_mill_bit.getBitPriority("pocket", 100.0)
+        assert isinstance(generic_priority, float)
+        assert generic_priority == -300.0
+        assert isinstance(actual_priority, float)
+        assert actual_priority == -1800.0
+        assert too_deep_priority is None
+
         if tracing:
             print(f"{tracing}<=FabEndMillBit._unit_tests()")
 
@@ -748,15 +777,18 @@ class FabThreadMillBit(FabBit):
         return ("lower_chamfer", "upper_chamfer")
 
     # FabThreadMillBit.getBitPriority():
-    def getBitPriority(self, operation_kind: str, tracing: str = "") -> Optional[float]:
+    def getBitPriority(
+            self, operation_kind: str, depth: float, tracing: str = "") -> Optional[float]:
         """Return operation priority for a FabEndThreadMillBit.
 
         Arguments:
         * *operation_kind* (str): The kind of operation (e.g. "pocket", "drill", etc.).
+        * *depth* (str): Depth of drill operation.
 
         Returns:
         * (Optional[float]): The priority as a negative number, where more negative numbers
-          have a higher priority.
+          have a higher priority.  None is returned if there is bit does not support either
+          the operation kind or depth.
         """
         operation_kinds: Tuple[str, ...] = self.getOperationKinds()
         assert operation_kind in operation_kinds, (
@@ -909,15 +941,18 @@ class FabVBit(FabBit):
         return ("contour", "countersink", "upper_chamfer")
 
     # FabDrillBit.getBitPriority():
-    def getBitPriority(self, operation_kind: str, tracing: str = "") -> Optional[float]:
+    def getBitPriority(
+            self, operation_kind: str, depth: float, tracing: str = "") -> Optional[float]:
         """Return operation priority for a FabEndMillBit.
 
         Arguments:
         * *operation_kind* (str): The kind of operation (e.g. "pocket", "drill", etc.).
+        * *depth* (str): Depth of drill operation.
 
         Returns:
         * (Optional[float]): The priority as a negative number, where more negative numbers
-          have a higher priority.
+          have a higher priority.  None is returned if there is bit does not support either
+          the operation kind or depth.
         """
         operation_kinds: Tuple[str, ...] = self.getOperationKinds()
         assert operation_kind in operation_kinds, (

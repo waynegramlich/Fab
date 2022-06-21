@@ -362,15 +362,18 @@ class FabBit(object):
         check_type("FabBit.Attributes", self.Attributes, FabAttributes)
 
     # FabBit.getBitPriority():
-    def getBitPriority(self, operation_kind: str, tracing: str = "") -> Optional[float]:
+    def getBitPriority(
+            self, operation_kind: str, depth: float, tracing: str = "") -> Optional[float]:
         """Return operation priority for an operation.
 
         Arguments:
         * *operation_kind* (str): The kind of operation (e.g. "pocket", "drill", etc.).
-
+        * *depth* (str): Depth of operation depth style operations (e.g. profile, pocket,
+          drill) and 0.0 otherwise.
         Returns:
         * (Optional[float]): The priority as a negative number, where more negative numbers
-          have a higher priority.
+          have a higher priority.  None is returned if there is bit does not support either
+          the operation kind or depth.
 
         """
         if tracing:

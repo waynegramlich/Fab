@@ -187,15 +187,17 @@ Returns:
 
 ### <a name="fabtoolbits----getbitpriority"></a>5.2 `FabDrillBit.`getBitPriority():
 
-FabDrillBit.getBitPriority(self, operation_kind: str, tracing: str = '') -> Union[float, NoneType]:
+FabDrillBit.getBitPriority(self, operation_kind: str, depth: float, tracing: str = '') -> Union[float, NoneType]:
 
 Return operation priority for a FabEndMillBit.
 Arguments:
 * *operation_kind* (str): The kind of operation (e.g. "pocket", "drill", etc.).
+* *depth* (str): Depth of drill operation.
 
 Returns:
 * (Optional[float]): The priority as a negative number, where more negative numbers
-  have a higher priority.
+  have a higher priority.  None is returned if there is bit does not support either
+  the operation kind or depth.
 
 
 ## <a name="fabtoolbits--fabendmillbit"></a>6 Class FabEndMillBit:
@@ -225,15 +227,18 @@ Returns:
 
 ### <a name="fabtoolbits----getbitpriority"></a>6.2 `FabEndMillBit.`getBitPriority():
 
-FabEndMillBit.getBitPriority(self, operation_kind: str, tracing: str = '') -> Union[float, NoneType]:
+FabEndMillBit.getBitPriority(self, operation_kind: str, depth: float, tracing: str = '') -> Union[float, NoneType]:
 
 Return operation priority for a FabEndMillBit.
 Arguments:
 * *operation_kind* (str): The kind of operation (e.g. "pocket", "drill", etc.).
+* *depth* (str):
+  Depth of end-mill operation or 0.0 for a "generic" priority independent of depth.
 
 Returns:
 * (Optional[float]): The priority as a negative number, where more negative numbers
-  have a higher priority.
+  have a higher priority.  None is returned if there is bit does not support either
+  the *operation_kind* or *depth*.
 
 
 ## <a name="fabtoolbits--fabprobebit"></a>7 Class FabProbeBit:
@@ -319,15 +324,17 @@ Returns:
 
 ### <a name="fabtoolbits----getbitpriority"></a>9.2 `FabThreadMillBit.`getBitPriority():
 
-FabThreadMillBit.getBitPriority(self, operation_kind: str, tracing: str = '') -> Union[float, NoneType]:
+FabThreadMillBit.getBitPriority(self, operation_kind: str, depth: float, tracing: str = '') -> Union[float, NoneType]:
 
 Return operation priority for a FabEndThreadMillBit.
 Arguments:
 * *operation_kind* (str): The kind of operation (e.g. "pocket", "drill", etc.).
+* *depth* (str): Depth of drill operation.
 
 Returns:
 * (Optional[float]): The priority as a negative number, where more negative numbers
-  have a higher priority.
+  have a higher priority.  None is returned if there is bit does not support either
+  the operation kind or depth.
 
 
 ## <a name="fabtoolbits--fabvbit"></a>10 Class FabVBit:
@@ -406,15 +413,17 @@ Returns:
 
 ### <a name="fabtoolbits----getbitpriority"></a>10.2 `FabVBit.`getBitPriority():
 
-FabVBit.getBitPriority(self, operation_kind: str, tracing: str = '') -> Union[float, NoneType]:
+FabVBit.getBitPriority(self, operation_kind: str, depth: float, tracing: str = '') -> Union[float, NoneType]:
 
 Return operation priority for a FabEndMillBit.
 Arguments:
 * *operation_kind* (str): The kind of operation (e.g. "pocket", "drill", etc.).
+* *depth* (str): Depth of drill operation.
 
 Returns:
 * (Optional[float]): The priority as a negative number, where more negative numbers
-  have a higher priority.
+  have a higher priority.  None is returned if there is bit does not support either
+  the operation kind or depth.
 
 
 

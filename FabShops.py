@@ -918,7 +918,7 @@ class FabShops(object):
                               f"{bit.Name}:{operation_kinds}")
                     for operation_kind in operation_kinds:
                         assert operation_kind in operations_table, operation_kind
-                        bit_priority: Optional[float] = bit.getBitPriority(operation_kind)
+                        bit_priority: Optional[float] = bit.getBitPriority(operation_kind, 0.0)
                         if tracing:
                             print(f"{tracing}  {operation_kind=} {bit_priority=}")
                         if bit_priority is not None:

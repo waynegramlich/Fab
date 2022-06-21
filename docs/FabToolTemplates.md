@@ -83,15 +83,17 @@ Constructor:
 
 ### <a name="fabtooltemplates----getbitpriority"></a>2.1 `FabBit.`getBitPriority():
 
-FabBit.getBitPriority(self, operation_kind: str, tracing: str = '') -> Union[float, NoneType]:
+FabBit.getBitPriority(self, operation_kind: str, depth: float, tracing: str = '') -> Union[float, NoneType]:
 
 Return operation priority for an operation.
 Arguments:
 * *operation_kind* (str): The kind of operation (e.g. "pocket", "drill", etc.).
-
+* *depth* (str): Depth of operation depth style operations (e.g. profile, pocket,
+  drill) and 0.0 otherwise.
 Returns:
 * (Optional[float]): The priority as a negative number, where more negative numbers
-  have a higher priority.
+  have a higher priority.  None is returned if there is bit does not support either
+  the operation kind or depth.
 
 ### <a name="fabtooltemplates----getnumber"></a>2.2 `FabBit.`getNumber():
 
