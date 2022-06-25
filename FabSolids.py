@@ -16,7 +16,7 @@ import math
 from enum import IntEnum, auto
 from dataclasses import dataclass, field
 from pathlib import Path
-from typeguard import check_argument_types
+from typeguard import check_argument_types, check_type
 from typing import Any, cast, Dict, Generator, IO, List, Optional, Sequence, Tuple, Union
 
 import cadquery as cq  # type: ignore
@@ -183,8 +183,8 @@ class Fab_OperationOrder(IntEnum):
     DOWEL_PIN = auto()
     END_MILL_EXTERIOR = auto()
     MILL_DRILL_EXTERIOR = auto()
-    MILL_DRILL_CHAMFER = auto()
     MILL_DRILL_COUNTERSINK = auto()
+    MILL_DRILL_CHAMFER = auto()
     MILL_DRILL = auto()
     END_MILL_DRILL = auto()
     END_MILL_ROUND_POCKET = auto()
@@ -203,7 +203,7 @@ class Fab_OperationOrder(IntEnum):
     def _unit_tests(tracing: str = "") -> None:
         """Perform unit tests on Fab_OperationOrder."""
         if tracing:
-            print(f"{tracing}=>FabOperatoinOrder._unit_tests()")
+            print(f"{tracing}=>FabOperationOrder._unit_tests()")
 
         none = Fab_OperationOrder.NONE
         mount = Fab_OperationOrder.MOUNT
@@ -226,14 +226,14 @@ class Fab_OperationOrder(IntEnum):
         slide = Fab_OperationOrder.SLIDE
         last = Fab_OperationOrder.LAST
         assert none < mount < pin < end_mill < mill_drill_exterior < mill_drill_chamfer
-        assert mill_drill_chamfer < mill_drill_countersink < mill_drill < end_mill_drill
-        assert end_mill_drill < end_mill_round_pocket < end_mill_simple_pocket
+        assert mill_drill_countersink < mill_drill_chamfer < mill_drill < end_mill_drill
+        assert mill_drill < end_mill_round_pocket < end_mill_simple_pocket
         assert end_mill_simple_pocket < mill_drill_pocket_chamfer < mill_dove_tail_chamfer
         assert mill_dove_tail_chamfer < double_angle_v_groove < double_angle_chamfer
         assert double_angle_chamfer < drill < tap < vertical_lathe < slide < last
 
         if tracing:
-            print(f"{tracing}<=FabOperatoinOrder._unit_tests()")
+            print(f"{tracing}<=FabOperationOrder._unit_tests()")
 
 
 # Fab_OperationKind:
@@ -268,6 +268,49 @@ class Fab_OperationKind(IntEnum):
 
         if tracing:
             print(f"{tracing}<=OperationKind._unit_tests()")
+
+
+# Fab_OperationKey:
+@dataclass(frozen=True, order=True)
+class Fab_OperationKey:
+    """Fab_OperationKey: Provides a sorting key for Fab_Opertions.
+
+    Attributes:
+    * *MountFence* (int): The user manage fence index grouping operations within a mount.
+    * *ShopIndex* (int): The shop index of the bit to be used.
+    * *MachineIndex* (int): The machine index of the bit to be used.
+    * *Order*: (Fab_OperationOrder): The preferred order for operations.
+    * *BitPriority*: (float): A negative number obtained via the getBitPriority method.
+
+    Constructor:
+    * Fab_OperationKey(MountFence, ShopIndex, MachineIndex, Order, BitPriority)
+
+    """
+
+    MountFence: int
+    ShopIndex: int
+    MachineIndex: int
+    Order: Fab_OperationOrder
+    BitPriority: float
+
+    # Fab_OperationKey.__post_init__():
+    def __post_init__(self) -> None:
+        """Finish initializing a FabOperationKey."""
+        pass
+
+    # Fab_OperationKey._unitTests():
+    @staticmethod
+    def _unitTests(tracing: str = ""):
+        """Perform unit tests."""
+        if tracing:
+            print(f"{tracing}=>Fab_OperationKey._unitTests()")
+        key1: Fab_OperationKey = Fab_OperationKey(
+            0, 0, 0, Fab_OperationOrder.MILL_DRILL_EXTERIOR, -1.0)
+        key2: Fab_OperationKey = Fab_OperationKey(
+            0, 0, 0, Fab_OperationOrder.MILL_DRILL_COUNTERSINK, -1.0)
+        assert key1 < key2
+        if tracing:
+            print(f"{tracing}<=Fab_OperationKey._unitTests()")
 
 
 # Fab_Operation:
@@ -1282,6 +1325,7 @@ class FabMount(object):
     _Depth: float
     _Query: Fab_Query
     _Operations: List[Fab_Operation] = field(init=False, repr=False)
+    _Fence: int = field(init=False, repr=False)  # Used to group operations
     _Copy: Vector = field(init=False, repr=False)  # Used for making private copies of Vector's
     _Tracing: str = field(init=False, repr=False)
     _GeometryContext: Fab_GeometryContext = field(init=False, repr=False)
@@ -1297,18 +1341,17 @@ class FabMount(object):
         solid: "FabSolid" = self._Solid
 
         tracing: str = solid.Tracing
-        next_tracing: str = tracing + " " if tracing else ""
-        _ = next_tracing  # Until it is used elsewhere
+        # next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabMount({self.Name}).__post_init__()")
 
         # Do type checking here.
-        assert isinstance(self._Name, str)
-        assert isinstance(self._Solid, FabSolid)
-        assert isinstance(self._Contact, Vector), (self._Contact, type(self._Contact))
-        assert isinstance(self._Normal, Vector), self._Normal
-        assert isinstance(self._Orient, Vector), self._Orient
-        assert isinstance(self._Depth, float)
+        check_type("FabMount.Name", self._Name, str)
+        check_type("FabMount.Solid", self._Solid, FabSolid)
+        check_type("FabMount.Contact", self._Contact, Vector)
+        check_type("FabMount.Normal", self._Normal, Vector)
+        check_type("FabMount.Orient", self._Orient, Vector)
+        check_type("FabMount.Depth", self._Depth, float)
 
         copy: Vector = Vector()  # Make private copy of Vector's.
         self._Copy = copy
@@ -1316,6 +1359,7 @@ class FabMount(object):
         self._Normal = self._Normal + copy
         self._Operations = []
         # Vector metheds like to modify Vector contents; force copies beforehand:
+        self._Fence = 0
         self._Plane: FabPlane = FabPlane(self._Contact, self._Normal)  # , tracing=next_tracing)
         self._Orient = self._Plane.projectPoint(self._Orient)
         self._GeometryContext = Fab_GeometryContext(self._Plane, self._Query)
@@ -1382,6 +1426,11 @@ class FabMount(object):
         solid: FabSolid = self._Solid
         prefix: Fab_Prefix = solid.lookup_prefix(self.Name, operation_name)
         return prefix
+
+    # FabMount.fence():
+    def fence(self) -> None:
+        """Put a fence between operations to keep sub-groups together."""
+        self._Fence += 1  # pragma: no unit cover
 
     # FabMount.getHash():
     def getHash(self) -> Tuple[Any, ...]:
@@ -2039,6 +2088,7 @@ def main(tracing: str = "") -> None:
     Fab_HoleKey._unit_tests(tracing=next_tracing)
     Fab_OperationOrder._unit_tests(tracing=next_tracing)
     Fab_OperationKind._unit_tests(tracing=next_tracing)
+    Fab_OperationKey._unitTests(tracing=next_tracing)
     FabStock._unit_tests(tracing=next_tracing)
     FabSolid._unit_tests(tracing=next_tracing)
 

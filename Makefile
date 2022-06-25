@@ -79,6 +79,7 @@ flake8: ${FLAKE8_FILES}
 
 clean:
 	rm -f ${CLEAN_FILES} .tests
+	rm -rf /tmp/*.{stp,ngc}
 
 mypy: .mypy  # Use .mypyp to remember when tests were run
 
@@ -99,22 +100,22 @@ tests: .tests  # Use .tests to remember that tests were run.
 # Use `cover.sh` to suppress output to stdout.  Output to stderr comes through.
 .tests: ${TEST_FILES}
 	echo "Running coverage"
+	rm -rf /tmp/*.{stp,ngc}  # Delete cached step and ngc
 	if [ ! "$$($(PIP) list | grep '^coverage')" ] ; then \
 	   $(PIP) install coverage ; \
 	fi
 	$(COVERAGE) erase  # Erase previous coverage runs.
-	for py_file in ${TEST_FILES} ; do \
+	for py_file in ${TEST_FILES} test.py ; do \
 	    echo Testing $$py_file ; \
 	    if ! ./cover.sh $$py_file ; then \
 	        echo "$$py_file >>>>>>>>>>>>>>>> failed" ; \
 	    fi ; \
-	done
+	done  # Run test.py twice to exercise the file caching code.
 	$(COVERAGE) annotate  # Generate annotated coverage files.
 	( grep -n "^!" ${COVER_FILES} | \
 	    grep -v "pragma: no unit test" > /tmp/uncovered_lines ) || true
 	$(COVERAGE) report  # Generate the summary report.
 	$(COVERAGE) erase  # Do not leave around stale coverage information
-	# rm -f ${COVER_FILES}  # Remove coverage files.
 	touch $@
 
 # Specific rule for "__init__.py" => "docs/ModFab.py":

@@ -10,15 +10,16 @@ This internal classes are managed by FabMount methods.
 
 * 1 Class: [FabMount](#fabsolids--fabmount):
   * 1.1 [lookup_prefix()](#fabsolids----lookup-prefix): Return the Fab_Prefix for an operation.
-  * 1.2 [getHash()](#fabsolids----gethash): Return a has the current contents of a FabMount.
-  * 1.3 [record_operation()](#fabsolids----record-operation): Record an operation to a FabMount.
-  * 1.4 [setGeometryGroup()](#fabsolids----setgeometrygroup): Set the FabMount GeometryGroup need for the FabGeometryContex.
-  * 1.5 [post_produce1()](#fabsolids----post-produce1): Expand and transform operations.
-  * 1.6 [post_produce2()](#fabsolids----post-produce2): Perform FabMount phase 1 post procduction.
-  * 1.7 [to_json()](#fabsolids----to-json): Return FabMount JSON structure.
-  * 1.8 [extrude()](#fabsolids----extrude): Perform a extrude operation.
-  * 1.9 [pocket()](#fabsolids----pocket): Perform a pocket operation.
-  * 1.10 [drill_joins()](#fabsolids----drill-joins): Drill some FabJoin's into a FabMount.
+  * 1.2 [fence()](#fabsolids----fence): Put a fence between operations to keep sub-groups together.
+  * 1.3 [getHash()](#fabsolids----gethash): Return a has the current contents of a FabMount.
+  * 1.4 [record_operation()](#fabsolids----record-operation): Record an operation to a FabMount.
+  * 1.5 [setGeometryGroup()](#fabsolids----setgeometrygroup): Set the FabMount GeometryGroup need for the FabGeometryContex.
+  * 1.6 [post_produce1()](#fabsolids----post-produce1): Expand and transform operations.
+  * 1.7 [post_produce2()](#fabsolids----post-produce2): Perform FabMount phase 1 post procduction.
+  * 1.8 [to_json()](#fabsolids----to-json): Return FabMount JSON structure.
+  * 1.9 [extrude()](#fabsolids----extrude): Perform a extrude operation.
+  * 1.10 [pocket()](#fabsolids----pocket): Perform a pocket operation.
+  * 1.11 [drill_joins()](#fabsolids----drill-joins): Drill some FabJoin's into a FabMount.
 * 2 Class: [FabSolid](#fabsolids--fabsolid):
   * 2.1 [lookup_prefix()](#fabsolids----lookup-prefix): Return the Fab_Prefix for a mount/operation name pair.
   * 2.2 [to_json()](#fabsolids----to-json): Return FabProject JSON structure.
@@ -57,14 +58,15 @@ This internal classes are managed by FabMount methods.
   * 7.8 [post_produce1()](#fabsolids----post-produce1): Expand simple operations as approprated.
   * 7.9 [post_produce2()](#fabsolids----post-produce2): NO DOC STRING!
   * 7.10 [to_json()](#fabsolids----to-json): Return a base JSON dictionary for an Fab_Operation.
-* 8 Class: [Fab_OperationKind](#fabsolids--fab-operationkind):
-* 9 Class: [Fab_OperationOrder](#fabsolids--fab-operationorder):
-* 10 Class: [Fab_Pocket](#fabsolids--fab-pocket):
-  * 10.1 [post_produce1()](#fabsolids----post-produce1): Expand simple operations as approprated.
-  * 10.2 [getHash()](#fabsolids----gethash): Return Fab_Pocket hash.
-  * 10.3 [get_kind()](#fabsolids----get-kind): Return Fab_Pocket kind.
-  * 10.4 [post_produce2()](#fabsolids----post-produce2): Produce the Pocket.
-  * 10.5 [to_json()](#fabsolids----to-json): Return JSON dictionary for Fab_Extrude.
+* 8 Class: [Fab_OperationKey](#fabsolids--fab-operationkey):
+* 9 Class: [Fab_OperationKind](#fabsolids--fab-operationkind):
+* 10 Class: [Fab_OperationOrder](#fabsolids--fab-operationorder):
+* 11 Class: [Fab_Pocket](#fabsolids--fab-pocket):
+  * 11.1 [post_produce1()](#fabsolids----post-produce1): Expand simple operations as approprated.
+  * 11.2 [getHash()](#fabsolids----gethash): Return Fab_Pocket hash.
+  * 11.3 [get_kind()](#fabsolids----get-kind): Return Fab_Pocket kind.
+  * 11.4 [post_produce2()](#fabsolids----post-produce2): Produce the Pocket.
+  * 11.5 [to_json()](#fabsolids----to-json): Return JSON dictionary for Fab_Extrude.
 
 ## <a name="fabsolids--fabmount"></a>1 Class FabMount:
 
@@ -89,49 +91,55 @@ FabMount.lookup_prefix(self, operation_name: str) -> FabNodes.Fab_Prefix:
 
 Return the Fab_Prefix for an operation.
 
-### <a name="fabsolids----gethash"></a>1.2 `FabMount.`getHash():
+### <a name="fabsolids----fence"></a>1.2 `FabMount.`fence():
+
+FabMount.fence(self) -> None:
+
+Put a fence between operations to keep sub-groups together.
+
+### <a name="fabsolids----gethash"></a>1.3 `FabMount.`getHash():
 
 FabMount.getHash(self) -> Tuple[Any, ...]:
 
 Return a has the current contents of a FabMount.
 
-### <a name="fabsolids----record-operation"></a>1.3 `FabMount.`record_operation():
+### <a name="fabsolids----record-operation"></a>1.4 `FabMount.`record_operation():
 
 FabMount.record_operation(self, operation: FabSolids.Fab_Operation) -> None:
 
 Record an operation to a FabMount.
 
-### <a name="fabsolids----setgeometrygroup"></a>1.4 `FabMount.`setGeometryGroup():
+### <a name="fabsolids----setgeometrygroup"></a>1.5 `FabMount.`setGeometryGroup():
 
 FabMount.setGeometryGroup(self, geometry_group: Any) -> None:
 
 Set the FabMount GeometryGroup need for the FabGeometryContex.
 
-### <a name="fabsolids----post-produce1"></a>1.5 `FabMount.`post_produce1():
+### <a name="fabsolids----post-produce1"></a>1.6 `FabMount.`post_produce1():
 
 FabMount.post_produce1(self, produce_state: FabNodes.Fab_ProduceState, tracing: str = '') -> None:
 
 Expand and transform operations.
 
-### <a name="fabsolids----post-produce2"></a>1.6 `FabMount.`post_produce2():
+### <a name="fabsolids----post-produce2"></a>1.7 `FabMount.`post_produce2():
 
 FabMount.post_produce2(self, produce_state: FabNodes.Fab_ProduceState, tracing: str = '') -> None:
 
 Perform FabMount phase 1 post procduction.
 
-### <a name="fabsolids----to-json"></a>1.7 `FabMount.`to_json():
+### <a name="fabsolids----to-json"></a>1.8 `FabMount.`to_json():
 
 FabMount.to_json(self) -> Dict[str, Any]:
 
 Return FabMount JSON structure.
 
-### <a name="fabsolids----extrude"></a>1.8 `FabMount.`extrude():
+### <a name="fabsolids----extrude"></a>1.9 `FabMount.`extrude():
 
 FabMount.extrude(self, name: str, shapes: Union[FabGeometries.FabGeometry, Tuple[FabGeometries.FabGeometry, ...]], depth: float, contour: bool = True, tracing: str = '') -> None:
 
 Perform a extrude operation.
 
-### <a name="fabsolids----pocket"></a>1.9 `FabMount.`pocket():
+### <a name="fabsolids----pocket"></a>1.10 `FabMount.`pocket():
 
 FabMount.pocket(self, name: str, shapes: Union[FabGeometries.FabGeometry, Tuple[FabGeometries.FabGeometry, ...]], depth: float, tracing: str = '') -> None:
 
@@ -143,7 +151,7 @@ Arguments:
   the pocket boundary.
 * *depth* (float): The pocket depth in millimeters from the mount plane.
 
-### <a name="fabsolids----drill-joins"></a>1.10 `FabMount.`drill_joins():
+### <a name="fabsolids----drill-joins"></a>1.11 `FabMount.`drill_joins():
 
 FabMount.drill_joins(self, joins_name: str, joins: Union[FabJoins.FabJoin, Sequence[FabJoins.FabJoin]], tracing: str = '') -> None:
 
@@ -463,17 +471,31 @@ Fab_Operation.to_json(self) -> Dict[str, Any]:
 Return a base JSON dictionary for an Fab_Operation.
 
 
-## <a name="fabsolids--fab-operationkind"></a>8 Class Fab_OperationKind:
+## <a name="fabsolids--fab-operationkey"></a>8 Class Fab_OperationKey:
+
+Provides a sorting key for Fab_Opertions.
+Attributes:
+* *MountFence* (int): The user manage fence index grouping operations within a mount.
+* *ShopIndex* (int): The shop index of the bit to be used.
+* *MachineIndex* (int): The machine index of the bit to be used.
+* *Order*: (Fab_OperationOrder): The preferred order for operations.
+* *BitPriority*: (float): A negative number obtained via the getBitPriority method.
+
+Constructor:
+* Fab_OperationKey(MountFence, ShopIndex, MachineIndex, Order, BitPriority)
+
+
+## <a name="fabsolids--fab-operationkind"></a>9 Class Fab_OperationKind:
 
 Value for the kind of operation.
 
 
-## <a name="fabsolids--fab-operationorder"></a>9 Class Fab_OperationOrder:
+## <a name="fabsolids--fab-operationorder"></a>10 Class Fab_OperationOrder:
 
  OperationOrder: A enumeration that specifies the desired order of operations.
 
 
-## <a name="fabsolids--fab-pocket"></a>10 Class Fab_Pocket:
+## <a name="fabsolids--fab-pocket"></a>11 Class Fab_Pocket:
 
 Represents a pocketing operation.
 Attributes:
@@ -497,31 +519,31 @@ See Fab_Operation for extra computed Attributes.
 Constructor:
 * Fab_Pocket(Mount, Name, Geometries, Depth)
 
-### <a name="fabsolids----post-produce1"></a>10.1 `Fab_Pocket.`post_produce1():
+### <a name="fabsolids----post-produce1"></a>11.1 `Fab_Pocket.`post_produce1():
 
 Fab_Pocket.post_produce1(self, produce_state: FabNodes.Fab_ProduceState, expanded_operations: 'List[Fab_Operation]', tracing: str = '') -> None:
 
 Expand simple operations as approprated.
 
-### <a name="fabsolids----gethash"></a>10.2 `Fab_Pocket.`getHash():
+### <a name="fabsolids----gethash"></a>11.2 `Fab_Pocket.`getHash():
 
 Fab_Pocket.getHash(self) -> Tuple[Any, ...]:
 
 Return Fab_Pocket hash.
 
-### <a name="fabsolids----get-kind"></a>10.3 `Fab_Pocket.`get_kind():
+### <a name="fabsolids----get-kind"></a>11.3 `Fab_Pocket.`get_kind():
 
 Fab_Pocket.get_kind(self) -> str:
 
 Return Fab_Pocket kind.
 
-### <a name="fabsolids----post-produce2"></a>10.4 `Fab_Pocket.`post_produce2():
+### <a name="fabsolids----post-produce2"></a>11.4 `Fab_Pocket.`post_produce2():
 
 Fab_Pocket.post_produce2(self, produce_state: FabNodes.Fab_ProduceState, tracing: str = '') -> None:
 
 Produce the Pocket.
 
-### <a name="fabsolids----to-json"></a>10.5 `Fab_Pocket.`to_json():
+### <a name="fabsolids----to-json"></a>11.5 `Fab_Pocket.`to_json():
 
 Fab_Pocket.to_json(self) -> Dict[str, Any]:
 
