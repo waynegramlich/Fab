@@ -5,7 +5,7 @@
 
 # Python library imports:
 from dataclasses import dataclass, field
-from typing import Any, cast, List, Tuple
+from typing import Any, cast, List, Set, Tuple
 from pathlib import Path as PathFile
 
 # CadQuery library imports:
@@ -300,7 +300,9 @@ class Box(FabAssembly):
 class TestSolid(FabSolid):
     """TestSolid: A test solid to exercise FabSolid code."""
 
-    Fasten: FabFasten = field(init=False, repr=False)
+    I4_40Fasten: FabFasten = field(init=False, repr=False)
+    M8_1_25Fasten: FabFasten = field(init=False, repr=False)
+    M10_1_5Fasten: FabFasten = field(init=False, repr=False)
     Screw1: FabJoin = field(init=False, repr=False)
 
     # TestSolid.__post_init__():
@@ -310,7 +312,9 @@ class TestSolid(FabSolid):
         tracing: str = self.Tracing
         if tracing:
             print(f"{tracing}=>TestSolid({self.Label}).__post_init__()")
-        self.Fasten = FabFasten("TestSolidFasten", "M3x.5", ())  # No options yet.
+        self.I4_40Fasten = FabFasten("TestSolidImperialFasten", "#4-40", ())  # No options yet.
+        self.M8_1_25Fasten = FabFasten("TestSolidMetricFasten", "M8x1.25", ())  # No options yet.
+        self.M10_1_5Fasten = FabFasten("TestSolidMetricFasten", "M10x1.5", ())  # No options yet.
         if tracing:
             print(f"{tracing}<=TestSolid({self.Label}).__post_init__()")
 
@@ -346,10 +350,11 @@ class TestSolid(FabSolid):
             (Vector(wx, ny, z_offset), extrude_fillet_radius),  # NW
         ))
         top_mount.extrude("Extrude", extrude_polygon, depth, tracing=next_tracing)
-
-        # Perform a pocket:
         pocket_fillet_radius: float = 2.5
-        features: Tuple[str, ...] = ("LPP", "RPP", "RCP", "CCP", "DSH")  # Enable all *features*
+
+        # Enable vasious *features*:
+        features: Set[str] = {"LPP", "RPP", "RCP", "CCP", "IDH", "MDH", "MDP", "SSH"}
+
         # features = ("RPP",)  # Down select to specific *features*
         if "LPP" in features:  # Left Polygon Pocket
             left_polygon: FabPolygon = FabPolygon(top_plane, (
@@ -376,13 +381,30 @@ class TestSolid(FabSolid):
         if "CCP" in features:  # Center Circle Pocket
             center_circle: FabCircle = FabCircle(top_plane, Vector(0, 0, z_offset), 10)
             top_mount.pocket("CenterCircle", center_circle, depth2)
-            screw_start: Vector = Vector(0.0, -10.0, z_offset)
-            screw_end: Vector = Vector(0.0, -10.0, z_offset - depth)
-            self.Screw1: FabJoin = FabJoin("ScrewT", self.Fasten, screw_start, screw_end)
-            top_mount.drill_joins("ScrewT", (self.Screw1,), tracing=next_tracing)
-            top_mount.pocket("LeftPocket", left_polygon, depth)
 
-        if "DSH" in features:  # Drill Screw Hole:
+        if "IDH" in features:  # Imperial Drill Hole
+            imperial_drill_start: Vector = Vector(0.0, -10.0, z_offset)
+            imperial_drill_end: Vector = Vector(0.0, -10.0, z_offset - depth)
+            self.ScrewIDH: FabJoin = FabJoin("ScrewI", self.I4_40Fasten,
+                                             imperial_drill_start, imperial_drill_end)
+            top_mount.drill_joins("ScrewIDH", (self.ScrewIDH,), tracing=next_tracing)
+
+        if "MDH" in features:  # Metric Drill Hole
+            metric_drill_start: Vector = Vector(-20.0, -20.0, z_offset)
+            metric_drill_end: Vector = Vector(-20.0, -20.0, z_offset - depth)
+            self.ScrewMDH: FabJoin = FabJoin("ScrewMDH", self.M8_1_25Fasten,
+                                             metric_drill_start, metric_drill_end)
+            top_mount.drill_joins("ScrewMDH", (self.ScrewMDH,), tracing=next_tracing)
+
+        if "MDP" in features:  # Metric Drill Pocket
+            # There is no M10x1.5 drill in the example mill.
+            metric_pocket_start: Vector = Vector(20.0, -20.0, z_offset)
+            metric_pocket_end: Vector = Vector(20.0, -20.0, z_offset - depth)
+            self.ScrewMDP: FabJoin = FabJoin("ScrewMDP", self.M10_1_5Fasten,
+                                             metric_pocket_start, metric_pocket_end)
+            top_mount.drill_joins("ScrewMDP", (self.ScrewMDP,), tracing=next_tracing)
+
+        if "SSH" in features:  # Side Screw Hole:
             north_start: Vector = self.N
             north_end: Vector = self.C
             n: Vector = self.N
@@ -390,7 +412,7 @@ class TestSolid(FabSolid):
             dy: Vector = self.YMax - self.YMin  # FIXME: use self.DY instead.
             north_plane: FabPlane = FabPlane(n, dn)
             north_mount: FabMount = self.mount("NorthX", north_plane, de, dy, tracing=tracing)
-            self.ScrewN: FabJoin = FabJoin("ScrewN", self.Fasten, north_start, north_end)
+            self.ScrewN: FabJoin = FabJoin("ScrewN", self.I4_40Fasten, north_start, north_end)
             north_mount.drill_joins("ScrewN", (self.ScrewN,), tracing=next_tracing)
 
         if tracing:
