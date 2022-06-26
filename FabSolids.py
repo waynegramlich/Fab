@@ -202,7 +202,7 @@ class Fab_OperationOrder(IntEnum):
     def _unit_tests(tracing: str = "") -> None:
         """Perform unit tests on Fab_OperationOrder."""
         if tracing:
-            print(f"{tracing}=>FabOperationOrder._unit_tests()")
+            print(f"{tracing}=>Fab_OperationOrder._unit_tests()")
 
         none = Fab_OperationOrder.NONE
         mount = Fab_OperationOrder.MOUNT
@@ -230,7 +230,7 @@ class Fab_OperationOrder(IntEnum):
         assert double_angle_chamfer < drill < tap < vertical_lathe < slide < last
 
         if tracing:
-            print(f"{tracing}<=FabOperationOrder._unit_tests()")
+            print(f"{tracing}<=Fab_OperationOrder._unit_tests()")
 
 
 # Fab_OperationKind:
@@ -274,7 +274,7 @@ class Fab_OperationKey:
 
     Attributes:
     * *MountFence* (int): The user manage fence index grouping operations within a mount.
-    * *OperationOrder* (FabOperationOrder): The preferred operation order.
+    * *OperationOrder* (Fab_OperationOrder): The preferred operation order.
     * *BitPriority*: (float): A negative number obtained via the getBitPriority method.
     * *ShopIndex* (int): The shop index of the bit to be used.
     * *MachineIndex* (int): The machine index of the bit to be used.
@@ -349,6 +349,7 @@ class Fab_Operation(object):
     Active: bool = field(init=False)
     Prefix: Optional[Fab_Prefix] = field(init=False, repr=False)
     ShopBits: Tuple[Fab_ShopBit, ...] = field(init=False, repr=False)
+    InitialOperationKey: Optional[Fab_OperationKey] = field(init=False, repr=False, compare=False)
 
     # Fab_Operation.__post_init__():
     def __post_init__(self) -> None:
@@ -359,6 +360,7 @@ class Fab_Operation(object):
         self.Active = True
         self.Prefix = None
         self.ShopBits = ()
+        self.InitialOperationKey = None
 
     # Fab_Operation.get_tool_controller():
     # def get_tool_controller(self) -> FabToolController:
@@ -394,12 +396,39 @@ class Fab_Operation(object):
         """Return Fab_Operation name."""
         return self.Name
 
+    # Fab_Operation.getOperationOrder():
+    def getOperationOrder(self, bit: FabBit) -> Fab_OperationOrder:
+        """Return the Fab_OperationOrder for a Fab_Operation."""
+        assert False, (
+            f"Fab_Operation.getOperationOrder(): {type(self)}.getOperationOrder() not implemented")
+
     # Fab_Operation.getInitialOperationKey():
     def getInitialOperationKey(self) -> Fab_OperationKey:
-        """Return the initial Fab_OperationKey for a Fab_Operation."""
-        raise RuntimeError(
-            "Fab_Operation().getInitialOperationKey() "
-            f"not implemented for {type(self)}")  # pragma: no unit cover
+        """Return initial Fab_OperationKey for a Fab_Extrude."""
+        initial_operation_key: Optional[Fab_OperationKey] = self.InitialOperationKey
+        if initial_operation_key is None:
+            best_shop_bit: Fab_ShopBit
+            best_bit_priority: float = 0.0  # 0.0 will be replaces since priorities are negative.
+            shop_bit: Fab_ShopBit
+            index: int
+            for index, shop_bit in enumerate(self.ShopBits):
+                if index == 0 or shop_bit.BitPriority < best_bit_priority:
+                    best_shop_bit = shop_bit
+                    best_bit_priority = shop_bit.BitPriority
+            if best_bit_priority >= 0.0:
+                raise RuntimeError(
+                    "FabExtrude.getInitialOperationKey(): "
+                    f"{self.Mount._Solid.Label}.{self.Mount.Name}.{self.Name}: "
+                    f"no bit found: {self.ShopBits=}")  # pragma: no unit cover
+            fence: int = self.Mount.Fence
+            bit: FabBit = shop_bit.Bit
+            operation_order: Fab_OperationOrder = self.getOperationOrder(bit)
+
+            initial_operation_key = Fab_OperationKey(
+                fence, operation_order, best_shop_bit.BitPriority, best_shop_bit.ShopIndex,
+                best_shop_bit.MachineIndex, best_shop_bit.ToolNumber)
+            self.InitialOperationKey = initial_operation_key
+        return initial_operation_key
 
     # Fab_Operation.getInitialOperationKeyTrampoline():
     def getInitialOperationKeyTrampoline(self) -> Fab_OperationKey:
@@ -498,7 +527,6 @@ class Fab_Extrude(Fab_Operation):
     _StartDepth: float = field(init=False, repr=False, compare=False)
     _StepDown: float = field(init=False, repr=False, compare=False)
     _FinalDepth: float = field(init=False, repr=False, compare=False)
-    _InitialOperationKey: Optional[Fab_OperationKey] = field(init=False, repr=False, compare=False)
 
     # Fab_Extrude.__post_init__():
     def __post_init__(self) -> None:
@@ -531,7 +559,6 @@ class Fab_Extrude(Fab_Operation):
         self._StartDepth = 0.0
         self._StepDown = 3.0
         self._FinalDepth = -self.Depth
-        self._InitialOperationKey = None
         self.Active = self._Contour
         self.Prefix = self.Mount.lookup_prefix(self.Name)
 
@@ -552,44 +579,20 @@ class Fab_Extrude(Fab_Operation):
         """Return Fab_Extrude kind."""
         return "Extrude"
 
-    # Fab_Extrude.getInitialOperationKey():
-    def getInitialOperationKey(self) -> Fab_OperationKey:
-        """Return initial Fab_OperationKey for a Fab_Extrude."""
-        initial_operation_key: Optional[Fab_OperationKey] = self._InitialOperationKey
-        if initial_operation_key is None:
-            best_shop_bit: Fab_ShopBit
-            best_bit_priority: float = 0.0  # 0.0 will be replaces since priorities are negative.
-            shop_bit: Fab_ShopBit
-            index: int
-            for index, shop_bit in enumerate(self.ShopBits):
-                if index == 0 or shop_bit.BitPriority < best_bit_priority:
-                    best_shop_bit = shop_bit
-                    best_bit_priority = shop_bit.BitPriority
-            if best_bit_priority >= 0.0:
-                raise RuntimeError(
-                    "FabExtrude.getInitialOperationKey(): "
-                    f"{self.Mount._Solid.Label}.{self.Mount.Name}.{self.Name}: "
-                    f"no bit found: {self.ShopBits=}")  # pragma: no unit cover
-            fence: int = self.Mount.Fence
-            operation_order: Optional[Fab_OperationOrder] = None
-            bit: FabBit = shop_bit.Bit
-            if isinstance(bit, FabEndMillBit):
-                operation_order = Fab_OperationOrder.END_MILL_EXTERIOR
-            elif isinstance(bit, FabVBit):  # pragma: no unit cover
-                # A mill drill is represented as a FabVBit.
-                operation_order = Fab_OperationOrder.MILL_DRILL_EXTERIOR
-            else:
-                raise RuntimeError(
-                    f"FabExtrude, Fab_Extrude.getInitialOperationKey(): Got {type(bit)} "
-                    "which is neither FabEndMillBit nor FabMillDrillBit")  # pragma: no unit cover
-
-            initial_operation_key = Fab_OperationKey(
-                fence, operation_order, best_shop_bit.BitPriority, best_shop_bit.ShopIndex,
-                best_shop_bit.MachineIndex, best_shop_bit.ToolNumber)
-            self.InitialOperationKey = initial_operation_key
-        return initial_operation_key
-    # Fab_OperationKey(MountFence, OperationOrder, BitPriority, ShopIndex, MachineIndex, ToolNumber)
-    # Fab_ShopBit(BitPriority, Shop, ShopIndex, Machine, MachineIndex, Bit, Number)
+    # Fab_Extrude.getOperationOrder():
+    def getOperationOrder(self, bit: FabBit) -> Fab_OperationOrder:
+        """Return the Fab_OperationOrder for a Fab_Operation."""
+        operation_order: Fab_OperationOrder = Fab_OperationOrder.NONE
+        if isinstance(bit, FabEndMillBit):
+            operation_order = Fab_OperationOrder.END_MILL_EXTERIOR
+        elif isinstance(bit, FabVBit):  # pragma: no unit cover
+            # A mill drill is represented as a FabVBit.
+            operation_order = Fab_OperationOrder.MILL_DRILL_EXTERIOR
+        else:
+            raise RuntimeError(
+                f"FabExtrude, Fab_Extrude.getOperationOrder {type(bit)} "
+                "which is neither FabEndMillBit nor FabMillDrillBit")  # pragma: no unit cover
+        return operation_order
 
     # Fab_Extrude.getHash():
     def getHash(self) -> Tuple[Any, ...]:
@@ -784,7 +787,6 @@ class Fab_Pocket(Fab_Operation):
     _TopDepth: float = field(init=False, repr=False)
     _StartDepth: float = field(init=False, repr=False)
     _StepDepth: float = field(init=False, repr=False)
-    _InitialOperationKey: Optional[Fab_OperationKey] = field(init=False, repr=False)
 
     # Fab_Pocket.__post_init__():
     def __post_init__(self) -> None:
@@ -815,7 +817,6 @@ class Fab_Pocket(Fab_Operation):
                 f"Fab_Extrude.__post_init__({self.Name}):"
                 f"Depth ({self.Depth}) is not positive.")  # pragma: no unit cover
         self._BottomPath = None
-        self._InitialOperationKey = None
 
         # Unpack some values from *mount*:
         mount: FabMount = self.Mount
@@ -900,41 +901,17 @@ class Fab_Pocket(Fab_Operation):
         if tracing:
             print(f"{tracing}<=Fab_Pocket.post_produce1()")
 
-    # Fab_Pocket.getInitialOperationKey():
-    def getInitialOperationKey(self) -> Fab_OperationKey:
-        """Return initial Fab_OperationKey for a Fab_Pocket."""
-        initial_operation_key: Optional[Fab_OperationKey] = self._InitialOperationKey
-        if initial_operation_key is None:
-            best_shop_bit: Fab_ShopBit
-            best_bit_priority: float = 0.0  # 0.0 will be replaces since priorities are negative.
-            shop_bit: Fab_ShopBit
-            index: int
-            for index, shop_bit in enumerate(self.ShopBits):
-                if index == 0 or shop_bit.BitPriority < best_bit_priority:
-                    best_shop_bit = shop_bit
-                    best_bit_priority = shop_bit.BitPriority
-            if best_bit_priority >= 0.0:
-                raise RuntimeError(
-                    "FabExtrude.getInitialOperationKey(): "
-                    f"{self.Mount._Solid.Label}.{self.Mount.Name}.{self.Name}: "
-                    f"no bit found: {self.ShopBits=}")  # pragma: no unit cover
-            fence: int = self.Mount.Fence
-            operation_order: Optional[Fab_OperationOrder] = None
-            bit: FabBit = shop_bit.Bit
-            if isinstance(bit, FabEndMillBit):
-                operation_order = Fab_OperationOrder.END_MILL_POCKET
-            else:
-                raise RuntimeError(
-                    f"FabExtrude, Fab_Pocket.getInitialOperationKey(): Got {type(bit)} "
-                    "which is neither FabEndMillBit nor FabMillDrillBit")  # pragma: no unit cover
-
-            initial_operation_key = Fab_OperationKey(
-                fence, operation_order, best_shop_bit.BitPriority, best_shop_bit.ShopIndex,
-                best_shop_bit.MachineIndex, best_shop_bit.ToolNumber)
-            self.InitialOperationKey = initial_operation_key
-        return initial_operation_key
-    # Fab_OperationKey(MountFence, OperationOrder, BitPriority, ShopIndex, MachineIndex, ToolNumber)
-    # Fab_ShopBit(BitPriority, Shop, ShopIndex, Machine, MachineIndex, Bit, Number)
+    # Fab_Pocket.getOperationOrder():
+    def getOperationOrder(self, bit: FabBit) -> Fab_OperationOrder:
+        """Return the Fab_OperationOrder for a Fab_Operation."""
+        operation_order: Fab_OperationOrder = Fab_OperationOrder.NONE
+        if isinstance(bit, FabEndMillBit):
+            operation_order = Fab_OperationOrder.END_MILL_POCKET
+        else:
+            raise RuntimeError(
+                f"FabExtrude, Fab_Pockt.getOperationOrder {type(bit)} "
+                "is not a FabEndMillBit")  # pragma: no unit cover
+        return operation_order
 
     # Fab_Pocket.Geometries():
     @property
@@ -1170,7 +1147,6 @@ class Fab_Hole(Fab_Operation):
     StartDepth: float = field(init=False, repr=False)
     StepFile: str = field(init=False, repr=False)
     Prefix: Optional[Fab_Prefix] = field(init=False, repr=False)
-    InitialOperationKey: Optional[Fab_OperationKey] = field(init=False, repr=False)
 
     # Fab_Hole.__post_init__():
     def __post_init__(self) -> None:
@@ -1186,7 +1162,6 @@ class Fab_Hole(Fab_Operation):
         self.StartDepth = 0.0
         self.StepFile = ""
         self.Prefix = self.Mount.lookup_prefix(self.Name)
-        self.InitialOperationKey = None
 
     # Fab_Hole.get_kind():
     def get_kind(self) -> str:
@@ -1208,32 +1183,17 @@ class Fab_Hole(Fab_Operation):
             hashes.append(f"{center.z:.6f}")
         return tuple(hashes)
 
-    # Fab_Hole.getInitialOperationKey():
-    def getInitialOperationKey(self) -> Fab_OperationKey:
-        """Return initial Fab_OperationKey for a Fab_Operation."""
-        initial_operation_key: Optional[Fab_OperationKey] = self.InitialOperationKey
-        if initial_operation_key is None:
-            best_shop_bit: Fab_ShopBit
-            best_bit_priority: float = 0.0  # 0.0 will be replaced since priorities are negative.
-            shop_bit: Fab_ShopBit
-            index: int
-            for index, shop_bit in enumerate(self.ShopBits):
-                if index == 0 or shop_bit.BitPriority < best_bit_priority:
-                    best_shop_bit = shop_bit
-                    best_bit_priority = shop_bit.BitPriority
-            if best_bit_priority >= 0.0:
-                raise RuntimeError(
-                    "FabExtrude.getInitialOperationKey(): "
-                    f"{self.Mount._Solid.Label}.{self.Mount.Name}.{self.Name}: "
-                    f"no bit found: {self.ShopBits=}")  # pragma: no unit cover
-
-            fence: int = self.Mount.Fence
-            operation_order: Fab_OperationOrder = Fab_OperationOrder.DRILL
-            initial_operation_key = Fab_OperationKey(
-                fence, operation_order, best_shop_bit.BitPriority, best_shop_bit.ShopIndex,
-                best_shop_bit.MachineIndex, best_shop_bit.ToolNumber)
-            self.InitialOperationKey = initial_operation_key
-        return initial_operation_key
+    # Fab_Hole.getOperationOrder():
+    def getOperationOrder(self, bit: FabBit) -> Fab_OperationOrder:
+        """Return the Fab_OperationOrder for a Fab_Operation."""
+        operation_order: Fab_OperationOrder = Fab_OperationOrder.NONE
+        if isinstance(bit, FabDrillBit):
+            operation_order = Fab_OperationOrder.DRILL
+        else:
+            raise RuntimeError(
+                f"FabExtrude, Fab_Pocket.getOperationOrder {type(bit)} "
+                "is not a FabDrillBit")  # pragma: no unit cover
+        return operation_order
 
     # Fab_Hole.post_produce1():
     def post_produce1(
