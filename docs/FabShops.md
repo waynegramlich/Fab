@@ -271,7 +271,7 @@ Attributes:
 * *Machine* (FabMachine): The machine that can use the tool bit.
 * *MachineIndex* (int): The machine precedence order (lower values sort first.)
 * *Bit*: (FabBit): The machine tool bit.
-* *Number*: (int): The tool bit number to use in generated G-Code.
+* *ToolNumber*: (int): The tool bit number to use in generated G-Code.
 
 Constructor:
 * Fab_ShopBit(BitPriority, Shop, ShopIndex, Machine, MachineIndex, Bit, Number)

@@ -31,7 +31,7 @@ from FabJoins import FabFasten, FabJoin
 from FabNodes import FabBox, FabNode, Fab_Prefix, Fab_ProduceState
 # from FabShops import FabCNC, FabMachine, FabShop
 # from FabTools import FabLibrary
-from FabToolBits import FabDrillBit, FabEndMillBit
+from FabToolBits import FabDrillBit, FabEndMillBit, FabVBit
 from FabToolTemplates import FabBit
 from FabUtilities import FabColor, FabToolController
 from FabShops import Fab_ShopBit, FabShops
@@ -187,8 +187,7 @@ class Fab_OperationOrder(IntEnum):
     MILL_DRILL_CHAMFER = auto()
     MILL_DRILL = auto()
     END_MILL_DRILL = auto()
-    END_MILL_ROUND_POCKET = auto()
-    END_MILL_SIMPLE_POCKET = auto()
+    END_MILL_POCKET = auto()
     MILL_DRILL_POCKET_CHAMFER = auto()
     MILL_DOVE_TAIL_CHAMFER = auto()
     DOUBLE_ANGLE_V_GROOVE = auto()
@@ -214,8 +213,7 @@ class Fab_OperationOrder(IntEnum):
         mill_drill_countersink = Fab_OperationOrder.MILL_DRILL_COUNTERSINK
         mill_drill = Fab_OperationOrder.MILL_DRILL
         end_mill_drill = Fab_OperationOrder.END_MILL_DRILL
-        end_mill_round_pocket = Fab_OperationOrder.END_MILL_ROUND_POCKET
-        end_mill_simple_pocket = Fab_OperationOrder.END_MILL_SIMPLE_POCKET
+        end_mill_pocket = Fab_OperationOrder.END_MILL_POCKET
         mill_drill_pocket_chamfer = Fab_OperationOrder.MILL_DRILL_POCKET_CHAMFER
         mill_dove_tail_chamfer = Fab_OperationOrder.MILL_DOVE_TAIL_CHAMFER
         double_angle_v_groove = Fab_OperationOrder.DOUBLE_ANGLE_V_GROOVE
@@ -227,8 +225,7 @@ class Fab_OperationOrder(IntEnum):
         last = Fab_OperationOrder.LAST
         assert none < mount < pin < end_mill < mill_drill_exterior < mill_drill_chamfer
         assert mill_drill_countersink < mill_drill_chamfer < mill_drill < end_mill_drill
-        assert mill_drill < end_mill_round_pocket < end_mill_simple_pocket
-        assert end_mill_simple_pocket < mill_drill_pocket_chamfer < mill_dove_tail_chamfer
+        assert mill_drill < end_mill_pocket < mill_drill_pocket_chamfer < mill_dove_tail_chamfer
         assert mill_dove_tail_chamfer < double_angle_v_groove < double_angle_chamfer
         assert double_angle_chamfer < drill < tap < vertical_lathe < slide < last
 
@@ -273,25 +270,27 @@ class Fab_OperationKind(IntEnum):
 # Fab_OperationKey:
 @dataclass(frozen=True, order=True)
 class Fab_OperationKey:
-    """Fab_OperationKey: Provides a sorting key for Fab_Opertions.
+    """Fab_OperationKey: Provides a sorting key for Fab_Operations.
 
     Attributes:
     * *MountFence* (int): The user manage fence index grouping operations within a mount.
+    * *OperationOrder* (FabOperationOrder): The preferred operation order.
+    * *BitPriority*: (float): A negative number obtained via the getBitPriority method.
     * *ShopIndex* (int): The shop index of the bit to be used.
     * *MachineIndex* (int): The machine index of the bit to be used.
-    * *Order*: (Fab_OperationOrder): The preferred order for operations.
-    * *BitPriority*: (float): A negative number obtained via the getBitPriority method.
+    * *ToolNumber* (int): The Tool number for the tool.
 
     Constructor:
-    * Fab_OperationKey(MountFence, ShopIndex, MachineIndex, Order, BitPriority)
+    * Fab_OperationKey(MountFence, OperationOrder, BitPriority, ShopIndex, MachineIndex, ToolNumber)
 
     """
 
     MountFence: int
+    OperationOrder: Fab_OperationOrder
+    BitPriority: float
     ShopIndex: int
     MachineIndex: int
-    Order: Fab_OperationOrder
-    BitPriority: float
+    ToolNumber: int
 
     # Fab_OperationKey.__post_init__():
     def __post_init__(self) -> None:
@@ -305,9 +304,9 @@ class Fab_OperationKey:
         if tracing:
             print(f"{tracing}=>Fab_OperationKey._unitTests()")
         key1: Fab_OperationKey = Fab_OperationKey(
-            0, 0, 0, Fab_OperationOrder.MILL_DRILL_EXTERIOR, -1.0)
+            0, Fab_OperationOrder.MILL_DRILL_EXTERIOR, -1.0, 0, 0, 1)
         key2: Fab_OperationKey = Fab_OperationKey(
-            0, 0, 0, Fab_OperationOrder.MILL_DRILL_COUNTERSINK, -1.0)
+            0, Fab_OperationOrder.MILL_DRILL_COUNTERSINK, -1.0, 0, 0, 2)
         assert key1 < key2
         if tracing:
             print(f"{tracing}<=Fab_OperationKey._unitTests()")
@@ -319,8 +318,9 @@ class Fab_Operation(object):
     """Fab_Operation: An base class for FabMount operations.
 
     Attributes:
-    * *Mount* (FabMount): The FabMount to use for performing operations.
     * *Name* (str): The name of the Fab_Operation.
+    * *Mount* (FabMount): The FabMount to use for performing operations.
+    * *Fence* (int): Used to order sub groups of operations.
 
     Extra Computed Attributes:
     * *ToolController* (Optional[FabToolController]):
@@ -336,12 +336,13 @@ class Fab_Operation(object):
       The prefix information to use for file name generation.
 
     Constructor:
-    * Fab_Operation(Mount, "Name")
+    * Fab_Operation("Name", Mount, Fence)
 
     """
 
-    Mount: "FabMount" = field(repr=False, compare=False)
     Name: str
+    Mount: "FabMount" = field(repr=False, compare=False)
+    Fence: int
     ToolController: Optional[FabToolController] = field(init=False, repr=False)
     ToolControllerIndex: int = field(init=False)
     JsonEnabled: bool = field(init=False)
@@ -352,9 +353,6 @@ class Fab_Operation(object):
     # Fab_Operation.__post_init__():
     def __post_init__(self) -> None:
         """Initialize Fab_Operation."""
-        # TODO: Enable check:
-        # if not self.Mount.is_mount():
-        #   raise RuntimeError("Fab_Operation.__post_init__(): {type(self.Mount)} is not FabMount")
         self.ToolController = None
         self.ToolControllerIndex = -1  # Unassigned.
         self.JsonEnabled = True
@@ -395,6 +393,18 @@ class Fab_Operation(object):
     def get_name(self) -> str:
         """Return Fab_Operation name."""
         return self.Name
+
+    # Fab_Operation.getInitialOperationKey():
+    def getInitialOperationKey(self) -> Fab_OperationKey:
+        """Return the initial Fab_OperationKey for a Fab_Operation."""
+        raise RuntimeError(
+            "Fab_Operation().getInitialOperationKey() "
+            f"not implemented for {type(self)}")  # pragma: no unit cover
+
+    # Fab_Operation.getInitialOperationKeyTrampoline():
+    def getInitialOperationKeyTrampoline(self) -> Fab_OperationKey:
+        """Get the initial operation key for a Fab_Operation."""
+        return self.getInitialOperationKey()
 
     # Fab_Operation.getHash():
     def getHash(self) -> Tuple[Any, ...]:
@@ -464,6 +474,7 @@ class Fab_Extrude(Fab_Operation):
     Attributes:
     * *Mount* (FabMount): The FabMount to use for performing operations.
     * *Name* (str): The FabExtrude operation name.
+    * *Fence* (int): The fence sub-group to stay in.
     * *Geometry* (Union[FabGeometry, Tuple[FabGeometry, ...]):
       The FabGeometry (i.e. FabPolygon or FabCircle) or a tuple of FabGeometry's to extrude with.
       When the tuple is used, the largest FabGeometry (which is traditionally the first one)
@@ -474,7 +485,7 @@ class Fab_Extrude(Fab_Operation):
     See Fab_Operation for extra computed Attributes.
 
     Constructor:
-    * Fab_Extrude(Mount, "Name", Geometry, Depth, Contour)
+    * Fab_Extrude("Name", Mount, Fence, Geometry, Depth, Contour)
 
     """
 
@@ -483,10 +494,11 @@ class Fab_Extrude(Fab_Operation):
     _Contour: bool
     # TODO: Make _Geometries be comparable.
     _Geometries: Tuple[FabGeometry, ...] = field(init=False, repr=False, compare=False)
-    _StepFile: str = field(init=False)
-    _StartDepth: float = field(init=False)
-    _StepDown: float = field(init=False)
-    _FinalDepth: float = field(init=False)
+    _StepFile: str = field(init=False, repr=False, compare=False)
+    _StartDepth: float = field(init=False, repr=False, compare=False)
+    _StepDown: float = field(init=False, repr=False, compare=False)
+    _FinalDepth: float = field(init=False, repr=False, compare=False)
+    _InitialOperationKey: Optional[Fab_OperationKey] = field(init=False, repr=False, compare=False)
 
     # Fab_Extrude.__post_init__():
     def __post_init__(self) -> None:
@@ -519,6 +531,7 @@ class Fab_Extrude(Fab_Operation):
         self._StartDepth = 0.0
         self._StepDown = 3.0
         self._FinalDepth = -self.Depth
+        self._InitialOperationKey = None
         self.Active = self._Contour
         self.Prefix = self.Mount.lookup_prefix(self.Name)
 
@@ -539,6 +552,45 @@ class Fab_Extrude(Fab_Operation):
         """Return Fab_Extrude kind."""
         return "Extrude"
 
+    # Fab_Extrude.getInitialOperationKey():
+    def getInitialOperationKey(self) -> Fab_OperationKey:
+        """Return initial Fab_OperationKey for a Fab_Extrude."""
+        initial_operation_key: Optional[Fab_OperationKey] = self._InitialOperationKey
+        if initial_operation_key is None:
+            best_shop_bit: Fab_ShopBit
+            best_bit_priority: float = 0.0  # 0.0 will be replaces since priorities are negative.
+            shop_bit: Fab_ShopBit
+            index: int
+            for index, shop_bit in enumerate(self.ShopBits):
+                if index == 0 or shop_bit.BitPriority < best_bit_priority:
+                    best_shop_bit = shop_bit
+                    best_bit_priority = shop_bit.BitPriority
+            if best_bit_priority >= 0.0:
+                raise RuntimeError(
+                    "FabExtrude.getInitialOperationKey(): "
+                    f"{self.Mount._Solid.Label}.{self.Mount.Name}.{self.Name}: "
+                    f"no bit found: {self.ShopBits=}")  # pragma: no unit cover
+            fence: int = self.Mount.Fence
+            operation_order: Optional[Fab_OperationOrder] = None
+            bit: FabBit = shop_bit.Bit
+            if isinstance(bit, FabEndMillBit):
+                operation_order = Fab_OperationOrder.END_MILL_EXTERIOR
+            elif isinstance(bit, FabVBit):  # pragma: no unit cover
+                # A mill drill is represented as a FabVBit.
+                operation_order = Fab_OperationOrder.MILL_DRILL_EXTERIOR
+            else:
+                raise RuntimeError(
+                    f"FabExtrude, Fab_Extrude.getInitialOperationKey(): Got {type(bit)} "
+                    "which is neither FabEndMillBit nor FabMillDrillBit")  # pragma: no unit cover
+
+            initial_operation_key = Fab_OperationKey(
+                fence, operation_order, best_shop_bit.BitPriority, best_shop_bit.ShopIndex,
+                best_shop_bit.MachineIndex, best_shop_bit.ToolNumber)
+            self.InitialOperationKey = initial_operation_key
+        return initial_operation_key
+    # Fab_OperationKey(MountFence, OperationOrder, BitPriority, ShopIndex, MachineIndex, ToolNumber)
+    # Fab_ShopBit(BitPriority, Shop, ShopIndex, Machine, MachineIndex, Bit, Number)
+
     # Fab_Extrude.getHash():
     def getHash(self) -> Tuple[Any, ...]:
         """Return hash for Fab_Extrude operation."""
@@ -557,7 +609,7 @@ class Fab_Extrude(Fab_Operation):
         tracing = "      "
         # next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}<=>Fab_Extrude.post_produce1('{self.Name}')")
+            print(f"{tracing}=>Fab_Extrude.post_produce1('{self.Name}')")
 
         depth: float = self.Depth
         geometries: Tuple[FabGeometry, ...] = self._Geometries
@@ -570,7 +622,7 @@ class Fab_Extrude(Fab_Operation):
         # Deal with *exterior_info* first:
         exterior_info: FabGeometryInfo = exterior.GeometryInfo
         if tracing:
-            print(f"{tracing}{plane=} {exterior=} {exterior_info=}")
+            print(f"{tracing}{plane=} {exterior_info=}")
         area: float = exterior_info.Area
         perimeter: float = exterior_info.Perimeter
         internal_radius: float = exterior_info.MinimumInternalRadius
@@ -578,34 +630,38 @@ class Fab_Extrude(Fab_Operation):
         if tracing:
             print(f"{tracing}{area=} {perimeter=} {internal_radius=} {external_radius=}")
         internal_radius = max(0.0, exterior_info.MinimumInternalRadius)  # no internals: -1.0=>0.0
-        maximum_diameter = 2.0 * internal_radius
+        maximum_diameter = 2.0 * internal_radius if internal_radius > 0.0 else 987654321.0
         if tracing:
             print(f"{tracing}")
             print(f"{tracing}{self.Name=} {maximum_diameter=} {depth=}")
 
         # Search *drill_shop_bits* and fill in *matching_shop_bits*:
         shops: FabShops = produce_state.Shops
-        pocket_shop_bits: Tuple[Fab_ShopBit, ...] = shops.PocketShopBits
-        pocket_shop_bit: Fab_ShopBit
+        contour_shop_bits: Tuple[Fab_ShopBit, ...] = shops.ContourShopBits
+        assert len(contour_shop_bits) > 0
+        shop_bit: Fab_ShopBit
+        allowed_bit_types: Tuple[type, ...] = (FabEndMillBit, FabVBit)  # MillDrill=>FabVBit
         matching_shop_bits: List[Fab_ShopBit] = []
         index: int
-        for index, pocket_shop_bit in enumerate(pocket_shop_bits):
-            end_mill_bit: FabBit = pocket_shop_bit.Bit
+        for index, shop_bit in enumerate(contour_shop_bits):
+            contour_bit: FabBit = shop_bit.Bit
             if tracing:
-                print(f"{tracing}EndMill[{index}]: {end_mill_bit.Name}")
-            assert isinstance(end_mill_bit, FabEndMillBit)
-            end_mill_bit_length: Union[float, int] = end_mill_bit.getNumber("Length")
-            end_mill_bit_diameter: Union[float, int] = end_mill_bit.getNumber("Diameter")
-            length_ok: bool = depth <= end_mill_bit_length
-            diameter_ok: bool = end_mill_bit_diameter <= maximum_diameter
+                print(f"{tracing}EndMill[{index}]: {contour_bit.Name}")
+            assert isinstance(contour_bit, allowed_bit_types), (
+                f"FabExtrude.produce1(): {type(contour_bit)} is not one of {allowed_bit_types}")
+            contour_bit_length: Union[float, int] = contour_bit.getNumber("Length")
+            contour_bit_diameter: Union[float, int] = contour_bit.getNumber("Diameter")
+            length_ok: bool = depth <= contour_bit_length
+            diameter_ok: bool = contour_bit_diameter <= maximum_diameter
             if tracing:
-                print(f"{tracing}{depth=} {end_mill_bit_length}")
-                print(f"{tracing}{maximum_diameter=} {end_mill_bit_diameter=}")
+                print(f"{tracing}{depth=} {contour_bit_length}")
+                print(f"{tracing}{maximum_diameter=} {contour_bit_diameter=}")
                 print(f"{tracing}{length_ok=} {diameter_ok=}")
             if length_ok and diameter_ok:
                 if tracing:
                     print(f"{tracing}Match!")
-                matching_shop_bits.append(pocket_shop_bit)  # pragma: no unit cover
+                matching_shop_bits.append(shop_bit)
+        assert len(matching_shop_bits) > 0
 
         # For now, fail horribly if there are no *matching_shop_bits*:
         # assert len(matching_shop_bits) > 0
@@ -697,8 +753,9 @@ class Fab_Pocket(Fab_Operation):
     """Fab_Pocket: Represents a pocketing operation.
 
     Attributes:
-    * Mount (FabMount): The FabMount to use for pocketing.
     * Name (str): The operation name.
+    * Mount (FabMount): The FabMount to use for pocketing.
+    * *Fence* (int): Used to order sub groups of operations.
     * Geometries (Tuple[FabGeometry, ...]):
       The FabGeomety's that specify the pocket.  The first one must be the outer most pocket
       contour.  The remaining FabGeometries must be pocket "islands".  All islands must be
@@ -727,6 +784,7 @@ class Fab_Pocket(Fab_Operation):
     _TopDepth: float = field(init=False, repr=False)
     _StartDepth: float = field(init=False, repr=False)
     _StepDepth: float = field(init=False, repr=False)
+    _InitialOperationKey: Optional[Fab_OperationKey] = field(init=False, repr=False)
 
     # Fab_Pocket.__post_init__():
     def __post_init__(self) -> None:
@@ -757,6 +815,7 @@ class Fab_Pocket(Fab_Operation):
                 f"Fab_Extrude.__post_init__({self.Name}):"
                 f"Depth ({self.Depth}) is not positive.")  # pragma: no unit cover
         self._BottomPath = None
+        self._InitialOperationKey = None
 
         # Unpack some values from *mount*:
         mount: FabMount = self.Mount
@@ -840,6 +899,42 @@ class Fab_Pocket(Fab_Operation):
 
         if tracing:
             print(f"{tracing}<=Fab_Pocket.post_produce1()")
+
+    # Fab_Pocket.getInitialOperationKey():
+    def getInitialOperationKey(self) -> Fab_OperationKey:
+        """Return initial Fab_OperationKey for a Fab_Pocket."""
+        initial_operation_key: Optional[Fab_OperationKey] = self._InitialOperationKey
+        if initial_operation_key is None:
+            best_shop_bit: Fab_ShopBit
+            best_bit_priority: float = 0.0  # 0.0 will be replaces since priorities are negative.
+            shop_bit: Fab_ShopBit
+            index: int
+            for index, shop_bit in enumerate(self.ShopBits):
+                if index == 0 or shop_bit.BitPriority < best_bit_priority:
+                    best_shop_bit = shop_bit
+                    best_bit_priority = shop_bit.BitPriority
+            if best_bit_priority >= 0.0:
+                raise RuntimeError(
+                    "FabExtrude.getInitialOperationKey(): "
+                    f"{self.Mount._Solid.Label}.{self.Mount.Name}.{self.Name}: "
+                    f"no bit found: {self.ShopBits=}")  # pragma: no unit cover
+            fence: int = self.Mount.Fence
+            operation_order: Optional[Fab_OperationOrder] = None
+            bit: FabBit = shop_bit.Bit
+            if isinstance(bit, FabEndMillBit):
+                operation_order = Fab_OperationOrder.END_MILL_POCKET
+            else:
+                raise RuntimeError(
+                    f"FabExtrude, Fab_Pocket.getInitialOperationKey(): Got {type(bit)} "
+                    "which is neither FabEndMillBit nor FabMillDrillBit")  # pragma: no unit cover
+
+            initial_operation_key = Fab_OperationKey(
+                fence, operation_order, best_shop_bit.BitPriority, best_shop_bit.ShopIndex,
+                best_shop_bit.MachineIndex, best_shop_bit.ToolNumber)
+            self.InitialOperationKey = initial_operation_key
+        return initial_operation_key
+    # Fab_OperationKey(MountFence, OperationOrder, BitPriority, ShopIndex, MachineIndex, ToolNumber)
+    # Fab_ShopBit(BitPriority, Shop, ShopIndex, Machine, MachineIndex, Bit, Number)
 
     # Fab_Pocket.Geometries():
     @property
@@ -1050,8 +1145,9 @@ class Fab_Hole(Fab_Operation):
     """Fab_Hole: FabDrill helper class that represents one or more holes related holes.
 
     Attributes:
-    * Mount (FabMount): The FabMount for the hole operation.
     * Name (str)
+    * Mount (FabMount): The FabMount for the hole operation.
+    * *Fence* (int): Used to order sub groups of operations.
     * Key (FabHoleKey): The hole key used for grouping holes.
     * Join (FabJoin): The associated FabJoin the produced the hole.
     * Centers (Tuple[Vector, ...]): The associated start centers.
@@ -1067,13 +1163,14 @@ class Fab_Hole(Fab_Operation):
     """
 
     Key: Fab_HoleKey
-    Centers: Tuple[Vector, ...]  # The Center (start point) of the drils
+    Centers: Tuple[Vector, ...]  # The Center (start point) of the drills
     Join: FabJoin = field(repr=False)  # The associated FabJoin
     Depth: float  # Hole depth
-    HolesCount: int = field(init=False)  # Number of holes in this opertation
-    StartDepth: float = field(init=False)
-    StepFile: str = field(init=False)
-    Prefix: Optional[Fab_Prefix] = field(init=False)
+    HolesCount: int = field(init=False, repr=False)  # Number of holes in this operation
+    StartDepth: float = field(init=False, repr=False)
+    StepFile: str = field(init=False, repr=False)
+    Prefix: Optional[Fab_Prefix] = field(init=False, repr=False)
+    InitialOperationKey: Optional[Fab_OperationKey] = field(init=False, repr=False)
 
     # Fab_Hole.__post_init__():
     def __post_init__(self) -> None:
@@ -1089,6 +1186,7 @@ class Fab_Hole(Fab_Operation):
         self.StartDepth = 0.0
         self.StepFile = ""
         self.Prefix = self.Mount.lookup_prefix(self.Name)
+        self.InitialOperationKey = None
 
     # Fab_Hole.get_kind():
     def get_kind(self) -> str:
@@ -1109,6 +1207,33 @@ class Fab_Hole(Fab_Operation):
             hashes.append(f"{center.y:.6f}")
             hashes.append(f"{center.z:.6f}")
         return tuple(hashes)
+
+    # Fab_Hole.getInitialOperationKey():
+    def getInitialOperationKey(self) -> Fab_OperationKey:
+        """Return initial Fab_OperationKey for a Fab_Operation."""
+        initial_operation_key: Optional[Fab_OperationKey] = self.InitialOperationKey
+        if initial_operation_key is None:
+            best_shop_bit: Fab_ShopBit
+            best_bit_priority: float = 0.0  # 0.0 will be replaced since priorities are negative.
+            shop_bit: Fab_ShopBit
+            index: int
+            for index, shop_bit in enumerate(self.ShopBits):
+                if index == 0 or shop_bit.BitPriority < best_bit_priority:
+                    best_shop_bit = shop_bit
+                    best_bit_priority = shop_bit.BitPriority
+            if best_bit_priority >= 0.0:
+                raise RuntimeError(
+                    "FabExtrude.getInitialOperationKey(): "
+                    f"{self.Mount._Solid.Label}.{self.Mount.Name}.{self.Name}: "
+                    f"no bit found: {self.ShopBits=}")  # pragma: no unit cover
+
+            fence: int = self.Mount.Fence
+            operation_order: Fab_OperationOrder = Fab_OperationOrder.DRILL
+            initial_operation_key = Fab_OperationKey(
+                fence, operation_order, best_shop_bit.BitPriority, best_shop_bit.ShopIndex,
+                best_shop_bit.MachineIndex, best_shop_bit.ToolNumber)
+            self.InitialOperationKey = initial_operation_key
+        return initial_operation_key
 
     # Fab_Hole.post_produce1():
     def post_produce1(
@@ -1145,12 +1270,15 @@ class Fab_Hole(Fab_Operation):
         else:
             # Create a FabPocket for each hole *center*:
             mount_plane: FabPlane = self.Mount.Plane
+            mount: FabMount = self.Mount
+            fence: int = self.Fence
             center: Vector
             index: int
             for index, center in enumerate(self.Centers):
                 circle_geometry: FabCircle = FabCircle(mount_plane, center, diameter)
                 pocket_name: str = f"{self.Name}_{index}"
-                pocket: Fab_Pocket = Fab_Pocket(self.Mount, pocket_name, (circle_geometry,), depth)
+                pocket: Fab_Pocket = Fab_Pocket(
+                    pocket_name, mount, fence, (circle_geometry,), depth)
                 pocket.post_produce1(produce_state, expanded_operations, tracing=next_tracing)
 
         if tracing:
@@ -1372,10 +1500,16 @@ class FabMount(object):
             print(f"{tracing}{self._Depth=} {self._GeometryContext=}")
             print(f"{tracing}<=FabMount({self.Name}).__post_init__()")
 
+    # FabMount.Fenct():
+    @property
+    def Fence(self) -> int:
+        """Return the FabMount fence operations sub-group number."""
+        return self._Fence
+
     # FabMount.Name():
     @property
     def Name(self) -> str:
-        """Return the FabMoun name."""
+        """Return the FabMount name."""
         return self._Name
 
     # FabMount.Solid:
@@ -1479,6 +1613,9 @@ class FabMount(object):
         operation: Fab_Operation
         for operation in self._Operations:
             operation.post_produce1(produce_state, expanded_operations, tracing=next_tracing)
+
+        expanded_operations.sort(key=Fab_Operation.getInitialOperationKeyTrampoline)
+
         self._Operations = expanded_operations
         if tracing:
             print(f"{tracing}=>FabMount.post_produce1('{self.Name}'): "
@@ -1486,7 +1623,7 @@ class FabMount(object):
 
     # FabMount.post_produce2():
     def post_produce2(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
-        """Perform FabMount phase 1 post procduction."""
+        """Perform FabMount phase 1 post production."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabMount.post_produce2('{self.Name}')")
@@ -1586,7 +1723,7 @@ class FabMount(object):
         self._Solid.enclose(boxes)
 
         # Create and record the *extrude*:
-        extrude: Fab_Extrude = Fab_Extrude(self, name, shapes, depth, contour)
+        extrude: Fab_Extrude = Fab_Extrude(name, self, self._Fence, shapes, depth, contour)
         self.record_operation(extrude)
 
         if tracing:
@@ -1612,7 +1749,7 @@ class FabMount(object):
         assert check_argument_types()
         if isinstance(shapes, FabGeometry):
             shapes = (shapes,)
-        pocket: Fab_Pocket = Fab_Pocket(self, name, shapes, depth)
+        pocket: Fab_Pocket = Fab_Pocket(name, self, self._Fence, shapes, depth)
         self.record_operation(pocket)
 
         if tracing:
@@ -1644,6 +1781,7 @@ class FabMount(object):
 
         # Collects compatible holes in *hole_groups*:
         HoleInfo = Tuple[FabJoin, int, Vector, str]  # (join, joint_index, trimmed_start, name)
+        fence: int = self._Fence
         hole_info: HoleInfo
         hole_groups: Dict[Fab_HoleKey, List[HoleInfo]] = {}
         hole_name: str
@@ -1697,7 +1835,7 @@ class FabMount(object):
             for join, join_index, trimmed_start, hole_name in hole_infos:
                 trimmed_starts.append(trimmed_start)
             centers: Tuple[Vector, ...] = tuple(trimmed_starts)
-            grouped_hole = Fab_Hole(self, hole_name, hole_key, centers, join, hole_key.Depth)
+            grouped_hole = Fab_Hole(hole_name, self, fence, hole_key, centers, join, hole_key.Depth)
             grouped_holes.append(grouped_hole)
 
         hole_index: int

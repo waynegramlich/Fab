@@ -785,7 +785,7 @@ class Fab_ShopBit(object):
     * *Machine* (FabMachine): The machine that can use the tool bit.
     * *MachineIndex* (int): The machine precedence order (lower values sort first.)
     * *Bit*: (FabBit): The machine tool bit.
-    * *Number*: (int): The tool bit number to use in generated G-Code.
+    * *ToolNumber*: (int): The tool bit number to use in generated G-Code.
 
     Constructor:
     * Fab_ShopBit(BitPriority, Shop, ShopIndex, Machine, MachineIndex, Bit, Number)
@@ -798,7 +798,7 @@ class Fab_ShopBit(object):
     Machine: FabMachine = field(compare=False, repr=False)
     MachineIndex: int
     Bit: FabBit = field(compare=False, repr=False)
-    Number: int
+    ToolNumber: int
 
     # Fab_ShopBit.__post_init__():
     def __post_init__(self) -> None:
@@ -809,7 +809,7 @@ class Fab_ShopBit(object):
         check_type("Fab_ShopBit.Machine", self.Machine, FabMachine)
         check_type("Fab_ShopBit.MachineIndex", self.MachineIndex, int)
         check_type("Fab_ShopBit.Bit", self.Bit, FabBit)
-        check_type("Fab_ShopBit.Number", self.Number, int)
+        check_type("Fab_ShopBit.ToolNumber", self.ToolNumber, int)
 
     # Fab_ShopBit.getExample():
     @staticmethod
@@ -820,7 +820,7 @@ class Fab_ShopBit(object):
         cnc_machine: FabCNCMill = FabCNCMill.getExample()
         shop_bit: Fab_ShopBit = Fab_ShopBit(
             BitPriority=-123.456, Shop=shop, ShopIndex=0,
-            Machine=cnc_machine, MachineIndex=0, Bit=end_mill_bit, Number=1)
+            Machine=cnc_machine, MachineIndex=0, Bit=end_mill_bit, ToolNumber=1)
         return shop_bit
 
     # Fab_ShopBit._unit_tests():
@@ -837,7 +837,7 @@ class Fab_ShopBit(object):
         assert shop_bit.Machine == FabCNCMill.getExample()
         assert shop_bit.MachineIndex == 0
         assert shop_bit.Bit == FabEndMillBit.getExample()
-        assert shop_bit.Number == 1
+        assert shop_bit.ToolNumber == 1
 
         if tracing:
             print(f"{tracing}<=Fab_ShopBit._unit_tests()")
@@ -884,6 +884,7 @@ class FabShops(object):
         if tracing:
             print(f"{tracing}=>FabShops.__post_init__().")
 
+        # Create lists of Fab_ShopBit's for each operation kind:
         all_shop_bits: List[Fab_ShopBit] = []
         countersink_shop_bits: List[Fab_ShopBit] = []
         drill_shop_bits: List[Fab_ShopBit] = []
@@ -901,6 +902,7 @@ class FabShops(object):
             "upper_chamfer": upper_chamfer_shop_bits,
         }
 
+        # Sweep through the shops/machines/bits tree:
         shop_index: int
         shop: FabShop
         for shop_index, shop in enumerate(self.Shops):
@@ -908,13 +910,13 @@ class FabShops(object):
             machine: FabMachine
             for machine_index, machine in enumerate(shop.Machines):
                 library: FabLibrary = machine.Library
-                number: int
+                tool_number: int
                 bit: FabBit
-                for number, bit in library.NumberedBits:
+                for tool_number, bit in library.NumberedBits:
                     operation_kinds: Tuple[str, ...] = bit.getOperationKinds()
                     operation_kind: str
                     if tracing:
-                        print(f"{tracing}[{shop_index},{machine_index},{number}]"
+                        print(f"{tracing}[{shop_index},{machine_index},{tool_number}]"
                               f"{bit.Name}:{operation_kinds}")
                     for operation_kind in operation_kinds:
                         assert operation_kind in operations_table, operation_kind
@@ -922,8 +924,9 @@ class FabShops(object):
                         if tracing:
                             print(f"{tracing}  {operation_kind=} {bit_priority=}")
                         if bit_priority is not None:
-                            shop_bit: Fab_ShopBit = Fab_ShopBit(bit_priority, shop, shop_index,
-                                                                machine, machine_index, bit, number)
+                            shop_bit: Fab_ShopBit = Fab_ShopBit(
+                                bit_priority, shop, shop_index,
+                                machine, machine_index, bit, tool_number)
                             operations_table[operation_kind].append(shop_bit)
                             all_shop_bits.append(shop_bit)
 
