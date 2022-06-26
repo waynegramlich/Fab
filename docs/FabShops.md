@@ -185,19 +185,19 @@ Return the named FabMachine.
 
 A collection of FabShop's.
 This class collects all available FabShop's together.
-It precomputes the FabShopBit's that are available for each operation type.
+It precomputes the Fab_ShopBit's that are available for each operation type.
 
 Attributes:
 * *Shops* (Tuple[FabShop, ...]: All available FabShop's.
 * *Machines* (Tuple[Tuple[FabShop, FabMachine, ...]: A tuple of all (FabShop, FabMachine) pairs.
-* *AllShopBits: (Tuple[FabShopBit, ...]): A tuple of a FabShopBit's.
-* *ContourShopBits: (Tuple[FabShopBit, ...]):
-  A tuple of FabShopBit's suitable for exterior contour contouring.
-* *CounterSinkShopBits: (Tuple[TFabShopBit, ...):
-  A tuple of FabShopBit's suitable for countersinking.
-* *DrillShipBits (Tuple[FabShopBit, ...]):
-  A tuple of FabShopBit's suitable for exterior drilling.
-* *PocketShopBits: (Tuple[FabShopBit, ...]): A tuple of FabShopBit's suitable for pocketing.
+* *AllShopBits: (Tuple[Fab_ShopBit, ...]): A tuple of a Fab_ShopBit's.
+* *ContourShopBits: (Tuple[Fab_ShopBit, ...]):
+  A tuple of Fab_ShopBit's suitable for exterior contour contouring.
+* *CounterSinkShopBits: (Tuple[TFab_ShopBit, ...):
+  A tuple of Fab_ShopBit's suitable for countersinking.
+* *DrillShipBits (Tuple[Fab_ShopBit, ...]):
+  A tuple of Fab_ShopBit's suitable for exterior drilling.
+* *PocketShopBits: (Tuple[Fab_ShopBit, ...]): A tuple of Fab_ShopBit's suitable for pocketing.
 
 Constructor:
 * FabShops(Shops)
