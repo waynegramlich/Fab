@@ -404,7 +404,7 @@ class Fab_Operation(object):
 
     # Fab_Operation.getInitialOperationKey():
     def getInitialOperationKey(self) -> Fab_OperationKey:
-        """Return initial Fab_OperationKey for a Fab_Extrude."""
+        """Return initial Fab_OperationKey for a Fab_Operation."""
         initial_operation_key: Optional[Fab_OperationKey] = self.InitialOperationKey
         if initial_operation_key is None:
             best_shop_bit: Fab_ShopBit
@@ -433,6 +433,12 @@ class Fab_Operation(object):
     # Fab_Operation.getInitialOperationKeyTrampoline():
     def getInitialOperationKeyTrampoline(self) -> Fab_OperationKey:
         """Get the initial operation key for a Fab_Operation."""
+        # In general, the Fab_Fab_OperationKey's are used to sort operations.
+        # Unfortunately, when the sort method is called with
+        # `key=Fab_Operation.getInitialOperationKey` it strongly binds to the place holder
+        # Fab_Operation.getInitialOperationKey method() rather than call the desired
+        # sub-class method.  To work around this, this method forwards the method call to the
+        # desired sub-class method.  Yes, it bounces the call to the correct sub-class method.
         return self.getInitialOperationKey()
 
     # Fab_Operation.getHash():
@@ -665,7 +671,6 @@ class Fab_Extrude(Fab_Operation):
                     print(f"{tracing}Match!")
                 matching_shop_bits.append(shop_bit)
         assert len(matching_shop_bits) > 0
-
         # For now, fail horribly if there are no *matching_shop_bits*:
         # assert len(matching_shop_bits) > 0
         self.setShopBits(matching_shop_bits)

@@ -756,9 +756,9 @@ class Fab_ShopBit(object):
     """
     Fab_ShopBit: Represents a tool bit for a FabMachine in a FabShop.
 
-    Fab_ShopBit is a sub-class of FabBit and it is used to describe a FabBit that can be used
-    given operation -- pocket, drill, chamfer, face mill, etc.  Fab_ShopBit's are assembled
-    into operation specific lists that are subsequently searched to find ones that match.
+    Fab_ShopBit is used to describe a FabBit that can be used given operation -- pocket, drill,
+    chamfer, face mill, etc.  Fab_ShopBit's are assembled into operation specific lists that are
+    subsequently searched to find ones that match.
 
     When a FabSolid is produced using a CNC machine (i.e. a FabCNCMill) process, it starts with
     some stock material which is machined down with one or more mount operations.  Conceptually,
@@ -822,6 +822,14 @@ class Fab_ShopBit(object):
             BitPriority=-123.456, Shop=shop, ShopIndex=0,
             Machine=cnc_machine, MachineIndex=0, Bit=end_mill_bit, ToolNumber=1)
         return shop_bit
+
+    # Fab_ShopBit.replaceBitPriority():
+    def replaceBitPriority(self, bit_priority: float) -> "Fab_ShopBit":
+        """Return a Fab_Shopbit copy with its BitPrioriy replaced."""
+        replaced_shop_bit: Fab_ShopBit = Fab_ShopBit(
+            bit_priority, self.Shop, self.ShopIndex, self.Machine, self.MachineIndex,
+            self.Bit, self.ToolNumber)
+        return replaced_shop_bit
 
     # Fab_ShopBit._unit_tests():
     @staticmethod

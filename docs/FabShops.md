@@ -26,6 +26,7 @@ This is a package provides classes used to define what machines are available in
 * 10 Class: [FabSpindle](#fabshops--fabspindle):
 * 11 Class: [FabTable](#fabshops--fabtable):
 * 12 Class: [Fab_ShopBit](#fabshops--fab-shopbit):
+  * 12.1 [replaceBitPriority()](#fabshops----replacebitpriority): Return a Fab_Shopbit copy with its BitPrioriy replaced.
 
 ## <a name="fabshops--fabaxis"></a>1 Class FabAxis:
 
@@ -242,9 +243,9 @@ Constructor:
 
 Fab_ShopBit: Represents a tool bit for a FabMachine in a FabShop.
 
-Fab_ShopBit is a sub-class of FabBit and it is used to describe a FabBit that can be used
-given operation -- pocket, drill, chamfer, face mill, etc.  Fab_ShopBit's are assembled
-into operation specific lists that are subsequently searched to find ones that match.
+Fab_ShopBit is used to describe a FabBit that can be used given operation -- pocket, drill,
+chamfer, face mill, etc.  Fab_ShopBit's are assembled into operation specific lists that are
+subsequently searched to find ones that match.
 
 When a FabSolid is produced using a CNC machine (i.e. a FabCNCMill) process, it starts with
 some stock material which is machined down with one or more mount operations.  Conceptually,
@@ -275,6 +276,12 @@ Attributes:
 
 Constructor:
 * Fab_ShopBit(BitPriority, Shop, ShopIndex, Machine, MachineIndex, Bit, Number)
+
+### <a name="fabshops----replacebitpriority"></a>12.1 `Fab_ShopBit.`replaceBitPriority():
+
+Fab_ShopBit.replaceBitPriority(self, bit_priority: float) -> 'Fab_ShopBit':
+
+Return a Fab_Shopbit copy with its BitPrioriy replaced.
 
 
 

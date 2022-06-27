@@ -54,7 +54,7 @@ This internal classes are managed by FabMount methods.
   * 7.2 [get_kind()](#fabsolids----get-kind): Return Fab_Operation kind.
   * 7.3 [get_name()](#fabsolids----get-name): Return Fab_Operation name.
   * 7.4 [getOperationOrder()](#fabsolids----getoperationorder): Return the Fab_OperationOrder for a Fab_Operation.
-  * 7.5 [getInitialOperationKey()](#fabsolids----getinitialoperationkey): Return initial Fab_OperationKey for a Fab_Extrude.
+  * 7.5 [getInitialOperationKey()](#fabsolids----getinitialoperationkey): Return initial Fab_OperationKey for a Fab_Operation.
   * 7.6 [getInitialOperationKeyTrampoline()](#fabsolids----getinitialoperationkeytrampoline): Get the initial operation key for a Fab_Operation.
   * 7.7 [getHash()](#fabsolids----gethash): Return Fab_Operation hash.
   * 7.8 [get_geometries_hash()](#fabsolids----get-geometries-hash): Return hash of FabGeometry's.
@@ -459,7 +459,7 @@ Return the Fab_OperationOrder for a Fab_Operation.
 
 Fab_Operation.getInitialOperationKey(self) -> FabSolids.Fab_OperationKey:
 
-Return initial Fab_OperationKey for a Fab_Extrude.
+Return initial Fab_OperationKey for a Fab_Operation.
 
 ### <a name="fabsolids----getinitialoperationkeytrampoline"></a>7.6 `Fab_Operation.`getInitialOperationKeyTrampoline():
 
