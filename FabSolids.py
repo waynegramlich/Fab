@@ -15,7 +15,7 @@ import math
 
 from enum import IntEnum, auto
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path as PathFile
 from typeguard import check_argument_types, check_type
 from typing import Any, cast, Dict, Generator, IO, List, Optional, Sequence, Tuple, Union
 
@@ -787,7 +787,7 @@ class Fab_Pocket(Fab_Operation):
     _Geometries: Tuple[FabGeometry, ...] = field(compare=False)
     _Depth: float
     # TODO: Make _Geometries be comparable.
-    _BottomPath: Optional[Path] = field(init=False)
+    _BottomPath: Optional[PathFile] = field(init=False)
     _FinalDepth: float = field(init=False, repr=False)
     _TopDepth: float = field(init=False, repr=False)
     _StartDepth: float = field(init=False, repr=False)
@@ -1034,7 +1034,7 @@ class Fab_Pocket(Fab_Operation):
     # Fab_Pocket.to_json():
     def to_json(self) -> Dict[str, Any]:
         """Return JSON dictionary for Fab_Extrude."""
-        bottom_path: Optional[Path] = self._BottomPath
+        bottom_path: Optional[PathFile] = self._BottomPath
         cut_modes: Tuple[str, ...] = ("Climb", "Conventional")
         coolant_modes: Tuple[str, ...] = ("None", "Flood", "Mist")
         offset_patterns: Tuple[str, ...] = (
@@ -1344,7 +1344,7 @@ class Fab_Hole(Fab_Operation):
             assembly: cq.Assembly = cq.Assembly(
                 holes_query.WorkPlane, name=step_base_name, color=cq.Color(0.5, 0.5, 0.5, 1.0))
 
-            holes_path: Path = produce_state.Steps.activate(step_base_name, self.getHash())
+            holes_path: PathFile = produce_state.Steps.activate(step_base_name, self.getHash())
             self.StepFile: str = str(holes_path)
 
             if not holes_path.exists():
@@ -1836,7 +1836,7 @@ class FabSolid(FabNode):
     _Body: Optional[Any] = field(init=False, repr=False)  # TODO: remove?
     _Query: Fab_Query = field(init=False, repr=False)
     _Assembly: Any = field(init=False, repr=False)
-    _StepFile: Optional[Path] = field(init=False, repr=False)
+    _StepFile: Optional[PathFile] = field(init=False, repr=False)
     _Color: Optional[Tuple[float, ...]] = field(init=False, repr=False)
     Prefix: Fab_Prefix = field(init=False, repr=False)
     MountOperationPrefixes: Dict[str, Dict[str, Fab_Prefix]] = field(init=False, repr=False)
@@ -2110,7 +2110,7 @@ class FabSolid(FabNode):
             print(f"{tracing}=>FabSolid.post_produce2('{self.Label}')")
 
         # Deterimine whether it is possible to *use_cached_step*:
-        step_path: Path = cast(Path, None)  # Force runtime error if used.
+        step_path: PathFile = cast(PathFile, None)  # Force runtime error if used.
         # This was a shocker.  It turns out that __hash__() methods are not necessarily
         # consistent between Python runs.  In other words  __hash__() is non-deterministic.
         # Instead use one of the hashlib hash functions instead:
