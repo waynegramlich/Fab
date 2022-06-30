@@ -317,12 +317,12 @@ class Fab_OperationKey:
 class Fab_Operation(object):
     """Fab_Operation: An base class for FabMount operations.
 
-    Attributes:
+    Constructor Attributes:
     * *Name* (str): The name of the Fab_Operation.
     * *Mount* (FabMount): The FabMount to use for performing operations.
-    * *Fence* (int): Used to order sub groups of operations.
 
-    Extra Computed Attributes:
+    Other Attributes:
+    * *Fence* (int): Used to order sub groups of operations.
     * *ToolController* (Optional[FabToolController]):
       The tool controller (i.e. speeds, feeds, etc.) to use. (Default: None)
     * *ToolControllerIndex* (int):
@@ -334,31 +334,38 @@ class Fab_Operation(object):
       is for an extrude of stock material like a C channel, I beam, etc.  (Default: True)
     * *Prefix* (Fab_Prefix):
       The prefix information to use for file name generation.
+    * *ShopBits*: Tuple[Fab_ShopBit, ...]:
+      The available Fab_ShopBit's to select from for CNC operations.
+    * *InitialOperationKey* (Optional[Fab_OpeartionKey]):
+      The initial Fab_OperationKey used to do the initially sort the operations.
 
     Constructor:
-    * Fab_Operation("Name", Mount, Fence)
+    * Fab_Operation("Name", Mount)
 
     """
 
     Name: str
     Mount: "FabMount" = field(repr=False, compare=False)
-    Fence: int
+    Fence: int = field(init=False, repr=False, compare=False)
     ToolController: Optional[FabToolController] = field(init=False, repr=False)
     ToolControllerIndex: int = field(init=False)
     JsonEnabled: bool = field(init=False)
     Active: bool = field(init=False)
-    Prefix: Optional[Fab_Prefix] = field(init=False, repr=False)
+    Prefix: Fab_Prefix = field(init=False, repr=False)
     ShopBits: Tuple[Fab_ShopBit, ...] = field(init=False, repr=False)
     InitialOperationKey: Optional[Fab_OperationKey] = field(init=False, repr=False, compare=False)
 
     # Fab_Operation.__post_init__():
     def __post_init__(self) -> None:
         """Initialize Fab_Operation."""
+        check_type("Fab_Oparation.Name", self.Name, str)
+        check_type("Fab_Oparation.Mount", self.Mount, "FabMount")
+        self.Fence = self.Mount.Fence
         self.ToolController = None
         self.ToolControllerIndex = -1  # Unassigned.
         self.JsonEnabled = True
         self.Active = True
-        self.Prefix = None
+        self.Prefix = self.Mount.lookup_prefix(self.Name)
         self.ShopBits = ()
         self.InitialOperationKey = None
 
@@ -509,7 +516,6 @@ class Fab_Extrude(Fab_Operation):
     Attributes:
     * *Mount* (FabMount): The FabMount to use for performing operations.
     * *Name* (str): The FabExtrude operation name.
-    * *Fence* (int): The fence sub-group to stay in.
     * *Geometry* (Union[FabGeometry, Tuple[FabGeometry, ...]):
       The FabGeometry (i.e. FabPolygon or FabCircle) or a tuple of FabGeometry's to extrude with.
       When the tuple is used, the largest FabGeometry (which is traditionally the first one)
@@ -520,7 +526,7 @@ class Fab_Extrude(Fab_Operation):
     See Fab_Operation for extra computed Attributes.
 
     Constructor:
-    * Fab_Extrude("Name", Mount, Fence, Geometry, Depth, Contour)
+    * Fab_Extrude("Name", Mount, Geometry, Depth, Contour)
 
     """
 
@@ -538,6 +544,10 @@ class Fab_Extrude(Fab_Operation):
     def __post_init__(self) -> None:
         """Verify Fab_Extrude values."""
         super().__post_init__()
+        check_type("Fab_Extrude.Geometry", self._Geometry,
+                   Union[FabGeometry, Tuple[FabGeometry, ...]])
+        check_type("Fab_Extrude.Depth", self._Depth, float)
+        check_type("Fab_Extrude.Contour", self._Contour, bool)
 
         # Type check self._Geometry and convert into self._Geometries:
         geometries: List[FabGeometry] = []
@@ -561,12 +571,11 @@ class Fab_Extrude(Fab_Operation):
         if self.Depth <= 0.0:
             raise RuntimeError(f"Fab_Extrude.__post_init__({self.Name}):"
                                f"Depth ({self.Depth}) is not positive.")  # pragma: no unit cover
-        self._StepFile = "Fab_Extrude.__post_init_()"
+        self._StepFile = "Fab_Extrude.__post_init__()"
         self._StartDepth = 0.0
         self._StepDown = 3.0
         self._FinalDepth = -self.Depth
         self.Active = self._Contour
-        self.Prefix = self.Mount.lookup_prefix(self.Name)
 
     # Fab_Extrude.Geometry():
     @property
@@ -763,7 +772,6 @@ class Fab_Pocket(Fab_Operation):
     Attributes:
     * Name (str): The operation name.
     * Mount (FabMount): The FabMount to use for pocketing.
-    * *Fence* (int): Used to order sub groups of operations.
     * Geometries (Tuple[FabGeometry, ...]):
       The FabGeomety's that specify the pocket.  The first one must be the outer most pocket
       contour.  The remaining FabGeometries must be pocket "islands".  All islands must be
@@ -777,10 +785,10 @@ class Fab_Pocket(Fab_Operation):
        material within the pocket that must not be removed.
     * *Depth* (float): The pocket depth in millimeters.
     * *Bottom_Path* (str): The the path to the generated Pocket bottom STEP file.
-    See Fab_Operation for extra computed Attributes.
+    See Fab_Operation for even more extra computed Attributes.
 
     Constructor:
-    * Fab_Pocket(Mount, Name, Geometries, Depth)
+    * Fab_Pocket(Mount, "Name", Geometries, Depth)
 
     """
 
@@ -842,7 +850,6 @@ class Fab_Pocket(Fab_Operation):
         self._StartDepth = max(top_depth - step_depth, final_depth)
         self._StepDown = step_down
         self._FinalDepth = final_depth
-        self.Prefix = self.Mount.lookup_prefix(self.Name)
 
     # Fab_Pocket.post_produce1():
     def post_produce1(
@@ -968,21 +975,19 @@ class Fab_Pocket(Fab_Operation):
             -self._Depth, tracing=next_tracing)
 
         # Step 1b: Transfer *geometries* to *pocket_context* and *bottom_context*:
-        pocket_prefix: Optional[Fab_Prefix] = self.Prefix
-        assert isinstance(pocket_prefix, Fab_Prefix)
-        bottom_prefix: str = pocket_prefix.to_string()
+        prefix: Fab_Prefix = self.Prefix
+        prefix_text: str = prefix.to_string()
         geometry: FabGeometry
         index: int
         for index, geometry in enumerate(geometries):
-            geometry.produce(pocket_context, bottom_prefix, index, tracing=next_tracing)
-            geometry.produce(bottom_context, bottom_prefix, index, tracing=next_tracing)
+            geometry.produce(pocket_context, prefix_text, index, tracing=next_tracing)
+            geometry.produce(bottom_context, prefix_text, index, tracing=next_tracing)
             if tracing:
                 pocket_query.show(f"Pocket Context after Geometry {index}", tracing)
 
         # Step 1c: Extrude *bottom_path* and save it to a STEP file:
         pocket_query.extrude(self._Depth, tracing=next_tracing)
-
-        bottom_name: str = f"{bottom_prefix}__{self.Name}__pocket_bottom"
+        bottom_name: str = f"{prefix_text}__{self.Name}__pocket_bottom"
         bottom_path = produce_state.Steps.activate(bottom_name,
                                                    self.get_geometries_hash(geometries))
         if not bottom_path.exists():
@@ -1075,6 +1080,10 @@ class Fab_HoleKey(object):
     * *Kind* (str): The kind of thread hole (one of "thread", "close", or "standard".)
     * *Depth* (float): The hole depth.
     * *IsTop* (bool): True when hole is the top of the fastener for countersink and counterboring.
+    See Fab_Operation for even more extra computed Attributes.
+
+    Constructor:
+    * Fab_HoleKey("Name", Mount, "ThreadName", "Kind", Depth, IsTop)
 
     """
     ThreadName: str
@@ -1127,9 +1136,8 @@ class Fab_Hole(Fab_Operation):
     """Fab_Hole: FabDrill helper class that represents one or more holes related holes.
 
     Attributes:
-    * Name (str)
-    * Mount (FabMount): The FabMount for the hole operation.
-    * *Fence* (int): Used to order sub groups of operations.
+    * *Name* (str): The name of the Fab_Hole.
+    * *Mount* (FabMount): The FabMount to use for performing operations.
     * Key (FabHoleKey): The hole key used for grouping holes.
     * Join (FabJoin): The associated FabJoin the produced the hole.
     * Centers (Tuple[Vector, ...]): The associated start centers.
@@ -1141,7 +1149,7 @@ class Fab_Hole(Fab_Operation):
     * StartDepth (float): The starting depth in millimeters from the mount plane.
 
     Constructor:
-    * Fab_Hole(Mount, Name, Key, Centers, Name, Depth)
+    * Fab_Hole("Name", Mount, Key, Centers, Join, Depth)
     """
 
     Key: Fab_HoleKey
@@ -1151,22 +1159,19 @@ class Fab_Hole(Fab_Operation):
     HolesCount: int = field(init=False, repr=False)  # Number of holes in this operation
     StartDepth: float = field(init=False, repr=False)
     StepFile: str = field(init=False, repr=False)
-    Prefix: Optional[Fab_Prefix] = field(init=False, repr=False)
 
     # Fab_Hole.__post_init__():
     def __post_init__(self) -> None:
         """Perform final initialization of Fab_Hole"""
 
         super().__post_init__()
-        assert isinstance(self.Name, str), self.Name
-        assert isinstance(self.Key, Fab_HoleKey), self.Key
-        assert isinstance(self.Centers, tuple), self.Centers
-        assert isinstance(self.Join, FabJoin), self.Join
-        self.Depth = 0.0
+        check_type("Fab_Hole.Key", self.Key, Fab_HoleKey)
+        check_type("Fab_Hole.Centers", self.Centers, Tuple[Vector, ...])
+        check_type("Fab_Hole.Join", self.Join, FabJoin)
+        check_type("Fab_Hole.Depth", self.Depth, float)
         self.HolesCount = 0
         self.StartDepth = 0.0
         self.StepFile = ""
-        self.Prefix = self.Mount.lookup_prefix(self.Name)
 
     # Fab_Hole.get_kind():
     def get_kind(self) -> str:
@@ -1236,14 +1241,13 @@ class Fab_Hole(Fab_Operation):
             # Create a FabPocket for each hole *center*:
             mount_plane: FabPlane = self.Mount.Plane
             mount: FabMount = self.Mount
-            fence: int = self.Fence
             center: Vector
             index: int
             for index, center in enumerate(self.Centers):
                 circle_geometry: FabCircle = FabCircle(mount_plane, center, diameter)
                 pocket_name: str = f"{self.Name}_{index}"
                 pocket: Fab_Pocket = Fab_Pocket(
-                    pocket_name, mount, fence, (circle_geometry,), depth)
+                    pocket_name, mount, (circle_geometry,), depth)
                 pocket.post_produce1(produce_state, expanded_operations, tracing=next_tracing)
 
         if tracing:
@@ -1337,10 +1341,9 @@ class Fab_Hole(Fab_Operation):
                 holes_query.hole(diameter, depth)
             self.HolesCount = len(self.Centers)
 
-            drill_prefix: Optional[Fab_Prefix] = self.Prefix
-            assert isinstance(drill_prefix, Fab_Prefix)
-            assert isinstance(drill_prefix, Fab_Prefix), drill_prefix
-            step_base_name: str = f"{drill_prefix.to_string()}__{self.Name}_holes"
+            prefix: Fab_Prefix = self.Prefix
+            prefix_text: str = prefix.to_string()
+            step_base_name: str = f"{prefix_text}__{self.Name}_holes"
             assembly: cq.Assembly = cq.Assembly(
                 holes_query.WorkPlane, name=step_base_name, color=cq.Color(0.5, 0.5, 0.5, 1.0))
 
@@ -1430,9 +1433,7 @@ class FabMount(object):
     # FabMount.__post_init__():
     def __post_init__(self) -> None:
         """Verify that FabMount arguments are valid."""
-
         solid: "FabSolid" = self._Solid
-
         tracing: str = solid.Tracing
         # next_tracing: str = tracing + " " if tracing else ""
         if tracing:
@@ -1445,6 +1446,7 @@ class FabMount(object):
         check_type("FabMount.Normal", self._Normal, Vector)
         check_type("FabMount.Orient", self._Orient, Vector)
         check_type("FabMount.Depth", self._Depth, float)
+        check_type("FabMount.Query", self._Query, Fab_Query)
 
         copy: Vector = Vector()  # Make private copy of Vector's.
         self._Copy = copy
@@ -1688,7 +1690,7 @@ class FabMount(object):
         self._Solid.enclose(boxes)
 
         # Create and record the *extrude*:
-        extrude: Fab_Extrude = Fab_Extrude(name, self, self._Fence, shapes, depth, contour)
+        extrude: Fab_Extrude = Fab_Extrude(name, self, shapes, depth, contour)
         self.record_operation(extrude)
 
         if tracing:
@@ -1714,7 +1716,7 @@ class FabMount(object):
         assert check_argument_types()
         if isinstance(shapes, FabGeometry):
             shapes = (shapes,)
-        pocket: Fab_Pocket = Fab_Pocket(name, self, self._Fence, shapes, depth)
+        pocket: Fab_Pocket = Fab_Pocket(name, self, shapes, depth)
         self.record_operation(pocket)
 
         if tracing:
@@ -1746,7 +1748,6 @@ class FabMount(object):
 
         # Collects compatible holes in *hole_groups*:
         HoleInfo = Tuple[FabJoin, int, Vector, str]  # (join, joint_index, trimmed_start, name)
-        fence: int = self._Fence
         hole_info: HoleInfo
         hole_groups: Dict[Fab_HoleKey, List[HoleInfo]] = {}
         hole_name: str
@@ -1800,14 +1801,13 @@ class FabMount(object):
             for join, join_index, trimmed_start, hole_name in hole_infos:
                 trimmed_starts.append(trimmed_start)
             centers: Tuple[Vector, ...] = tuple(trimmed_starts)
-            grouped_hole = Fab_Hole(hole_name, self, fence, hole_key, centers, join, hole_key.Depth)
+            grouped_hole = Fab_Hole(hole_name, self, hole_key, centers, join, hole_key.Depth)
             grouped_holes.append(grouped_hole)
 
         hole_index: int
         for hole_index, hole in enumerate(grouped_holes):
             if tracing:
                 print(f"{tracing}Hole[{hole_index}]: record_operation({hole})")
-            self.Prefix = hole.Mount.lookup_prefix(self._Name)
             self.record_operation(hole)
 
         if tracing:
@@ -1927,7 +1927,7 @@ class FabSolid(FabNode):
         #
         # For debugging and consistency reasons, it is nice to have a "sticky" Fab_Prefix
         # that does not change as a result of constraint propagation changes.  The "sticky"
-        # Fab_Prefix's for FabMounts and Fab_Operations are store in the FabSolid MountOperations
+        # Fab_Prefix's for FabMounts and Fab_Operations are stored in the FabSolid MountOperations
         # attribute.  This attribute is an Dict of Dict's, where the first level is keyed off a
         # mount name and the second level is keyed of an operation name.  Once a Fab_Prefix
         # is assigned to mount/operation name pair, it no longer changes.

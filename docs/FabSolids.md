@@ -284,7 +284,6 @@ Represents and extrude operation.
 Attributes:
 * *Mount* (FabMount): The FabMount to use for performing operations.
 * *Name* (str): The FabExtrude operation name.
-* *Fence* (int): The fence sub-group to stay in.
 * *Geometry* (Union[FabGeometry, Tuple[FabGeometry, ...]):
   The FabGeometry (i.e. FabPolygon or FabCircle) or a tuple of FabGeometry's to extrude with.
   When the tuple is used, the largest FabGeometry (which is traditionally the first one)
@@ -295,7 +294,7 @@ Attributes:
 See Fab_Operation for extra computed Attributes.
 
 Constructor:
-* Fab_Extrude("Name", Mount, Fence, Geometry, Depth, Contour)
+* Fab_Extrude("Name", Mount, Geometry, Depth, Contour)
 
 ### <a name="fabsolids----get-kind"></a>4.1 `Fab_Extrude.`get_kind():
 
@@ -338,9 +337,8 @@ Return JSON dictionary for Fab_Extrude.
 
 FabDrill helper class that represents one or more holes related holes.
 Attributes:
-* Name (str)
-* Mount (FabMount): The FabMount for the hole operation.
-* *Fence* (int): Used to order sub groups of operations.
+* *Name* (str): The name of the Fab_Hole.
+* *Mount* (FabMount): The FabMount to use for performing operations.
 * Key (FabHoleKey): The hole key used for grouping holes.
 * Join (FabJoin): The associated FabJoin the produced the hole.
 * Centers (Tuple[Vector, ...]): The associated start centers.
@@ -352,7 +350,7 @@ Computed Attributes:
 * StartDepth (float): The starting depth in millimeters from the mount plane.
 
 Constructor:
-* Fab_Hole(Mount, Name, Key, Centers, Name, Depth)
+* Fab_Hole("Name", Mount, Key, Centers, Join, Depth)
 
 ### <a name="fabsolids----get-kind"></a>5.1 `Fab_Hole.`get_kind():
 
@@ -399,6 +397,10 @@ Attributes:
 * *Kind* (str): The kind of thread hole (one of "thread", "close", or "standard".)
 * *Depth* (float): The hole depth.
 * *IsTop* (bool): True when hole is the top of the fastener for countersink and counterboring.
+See Fab_Operation for even more extra computed Attributes.
+
+Constructor:
+* Fab_HoleKey("Name", Mount, "ThreadName", "Kind", Depth, IsTop)
 
 ### <a name="fabsolids----gethash"></a>6.1 `Fab_HoleKey.`getHash():
 
@@ -410,12 +412,12 @@ Return a hash tuple for a Fab_HoleKey.
 ## <a name="fabsolids--fab-operation"></a>7 Class Fab_Operation:
 
 An base class for FabMount operations.
-Attributes:
+Constructor Attributes:
 * *Name* (str): The name of the Fab_Operation.
 * *Mount* (FabMount): The FabMount to use for performing operations.
-* *Fence* (int): Used to order sub groups of operations.
 
-Extra Computed Attributes:
+Other Attributes:
+* *Fence* (int): Used to order sub groups of operations.
 * *ToolController* (Optional[FabToolController]):
   The tool controller (i.e. speeds, feeds, etc.) to use. (Default: None)
 * *ToolControllerIndex* (int):
@@ -427,9 +429,13 @@ Extra Computed Attributes:
   is for an extrude of stock material like a C channel, I beam, etc.  (Default: True)
 * *Prefix* (Fab_Prefix):
   The prefix information to use for file name generation.
+* *ShopBits*: Tuple[Fab_ShopBit, ...]:
+  The available Fab_ShopBit's to select from for CNC operations.
+* *InitialOperationKey* (Optional[Fab_OpeartionKey]):
+  The initial Fab_OperationKey used to do the initially sort the operations.
 
 Constructor:
-* Fab_Operation("Name", Mount, Fence)
+* Fab_Operation("Name", Mount)
 
 ### <a name="fabsolids----set-tool-controller"></a>7.1 `Fab_Operation.`set_tool_controller():
 
@@ -541,7 +547,6 @@ Represents a pocketing operation.
 Attributes:
 * Name (str): The operation name.
 * Mount (FabMount): The FabMount to use for pocketing.
-* *Fence* (int): Used to order sub groups of operations.
 * Geometries (Tuple[FabGeometry, ...]):
   The FabGeomety's that specify the pocket.  The first one must be the outer most pocket
   contour.  The remaining FabGeometries must be pocket "islands".  All islands must be
@@ -555,10 +560,10 @@ Extra Computed Attributes:
    material within the pocket that must not be removed.
 * *Depth* (float): The pocket depth in millimeters.
 * *Bottom_Path* (str): The the path to the generated Pocket bottom STEP file.
-See Fab_Operation for extra computed Attributes.
+See Fab_Operation for even more extra computed Attributes.
 
 Constructor:
-* Fab_Pocket(Mount, Name, Geometries, Depth)
+* Fab_Pocket(Mount, "Name", Geometries, Depth)
 
 ### <a name="fabsolids----post-produce1"></a>11.1 `Fab_Pocket.`post_produce1():
 
