@@ -966,27 +966,27 @@ class Fab_Pocket(Fab_Operation):
         # Step 1a: Create the needed CadQuery *pocket_context* and *bottom_context*:
         mount: FabMount = self.Mount
         geometry_context: Fab_GeometryContext = mount._GeometryContext
-        geometries: Tuple[FabGeometry, ...] = self._Geometries
-        pocket_context: Fab_GeometryContext = geometry_context.copy(tracing=next_tracing)
-        pocket_query: Fab_Query = pocket_context.Query
-        if tracing:
-            pocket_query.show("Pocket Context Before", tracing)
+        top_context: Fab_GeometryContext = geometry_context.copy(tracing=next_tracing)
+        top_pocket_query: Fab_Query = top_context.Query
         bottom_context: Fab_GeometryContext = geometry_context.copyWithPlaneAdjust(
             -self._Depth, tracing=next_tracing)
+        if tracing:
+            top_pocket_query.show("Top Pocket Context Before", tracing)
 
         # Step 1b: Transfer *geometries* to *pocket_context* and *bottom_context*:
         prefix: Fab_Prefix = self.Prefix
         prefix_text: str = prefix.to_string()
         geometry: FabGeometry
+        geometries: Tuple[FabGeometry, ...] = self._Geometries
         index: int
         for index, geometry in enumerate(geometries):
-            geometry.produce(pocket_context, prefix_text, index, tracing=next_tracing)
+            geometry.produce(top_context, prefix_text, index, tracing=next_tracing)
             geometry.produce(bottom_context, prefix_text, index, tracing=next_tracing)
             if tracing:
-                pocket_query.show(f"Pocket Context after Geometry {index}", tracing)
+                top_pocket_query.show(f"Top Pocket Context after Geometry {index}", tracing)
 
         # Step 1c: Extrude *bottom_path* and save it to a STEP file:
-        pocket_query.extrude(self._Depth, tracing=next_tracing)
+        top_pocket_query.extrude(self._Depth, tracing=next_tracing)
         bottom_name: str = f"{prefix_text}__{self.Name}__pocket_bottom"
         bottom_path = produce_state.Steps.activate(bottom_name,
                                                    self.get_geometries_hash(geometries))
@@ -1024,14 +1024,14 @@ class Fab_Pocket(Fab_Operation):
         self.set_tool_controller(tool_controller, produce_state.ToolControllersTable)
 
         if tracing:
-            pocket_query.show("Pocket Context after Extrude:", tracing)
+            top_pocket_query.show("Pocket Context after Extrude:", tracing)
 
         # TODO: Use the CadQuery *cut* operation instead of *subtract*:
         query: Any = geometry_context.Query
         assert isinstance(query, Fab_Query), query
         if tracing:
             query.show("Pocket Main Before Subtract", tracing)
-        query.subtract(pocket_query, tracing=next_tracing)
+        query.subtract(top_pocket_query, tracing=next_tracing)
         if tracing:
             query.show("Pocket After Subtract", tracing)
             print(f"{tracing}<=Fab_Pocket.post_produce2('{self.Name}')")
