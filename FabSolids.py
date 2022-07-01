@@ -700,10 +700,17 @@ class Fab_Extrude(Fab_Operation):
         if tracing:
             print(f"{tracing}=>Fab_Extrude.produce2('{self.Name}')")
 
-        # Extract the *part_geometries* and create the associated *shape_binder*:
+        # Step 1: Produce the extrude Step file for the extrude:
+        # Step 1a: Create the needed CadQuery *extrude_context*:
         mount: FabMount = self.Mount
-        geometry_prefix: str = f"{mount.Name}_{self.Name}"
         geometry_context: Fab_GeometryContext = mount._GeometryContext
+        extrude_context: Fab_GeometryContext = geometry_context.copy(tracing=next_tracing)
+        extrude_query: Fab_Query = extrude_context.Query
+        if tracing:
+            extrude_query.show("Extrude Query Context Before", tracing)
+
+        # Step 1b: Transfer *geometries* to *pocket_context* and *bottom_context*:
+        geometry_prefix: str = f"{mount.Name}_{self.Name}"
         for index, geometry in enumerate(self._Geometries):
             if tracing:
                 print(f"{tracing}Geometry[{index}]:{geometry=}")
