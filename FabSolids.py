@@ -704,22 +704,23 @@ class Fab_Extrude(Fab_Operation):
         # Step 1a: Create the needed CadQuery *extrude_context*:
         mount: FabMount = self.Mount
         geometry_context: Fab_GeometryContext = mount._GeometryContext
-        extrude_context: Fab_GeometryContext = geometry_context.copy(tracing=next_tracing)
+        # Leave the extruded solid on the top of the *geometry_context* for further operations.
+        extrude_context: Fab_GeometryContext = geometry_context
         extrude_query: Fab_Query = extrude_context.Query
         if tracing:
             extrude_query.show("Extrude Query Context Before", tracing)
 
-        # Step 1b: Transfer *geometries* to *pocket_context* and *bottom_context*:
+        # Step 1b: Transfer *geometries* to *extrude_context* and perform the extrusion:
         geometry_prefix: str = f"{mount.Name}_{self.Name}"
         for index, geometry in enumerate(self._Geometries):
             if tracing:
                 print(f"{tracing}Geometry[{index}]:{geometry=}")
-            geometry.produce(geometry_context, geometry_prefix, index, tracing=next_tracing)
+            geometry.produce(extrude_context, geometry_prefix, index, tracing=next_tracing)
         # geometry_context.WorkPlane.close(tracing=next_tracing)
-        geometry_context.Query.extrude(self.Depth, tracing=next_tracing)
+        extrude_context.Query.extrude(self.Depth, tracing=next_tracing)
 
         # Do Contour computations:
-        plane: FabPlane = geometry_context.Plane
+        plane: FabPlane = extrude_context.Plane
         normal: Vector = plane.Normal
         origin: Vector = plane.Origin
         distance: float = origin.Length
