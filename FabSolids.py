@@ -34,7 +34,7 @@ from FabNodes import FabBox, FabNode, Fab_Prefix, Fab_ProduceState
 from FabToolBits import FabDrillBit, FabEndMillBit, FabVBit
 from FabToolTemplates import FabBit
 from FabUtilities import FabColor, FabMaterial, FabToolController
-from FabShops import Fab_ShopBit, FabShops
+from FabShops import Fab_ShopBit, FabMachine, FabCNCMill, FabShops
 
 # The *_suppress_stdout* function is based on code from:
 #   [I/O Redirect](https://stackoverflow.com/questions/4675728/redirect-stdout-to-a-file-in-python)
@@ -1050,8 +1050,16 @@ class Fab_Pocket(Fab_Operation):
 
         selected_shop_bit: Optional[Fab_ShopBit] = self.SelectedShopBit
         assert isinstance(selected_shop_bit, Fab_ShopBit), selected_shop_bit
+        selected_bit: FabBit = selected_shop_bit.Bit
+        assert isinstance(selected_bit, FabEndMillBit), selected_bit
         material: FabMaterial = self.Mount.Solid.Material
-        _ = material
+        assert isinstance(material, FabMaterial), material
+        selected_diameter: float = selected_bit.getNumber("Diameter")
+        chip_load: float = material.getChipLoad(selected_diameter)
+        machine: FabMachine = selected_shop_bit.Machine
+        assert isinstance(machine, FabCNCMill), machine
+        _ = machine
+        _ = chip_load
 
         tool_controller: FabToolController = FabToolController(
             BitName="5mm_Endmill",
@@ -1971,7 +1979,8 @@ class FabSolid(FabNode):
         _ = next_tracing  # Until it is used elsewhere.
         if tracing:
             print(f"{tracing}=>FabSolid({self.Label}).__post_init__()")
-        # TODO: Do additional type checking here:
+        check_type("FabSolid.Material", self.Material, FabMaterial)
+        check_type("FabSolid.Color", self.Color, str)
         # Initial WorkPlane does not matter, it gets set by FabMount.
         origin: Vector = Vector(0.0, 0.0, 0.0)
         z_axis: Vector = Vector(0.0, 0.0, 1.0)

@@ -432,8 +432,9 @@ class TestAssembly(FabAssembly):
     def __post_init__(self):
         """Initialize Test Assembly."""
         super().__post_init__()
-        self.Solid = TestSolid("TestSolid", self, "HDPE", "red")
-        self.Box = Box("TestBox", self, 200.0, 150.0, 75.0, 6.0, "HDPE", Vector(0, 0, 0))
+        material: FabMaterial = FabMaterial(("Plastic", "HDPE"), "red")
+        self.Solid = TestSolid("TestSolid", self, material, "red")
+        self.Box = Box("TestBox", self, 200.0, 150.0, 75.0, 6.0, material, Vector(0, 0, 0))
 
 
 # TestDocument:
