@@ -176,6 +176,9 @@ Attributes:
 * *Material* (str): The material to use.
 * *Color* (str): The color to use.
 
+Constructor:
+* FabSolid("Name", Parent, Material, Color)
+
 ### <a name="fabsolids----lookup-prefix"></a>2.1 `FabSolid.`lookup_prefix():
 
 FabSolid.lookup_prefix(self, mount_name: str, operation_name: str) -> FabNodes.Fab_Prefix:

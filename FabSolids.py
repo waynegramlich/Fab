@@ -33,7 +33,7 @@ from FabNodes import FabBox, FabNode, Fab_Prefix, Fab_ProduceState
 # from FabTools import FabLibrary
 from FabToolBits import FabDrillBit, FabEndMillBit, FabVBit
 from FabToolTemplates import FabBit
-from FabUtilities import FabColor, FabToolController
+from FabUtilities import FabColor, FabMaterial, FabToolController
 from FabShops import Fab_ShopBit, FabShops
 
 # The *_suppress_stdout* function is based on code from:
@@ -1048,6 +1048,11 @@ class Fab_Pocket(Fab_Operation):
         # pocket_info: FabGeometryInfo = pocket_geometry.GetGeometryInfo()
         # _ = pocket_info
 
+        selected_shop_bit: Optional[Fab_ShopBit] = self.SelectedShopBit
+        assert isinstance(selected_shop_bit, Fab_ShopBit), selected_shop_bit
+        material: FabMaterial = self.Mount.Solid.Material
+        _ = material
+
         tool_controller: FabToolController = FabToolController(
             BitName="5mm_Endmill",
             Cooling="Flood",
@@ -1940,9 +1945,12 @@ class FabSolid(FabNode):
     * *Material* (str): The material to use.
     * *Color* (str): The color to use.
 
+    Constructor:
+    * FabSolid("Name", Parent, Material, Color)
+
     """
 
-    Material: str
+    Material: FabMaterial
     Color: str
     _Mounts: List[FabMount] = field(init=False, repr=False)
     _GeometryGroup: Optional[Any] = field(init=False, repr=False)

@@ -18,6 +18,7 @@ from FabNodes import FabNode  # This should not be needed see cast in BoxSide.pr
 from FabProjects import FabAssembly, FabDocument, FabProject
 from FabShops import FabShops
 from FabSolids import FabSolid, FabMount
+from FabUtilities import FabMaterial
 
 
 # BoxSide:
@@ -28,7 +29,7 @@ class BoxSide(FabSolid):
     Inherited Constructor Attributes:
     * *Name* (str): Box name.
     * *Parent* (*FabNode*): The parent container.
-    * *Material* (str): The Material to use.
+    * *Material* (FabMaterial): The Material to use.
     * *Color* (str): The color to use.
 
     Additional Constructor Attributes:
@@ -162,7 +163,7 @@ class Box(FabAssembly):
     * *Width* (float): width in Y direction in millimeters.
     * *Height* (float): height in Z direction in millimeters.
     * *Thickness* (float): Material thickness in millimeters.
-    * *Material* (str): Material to use.
+    * *Material* (FabMaterial): Material to use.
     * *Center* (Vector): Center of Box.
 
     Produced Attributes:
@@ -180,7 +181,7 @@ class Box(FabAssembly):
     Width: float
     Height: float
     Thickness: float
-    Material: str = "HDPE"
+    Material: FabMaterial = FabMaterial(("Plasitic", "HDPE"), "white")
     Center: Vector = Vector()
 
     Top: BoxSide = field(init=False, repr=False)
@@ -200,7 +201,7 @@ class Box(FabAssembly):
             print(f"{tracing}=>Box({self.Label}).__post_init__()")
 
         depth: float = self.Thickness
-        material: str = self.Material
+        material: FabMaterial = self.Material
         x_axis: Vector = Vector(1, 0, 0)
         y_axis: Vector = Vector(0, 1, 0)
         z_axis: Vector = Vector(0, 0, 1)

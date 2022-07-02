@@ -28,7 +28,7 @@ Additional Constructor Attributes:
 * *Width* (float): width in Y direction in millimeters.
 * *Height* (float): height in Z direction in millimeters.
 * *Thickness* (float): Material thickness in millimeters.
-* *Material* (str): Material to use.
+* *Material* (FabMaterial): Material to use.
 * *Center* (Vector): Center of Box.
 
 Produced Attributes:
@@ -59,7 +59,7 @@ A Box side.
 Inherited Constructor Attributes:
 * *Name* (str): Box name.
 * *Parent* (*FabNode*): The parent container.
-* *Material* (str): The Material to use.
+* *Material* (FabMaterial): The Material to use.
 * *Color* (str): The color to use.
 
 Additional Constructor Attributes:
