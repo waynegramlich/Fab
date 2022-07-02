@@ -338,6 +338,10 @@ Attributes:
   A lookup to make common FabToolControllers to a single integer.
 * *OperationIndex* (int):
   An index for the current operation being performed for a mount.
+* *CurrentShopIndex* (int):
+  The currently preferred shop index to use for CNC Fab_ShopBit selection.
+* *CurrentMachineIndex* (int):
+  The currently preferred machine index to use for CNC Fab_ShopBit selection.
 
 This class is for internal use only:
 

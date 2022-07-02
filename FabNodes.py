@@ -1020,6 +1020,10 @@ class Fab_ProduceState(object):
       A lookup to make common FabToolControllers to a single integer.
     * *OperationIndex* (int):
       An index for the current operation being performed for a mount.
+    * *CurrentShopIndex* (int):
+      The currently preferred shop index to use for CNC Fab_ShopBit selection.
+    * *CurrentMachineIndex* (int):
+      The currently preferred machine index to use for CNC Fab_ShopBit selection.
 
     This class is for internal use only:
 
@@ -1034,6 +1038,8 @@ class Fab_ProduceState(object):
     ObjectsTable: Dict[str, Any] = field(init=False, repr=False)
     ToolControllersTable: Dict[FabToolController, int] = field(init=False, repr=False)
     OperationIndex: int = field(init=False, repr=False)
+    CurrentShopIndex: int = field(init=False, repr=False)
+    CurrentMachineIndex: int = field(init=False, repr=False)
 
     # Fab_ProduceState.__post_init__():
     def __post_init__(self) -> None:
@@ -1042,6 +1048,8 @@ class Fab_ProduceState(object):
         self.Steps = Fab_Steps(self.StepsDirectory)
         self.ToolControllersTable = {}
         self.OperationsIndex = 0
+        self.CurrentShopIndex = 0
+        self.CurrentMachineIndex = 0
 
 
 # FabNode:

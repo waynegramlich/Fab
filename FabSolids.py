@@ -273,8 +273,8 @@ class Fab_OperationKey:
     """Fab_OperationKey: Provides a sorting key for Fab_Operations.
 
     Attributes:
-    * *MountFence* (int): The user manage fence index grouping operations within a mount.
-    * *OperationOrder* (Fab_OperationOrder): The preferred operation order.
+    * *MountFence* (int): The user managed fence index for grouping operations within a mount.
+    * *OperationOrder* (Fab_OperationOrder): The preferred operation order within a group.
     * *BitPriority*: (float): A negative number obtained via the getBitPriority method.
     * *ShopIndex* (int): The shop index of the bit to be used.
     * *MachineIndex* (int): The machine index of the bit to be used.
@@ -336,8 +336,10 @@ class Fab_Operation(object):
       The prefix information to use for file name generation.
     * *ShopBits*: Tuple[Fab_ShopBit, ...]:
       The available Fab_ShopBit's to select from for CNC operations.
-    * *InitialOperationKey* (Optional[Fab_OpeartionKey]):
+    * *InitialOperationKey* (Optional[Fab_OperationKey]):
       The initial Fab_OperationKey used to do the initially sort the operations.
+    * *SelectedShopBit* (Optional[Fab_ShopBit]):
+      The final selected Fab_ShopBit for the operation.
 
     Constructor:
     * Fab_Operation("Name", Mount)
@@ -348,12 +350,13 @@ class Fab_Operation(object):
     Mount: "FabMount" = field(repr=False, compare=False)
     Fence: int = field(init=False, repr=False, compare=False)
     ToolController: Optional[FabToolController] = field(init=False, repr=False)
-    ToolControllerIndex: int = field(init=False)
-    JsonEnabled: bool = field(init=False)
-    Active: bool = field(init=False)
+    ToolControllerIndex: int = field(init=False, repr=False)
+    JsonEnabled: bool = field(init=False, repr=False)
+    Active: bool = field(init=False, repr=False)
     Prefix: Fab_Prefix = field(init=False, repr=False)
     ShopBits: Tuple[Fab_ShopBit, ...] = field(init=False, repr=False)
     InitialOperationKey: Optional[Fab_OperationKey] = field(init=False, repr=False, compare=False)
+    SelectedShopBit: Optional[Fab_ShopBit] = field(init=False, repr=False, compare=False)
 
     # Fab_Operation.__post_init__():
     def __post_init__(self) -> None:
@@ -368,6 +371,7 @@ class Fab_Operation(object):
         self.Prefix = self.Mount.lookup_prefix(self.Name)
         self.ShopBits = ()
         self.InitialOperationKey = None
+        self.SelectedShopBit = None
 
     # Fab_Operation.get_tool_controller():
     # def get_tool_controller(self) -> FabToolController:
@@ -402,6 +406,12 @@ class Fab_Operation(object):
     def get_name(self) -> str:
         """Return Fab_Operation name."""
         return self.Name
+
+    # Fab_Operation.selectShopBit():
+    def selectShopBit(self, shop_bit: Fab_ShopBit) -> None:
+        """Select a Fab_Shop bit for a Fab_Operation."""
+        assert self.SelectedShopBit is None, "Fab_Operation.setShopBit(): already set"
+        self.SelectedShopBit = shop_bit
 
     # Fab_Operation.getOperationOrder():
     def getOperationOrder(self, bit: FabBit) -> Fab_OperationOrder:
@@ -1602,6 +1612,7 @@ class FabMount(object):
         if tracing:
             print(f"{tracing}=>FabMount.post_produce1('{self.Name}'):")
 
+        # Scan *operations* and perform conversions/expansions as needed into *expanded_operations*:
         operations: List[Fab_Operation] = self._Operations
         before_operations_size: int = len(operations)
         expanded_operations: List[Fab_Operation] = []
@@ -1609,7 +1620,44 @@ class FabMount(object):
         for operation in self._Operations:
             operation.post_produce1(produce_state, expanded_operations, tracing=next_tracing)
 
+        # Perform the initial sort of *expanded_operations*.  This maintains fence sub-groups
+        # and maintains operation order (e.g. center drill before drill, etc.)
         expanded_operations.sort(key=Fab_Operation.getInitialOperationKeyTrampoline)
+
+        # The goal here is to minimize the number of times that a part needs to be moved between
+        # shops and machines.  Each time the part has to visit another machine is annoying.
+        current_shop_index: int = produce_state.CurrentShopIndex
+        current_machine_index: int = produce_state.CurrentMachineIndex
+        for operation in expanded_operations:
+            same_machine_shop_bit: Optional[Fab_ShopBit] = None
+            same_shop_bit: Optional[Fab_ShopBit] = None
+            other_shop_bit: Optional[Fab_ShopBit] = None
+            shop_bits: Tuple[Fab_ShopBit, ...] = operation.ShopBits
+            for shop_bit in shop_bits:
+                if shop_bit.ShopIndex == current_shop_index:
+                    if shop_bit.MachineIndex == current_machine_index:
+                        if same_machine_shop_bit is None:
+                            same_machine_shop_bit = shop_bit
+                            break  # This is the one to use, no need to look any further.
+                    else:  # pragma: no unit cover
+                        if same_shop_bit is None:
+                            same_shop_bit = shop_bit
+                elif other_shop_bit is None:  # pragma: no unit cover
+                    other_shop_bit = shop_bit
+
+            if same_machine_shop_bit is not None:
+                operation.selectShopBit(same_machine_shop_bit)
+            elif same_shop_bit is not None:  # pragma: no unit cover
+                operation.selectShopBit(same_shop_bit)
+                current_machine_index = same_shop_bit.ShopIndex
+            elif other_shop_bit is not None:  # pragma: no unit cover
+                operation.selectShopBit(other_shop_bit)
+                current_shop_index = other_shop_bit.ShopIndex
+                current_machine_index = other_shop_bit.MachineIndex
+            else:  # pragma: no unit cover
+                raise RuntimeError("FabMount.post_produce1(): No matching shop bit found.")
+        produce_state.CurrentShopIndex = current_shop_index
+        produce_state.CurrentMachineIndex = current_machine_index
 
         self._Operations = expanded_operations
         if tracing:
@@ -2045,6 +2093,10 @@ class FabSolid(FabNode):
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabSolid.post_produce1({self.Label})")
+
+        # Reset the preferred shop and machine.
+        produce_state.CurrentShopIndex = 0
+        produce_state.CurrentMachineIndex = 0
 
         # Expand the operations for each *mount*:
         mount: FabMount

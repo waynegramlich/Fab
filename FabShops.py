@@ -781,7 +781,6 @@ class Fab_ShopBit(object):
       This is typically a negative number since more negative number sorts first.
     * *Shop* (FabShop): The shop that tool bit.
     * *ShopIndex* (int): The index of the FabShop in FabShops.
-      This is used to distinguish
     * *Machine* (FabMachine): The machine that can use the tool bit.
     * *MachineIndex* (int): The machine precedence order (lower values sort first.)
     * *Bit*: (FabBit): The machine tool bit.
