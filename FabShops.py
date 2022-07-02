@@ -822,14 +822,6 @@ class Fab_ShopBit(object):
             Machine=cnc_machine, MachineIndex=0, Bit=end_mill_bit, ToolNumber=1)
         return shop_bit
 
-    # Fab_ShopBit.replaceBitPriority():
-    def replaceBitPriority(self, bit_priority: float) -> "Fab_ShopBit":
-        """Return a Fab_Shopbit copy with its BitPrioriy replaced."""
-        replaced_shop_bit: Fab_ShopBit = Fab_ShopBit(
-            bit_priority, self.Shop, self.ShopIndex, self.Machine, self.MachineIndex,
-            self.Bit, self.ToolNumber)
-        return replaced_shop_bit
-
     # Fab_ShopBit._unit_tests():
     @staticmethod
     def _unit_tests(tracing: str = "") -> None:

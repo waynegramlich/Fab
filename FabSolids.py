@@ -492,12 +492,12 @@ class Fab_Operation(object):
     def post_produce1(
             self, produce_state: Fab_ProduceState,
             expanded_operations: "List[Fab_Operation]", tracing: str = "") -> None:
-        """Expand simple operations as approprated."""
+        """Expand simple operations as approprate."""
         expanded_operations.append(self)  # pragma: no unit cover
         if tracing:
             print(f"{tracing}<=>{type(self)}.post_produce1()")
 
-    # Fab_Operation.post_produce2():x
+    # Fab_Operation.post_produce2():
     def post_produce2(self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
         raise NotImplementedError(
             f"{type(self)}.post_produce2() is not implemented")  # pragma: no unit cover
@@ -1606,8 +1606,9 @@ class FabMount(object):
 
     # FabMount.post_produce1():
     def post_produce1(
-            self, produce_state: Fab_ProduceState, tracing: str = "") -> None:
-        """Expand and transform operations."""
+            self, produce_state: Fab_ProduceState,
+            expanded_mounts: List["FabMount"], tracing: str = "") -> None:
+        """Expand both Mounts and Operations within each Mount."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}=>FabMount.post_produce1('{self.Name}'):")
@@ -1626,12 +1627,40 @@ class FabMount(object):
 
         # The goal here is to minimize the number of times that a part needs to be moved between
         # shops and machines.  Each time the part has to visit another machine is annoying.
+        same_machine_operations: List[Fab_Operation] = []
+
+        # Now the *expanded_operations* need to select a specific Fab_ShopBit.  The preference
+        # is to always select one from the current shop and machine.  Failing that, a machine
+        # in the same shop is preferred.  Failing that, any machine from any shop that can do
+        # the operation is selected.  *expanded_mounts* is filled with one or more copies of
+        # the current Fab_Mount (i.e. *self*), where each individual Fab_Mount has Fab_ShopBit's
+        # are on the same machine.
+
+        # Helper function to create a copy of *self* that contains *operations*:
+        def flush_operations(
+                operations: List[Fab_Operation], expanded_mounts: List[FabMount]) -> None:
+            """Flush a list of Fab_Operation's into a new FabMount."""
+            if len(operations) > 0:
+                copied_operations: List[Fab_Operation] = operations[:]
+                del operations[:]
+                new_name: str = self._Name
+                if len(expanded_mounts) == 0:
+                    new_name = f"{self._Name}{len(expanded_mounts)+1}:03d"
+                new_mount: FabMount = FabMount(
+                    new_name, self._Solid, self._Contact, self._Normal, self._Orient,
+                    self._Depth, self._Query)
+                new_mount._Operations = copied_operations
+                expanded_mounts.append(new_mount)
+
+        # Sweep across *expanded_operations*:
         current_shop_index: int = produce_state.CurrentShopIndex
         current_machine_index: int = produce_state.CurrentMachineIndex
         for operation in expanded_operations:
             same_machine_shop_bit: Optional[Fab_ShopBit] = None
             same_shop_bit: Optional[Fab_ShopBit] = None
             other_shop_bit: Optional[Fab_ShopBit] = None
+
+            # Sweep across *shop_bits* to select the closest to the current machine.
             shop_bits: Tuple[Fab_ShopBit, ...] = operation.ShopBits
             for shop_bit in shop_bits:
                 if shop_bit.ShopIndex == current_shop_index:
@@ -1645,21 +1674,29 @@ class FabMount(object):
                 elif other_shop_bit is None:  # pragma: no unit cover
                     other_shop_bit = shop_bit
 
+            # Now decide if a machine switch happened:
             if same_machine_shop_bit is not None:
                 operation.selectShopBit(same_machine_shop_bit)
-            elif same_shop_bit is not None:  # pragma: no unit cover
-                operation.selectShopBit(same_shop_bit)
-                current_machine_index = same_shop_bit.ShopIndex
-            elif other_shop_bit is not None:  # pragma: no unit cover
-                operation.selectShopBit(other_shop_bit)
-                current_shop_index = other_shop_bit.ShopIndex
-                current_machine_index = other_shop_bit.MachineIndex
+                same_machine_operations.append(operation)
             else:  # pragma: no unit cover
-                raise RuntimeError("FabMount.post_produce1(): No matching shop bit found.")
+                if same_shop_bit is not None:  # pragma: no unit cover
+                    operation.selectShopBit(same_shop_bit)
+                    current_machine_index = same_shop_bit.ShopIndex
+                elif other_shop_bit is not None:  # pragma: no unit cover
+                    operation.selectShopBit(other_shop_bit)
+                    current_shop_index = other_shop_bit.ShopIndex
+                    current_machine_index = other_shop_bit.MachineIndex
+                else:  # pragma: no unit cover
+                    raise RuntimeError("FabMount.post_produce1(): No matching shop bit found.")
+                # Create operation here:
+                flush_operations(same_machine_operations, expanded_mounts)
+                same_machine_operations = [operation]
+
+        # Wrap up *expanded_operations*:
+        flush_operations(same_machine_operations, expanded_mounts)
         produce_state.CurrentShopIndex = current_shop_index
         produce_state.CurrentMachineIndex = current_machine_index
 
-        self._Operations = expanded_operations
         if tracing:
             print(f"{tracing}=>FabMount.post_produce1('{self.Name}'): "
                   f"|{before_operations_size}| => |{len(expanded_operations)}|")
@@ -2100,8 +2137,10 @@ class FabSolid(FabNode):
 
         # Expand the operations for each *mount*:
         mount: FabMount
+        expanded_mounts: List[FabMount] = []
         for mount in self._Mounts:
-            mount.post_produce1(produce_state, tracing=next_tracing)
+            mount.post_produce1(produce_state, expanded_mounts, tracing=next_tracing)
+        self._Mounts = expanded_mounts
 
         if tracing:
             print(f"{tracing}<=FabSolid.post_produce1({self.Label})")

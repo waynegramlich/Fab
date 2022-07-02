@@ -14,7 +14,7 @@ This internal classes are managed by FabMount methods.
   * 1.3 [getHash()](#fabsolids----gethash): Return a has the current contents of a FabMount.
   * 1.4 [record_operation()](#fabsolids----record-operation): Record an operation to a FabMount.
   * 1.5 [setGeometryGroup()](#fabsolids----setgeometrygroup): Set the FabMount GeometryGroup need for the FabGeometryContex.
-  * 1.6 [post_produce1()](#fabsolids----post-produce1): Expand and transform operations.
+  * 1.6 [post_produce1()](#fabsolids----post-produce1): Expand both Mounts and Operations within each Mount.
   * 1.7 [post_produce2()](#fabsolids----post-produce2): Perform FabMount phase 1 post production.
   * 1.8 [to_json()](#fabsolids----to-json): Return FabMount JSON structure.
   * 1.9 [extrude()](#fabsolids----extrude): Perform a extrude operation.
@@ -61,7 +61,7 @@ This internal classes are managed by FabMount methods.
   * 7.9 [get_geometries_hash()](#fabsolids----get-geometries-hash): Return hash of FabGeometry's.
   * 7.10 [setShopBits()](#fabsolids----setshopbits): Set the Fab_Operation ShopBits attribute.
   * 7.11 [produce()](#fabsolids----produce): Return the operation sort key.
-  * 7.12 [post_produce1()](#fabsolids----post-produce1): Expand simple operations as approprated.
+  * 7.12 [post_produce1()](#fabsolids----post-produce1): Expand simple operations as approprate.
   * 7.13 [post_produce2()](#fabsolids----post-produce2): NO DOC STRING!
   * 7.14 [to_json()](#fabsolids----to-json): Return a base JSON dictionary for an Fab_Operation.
 * 8 Class: [Fab_OperationKey](#fabsolids--fab-operationkey):
@@ -124,9 +124,9 @@ Set the FabMount GeometryGroup need for the FabGeometryContex.
 
 ### <a name="fabsolids----post-produce1"></a>1.6 `FabMount.`post_produce1():
 
-FabMount.post_produce1(self, produce_state: FabNodes.Fab_ProduceState, tracing: str = '') -> None:
+FabMount.post_produce1(self, produce_state: FabNodes.Fab_ProduceState, expanded_mounts: List[ForwardRef('FabMount')], tracing: str = '') -> None:
 
-Expand and transform operations.
+Expand both Mounts and Operations within each Mount.
 
 ### <a name="fabsolids----post-produce2"></a>1.7 `FabMount.`post_produce2():
 
@@ -510,7 +510,7 @@ Return the operation sort key.
 
 Fab_Operation.post_produce1(self, produce_state: FabNodes.Fab_ProduceState, expanded_operations: 'List[Fab_Operation]', tracing: str = '') -> None:
 
-Expand simple operations as approprated.
+Expand simple operations as approprate.
 
 ### <a name="fabsolids----post-produce2"></a>7.13 `Fab_Operation.`post_produce2():
 
