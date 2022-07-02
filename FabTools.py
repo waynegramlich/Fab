@@ -371,6 +371,7 @@ class FabBits(object):
         with tempfile.TemporaryDirectory() as temporary_directory:
             assert isinstance(temporary_directory, str), temporary_directory
             temporary_tools_directory: PathFile = PathFile(temporary_directory) / "Tools"
+            shapes.write(temporary_tools_directory, tracing=next_tracing)
             bits.write(temporary_tools_directory, tracing=next_tracing)
             # The 2nd call should succeed without error:
             bits.write(temporary_tools_directory, tracing=next_tracing)

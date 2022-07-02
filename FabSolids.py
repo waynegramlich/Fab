@@ -712,12 +712,32 @@ class Fab_Extrude(Fab_Operation):
 
         # Step 1b: Transfer *geometries* to *extrude_context* and perform the extrusion:
         geometry_prefix: str = f"{mount.Name}_{self.Name}"
-        for index, geometry in enumerate(self._Geometries):
+        geometries: Tuple[FabGeometry, ...] = self._Geometries
+        for index, geometry in enumerate(geometries):
             if tracing:
                 print(f"{tracing}Geometry[{index}]:{geometry=}")
             geometry.produce(extrude_context, geometry_prefix, index, tracing=next_tracing)
         # geometry_context.WorkPlane.close(tracing=next_tracing)
         extrude_context.Query.extrude(self.Depth, tracing=next_tracing)
+
+        # Step 1c: Save extrusion to a STEP file:
+        prefix: Fab_Prefix = self.Prefix
+        prefix_text: str = prefix.to_string()
+        extrude_name: str = f"{prefix_text}__{self.Name}__extrude"
+        extrude_path = produce_state.Steps.activate(extrude_name,
+                                                    self.get_geometries_hash(geometries))
+        self._StepFile = str(extrude_path)
+        if not extrude_path.exists():
+            # Save it out here.
+            extrude_assembly = cq.Assembly(
+                extrude_context.Query.WorkPlane, name=extrude_name,
+                color=cq.Color(0.5, 0.5, 0.5, 0.5))
+            _ = extrude_assembly
+
+            # Use Fab_Steps to manage duplicates.
+            with _suppress_stdout():
+                extrude_assembly.save(str(extrude_path), "STEP")
+        assert extrude_path.exists()
 
         # Do Contour computations:
         plane: FabPlane = extrude_context.Plane
@@ -759,7 +779,7 @@ class Fab_Extrude(Fab_Operation):
         direction_modes: Tuple[str, ...] = ("CCW", "CW")
         side_modes: Tuple[str, ...] = ("Inside", "Outside")
         json_dict: Dict[str, Any] = super().to_json()
-        json_dict["StepFile"] = "Fab_Extrude.to_json:_StepFile"
+        json_dict["StepFile"] = self._StepFile
         json_dict["_Active"] = self.Active
         json_dict["_ClearanceHeight"] = self._StartDepth + 10.0  # TODO: Fix
         json_dict["_CoolantMode"] = coolant_modes[1]  # TODO: Fix

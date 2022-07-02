@@ -792,7 +792,8 @@ class Fab_Prefix(object):
         # command is done.  The `ls` command as evolved away from strict ASCII order to a much
         # more nuanced Unicode sort order that depends upon the LC_COLLATE and LANG environment
         # manuals.  To avoid this confusion, the prefix consists of letter and digits in a fixed
-        # order. The letter "a" always sorts before the the letters "d", "s", "m" and "o".
+        # order. The letter "a" always sorts before the the letters "d", "s", "m" and "o" when
+        # the `ls` command is used.  (The `ls` command does **NOT** use ASCII sort any longer.)
         # "XX" and "XXX" are stand-ins for "00" and "000" which are uninitialized values.
         documentation: str = f"d{self.DocumentIndex:02d}" if self.DocumentIndex > 0 else "a__"
         solid: str = f"s{self.SolidIndex:03d}" if self.SolidIndex > 0 else "a___"
