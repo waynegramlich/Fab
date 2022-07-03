@@ -18,7 +18,9 @@ The Utility classes are:
 from dataclasses import dataclass
 from typeguard import check_type, check_argument_types
 from typing import Any, ClassVar, Dict, List, Tuple
+
 from FabShops import FabCNC, FabMachine, Fab_ShopBit
+from FabToolBits import FabDrillBit
 from FabToolTemplates import FabBit
 
 
@@ -503,9 +505,10 @@ class FabToolController(object):
         assert check_argument_types(), "FabToolController.from"
         machine: FabMachine = shop_bit.Machine
         bit: FabBit = shop_bit.Bit
-        cutting_edge_height: float = bit.getNumber("CuttingEdgeHeight")
+        is_drill: bool = isinstance(bit, FabDrillBit)
+        cutting_edge_height: float = bit.getNumber("Length" if is_drill else "CuttingEdgeHeight")
         diameter: float = bit.getNumber("Diameter")
-        flutes: int = int(bit.getNumber("Flutes"))
+        flutes: int = 2 if is_drill else int(bit.getNumber("Flutes"))
         chip_load: float = material.getChipLoad(diameter)
 
         # TODO: Deal with power limits here.

@@ -1393,17 +1393,18 @@ class Fab_Hole(Fab_Operation):
                 with _suppress_stdout():
                     assembly.save(self.StepFile, "STEP")
 
-            tool_controller: FabToolController = FabToolController(
-                BitName="5mm_Drill",
-                Cooling="Flood",
-                HorizontalFeed=2.34,
-                HorizontalRapid=23.45,
-                SpindleDirection=True,
-                SpindleSpeed=5432,
-                ToolNumber=2,
-                VerticalFeed=1.23,
-                VerticalRapid=12.34
-            )
+            selected_shop_bit: Optional[Fab_ShopBit] = self.SelectedShopBit
+            assert isinstance(selected_shop_bit, Fab_ShopBit), selected_shop_bit
+            selected_bit: FabBit = selected_shop_bit.Bit
+            assert isinstance(selected_bit, FabDrillBit), selected_bit
+            material: FabMaterial = self.Mount.Solid.Material
+            assert isinstance(material, FabMaterial), material
+
+            tool_controller: FabToolController
+            maxiumum_tool_depth: float
+            tool_controller, maximum_tool_depth = FabToolController.computeToolController(
+                material, selected_shop_bit, self.Depth)
+            _ = maximum_tool_depth
             self.set_tool_controller(tool_controller, produce_state.ToolControllersTable)
 
         if tracing:
