@@ -378,7 +378,7 @@ class FabCNC(FabMachine):
         check_type("FabCNC.Library", self.Library, FabLibrary)
 
     # FabCNC.getMaximumSpindleSpeed():
-    def getMaximumSpindleSpeed(self) -> float:
+    def getMaximumSpindleSpeed(self) -> int:
         """Return the maximum maximum spindle speed."""
         return self.Spindle.Speed
 

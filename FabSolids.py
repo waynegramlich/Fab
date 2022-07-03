@@ -772,7 +772,7 @@ class Fab_Extrude(Fab_Operation):
             HorizontalFeed=2.34,
             HorizontalRapid=23.45,
             SpindleDirection=True,
-            SpindleSpeed=5432.0,
+            SpindleSpeed=5432,
             ToolNumber=1,
             VerticalFeed=1.23,
             VerticalRapid=12.34
@@ -1058,18 +1058,21 @@ class Fab_Pocket(Fab_Operation):
         chip_load: float = material.getChipLoad(selected_diameter)
         machine: FabMachine = selected_shop_bit.Machine
         assert isinstance(machine, FabCNCMill), machine
+        maximum_spindle_speed: int = machine.getMaximumSpindleSpeed()
+        horizontal_rapid: float = machine.getHorizontalRapidFeed()
+        vertical_rapid: float = machine.getVerticalRapidFeed()
         _ = machine
         _ = chip_load
         tool_controller: FabToolController = FabToolController(
             BitName="5mm_Endmill",
             Cooling="Flood",
             HorizontalFeed=2.34,
-            HorizontalRapid=23.45,
+            HorizontalRapid=horizontal_rapid,
             SpindleDirection=True,
-            SpindleSpeed=5432.0,
-            ToolNumber=1,
+            SpindleSpeed=maximum_spindle_speed,
+            ToolNumber=selected_shop_bit.ToolNumber,
             VerticalFeed=1.23,
-            VerticalRapid=12.34
+            VerticalRapid=vertical_rapid
         )
         self.set_tool_controller(tool_controller, produce_state.ToolControllersTable)
 
@@ -1410,7 +1413,7 @@ class Fab_Hole(Fab_Operation):
                 HorizontalFeed=2.34,
                 HorizontalRapid=23.45,
                 SpindleDirection=True,
-                SpindleSpeed=5432.0,
+                SpindleSpeed=5432,
                 ToolNumber=2,
                 VerticalFeed=1.23,
                 VerticalRapid=12.34

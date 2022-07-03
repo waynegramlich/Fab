@@ -245,8 +245,8 @@ class FabToolController(object):
         check_type("FabToolController.Cooling", self.BitName, str)
         check_type("FabToolController.HorizontalFeed", self.HorizontalFeed, float)
         check_type("FabToolController.HorizontalRapid", self.HorizontalRapid, float)
-        check_type("FabToolController.SpindleDirection", self.SpindleDirection, float)
-        check_type("FabToolController.SpindleSpeed", self.SpindleSpeed, float)
+        check_type("FabToolController.SpindleDirection", self.SpindleDirection, bool)
+        check_type("FabToolController.SpindleSpeed", self.SpindleSpeed, int)
         check_type("FabToolController.ToolNumber", self.ToolNumber, int)
         check_type("FabToolController.VerticalFeed", self.VerticalFeed, float)
         check_type("FabToolController.VerticalRapid", self.VerticalRapid, float)
@@ -279,7 +279,7 @@ class FabToolController(object):
             HorizontalFeed=1.0,
             HorizontalRapid=250.0,
             SpindleDirection=True,
-            SpindleSpeed=5000.0,
+            SpindleSpeed=5000,
             ToolNumber=1,
             VerticalFeed=1.0,
             VerticalRapid=250.0
@@ -290,7 +290,7 @@ class FabToolController(object):
             HorizontalFeed=1.0,
             HorizontalRapid=250.0,
             SpindleDirection=True,
-            SpindleSpeed=5000.0,
+            SpindleSpeed=5000,
             ToolNumber=1,
             VerticalFeed=1.0,
             VerticalRapid=250.0
@@ -301,7 +301,7 @@ class FabToolController(object):
             HorizontalFeed=1.0,
             HorizontalRapid=250.0,
             SpindleDirection=True,
-            SpindleSpeed=5000.0,
+            SpindleSpeed=5000,
             ToolNumber=2,
             VerticalFeed=1.0,
             VerticalRapid=250.0
@@ -314,7 +314,7 @@ class FabToolController(object):
             "HorizontalFeed": 1.0,
             "HorizontalRapid": 250.0,
             "SpindleDirection": True,
-            "SpindleSpeed": 5000.0,
+            "SpindleSpeed": 5000,
             "ToolNumber": 1,
             "VerticalFeed": 1.0,
             "VerticalRapid": 250.0,

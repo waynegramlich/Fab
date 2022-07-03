@@ -71,7 +71,7 @@ Constructor:
 
 ### <a name="fabshops----getmaximumspindlespeed"></a>2.1 `FabCNC.`getMaximumSpindleSpeed():
 
-FabCNC.getMaximumSpindleSpeed(self) -> float:
+FabCNC.getMaximumSpindleSpeed(self) -> int:
 
 Return the maximum maximum spindle speed.
 

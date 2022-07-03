@@ -209,8 +209,8 @@ class FabCQtoFC(object):
                     "SpindleDirection", tool_controller_dict, bool,
                     tree_path, f"get_tool_and controller.SpindleDirection {tool_controller_dict}"))
             spindle_speed = cast(
-                float, self.key_verify(
-                    "SpindleSpeed", tool_controller_dict, float,
+                int, self.key_verify(
+                    "SpindleSpeed", tool_controller_dict, int,
                     tree_path, "get_tool_and controller.SpindleSpeed"))
             tool_number = cast(
                 int, self.key_verify(
