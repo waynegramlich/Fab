@@ -41,7 +41,7 @@ Attributes:
   The range that axis can span in millimeters (Linear=True) or in degrees (Linear=False).
   If there are no restrictions for the rotational axis, set to 0.0.
 * Feed (*float*):
-  The maximum speed for the axis in mm/sec (Linear=True) or degrees/sec (Linear=False).
+  The maximum speed for the axis in mm/min (Linear=True) or degrees/sec (Linear=False).
 * Acceleration (*float*):
   The maximum acceleration for axis in mm/sec^2 (Linear=True) or degrees/sec^2 (Linear=False).
   Set to 0.0 if maximum acceleration is not known.

@@ -483,15 +483,14 @@ class FabToolController(object):
             "VerticalRapid": self.VerticalRapid,
         }
 
-    # FabToolController.fromCNCMaterialShopBit()
+    # FabToolController.computeToolController()
     @staticmethod
-    def fromCNCMaterialShopBit(
-            cnc: FabCNC, material: FabMaterial, shop_bit: Fab_ShopBit, desired_depth: float,
+    def computeToolController(
+            material: FabMaterial, shop_bit: Fab_ShopBit, desired_depth: float,
     ) -> Tuple["FabToolController", float]:
-        """Return a FabToolController for a given FabCNC, FabMaterial and Fab_ShopBit
+        """Return FabToolController for given FabCNC, FabMaterial and Fab_ShopBit.
 
         Arguments:
-        * *cnc* (FabCNC): The CNC machine to use.
         * *material* (FabMaterial): The material to use.
         * *shop_bit* (Fab_ShopBit): The Fab_ShopBit to use.
         * *desired_depth* (float): The desired depth of cut.
@@ -506,27 +505,33 @@ class FabToolController(object):
         bit: FabBit = shop_bit.Bit
         cutting_edge_height: float = bit.getNumber("CuttingEdgeHeight")
         diameter: float = bit.getNumber("Diameter")
+        flutes: int = int(bit.getNumber("Flutes"))
         chip_load: float = material.getChipLoad(diameter)
-        _ = machine
-        _ = chip_load
 
         # TODO: Deal with power limits here.
         # CNC machines do not have inifite spindle power.  For soft materials (e.g. plastic)
-        # the CNC machine will go to maximum depth remove a lot of material.
-        maximum_depth: float = min(cutting_edge_height, desired_depth)
+        # the CNC machine will go to maximum speed depth remove a lot of material quickly.
+        # For harder materials the chip load goes down *AND* the power required to cut each
+        # chip goes up.  By the way `diameter / 3.0` is a heuristic.
+        assert isinstance(machine, FabCNC)
+        maximum_depth: float = min(cutting_edge_height, desired_depth, diameter / 3.0)
+        maximum_spindle_speed: int = machine.getMaximumSpindleSpeed()
+        horizontal_rapid: float = machine.getHorizontalRapidFeed()
+        vertical_rapid: float = machine.getVerticalRapidFeed()
 
-        maximum_spindle_speed: int = cnc.getMaximumSpindleSpeed()
-        horizontal_rapid: float = cnc.getHorizontalRapidFeed()
-        vertical_rapid: float = cnc.getVerticalRapidFeed()
+        # See [Table Feed]
+        # (https://www.machiningdoctor.com/calculators/milling-calculators-2/#table-fead)
+        horizontal_feed: float = min(horizontal_rapid, maximum_spindle_speed * flutes * chip_load)
+        vertical_feed: float = horizontal_feed / 4.0  # Heuristic
         tool_controller: FabToolController = FabToolController(
             BitName="5mm_Endmill",
             Cooling="Flood",
-            HorizontalFeed=2.34,
+            HorizontalFeed=horizontal_feed,
             HorizontalRapid=horizontal_rapid,
             SpindleDirection=True,
             SpindleSpeed=maximum_spindle_speed,
             ToolNumber=shop_bit.ToolNumber,
-            VerticalFeed=1.23,
+            VerticalFeed=vertical_feed,
             VerticalRapid=vertical_rapid
         )
         return (tool_controller, maximum_depth)

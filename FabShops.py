@@ -48,7 +48,7 @@ class FabAxis(object):
       The range that axis can span in millimeters (Linear=True) or in degrees (Linear=False).
       If there are no restrictions for the rotational axis, set to 0.0.
     * Feed (*float*):
-      The maximum speed for the axis in mm/sec (Linear=True) or degrees/sec (Linear=False).
+      The maximum speed for the axis in mm/min (Linear=True) or degrees/sec (Linear=False).
     * Acceleration (*float*):
       The maximum acceleration for axis in mm/sec^2 (Linear=True) or degrees/sec^2 (Linear=False).
       Set to 0.0 if maximum acceleration is not known.
@@ -482,13 +482,13 @@ class FabCNCMill(FabCNC):
     def getExample() -> "FabCNCMill":
         """Return an example FabCNCMill."""
         x_axis: FabAxis = FabAxis(
-            Name="X Axis", Letter="X", Linear=True, Range=100.0, Feed=10.0, Acceleration=0.0,
+            Name="X Axis", Letter="X", Linear=True, Range=1000.0, Feed=500.0, Acceleration=0.0,
             EndSensors=True, Brake=False)
         y_axis: FabAxis = FabAxis(
-            Name="Y Axis", Letter="Y", Linear=True, Range=100.0, Feed=10.0, Acceleration=0.0,
+            Name="Y Axis", Letter="Y", Linear=True, Range=300.0, Feed=500.0, Acceleration=0.0,
             EndSensors=True, Brake=False)
         z_axis: FabAxis = FabAxis(
-            Name="Z Axis", Letter="Z", Linear=True, Range=100.0, Feed=10.0, Acceleration=0.0,
+            Name="Z Axis", Letter="Z", Linear=True, Range=500.0, Feed=350.0, Acceleration=0.0,
             EndSensors=True, Brake=False)
         axes: Tuple[FabAxis, ...] = (x_axis, y_axis, z_axis)
         controller: FabController = FabController.example()

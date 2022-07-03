@@ -34,7 +34,7 @@ from FabNodes import FabBox, FabNode, Fab_Prefix, Fab_ProduceState
 from FabToolBits import FabDrillBit, FabEndMillBit, FabVBit
 from FabToolTemplates import FabBit
 from FabUtilities import FabColor, FabMaterial, FabToolController
-from FabShops import Fab_ShopBit, FabMachine, FabCNCMill, FabShops
+from FabShops import Fab_ShopBit, FabShops
 
 # The *_suppress_stdout* function is based on code from:
 #   [I/O Redirect](https://stackoverflow.com/questions/4675728/redirect-stdout-to-a-file-in-python)
@@ -1054,26 +1054,11 @@ class Fab_Pocket(Fab_Operation):
         assert isinstance(selected_bit, FabEndMillBit), selected_bit
         material: FabMaterial = self.Mount.Solid.Material
         assert isinstance(material, FabMaterial), material
-        selected_diameter: float = selected_bit.getNumber("Diameter")
-        chip_load: float = material.getChipLoad(selected_diameter)
-        machine: FabMachine = selected_shop_bit.Machine
-        assert isinstance(machine, FabCNCMill), machine
-        maximum_spindle_speed: int = machine.getMaximumSpindleSpeed()
-        horizontal_rapid: float = machine.getHorizontalRapidFeed()
-        vertical_rapid: float = machine.getVerticalRapidFeed()
-        _ = machine
-        _ = chip_load
-        tool_controller: FabToolController = FabToolController(
-            BitName="5mm_Endmill",
-            Cooling="Flood",
-            HorizontalFeed=2.34,
-            HorizontalRapid=horizontal_rapid,
-            SpindleDirection=True,
-            SpindleSpeed=maximum_spindle_speed,
-            ToolNumber=selected_shop_bit.ToolNumber,
-            VerticalFeed=1.23,
-            VerticalRapid=vertical_rapid
-        )
+
+        tool_controller: FabToolController
+        maximum_depth: float
+        tool_controller, maximum_depth = FabToolController.computeToolController(
+            material, selected_shop_bit, self._Depth)
         self.set_tool_controller(tool_controller, produce_state.ToolControllersTable)
 
         if tracing:
