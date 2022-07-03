@@ -16,8 +16,10 @@ The Utility classes are:
 # <--------------------------------------- 100 characters ---------------------------------------> #
 
 from dataclasses import dataclass
-from typeguard import check_type
+from typeguard import check_type, check_argument_types
 from typing import Any, ClassVar, Dict, List, Tuple
+from FabShops import FabCNC, FabMachine, Fab_ShopBit
+from FabToolTemplates import FabBit
 
 
 # FabColor:
@@ -208,136 +210,6 @@ class FabColor(object):
 
         if tracing:
             print(f"{tracing}<=FabColor._unit_tests()")
-
-
-# FabToolController:
-@dataclass(frozen=True)
-class FabToolController(object):
-    """FabToolController: Speeds/Feeds information.
-
-    Attributes:
-    * *BitName* (str): The name Bit file name in `.../Tools/Bit/*.fctb` where `*` is BitName.
-    * *Cooling* (str): The cooling to use which is one of "None", "Flood", or "Mist".
-    * *HorizontalFeed* (float): The material horizontal feed rate in mm/sec.
-    * *HorizontalRapid* (float): The horizontal rapid feed rate in mm/sec.
-    * *SpindleDirection* (bool): The spindle direction where True means clockwise.
-    * *SpindleSpeed* (float): The spindle rotation speed in rotations per second.
-    * *ToolNumber* (int): The tool number to use.
-    * *VerticalFeed* (float): The material vertical free rate in mm/sec.
-    * *VerticalRapid* (float): The vertical rapid feed rate in mm/sec.
-
-    """
-
-    BitName: str
-    Cooling: str
-    HorizontalFeed: float
-    HorizontalRapid: float
-    SpindleDirection: bool
-    SpindleSpeed: float
-    ToolNumber: int
-    VerticalFeed: float
-    VerticalRapid: float
-
-    # FabToolController.__post_init__():
-    def __post_init__(self) -> None:
-        """Fininsh initializing FabToolController"""
-        check_type("FabToolController.BitName", self.BitName, str)
-        check_type("FabToolController.Cooling", self.BitName, str)
-        check_type("FabToolController.HorizontalFeed", self.HorizontalFeed, float)
-        check_type("FabToolController.HorizontalRapid", self.HorizontalRapid, float)
-        check_type("FabToolController.SpindleDirection", self.SpindleDirection, bool)
-        check_type("FabToolController.SpindleSpeed", self.SpindleSpeed, int)
-        check_type("FabToolController.ToolNumber", self.ToolNumber, int)
-        check_type("FabToolController.VerticalFeed", self.VerticalFeed, float)
-        check_type("FabToolController.VerticalRapid", self.VerticalRapid, float)
-
-    # FabToolController.to_json():
-    def to_json(self) -> Dict[str, Any]:
-        """Return a dictionary containing the controller information."""
-        return {
-            "BitName": self.BitName,
-            "Cooling": self.Cooling,
-            "HorizontalFeed": self.HorizontalFeed,
-            "HorizontalRapid": self.HorizontalRapid,
-            "SpindleDirection": self.SpindleDirection,
-            "SpindleSpeed": self.SpindleSpeed,
-            "ToolNumber": self.ToolNumber,
-            "VerticalFeed": self.VerticalFeed,
-            "VerticalRapid": self.VerticalRapid,
-        }
-
-    # FabController._unit_tests()
-    @staticmethod
-    def _unit_tests(tracing: str = "") -> None:
-        """Perform FabController unit tests."""
-        if tracing:
-            print(f"{tracing}=>FabController._unit_tests()")
-
-        tool_controller1a: FabToolController = FabToolController(
-            BitName="5mm_Endmill",
-            Cooling="Flood",
-            HorizontalFeed=1.0,
-            HorizontalRapid=250.0,
-            SpindleDirection=True,
-            SpindleSpeed=5000,
-            ToolNumber=1,
-            VerticalFeed=1.0,
-            VerticalRapid=250.0
-        )
-        tool_controller1b: FabToolController = FabToolController(
-            BitName="5mm_Endmill",
-            Cooling="Flood",
-            HorizontalFeed=1.0,
-            HorizontalRapid=250.0,
-            SpindleDirection=True,
-            SpindleSpeed=5000,
-            ToolNumber=1,
-            VerticalFeed=1.0,
-            VerticalRapid=250.0
-        )
-        tool_controller2: FabToolController = FabToolController(
-            BitName="5mm_Drill",
-            Cooling="Flood",
-            HorizontalFeed=1.0,
-            HorizontalRapid=250.0,
-            SpindleDirection=True,
-            SpindleSpeed=5000,
-            ToolNumber=2,
-            VerticalFeed=1.0,
-            VerticalRapid=250.0
-        )
-        assert tool_controller1a == tool_controller1b, "FabToolController.__eq__() failed"
-        assert tool_controller1a != tool_controller2, "FabToolController.__eq__() failed"
-        desired_json: Dict[str, Any] = {
-            "BitName": "5mm_Endmill",
-            "Cooling": "Flood",
-            "HorizontalFeed": 1.0,
-            "HorizontalRapid": 250.0,
-            "SpindleDirection": True,
-            "SpindleSpeed": 5000,
-            "ToolNumber": 1,
-            "VerticalFeed": 1.0,
-            "VerticalRapid": 250.0,
-        }
-        actual_json: Dict[str, Any] = tool_controller1b.to_json()
-        assert desired_json == actual_json, ("Dict mismatch", desired_json, actual_json)
-        tool_controller_table: Dict[FabToolController, int] = {}
-
-        tool_controller_table[tool_controller1a] = 1
-        assert tool_controller1a in tool_controller_table, "Insert 1a failed"
-        assert tool_controller1b in tool_controller_table, "Insert 1b failed"
-        assert tool_controller_table[tool_controller1a] == 1, "Lookup 1a failed"
-        assert tool_controller_table[tool_controller1b] == 1, "Lookup 1b failed"
-        assert len(tool_controller_table) == 1, "Table is wrong size"
-
-        assert tool_controller2 not in tool_controller_table, "Already in table?"
-        tool_controller_table[tool_controller2] = 2
-        assert tool_controller_table[tool_controller2] == 2, "Lookup failed"
-        assert tool_controller2 in tool_controller_table, "Insert failed"
-        assert len(tool_controller_table) == 2, "Table is wrong size"
-
-        if tracing:
-            print(f"{tracing}<=FabController._unit_tests()")
 
 
 # FabMaterial:
@@ -553,6 +425,184 @@ class FabMaterial(object):
 
         if tracing:
             print(f"{tracing}<=FabMaterial._unit_tests()")
+
+
+# FabToolController:
+@dataclass(frozen=True)
+class FabToolController(object):
+    """FabToolController: Speeds/Feeds information.
+
+    Attributes:
+    * *BitName* (str): The name Bit file name in `.../Tools/Bit/*.fctb` where `*` is BitName.
+    * *Cooling* (str): The cooling to use which is one of "None", "Flood", or "Mist".
+    * *HorizontalFeed* (float): The material horizontal feed rate in mm/sec.
+    * *HorizontalRapid* (float): The horizontal rapid feed rate in mm/sec.
+    * *SpindleDirection* (bool): The spindle direction where True means clockwise.
+    * *SpindleSpeed* (float): The spindle rotation speed in rotations per second.
+    * *ToolNumber* (int): The tool number to use.
+    * *VerticalFeed* (float): The material vertical free rate in mm/sec.
+    * *VerticalRapid* (float): The vertical rapid feed rate in mm/sec.
+
+    """
+
+    BitName: str
+    Cooling: str
+    HorizontalFeed: float
+    HorizontalRapid: float
+    SpindleDirection: bool
+    SpindleSpeed: float
+    ToolNumber: int
+    VerticalFeed: float
+    VerticalRapid: float
+
+    # FabToolController.__post_init__():
+    def __post_init__(self) -> None:
+        """Fininsh initializing FabToolController"""
+        check_type("FabToolController.BitName", self.BitName, str)
+        check_type("FabToolController.Cooling", self.Cooling, str)
+        check_type("FabToolController.HorizontalFeed", self.HorizontalFeed, float)
+        check_type("FabToolController.HorizontalRapid", self.HorizontalRapid, float)
+        check_type("FabToolController.SpindleDirection", self.SpindleDirection, bool)
+        check_type("FabToolController.SpindleSpeed", self.SpindleSpeed, int)
+        check_type("FabToolController.ToolNumber", self.ToolNumber, int)
+        check_type("FabToolController.VerticalFeed", self.VerticalFeed, float)
+        check_type("FabToolController.VerticalRapid", self.VerticalRapid, float)
+
+    # FabToolController.to_json():
+    def to_json(self) -> Dict[str, Any]:
+        """Return a dictionary containing the controller information."""
+        return {
+            "BitName": self.BitName,
+            "Cooling": self.Cooling,
+            "HorizontalFeed": self.HorizontalFeed,
+            "HorizontalRapid": self.HorizontalRapid,
+            "SpindleDirection": self.SpindleDirection,
+            "SpindleSpeed": self.SpindleSpeed,
+            "ToolNumber": self.ToolNumber,
+            "VerticalFeed": self.VerticalFeed,
+            "VerticalRapid": self.VerticalRapid,
+        }
+
+    # FabToolController.fromCNCMaterialShopBit()
+    @staticmethod
+    def fromCNCMaterialShopBit(
+            cnc: FabCNC, material: FabMaterial, shop_bit: Fab_ShopBit, desired_depth: float,
+    ) -> Tuple["FabToolController", float]:
+        """Return a FabToolController for a given FabCNC, FabMaterial and Fab_ShopBit
+
+        Arguments:
+        * *cnc* (FabCNC): The CNC machine to use.
+        * *material* (FabMaterial): The material to use.
+        * *shop_bit* (Fab_ShopBit): The Fab_ShopBit to use.
+        * *desired_depth* (float): The desired depth of cut.
+
+        Returns:
+        * (FabToolController): The result FabToolController.
+        * (float): The permitted depth of cut.
+
+        """
+        assert check_argument_types(), "FabToolController.from"
+        machine: FabMachine = shop_bit.Machine
+        bit: FabBit = shop_bit.Bit
+        cutting_edge_height: float = bit.getNumber("CuttingEdgeHeight")
+        diameter: float = bit.getNumber("Diameter")
+        chip_load: float = material.getChipLoad(diameter)
+        _ = machine
+        _ = chip_load
+
+        # TODO: Deal with power limits here.
+        # CNC machines do not have inifite spindle power.  For soft materials (e.g. plastic)
+        # the CNC machine will go to maximum depth remove a lot of material.
+        maximum_depth: float = min(cutting_edge_height, desired_depth)
+
+        maximum_spindle_speed: int = cnc.getMaximumSpindleSpeed()
+        horizontal_rapid: float = cnc.getHorizontalRapidFeed()
+        vertical_rapid: float = cnc.getVerticalRapidFeed()
+        tool_controller: FabToolController = FabToolController(
+            BitName="5mm_Endmill",
+            Cooling="Flood",
+            HorizontalFeed=2.34,
+            HorizontalRapid=horizontal_rapid,
+            SpindleDirection=True,
+            SpindleSpeed=maximum_spindle_speed,
+            ToolNumber=shop_bit.ToolNumber,
+            VerticalFeed=1.23,
+            VerticalRapid=vertical_rapid
+        )
+        return (tool_controller, maximum_depth)
+
+    # FabToolController._unit_tests()
+    @staticmethod
+    def _unit_tests(tracing: str = "") -> None:
+        """Perform FabController unit tests."""
+        if tracing:
+            print(f"{tracing}=>FabToolController._unit_tests()")
+
+        tool_controller1a: FabToolController = FabToolController(
+            BitName="5mm_Endmill",
+            Cooling="Flood",
+            HorizontalFeed=1.0,
+            HorizontalRapid=250.0,
+            SpindleDirection=True,
+            SpindleSpeed=5000,
+            ToolNumber=1,
+            VerticalFeed=1.0,
+            VerticalRapid=250.0
+        )
+        tool_controller1b: FabToolController = FabToolController(
+            BitName="5mm_Endmill",
+            Cooling="Flood",
+            HorizontalFeed=1.0,
+            HorizontalRapid=250.0,
+            SpindleDirection=True,
+            SpindleSpeed=5000,
+            ToolNumber=1,
+            VerticalFeed=1.0,
+            VerticalRapid=250.0
+        )
+        tool_controller2: FabToolController = FabToolController(
+            BitName="5mm_Drill",
+            Cooling="Flood",
+            HorizontalFeed=1.0,
+            HorizontalRapid=250.0,
+            SpindleDirection=True,
+            SpindleSpeed=5000,
+            ToolNumber=2,
+            VerticalFeed=1.0,
+            VerticalRapid=250.0
+        )
+        assert tool_controller1a == tool_controller1b, "FabToolController.__eq__() failed"
+        assert tool_controller1a != tool_controller2, "FabToolController.__eq__() failed"
+        desired_json: Dict[str, Any] = {
+            "BitName": "5mm_Endmill",
+            "Cooling": "Flood",
+            "HorizontalFeed": 1.0,
+            "HorizontalRapid": 250.0,
+            "SpindleDirection": True,
+            "SpindleSpeed": 5000,
+            "ToolNumber": 1,
+            "VerticalFeed": 1.0,
+            "VerticalRapid": 250.0,
+        }
+        actual_json: Dict[str, Any] = tool_controller1b.to_json()
+        assert desired_json == actual_json, ("Dict mismatch", desired_json, actual_json)
+        tool_controller_table: Dict[FabToolController, int] = {}
+
+        tool_controller_table[tool_controller1a] = 1
+        assert tool_controller1a in tool_controller_table, "Insert 1a failed"
+        assert tool_controller1b in tool_controller_table, "Insert 1b failed"
+        assert tool_controller_table[tool_controller1a] == 1, "Lookup 1a failed"
+        assert tool_controller_table[tool_controller1b] == 1, "Lookup 1b failed"
+        assert len(tool_controller_table) == 1, "Table is wrong size"
+
+        assert tool_controller2 not in tool_controller_table, "Already in table?"
+        tool_controller_table[tool_controller2] = 2
+        assert tool_controller_table[tool_controller2] == 2, "Lookup failed"
+        assert tool_controller2 in tool_controller_table, "Insert failed"
+        assert len(tool_controller_table) == 2, "Table is wrong size"
+
+        if tracing:
+            print(f"{tracing}<=FabToolController._unit_tests()")
 
 
 # main()
