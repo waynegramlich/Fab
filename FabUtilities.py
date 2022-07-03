@@ -359,7 +359,8 @@ class FabMaterial(object):
     Name: Tuple[str, ...]  # Hierarchical name from generic to specific.
     Color: str  # SVG color name to use.
 
-    _InchChipLoadData: ClassVar[Tuple[str, ...]] = (
+    # By the way the two tables below do no match up very well.
+    _InchChipLoadData: ClassVar[Tuple[str, ...]] = (  # IPT == inch per tooth
         "  in: Steel         Stainless     Aluminum      Titanium      Wood          Plastic",
         "1/16: 0.0019-0.0036 0.0016-0.0030 0.0021-0.0040 0.0015-0.0028 0.0028-0.0053 0.0052-0.0098",
         " 1/8: 0.0023-0.0044 0.0019-0.0036 0.0025-0.0048 0.0018-0.0034 0.0033-0.0063 0.0062-0.0118",
@@ -373,7 +374,7 @@ class FabMaterial(object):
         " 7/8: 0.0034-0.0064 0.0028-0.0053 0.0037-0.0071 0.0026-0.0050 0.0049-0.0093 0.0092-0.0173",
         "   1: 0.0035-0.0066 0.0029-0.0054 0.0038-0.0072 0.0027-0.0051 0.0050-0.0095 0.0094-0.0177",
     )
-    _MmChipLoadData: ClassVar[Tuple[str, ...]] = (
+    _MmChipLoadData: ClassVar[Tuple[str, ...]] = (  # MPT == mm per tooth
         "mm: Steel     Stainless Aluminum  Titanium  Wood      Plastic",
         " 2: 0.01-0.01 0.01-0.01 0.01-0.01 0.01-0.01 0.01-0.02 0.02-0.03",
         " 3: 0.01-0.02 0.01-0.02 0.01-0.03 0.01-0.02 0.02-0.03 0.03-0.06",

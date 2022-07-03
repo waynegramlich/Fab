@@ -47,7 +47,7 @@ class FabAxis(object):
     * Range (*float*):
       The range that axis can span in millimeters (Linear=True) or in degrees (Linear=False).
       If there are no restrictions for the rotational axis, set to 0.0.
-    * Speed (*float*):
+    * Feed (*float*):
       The maximum speed for the axis in mm/sec (Linear=True) or degrees/sec (Linear=False).
     * Acceleration (*float*):
       The maximum acceleration for axis in mm/sec^2 (Linear=True) or degrees/sec^2 (Linear=False).
@@ -58,7 +58,7 @@ class FabAxis(object):
       Typically this is only available for rotational axes.
 
     Constructor:
-    * FabAxis("Name", "Letter", Linear, Range, Speed, EndSensors, Brake)
+    * FabAxis("Name", "Letter", Linear, Range, Feed, EndSensors, Brake)
 
     """
 
@@ -66,7 +66,7 @@ class FabAxis(object):
     Letter: str
     Linear: bool
     Range: float
-    Speed: float
+    Feed: float
     Acceleration: float
     EndSensors: bool
     Brake: bool
@@ -78,7 +78,7 @@ class FabAxis(object):
         check_type("FabAxis.Letter", self.Letter, str)
         check_type("FabAxis.Linear", self.Linear, bool)
         check_type("FabAxis.Range", self.Range, float)
-        check_type("FabAxis.Speed", self.Speed, float)
+        check_type("FabAxis.Feed", self.Feed, float)
         check_type("FabAxis.Acceleration", self.Acceleration, float)
         check_type("FabAxis.EndSensors", self.EndSensors, bool)
         check_type("FabAxis.Brake", self.Brake, bool)
@@ -88,7 +88,7 @@ class FabAxis(object):
     def example() -> "FabAxis":
         """Return an example FabAxis."""
         return FabAxis(
-            Name="X Axis", Letter="X", Linear=True, Range=100.0, Speed=10.0,
+            Name="X Axis", Letter="X", Linear=True, Range=100.0, Feed=10.0,
             Acceleration=0.0, EndSensors=True, Brake=False
         )
 
@@ -104,7 +104,7 @@ class FabAxis(object):
         assert linear_axis.Letter == "X", linear_axis
         assert linear_axis.Linear, linear_axis
         assert linear_axis.Range == 100.00, linear_axis
-        assert linear_axis.Speed == 10.00, linear_axis
+        assert linear_axis.Feed == 10.00, linear_axis
         assert linear_axis.Acceleration == 0.00, linear_axis
         assert linear_axis.EndSensors, linear_axis
         assert not linear_axis.Brake, linear_axis
@@ -371,11 +371,40 @@ class FabCNC(FabMachine):
     def __post_init__(self) -> None:
         """Finish initializing FabCNC."""
         super().__post_init__()
-        check_type("FabCNC.WorkVolume", self.Axes, Tuple[FabAxis, ...])
+        check_type("FabCNC.Axes", self.Axes, Tuple[FabAxis, ...])
         check_type("FabCNC.Table", self.Table, FabTable)
         check_type("FabCNC.Spindle", self.Spindle, FabSpindle)
         check_type("FabCNC.Controller", self.Controller, FabController)
         check_type("FabCNC.Library", self.Library, FabLibrary)
+
+    # FabCNC.getMaximumSpeed():
+    def getMaximumSpeed(self) -> float:
+        """Return the maximum maximum spindle speed."""
+        return self.Spindle.Speed
+
+    # FabCNC.getMaximumXYFeed():
+    def getMaximumXYFeed(self) -> float:
+        """Return the maximum X/Y feed rate in mm/sec."""
+        axes: Tuple[FabAxis, ...] = self.Axes
+        axis: FabAxis
+        feed: float = -1.0
+        index: int
+        for index, axis in enumerate(axes):
+            if axis.Letter in "XY":
+                feed = axis.Feed if index == 0 else min(feed, axis.Feed)
+        return feed
+
+    # FabCNC.getMaximumZFeed():
+    def getMaximumZFeed(self) -> float:
+        """Return the maximum Z feed rate in mm/sec."""
+        axes: Tuple[FabAxis, ...] = self.Axes
+        axis: FabAxis
+        feed: float = -1.0
+        index: int
+        for axis in axes:
+            if axis.Letter == "Z":
+                feed = axis.Feed
+        return feed
 
     # FabCNC._unit_tests():
     @staticmethod
@@ -384,13 +413,13 @@ class FabCNC(FabMachine):
         if tracing:
             print(f"{tracing}=>FabCNC._unit_tests()")
         x_axis: FabAxis = FabAxis(
-            Name="X Axis", Letter="X", Linear=True, Range=100.0, Speed=10.0, Acceleration=0.0,
+            Name="X Axis", Letter="X", Linear=True, Range=200.0, Feed=10.0, Acceleration=0.0,
             EndSensors=True, Brake=False)
         y_axis: FabAxis = FabAxis(
-            Name="Y Axis", Letter="Y", Linear=True, Range=100.0, Speed=10.0, Acceleration=0.0,
+            Name="Y Axis", Letter="Y", Linear=True, Range=150.0, Feed=12.0, Acceleration=0.0,
             EndSensors=True, Brake=False)
         z_axis: FabAxis = FabAxis(
-            Name="Z Axis", Letter="Z", Linear=True, Range=100.0, Speed=10.0, Acceleration=0.0,
+            Name="Z Axis", Letter="Z", Linear=True, Range=100.0, Feed=5.0, Acceleration=0.0,
             EndSensors=True, Brake=False)
         axes: Tuple[FabAxis, ...] = (x_axis, y_axis, z_axis)
         spindle: FabSpindle = FabSpindle(
@@ -410,6 +439,9 @@ class FabCNC(FabMachine):
         assert cnc.Table is table
         assert cnc.Spindle is spindle
         assert cnc.Controller is controller
+        assert cnc.getMaximumSpeed() == 5000, cnc.getMaximumSpeed()
+        assert cnc.getMaximumXYFeed() == 10.0, cnc.getMaximumXYFeed()
+        assert cnc.getMaximumZFeed() == 5.0, cnc.getMaximumZFeed()
         if tracing:
             print(f"{tracing}<=FabCNC._unit_tests()")
 
@@ -450,13 +482,13 @@ class FabCNCMill(FabCNC):
     def getExample() -> "FabCNCMill":
         """Return an example FabCNCMill."""
         x_axis: FabAxis = FabAxis(
-            Name="X Axis", Letter="X", Linear=True, Range=100.0, Speed=10.0, Acceleration=0.0,
+            Name="X Axis", Letter="X", Linear=True, Range=100.0, Feed=10.0, Acceleration=0.0,
             EndSensors=True, Brake=False)
         y_axis: FabAxis = FabAxis(
-            Name="Y Axis", Letter="Y", Linear=True, Range=100.0, Speed=10.0, Acceleration=0.0,
+            Name="Y Axis", Letter="Y", Linear=True, Range=100.0, Feed=10.0, Acceleration=0.0,
             EndSensors=True, Brake=False)
         z_axis: FabAxis = FabAxis(
-            Name="Z Axis", Letter="Z", Linear=True, Range=100.0, Speed=10.0, Acceleration=0.0,
+            Name="Z Axis", Letter="Z", Linear=True, Range=100.0, Feed=10.0, Acceleration=0.0,
             EndSensors=True, Brake=False)
         axes: Tuple[FabAxis, ...] = (x_axis, y_axis, z_axis)
         controller: FabController = FabController.example()
@@ -525,13 +557,13 @@ class FabCNCRouter(FabCNC):
         if tracing:
             print(f"{tracing}=>FabCNCRouter._unit_tests()")
         x_axis: FabAxis = FabAxis(
-            Name="X Axis", Letter="X", Linear=True, Range=100.0, Speed=10.0, Acceleration=0.0,
+            Name="X Axis", Letter="X", Linear=True, Range=100.0, Feed=10.0, Acceleration=0.0,
             EndSensors=True, Brake=False)
         y_axis: FabAxis = FabAxis(
-            Name="Y Axis", Letter="Y", Linear=True, Range=100.0, Speed=10.0, Acceleration=0.0,
+            Name="Y Axis", Letter="Y", Linear=True, Range=100.0, Feed=10.0, Acceleration=0.0,
             EndSensors=True, Brake=False)
         z_axis: FabAxis = FabAxis(
-            Name="Z Axis", Letter="Z", Linear=True, Range=100.0, Speed=10.0, Acceleration=0.0,
+            Name="Z Axis", Letter="Z", Linear=True, Range=100.0, Feed=10.0, Acceleration=0.0,
             EndSensors=True, Brake=False)
         axes: Tuple[FabAxis, ...] = (x_axis, y_axis, z_axis)
         spindle: FabSpindle = FabSpindle(

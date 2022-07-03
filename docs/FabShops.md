@@ -15,6 +15,9 @@ This is a package provides classes used to define what machines are available in
 
 * 1 Class: [FabAxis](#fabshops--fabaxis):
 * 2 Class: [FabCNC](#fabshops--fabcnc):
+  * 2.1 [getMaximumSpeed()](#fabshops----getmaximumspeed): Return the maximum maximum spindle speed.
+  * 2.2 [getMaximumXYFeed()](#fabshops----getmaximumxyfeed): Return the maximum X/Y feed rate in mm/sec.
+  * 2.3 [getMaximumZFeed()](#fabshops----getmaximumzfeed): Return the maximum Z feed rate in mm/sec.
 * 3 Class: [FabCNCMill](#fabshops--fabcncmill):
 * 4 Class: [FabCNCRouter](#fabshops--fabcncrouter):
 * 5 Class: [FabController](#fabshops--fabcontroller):
@@ -37,7 +40,7 @@ Attributes:
 * Range (*float*):
   The range that axis can span in millimeters (Linear=True) or in degrees (Linear=False).
   If there are no restrictions for the rotational axis, set to 0.0.
-* Speed (*float*):
+* Feed (*float*):
   The maximum speed for the axis in mm/sec (Linear=True) or degrees/sec (Linear=False).
 * Acceleration (*float*):
   The maximum acceleration for axis in mm/sec^2 (Linear=True) or degrees/sec^2 (Linear=False).
@@ -48,7 +51,7 @@ Attributes:
   Typically this is only available for rotational axes.
 
 Constructor:
-* FabAxis("Name", "Letter", Linear, Range, Speed, EndSensors, Brake)
+* FabAxis("Name", "Letter", Linear, Range, Feed, EndSensors, Brake)
 
 
 ## <a name="fabshops--fabcnc"></a>2 Class FabCNC:
@@ -65,6 +68,24 @@ Attributes:
 
 Constructor:
 * FabCNC("Name", "Placement", Axes, Table, Spindle, Controller)
+
+### <a name="fabshops----getmaximumspeed"></a>2.1 `FabCNC.`getMaximumSpeed():
+
+FabCNC.getMaximumSpeed(self) -> float:
+
+Return the maximum maximum spindle speed.
+
+### <a name="fabshops----getmaximumxyfeed"></a>2.2 `FabCNC.`getMaximumXYFeed():
+
+FabCNC.getMaximumXYFeed(self) -> float:
+
+Return the maximum X/Y feed rate in mm/sec.
+
+### <a name="fabshops----getmaximumzfeed"></a>2.3 `FabCNC.`getMaximumZFeed():
+
+FabCNC.getMaximumZFeed(self) -> float:
+
+Return the maximum Z feed rate in mm/sec.
 
 
 ## <a name="fabshops--fabcncmill"></a>3 Class FabCNCMill:

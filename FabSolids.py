@@ -1060,7 +1060,6 @@ class Fab_Pocket(Fab_Operation):
         assert isinstance(machine, FabCNCMill), machine
         _ = machine
         _ = chip_load
-
         tool_controller: FabToolController = FabToolController(
             BitName="5mm_Endmill",
             Cooling="Flood",
