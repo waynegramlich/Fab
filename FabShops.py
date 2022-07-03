@@ -377,13 +377,13 @@ class FabCNC(FabMachine):
         check_type("FabCNC.Controller", self.Controller, FabController)
         check_type("FabCNC.Library", self.Library, FabLibrary)
 
-    # FabCNC.getMaximumSpeed():
-    def getMaximumSpeed(self) -> float:
+    # FabCNC.getMaximumSpindleSpeed():
+    def getMaximumSpindleSpeed(self) -> float:
         """Return the maximum maximum spindle speed."""
         return self.Spindle.Speed
 
-    # FabCNC.getMaximumXYFeed():
-    def getMaximumXYFeed(self) -> float:
+    # FabCNC.getHoizontalRapidFeed():
+    def getHorizontalRapidFeed(self) -> float:
         """Return the maximum X/Y feed rate in mm/sec."""
         axes: Tuple[FabAxis, ...] = self.Axes
         axis: FabAxis
@@ -394,8 +394,8 @@ class FabCNC(FabMachine):
                 feed = axis.Feed if index == 0 else min(feed, axis.Feed)
         return feed
 
-    # FabCNC.getMaximumZFeed():
-    def getMaximumZFeed(self) -> float:
+    # FabCNC.getVerticalRapidFeed():
+    def getVerticalRapidFeed(self) -> float:
         """Return the maximum Z feed rate in mm/sec."""
         axes: Tuple[FabAxis, ...] = self.Axes
         axis: FabAxis
@@ -439,9 +439,9 @@ class FabCNC(FabMachine):
         assert cnc.Table is table
         assert cnc.Spindle is spindle
         assert cnc.Controller is controller
-        assert cnc.getMaximumSpeed() == 5000, cnc.getMaximumSpeed()
-        assert cnc.getMaximumXYFeed() == 10.0, cnc.getMaximumXYFeed()
-        assert cnc.getMaximumZFeed() == 5.0, cnc.getMaximumZFeed()
+        assert cnc.getMaximumSpindleSpeed() == 5000, cnc.getMaximumSpindleSpeed()
+        assert cnc.getHorizontalRapidFeed() == 10.0, cnc.getHorizontalRapidFeed()
+        assert cnc.getVerticalRapidFeed() == 5.0, cnc.getVerticalRapidFeed()
         if tracing:
             print(f"{tracing}<=FabCNC._unit_tests()")
 

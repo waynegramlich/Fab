@@ -15,9 +15,9 @@ This is a package provides classes used to define what machines are available in
 
 * 1 Class: [FabAxis](#fabshops--fabaxis):
 * 2 Class: [FabCNC](#fabshops--fabcnc):
-  * 2.1 [getMaximumSpeed()](#fabshops----getmaximumspeed): Return the maximum maximum spindle speed.
-  * 2.2 [getMaximumXYFeed()](#fabshops----getmaximumxyfeed): Return the maximum X/Y feed rate in mm/sec.
-  * 2.3 [getMaximumZFeed()](#fabshops----getmaximumzfeed): Return the maximum Z feed rate in mm/sec.
+  * 2.1 [getMaximumSpindleSpeed()](#fabshops----getmaximumspindlespeed): Return the maximum maximum spindle speed.
+  * 2.2 [getHorizontalRapidFeed()](#fabshops----gethorizontalrapidfeed): Return the maximum X/Y feed rate in mm/sec.
+  * 2.3 [getVerticalRapidFeed()](#fabshops----getverticalrapidfeed): Return the maximum Z feed rate in mm/sec.
 * 3 Class: [FabCNCMill](#fabshops--fabcncmill):
 * 4 Class: [FabCNCRouter](#fabshops--fabcncrouter):
 * 5 Class: [FabController](#fabshops--fabcontroller):
@@ -69,21 +69,21 @@ Attributes:
 Constructor:
 * FabCNC("Name", "Placement", Axes, Table, Spindle, Controller)
 
-### <a name="fabshops----getmaximumspeed"></a>2.1 `FabCNC.`getMaximumSpeed():
+### <a name="fabshops----getmaximumspindlespeed"></a>2.1 `FabCNC.`getMaximumSpindleSpeed():
 
-FabCNC.getMaximumSpeed(self) -> float:
+FabCNC.getMaximumSpindleSpeed(self) -> float:
 
 Return the maximum maximum spindle speed.
 
-### <a name="fabshops----getmaximumxyfeed"></a>2.2 `FabCNC.`getMaximumXYFeed():
+### <a name="fabshops----gethorizontalrapidfeed"></a>2.2 `FabCNC.`getHorizontalRapidFeed():
 
-FabCNC.getMaximumXYFeed(self) -> float:
+FabCNC.getHorizontalRapidFeed(self) -> float:
 
 Return the maximum X/Y feed rate in mm/sec.
 
-### <a name="fabshops----getmaximumzfeed"></a>2.3 `FabCNC.`getMaximumZFeed():
+### <a name="fabshops----getverticalrapidfeed"></a>2.3 `FabCNC.`getVerticalRapidFeed():
 
-FabCNC.getMaximumZFeed(self) -> float:
+FabCNC.getVerticalRapidFeed(self) -> float:
 
 Return the maximum Z feed rate in mm/sec.
 
