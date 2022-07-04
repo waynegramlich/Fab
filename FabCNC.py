@@ -107,6 +107,7 @@ class FabCQtoFC(object):
     ToolsPath: Optional[FilePath]
     CNC: bool
     AllDocuments: List[Any] = field(init=False, repr=False)
+    BitsTable: Dict[int, str] = field(init=False, repr=False)  # Bit# => str
     CurrentGroup: Any = field(init=False, repr=False)
     CurrentJob: Any = field(init=False, repr=False)
     CurrentJobName: Any = field(init=False, repr=False)
@@ -126,6 +127,7 @@ class FabCQtoFC(object):
         """Initialize FabCQtoFC."""
         assert isinstance(self.JsonPath, FilePath), self.JsonPath
         self.AllDocuments = []
+        self.BitsTable = {}
         self.CurrentGroup = None
         self.CurrentJob = None
         self.CurrentJobName = None
@@ -172,6 +174,35 @@ class FabCQtoFC(object):
         """Extract tool controller and associated tool bit from a JSON node."""
         if tracing:
             print(f"{tracing}=>FabCQtotFC.get_tool_and_controller(*, {label}, {tree_path})")
+
+        bit_index = cast(
+            int, self.key_verify("BitIndex", json_dict, int,
+                                 tree_path, "get_tool_and controller.ToolControllerIndex"))
+        bits_table: Dict[int, str] = self.BitsTable
+        bit_name: str = "???"
+        if bit_index in bits_table:
+            bit_name = bits_table[bit_index]
+        else:
+            # Extract the *bit_dict* from *json_dict*:
+            bit_dict = cast(
+                Dict[str, Any], self.key_verify(
+                    "Bit", json_dict, dict, tree_path, "get_tool_and_controller.Bit"))
+
+            # Extract the *bit_name*:
+            bit_name = cast(str, bit_dict["name"].replace(" ", "_").replace("/", "_"))
+            assert isinstance(bit_name, str), bit_name
+            tools_path: Optional[FilePath] = self.ToolsPath
+            assert isinstance(tools_path, FilePath), tools_path
+            bit_directory: FilePath = tools_path / "Bit"
+            assert bit_directory.exists()
+            prefix_bit_name: str = f"Bit{bit_index:03d}_{bit_name}.fctb"
+            bit_file_path: FilePath = bit_directory / prefix_bit_name
+            bit_file: IO[str]
+            bit_json_text: str = json.dumps(bit_dict, sort_keys=True, indent=2)
+            with open(bit_file_path, "w") as bit_file:
+                bit_file.write(bit_json_text)
+            bits_table[bit_index] = prefix_bit_name
+
         tool_controller_index = cast(
             int, self.key_verify("ToolControllerIndex", json_dict, int,
                                  tree_path, "get_tool_and controller.ToolControllerIndex"))
@@ -693,6 +724,7 @@ class FabCQtoFC(object):
         """Return some common properties to ignore."""
         infos["Active"] = {}
         infos["Base"] = {"ignore": None}
+        infos["Bit"] = {"ignore": None}
         infos["ClearanceHeight"] = {"type": float}
         infos["Comment"] = {"ignore": None}
         infos["CoolantMode"] = {}
@@ -1133,7 +1165,7 @@ def main(tracing: str = "") -> None:
     json_processor: FabCQtoFC = FabCQtoFC(FilePath(json_file_name), tools_directory, cnc)
     json_processor.flush_temporary_bits(tools_directory, tracing=next_tracing)
     json_processor.process(indent="  ", tracing=next_tracing)
-    json_processor.flush_temporary_bits(tools_directory, tracing=next_tracing)
+    # json_processor.flush_temporary_bits(tools_directory, tracing=next_tracing)
     if not App.GuiUp:  # type: ignore
         if tracing:
             print(f"{tracing}calling sys.exit()")
