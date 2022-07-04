@@ -391,10 +391,10 @@ class Fab_Operation(object):
     # Fab_Operation.setBit():
     def setBit(self, bit: FabBit, bits_table: Dict[FabBit, int]) -> None:
         """Set the Fab_Operation bit and associated index. """
+        assert check_argument_types()
         bit_index: int
         if bit in bits_table:
             bit_index = bits_table[bit]
-            self.Bit = None
         else:
             bit_index = len(bits_table)
             bits_table[bit] = bit_index
@@ -529,6 +529,11 @@ class Fab_Operation(object):
             "Label": self.get_name(),
             "_Active": self.Active,
         }
+        if self.BitIndex >= 0:
+            json_dict["BitIndex"] = self.BitIndex
+        if self.Bit:
+            bit_json: Dict[str, Any] = self.Bit.toJSON()
+            json_dict["Bit"] = bit_json
         if self.ToolControllerIndex >= 0:
             json_dict["ToolControllerIndex"] = self.ToolControllerIndex
         if self.ToolController:
