@@ -52,6 +52,7 @@ from cadquery import Vector  # type: ignore
 
 from FabUtilities import FabToolController
 from FabShops import FabShops
+from FabToolTemplates import FabBit
 
 
 # FabBox:
@@ -1016,8 +1017,10 @@ class Fab_ProduceState(object):
       The step file directory management object.
     * *ObjectsTable* (Dict[str, Any]):
       A table of objects that can be accessed via a debugger.
+    * *BitsTable*: (Dict[Fab_Bit, int]):
+      A lookup table to convert a Fab_Bit's into a unique integer.
     * *ToolControllersTable*: (Dict[FabToolController, int]):
-      A lookup to make common FabToolControllers to a single integer.
+      A lookup table to convert a FabToolController into unique integer.
     * *OperationIndex* (int):
       An index for the current operation being performed for a mount.
     * *CurrentShopIndex* (int):
@@ -1036,6 +1039,7 @@ class Fab_ProduceState(object):
     Shops: FabShops
     Steps: Fab_Steps = field(init=False, repr=False)
     ObjectsTable: Dict[str, Any] = field(init=False, repr=False)
+    BitsTable: Dict[FabBit, int] = field(init=False, repr=False)
     ToolControllersTable: Dict[FabToolController, int] = field(init=False, repr=False)
     OperationIndex: int = field(init=False, repr=False)
     CurrentShopIndex: int = field(init=False, repr=False)
@@ -1044,8 +1048,11 @@ class Fab_ProduceState(object):
     # Fab_ProduceState.__post_init__():
     def __post_init__(self) -> None:
         """Finish initializing _ProduceState."""
+        check_type("Fab_ProduceState.StepsDirectory", self.StepsDirectory, PathFile)
+        check_type("Fab_ProduceState.Shops", self.Shops, FabShops)
         self.ObjectsTable = {}
         self.Steps = Fab_Steps(self.StepsDirectory)
+        self.BitsTable = {}
         self.ToolControllersTable = {}
         self.OperationsIndex = 0
         self.CurrentShopIndex = 0

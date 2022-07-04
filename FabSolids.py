@@ -317,12 +317,14 @@ class Fab_OperationKey:
 class Fab_Operation(object):
     """Fab_Operation: An base class for FabMount operations.
 
-    Constructor Attributes:
+    Attributes:
     * *Name* (str): The name of the Fab_Operation.
     * *Mount* (FabMount): The FabMount to use for performing operations.
-
-    Other Attributes:
     * *Fence* (int): Used to order sub groups of operations.
+    * *Bit* (Optional[FabBit):
+      The bit to use for this CNC operation.  (default: None)
+    * *BitIndex* (int):
+      The bit index associated with the bit.  (Default: -1)
     * *ToolController* (Optional[FabToolController]):
       The tool controller (i.e. speeds, feeds, etc.) to use. (Default: None)
     * *ToolControllerIndex* (int):
@@ -349,6 +351,8 @@ class Fab_Operation(object):
     Name: str
     Mount: "FabMount" = field(repr=False, compare=False)
     Fence: int = field(init=False, repr=False, compare=False)
+    Bit: Optional[FabBit] = field(init=False, repr=False)
+    BitIndex: int = field(init=False, repr=False)
     ToolController: Optional[FabToolController] = field(init=False, repr=False)
     ToolControllerIndex: int = field(init=False, repr=False)
     JsonEnabled: bool = field(init=False, repr=False)
@@ -364,6 +368,8 @@ class Fab_Operation(object):
         check_type("Fab_Oparation.Name", self.Name, str)
         check_type("Fab_Oparation.Mount", self.Mount, "FabMount")
         self.Fence = self.Mount.Fence
+        self.Bit = None
+        self.BitIndex = -1  # Unassigned.
         self.ToolController = None
         self.ToolControllerIndex = -1  # Unassigned.
         self.JsonEnabled = True
@@ -381,6 +387,19 @@ class Fab_Operation(object):
     #             "Fab_Operation().get_tool_controller(): "
     #             "ToolController not set yet.")  # pragma: no unit cover
     #     return self.ToolController
+
+    # Fab_Operation.setBit():
+    def setBit(self, bit: FabBit, bits_table: Dict[FabBit, int]) -> None:
+        """Set the Fab_Operation bit and associated index. """
+        bit_index: int
+        if bit in bits_table:
+            bit_index = bits_table[bit]
+            self.Bit = None
+        else:
+            bit_index = len(bits_table)
+            bits_table[bit] = bit_index
+            self.Bit = bit
+        self.BitIndex = bit_index
 
     # Fab_Operation.set_tool_controller():
     def set_tool_controller(self, tool_controller: FabToolController,
@@ -778,6 +797,7 @@ class Fab_Extrude(Fab_Operation):
         tool_controller, maximum_tool_depth = FabToolController.computeToolController(
             material, selected_shop_bit, self._Depth)
         _ = maximum_tool_depth
+        self.setBit(selected_bit, produce_state.BitsTable)
         self.set_tool_controller(tool_controller, produce_state.ToolControllersTable)
 
         if tracing:
@@ -1060,6 +1080,7 @@ class Fab_Pocket(Fab_Operation):
         maximum_depth: float
         tool_controller, maximum_depth = FabToolController.computeToolController(
             material, selected_shop_bit, self._Depth)
+        self.setBit(selected_bit, produce_state.BitsTable)
         self.set_tool_controller(tool_controller, produce_state.ToolControllersTable)
 
         if tracing:
@@ -1405,6 +1426,7 @@ class Fab_Hole(Fab_Operation):
             tool_controller, maximum_tool_depth = FabToolController.computeToolController(
                 material, selected_shop_bit, self.Depth)
             _ = maximum_tool_depth
+            self.setBit(selected_bit, produce_state.BitsTable)
             self.set_tool_controller(tool_controller, produce_state.ToolControllersTable)
 
         if tracing:

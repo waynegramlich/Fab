@@ -334,8 +334,10 @@ Attributes:
   The step file directory management object.
 * *ObjectsTable* (Dict[str, Any]):
   A table of objects that can be accessed via a debugger.
+* *BitsTable*: (Dict[Fab_Bit, int]):
+  A lookup table to convert a Fab_Bit's into a unique integer.
 * *ToolControllersTable*: (Dict[FabToolController, int]):
-  A lookup to make common FabToolControllers to a single integer.
+  A lookup table to convert a FabToolController into unique integer.
 * *OperationIndex* (int):
   An index for the current operation being performed for a mount.
 * *CurrentShopIndex* (int):

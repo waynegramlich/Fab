@@ -50,20 +50,21 @@ This internal classes are managed by FabMount methods.
 * 6 Class: [Fab_HoleKey](#fabsolids--fab-holekey):
   * 6.1 [getHash()](#fabsolids----gethash): Return a hash tuple for a Fab_HoleKey.
 * 7 Class: [Fab_Operation](#fabsolids--fab-operation):
-  * 7.1 [set_tool_controller()](#fabsolids----set-tool-controller): Set the Fab_Operation tool controller and associated index.
-  * 7.2 [get_kind()](#fabsolids----get-kind): Return Fab_Operation kind.
-  * 7.3 [get_name()](#fabsolids----get-name): Return Fab_Operation name.
-  * 7.4 [selectShopBit()](#fabsolids----selectshopbit): Select a Fab_Shop bit for a Fab_Operation.
-  * 7.5 [getOperationOrder()](#fabsolids----getoperationorder): Return the Fab_OperationOrder for a Fab_Operation.
-  * 7.6 [getInitialOperationKey()](#fabsolids----getinitialoperationkey): Return initial Fab_OperationKey for a Fab_Operation.
-  * 7.7 [getInitialOperationKeyTrampoline()](#fabsolids----getinitialoperationkeytrampoline): Get the initial operation key for a Fab_Operation.
-  * 7.8 [getHash()](#fabsolids----gethash): Return Fab_Operation hash.
-  * 7.9 [get_geometries_hash()](#fabsolids----get-geometries-hash): Return hash of FabGeometry's.
-  * 7.10 [setShopBits()](#fabsolids----setshopbits): Set the Fab_Operation ShopBits attribute.
-  * 7.11 [produce()](#fabsolids----produce): Return the operation sort key.
-  * 7.12 [post_produce1()](#fabsolids----post-produce1): Expand simple operations as approprate.
-  * 7.13 [post_produce2()](#fabsolids----post-produce2): NO DOC STRING!
-  * 7.14 [to_json()](#fabsolids----to-json): Return a base JSON dictionary for an Fab_Operation.
+  * 7.1 [setBit()](#fabsolids----setbit): Set the Fab_Operation bit and associated index.
+  * 7.2 [set_tool_controller()](#fabsolids----set-tool-controller): Set the Fab_Operation tool controller and associated index.
+  * 7.3 [get_kind()](#fabsolids----get-kind): Return Fab_Operation kind.
+  * 7.4 [get_name()](#fabsolids----get-name): Return Fab_Operation name.
+  * 7.5 [selectShopBit()](#fabsolids----selectshopbit): Select a Fab_Shop bit for a Fab_Operation.
+  * 7.6 [getOperationOrder()](#fabsolids----getoperationorder): Return the Fab_OperationOrder for a Fab_Operation.
+  * 7.7 [getInitialOperationKey()](#fabsolids----getinitialoperationkey): Return initial Fab_OperationKey for a Fab_Operation.
+  * 7.8 [getInitialOperationKeyTrampoline()](#fabsolids----getinitialoperationkeytrampoline): Get the initial operation key for a Fab_Operation.
+  * 7.9 [getHash()](#fabsolids----gethash): Return Fab_Operation hash.
+  * 7.10 [get_geometries_hash()](#fabsolids----get-geometries-hash): Return hash of FabGeometry's.
+  * 7.11 [setShopBits()](#fabsolids----setshopbits): Set the Fab_Operation ShopBits attribute.
+  * 7.12 [produce()](#fabsolids----produce): Return the operation sort key.
+  * 7.13 [post_produce1()](#fabsolids----post-produce1): Expand simple operations as approprate.
+  * 7.14 [post_produce2()](#fabsolids----post-produce2): NO DOC STRING!
+  * 7.15 [to_json()](#fabsolids----to-json): Return a base JSON dictionary for an Fab_Operation.
 * 8 Class: [Fab_OperationKey](#fabsolids--fab-operationkey):
 * 9 Class: [Fab_OperationKind](#fabsolids--fab-operationkind):
 * 10 Class: [Fab_OperationOrder](#fabsolids--fab-operationorder):
@@ -416,12 +417,14 @@ Return a hash tuple for a Fab_HoleKey.
 ## <a name="fabsolids--fab-operation"></a>7 Class Fab_Operation:
 
 An base class for FabMount operations.
-Constructor Attributes:
+Attributes:
 * *Name* (str): The name of the Fab_Operation.
 * *Mount* (FabMount): The FabMount to use for performing operations.
-
-Other Attributes:
 * *Fence* (int): Used to order sub groups of operations.
+* *Bit* (Optional[FabBit):
+  The bit to use for this CNC operation.  (default: None)
+* *BitIndex* (int):
+  The bit index associated with the bit.  (Default: -1)
 * *ToolController* (Optional[FabToolController]):
   The tool controller (i.e. speeds, feeds, etc.) to use. (Default: None)
 * *ToolControllerIndex* (int):
@@ -443,85 +446,91 @@ Other Attributes:
 Constructor:
 * Fab_Operation("Name", Mount)
 
-### <a name="fabsolids----set-tool-controller"></a>7.1 `Fab_Operation.`set_tool_controller():
+### <a name="fabsolids----setbit"></a>7.1 `Fab_Operation.`setBit():
+
+Fab_Operation.setBit(self, bit: FabToolTemplates.FabBit, bits_table: Dict[FabToolTemplates.FabBit, int]) -> None:
+
+Set the Fab_Operation bit and associated index.
+
+### <a name="fabsolids----set-tool-controller"></a>7.2 `Fab_Operation.`set_tool_controller():
 
 Fab_Operation.set_tool_controller(self, tool_controller: FabUtilities.FabToolController, tool_controllers_table: Dict[FabUtilities.FabToolController, int]) -> None:
 
 Set the Fab_Operation tool controller and associated index.
 
-### <a name="fabsolids----get-kind"></a>7.2 `Fab_Operation.`get_kind():
+### <a name="fabsolids----get-kind"></a>7.3 `Fab_Operation.`get_kind():
 
 Fab_Operation.get_kind(self) -> str:
 
 Return Fab_Operation kind.
 
-### <a name="fabsolids----get-name"></a>7.3 `Fab_Operation.`get_name():
+### <a name="fabsolids----get-name"></a>7.4 `Fab_Operation.`get_name():
 
 Fab_Operation.get_name(self) -> str:
 
 Return Fab_Operation name.
 
-### <a name="fabsolids----selectshopbit"></a>7.4 `Fab_Operation.`selectShopBit():
+### <a name="fabsolids----selectshopbit"></a>7.5 `Fab_Operation.`selectShopBit():
 
 Fab_Operation.selectShopBit(self, shop_bit: FabShops.Fab_ShopBit) -> None:
 
 Select a Fab_Shop bit for a Fab_Operation.
 
-### <a name="fabsolids----getoperationorder"></a>7.5 `Fab_Operation.`getOperationOrder():
+### <a name="fabsolids----getoperationorder"></a>7.6 `Fab_Operation.`getOperationOrder():
 
 Fab_Operation.getOperationOrder(self, bit: FabToolTemplates.FabBit) -> FabSolids.Fab_OperationOrder:
 
 Return the Fab_OperationOrder for a Fab_Operation.
 
-### <a name="fabsolids----getinitialoperationkey"></a>7.6 `Fab_Operation.`getInitialOperationKey():
+### <a name="fabsolids----getinitialoperationkey"></a>7.7 `Fab_Operation.`getInitialOperationKey():
 
 Fab_Operation.getInitialOperationKey(self) -> FabSolids.Fab_OperationKey:
 
 Return initial Fab_OperationKey for a Fab_Operation.
 
-### <a name="fabsolids----getinitialoperationkeytrampoline"></a>7.7 `Fab_Operation.`getInitialOperationKeyTrampoline():
+### <a name="fabsolids----getinitialoperationkeytrampoline"></a>7.8 `Fab_Operation.`getInitialOperationKeyTrampoline():
 
 Fab_Operation.getInitialOperationKeyTrampoline(self) -> FabSolids.Fab_OperationKey:
 
 Get the initial operation key for a Fab_Operation.
 
-### <a name="fabsolids----gethash"></a>7.8 `Fab_Operation.`getHash():
+### <a name="fabsolids----gethash"></a>7.9 `Fab_Operation.`getHash():
 
 Fab_Operation.getHash(self) -> Tuple[Any, ...]:
 
 Return Fab_Operation hash.
 
-### <a name="fabsolids----get-geometries-hash"></a>7.9 `Fab_Operation.`get_geometries_hash():
+### <a name="fabsolids----get-geometries-hash"></a>7.10 `Fab_Operation.`get_geometries_hash():
 
 Fab_Operation.get_geometries_hash(self, geometries: Union[FabGeometries.FabGeometry, Tuple[FabGeometries.FabGeometry, ...]]) -> Tuple[Any, ...]:
 
 Return hash of FabGeometry's.
 
-### <a name="fabsolids----setshopbits"></a>7.10 `Fab_Operation.`setShopBits():
+### <a name="fabsolids----setshopbits"></a>7.11 `Fab_Operation.`setShopBits():
 
 Fab_Operation.setShopBits(self, shop_bits: List[FabShops.Fab_ShopBit]) -> None:
 
 Set the Fab_Operation ShopBits attribute.
 
-### <a name="fabsolids----produce"></a>7.11 `Fab_Operation.`produce():
+### <a name="fabsolids----produce"></a>7.12 `Fab_Operation.`produce():
 
 Fab_Operation.produce(self, tracing: str = '') -> Tuple[str, ...]:
 
 Return the operation sort key.
 
-### <a name="fabsolids----post-produce1"></a>7.12 `Fab_Operation.`post_produce1():
+### <a name="fabsolids----post-produce1"></a>7.13 `Fab_Operation.`post_produce1():
 
 Fab_Operation.post_produce1(self, produce_state: FabNodes.Fab_ProduceState, expanded_operations: 'List[Fab_Operation]', tracing: str = '') -> None:
 
 Expand simple operations as approprate.
 
-### <a name="fabsolids----post-produce2"></a>7.13 `Fab_Operation.`post_produce2():
+### <a name="fabsolids----post-produce2"></a>7.14 `Fab_Operation.`post_produce2():
 
 Fab_Operation.post_produce2(self, produce_state: FabNodes.Fab_ProduceState, tracing: str = '') -> None:
 
 NO DOC STRING!
 
-### <a name="fabsolids----to-json"></a>7.14 `Fab_Operation.`to_json():
+### <a name="fabsolids----to-json"></a>7.15 `Fab_Operation.`to_json():
 
 Fab_Operation.to_json(self) -> Dict[str, Any]:
 
