@@ -527,7 +527,7 @@ class FabToolController(object):
         horizontal_feed: float = min(horizontal_rapid, maximum_spindle_speed * flutes * chip_load)
         vertical_feed: float = horizontal_feed / 4.0  # Heuristic
         tool_controller: FabToolController = FabToolController(
-            BitName="5mm_Endmill",
+            BitName=bit.Name,
             Cooling="Flood",
             HorizontalFeed=horizontal_feed,
             HorizontalRapid=horizontal_rapid,

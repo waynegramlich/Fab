@@ -144,14 +144,15 @@ class FabCQtoFC(object):
         self.ToolsTable = {}
 
     # FabCQtoFC.fetch_tool():
-    def fetch_tool(self, bit_name: str) -> Any:
+    def fetch_tool(self, bit_index: int) -> Any:
         """Fetch a tool from the Tools/Bit and store into ToolsTable."""
+        bit_name: str = self.BitsTable[bit_index]
         tools_table: Dict[str, Any] = self.ToolsTable
         if bit_name not in tools_table:
             # Create the *bit_path* file name and verify that it exists:
             assert isinstance(self.ToolsPath, FilePath), f"{type(self.ToolsPath)=}"
             bit_directory: FilePath = self.ToolsPath / "Bit"
-            bit_path: FilePath = bit_directory / f"{bit_name}.fctb"
+            bit_path: FilePath = bit_directory / bit_name
             if not bit_path.exists():
                 raise RuntimeError(f"{str(bit_path)} file does not exist")
 
@@ -265,7 +266,7 @@ class FabCQtoFC(object):
             if tool_number in self.ToolNumbersTable:
                 tool = self.ToolNumbersTable[tool_number]
             else:
-                tool = self.fetch_tool(bit_name)
+                tool = self.fetch_tool(bit_index)
                 self.ToolNumbersTable[tool_number] = tool
             tool_controller.Tool = tool
 
