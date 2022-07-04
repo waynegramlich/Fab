@@ -69,6 +69,7 @@ from PathScripts import PathToolBit, PathDrilling  # type: ignore
 from PathScripts import PathJob, PathProfile, PathPostProcessor, PathUtil  # type: ignore
 from PathScripts import PathToolController, PathPocket  # type: ignore
 import Path  # type: ignore
+_ = Path  # TODO: remove
 _ = PathOp  # TODO: remove
 _ = PathUtils  # TODO: remove
 _ = PathToolBit  # TODO: remove
@@ -1103,6 +1104,17 @@ class FabCQtoFC(object):
             print(f"{tracing}<=get_aligned_faces_name({obj}, {normal})=>{sorted_face_names}")
         return sorted_face_names
 
+    # CQtoFC.flush_temporary_bits():
+    def flush_temporary_bits(self, tools_directory: FilePath, tracing: str = "") -> None:
+        """Flush out any temporary bits."""
+        if tracing:
+            print(f"=>{tracing}CQtoFC.flush_temporary_bits()")
+        bit_directory: FilePath = tools_directory / "Bit"
+        for bit_path in bit_directory.glob("Bit[0-9][0-9][0-9]_*"):
+            bit_path.unlink()
+        if tracing:
+            print(f"<={tracing}CQtoFC.flush_temporary_bits()")
+
 
 # main():
 def main(tracing: str = "") -> None:
@@ -1115,11 +1127,13 @@ def main(tracing: str = "") -> None:
     flags: str = environ["FLAGS"] if "FLAGS" in environ else ""
     cnc: bool = "c" in flags
     visual: bool = "v" in flags
-    tools_path: Optional[Path] = FilePath(".") / "Tools" if cnc else None
+    tools_directory: FilePath = FilePath(__file__).parent / "Tools"
     if tracing:
-        print(f"{tracing}{json_file_name=} {tools_path=} {flags=} {cnc=} {visual=}")
-    json_reader: FabCQtoFC = FabCQtoFC(FilePath(json_file_name), tools_path, cnc)
-    json_reader.process(indent="  ", tracing=next_tracing)
+        print(f"{tracing}{json_file_name=} {tools_directory=} {flags=} {cnc=} {visual=}")
+    json_processor: FabCQtoFC = FabCQtoFC(FilePath(json_file_name), tools_directory, cnc)
+    json_processor.flush_temporary_bits(tools_directory, tracing=next_tracing)
+    json_processor.process(indent="  ", tracing=next_tracing)
+    json_processor.flush_temporary_bits(tools_directory, tracing=next_tracing)
     if not App.GuiUp:  # type: ignore
         if tracing:
             print(f"{tracing}calling sys.exit()")
