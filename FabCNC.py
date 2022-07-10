@@ -45,6 +45,7 @@ if sys.executable == SHARP_EXEC_PATH:
 
 from typing import Any, cast, List, Dict, IO, Optional, Set, Tuple, Union
 from pathlib import Path as FilePath  # The Path library uses `Path`, hence `FilePath`
+from typeguard import check_type
 
 # Uncomment these lines to fire up the debugger:
 # import pudb  # type: ignore
@@ -491,6 +492,32 @@ class FabCQtoFC(object):
         self.type_verify(value, key_type, tree_path, tag)
         return value
 
+    # FabCQtoFC.import_step():
+    def import_step(self, step_file_path_text: str, insert_label: str) -> None:
+        """Import step file.
+
+        Arguments:
+        * *step_file_path_text* (str): The path to the step file.
+        * *insert_label* (str): The document node label to insert the step file at.
+
+        """
+        step_file_path: FilePath = FilePath(step_file_path_text)
+        if not step_file_path.exists():
+            raise RuntimeError(f"{step_file_path} does not exist.")
+        part_colors: Any = FCImport.insert(step_file_path_text, insert_label)
+        check_type("FabCQtoFC.import_step.import_step().part_colors", part_colors,
+                   List[Tuple[Any, List[Tuple[float, float, float, float]]]])
+        assert len(part_colors) == 1, part_colors  # Should not be more than one part in step file.
+        part: Any
+        colors: List[Tuple[float, float, float, float]]
+        part, colors = part_colors[0]
+        check_type("FabCQtoFC.import_step.import_step().colors", colors,
+                   List[Tuple[float, float, float, float]])
+        assert len(colors) == 1, colors  # Should only be one RGBA color in step file.
+        color: Tuple[float, float, float, float] = colors[0]
+        check_type("FabCQtoFC.import_step.import_step().color", color,
+                   Tuple[float, float, float, float])
+
     # FabCQtoFC.process_json():
     def process_json(
             self, json_dict: Dict[str, Any], obj: Any,
@@ -705,6 +732,11 @@ class FabCQtoFC(object):
                 # Modify PathProfile:1460 and 1464 to Job.
                 # TODO: Any => PathProfile
                 profile: Any = PathProfile.Create(profile_name, parentJob=job)
+                # TODO: Delete
+                # feature_compound: Any = App.ActiveDocument.addObject(
+                #     "Path::FeatureCompound", "feature_compound")
+                # profile_list = [profile]
+                # feature_compound.Group = profile_list
                 if tracing:
                     print(f"{tracing}profile created")
                 profile.Base = (profile_solid, aligned_face_names[0])
@@ -1016,10 +1048,11 @@ class FabCQtoFC(object):
         #     print(f"{tracing}{id(job)=} {id(instances[0])=}")
         #     assert len(instances) == 1 and instances[0], "Not good"
         job = PathJob.Create(job_name, [self.CurrentSolid], None)
-
-        # drilling_name: str = f"{job_name}_Drilling"
-        # assert PathDrilling.Create(drilling_name) is not None
-        # self.ProjectDocument.removeObject(drilling_name)
+        # Example code that modifies placement of a Job:
+        # placement = job.Placement
+        # job.Placement = placement
+        # job.Placement.translate(Vector(150.0, 0.0, 0.0))
+        # job.Placement.Rotation = Rotation(Vector(0.0, 0.0, 1.0), Vector(1.0, 0.0, 0.0))
 
         # TODO: Create a setupsheet and install it into the job.
         # setup_sheet: PathSetupSheet.SetupSheet = PathSetupSheet.Create()
@@ -1181,3 +1214,5 @@ if __name__ == "__main__":
 # Miscellaneous links:
 # [Add: New waterline algorithm](https://forum.freecad.org/viewtopic.php?f=15&t=65718)
 # Post by sliptonic 02Feb2022@3:17PM describes the Path vs FreeCAD global coordinate systems.
+# [Specifying Machining Plain](https://forum.freecadweb.org/viewtopic.php?f=15&t=22155)
+# By the way, this one was posted by somebody named "waynegramlich".
