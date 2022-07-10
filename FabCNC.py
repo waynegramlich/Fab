@@ -45,7 +45,6 @@ if sys.executable == SHARP_EXEC_PATH:
 
 from typing import Any, cast, List, Dict, IO, Optional, Set, Tuple, Union
 from pathlib import Path as FilePath  # The Path library uses `Path`, hence `FilePath`
-from typeguard import check_type
 
 # Uncomment these lines to fire up the debugger:
 # import pudb  # type: ignore
@@ -493,30 +492,27 @@ class FabCQtoFC(object):
         return value
 
     # FabCQtoFC.import_step():
-    def import_step(self, step_file_path_text: str, insert_label: str) -> None:
+    def import_step(self, step_file_path_text: str, insert_label: str, tracing: str = "") -> str:
         """Import step file.
 
         Arguments:
         * *step_file_path_text* (str): The path to the step file.
         * *insert_label* (str): The document node label to insert the step file at.
 
+        Returns:
+        * (str): The label to extracted from the *step_file_path_text*.
+
         """
+        if tracing:
+            print(f"{tracing}=>FabCQtoFC.import_step()")
         step_file_path: FilePath = FilePath(step_file_path_text)
         if not step_file_path.exists():
             raise RuntimeError(f"{step_file_path} does not exist.")
-        part_colors: Any = FCImport.insert(step_file_path_text, insert_label)
-        check_type("FabCQtoFC.import_step.import_step().part_colors", part_colors,
-                   List[Tuple[Any, List[Tuple[float, float, float, float]]]])
-        assert len(part_colors) == 1, part_colors  # Should not be more than one part in step file.
-        part: Any
-        colors: List[Tuple[float, float, float, float]]
-        part, colors = part_colors[0]
-        check_type("FabCQtoFC.import_step.import_step().colors", colors,
-                   List[Tuple[float, float, float, float]])
-        assert len(colors) == 1, colors  # Should only be one RGBA color in step file.
-        color: Tuple[float, float, float, float] = colors[0]
-        check_type("FabCQtoFC.import_step.import_step().color", color,
-                   Tuple[float, float, float, float])
+        FCImport.insert(step_file_path_text, insert_label)
+        label: str = step_file_path.stem[:-18]  # strip off '__XXXXXXXXXXXXXXXX'
+        if tracing:
+            print(f"{tracing}<=FabCQtoFC.import_step()=>'{label}'")
+        return label
 
     # FabCQtoFC.process_json():
     def process_json(
@@ -874,16 +870,7 @@ class FabCQtoFC(object):
             print(f"{tracing}{project_document=} {project_document.Label=}")
         step = cast(str, self.key_verify(
             "StepFile", json_dict, str, tree_path, "Pocket.StepFile"))
-        step_file: FilePath = FilePath(step)
-        if tracing:
-            print(f"{tracing}{step_file=}")
-            print(f"{tracing}{step_file.stem=}")
-        if not step_file.exists():
-            raise RuntimeError(f"{step_file} does not exits.")
-        FCImport.insert(step, project_document.Label)
-        pocket_label: str = step_file.stem[:-18]  # strip off '__XXXXXXXXXXXXXXXX'
-        if tracing:
-            print(f"{tracing}{pocket_label=}")
+        pocket_label: str = self.import_step(step, project_document.Label, tracing=next_tracing)
 
         # *pocket_solid* is a rectangular block with (currently) 1 pocket cut into it:
         pocket_solid: Any = project_document.getObject(pocket_label)
@@ -938,17 +925,7 @@ class FabCQtoFC(object):
             "StepFile", json_dict, str, tree_path, "Drilling.StepFile"))
         holes_count = cast(int, self.key_verify(
             "HolesCount", json_dict, int, tree_path, "Drilling.HolesCount"))
-        step_file_path: FilePath = FilePath(step)
-        if tracing:
-            print(f"{tracing}{step_file_path=}")
-            print(f"{tracing}{step_file_path.stem=}")
-        if not step_file_path.exists():
-            raise RuntimeError(f"{step_file_path} does not exits.")
-        FCImport.insert(step, project_document.Label)
-        drilling_label: str = step_file_path.stem[:-18]  # strip off '__XXXXXXXXXXXXXXXX'
-        if tracing:
-            print(f"{tracing}{step_file_path=}")
-            print(f"{tracing}{drilling_label=}")
+        drilling_label: str = self.import_step(step, project_document.Label, tracing=next_tracing)
         drilling_solid: Any = project_document.getObject(drilling_label)
         if tracing:
             print(f"{tracing}{drilling_solid=}")
@@ -1101,7 +1078,7 @@ class FabCQtoFC(object):
         use_project_document: bool = True
         document: Any = self.ProjectDocument if use_project_document else self.StepsDocument
         before_size: int = len(document.RootObjects)
-        FCImport.insert(step_file, document.Label)
+        self.import_step(step_file, document.Label, tracing=next_tracing)
         after_size: int = len(document.RootObjects)
         assert before_size + 1 == after_size, (before_size, after_size)
         solid: Any = document.getObject(label)
