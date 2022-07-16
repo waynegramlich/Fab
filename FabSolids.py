@@ -1674,7 +1674,7 @@ class FabMount(object):
                 del operations[:]
                 new_name: str = self._Name
                 if len(expanded_mounts) == 0:
-                    new_name = f"{self._Name}{len(expanded_mounts)+1}:03d"
+                    new_name = f"{self._Name}{len(expanded_mounts)+1:03d}"
                 new_mount: FabMount = FabMount(
                     new_name, self._Solid, self._Contact, self._Normal, self._Orient,
                     self._Depth, self._Query)

@@ -98,6 +98,15 @@ else:
     from FreeCAD import Import as FCImport  # type: ignore
 
 
+trace_file: IO[str] = open("/tmp/cnc.trace", "w")
+
+
+def trace(line: str) -> None:
+    """Log a trace line."""
+    trace_file.write(f"{line}\n")
+    trace_file.flush()
+
+
 # FabCQtoFC:
 @dataclass
 class FabCQtoFC(object):
@@ -174,7 +183,7 @@ class FabCQtoFC(object):
             tracing: str = "") -> Tuple[Any, Any]:
         """Extract tool controller and associated tool bit from a JSON node."""
         if tracing:
-            print(f"{tracing}=>FabCQtotFC.get_tool_and_controller(*, {label}, {tree_path})")
+            trace(f"{tracing}=>FabCQtotFC.get_tool_and_controller(*, {label}, {tree_path})")
 
         bit_index = cast(
             int, self.key_verify("BitIndex", json_dict, int,
@@ -296,14 +305,14 @@ class FabCQtoFC(object):
 
         result: Tuple[Any, Any] = (tool, tool_controller)
         if tracing:
-            print(f"{tracing}<=FabCQtotFC.get_tool_and_controller("
+            trace(f"{tracing}<=FabCQtotFC.get_tool_and_controller("
                   f"*, {label}, {tree_path})=>{result}")
         return result
 
     # FabCQtoFC.flush_job(self):
     def flush_job(self, tracing: str = ""):
         if tracing:
-            print(f"{tracing}=>FabCQtoFC.flush_job()")
+            trace(f"{tracing}=>FabCQtoFC.flush_job()")
         job: Any = self.CurrentJob
         job_name: Any = self.CurrentJobName
         if job:
@@ -314,7 +323,7 @@ class FabCQtoFC(object):
                 tool_controller: Any = PathUtil.toolControllerForOp(operation)
                 tool: Any = tool_controller.Tool
                 if tracing:
-                    print(f"{tracing}{tool=}")
+                    trace(f"{tracing}{tool=}")
 
                 if tool_controller is not None:
                     if tool_controller.ToolNumber != current_tool_number:
@@ -330,24 +339,24 @@ class FabCQtoFC(object):
         self.CurrentJob = None
         self.CurrentJobName = None
         if tracing:
-            print(f"{tracing}<=FabCQtoFC.flush_job()")
+            trace(f"{tracing}<=FabCQtoFC.flush_job()")
 
     # CQtoPy.verify_properties():
     def verify_properties(self, tracing: str = "") -> None:
         """Verify that all of the properties match their associated 'info' dictionaries."""
         # This method must be called after a document has been created.
         if tracing:
-            print(f"{tracing}=>CQtoPy.verify_properties()")
+            trace(f"{tracing}=>CQtoPy.verify_properties()")
 
         def match(label: str, properties: Set[str], infos: Set[str]) -> None:
             """Match a properties with information set."""
             if properties != infos:
-                print(f"CQtoPy.verify_properties.match('{label}') <<<<<<<<<<<<<<<<:")
-                # print(f"{sorted(properties)=}")
-                # print(f"{sorted(infos)=}")
+                trace(f"CQtoPy.verify_properties.match('{label}') <<<<<<<<<<<<<<<<:")
+                # trace(f"{sorted(properties)=}")
+                # trace(f"{sorted(infos)=}")
                 # print()
-                print(f"{sorted(properties - infos)=}")
-                print(f"{sorted(infos - properties)=}")
+                trace(f"{sorted(properties - infos)=}")
+                trace(f"{sorted(infos - properties)=}")
                 assert False
 
         def append_documentation(obj: Any, out_file: IO[str], label: str) -> None:
@@ -417,14 +426,14 @@ class FabCQtoFC(object):
             match("profile", profiles, extrude_infos)
             match("drilling", drillings, drilling_infos)
         if tracing:
-            print(f"{tracing}<=CQtoPy.verify_properties()")
+            trace(f"{tracing}<=CQtoPy.verify_properties()")
 
     # FabCQtoFC.process():
     def process(self, indent: str = "", tracing: str = "") -> None:
         """Process a JSON file into a FreeCAD documents."""
         next_tracing: str = tracing + "  " if tracing else ""
         if tracing:
-            print(f"{tracing}=>FabCQtFC.process({str(self.JsonPath), {self.ToolsPath}})")
+            trace(f"{tracing}=>FabCQtFC.process({str(self.JsonPath), {self.ToolsPath}})")
 
         # Create the *steps_document*:
         json_directory: FilePath = self.JsonPath.parent
@@ -438,17 +447,17 @@ class FabCQtoFC(object):
         if self.JsonPath.suffix != ".json":
             raise RuntimeError(f"JSON file must have `.json` suffix: '{str(self.JsonPath)}'")
         if tracing:
-            print(f"{tracing}Loading {str(self.JsonPath)}")
+            trace(f"{tracing}Loading {str(self.JsonPath)}")
         with open(self.JsonPath, "r") as json_file:
             json_text = json_file.read()
         if tracing:
-            print(f"{tracing}Parsing {str(self.JsonPath)}")
+            trace(f"{tracing}Parsing {str(self.JsonPath)}")
         json_root = cast(Dict[str, Any], json.loads(json_text))
         assert isinstance(json_root, dict), json_root
 
         # Recursively walk the tree starting at *json_root*:
         if tracing:
-            print(f"{tracing}Processing {str(self.JsonPath)}")
+            trace(f"{tracing}Processing {str(self.JsonPath)}")
         self.node_process(("Root",), json_root, indent=indent, tracing=next_tracing)
 
         # Save *all_documents*:
@@ -468,7 +477,7 @@ class FabCQtoFC(object):
         for link, part in self.PendingLinks:
             link.setLink(part)
         if tracing:
-            print(f"{tracing}<=FabCQtFC.process({str(self.JsonPath), {self.ToolsPath}})")
+            trace(f"{tracing}<=FabCQtFC.process({str(self.JsonPath), {self.ToolsPath}})")
 
     # FabCQtoFC.type_verify():
     def type_verify(self, value: Any, value_type: type,
@@ -492,27 +501,41 @@ class FabCQtoFC(object):
         return value
 
     # FabCQtoFC.import_step():
-    def import_step(self, step_file_path_text: str, insert_label: str, tracing: str = "") -> str:
+    def import_step(self, step_file_path_text: str, visible: bool, tracing: str = "") -> str:
         """Import step file.
 
         Arguments:
         * *step_file_path_text* (str): The path to the step file.
-        * *insert_label* (str): The document node label to insert the step file at.
 
         Returns:
         * (str): The label to extracted from the *step_file_path_text*.
 
         """
         if tracing:
-            print(f"{tracing}=>FabCQtoFC.import_step()")
+            trace(f"{tracing}=>FabCQtoFC.import_step()")
+
         step_file_path: FilePath = FilePath(step_file_path_text)
+        step_label: str = step_file_path.stem[:-18]  # strip off '__XXXXXXXXXXXXXXXX'
         if not step_file_path.exists():
             raise RuntimeError(f"{step_file_path} does not exist.")
-        FCImport.insert(step_file_path_text, insert_label)
-        label: str = step_file_path.stem[:-18]  # strip off '__XXXXXXXXXXXXXXXX'
+        project_document: Any = self.ProjectDocument
+        project_document_name: str = project_document.Name
+        FCImport.insert(step_file_path_text, project_document_name)
+        imported_object: Any = project_document.getObject(step_label)
+        _ = imported_object
+
+        # When the STEP files are colocated with the assemblies and such, the visibility
+        # of the associated *gui_step_object* needs to be disabled.
+        if App.GuiUp:  # type: ignore
+            gui_document: Any = Gui.getDocument(project_document_name)  # type: ignore
+            gui_step_object: Any = gui_document.getObject(step_label)
+            if gui_step_object is not None:
+                if hasattr(gui_step_object, "Visibility"):
+                    gui_step_object.Visibility = visible
+
         if tracing:
-            print(f"{tracing}<=FabCQtoFC.import_step()=>'{label}'")
-        return label
+            trace(f"{tracing}<=FabCQtoFC.import_step()=>'{step_label}'")
+        return step_label
 
     # FabCQtoFC.process_json():
     def process_json(
@@ -535,7 +558,7 @@ class FabCQtoFC(object):
           * "ignore: (None): When present, this property is ignored.
         """
         if tracing:
-            print(f"{tracing}=>FabCQtoFC.process_json(*, *, *)")
+            trace(f"{tracing}=>FabCQtoFC.process_json(*, *, *)")
 
         # Verify that required methods are present:  # TODO: Move to verify_properties:
         if not hasattr(obj, "PropertiesList"):
@@ -569,7 +592,7 @@ class FabCQtoFC(object):
 
         # Sweep through *properties*:
         if tracing:
-            print(f"{tracing}{jsons=}")
+            trace(f"{tracing}{jsons=}")
         for name, info in infos.items():
             info_key: str
             info_value: Any
@@ -594,7 +617,7 @@ class FabCQtoFC(object):
                 setattr(obj, name, json_value)
 
         if tracing:
-            print(f"{tracing}<=FabCQtoFC.process_json(*, *, *)")
+            trace(f"{tracing}<=FabCQtoFC.process_json(*, *, *)")
 
     # FabCQtoFC.node_process():
     def node_process(self, tree_path: Tuple[str, ...], json_dict: Dict[str, Any],
@@ -605,8 +628,8 @@ class FabCQtoFC(object):
         next_tracing: str = tracing + "  " if tracing else ""
         next_indent = indent + "  " if indent else ""
         if tracing:
-            print(f"{tracing}=>FabCQtoFC.child_process(*, {tree_path}, '{indent}')")
-            print(f"{tracing}{json_dict=}")
+            trace(f"{tracing}=>FabCQtoFC.child_process(*, {tree_path}, '{indent}')")
+            trace(f"{tracing}{json_dict=}")
 
         # Do some sanity checking:
         error_message: str
@@ -614,8 +637,8 @@ class FabCQtoFC(object):
         kind = cast(str, self.key_verify("Kind", json_dict, str, tree_path, "Kind"))
         label = cast(str, self.key_verify("Label", json_dict, str, tree_path, "Label"))
         if indent:
-            print(f"{indent}{label}:")
-            print(f"{indent} Kind: {kind}")
+            trace(f"{indent}{label}:")
+            trace(f"{indent} Kind: {kind}")
 
         # Verify that that *kind* is one of the *allowed_kinds*:
         allowed_kinds: Tuple[str, ...] = (
@@ -653,7 +676,7 @@ class FabCQtoFC(object):
             children = cast(List[Dict[str, Any]],
                             self.key_verify("children", json_dict, list, tree_path, "Children"))
             if indent:
-                print(f"{indent} children ({len(children)}):")
+                trace(f"{indent} children ({len(children)}):")
 
             child_dict: Dict[str, Any]
             for child_dict in children:
@@ -664,19 +687,19 @@ class FabCQtoFC(object):
                 self.node_process(child_tree_path, child_dict,
                                   indent=next_indent, tracing=next_tracing)
         if tracing:
-            print(f"{tracing}<=FabCQtoFC.child_process({tree_path}, '{indent}')")
+            trace(f"{tracing}<=FabCQtoFC.child_process({tree_path}, '{indent}')")
 
     # FabCQtoFC.process_assembly():
     def process_assembly(self, json_dict: Dict[str, Any], label: str,
                          indent: str, tree_path: Tuple[str, ...], tracing: str = "") -> None:
         if tracing:
-            print(f"{tracing}=>FabCQtoFC.process_assembly(*, '{label}', {tree_path})")
+            trace(f"{tracing}=>FabCQtoFC.process_assembly(*, '{label}', {tree_path})")
         if self.CurrentGroup:
             self.CurrentGroup = self.CurrentGroup.newObject("App::DocumentObjectGroup", label)
         else:
             self.CurrentGroup = self.ProjectDocument.addObject("App::DocumentObjectGroup", label)
         if tracing:
-            print(f"{tracing}<=FabCQtoFC.process_assembly(*, '{label}', {tree_path})")
+            trace(f"{tracing}<=FabCQtoFC.process_assembly(*, '{label}', {tree_path})")
 
     # FabCQtoFC.process_document():
     def process_document(self, json_dict: Dict[str, Any], label: str,
@@ -684,17 +707,17 @@ class FabCQtoFC(object):
         """Process a Document JSON node."""
         # next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>FabCQtoFC.process_document(*, '{label}', {tree_path})")
+            trace(f"{tracing}=>FabCQtoFC.process_document(*, '{label}', {tree_path})")
         file_path: str = cast(str, self.key_verify(
             "_FilePath", json_dict, str, tree_path, "Document._File_Path"))
         project_document = App.newDocument(label)  # type: ignore
         project_document.Label = label
         if indent:
-            print(f"{indent} _FilePath: {file_path}")
+            trace(f"{indent} _FilePath: {file_path}")
             self.ProjectDocument = project_document
             self.AllDocuments.append(project_document)
         if tracing:
-            print(f"{tracing}<=FabCQtoFC.process_document(*, '{label}', {tree_path})")
+            trace(f"{tracing}<=FabCQtoFC.process_document(*, '{label}', {tree_path})")
 
     # FabCQtoFC.process_extrude():
     def process_extrude(self, json_dict: Dict[str, Any], label: str,
@@ -702,11 +725,11 @@ class FabCQtoFC(object):
         """Process an Extrude JSON node."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>FabCQtoFC.process_extrude(*, '{label}', {tree_path})")
+            trace(f"{tracing}=>FabCQtoFC.process_extrude(*, '{label}', {tree_path})")
         active = cast(bool, self.key_verify("_Active", json_dict, bool, tree_path,
                                             "Extrude._Active"))
         if tracing:
-            print(f"{tracing}Creating job")
+            trace(f"{tracing}Creating job")
         job = self.CurrentJob
         normal = self.CurrentNormal
         assert job is not None, "No job present"
@@ -722,7 +745,7 @@ class FabCQtoFC(object):
                 profile_solid, normal, tracing=next_tracing)
             if aligned_face_names:
                 if tracing:
-                    print(f"{tracing}Create profile")
+                    trace(f"{tracing}Create profile")
                 # This prints:
                 # PathSetupSheet.INFO: SetupSheet has no support for TestSolid_Step_Top_profile
                 # Modify PathProfile:1460 and 1464 to Job.
@@ -734,7 +757,7 @@ class FabCQtoFC(object):
                 # profile_list = [profile]
                 # feature_compound.Group = profile_list
                 if tracing:
-                    print(f"{tracing}profile created")
+                    trace(f"{tracing}profile created")
                 profile.Base = (profile_solid, aligned_face_names[0])
                 profile_infos: Dict[str, Any] = self.get_extrude_infos()
                 self.process_json(json_dict, profile, profile_infos, tracing=next_tracing)
@@ -746,7 +769,7 @@ class FabCQtoFC(object):
                 profile.recompute()
 
         if tracing:
-            print(f"{tracing}<=FabCQtoFC.process_extrude(*, '{label}', {tree_path})")
+            trace(f"{tracing}<=FabCQtoFC.process_extrude(*, '{label}', {tree_path})")
 
     # FabCQtFC.merge_common_infos():
     def merge_common_infos(self, infos: Dict[str, Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
@@ -861,21 +884,21 @@ class FabCQtoFC(object):
         """Process a Pocket JSON node."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>FabCQtoFC.process_pocket(*, '{label}', {tree_path})")
+            trace(f"{tracing}=>FabCQtoFC.process_pocket(*, '{label}', {tree_path})")
 
         # Grab *pocket_bottom* from STEP file and insert into *project_document*:
         self.verify_properties(tracing=next_tracing)
         project_document: Any = self.ProjectDocument
         if tracing:
-            print(f"{tracing}{project_document=} {project_document.Label=}")
+            trace(f"{tracing}{project_document=} {project_document.Label=}")
         step = cast(str, self.key_verify(
             "StepFile", json_dict, str, tree_path, "Pocket.StepFile"))
-        pocket_label: str = self.import_step(step, project_document.Label, tracing=next_tracing)
+        pocket_label: str = self.import_step(step, False, tracing=next_tracing)
 
         # *pocket_solid* is a rectangular block with (currently) 1 pocket cut into it:
         pocket_solid: Any = project_document.getObject(pocket_label)
         if tracing:
-            print(f"{tracing}{pocket_solid=}")
+            trace(f"{tracing}{pocket_solid=}")
 
         tool: Any = None
         tool_controller: Any = None
@@ -883,7 +906,7 @@ class FabCQtoFC(object):
             json_dict, label, indent, tree_path, tracing=next_tracing)
         App.ActiveDocument = project_document  # TODO: This should not be necessary
         if tracing:
-            print(f"{tracing}{tool=} {tool_controller=}")
+            trace(f"{tracing}{tool=} {tool_controller=}")
 
         normal: Vector = Vector(0.0, 0.0, 1.0)
         aligned_face_names: Tuple[str, ...] = self.get_aligned_face_names(
@@ -905,7 +928,7 @@ class FabCQtoFC(object):
             pocket.recompute()
 
         if tracing:
-            print(f"{tracing}<=FabCQtoFC.process_pocket(*, '{label}', {tree_path})")
+            trace(f"{tracing}<=FabCQtoFC.process_pocket(*, '{label}', {tree_path})")
 
     # FabCQtoFC.process_drilling():
     def process_drilling(self, json_dict: Dict[str, Any], label: str,
@@ -913,22 +936,22 @@ class FabCQtoFC(object):
         """Process a Drill JSON node."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>FabCQtoFC.process_drilling(*, '{label}', {tree_path})")
+            trace(f"{tracing}=>FabCQtoFC.process_drilling(*, '{label}', {tree_path})")
 
         # Grab *drill_solid* from STEP file and insert into *project_document*:
         self.verify_properties(tracing=next_tracing)
         project_document: Any = self.ProjectDocument
         if tracing:
-            print(f"{tracing}{project_document=} {project_document.Label=}")
+            trace(f"{tracing}{project_document=} {project_document.Label=}")
         # TODO: refactor Step file extraction():
         step = cast(str, self.key_verify(
             "StepFile", json_dict, str, tree_path, "Drilling.StepFile"))
         holes_count = cast(int, self.key_verify(
             "HolesCount", json_dict, int, tree_path, "Drilling.HolesCount"))
-        drilling_label: str = self.import_step(step, project_document.Label, tracing=next_tracing)
+        drilling_label: str = self.import_step(step, False, tracing=next_tracing)
         drilling_solid: Any = project_document.getObject(drilling_label)
         if tracing:
-            print(f"{tracing}{drilling_solid=}")
+            trace(f"{tracing}{drilling_solid=}")
 
         tool: Any = None
         tool_controller: Any = None
@@ -936,7 +959,7 @@ class FabCQtoFC(object):
             json_dict, label, indent, tree_path, tracing=next_tracing)
         App.ActiveDocument = project_document  # TODO: This should not be necessary
         if tracing:
-            print(f"{tracing}{tool=} {tool_controller=}")
+            trace(f"{tracing}{tool=} {tool_controller=}")
 
         # Now create a PathDrilling object:
         job: Any = self.CurrentJob
@@ -964,13 +987,13 @@ class FabCQtoFC(object):
                 #     hole_face_names.append(face_name)
         if len(hole_face_names) != holes_count:
             print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-            print(f"{len(hole_face_names)=} != {holes_count=}")
+            trace(f"{len(hole_face_names)=} != {holes_count=}")
         # z_axis: Vector = Vector(0.0, 0.0, 1.0)
         # aligned_face_names: Tuple[str, ...] = self.get_aligned_face_names(
         #     drilling_solid, z_axis, tracing=next_tracing)
         # if tracing:
-        #     print(f"{tracing}################################################################")
-        #     print(f"{tracing}Drilling: {aligned_face_names=}")
+        #     trace(f"{tracing}################################################################")
+        #     trace(f"{tracing}Drilling: {aligned_face_names=}")
 
         drilling.Base = (drilling_solid, hole_face_names)
         drilling_infos: Dict[str, Any] = self.get_drilling_infos()
@@ -978,7 +1001,7 @@ class FabCQtoFC(object):
         drilling.recompute()
 
         if tracing:
-            print(f"{tracing}<=FabCQtoFC.process_drilling(*, '{label}', {tree_path})")
+            trace(f"{tracing}<=FabCQtoFC.process_drilling(*, '{label}', {tree_path})")
 
     # FabCQtoFC.process_mount():
     def process_mount(self, json_dict: Dict[str, Any], label: str,
@@ -986,7 +1009,7 @@ class FabCQtoFC(object):
         """Process a Mount JSON node."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>FabCQtotFC.process_mount(*, {label}, {tree_path})")
+            trace(f"{tracing}=>FabCQtotFC.process_mount(*, {label}, {tree_path})")
         contact_list: List[float] = cast(
             list, self.key_verify("_Contact", json_dict, list, tree_path, "Solid._Contact"))
         normal_list: List[float] = cast(
@@ -997,32 +1020,32 @@ class FabCQtoFC(object):
         normal = Vector(normal_list)
         orient: Vector = Vector(orient_list)
         if indent:
-            print(f"{indent} _Contact: {contact}")
-            print(f"{indent} _Normal: {normal}")
-            print(f"{indent} _Orient: {orient}")
+            trace(f"{indent} _Contact: {contact}")
+            trace(f"{indent} _Normal: {normal}")
+            trace(f"{indent} _Orient: {orient}")
 
         self.flush_job(tracing=next_tracing)  # Force previous job to be done.
 
         # # Delete any previous jobs:
         # if tracing:
-        #     print(f"{tracing}>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-        #     print(f"{tracing}Before: {PathJob.Instances()=}")
+        #     trace(f"{tracing}>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+        #     trace(f"{tracing}Before: {PathJob.Instances()=}")
         # job: Any
         # for job in PathJob.Instances():
-        #     print(f"{tracing}Deleting Job '{job.Label}'")
+        #     trace(f"{tracing}Deleting Job '{job.Label}'")
         #     self.ProjectDocument.removeObject(job.Label)
 
         # Create the new job:
         job_name: str = f"{self.CurrentSolid.Label}_{label}"
         # if tracing:
-        #     print(f"{tracing}Middle: {PathJob.Instances()=}")
-        #     print(f"{tracing}Creating job {job_name}...")
+        #     trace(f"{tracing}Middle: {PathJob.Instances()=}")
+        #     trace(f"{tracing}Creating job {job_name}...")
         # job = PathJob.Create(job_name, [self.CurrentPart], None)
         # if tracing:
         #     instances: List[Any] = PathJob.Instances()
-        #     print(f"{tracing}After: {job=} {instances=}")
+        #     trace(f"{tracing}After: {job=} {instances=}")
         #     assert len(instances) == 1 and instances[0], "Not good"
-        #     print(f"{tracing}{id(job)=} {id(instances[0])=}")
+        #     trace(f"{tracing}{id(job)=} {id(instances[0])=}")
         #     assert len(instances) == 1 and instances[0], "Not good"
         job = PathJob.Create(job_name, [self.CurrentSolid], None)
         # Example code that modifies placement of a Job:
@@ -1056,7 +1079,7 @@ class FabCQtoFC(object):
             job.ViewObject.Proxy = proxy  # This assignment rearranges the Job.
 
         if tracing:
-            print(f"{tracing}<=FabCQtotFC.process_mount(*, {label}, {tree_path})")
+            trace(f"{tracing}<=FabCQtotFC.process_mount(*, {label}, {tree_path})")
 
     # CQtoFC.process_solid():
     def process_solid(self, json_dict: Dict[str, Any], label: str,
@@ -1064,21 +1087,21 @@ class FabCQtoFC(object):
         """Process a Solid JSON node."""
         next_tracing: str = tracing + " " if tracing else ""
         if tracing:
-            print(f"{tracing}=>FabCQtotFC.process_solid(*, {label}, {tree_path})")
+            trace(f"{tracing}=>FabCQtotFC.process_solid(*, {label}, {tree_path})")
 
         self.flush_job(tracing=next_tracing)
 
         step_file: str = cast(str, self.key_verify("StepFile",
                                                    json_dict, str, tree_path, "Solid.StepFile"))
         if indent:
-            print(f"{indent} StepFile: {step_file}")
+            trace(f"{indent} StepFile: {step_file}")
 
         # This code currently tries to work with object in a separate *steps_document* and
         # the main *project_document*.  Change the conditional to switch between.
         use_project_document: bool = True
         document: Any = self.ProjectDocument if use_project_document else self.StepsDocument
         before_size: int = len(document.RootObjects)
-        self.import_step(step_file, document.Label, tracing=next_tracing)
+        self.import_step(step_file, True, tracing=next_tracing)
         after_size: int = len(document.RootObjects)
         assert before_size + 1 == after_size, (before_size, after_size)
         solid: Any = document.getObject(label)
@@ -1104,14 +1127,14 @@ class FabCQtoFC(object):
         self.CurrentNormal = None
 
         if tracing:
-            print(f"{tracing}<=FabCQtotFC.process_solid(*, {label}, {tree_path})")
+            trace(f"{tracing}<=FabCQtotFC.process_solid(*, {label}, {tree_path})")
 
     # CQtoFC.get_aligned_face_names():
     def get_aligned_face_names(self, obj:
                                Any, normal: Vector, tracing: str = "") -> Tuple[str, ...]:
         """Return normal aligned faces from largest to smallest."""
         if tracing:
-            print(f"{tracing}=>get_aligned_face_name({obj}, {normal})")
+            trace(f"{tracing}=>get_aligned_face_name({obj}, {normal})")
         epsilon: float = 1.0e-8
         if abs(normal.Length - 1.0) > epsilon:
             normal = normal / normal.Length
@@ -1144,19 +1167,19 @@ class FabCQtoFC(object):
             [face_name for area, face_name in aligned_area_names])
 
         if tracing:
-            print(f"{tracing}<=get_aligned_faces_name({obj}, {normal})=>{sorted_face_names}")
+            trace(f"{tracing}<=get_aligned_faces_name({obj}, {normal})=>{sorted_face_names}")
         return sorted_face_names
 
     # CQtoFC.flush_temporary_bits():
     def flush_temporary_bits(self, tools_directory: FilePath, tracing: str = "") -> None:
         """Flush out any temporary bits."""
         if tracing:
-            print(f"=>{tracing}CQtoFC.flush_temporary_bits()")
+            trace(f"=>{tracing}CQtoFC.flush_temporary_bits()")
         bit_directory: FilePath = tools_directory / "Bit"
         for bit_path in bit_directory.glob("Bit[0-9][0-9][0-9]_*"):
             bit_path.unlink()
         if tracing:
-            print(f"<={tracing}CQtoFC.flush_temporary_bits()")
+            trace(f"<={tracing}CQtoFC.flush_temporary_bits()")
 
 
 # main():
@@ -1164,7 +1187,7 @@ def main(tracing: str = "") -> None:
     """The main program."""
     next_tracing: str = tracing + " " if tracing else ""
     if tracing:
-        print(f"{tracing}=>main()")
+        trace(f"{tracing}=>main()")
     environ = cast(Dict[str, str], os.environ)
     json_file_name: str = environ["JSON"] if "JSON" in environ else "/tmp/TestProject.json"
     flags: str = environ["FLAGS"] if "FLAGS" in environ else ""
@@ -1172,17 +1195,17 @@ def main(tracing: str = "") -> None:
     visual: bool = "v" in flags
     tools_directory: FilePath = FilePath(__file__).parent / "Tools"
     if tracing:
-        print(f"{tracing}{json_file_name=} {tools_directory=} {flags=} {cnc=} {visual=}")
+        trace(f"{tracing}{json_file_name=} {tools_directory=} {flags=} {cnc=} {visual=}")
     json_processor: FabCQtoFC = FabCQtoFC(FilePath(json_file_name), tools_directory, cnc)
     json_processor.flush_temporary_bits(tools_directory, tracing=next_tracing)
     json_processor.process(indent="  ", tracing=next_tracing)
     # json_processor.flush_temporary_bits(tools_directory, tracing=next_tracing)
     if not App.GuiUp:  # type: ignore
         if tracing:
-            print(f"{tracing}calling sys.exit()")
+            trace(f"{tracing}calling sys.exit()")
         sys.exit(0)
     if tracing:
-        print(f"{tracing}<=main()")
+        trace(f"{tracing}<=main()")
 
 
 if __name__ == "__main__":
