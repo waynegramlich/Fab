@@ -1,5 +1,24 @@
 #!/usr/bin/env python3
-"""Geometry: A module for constructing 2D geometry."""
+"""FabGeometries: A module for constructing 2D geometry.
+
+Public Classes:
+* FabGeometryInfo: A public frozen class for geometry information (e.g. Area, Perimeter, etc.)
+* FabPlane: An public immutable class specifying a plane via point in the plane and a normal.
+* FabGeometry: A public frozen base class for FabCircle and FabPolygon.
+  * FabCircle: A public frozen class that represents a circle on a plane.
+  * FabPolygon: A public frozen class that represents a closed polygon rounded corners on a plane.
+
+Private Classes:
+* Fab_GeometryContext: A private mutable context needed to produce FabGeometry objects.
+* Fab_Geometry: An private base class for Fab_Arc, Fab_Circle, and Fab_Line.
+  * Fab_Arc: A private representation an arc geometry projected onto plane.
+  * Fab_Circle: A private representation of a circle geometry projected onto a plane.
+  * Fab_Line: An private representation of a line segment projected onto a plane.
+  * Fab_Fillet: A private object that represents one fillet of a FabPolygon.
+* Fab_Geometry_Info: A private class is ultimately used to construct a frozen FabGeometryInfo.
+* Fab_Query: A private CadQuery Workplane wrapper.
+
+"""
 
 # <--------------------------------------- 100 characters ---------------------------------------> #
 
@@ -19,7 +38,7 @@ from FabNodes import FabBox
 # FabGeometryInfo:
 @dataclass(frozen=True)
 class FabGeometryInfo(object):
-    """FabGeometryInfo: Geometric information about area, perimeter, etc.
+    """ FabGeometryInfo: A frozen class containing geometry information (e.g. Area, Perimeter, etc.)
 
     Attributes:
     * Area (float): The geometry area in square millimeters.
@@ -64,10 +83,21 @@ class FabGeometryInfo(object):
 # FabPlane:
 @dataclass
 class FabPlane(object):
-    """FabPlane: An immutable Plane class.
+    """FabPlane: An public immutable class specifying a plane via point in the plane and a normal.
 
+    Constructor Attributes:
     * *Contact* (Vector):  Some contact point that anywhere in the plane.
     * *Normal* (Vector): The normal to the plane.
+
+    Computed Attributes:
+    * *UnitNormal* (Vector): The unit normal vector.
+    * *Distance* (float): The distance from the origin using normal to a point on the plane.
+    * *Origin* (Vector):
+      The location on the plane where the from origin along normal intersects the plane.
+
+    Constructor:
+    * FabPlane(Contact, Normal)
+
     """
 
     _Contact: Vector
@@ -225,9 +255,9 @@ class FabPlane(object):
         adjusted_plane: FabPlane = FabPlane(new_origin, new_origin)
         return adjusted_plane
 
-    # FabPlane.CQPlane():
+    # FabPlane.CQ_Plane():
     @property
-    def CQPlane(self) -> Any:
+    def CQ_Plane(self) -> Any:
         """Return the associated CadQuery Plane."""
         plane: Any = self._Plane
         assert isinstance(plane, cq.Plane), plane
@@ -402,14 +432,19 @@ class FabPlane(object):
 # Fab_GeometryContext:
 @dataclass
 class Fab_GeometryContext(object):
-    """GeometryProduce: Context needed to produce FreeCAD geometry objects.
+    """Fab_GeometryContext: A private mutable context needed to produce FabGeometry objects.
 
     Attributes:
     * *Plane* (FabPlane): Plane to use.
     * *Query* (Fab_Query): The CadQuery Workplane wrapper to use.
+
+    Old Attributes:
     * *_GeometryGroup*: (App.DocumentObjectGroup):
       The FreeCAD group to store FreeCAD Geometry objects into.
       This field needs to be set prior to use with setGeometryGroup() method.
+
+    Constructor:
+    * Fab_GeometryContext(Plane, Query)
 
     """
 
@@ -481,10 +516,13 @@ class Fab_GeometryContext(object):
 # Fab_Geometry:
 @dataclass
 class Fab_Geometry(object):
-    """Fab_Geometry: An Internal base class for Fab_Arc, Fab_Circle, and Fab_Line.
+    """Fab_Geometry: An private base class for Fab_Arc, Fab_Circle, and Fab_Line.
 
     Attributes:
     * Plane* (FabPlane): The plane onto which the geometry is projected.
+
+    Constructory:
+    * Fab_Geometry(Plane)
 
     """
 
@@ -524,9 +562,10 @@ class Fab_Geometry(object):
 # Fab_Arc:
 @dataclass
 class Fab_Arc(Fab_Geometry):
-    """Fab_Arc: An internal representation an arc geometry.
+    """Fab_Arc: A private representation an arc geometry projected onto plane.
 
     Attributes:
+    * *Plane* (Vector): The plane the arc is projected onto..
     * *Apex* (Vector): The fillet apex point (i.e. corner.)
     * *Radius* (float): The arc radius in millimeters.
     * *Center* (Vector): The arc center point.
@@ -534,13 +573,15 @@ class Fab_Arc(Fab_Geometry):
     * *Middle* (Vector): The Arc midpoint.
     * *Finish* (Vector): The Arc finish point.
 
+    Computed Attributes:
     * *ApexXY* (Vector): Apex projected onto the XY Plane.
     * *CenterXY* (Vector): The Center projected onto the XY Plane.
     * *StartXY* (Vector): The Start projected onto the XY Plane.
     * *MiddleXY* (Vector): The Middle projected onto the XY Plane
     * *FinishXY* (Vector): The Finish projected onto the XY Plane
+
     Constructor:
-    * Fab_Arc(Apex, Radius, Center, Start, Middle, Finish)
+    * Fab_Arc(Plane, Apex, Radius, Center, Start, Middle, Finish)
 
     """
 
@@ -604,12 +645,18 @@ class Fab_Arc(Fab_Geometry):
 
 @dataclass
 class Fab_Circle(Fab_Geometry):
-    """Fab_Circle: An internal representation of a circle geometry.
+    """Fab_Circle: A private representation of a circle geometry projected onto a plane.
 
     Attributes:
+    * *Plane* (Vector): The plane the circle is projected onto.
     * *Center (Vector): The circle center.
     * *Diameter (float): The circle diameter in millimeters.
+
+    Computed attributes:
     * *CenterXY* (Vector): Center projected onto XY plane.
+
+    Constructor:
+    * Fab_Circle(Plane, Center, Diameter)
 
     """
 
@@ -660,17 +707,19 @@ class Fab_Circle(Fab_Geometry):
 # Fab_Line:
 @dataclass
 class Fab_Line(Fab_Geometry):
-    """Fab_Line: An internal representation of a line segment geometry.
+    """Fab_Line: An private representation of a line segment projected onto a plane.
 
-    Attributes:
-    * *Plane* (FabPlane): The plane to project the line onto.
+    Constructor Attributes:
+    * *Plane* (FabPlane): The plane the line segment is projected onto.
     * *Start* (Vector): The line segment start point.
     * *Finish* (Vector): The line segment finish point.
-    * *StartXY* (Vector): Start projected onto XY plane.
-    * *FinishXY* (Vector): Finish projected onto XY plane.
+
+    Computed Attributes:
+    * *StartXY* (Vector): Start point projected onto XY plane.
+    * *FinishXY* (Vector): Finish point projected onto XY plane.
 
     Constructor:
-    * Fab_Line(Start, Finish)
+    * Fab_Line(Planne, Start, Finish)
     """
 
     Start: Vector
@@ -729,7 +778,7 @@ class Fab_Line(Fab_Geometry):
 # Fab_Fillet:
 @dataclass
 class Fab_Fillet(object):
-    """Fab_Fillet: An object that represents one fillet of a FabPolygon.
+    """Fab_Fillet: A private object that represents one fillet of a FabPolygon.
 
     Attributes:
     * *Plane* (FabPlane): The plane onto which the fillet is projected.
@@ -740,6 +789,16 @@ class Fab_Fillet(object):
     * *Arc* (Optional[Fab_Arc]): The fillet Arc if Radius is non-zero.
     * *Line* (Optional[Fab_Line]): The line that connects to the previous Fab_Fillet
     * *ApexXY* (Vector): The Apex projected onto the XY plane.
+
+    Computed Attributes:
+    * Before (Fab_Fillet): The previous fillet in the Fab_Polygon.
+    * After (Fab_Fillet): The next fillet in the Fab_Polygon.
+    * Radius (Optional[Fab_Arc): The Fab_Arc for a rounded fillet.
+    * Line (Optional[Fab_Line]): The Fab line for connecting between fillets.
+    * ApexXY (Vector): The Apex projected onto the plane.
+
+    Constructor:
+    * Fab_Fillet(Plane, Apex, Radius)
 
     """
 
@@ -1062,12 +1121,20 @@ class Fab_Fillet(object):
 # FabGeometry:
 @dataclass(frozen=True)
 class FabGeometry(object):
-    """FabGeometry: The base class for FabPolygon and FabCircle.
+    """FabGeometry: The public base class for FabCircle and FabPolygon.
 
-    Attributes:
+    Note: The private mutable Fab_Geometry base class is quite similar and is ultimately used
+    to construct this class.
+
+    Constructor Attributes:
     * *Plane* (FabPlane): The plane to project the geometry onto.
-    * *Box* (FabBox): A 3D box that encloses the gemetery.
-    * *GeometryInfo* (FabGeometryInfo): The geometry information (e.g. area, peremeteter, etc.)
+
+    Computed Attributes:
+    * *Box* (FabBox): A 3D box that encloses the geometry.
+    * *GeometryInfo* (FabGeometryInfo): The geometry information (e.g. area, perimeter, etc.)
+
+    Constructor:
+    * FabGeometry(Plane)
 
     """
 
@@ -1134,12 +1201,14 @@ class FabGeometry(object):
 # FabCircle:
 @dataclass(frozen=True)
 class FabCircle(FabGeometry):
-    """FabCircle: Represents a circle on a plane.
+    """FabCircle: A frozen class that represents a circle on a plane.
 
-    Attributes:
+    Constructor Class Attributes:
     * *Plane* (FabPlane): The plane the circle center is projected onto.
-    * *Center* (Vector): The circle center after it has been projected.
+    * *Center* (Vector): The circle center after it has been projected onto the plane
     * *Diameter* (float): The circle diameter in millimeters.
+
+    Computed Attributes:
     * *Box* (FabBox): The box that encloses FabCircle
     * *GeometryInfo* (FabGeometryInfo):
        The geometry information about the FabCircle (e.g. Area, Perimeter, etc.)
@@ -1365,7 +1434,7 @@ class FabCircle(FabGeometry):
 # FabPolygon:
 @dataclass(frozen=True)
 class FabPolygon(FabGeometry):
-    """FabPolygon: An immutable polygon with rounded corners.
+    """FabPolygon: An frozen class that represents a closed polygon rounded corners on a plane.
 
     A FabPolygon is represented as a sequence of corners (i.e. a Vector) where each corner can
     optionally be filleted with a radius.  In order to make it easier to use, a corner can be
@@ -1376,10 +1445,13 @@ class FabPolygon(FabGeometry):
     FabPolygon's are frozen and can not be modified after creation.  Since Vector's are mutable,
     a private copy of each vector stored inside the FabPolygon.
 
-    Attributes:
+    Constructor Attributes:
     * *Plane* (FabPlane: The plane that all of the corners are projected onto.
     * *Corners* (Tuple[Union[Vector, Tuple[Vector, Union[int, float]]], ...]):
       See description immediately above for more on corners.
+
+    Computed Attributes:
+    * *Box* (FabBox): The box that closes the FabPolygon.
     * *GeometryInfo* (FabGeometryInfo): The geometry information (e.g. area, perimeter, etc.)
 
     Constructor:
@@ -2408,7 +2480,7 @@ class Fab_GeometryInfo(object):
 # Fab_Query:
 @dataclass
 class Fab_Query(object):
-    """Fab_Query: A CadQuery Workplane wrapper.
+    """Fab_Query:  A private CadQuery Workplane wrapper.
 
     This class creates CadQuery Workplane provides a consistent head of the Workplane chain..
     CadQuery Operations are added as needed.
@@ -2416,6 +2488,9 @@ class Fab_Query(object):
     Attributes:
     * *Plane* (FabPlane): The plane to use for CadQuery initialization.
     * *WorkPlane: (cadquery.Workplane): The resulting CadQuery Workplane object.
+
+    Constructor:
+    Fab_Query(Plane, Workplane)
 
     """
     _Plane: FabPlane
@@ -2480,7 +2555,7 @@ class Fab_Query(object):
             print(f"{tracing}{plane=}")
         self._Query = (
             cast(cq.Workplane, self._Query)
-            .copyWorkplane(cq.Workplane(plane.CQPlane))
+            .copyWorkplane(cq.Workplane(plane.CQ_Plane))
         )
         if tracing:
             print(f"{tracing}<=Fab_Query.copy_workPlane({plane})")
