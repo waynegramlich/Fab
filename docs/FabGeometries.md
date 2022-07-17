@@ -7,10 +7,12 @@
   * 1.2 [projectToPlane()](#fabgeometries----projecttoplane): Return a new FabCircle projected onto a plane.
   * 1.3 [produce()](#fabgeometries----produce): Produce the FreeCAD objects needed for FabPolygon.
   * 1.4 [getGeometries()](#fabgeometries----getgeometries): Return the FabPolygon lines and arcs.
+  * 1.5 [xyPlaneReorient()](#fabgeometries----xyplanereorient): Return a reoriented Fab_Circle.
 * 2 Class: [FabGeometry](#fabgeometries--fabgeometry):
   * 2.1 [getHash()](#fabgeometries----gethash): Return FabGeometry hash.
   * 2.2 [produce()](#fabgeometries----produce): Produce the necessary FreeCAD objects for the FabGeometry.
   * 2.3 [projectToPlane()](#fabgeometries----projecttoplane): Return a new FabGeometry projected onto a plane.
+  * 2.4 [xyPlaneReorient()](#fabgeometries----xyplanereorient): Return a reoriented Fab_Fillet.
 * 3 Class: [FabGeometryInfo](#fabgeometries--fabgeometryinfo):
 * 4 Class: [FabPlane](#fabgeometries--fabplane):
   * 4.1 [getHash()](#fabgeometries----gethash): Return a FabPlane hash value.
@@ -23,19 +25,24 @@
   * 5.2 [projectToPlane()](#fabgeometries----projecttoplane): Return nre FabPolygon projected onto a plane.
   * 5.3 [doubleLink()](#fabgeometries----doublelink): Double link the Fab_Fillet's together.
   * 5.4 [getGeometries()](#fabgeometries----getgeometries): Return the FabPolygon lines and arcs.
-  * 5.5 [produce()](#fabgeometries----produce): Produce the FreeCAD objects needed for FabPolygon.
+  * 5.5 [xyPlaneReorient()](#fabgeometries----xyplanereorient): Return a reoriented FabPolygon.
+  * 5.6 [produce()](#fabgeometries----produce): Produce the FreeCAD objects needed for FabPolygon.
 * 6 Class: [Fab_Arc](#fabgeometries--fab-arc):
   * 6.1 [produce()](#fabgeometries----produce): Return line segment after moving it into Geometry group.
+  * 6.2 [xyPlaneReorient()](#fabgeometries----xyplanereorient): Return a reoriented Fab_Arc.
 * 7 Class: [Fab_Circle](#fabgeometries--fab-circle):
   * 7.1 [produce()](#fabgeometries----produce): Return line segment after moving it into Geometry group.
+  * 7.2 [xyPlaneReorient()](#fabgeometries----xyplanereorient): Return a reoriented Fab_Circle.
 * 8 Class: [Fab_Fillet](#fabgeometries--fab-fillet):
   * 8.1 [compute_arc()](#fabgeometries----compute-arc): Return the arc associated with a Fab_Fillet with non-zero radius.
   * 8.2 [plane_2d_project()](#fabgeometries----plane-2d-project): Project the Apex onto a plane.
   * 8.3 [computeFilletAreaPerimeter()](#fabgeometries----computefilletareaperimeter): Return the excluded fillet area and the perimeter for a Fab_Fillet.
   * 8.4 [getGeometries()](#fabgeometries----getgeometries): NO DOC STRING!
+  * 8.5 [xyPlaneReorient()](#fabgeometries----xyplanereorient): Return a reoriented Fab_Fillet.
 * 9 Class: [Fab_Geometry](#fabgeometries--fab-geometry):
   * 9.1 [produce()](#fabgeometries----produce): NO DOC STRING!
   * 9.2 [getStart()](#fabgeometries----getstart): Return start point of geometry.
+  * 9.3 [xyPlaneReorient()](#fabgeometries----xyplanereorient): Return a reoriented FabGeometry.
 * 10 Class: [Fab_GeometryContext](#fabgeometries--fab-geometrycontext):
   * 10.1 [copy()](#fabgeometries----copy): Return a Fab_GeometryContext copy.
   * 10.2 [copyWithPlaneAdjust()](#fabgeometries----copywithplaneadjust): Return a Fab_GeometryContext copy with the plane adjusted up/down.
@@ -45,6 +52,7 @@
 * 12 Class: [Fab_Line](#fabgeometries--fab-line):
   * 12.1 [getStart()](#fabgeometries----getstart): Return the start point of the Fab_Line.
   * 12.2 [produce()](#fabgeometries----produce): Return line segment after moving it into Geometry group.
+  * 12.3 [xyPlaneReorient()](#fabgeometries----xyplanereorient): Return a reoriented Fab_Circle.
 * 13 Class: [Fab_Query](#fabgeometries--fab-query):
   * 13.1 [circle()](#fabgeometries----circle): Draw a circle to a point.
   * 13.2 [close()](#fabgeometries----close): Close a sequence of arcs and lines.
@@ -100,6 +108,18 @@ FabCircle.getGeometries(self) -> Tuple[FabGeometries.Fab_Geometry, ...]:
 
 Return the FabPolygon lines and arcs.
 
+### <a name="fabgeometries----xyplanereorient"></a>1.5 `FabCircle.`xyPlaneReorient():
+
+FabCircle.xyPlaneReorient(self, rotate: float, translate: cadquery.occ_impl.geom.Vector, tracing: str = '') -> 'FabCircle':
+
+Return a reoriented Fab_Circle.
+Args:
+* rotate (float): The amount to rotate around the new plane origin by in radians.
+* xy_translate (Vector): The amount to translate the geometry in X/Y after rotation.
+
+Returns:
+(Fab_Circle): The reoriented Fab_Line.
+
 
 ## <a name="fabgeometries--fabgeometry"></a>2 Class FabGeometry:
 
@@ -126,6 +146,18 @@ Produce the necessary FreeCAD objects for the FabGeometry.
 FabGeometry.projectToPlane(self, plane: FabGeometries.FabPlane) -> 'FabGeometry':
 
 Return a new FabGeometry projected onto a plane.
+
+### <a name="fabgeometries----xyplanereorient"></a>2.4 `FabGeometry.`xyPlaneReorient():
+
+FabGeometry.xyPlaneReorient(self, rotate: float, translate: cadquery.occ_impl.geom.Vector, tracing: str = '') -> 'FabGeometry':
+
+Return a reoriented Fab_Fillet.
+Args:
+* rotate (float): The amount to rotate around the new plane origin by in radians.
+* xy_translate (Vector): The amount to translate the geometry in X/Y after rotation.
+
+Returns:
+(Fab_Geometry): The reoriented Fab_Line.
 
 
 ## <a name="fabgeometries--fabgeometryinfo"></a>3 Class FabGeometryInfo:
@@ -257,7 +289,19 @@ FabPolygon.getGeometries(self) -> Tuple[FabGeometries.Fab_Geometry, ...]:
 
 Return the FabPolygon lines and arcs.
 
-### <a name="fabgeometries----produce"></a>5.5 `FabPolygon.`produce():
+### <a name="fabgeometries----xyplanereorient"></a>5.5 `FabPolygon.`xyPlaneReorient():
+
+FabPolygon.xyPlaneReorient(self, rotate: float, translate: cadquery.occ_impl.geom.Vector, tracing: str = '') -> 'FabPolygon':
+
+Return a reoriented FabPolygon.
+Args:
+* rotate (float): The amount to rotate around the new plane origin by in radians.
+* xy_translate (Vector): The amount to translate the geometry in X/Y after rotation.
+
+Returns:
+(Fab_Polygon): The reoriented Fab_Line.
+
+### <a name="fabgeometries----produce"></a>5.6 `FabPolygon.`produce():
 
 FabPolygon.produce(self, geometry_context: FabGeometries.Fab_GeometryContext, prefix: str, index: int, tracing: str = '') -> Tuple[Any, ...]:
 
@@ -289,6 +333,18 @@ Fab_Arc.produce(self, geometry_context: FabGeometries.Fab_GeometryContext, prefi
 
 Return line segment after moving it into Geometry group.
 
+### <a name="fabgeometries----xyplanereorient"></a>6.2 `Fab_Arc.`xyPlaneReorient():
+
+Fab_Arc.xyPlaneReorient(self, rotate: float, translate: cadquery.occ_impl.geom.Vector, tracing: str = '') -> 'Fab_Arc':
+
+Return a reoriented Fab_Arc.
+Args:
+* rotate (float): The amount to rotate around the new plane origin by in radians.
+* xy_translate (Vector): The amount to translate the geometry in X/Y after rotation.
+
+Returns:
+* (Fab_Arc): The reoriented Fab_Arc.
+
 
 ## <a name="fabgeometries--fab-circle"></a>7 Class Fab_Circle:
 
@@ -303,6 +359,18 @@ Attributes:
 Fab_Circle.produce(self, geometry_context: FabGeometries.Fab_GeometryContext, prefix: str, index: int, tracing: str = '') -> Any:
 
 Return line segment after moving it into Geometry group.
+
+### <a name="fabgeometries----xyplanereorient"></a>7.2 `Fab_Circle.`xyPlaneReorient():
+
+Fab_Circle.xyPlaneReorient(self, rotate: float, translate: cadquery.occ_impl.geom.Vector, tracing: str = '') -> 'Fab_Circle':
+
+Return a reoriented Fab_Circle.
+Args:
+* rotate (float): The amount to rotate around the new plane origin by in radians.
+* xy_translate (Vector): The amount to translate the geometry in X/Y after rotation.
+
+Returns:
+(Fab_Circle): The reoriented Fab_Geometry.
 
 
 ## <a name="fabgeometries--fab-fillet"></a>8 Class Fab_Fillet:
@@ -352,12 +420,24 @@ Fab_Fillet.getGeometries(self) -> Tuple[FabGeometries.Fab_Geometry, ...]:
 
 NO DOC STRING!
 
+### <a name="fabgeometries----xyplanereorient"></a>8.5 `Fab_Fillet.`xyPlaneReorient():
+
+Fab_Fillet.xyPlaneReorient(self, rotate: float, translate: cadquery.occ_impl.geom.Vector, tracing: str = '') -> 'Fab_Fillet':
+
+Return a reoriented Fab_Fillet.
+Args:
+* rotate (float): The amount to rotate around the new plane origin by in radians.
+* xy_translate (Vector): The amount to translate the geometry in X/Y after rotation.
+
+Returns:
+(Fab_Line): The reoriented Fab_Line.
+
 
 ## <a name="fabgeometries--fab-geometry"></a>9 Class Fab_Geometry:
 
 An Internal base class for Fab_Arc, Fab_Circle, and Fab_Line.
 Attributes:
-* Plane* (FabPlane): The plane onto which the geo
+* Plane* (FabPlane): The plane onto which the geometry is projected.
 
 ### <a name="fabgeometries----produce"></a>9.1 `Fab_Geometry.`produce():
 
@@ -370,6 +450,18 @@ NO DOC STRING!
 Fab_Geometry.getStart(self) -> cadquery.occ_impl.geom.Vector:
 
 Return start point of geometry.
+
+### <a name="fabgeometries----xyplanereorient"></a>9.3 `Fab_Geometry.`xyPlaneReorient():
+
+Fab_Geometry.xyPlaneReorient(self, rotate: float, translate: cadquery.occ_impl.geom.Vector, tracing: str = '') -> 'Fab_Geometry':
+
+Return a reoriented FabGeometry.
+Args:
+* rotate (float): The amount to rotate around the new plane origin by in radians.
+* xy_translate (Vector): The amount to translate the geometry in X/Y after rotation.
+
+Returns:
+* (Fab_Geometry): The reoriented Fab_Geometry.
 
 
 ## <a name="fabgeometries--fab-geometrycontext"></a>10 Class Fab_GeometryContext:
@@ -447,6 +539,18 @@ Return the start point of the Fab_Line.
 Fab_Line.produce(self, geometry_context: FabGeometries.Fab_GeometryContext, prefix: str, index: int, tracing: str = '') -> Any:
 
 Return line segment after moving it into Geometry group.
+
+### <a name="fabgeometries----xyplanereorient"></a>12.3 `Fab_Line.`xyPlaneReorient():
+
+Fab_Line.xyPlaneReorient(self, rotate: float, translate: cadquery.occ_impl.geom.Vector, tracing: str = '') -> 'Fab_Circle':
+
+Return a reoriented Fab_Circle.
+Args:
+* rotate (float): The amount to rotate around the new plane origin by in radians.
+* xy_translate (Vector): The amount to translate the geometry in X/Y after rotation.
+
+Returns:
+(Fab_Line): The reoriented Fab_Line.
 
 
 ## <a name="fabgeometries--fab-query"></a>13 Class Fab_Query:
