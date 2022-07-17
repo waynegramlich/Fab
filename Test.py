@@ -330,7 +330,7 @@ class TestSolid(FabSolid):
         depth: float = 10.0
         depth2: float = depth / 2.0
         _ = depth2
-        top_origin: Vector = Vector(0.0, 0.0, 55.0)
+        top_origin: Vector = Vector(0.0, 0.0, -55.0)
         dt: Vector = self.DT
         dn: Vector = self.DN
         top_plane: FabPlane = FabPlane(top_origin, dt)
@@ -434,7 +434,8 @@ class TestAssembly(FabAssembly):
         super().__post_init__()
         material: FabMaterial = FabMaterial(("Plastic", "HDPE"), "red")
         self.Solid = TestSolid("TestSolid", self, material, "red")
-        self.Box = Box("TestBox", self, 200.0, 150.0, 75.0, 6.0, material, Vector(0, 0, 0))
+        center: Vector = Vector(0, 0, -100.0)
+        self.Box = Box("TestBox", self, 200.0, 150.0, 75.0, 6.0, material, center)
 
 
 # TestDocument:
