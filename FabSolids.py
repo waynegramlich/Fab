@@ -750,6 +750,7 @@ class Fab_Extrude(Fab_Operation):
         for index, geometry in enumerate(geometries):
             if tracing:
                 print(f"{tracing}Geometry[{index}]:{geometry=}")
+            _ = geometry.xyPlaneReorient(0.0, Vector(), tracing=next_tracing)
             geometry.produce(extrude_context, geometry_prefix, index, tracing=next_tracing)
         # geometry_context.WorkPlane.close(tracing=next_tracing)
         extrude_context.Query.extrude(self.Depth, tracing=next_tracing)

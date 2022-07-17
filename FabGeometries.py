@@ -428,6 +428,43 @@ class FabPlane(object):
         projected_point.z = 0.0
         return projected_point
 
+    # FabPlane.xyPlaneReorient():
+    def xyPlaneReorient(
+            self, point: Vector, rotate: float,
+            translate: Vector, tracing: str = "") -> Tuple["FabPlane", Vector]:
+        """Return (Plane, Point) that has been reoriented, rotated, translated to an X/Y plane.
+
+        Arguments:
+        * *point* (Vector): The point to reorient.
+        * *rotate* (float): The amount to rotate point around the X/Y plane origin in radians.
+        * *translate* (Vector): A final translate to perform on the rotated point.
+
+        Returns:
+        * (FabPlane): The final XY FabPlane the point is translated onto.
+        * (Vector): The reoriented point translated X/Y plane.
+        """
+        if tracing:
+            print(f"{tracing}=>FabPlane.xyPlaneReorient(*, "
+                  f"{point}, {math.degrees(rotate):.3f}°, {translate})")
+
+        z_axis_aligned_point: Vector = self.rotateToZAxis(point)
+        x: float = z_axis_aligned_point.x
+        y: float = z_axis_aligned_point.y
+        z: float = z_axis_aligned_point.z
+        sin_rotate: float = math.sin(rotate)
+        cos_rotate: float = math.cos(rotate)
+        rotated_x: float = x * cos_rotate + y * sin_rotate
+        rotated_y: float = -x * sin_rotate + y * cos_rotate
+        translated_point: Vector = Vector(rotated_x, rotated_y, z) + translate
+
+        z_axis: Vector = Vector(0.0, 0.0, 1.0)
+        translated_plane: FabPlane = FabPlane(translated_point, z_axis)
+
+        if tracing:
+            print(f"{tracing}<=FabPlane.xyPlaneReorient(*, "
+                  f"{point}, {math.degrees(rotate):.3f}°, {translate})=>*, {translated_point}")
+        return translated_plane, translated_point
+
 
 # Fab_GeometryContext:
 @dataclass
@@ -543,21 +580,6 @@ class Fab_Geometry(object):
         """Return start point of geometry."""
         raise NotImplementedError(f"{type(self)}.getStart() is not implemented yet")
 
-    # Fab_Geometry.xyPlaneReorient():
-    def xyPlaneReorient(self,
-                        rotate: float, translate: Vector, tracing: str = "") -> "Fab_Geometry":
-        """Return a reoriented FabGeometry.
-
-        Args:
-        * rotate (float): The amount to rotate around the new plane origin by in radians.
-        * xy_translate (Vector): The amount to translate the geometry in X/Y after rotation.
-
-        Returns:
-        * (Fab_Geometry): The reoriented Fab_Geometry.
-
-        """
-        raise NotImplementedError(f"{type(self)}.xyPlaneReorient() is not implemented yet")
-
 
 # Fab_Arc:
 @dataclass
@@ -627,21 +649,6 @@ class Fab_Arc(Fab_Geometry):
             print(f"{tracing}<=Fab_Arc.produce(*, '{prefix}', {index})=>{part_arc}")
         return part_arc
 
-    # Fab_Arc.xyPlaneReorient():
-    def xyPlaneReorient(self,
-                        rotate: float, translate: Vector, tracing: str = "") -> "Fab_Arc":
-        """Return a reoriented Fab_Arc.
-
-        Args:
-        * rotate (float): The amount to rotate around the new plane origin by in radians.
-        * xy_translate (Vector): The amount to translate the geometry in X/Y after rotation.
-
-        Returns:
-        * (Fab_Arc): The reoriented Fab_Arc.
-
-        """
-        raise NotImplementedError("Fab_Arc.xyPlaneReorient() is not implemented yet")
-
 
 @dataclass
 class Fab_Circle(Fab_Geometry):
@@ -687,21 +694,6 @@ class Fab_Circle(Fab_Geometry):
         if tracing:
             print(f"{tracing}<=Fab_Circle.produce()")
         return part_circle
-
-    # Fab_Circle.xyPlaneReorient():
-    def xyPlaneReorient(self,
-                        rotate: float, translate: Vector, tracing: str = "") -> "Fab_Circle":
-        """Return a reoriented Fab_Circle.
-
-        Args:
-        * rotate (float): The amount to rotate around the new plane origin by in radians.
-        * xy_translate (Vector): The amount to translate the geometry in X/Y after rotation.
-
-        Returns:
-        (Fab_Circle): The reoriented Fab_Geometry.
-
-        """
-        raise NotImplementedError("Fab_Circle.xyPlaneReorient() is not implemented yet")
 
 
 # Fab_Line:
@@ -758,21 +750,6 @@ class Fab_Line(Fab_Geometry):
         if tracing:
             print(f"{tracing}<=Fab_Line.produce()=>{line_segment}")
         return line_segment
-
-    # Fab_Line.xyPlaneReorient():
-    def xyPlaneReorient(self,
-                        rotate: float, translate: Vector, tracing: str = "") -> "Fab_Circle":
-        """Return a reoriented Fab_Circle.
-
-        Args:
-        * rotate (float): The amount to rotate around the new plane origin by in radians.
-        * xy_translate (Vector): The amount to translate the geometry in X/Y after rotation.
-
-        Returns:
-        (Fab_Line): The reoriented Fab_Line.
-
-        """
-        raise NotImplementedError("Fab_Line.xyPlaneReorient() is not implemented yet")
 
 
 # Fab_Fillet:
@@ -1183,16 +1160,18 @@ class FabGeometry(object):
         raise NotImplementedError(f"{type(self)}._computeGeometryInfo is not implemented")
 
     # FabGeometry.xyPlaneReorient():
-    def xyPlaneReorient(self,
-                        rotate: float, translate: Vector, tracing: str = "") -> "FabGeometry":
+    def xyPlaneReorient(
+            self, rotate: float, translate: Vector, tracing: str = ""
+    ) -> Tuple[FabPlane, "FabGeometry"]:
         """Return a reoriented Fab_Fillet.
 
         Args:
         * rotate (float): The amount to rotate around the new plane origin by in radians.
-        * xy_translate (Vector): The amount to translate the geometry in X/Y after rotation.
+        * translate (Vector): The translation to apply after rotation.
 
         Returns:
-        (Fab_Geometry): The reoriented Fab_Line.
+        * (FabPlane): The reoriented the FabGeomerty is on
+        * (Fab_Geometry): The reoriented FabGeometry.
 
         """
         raise NotImplementedError(f"{type(self)}.xyPlaneReorient() is not implemented yet")
@@ -1374,19 +1353,33 @@ class FabCircle(FabGeometry):
         return (Fab_Circle(self.Plane, self.Center, self.Diameter),)
 
     # FabCircle.xyPlaneReorient():
-    def xyPlaneReorient(self,
-                        rotate: float, translate: Vector, tracing: str = "") -> "FabCircle":
+    def xyPlaneReorient(
+            self, rotate: float, translate: Vector, tracing: str = ""
+    ) -> Tuple[FabPlane, "FabCircle"]:
         """Return a reoriented Fab_Circle.
 
-        Args:
+        Arguments:
         * rotate (float): The amount to rotate around the new plane origin by in radians.
-        * xy_translate (Vector): The amount to translate the geometry in X/Y after rotation.
+        * translate (Vector): The amount to translate the geometry after rotation.
 
         Returns:
-        (Fab_Circle): The reoriented Fab_Line.
+        * (FabPlane): The reoriented FabPlane the FabCircle is on.
+        * (FabCircle): The reoriented FabCircle.
 
         """
-        raise NotImplementedError("FabCircle.xyPlaneReorient() is not implemented yet")
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>xyPlaneReorient({math.degrees(rotate):.3f}°, {translate})")
+
+        reoriented_plane: FabPlane
+        reoriented_center: Vector
+        reoriented_plane, reoriented_center = self.Plane.xyPlaneReorient(
+            self.Center, rotate, translate, tracing=next_tracing)
+        reoriented_circle: FabCircle = FabCircle(reoriented_plane, reoriented_center, self.Diameter)
+
+        if tracing:
+            print(f"{tracing}<=xyPlaneReorient({math.degrees(rotate):.3f}°, {translate})=>*,*")
+        return reoriented_plane, reoriented_circle
 
     @staticmethod
     # FabCircle._unitTests():
@@ -1877,19 +1870,40 @@ class FabPolygon(FabGeometry):
             fillet.plane_2d_project(plane)
 
     # FabPolygon.xyPlaneReorient():
-    def xyPlaneReorient(self,
-                        rotate: float, translate: Vector, tracing: str = "") -> "FabPolygon":
+    def xyPlaneReorient(
+            self, rotate: float, translate: Vector, tracing: str = ""
+    ) -> Tuple[FabPlane, "FabPolygon"]:
         """Return a reoriented FabPolygon.
 
         Args:
-        * rotate (float): The amount to rotate around the new plane origin by in radians.
-        * xy_translate (Vector): The amount to translate the geometry in X/Y after rotation.
+        * *rotate* (float): The amount to rotate point around the X/Y plane origin in radians.
+        * *translate* (Vector): A final translate to perform on the rotated point.
 
         Returns:
-        (Fab_Polygon): The reoriented Fab_Line.
+        (FabPolygon): The reoriented FabPolygon.
 
         """
-        raise NotImplementedError("FabCircle.xyPlaneReorient() is not implemented yet")
+        next_tracing = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabPolygon.xyPlaneReorient(*, "
+                  f"{math.degrees(rotate):.3f}°, {translate})")
+
+        plane: FabPlane = self.Plane
+        reoriented_corners: List[Tuple[Vector, Union[int, float]]] = []
+        apex: Vector
+        radius: Union[int, float]
+        for apex, radius in self.ProjectedCorners:
+            reoriented_plane: FabPlane
+            reoriented_apex: Vector
+            reoriented_plane, reoriented_apex = plane.xyPlaneReorient(
+                apex, rotate, translate, tracing=next_tracing)
+            reoriented_corners.append((reoriented_apex, radius))
+        reoriented_polygon: FabPolygon = FabPolygon(reoriented_plane, tuple(reoriented_corners))
+
+        if tracing:
+            print(f"{tracing}<=FabPolygon.xyPlaneReorient(*, "
+                  f"{math.degrees(rotate):.3f}°, {translate}) => *, *")
+        return reoriented_plane, reoriented_polygon
 
     # FabPolygon.produce():
     def produce(self, geometry_context: Fab_GeometryContext, prefix: str,
