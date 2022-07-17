@@ -728,6 +728,12 @@ class FabCQtoFC(object):
             trace(f"{tracing}=>FabCQtoFC.process_extrude(*, '{label}', {tree_path})")
         active = cast(bool, self.key_verify("_Active", json_dict, bool, tree_path,
                                             "Extrude._Active"))
+        project_document: Any = self.ProjectDocument
+        step = cast(str, self.key_verify(
+            "StepFile", json_dict, str, tree_path, "Extrude.StepFile"))
+        extrude_label: str = self.import_step(step, False, tracing=next_tracing)
+        extrude_solid: Any = project_document.getObject(extrude_label)
+
         if tracing:
             trace(f"{tracing}Creating job")
         job = self.CurrentJob
@@ -739,7 +745,7 @@ class FabCQtoFC(object):
                 json_dict, label, indent, tree_path, tracing=next_tracing)
 
             self.verify_properties(tracing=next_tracing)
-            profile_solid: Any = self.CurrentSolid
+            profile_solid: Any = extrude_solid
             profile_name: str = f"{job.Label}_profile"
             aligned_face_names: Tuple[str, ...] = self.get_aligned_face_names(
                 profile_solid, normal, tracing=next_tracing)
