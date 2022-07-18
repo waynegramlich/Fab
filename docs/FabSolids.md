@@ -143,13 +143,23 @@ Return FabMount JSON structure.
 
 ### <a name="fabsolids----extrude"></a>1.9 `FabMount.`extrude():
 
-FabMount.extrude(self, name: str, shapes: Union[FabGeometries.FabGeometry, Tuple[FabGeometries.FabGeometry, ...]], depth: float, contour: bool = True, tracing: str = '') -> None:
+FabMount.extrude(self, name: str, shapes: Union[FabGeometries.FabGeometry, Tuple[FabGeometries.FabGeometry, ...]], depth: float, contour: bool = True, debug: bool = False, tracing: str = '') -> None:
 
 Perform a extrude operation.
+Arguments:
+* *name* (str): The user name of the operation that shows up various generated files.
+* *shapes* (Union[FabGeometry, Tuple[FabGeometry]]):
+  Either FabGeometry the specifies the exterior, or multiple FabGeometry's where
+  the first specifies the exterior and the are interior "holes".
+* *depth* (float): The depth (i.e. length) of the extrusion.  (Default: True)
+* *contour* (bool):
+  If True, an exterior contour operation is scheduled; otherwise, no contour operation
+  occurs. (Default: True)
+* *debug* (bool): If True, the extrude solid is made visble; otherwise it is not shown.
 
 ### <a name="fabsolids----pocket"></a>1.10 `FabMount.`pocket():
 
-FabMount.pocket(self, name: str, shapes: Union[FabGeometries.FabGeometry, Tuple[FabGeometries.FabGeometry, ...]], depth: float, tracing: str = '') -> None:
+FabMount.pocket(self, name: str, shapes: Union[FabGeometries.FabGeometry, Tuple[FabGeometries.FabGeometry, ...]], depth: float, debug: bool = False, tracing: str = '') -> None:
 
 Perform a pocket operation.
 Arguments:
@@ -158,12 +168,18 @@ Arguments:
   Either a single FabGeometry or a tuple of FabGeometry's.  The first FabGeometry specifies
   the pocket boundary.
 * *depth* (float): The pocket depth in millimeters from the mount plane.
+* *debug* (bool): If True, the pocket solid is made visible; otherwise it is not shown.
 
 ### <a name="fabsolids----drill-joins"></a>1.11 `FabMount.`drill_joins():
 
-FabMount.drill_joins(self, joins_name: str, joins: Union[FabJoins.FabJoin, Sequence[FabJoins.FabJoin]], tracing: str = '') -> None:
+FabMount.drill_joins(self, joins_name: str, joins: Union[FabJoins.FabJoin, Sequence[FabJoins.FabJoin]], debug: bool = False, tracing: str = '') -> None:
 
 Drill some FabJoin's into a FabMount.
+Arguments:
+* *joins_name* (str):
+  A user name for the all of the joins.  This name is used in file names, labels, etc..
+* *joins* (Union[FabJoin, Sequence[FabJoin]]):
+* *debug* (bool):  If True, the joins solid is made visible; otherwise it is not.
 
 
 ## <a name="fabsolids--fabsolid"></a>2 Class FabSolid:

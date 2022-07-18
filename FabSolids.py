@@ -1802,8 +1802,20 @@ class FabMount(object):
 
     # FabMount.extrude():
     def extrude(self, name: str, shapes: Union[FabGeometry, Tuple[FabGeometry, ...]],
-                depth: float, contour: bool = True, tracing: str = "") -> None:
-        """Perform a extrude operation."""
+                depth: float, contour: bool = True, debug: bool = False, tracing: str = "") -> None:
+        """Perform a extrude operation.
+
+        Arguments:
+        * *name* (str): The user name of the operation that shows up various generated files.
+        * *shapes* (Union[FabGeometry, Tuple[FabGeometry]]):
+          Either FabGeometry the specifies the exterior, or multiple FabGeometry's where
+          the first specifies the exterior and the are interior "holes".
+        * *depth* (float): The depth (i.e. length) of the extrusion.  (Default: True)
+        * *contour* (bool):
+          If True, an exterior contour operation is scheduled; otherwise, no contour operation
+          occurs. (Default: True)
+        * *debug* (bool): If True, the extrude solid is made visble; otherwise it is not shown.
+        """
         tracing = self._Solid.Tracing
         if tracing:
             print(f"{tracing}=>FabMount({self.Name}).extrude('{name}', *, {depth}, {contour})")
@@ -1841,7 +1853,7 @@ class FabMount(object):
 
     # FabMount.pocket():
     def pocket(self, name: str, shapes: Union[FabGeometry, Tuple[FabGeometry, ...]],
-               depth: float, tracing: str = "") -> None:
+               depth: float, debug: bool = False, tracing: str = "") -> None:
         """Perform a pocket operation.
 
         Arguments:
@@ -1850,7 +1862,7 @@ class FabMount(object):
           Either a single FabGeometry or a tuple of FabGeometry's.  The first FabGeometry specifies
           the pocket boundary.
         * *depth* (float): The pocket depth in millimeters from the mount plane.
-
+        * *debug* (bool): If True, the pocket solid is made visible; otherwise it is not shown.
         """
         # TODO: Add the ability to do pockets in pockets.
         if tracing:
@@ -1866,9 +1878,16 @@ class FabMount(object):
             print(f"{tracing}<=FabMount({self.Name}).pocket('{name}', *)")
 
     # FabMount.drill_joins():
-    def drill_joins(self, joins_name: str,
-                    joins: Union[FabJoin, Sequence[FabJoin]], tracing: str = "") -> None:
-        """Drill some FabJoin's into a FabMount."""
+    def drill_joins(self, joins_name: str, joins: Union[FabJoin, Sequence[FabJoin]],
+                    debug: bool = False, tracing: str = "") -> None:
+        """Drill some FabJoin's into a FabMount.
+
+        Arguments:
+        * *joins_name* (str):
+          A user name for the all of the joins.  This name is used in file names, labels, etc..
+        * *joins* (Union[FabJoin, Sequence[FabJoin]]):
+        * *debug* (bool):  If True, the joins solid is made visible; otherwise it is not.
+        """
 
         EPSILON: float = 1.0e-8
 

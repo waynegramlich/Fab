@@ -330,7 +330,7 @@ class TestSolid(FabSolid):
         depth: float = 10.0
         depth2: float = depth / 2.0
         _ = depth2
-        top_origin: Vector = Vector(0.0, 0.0, -55.0)
+        top_origin: Vector = Vector(0.0, 0.0, -40.0)
         dt: Vector = self.DT
         dn: Vector = self.DN
         top_plane: FabPlane = FabPlane(top_origin, dt)
@@ -350,7 +350,7 @@ class TestSolid(FabSolid):
             (Vector(ex, ny, z_offset), extrude_fillet_radius),  # NE
             (Vector(wx, ny, z_offset), extrude_fillet_radius),  # NW
         ))
-        top_mount.extrude("Extrude", extrude_polygon, depth, tracing=next_tracing)
+        top_mount.extrude("Extrude", extrude_polygon, depth, debug=True, tracing=next_tracing)
         pocket_fillet_radius: float = 2.5
 
         # Enable vasious *features*:
