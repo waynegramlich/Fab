@@ -731,7 +731,9 @@ class FabCQtoFC(object):
         project_document: Any = self.ProjectDocument
         step = cast(str, self.key_verify(
             "StepFile", json_dict, str, tree_path, "Extrude.StepFile"))
-        extrude_label: str = self.import_step(step, False, tracing=next_tracing)
+        debug = cast(bool, self.key_verify(
+            "Debug", json_dict, bool, tree_path, "Extrude.Debug"))
+        extrude_label: str = self.import_step(step, debug, tracing=next_tracing)
         extrude_solid: Any = project_document.getObject(extrude_label)
 
         if tracing:
@@ -899,7 +901,9 @@ class FabCQtoFC(object):
             trace(f"{tracing}{project_document=} {project_document.Label=}")
         step = cast(str, self.key_verify(
             "StepFile", json_dict, str, tree_path, "Pocket.StepFile"))
-        pocket_label: str = self.import_step(step, False, tracing=next_tracing)
+        debug = cast(bool, self.key_verify(
+            "Debug", json_dict, bool, tree_path, "Pocket.Debug"))
+        pocket_label: str = self.import_step(step, debug, tracing=next_tracing)
 
         # *pocket_solid* is a rectangular block with (currently) 1 pocket cut into it:
         pocket_solid: Any = project_document.getObject(pocket_label)
@@ -952,9 +956,11 @@ class FabCQtoFC(object):
         # TODO: refactor Step file extraction():
         step = cast(str, self.key_verify(
             "StepFile", json_dict, str, tree_path, "Drilling.StepFile"))
+        debug = cast(bool, self.key_verify(
+            "Debug", json_dict, bool, tree_path, "Drilling.Debug"))
         holes_count = cast(int, self.key_verify(
             "HolesCount", json_dict, int, tree_path, "Drilling.HolesCount"))
-        drilling_label: str = self.import_step(step, False, tracing=next_tracing)
+        drilling_label: str = self.import_step(step, debug, tracing=next_tracing)
         drilling_solid: Any = project_document.getObject(drilling_label)
         if tracing:
             trace(f"{tracing}{drilling_solid=}")
