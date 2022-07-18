@@ -342,6 +342,8 @@ class Fab_Operation(object):
       The initial Fab_OperationKey used to do the initially sort the operations.
     * *SelectedShopBit* (Optional[Fab_ShopBit]):
       The final selected Fab_ShopBit for the operation.
+    * *Debug* (bool):
+      If True, the resulting operation is made visible; otherwise, it is left not made visible.
 
     Constructor:
     * Fab_Operation("Name", Mount)
@@ -361,6 +363,7 @@ class Fab_Operation(object):
     ShopBits: Tuple[Fab_ShopBit, ...] = field(init=False, repr=False)
     InitialOperationKey: Optional[Fab_OperationKey] = field(init=False, repr=False, compare=False)
     SelectedShopBit: Optional[Fab_ShopBit] = field(init=False, repr=False, compare=False)
+    Debug: bool = field(init=False, repr=False)
 
     # Fab_Operation.__post_init__():
     def __post_init__(self) -> None:
@@ -378,6 +381,7 @@ class Fab_Operation(object):
         self.ShopBits = ()
         self.InitialOperationKey = None
         self.SelectedShopBit = None
+        self.Debug = False
 
     # Fab_Operation.get_tool_controller():
     # def get_tool_controller(self) -> FabToolController:
@@ -528,6 +532,7 @@ class Fab_Operation(object):
             "Kind": self.get_kind(),
             "Label": self.get_name(),
             "_Active": self.Active,
+            "Debug": self.Debug,
         }
         if self.BitIndex >= 0:
             json_dict["BitIndex"] = self.BitIndex
@@ -1814,7 +1819,7 @@ class FabMount(object):
         * *contour* (bool):
           If True, an exterior contour operation is scheduled; otherwise, no contour operation
           occurs. (Default: True)
-        * *debug* (bool): If True, the extrude solid is made visble; otherwise it is not shown.
+        * *debug* (bool): If True, the extrude solid is made visible; otherwise it is not shown.
         """
         tracing = self._Solid.Tracing
         if tracing:
@@ -1846,6 +1851,7 @@ class FabMount(object):
 
         # Create and record the *extrude*:
         extrude: Fab_Extrude = Fab_Extrude(name, self, shapes, depth, contour)
+        extrude.Debug = debug
         self.record_operation(extrude)
 
         if tracing:
@@ -1873,6 +1879,7 @@ class FabMount(object):
             shapes = (shapes,)
         pocket: Fab_Pocket = Fab_Pocket(name, self, shapes, depth)
         self.record_operation(pocket)
+        self.Debug = debug
 
         if tracing:
             print(f"{tracing}<=FabMount({self.Name}).pocket('{name}', *)")
@@ -1970,6 +1977,7 @@ class FabMount(object):
         for hole_index, hole in enumerate(grouped_holes):
             if tracing:
                 print(f"{tracing}Hole[{hole_index}]: record_operation({hole})")
+            hole.Debug = debug
             self.record_operation(hole)
 
         if tracing:

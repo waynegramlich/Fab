@@ -155,7 +155,7 @@ Arguments:
 * *contour* (bool):
   If True, an exterior contour operation is scheduled; otherwise, no contour operation
   occurs. (Default: True)
-* *debug* (bool): If True, the extrude solid is made visble; otherwise it is not shown.
+* *debug* (bool): If True, the extrude solid is made visible; otherwise it is not shown.
 
 ### <a name="fabsolids----pocket"></a>1.10 `FabMount.`pocket():
 
@@ -458,6 +458,8 @@ Attributes:
   The initial Fab_OperationKey used to do the initially sort the operations.
 * *SelectedShopBit* (Optional[Fab_ShopBit]):
   The final selected Fab_ShopBit for the operation.
+* *Debug* (bool):
+  If True, the resulting operation is made visible; otherwise, it is left not made visible.
 
 Constructor:
 * Fab_Operation("Name", Mount)
