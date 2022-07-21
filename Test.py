@@ -350,7 +350,8 @@ class TestSolid(FabSolid):
             (Vector(ex, ny, z_offset), extrude_fillet_radius),  # NE
             (Vector(wx, ny, z_offset), extrude_fillet_radius),  # NW
         ))
-        top_mount.extrude("Extrude", extrude_polygon, depth, debug=True, tracing=next_tracing)
+
+        top_mount.extrude("Extrude", extrude_polygon, depth, tracing=next_tracing)
         pocket_fillet_radius: float = 2.5
 
         # Enable vasious *features*:
@@ -364,7 +365,7 @@ class TestSolid(FabSolid):
                 (Vector(-10, 10, z_offset), pocket_fillet_radius),  # NE
                 (Vector(-30, 10, z_offset), pocket_fillet_radius),  # NW
             ))
-            top_mount.pocket("LeftPocket", left_polygon, depth2)
+            top_mount.pocket("LeftPocket", left_polygon, depth2, debug=True)
 
         if "RPP" in features:  # Right Polygon Pocket
             right_pocket: FabPolygon = FabPolygon(top_plane, (

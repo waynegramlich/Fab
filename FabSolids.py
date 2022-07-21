@@ -862,7 +862,7 @@ class Fab_Pocket(Fab_Operation):
 
     """
 
-    _Geometries: Tuple[FabGeometry, ...] = field(compare=False)
+    _Geometries: Union[FabGeometry, Tuple[FabGeometry, ...]] = field(compare=False)
     _Depth: float
     # TODO: Make _Geometries be comparable.
     _BottomPath: Optional[PathFile] = field(init=False)
@@ -876,24 +876,10 @@ class Fab_Pocket(Fab_Operation):
         """Verify Fab_Pocket values."""
         super().__post_init__()
 
-        # Type check self._Geometry and convert into self._Geometries:
-        geometries: List[FabGeometry] = []
-        self_geometry: Union[FabGeometry, Tuple[FabGeometry, ...]] = self._Geometries
-        if isinstance(self_geometry, FabGeometry):
-            geometries = [self_geometry]  # pragma: no unit cover
-        elif isinstance(self_geometry, tuple):  # pragma: no unit cover
-            geometry: FabGeometry
-            for geometry in self_geometry:
-                if not isinstance(geometry, FabGeometry):  # pragma: no unit cover
-                    raise RuntimeError(
-                        f"Fab_Extrude.__post_init__({self.Name}):"
-                        f"{type(geometry)} is not a FabGeometry")  # pragma: no unit cover
-                geometries.append(geometry)
-        else:  # pragma: no unit cover
-            raise RuntimeError(  # pragma: no unit cover
-                f"Fab_Extrude.__post_init__({self.Name}):{type(self.Geometries)} "
-                f"is neither a FabGeometry nor a Tuple[FabGeometry, ...]")  # pragma: no unit cover
-        self._Geometries = tuple(geometries)
+        # Convert single FabGeometry into a single tuple and verify.
+        if isinstance(self._Geometries, FabGeometry):
+            self._Geometries = (self._Geometries,)  # pragma: no unit cover
+        check_type("Fab_Pocket._Geometries", self._Geometries, Tuple[FabGeometry, ...])
 
         if self._Depth <= 0.0:
             raise RuntimeError(
@@ -931,7 +917,8 @@ class Fab_Pocket(Fab_Operation):
             print(f"{tracing}=>Fab_Pocket.post_produce1()")
 
         depth: float = self.Depth
-        geometries: Tuple[FabGeometry, ...] = self._Geometries
+        geometries: Union[FabGeometry, Tuple[FabGeometry, ...]] = self._Geometries
+        assert isinstance(geometries, tuple)
         exterior: FabGeometry = geometries[0]
         exterior_info: FabGeometryInfo = exterior.GeometryInfo
         if tracing:
@@ -991,7 +978,7 @@ class Fab_Pocket(Fab_Operation):
             operation_order = Fab_OperationOrder.END_MILL_POCKET
         else:
             raise RuntimeError(
-                f"FabExtrude, Fab_Pockt.getOperationOrder {type(bit)} "
+                f"FabExtrude, Fab_Pocket.getOperationOrder {type(bit)} "
                 "is not a FabEndMillBit")  # pragma: no unit cover
         return operation_order
 
@@ -999,7 +986,7 @@ class Fab_Pocket(Fab_Operation):
     @property
     def Geometries(self) -> Tuple[FabGeometry, ...]:
         """Return the original Geometry."""
-        return self._Geometries  # pragma: no unit cover
+        return cast(Tuple[FabGeometry, ...], self._Geometries)  # pragma: no unit cover
 
     # Fab_Pocket.Depth():
     @property
@@ -1015,8 +1002,9 @@ class Fab_Pocket(Fab_Operation):
             self.Name,
             f"{self._Depth:.6f}",
         ]
+        geometries = cast(Tuple[FabGeometry, ...], self._Geometries)
         geometry: FabGeometry
-        for geometry in self._Geometries:
+        for geometry in geometries:
             hashes.append(geometry.getHash())
         return tuple(hashes)
 
@@ -1047,7 +1035,7 @@ class Fab_Pocket(Fab_Operation):
         prefix: Fab_Prefix = self.Prefix
         prefix_text: str = prefix.to_string()
         geometry: FabGeometry
-        geometries: Tuple[FabGeometry, ...] = self._Geometries
+        geometries = cast(Tuple[FabGeometry, ...], self._Geometries)
         index: int
         for index, geometry in enumerate(geometries):
             geometry.produce(top_context, prefix_text, index, tracing=next_tracing)
