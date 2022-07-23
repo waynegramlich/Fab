@@ -389,7 +389,7 @@ class TestSolid(FabSolid):
             imperial_drill_end: Vector = Vector(0.0, -10.0, z_offset - depth)
             self.ScrewIDH: FabJoin = FabJoin("ScrewI", self.I4_40Fasten,
                                              imperial_drill_start, imperial_drill_end)
-            top_mount.drill_joins("ScrewIDH", (self.ScrewIDH,), tracing=next_tracing)
+            top_mount.drill_joins("ScrewIDH", (self.ScrewIDH,), debug=True, tracing=next_tracing)
 
         if "MDH" in features:  # Metric Drill Hole
             metric_drill_start: Vector = Vector(-20.0, -20.0, z_offset)

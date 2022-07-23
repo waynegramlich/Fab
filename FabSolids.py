@@ -1866,8 +1866,8 @@ class FabMount(object):
         if isinstance(shapes, FabGeometry):
             shapes = (shapes,)
         pocket: Fab_Pocket = Fab_Pocket(name, self, shapes, depth)
+        pocket.Debug = debug
         self.record_operation(pocket)
-        self.Debug = debug
 
         if tracing:
             print(f"{tracing}<=FabMount({self.Name}).pocket('{name}', *)")
