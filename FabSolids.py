@@ -607,6 +607,18 @@ class Fab_Extrude(Fab_Operation):
                 f"is neither a FabGeometry nor a Tuple[FabGeometry, ...]")  # pragma: no unit cover
         self._Geometries = tuple(geometries)
 
+        if len(geometries) == 0:  # pragma: no unit cover
+            raise RuntimeError(f"Fab_Extrude.__post_init__({self.Name}): "
+                               "No geometry specified")  # pragma: no unit cover
+        geometry0: FabGeometry = geometries[0]
+        no_translate: Vector = Vector(0.0, 0.0, 0.0)
+        mount: FabMount = self.Mount
+        orient_angle: float = mount.OrientAngle
+        reoriented_geometry0: FabGeometry
+        _, reoriented_geometry0 = geometry0.xyPlaneReorient(orient_angle, no_translate)
+        # For now always position the Top NorthEast (TNE) corner at the origin.
+        mount._setOrientTranslate(-reoriented_geometry0.Box.TNE)
+
         if self.Depth <= 0.0:
             raise RuntimeError(f"Fab_Extrude.__post_init__({self.Name}):"
                                f"Depth ({self.Depth}) is not positive.")  # pragma: no unit cover
@@ -1490,6 +1502,8 @@ class FabMount(object):
     _GuiDatumPlane: Any = field(init=False, repr=False)  # TODO: Remove
     _Plane: FabPlane = field(init=False, repr=False)
     Prefix: Optional[Fab_Prefix] = field(init=False, repr=False)
+    _OrientAngle: float = field(init=False, repr=False)
+    _OrientTranslate: Vector = field(init=False, repr=False)
 
     # FabMount.__post_init__():
     def __post_init__(self) -> None:
@@ -1522,6 +1536,14 @@ class FabMount(object):
         self._AppDatumPlane = None
         self._GuiDatumPlane = None
         self.Prefix = None
+
+        # Compute the *rotate* angle needed to orient the plane along the +X axis:
+        plane: FabPlane = self._Plane
+        orient: Vector = self._Orient
+        z_aligned_orient: Vector = plane.rotateToZAxis(orient)
+        # The minus sign is needed to rotate from off +X to align with +X axis:
+        self._OrientAngle: float = -math.atan2(z_aligned_orient.y, z_aligned_orient.x)
+        self._OrientTranslate: Vector = Vector(0.0, 0.0, 0.0)  # Computed after extrude.
 
         if tracing:
             print(f"{tracing}{self._Contact=} {self._Normal=}")
@@ -1570,6 +1592,18 @@ class FabMount(object):
         """Return the FabMount Orientation."""
         return self._Orient + self._Copy  # pragma: no unit cover
 
+    # FabMount.OrientAngle:
+    @property
+    def OrientAngle(self) -> float:
+        """Return the FabMount orient angle in radians."""
+        return self._OrientAngle
+
+    # FabMount.OrientTranslate
+    @property
+    def OrientTranslate(self) -> Vector:
+        """Return the FabMount orient translation."""
+        return self._OrientTranslate + self._Copy
+
     # FabMount.Plane:
     @property
     def Plane(self) -> FabPlane:
@@ -1612,6 +1646,13 @@ class FabMount(object):
         for operation in self._Operations:
             hashes.append(operation.getHash())
         return tuple(hashes)
+
+    # FabMount._setOrientTranslate():
+    def _setOrientTranslate(self, orient_translate: Vector) -> None:
+        """Set the OrientTranslate for a FabMount."""
+        assert check_argument_types()
+        assert self._OrientTranslate == Vector(), "FabMount._OrientTranslate already set."
+        self._OrientTranslate = orient_translate
 
     # FabMount.record_operation():
     def record_operation(self, operation: Fab_Operation) -> None:
@@ -1656,7 +1697,7 @@ class FabMount(object):
         # is to always select one from the current shop and machine.  Failing that, a machine
         # in the same shop is preferred.  Failing that, any machine from any shop that can do
         # the operation is selected.  *expanded_mounts* is filled with one or more copies of
-        # the current Fab_Mount (i.e. *self*), where each individual Fab_Mount has Fab_ShopBit's
+        # the current FabMount (i.e. *self*), where each individual FabMount has Fab_ShopBit's
         # are on the same machine.
 
         # Helper function to create a copy of *self* that contains *operations*:
