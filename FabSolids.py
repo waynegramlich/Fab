@@ -773,38 +773,60 @@ class Fab_Extrude(Fab_Operation):
         solid_context.Query.extrude(self.Depth, tracing=next_tracing)
 
         # Step 2: Create a STEP file for a CNC contour operation.
-        contour_prefix: Fab_Prefix = self.Prefix
-        contour_text: str = contour_prefix.to_string()
-        contour_name: str = f"{contour_text}__{self.Name}__extrude"
-        # TODO:  Should only use the first geometry.
-        contour_path = produce_state.Steps.activate(contour_name,
-                                                    self.get_geometries_hash(solid_geometries))
-        contour_context: Fab_GeometryContext = solid_context  # TODO for now
+        # Step 2a: Rotate *contour_geometry* to X/Y plane and reorient +X axis:
+        assert len(solid_geometries) >= 1, "Fab_Extrude.post_produce2(): No geometries."
+        contour_geometry: FabGeometry = solid_geometries[0]
+        orient_angle: float = mount._OrientAngle
+        no_translate: Vector = Vector(0.0, 0.0, 0.0)
+        rotated_xy_geometry: FabGeometry
+        _, rotated_xy_geometry = contour_geometry.xyPlaneReorient(
+            orient_angle, no_translate, tracing=next_tracing)
+        cnc_translate: Vector = -rotated_xy_geometry.Box.TNW
+        cnc_geometry: FabGeometry
+        _, cnc_geometry = contour_geometry.xyPlaneReorient(
+            orient_angle, cnc_translate, tracing=next_tracing)
 
-        self._StepFile = str(contour_path)
-        if not contour_path.exists():
+        cnc_prefix: Fab_Prefix = self.Prefix
+        cnc_prefix_text: str = cnc_prefix.to_string()
+        cnc_name: str = f"{cnc_prefix_text}__{self.Name}__extrude"
+        # TODO:  Should only use the first geometry.
+        cnc_path: PathFile
+        cnc_hashes: Tuple[Any, ...] = (cnc_geometry.getHash(),)
+        cnc_path = produce_state.Steps.activate(cnc_name, cnc_hashes)
+
+        self._StepFile = str(cnc_path)
+        if not cnc_path.exists():
+            # Create *cnc_context* for extruding the reoriented
+            origin: Vector = Vector(0.0, 0.0, 0.0)
+            z_axis: Vector = Vector(0.0, 0.0, 1.0)
+            cnc_plane: FabPlane = FabPlane(origin, z_axis)  # X/Y plane through the origin.
+            cnc_query: Fab_Query = Fab_Query(cnc_plane)
+            cnc_context: Fab_GeometryContext = Fab_GeometryContext(cnc_plane, cnc_query)
+            cnc_geometry.produce(cnc_context, cnc_prefix_text, 0, tracing=next_tracing)
+            cnc_query.extrude(self.Depth, tracing=next_tracing)
+
             # Save it out here.
-            contour_assembly = cq.Assembly(
-                contour_context.Query.WorkPlane, name=contour_name,
+            cnc_assembly = cq.Assembly(
+                cnc_context.Query.WorkPlane, name=cnc_name,
                 color=cq.Color(0.5, 0.5, 0.5, 0.5))
-            _ = contour_assembly  # TODO: remove.
+            _ = cnc_assembly  # TODO: remove.
 
             # Use Fab_Steps to manage duplicates.
             with _suppress_stdout():
-                contour_assembly.save(str(contour_path), "STEP")
-        assert contour_path.exists()
+                cnc_assembly.save(str(cnc_path), "STEP")
+        assert cnc_path.exists()
 
         # Do Contour CNC computations:
-        plane: FabPlane = contour_context.Plane
+        plane: FabPlane = cnc_context.Plane
         normal: Vector = plane.Normal
-        origin: Vector = plane.Origin
+        plane_origin: Vector = plane.Origin
         distance: float = origin.Length
         positive_origin: Vector = distance * normal
         negative_origin: Vector = -distance * normal
         # TODO: the computation below looks wrong.
         start_depth: float = (
             distance
-            if (origin - positive_origin).Length < (origin - negative_origin).Length
+            if (plane_origin - positive_origin).Length < (plane_origin - negative_origin).Length
             else -distance
         )
         self._StartDepth = start_depth
