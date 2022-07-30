@@ -902,7 +902,7 @@ class Fab_Pocket(Fab_Operation):
     _Geometries: Union[FabGeometry, Tuple[FabGeometry, ...]] = field(compare=False)
     _Depth: float
     # TODO: Make _Geometries be comparable.
-    _BottomPath: Optional[PathFile] = field(init=False)
+    _CncPath: Optional[PathFile] = field(init=False)
     _FinalDepth: float = field(init=False, repr=False)
     _TopDepth: float = field(init=False, repr=False)
     _StartDepth: float = field(init=False, repr=False)
@@ -922,7 +922,7 @@ class Fab_Pocket(Fab_Operation):
             raise RuntimeError(
                 f"Fab_Extrude.__post_init__({self.Name}):"
                 f"Depth ({self.Depth}) is not positive.")  # pragma: no unit cover
-        self._BottomPath = None
+        self._CncPath = None
 
         # Unpack some values from *mount*:
         mount: FabMount = self.Mount
@@ -1060,34 +1060,34 @@ class Fab_Pocket(Fab_Operation):
         # Step 1: Produce the pocket Step file for the pocket:
         # Step 1a: Create the needed CadQuery *pocket_context* and *bottom_context*:
         mount: FabMount = self.Mount
-        geometry_context: Fab_GeometryContext = mount._GeometryContext
-        top_context: Fab_GeometryContext = geometry_context.copy(tracing=next_tracing)
+        solid_context: Fab_GeometryContext = mount._GeometryContext
+        top_context: Fab_GeometryContext = solid_context.copy(tracing=next_tracing)
         top_pocket_query: Fab_Query = top_context.Query
-        bottom_context: Fab_GeometryContext = geometry_context.copyWithPlaneAdjust(
+        bottom_context: Fab_GeometryContext = solid_context.copyWithPlaneAdjust(
             -self._Depth, tracing=next_tracing)
         if tracing:
-            top_pocket_query.show("Top Pocket Context Before", tracing)
+            top_pocket_query.show("Top Pocket Query Context Before", tracing)
 
         # Step 1b: Transfer *geometries* to *pocket_context* and *bottom_context*:
         prefix: Fab_Prefix = self.Prefix
         prefix_text: str = prefix.to_string()
-        geometry: FabGeometry
-        geometries = cast(Tuple[FabGeometry, ...], self._Geometries)
+        solid_geometry: FabGeometry
+        solid_geometries = cast(Tuple[FabGeometry, ...], self._Geometries)
         index: int
-        for index, geometry in enumerate(geometries):
-            geometry.produce(top_context, prefix_text, index, tracing=next_tracing)
-            geometry.produce(bottom_context, prefix_text, index, tracing=next_tracing)
-            if tracing:
-                top_pocket_query.show(f"Top Pocket Context after Geometry {index}", tracing)
+        for index, solid_geometry in enumerate(solid_geometries):
+            solid_geometry.produce(top_context, prefix_text, index, tracing=next_tracing)
+            solid_geometry.produce(bottom_context, prefix_text, index, tracing=next_tracing)
+        if tracing:
+            top_pocket_query.show(f"Top Pocket Context after Geometry {index}", tracing)
 
         # Step 1c: Extrude *bottom_path* and save it to a STEP file:
         top_pocket_query.extrude(self._Depth, tracing=next_tracing)
         bottom_name: str = f"{prefix_text}__{self.Name}__pocket_bottom"
         bottom_path = produce_state.Steps.activate(bottom_name,
-                                                   self.get_geometries_hash(geometries))
+                                                   self.get_geometries_hash(solid_geometries))
         if not bottom_path.exists():
             # Save it out here.
-            self._BottomPath = bottom_path
+            self._CncPath = bottom_path
             bottom_context.Query.extrude(0.000001, tracing=next_tracing)  # Make it very thin.
             bottom_assembly = cq.Assembly(
                 bottom_context.Query.WorkPlane, name=bottom_name,
@@ -1098,7 +1098,7 @@ class Fab_Pocket(Fab_Operation):
             with _suppress_stdout():
                 bottom_assembly.save(str(bottom_path), "STEP")
         assert bottom_path.exists()
-        self._BottomPath = bottom_path
+        self._CncPath = bottom_path
 
         # Step 2: Now deal with finding acceptable tool bits from *machines* in *shops*:
         # pocket_geometry: FabGeometry = self._Geometries[0]
@@ -1123,7 +1123,7 @@ class Fab_Pocket(Fab_Operation):
             top_pocket_query.show("Pocket Context after Extrude:", tracing)
 
         # TODO: Use the CadQuery *cut* operation instead of *subtract*:
-        query: Any = geometry_context.Query
+        query: Any = solid_context.Query
         assert isinstance(query, Fab_Query), query
         if tracing:
             query.show("Pocket Main Before Subtract", tracing)
@@ -1135,7 +1135,7 @@ class Fab_Pocket(Fab_Operation):
     # Fab_Pocket.to_json():
     def to_json(self) -> Dict[str, Any]:
         """Return JSON dictionary for Fab_Extrude."""
-        bottom_path: Optional[PathFile] = self._BottomPath
+        bottom_path: Optional[PathFile] = self._CncPath
         cut_modes: Tuple[str, ...] = ("Climb", "Conventional")
         coolant_modes: Tuple[str, ...] = ("None", "Flood", "Mist")
         offset_patterns: Tuple[str, ...] = (
