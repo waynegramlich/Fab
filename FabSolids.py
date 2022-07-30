@@ -1082,6 +1082,15 @@ class Fab_Pocket(Fab_Operation):
 
         # Step 1c: Extrude *bottom_path* and save it to a STEP file:
         top_pocket_query.extrude(self._Depth, tracing=next_tracing)
+
+        # TODO: Use the CadQuery *cut* operation instead of *subtract*:
+        query: Any = solid_context.Query
+        assert isinstance(query, Fab_Query), query
+        if tracing:
+            query.show("Pocket Main Before Subtract", tracing)
+        query.subtract(top_pocket_query, tracing=next_tracing)
+
+        # Work on bottom:
         bottom_name: str = f"{prefix_text}__{self.Name}__pocket_bottom"
         bottom_path = produce_state.Steps.activate(bottom_name,
                                                    self.get_geometries_hash(solid_geometries))
@@ -1122,12 +1131,6 @@ class Fab_Pocket(Fab_Operation):
         if tracing:
             top_pocket_query.show("Pocket Context after Extrude:", tracing)
 
-        # TODO: Use the CadQuery *cut* operation instead of *subtract*:
-        query: Any = solid_context.Query
-        assert isinstance(query, Fab_Query), query
-        if tracing:
-            query.show("Pocket Main Before Subtract", tracing)
-        query.subtract(top_pocket_query, tracing=next_tracing)
         if tracing:
             query.show("Pocket After Subtract", tracing)
             print(f"{tracing}<=Fab_Pocket.post_produce2('{self.Name}')")
