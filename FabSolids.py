@@ -1058,7 +1058,7 @@ class Fab_Pocket(Fab_Operation):
             print(f"{tracing}=>Fab_Pocket.post_produce2('{self.Name}')")
 
         # Step 1: Perform the CadQuery operation to make the pocket.
-        # Step 1a: Create *top_context:
+        # Step 1a: Create *top_context* and *top_context*:
         mount: FabMount = self.Mount
         solid_context: Fab_GeometryContext = mount._GeometryContext
         top_context: Fab_GeometryContext = solid_context.copy(tracing=next_tracing)
@@ -1066,7 +1066,7 @@ class Fab_Pocket(Fab_Operation):
         if tracing:
             top_pocket_query.show("Top Pocket Query Context Before", tracing)
 
-        # Step 1b: Transfer *geometries* to *pocket_context* and *bottom_context*:
+        # Step 1b: Transfer *solid_geometries* to *top_context*:
         prefix: Fab_Prefix = self.Prefix
         prefix_text: str = prefix.to_string()
         solid_geometry: FabGeometry
@@ -1080,19 +1080,22 @@ class Fab_Pocket(Fab_Operation):
         # Step 1c: Extrude *bottom_path* and save it to a STEP file:
         top_pocket_query.extrude(self._Depth, tracing=next_tracing)
 
+        # Step 1d: Subtract the *top_pocket* from *solid_query*:
         # TODO: Use the CadQuery *cut* operation instead of *subtract*:
-        query: Any = solid_context.Query
-        assert isinstance(query, Fab_Query), query
+        solid_query: Any = solid_context.Query
+        assert isinstance(solid_query, Fab_Query), solid_query
         if tracing:
-            query.show("Pocket Main Before Subtract", tracing)
-        query.subtract(top_pocket_query, tracing=next_tracing)
+            solid_query.show("Pocket Main Before Subtract", tracing)
+        solid_query.subtract(top_pocket_query, tracing=next_tracing)
 
-        # Work on bottom:
+        # Step 2: Write out *bottom_assembly* out to a STEP file.
+        # Step 2a: Create *bottom_context* at the bottom of the pocket:
         bottom_context: Fab_GeometryContext = solid_context.copyWithPlaneAdjust(
             -self._Depth, tracing=next_tracing)
         for index, solid_geometry in enumerate(solid_geometries):
             solid_geometry.produce(bottom_context, prefix_text, index, tracing=next_tracing)
 
+        # Write out STEP file to specify the bottom of the pocket:
         bottom_name: str = f"{prefix_text}__{self.Name}__pocket_bottom"
         bottom_path = produce_state.Steps.activate(bottom_name,
                                                    self.get_geometries_hash(solid_geometries))
@@ -1131,10 +1134,6 @@ class Fab_Pocket(Fab_Operation):
         self.set_tool_controller(tool_controller, produce_state.ToolControllersTable)
 
         if tracing:
-            top_pocket_query.show("Pocket Context after Extrude:", tracing)
-
-        if tracing:
-            query.show("Pocket After Subtract", tracing)
             print(f"{tracing}<=Fab_Pocket.post_produce2('{self.Name}')")
 
     # Fab_Pocket.to_json():
