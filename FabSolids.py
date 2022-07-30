@@ -1057,14 +1057,12 @@ class Fab_Pocket(Fab_Operation):
         if tracing:
             print(f"{tracing}=>Fab_Pocket.post_produce2('{self.Name}')")
 
-        # Step 1: Produce the pocket Step file for the pocket:
-        # Step 1a: Create the needed CadQuery *pocket_context* and *bottom_context*:
+        # Step 1: Perform the CadQuery operation to make the pocket.
+        # Step 1a: Create *top_context:
         mount: FabMount = self.Mount
         solid_context: Fab_GeometryContext = mount._GeometryContext
         top_context: Fab_GeometryContext = solid_context.copy(tracing=next_tracing)
         top_pocket_query: Fab_Query = top_context.Query
-        bottom_context: Fab_GeometryContext = solid_context.copyWithPlaneAdjust(
-            -self._Depth, tracing=next_tracing)
         if tracing:
             top_pocket_query.show("Top Pocket Query Context Before", tracing)
 
@@ -1076,7 +1074,6 @@ class Fab_Pocket(Fab_Operation):
         index: int
         for index, solid_geometry in enumerate(solid_geometries):
             solid_geometry.produce(top_context, prefix_text, index, tracing=next_tracing)
-            solid_geometry.produce(bottom_context, prefix_text, index, tracing=next_tracing)
         if tracing:
             top_pocket_query.show(f"Top Pocket Context after Geometry {index}", tracing)
 
@@ -1091,6 +1088,11 @@ class Fab_Pocket(Fab_Operation):
         query.subtract(top_pocket_query, tracing=next_tracing)
 
         # Work on bottom:
+        bottom_context: Fab_GeometryContext = solid_context.copyWithPlaneAdjust(
+            -self._Depth, tracing=next_tracing)
+        for index, solid_geometry in enumerate(solid_geometries):
+            solid_geometry.produce(bottom_context, prefix_text, index, tracing=next_tracing)
+
         bottom_name: str = f"{prefix_text}__{self.Name}__pocket_bottom"
         bottom_path = produce_state.Steps.activate(bottom_name,
                                                    self.get_geometries_hash(solid_geometries))
