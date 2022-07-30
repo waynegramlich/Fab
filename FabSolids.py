@@ -751,48 +751,51 @@ class Fab_Extrude(Fab_Operation):
         if tracing:
             print(f"{tracing}=>Fab_Extrude.produce2('{self.Name}')")
 
-        # Step 1: Produce the extrude Step file for the extrude:
-        # Step 1a: Create the needed CadQuery *extrude_context*:
+        # Step 1: Perform a CadQuery extrusion operation and keep it around for future operations.
+        # Step 1a: Do some setup:
         mount: FabMount = self.Mount
-        geometry_context: Fab_GeometryContext = mount._GeometryContext
-        # Leave the extruded solid on the top of the *geometry_context* for further operations.
-        extrude_context: Fab_GeometryContext = geometry_context
-        extrude_query: Fab_Query = extrude_context.Query
+        solid_context: Fab_GeometryContext = mount._GeometryContext
+        solid_query: Fab_Query = solid_context.Query
+        solid_prefix: str = f"{mount.Name}_{self.Name}"  # TODO: Is this right?
         if tracing:
-            extrude_query.show("Extrude Query Context Before", tracing)
+            solid_query.show("Solid Query Context Before", tracing)
 
-        # Step 1b: Transfer *geometries* to *extrude_context* and perform the extrusion:
-        geometry_prefix: str = f"{mount.Name}_{self.Name}"
-        geometries: Tuple[FabGeometry, ...] = self._Geometries
-        for index, geometry in enumerate(geometries):
+        # Step 1b: Transfer *solid_geometries* to *solid_context* and perform the extrusion:
+        solid_geometry: FabGeometry
+        solid_geometries: Tuple[FabGeometry, ...] = self._Geometries
+        for index, solid_geometry in enumerate(solid_geometries):
             if tracing:
-                print(f"{tracing}Geometry[{index}]:{geometry=}")
-            _ = geometry.xyPlaneReorient(0.0, Vector(), tracing=next_tracing)
-            geometry.produce(extrude_context, geometry_prefix, index, tracing=next_tracing)
+                print(f"{tracing}Geometry[{index}]:{solid_geometry=}")
+            # TODO: Why is xyPlaneReorient() called.  It can probably be ignored.
+            _ = solid_geometry.xyPlaneReorient(0.0, Vector(), tracing=next_tracing)
+            solid_geometry.produce(solid_context, solid_prefix, index, tracing=next_tracing)
         # geometry_context.WorkPlane.close(tracing=next_tracing)
-        extrude_context.Query.extrude(self.Depth, tracing=next_tracing)
+        solid_context.Query.extrude(self.Depth, tracing=next_tracing)
 
-        # Step 1c: Save extrusion to a STEP file:
-        prefix: Fab_Prefix = self.Prefix
-        prefix_text: str = prefix.to_string()
-        extrude_name: str = f"{prefix_text}__{self.Name}__extrude"
-        extrude_path = produce_state.Steps.activate(extrude_name,
-                                                    self.get_geometries_hash(geometries))
-        self._StepFile = str(extrude_path)
-        if not extrude_path.exists():
+        # Step 2: Create a STEP file for a CNC contour operation.
+        contour_prefix: Fab_Prefix = self.Prefix
+        contour_text: str = contour_prefix.to_string()
+        contour_name: str = f"{contour_text}__{self.Name}__extrude"
+        # TODO:  Should only use the first geometry.
+        contour_path = produce_state.Steps.activate(contour_name,
+                                                    self.get_geometries_hash(solid_geometries))
+        contour_context: Fab_GeometryContext = solid_context  # TODO for now
+
+        self._StepFile = str(contour_path)
+        if not contour_path.exists():
             # Save it out here.
-            extrude_assembly = cq.Assembly(
-                extrude_context.Query.WorkPlane, name=extrude_name,
+            contour_assembly = cq.Assembly(
+                contour_context.Query.WorkPlane, name=contour_name,
                 color=cq.Color(0.5, 0.5, 0.5, 0.5))
-            _ = extrude_assembly
+            _ = contour_assembly  # TODO: remove.
 
             # Use Fab_Steps to manage duplicates.
             with _suppress_stdout():
-                extrude_assembly.save(str(extrude_path), "STEP")
-        assert extrude_path.exists()
+                contour_assembly.save(str(contour_path), "STEP")
+        assert contour_path.exists()
 
-        # Do Contour computations:
-        plane: FabPlane = extrude_context.Plane
+        # Do Contour CNC computations:
+        plane: FabPlane = contour_context.Plane
         normal: Vector = plane.Normal
         origin: Vector = plane.Origin
         distance: float = origin.Length
