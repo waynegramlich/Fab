@@ -616,8 +616,8 @@ class Fab_Extrude(Fab_Operation):
         orient_angle: float = mount.OrientAngle
         reoriented_geometry0: FabGeometry
         _, reoriented_geometry0 = geometry0.xyPlaneReorient(orient_angle, no_translate)
-        # For now always position the Top NorthEast (TNE) corner at the origin.
-        mount._setOrientTranslate(-reoriented_geometry0.Box.TNE)
+        # For now always position the Top NorthWast (TNW) corner at the origin.
+        mount._setOrientTranslate(-reoriented_geometry0.Box.TNW)
 
         if self.Depth <= 0.0:
             raise RuntimeError(f"Fab_Extrude.__post_init__({self.Name}):"
@@ -796,7 +796,7 @@ class Fab_Extrude(Fab_Operation):
 
         self._StepFile = str(cnc_path)
         if not cnc_path.exists():
-            # Create *cnc_context* for extruding the reoriented
+            # Create *cnc_context* for extruding the reoriented geometires:
             origin: Vector = Vector(0.0, 0.0, 0.0)
             z_axis: Vector = Vector(0.0, 0.0, 1.0)
             cnc_plane: FabPlane = FabPlane(origin, z_axis)  # X/Y plane through the origin.
@@ -1090,29 +1090,44 @@ class Fab_Pocket(Fab_Operation):
 
         # Step 2: Write out *bottom_assembly* out to a STEP file.
         # Step 2a: Create *bottom_context* at the bottom of the pocket:
-        bottom_context: Fab_GeometryContext = solid_context.copyWithPlaneAdjust(
-            -self._Depth, tracing=next_tracing)
-        for index, solid_geometry in enumerate(solid_geometries):
-            solid_geometry.produce(bottom_context, prefix_text, index, tracing=next_tracing)
+        assert len(solid_geometries) >= 1, "Fab_Pocket.post_produce2(): No geometries."
+        orient_angle: float = mount._OrientAngle
+        orient_translate: Vector = mount._OrientTranslate
 
-        # Write out STEP file to specify the bottom of the pocket:
-        bottom_name: str = f"{prefix_text}__{self.Name}__pocket_bottom"
-        bottom_path = produce_state.Steps.activate(bottom_name,
-                                                   self.get_geometries_hash(solid_geometries))
-        if not bottom_path.exists():
-            # Save it out here.
-            self._CncPath = bottom_path
-            bottom_context.Query.extrude(0.000001, tracing=next_tracing)  # Make it very thin.
-            bottom_assembly = cq.Assembly(
-                bottom_context.Query.WorkPlane, name=bottom_name,
+        # Step 2b: Transfer the pocket exterior and optional interior islands.
+        cnc_prefix: Fab_Prefix = self.Prefix
+        cnc_prefix_text: str = cnc_prefix.to_string()
+        cnc_name: str = f"{cnc_prefix_text}__{self.Name}__pocket_bottom"
+        cnc_path = produce_state.Steps.activate(cnc_name,
+                                                self.get_geometries_hash(solid_geometries))
+        if not cnc_path.exists():
+            # Create *cnc_context* for extruding the reoriented geometries:
+            origin: Vector = Vector(0.0, 0.0, -self._Depth)
+            z_axis: Vector = Vector(0.0, 0.0, 1.0)
+            cnc_plane: FabPlane = FabPlane(origin, z_axis)  # X/Y plane through the origin.
+            cnc_query: Fab_Query = Fab_Query(cnc_plane)
+            cnc_context: Fab_GeometryContext = Fab_GeometryContext(cnc_plane, cnc_query)
+
+            for index, solid_geometry in enumerate(solid_geometries):
+                cnc_geometry: FabGeometry
+                _, cnc_geometry = solid_geometry.xyPlaneReorient(
+                    orient_angle, orient_translate, tracing=next_tracing)
+                if tracing:
+                    print(f"{tracing}{cnc_geometry.Box.TNE=}")
+                cnc_geometry.produce(cnc_context, cnc_name, index, tracing=next_tracing)
+
+            # Save it out here:
+            self._CncPath = cnc_path
+            cnc_context.Query.extrude(0.000001, tracing=next_tracing)  # Make it very thin.
+            cnc_assembly = cq.Assembly(
+                cnc_context.Query.WorkPlane, name=cnc_name,
                 color=cq.Color(0.5, 0.5, 0.5, 0.5))
-            _ = bottom_assembly
 
             # Use Fab_Steps to manage duplicates.
             with _suppress_stdout():
-                bottom_assembly.save(str(bottom_path), "STEP")
-        assert bottom_path.exists()
-        self._CncPath = bottom_path
+                cnc_assembly.save(str(cnc_path), "STEP")
+        assert cnc_path.exists()
+        self._CncPath = cnc_path
 
         # Step 2: Now deal with finding acceptable tool bits from *machines* in *shops*:
         # pocket_geometry: FabGeometry = self._Geometries[0]
@@ -1571,7 +1586,8 @@ class FabMount(object):
         orient: Vector = self._Orient
         z_aligned_orient: Vector = plane.rotateToZAxis(orient)
         # The minus sign is needed to rotate from off +X to align with +X axis:
-        self._OrientAngle: float = -math.atan2(z_aligned_orient.y, z_aligned_orient.x)
+        self._OrientAngle: float = math.atan2(z_aligned_orient.y, z_aligned_orient.x)
+        self._OrientAngle = 0.0  # TODO: fix!
         self._OrientTranslate: Vector = Vector(0.0, 0.0, 0.0)  # Computed after extrude.
 
         if tracing:

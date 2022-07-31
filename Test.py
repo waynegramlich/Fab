@@ -332,9 +332,9 @@ class TestSolid(FabSolid):
         _ = depth2
         top_origin: Vector = Vector(0.0, 0.0, -40.0)
         dt: Vector = self.DT
-        dn: Vector = self.DN
+        de: Vector = self.DE
         top_plane: FabPlane = FabPlane(top_origin, dt)
-        top_mount: FabMount = self.mount("Top", top_plane, dn, depth, tracing=tracing)
+        top_mount: FabMount = self.mount("Top", top_plane, de, depth, tracing=tracing)
 
         wx: float = -40.0
         ex: float = 40.0
@@ -351,7 +351,7 @@ class TestSolid(FabSolid):
             (Vector(wx, ny, z_offset), extrude_fillet_radius),  # NW
         ))
 
-        top_mount.extrude("Extrude", extrude_polygon, depth, debug=True, tracing=next_tracing)
+        top_mount.extrude("Extrude", extrude_polygon, depth, debug=False, tracing=next_tracing)
         pocket_fillet_radius: float = 2.5
 
         # Enable vasious *features*:
@@ -365,7 +365,7 @@ class TestSolid(FabSolid):
                 (Vector(-10, 10, z_offset), pocket_fillet_radius),  # NE
                 (Vector(-30, 10, z_offset), pocket_fillet_radius),  # NW
             ))
-            top_mount.pocket("LeftPocket", left_polygon, depth2, debug=False)
+            top_mount.pocket("LeftPocket", left_polygon, depth2, debug=True)
 
         if "RPP" in features:  # Right Polygon Pocket
             right_pocket: FabPolygon = FabPolygon(top_plane, (
@@ -378,18 +378,18 @@ class TestSolid(FabSolid):
 
         if "RCP" in features:  # Right Circle Pocket
             right_circle: FabCircle = FabCircle(top_plane, Vector(20, 0, z_offset), 10)
-            top_mount.pocket("RightCircle", right_circle, depth)
+            top_mount.pocket("RightCircle", right_circle, depth, debug=True)
 
         if "CCP" in features:  # Center Circle Pocket
             center_circle: FabCircle = FabCircle(top_plane, Vector(0, 0, z_offset), 10)
-            top_mount.pocket("CenterCircle", center_circle, depth2)
+            top_mount.pocket("CenterCircle", center_circle, depth2, debug=True)
 
         if "IDH" in features:  # Imperial Drill Hole
             imperial_drill_start: Vector = Vector(0.0, -10.0, z_offset)
             imperial_drill_end: Vector = Vector(0.0, -10.0, z_offset - depth)
             self.ScrewIDH: FabJoin = FabJoin("ScrewI", self.I4_40Fasten,
                                              imperial_drill_start, imperial_drill_end)
-            top_mount.drill_joins("ScrewIDH", (self.ScrewIDH,), debug=False, tracing=next_tracing)
+            top_mount.drill_joins("ScrewIDH", (self.ScrewIDH,), debug=True, tracing=next_tracing)
 
         if "MDH" in features:  # Metric Drill Hole
             metric_drill_start: Vector = Vector(-20.0, -20.0, z_offset)
@@ -410,7 +410,7 @@ class TestSolid(FabSolid):
             north_start: Vector = self.N
             north_end: Vector = self.C
             n: Vector = self.N
-            de: Vector = self.DE
+            dn: Vector = self.DN
             dy: Vector = self.YMax - self.YMin  # FIXME: use self.DY instead.
             north_plane: FabPlane = FabPlane(n, dn)
             north_mount: FabMount = self.mount("NorthX", north_plane, de, dy, tracing=tracing)
