@@ -1393,16 +1393,15 @@ class Fab_Hole(Fab_Operation):
         self.Depth = depth
 
         # Drill the holes in the in the rotated solid:
-        # Collect the min/max x/y of the each *rotated_center* and drill the holes :
         index: int
         solid_center: Vector
-        circle: FabCircle
+        solid_circle: FabCircle
         projected_circle: FabCircle
         projected_center: Vector
         rotated_center: Vector
         for solid_center in self.Centers:
-            circle = FabCircle(solid_plane, solid_center, diameter)
-            projected_circle = circle.projectToPlane(solid_plane, tracing=next_tracing)
+            solid_circle = FabCircle(solid_plane, solid_center, diameter)
+            projected_circle = solid_circle.projectToPlane(solid_plane, tracing=next_tracing)
             projected_center = projected_circle.Center
             rotated_center = solid_plane.rotateToZAxis(projected_center, tracing=next_tracing)
             solid_query.move_to(rotated_center, tracing=next_tracing)
@@ -1413,34 +1412,32 @@ class Fab_Hole(Fab_Operation):
         if (solid_plane.UnitNormal - z_axis).Length > 1.0e-8:  # TODO: ENABLE off Z axis holes.
             self.JsonEnabled = False
         else:
+            # Collect the min/max x/y of the each *rotated_center* and drill the holes :
+            # Only create the Step file if it has changed.
             prefix: Fab_Prefix = self.Prefix
             prefix_text: str = prefix.to_string()
             step_base_name: str = f"{prefix_text}__{self.Name}_holes"
             cnc_path: PathFile = produce_state.Steps.activate(step_base_name, self.getHash())
             self.StepFile: str = str(cnc_path)
-
             if not cnc_path.exists():
-                max_x: float = 0.0  # For some reason mypy requires that min/max_x/y be initialized.
-                min_x: float = 0.0
-                max_y: float = 0.0
-                min_y: float = 0.0
+                max_cnc_x: float = 0.0  # mypy requires that min/max_cnc_x/y be initialized.  Why?
+                min_cnc_x: float = 0.0
+                max_cnc_y: float = 0.0
+                min_cnc_y: float = 0.0
                 for index, solid_center in enumerate(self.Centers):
-                    circle = FabCircle(solid_plane, solid_center, diameter)
-                    projected_circle = circle.projectToPlane(solid_plane, tracing=next_tracing)
+                    solid_circle = FabCircle(solid_plane, solid_center, diameter)
+                    projected_circle = solid_circle.projectToPlane(
+                        solid_plane, tracing=next_tracing)
                     projected_center = projected_circle.Center
                     rotated_center = solid_plane.rotateToZAxis(
                         projected_center, tracing=next_tracing)
 
-                    # Perform the *query* drill operation.
-                    solid_query.move_to(rotated_center, tracing=next_tracing)
-                    solid_query.hole(diameter, depth, tracing=next_tracing)
-
-                    x: float = projected_center.x
-                    y: float = projected_center.y
-                    max_x = x if index == 0 else max(max_x, x)
-                    min_x = x if index == 0 else min(min_x, x)
-                    max_y = y if index == 0 else max(max_y, y)
-                    min_y = y if index == 0 else min(min_y, y)
+                    cnc_x: float = projected_center.x
+                    cnc_y: float = projected_center.y
+                    max_cnc_x = cnc_x if index == 0 else max(max_cnc_x, cnc_x)
+                    min_cnc_x = cnc_x if index == 0 else min(min_cnc_x, cnc_x)
+                    max_cnc_y = cnc_y if index == 0 else max(max_cnc_y, cnc_y)
+                    min_cnc_y = cnc_y if index == 0 else min(min_cnc_y, cnc_y)
 
                 # Start with a new *cnc_plane* and *holes_query*:
                 # self.StartDepth = cnc_plane.Distance
@@ -1455,10 +1452,10 @@ class Fab_Hole(Fab_Operation):
                 # Thus, we make extend it by *diameter* in +/- X/Y.
                 extra: float = diameter
                 z: float = 0.0  # *z* is ignored.
-                enclose_ne: Vector = Vector(max_x + extra, max_y + extra, z)
-                enclose_nw: Vector = Vector(min_x - extra, max_y + extra, z)
-                enclose_sw: Vector = Vector(min_x - extra, min_y - extra, z)
-                enclose_se: Vector = Vector(max_x + extra, min_y - extra, z)
+                enclose_ne: Vector = Vector(max_cnc_x + extra, max_cnc_y + extra, z)
+                enclose_nw: Vector = Vector(min_cnc_x - extra, max_cnc_y + extra, z)
+                enclose_sw: Vector = Vector(min_cnc_x - extra, min_cnc_y - extra, z)
+                enclose_se: Vector = Vector(max_cnc_x + extra, min_cnc_y - extra, z)
 
                 # Create the enclosing extrusion:
                 cnc_query.copy_workplane(cnc_plane, tracing=next_tracing)
