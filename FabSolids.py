@@ -1424,52 +1424,52 @@ class Fab_Hole(Fab_Operation):
         if (solid_plane.UnitNormal - z_axis).Length > 1.0e-8:  # TODO: ENABLE off Z axis holes.
             self.JsonEnabled = False
         else:
-            # Start with a new *cnc_plane* and *holes_query*:
-            # self.StartDepth = cnc_plane.Distance
-            self.StartDepth = solid_plane.Distance  # TODO: FIX
-            cnc_contact: Vector = Vector(0.0, 0.0, self.StartDepth)
-            cnc_plane: FabPlane = FabPlane(cnc_contact, z_axis)
-            cnc_query: Fab_Query = Fab_Query(cnc_plane)
-            self.StartDepth = cnc_plane.Distance  # TODO: This needs to be fixed.
-
-            # Compute the closing solid corners.  The enclose face area must be greater the
-            # drill face area so that the JSON reader code can distinguish between faces.
-            # Thus, we make extend it by *diameter* in +/- X/Y.
-            extra: float = diameter
-            z: float = 0.0  # *z* is ignored.
-            enclose_ne: Vector = Vector(max_x + extra, max_y + extra, z)
-            enclose_nw: Vector = Vector(min_x - extra, max_y + extra, z)
-            enclose_sw: Vector = Vector(min_x - extra, min_y - extra, z)
-            enclose_se: Vector = Vector(max_x + extra, min_y - extra, z)
-
-            # Create the enclosing extrusion:
-            cnc_query.copy_workplane(cnc_plane, tracing=next_tracing)
-            cnc_query.move_to(enclose_ne)
-            cnc_query.line_to(enclose_nw)
-            cnc_query.line_to(enclose_sw)
-            cnc_query.line_to(enclose_se)
-            cnc_query.line_to(enclose_ne)
-            cnc_query.close()
-            # The + 1.0mm ensures that there is always a bottom face at the hole bottom.
-            # Thus there are no through holes in the final drilled extrusion.
-            cnc_query.extrude(depth + 1.0)  # TODO: 1.0 may be too high.  Use depth/100.0?
-
-            # Drill the holes:
-            for center in self.Centers:
-                cnc_query.move_to(center)  # TODO: Assume +Z axis for now.
-                cnc_query.hole(diameter, depth)
-            self.HolesCount = len(self.Centers)
-
             prefix: Fab_Prefix = self.Prefix
             prefix_text: str = prefix.to_string()
             step_base_name: str = f"{prefix_text}__{self.Name}_holes"
-            assembly: cq.Assembly = cq.Assembly(
-                cnc_query.WorkPlane, name=step_base_name, color=cq.Color(0.5, 0.5, 0.5, 1.0))
-
             cnc_path: PathFile = produce_state.Steps.activate(step_base_name, self.getHash())
             self.StepFile: str = str(cnc_path)
 
             if not cnc_path.exists():
+                # Start with a new *cnc_plane* and *holes_query*:
+                # self.StartDepth = cnc_plane.Distance
+                self.StartDepth = solid_plane.Distance  # TODO: FIX
+                cnc_contact: Vector = Vector(0.0, 0.0, self.StartDepth)
+                cnc_plane: FabPlane = FabPlane(cnc_contact, z_axis)
+                cnc_query: Fab_Query = Fab_Query(cnc_plane)
+                self.StartDepth = cnc_plane.Distance  # TODO: This needs to be fixed.
+
+                # Compute the closing solid corners.  The enclose face area must be greater the
+                # drill face area so that the JSON reader code can distinguish between faces.
+                # Thus, we make extend it by *diameter* in +/- X/Y.
+                extra: float = diameter
+                z: float = 0.0  # *z* is ignored.
+                enclose_ne: Vector = Vector(max_x + extra, max_y + extra, z)
+                enclose_nw: Vector = Vector(min_x - extra, max_y + extra, z)
+                enclose_sw: Vector = Vector(min_x - extra, min_y - extra, z)
+                enclose_se: Vector = Vector(max_x + extra, min_y - extra, z)
+
+                # Create the enclosing extrusion:
+                cnc_query.copy_workplane(cnc_plane, tracing=next_tracing)
+                cnc_query.move_to(enclose_ne)
+                cnc_query.line_to(enclose_nw)
+                cnc_query.line_to(enclose_sw)
+                cnc_query.line_to(enclose_se)
+                cnc_query.line_to(enclose_ne)
+                cnc_query.close()
+                # The + 1.0mm ensures that there is always a bottom face at the hole bottom.
+                # Thus there are no through holes in the final drilled extrusion.
+                cnc_query.extrude(depth + 1.0)  # TODO: 1.0 may be too high.  Use depth/100.0?
+
+                # Drill the holes:
+                for center in self.Centers:
+                    cnc_query.move_to(center)  # TODO: Assume +Z axis for now.
+                    cnc_query.hole(diameter, depth)
+                self.HolesCount = len(self.Centers)
+
+                assembly: cq.Assembly = cq.Assembly(
+                    cnc_query.WorkPlane, name=step_base_name, color=cq.Color(0.5, 0.5, 0.5, 1.0))
+
                 with _suppress_stdout():
                     assembly.save(self.StepFile, "STEP")
 
