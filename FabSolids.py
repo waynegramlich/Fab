@@ -1394,28 +1394,17 @@ class Fab_Hole(Fab_Operation):
 
         # Drill the holes in the in the rotated solid:
         # Collect the min/max x/y of the each *rotated_center* and drill the holes :
-        max_x: float = 0.0
-        max_y: float = 0.0
-        min_x: float = 0.0
-        min_y: float = 0.0
-        rotated_centers: List[Vector] = []
         index: int
         solid_center: Vector
-        for index, solid_center in enumerate(self.Centers):
-            circle: FabCircle = FabCircle(solid_plane, solid_center, diameter)
-            projected_circle: FabCircle = circle.projectToPlane(solid_plane, tracing=next_tracing)
-            projected_center: Vector = projected_circle.Center
-            rotated_center: Vector = solid_plane.rotateToZAxis(
-                projected_center, tracing=next_tracing)
-            rotated_centers.append(rotated_center)
-            x: float = projected_center.x
-            y: float = projected_center.y
-            max_x = x if index == 0 else max(max_x, x)
-            min_x = x if index == 0 else min(min_x, x)
-            max_y = y if index == 0 else max(max_y, y)
-            min_y = y if index == 0 else min(min_y, y)
-
-            # Perform the *query* drill operation.
+        circle: FabCircle
+        projected_circle: FabCircle
+        projected_center: Vector
+        rotated_center: Vector
+        for solid_center in self.Centers:
+            circle = FabCircle(solid_plane, solid_center, diameter)
+            projected_circle = circle.projectToPlane(solid_plane, tracing=next_tracing)
+            projected_center = projected_circle.Center
+            rotated_center = solid_plane.rotateToZAxis(projected_center, tracing=next_tracing)
             solid_query.move_to(rotated_center, tracing=next_tracing)
             solid_query.hole(diameter, depth, tracing=next_tracing)
 
@@ -1431,6 +1420,28 @@ class Fab_Hole(Fab_Operation):
             self.StepFile: str = str(cnc_path)
 
             if not cnc_path.exists():
+                max_x: float = 0.0  # For some reason mypy requires that min/max_x/y be initialized.
+                min_x: float = 0.0
+                max_y: float = 0.0
+                min_y: float = 0.0
+                for index, solid_center in enumerate(self.Centers):
+                    circle = FabCircle(solid_plane, solid_center, diameter)
+                    projected_circle = circle.projectToPlane(solid_plane, tracing=next_tracing)
+                    projected_center = projected_circle.Center
+                    rotated_center = solid_plane.rotateToZAxis(
+                        projected_center, tracing=next_tracing)
+
+                    # Perform the *query* drill operation.
+                    solid_query.move_to(rotated_center, tracing=next_tracing)
+                    solid_query.hole(diameter, depth, tracing=next_tracing)
+
+                    x: float = projected_center.x
+                    y: float = projected_center.y
+                    max_x = x if index == 0 else max(max_x, x)
+                    min_x = x if index == 0 else min(min_x, x)
+                    max_y = y if index == 0 else max(max_y, y)
+                    min_y = y if index == 0 else min(min_y, y)
+
                 # Start with a new *cnc_plane* and *holes_query*:
                 # self.StartDepth = cnc_plane.Distance
                 self.StartDepth = solid_plane.Distance  # TODO: FIX
