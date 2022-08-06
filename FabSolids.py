@@ -1104,9 +1104,9 @@ class Fab_Pocket(Fab_Operation):
                                                 self.get_geometries_hash(solid_geometries))
         if not cnc_path.exists():
             # Create *cnc_context* for extruding the reoriented geometries:
-            origin: Vector = Vector(0.0, 0.0, -self._Depth)
+            cnc_contact: Vector = Vector(0.0, 0.0, -self._Depth)
             z_axis: Vector = Vector(0.0, 0.0, 1.0)
-            cnc_plane: FabPlane = FabPlane(origin, z_axis)  # X/Y plane through the origin.
+            cnc_plane: FabPlane = FabPlane(cnc_contact, z_axis)  # X/Y plane through the origin.
             cnc_query: Fab_Query = Fab_Query(cnc_plane)
             cnc_context: Fab_GeometryContext = Fab_GeometryContext(cnc_plane, cnc_query)
 
@@ -1439,7 +1439,7 @@ class Fab_Hole(Fab_Operation):
                 cnc_query: Fab_Query = Fab_Query(cnc_plane)
                 self.StartDepth = cnc_plane.Distance  # TODO: This needs to be fixed.
 
-                # Compute the closing solid corners.  The enclose face area must be greater the
+                # Compute the enclosing solid corners.  The enclose face area must be greater the
                 # drill face area so that the JSON reader code can distinguish between faces.
                 # Thus, we make extend it by *diameter* in +/- X/Y.
                 extra: float = diameter
