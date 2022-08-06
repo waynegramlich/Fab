@@ -829,8 +829,10 @@ class Fab_Extrude(Fab_Operation):
             if (plane_origin - positive_origin).Length < (plane_origin - negative_origin).Length
             else -distance
         )
-        self._StartDepth = start_depth
+        # self._StartDepth = start_depth  # TODO: fix
+        self._StartDepth = 0.0
         self._StepDown = 3.0
+        # self._FinalDepth = start_depth - self.Depth  # TODO: fix
         self._FinalDepth = start_depth - self.Depth
 
         selected_shop_bit: Optional[Fab_ShopBit] = self.SelectedShopBit
@@ -925,10 +927,10 @@ class Fab_Pocket(Fab_Operation):
         self._CncPath = None
 
         # Unpack some values from *mount*:
-        mount: FabMount = self.Mount
-        geometry_context: Fab_GeometryContext = mount._GeometryContext
-        plane: FabPlane = geometry_context.Plane
-        top_depth: float = plane.Distance
+        # mount: FabMount = self.Mount
+        # geometry_context: Fab_GeometryContext = mount._GeometryContext
+        # top_depth: float = plane.Distance
+        top_depth: float = 0.0  # TODO: fix
         final_depth: float = top_depth - self._Depth
         delta_depth: float = top_depth - final_depth
         # tool_edge_height: float = 30.00  # TODO: Fix
@@ -1378,9 +1380,9 @@ class Fab_Hole(Fab_Operation):
 
         # Unpack the *mount* and associated *geometry_context*:
         mount: FabMount = self.Mount
-        geometry_context: Fab_GeometryContext = mount._GeometryContext
-        plane: FabPlane = geometry_context.Plane
-        query: Fab_Query = geometry_context.Query
+        solid_context: Fab_GeometryContext = mount._GeometryContext
+        solid_plane: FabPlane = solid_context.Plane
+        solid_query: Fab_Query = solid_context.Query
 
         key: Fab_HoleKey = self.Key
         kind: str = key.Kind
@@ -1398,12 +1400,13 @@ class Fab_Hole(Fab_Operation):
         min_y: float = 0.0
         rotated_centers: List[Vector] = []
         index: int
-        center: Vector
-        for index, center in enumerate(self.Centers):
-            circle: FabCircle = FabCircle(plane, center, diameter)
-            projected_circle: FabCircle = circle.projectToPlane(plane, tracing=next_tracing)
+        solid_center: Vector
+        for index, solid_center in enumerate(self.Centers):
+            circle: FabCircle = FabCircle(solid_plane, solid_center, diameter)
+            projected_circle: FabCircle = circle.projectToPlane(solid_plane, tracing=next_tracing)
             projected_center: Vector = projected_circle.Center
-            rotated_center: Vector = plane.rotateToZAxis(projected_center, tracing=next_tracing)
+            rotated_center: Vector = solid_plane.rotateToZAxis(
+                projected_center, tracing=next_tracing)
             rotated_centers.append(rotated_center)
             x: float = projected_center.x
             y: float = projected_center.y
@@ -1413,20 +1416,21 @@ class Fab_Hole(Fab_Operation):
             min_y = y if index == 0 else min(min_y, y)
 
             # Perform the *query* drill operation.
-            query.move_to(rotated_center, tracing=next_tracing)
-            query.hole(diameter, depth, tracing=next_tracing)
+            solid_query.move_to(rotated_center, tracing=next_tracing)
+            solid_query.hole(diameter, depth, tracing=next_tracing)
 
         # Create a new solid that encloses all of the holes:
         z_axis: Vector = Vector(0.0, 0.0, 1.0)
-        if (plane.UnitNormal - z_axis).Length > 1.0e-8:
+        if (solid_plane.UnitNormal - z_axis).Length > 1.0e-8:  # TODO: ENABLE off Z axis holes.
             self.JsonEnabled = False
         else:
-            # Start with a new *holes_plane* and *holes_query*:
-            self.StartDepth = plane.Distance
-            holes_contact: Vector = Vector(0.0, 0.0, self.StartDepth)
-            holes_plane: FabPlane = FabPlane(holes_contact, z_axis)
-            holes_query: Fab_Query = Fab_Query(holes_plane)
-            self.StartDepth = plane.Distance
+            # Start with a new *cnc_plane* and *holes_query*:
+            # self.StartDepth = cnc_plane.Distance
+            self.StartDepth = solid_plane.Distance  # TODO: FIX
+            cnc_contact: Vector = Vector(0.0, 0.0, self.StartDepth)
+            cnc_plane: FabPlane = FabPlane(cnc_contact, z_axis)
+            cnc_query: Fab_Query = Fab_Query(cnc_plane)
+            self.StartDepth = cnc_plane.Distance  # TODO: This needs to be fixed.
 
             # Compute the closing solid corners.  The enclose face area must be greater the
             # drill face area so that the JSON reader code can distinguish between faces.
@@ -1439,36 +1443,37 @@ class Fab_Hole(Fab_Operation):
             enclose_se: Vector = Vector(max_x + extra, min_y - extra, z)
 
             # Create the enclosing extrusion:
-            holes_query.copy_workplane(holes_plane, tracing=next_tracing)
-            holes_query.move_to(enclose_ne)
-            holes_query.line_to(enclose_nw)
-            holes_query.line_to(enclose_sw)
-            holes_query.line_to(enclose_se)
-            holes_query.line_to(enclose_ne)
-            holes_query.close()
+            cnc_query.copy_workplane(cnc_plane, tracing=next_tracing)
+            cnc_query.move_to(enclose_ne)
+            cnc_query.line_to(enclose_nw)
+            cnc_query.line_to(enclose_sw)
+            cnc_query.line_to(enclose_se)
+            cnc_query.line_to(enclose_ne)
+            cnc_query.close()
             # The + 1.0mm ensures that there is always a bottom face at the hole bottom.
             # Thus there are no through holes in the final drilled extrusion.
-            holes_query.extrude(depth + 1.0)  # TODO: 1.0 may be too high.  Use depth/100.0?
+            cnc_query.extrude(depth + 1.0)  # TODO: 1.0 may be too high.  Use depth/100.0?
 
             # Drill the holes:
             for center in self.Centers:
-                holes_query.move_to(center)  # TODO: Assume +Z axis for now.
-                holes_query.hole(diameter, depth)
+                cnc_query.move_to(center)  # TODO: Assume +Z axis for now.
+                cnc_query.hole(diameter, depth)
             self.HolesCount = len(self.Centers)
 
             prefix: Fab_Prefix = self.Prefix
             prefix_text: str = prefix.to_string()
             step_base_name: str = f"{prefix_text}__{self.Name}_holes"
             assembly: cq.Assembly = cq.Assembly(
-                holes_query.WorkPlane, name=step_base_name, color=cq.Color(0.5, 0.5, 0.5, 1.0))
+                cnc_query.WorkPlane, name=step_base_name, color=cq.Color(0.5, 0.5, 0.5, 1.0))
 
-            holes_path: PathFile = produce_state.Steps.activate(step_base_name, self.getHash())
-            self.StepFile: str = str(holes_path)
+            cnc_path: PathFile = produce_state.Steps.activate(step_base_name, self.getHash())
+            self.StepFile: str = str(cnc_path)
 
-            if not holes_path.exists():
+            if not cnc_path.exists():
                 with _suppress_stdout():
                     assembly.save(self.StepFile, "STEP")
 
+            # Select the appropriate shop bit:
             selected_shop_bit: Optional[Fab_ShopBit] = self.SelectedShopBit
             assert isinstance(selected_shop_bit, Fab_ShopBit), selected_shop_bit
             selected_bit: FabBit = selected_shop_bit.Bit
@@ -1872,9 +1877,11 @@ class FabMount(object):
         json_dict: Dict[str, Any] = {
             "Kind": "Mount",
             "Label": self.Name,
-            "_Contact": [contact.x, contact.y, contact.z],
+            # "_Contact": [contact.x, contact.y, contact.z],  # TODO: fix
+            "_Contact": [contact.x, contact.y, 0.0],
             "_Normal": [normal.x, normal.y, normal.z],
-            "_Orient": [orient.x, orient.y, orient.z],
+            # "_Orient": [orient.x, orient.y, orient.z],
+            "_Orient": [orient.x, orient.y, 0.0],
             "children": json_operations,
         }
         return json_dict
