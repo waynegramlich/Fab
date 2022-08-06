@@ -1439,6 +1439,19 @@ class Fab_Hole(Fab_Operation):
                     max_cnc_y = cnc_y if index == 0 else max(max_cnc_y, cnc_y)
                     min_cnc_y = cnc_y if index == 0 else min(min_cnc_y, cnc_y)
 
+                # Create *cnc_circles*:
+                orient_angle: float = mount.OrientAngle
+                orient_translate: Vector = mount.OrientTranslate
+                cnc_circles: List[FabCircle] = []
+                cnc_circle: FabCircle
+                for solid_center in self.Centers:
+                    solid_circle = FabCircle(solid_plane, solid_center, diameter)
+                    projected_circle = solid_circle.projectToPlane(
+                        solid_plane, tracing=next_tracing)
+                    _, cnc_circle = projected_circle.xyPlaneReorient(
+                        orient_angle, orient_translate, tracing=next_tracing)
+                    cnc_circles.append(cnc_circle)
+
                 # Start with a new *cnc_plane* and *holes_query*:
                 # self.StartDepth = cnc_plane.Distance
                 self.StartDepth = solid_plane.Distance  # TODO: FIX
