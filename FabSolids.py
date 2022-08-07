@@ -1529,6 +1529,17 @@ class Fab_Hole(Fab_Operation):
                 assembly: cq.Assembly = cq.Assembly(
                     cnc_query.WorkPlane, name=step_base_name, color=cq.Color(0.5, 0.5, 0.5, 1.0))
 
+                # Drill the holes:
+                for cnc_circle in cnc_circles:
+                    new_cnc_query.move_to(cnc_circle.Center)  # TODO: Assume +Z axis for now.
+                    new_cnc_query.hole(diameter, depth)
+                self.HolesCount = len(cnc_circles)
+
+                new_assembly: cq.Assembly = cq.Assembly(
+                    new_cnc_query.WorkPlane, name=step_base_name,
+                    color=cq.Color(0.5, 0.5, 0.5, 1.0))
+                _ = new_assembly
+
                 with _suppress_stdout():
                     assembly.save(self.StepFile, "STEP")
 
