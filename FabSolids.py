@@ -862,13 +862,13 @@ class Fab_Extrude(Fab_Operation):
         json_dict: Dict[str, Any] = super().to_json()
         json_dict["StepFile"] = self._StepFile
         json_dict["_Active"] = self.Active
-        json_dict["_ClearanceHeight"] = self._StartDepth + 10.0  # TODO: Fix
+        json_dict["_ClearanceHeight"] = 10.0  # self._StartDepth + 10.0  # TODO: Fix
         json_dict["_CoolantMode"] = coolant_modes[1]  # TODO: Fix
         json_dict["_Direction"] = direction_modes[0]
         json_dict["_FinalDepth"] = self._FinalDepth
-        json_dict["_SafeHeight"] = self._StartDepth + 5.0  # TODO: Fix
+        json_dict["_SafeHeight"] = 5.0  # self._StartDepth + 5.0  # TODO: Fix
         json_dict["_Side"] = side_modes[1]
-        json_dict["_StartDepth"] = self._StartDepth
+        json_dict["_StartDepth"] = 0.0  # TODO: fix: self._StartDepth
         json_dict["_StepDown"] = self._StepDown
         return json_dict
 
@@ -1163,13 +1163,13 @@ class Fab_Pocket(Fab_Operation):
             "Grid", "Line", "Offset", "Spiral", "Triangle", "ZigZag", "ZigZagOffset")
         start_ats: Tuple[str, ...] = ("Center", "Edge")
 
-        start_depth: float = self._StartDepth
+        # start_depth: float = self._StartDepth
         step_down: float = self._StepDown
         final_depth: float = self._FinalDepth
 
         json_dict: Dict[str, Any] = super().to_json()
         json_dict["StepFile"] = str(bottom_path)  # Step file
-        json_dict["_ClearanceHeight"] = start_depth + 10.0  # TODO: Fix
+        json_dict["_ClearanceHeight"] = 10.0  # start_depth + 10.0  # TODO: Fix
         json_dict["_CoolantMode"] = coolant_modes[1]  # TODO: Fix
         json_dict["_CutMode"] = cut_modes[0]  # TODO: Fix
         json_dict["_FinalDepth"] = final_depth  # TODO: Fix  (Lowest Z depth in pocket)
@@ -1177,7 +1177,7 @@ class Fab_Pocket(Fab_Operation):
         json_dict["_KeepToolDown"] = False
         json_dict["_MinTravel"] = False
         json_dict["_OffsetPattern"] = offset_patterns[5]
-        json_dict["_SafeHeight"] = start_depth + 5.0  # TODO: Fix
+        json_dict["_SafeHeight"] = 5.0  # start_depth + 5.0  # TODO: Fix
         json_dict["_StartAt"] = start_ats[0]
         json_dict["_StartDepth"] = 0.0  # TODO: Starting depth of first cut (pocket_top - delta)
         json_dict["_StepDown"] = step_down  # TODO: Incremental Step Down of Tool
@@ -1420,6 +1420,7 @@ class Fab_Hole(Fab_Operation):
             cnc_path: PathFile = produce_state.Steps.activate(step_base_name, self.getHash())
             self.StepFile: str = str(cnc_path)
             if not cnc_path.exists():
+                log_file: IO[str] = open(f"{step_base_name}.log", "w")
                 max_cnc_x: float = 0.0  # mypy requires that min/max_cnc_x/y be initialized.  Why?
                 min_cnc_x: float = 0.0
                 max_cnc_y: float = 0.0
@@ -1438,6 +1439,7 @@ class Fab_Hole(Fab_Operation):
                     min_cnc_x = cnc_x if index == 0 else min(min_cnc_x, cnc_x)
                     max_cnc_y = cnc_y if index == 0 else max(max_cnc_y, cnc_y)
                     min_cnc_y = cnc_y if index == 0 else min(min_cnc_y, cnc_y)
+                log_file.write(f"{min_cnc_x=} {max_cnc_x=} {min_cnc_y=} {max_cnc_y=}\n")
 
                 # Compute bound enclosure solid corners:
                 extra: float = diameter
@@ -1450,6 +1452,7 @@ class Fab_Hole(Fab_Operation):
                 # Create *cnc_circles*:
                 orient_angle: float = mount.OrientAngle
                 orient_translate: Vector = mount.OrientTranslate
+                log_file.write(f"{math.degrees(orient_angle)=:.3f} {orient_translate=}\n")
                 cnc_circles: List[FabCircle] = []
                 cnc_circle: FabCircle
                 for solid_center in self.Centers:
@@ -1473,6 +1476,8 @@ class Fab_Hole(Fab_Operation):
                     new_min_cnc_x = cnc_x if index == 0 else min(new_min_cnc_x, cnc_x)
                     new_max_cnc_y = cnc_y if index == 0 else max(new_max_cnc_y, cnc_y)
                     new_min_cnc_y = cnc_y if index == 0 else min(new_min_cnc_y, cnc_y)
+                log_file.write(f"{new_min_cnc_x=} {new_max_cnc_x=} "
+                               f"{new_min_cnc_y=} {new_max_cnc_y=}\n")
 
                 # Compute bound enclosure solid corners:
                 new_enclose_ne: Vector = Vector(new_max_cnc_x + extra, new_max_cnc_y + extra, z)
@@ -1503,7 +1508,7 @@ class Fab_Hole(Fab_Operation):
                 # Start with a new *cnc_plane* and *holes_query*:
                 # self.StartDepth = cnc_plane.Distance
                 self.StartDepth = solid_plane.Distance  # TODO: FIX
-                new_cnc_contact: Vector = Vector(0.0, 0.0, self.StartDepth)
+                new_cnc_contact: Vector = Vector(0.0, 0.0, 0.0)  # TODO: Fix self.StartDepth)
                 new_cnc_plane: FabPlane = FabPlane(new_cnc_contact, z_axis)
                 new_cnc_query: Fab_Query = Fab_Query(new_cnc_plane)
                 self.StartDepth = new_cnc_plane.Distance  # TODO: This needs to be fixed.
@@ -1528,6 +1533,7 @@ class Fab_Hole(Fab_Operation):
 
                 assembly: cq.Assembly = cq.Assembly(
                     cnc_query.WorkPlane, name=step_base_name, color=cq.Color(0.5, 0.5, 0.5, 1.0))
+                _ = assembly
 
                 # Drill the holes:
                 for cnc_circle in cnc_circles:
@@ -1541,7 +1547,9 @@ class Fab_Hole(Fab_Operation):
                 _ = new_assembly
 
                 with _suppress_stdout():
-                    assembly.save(self.StepFile, "STEP")
+                    new_assembly.save(self.StepFile, "STEP")
+
+                log_file.close()
 
             # Select the appropriate shop bit:
             selected_shop_bit: Optional[Fab_ShopBit] = self.SelectedShopBit
@@ -1565,21 +1573,21 @@ class Fab_Hole(Fab_Operation):
     # Fab_Hole.to_json():
     def to_json(self) -> Dict[str, Any]:
         """Return the FabHole JSON."""
-        start_depth: float = self.StartDepth
+        # start_depth: float = self.StartDepth
         extra_offset_modes: Tuple[str, ...] = ("2x Drill Tip", "Drill Tip", "None")
         json_dict: Dict[str, Any] = super().to_json()
         json_dict["HolesCount"] = self.HolesCount
         json_dict["StepFile"] = self.StepFile
         json_dict["ToolControllerIndex"] = 1  # TODO Fix
         json_dict["_Active"] = True
-        json_dict["_ClearanceHeight"] = self.StartDepth + 1.0  # TODO: Fix
+        json_dict["_ClearanceHeight"] = 10.0  # self.StartDepth + 10.0  # TODO: Fix
         json_dict["_CoolantMode"] = "Flood"  # TODO: Fix
         json_dict["_ExtraOffset"] = extra_offset_modes[2]
-        json_dict["_FinalDepth"] = self.StartDepth - self.Depth
+        json_dict["_FinalDepth"] = -self.Depth  # TODO: fixself.StartDepth - self.Depth
         json_dict["_PeckDepth"] = 2.0  # TODO: Fix
         json_dict["_PeckEnabled"] = False
-        json_dict["_SafeHeight"] = start_depth + 5.0  # TODO: Fix
-        json_dict["_StartDepth"] = start_depth
+        json_dict["_SafeHeight"] = 5.0  # start_depth + 5.0  # TODO: Fix
+        json_dict["_StartDepth"] = 0.0  # TODO: Fix start_depth
 
         return json_dict
 
