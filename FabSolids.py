@@ -1420,39 +1420,9 @@ class Fab_Hole(Fab_Operation):
             cnc_path: PathFile = produce_state.Steps.activate(step_base_name, self.getHash())
             self.StepFile: str = str(cnc_path)
             if not cnc_path.exists():
-                log_file: IO[str] = open(f"{step_base_name}.log", "w")
-                max_cnc_x: float = 0.0  # mypy requires that min/max_cnc_x/y be initialized.  Why?
-                min_cnc_x: float = 0.0
-                max_cnc_y: float = 0.0
-                min_cnc_y: float = 0.0
-                for index, solid_center in enumerate(self.Centers):
-                    solid_circle = FabCircle(solid_plane, solid_center, diameter)
-                    projected_circle = solid_circle.projectToPlane(
-                        solid_plane, tracing=next_tracing)
-                    projected_center = projected_circle.Center
-                    rotated_center = solid_plane.rotateToZAxis(
-                        projected_center, tracing=next_tracing)
-
-                    cnc_x: float = projected_center.x
-                    cnc_y: float = projected_center.y
-                    max_cnc_x = cnc_x if index == 0 else max(max_cnc_x, cnc_x)
-                    min_cnc_x = cnc_x if index == 0 else min(min_cnc_x, cnc_x)
-                    max_cnc_y = cnc_y if index == 0 else max(max_cnc_y, cnc_y)
-                    min_cnc_y = cnc_y if index == 0 else min(min_cnc_y, cnc_y)
-                log_file.write(f"{min_cnc_x=} {max_cnc_x=} {min_cnc_y=} {max_cnc_y=}\n")
-
-                # Compute bound enclosure solid corners:
-                extra: float = diameter
-                z: float = 0.0  # *z* is ignored.
-                enclose_ne: Vector = Vector(max_cnc_x + extra, max_cnc_y + extra, z)
-                enclose_nw: Vector = Vector(min_cnc_x - extra, max_cnc_y + extra, z)
-                enclose_sw: Vector = Vector(min_cnc_x - extra, min_cnc_y - extra, z)
-                enclose_se: Vector = Vector(max_cnc_x + extra, min_cnc_y - extra, z)
-
                 # Create *cnc_circles*:
                 orient_angle: float = mount.OrientAngle
                 orient_translate: Vector = mount.OrientTranslate
-                log_file.write(f"{math.degrees(orient_angle)=:.3f} {orient_translate=}\n")
                 cnc_circles: List[FabCircle] = []
                 cnc_circle: FabCircle
                 for solid_center in self.Centers:
@@ -1476,34 +1446,14 @@ class Fab_Hole(Fab_Operation):
                     new_min_cnc_x = cnc_x if index == 0 else min(new_min_cnc_x, cnc_x)
                     new_max_cnc_y = cnc_y if index == 0 else max(new_max_cnc_y, cnc_y)
                     new_min_cnc_y = cnc_y if index == 0 else min(new_min_cnc_y, cnc_y)
-                log_file.write(f"{new_min_cnc_x=} {new_max_cnc_x=} "
-                               f"{new_min_cnc_y=} {new_max_cnc_y=}\n")
 
                 # Compute bound enclosure solid corners:
+                extra: float = diameter
+                z: float = 0.0  # *z* is ignored.
                 new_enclose_ne: Vector = Vector(new_max_cnc_x + extra, new_max_cnc_y + extra, z)
                 new_enclose_nw: Vector = Vector(new_min_cnc_x - extra, new_max_cnc_y + extra, z)
                 new_enclose_sw: Vector = Vector(new_min_cnc_x - extra, new_min_cnc_y - extra, z)
                 new_enclose_se: Vector = Vector(new_max_cnc_x + extra, new_min_cnc_y - extra, z)
-
-                # Start with a new *cnc_plane* and *holes_query*:
-                # self.StartDepth = cnc_plane.Distance
-                self.StartDepth = solid_plane.Distance  # TODO: FIX
-                cnc_contact: Vector = Vector(0.0, 0.0, self.StartDepth)
-                cnc_plane: FabPlane = FabPlane(cnc_contact, z_axis)
-                cnc_query: Fab_Query = Fab_Query(cnc_plane)
-                self.StartDepth = cnc_plane.Distance  # TODO: This needs to be fixed.
-
-                # Create the enclosing extrusion:
-                cnc_query.copy_workplane(cnc_plane, tracing=next_tracing)
-                cnc_query.move_to(enclose_ne)
-                cnc_query.line_to(enclose_nw)
-                cnc_query.line_to(enclose_sw)
-                cnc_query.line_to(enclose_se)
-                cnc_query.line_to(enclose_ne)
-                cnc_query.close()
-                # The + 1.0mm ensures that there is always a bottom face at the hole bottom.
-                # Thus there are no through holes in the final drilled extrusion.
-                cnc_query.extrude(depth + 1.0)  # TODO: 1.0 may be too high.  Use depth/100.0?
 
                 # Start with a new *cnc_plane* and *holes_query*:
                 # self.StartDepth = cnc_plane.Distance
@@ -1526,16 +1476,6 @@ class Fab_Hole(Fab_Operation):
                 new_cnc_query.extrude(depth + 1.0)  # TODO: 1.0 may be too high.  Use depth/100.0?
 
                 # Drill the holes:
-                for center in self.Centers:
-                    cnc_query.move_to(center)  # TODO: Assume +Z axis for now.
-                    cnc_query.hole(diameter, depth)
-                self.HolesCount = len(self.Centers)
-
-                assembly: cq.Assembly = cq.Assembly(
-                    cnc_query.WorkPlane, name=step_base_name, color=cq.Color(0.5, 0.5, 0.5, 1.0))
-                _ = assembly
-
-                # Drill the holes:
                 for cnc_circle in cnc_circles:
                     new_cnc_query.move_to(cnc_circle.Center)  # TODO: Assume +Z axis for now.
                     new_cnc_query.hole(diameter, depth)
@@ -1548,8 +1488,6 @@ class Fab_Hole(Fab_Operation):
 
                 with _suppress_stdout():
                     new_assembly.save(self.StepFile, "STEP")
-
-                log_file.close()
 
             # Select the appropriate shop bit:
             selected_shop_bit: Optional[Fab_ShopBit] = self.SelectedShopBit
