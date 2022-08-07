@@ -1066,10 +1066,37 @@ class FabCQtoFC(object):
         # job.Placement.translate(Vector(150.0, 0.0, 0.0))
         # job.Placement.Rotation = Rotation(Vector(0.0, 0.0, 1.0), Vector(1.0, 0.0, 0.0))
 
-        # TODO: Create a setupsheet and install it into the job.
+        # TODO: Create a setup sheet and install it into the job.
         # setup_sheet: PathSetupSheet.SetupSheet = PathSetupSheet.Create()
         # job.SetupSheet = setup_sheet
         gcode_path: str = f"/tmp/{job_name}.ngc"
+        # From [FreeCAD Path Forum: Path Scriptabilty an example]
+        # (https://forum.freecadweb.org/viewtopic.php?f=15&t=64624)
+        setup_sheet: Any = job.SetupSheet
+        setup_sheet.ClearanceHeightExpression = ""
+        setup_sheet.ClearanceHeightExpression = "10 mm"
+        setup_sheet.FinalDepthExpression = ""
+        setup_sheet.FinalDepthExpression = "-10 mm"
+        setup_sheet.SafeHeightExpression = ""
+        setup_sheet.SafeHeightExpression = "5 mm"
+        setup_sheet.StartDepthExpression = ""
+        setup_sheet.StartDepthExpression = "0 mm"
+        setup_sheet.StepDownExpression = ""
+        setup_sheet.StepDownExpression = "3 mm"
+
+        setup_sheet.Label = "Custom SetupSheet"
+        setup_sheet.HorizRapid = "10 mm/s"
+        setup_sheet.VertRapid = "10 mm/s"
+
+        doc_file: IO[str]
+        with open("/tmp/cnc.doc", "w") as doc_file:
+            doc_file.write("dir(job):\n")
+            doc_file.write("\n".join(dir(job)))
+            doc_file.write("\n\n\n")
+            doc_file.write("\ndir(job.SetupSheet):\n")
+            doc_file.write("\n".join(dir(job.SetupSheet)))
+            doc_file.write("\n\n\n")
+
         job.PostProcessorOutputFile = gcode_path
         job.PostProcessor = 'linuxcnc'
         job.PostProcessorArgs = '--no-show-editor'
