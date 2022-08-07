@@ -5,7 +5,7 @@
 
 # Python library imports:
 from dataclasses import dataclass, field
-from typing import Any, cast, List, Set, Tuple
+from typing import Any, cast, List, Optional, Set, Tuple
 from pathlib import Path as PathFile
 
 # CadQuery library imports:
@@ -111,7 +111,7 @@ class BoxSide(FabSolid):
         )
 
         polygon: FabPolygon = FabPolygon(plane, corners)
-        mount.extrude(f"{name}Extrude", polygon, depth, contour=self.Contour)
+        mount.extrude(f"{name}Extrude", polygon, depth, debug=True, contour=self.Contour)
 
         # Create all of the *screws*:
         del screws[:]
@@ -183,13 +183,13 @@ class Box(FabAssembly):
     Thickness: float
     Material: FabMaterial = FabMaterial(("Plasitic", "HDPE"), "white")
     Center: Vector = Vector()
-
-    Top: BoxSide = field(init=False, repr=False)
-    Bottom: BoxSide = field(init=False, repr=False)
-    North: BoxSide = field(init=False, repr=False)
-    South: BoxSide = field(init=False, repr=False)
-    East: BoxSide = field(init=False, repr=False)
-    West: BoxSide = field(init=False, repr=False)
+    Enabled: str = field(init=False, repr=False)
+    Top: Optional[BoxSide] = field(init=False, repr=False)
+    Bottom: Optional[BoxSide] = field(init=False, repr=False)
+    North: Optional[BoxSide] = field(init=False, repr=False)
+    South: Optional[BoxSide] = field(init=False, repr=False)
+    East: Optional[BoxSide] = field(init=False, repr=False)
+    West: Optional[BoxSide] = field(init=False, repr=False)
     Fasten: FabFasten = field(init=False, repr=False)
 
     # Box.__post_init__():
@@ -205,18 +205,27 @@ class Box(FabAssembly):
         x_axis: Vector = Vector(1, 0, 0)
         y_axis: Vector = Vector(0, 1, 0)
         z_axis: Vector = Vector(0, 0, 1)
-        self.Top = BoxSide("Top", self, Normal=z_axis, Orient=y_axis,
-                           Depth=depth, Material=material, Color="lime", Contour=True)
-        self.Bottom = BoxSide("Bottom", self, Normal=-z_axis, Orient=y_axis,
-                              Depth=depth, Material=material, Color="green")
-        self.North = BoxSide("North", self, Normal=y_axis, Orient=-z_axis,
-                             Depth=depth, Material=material, Color="orange")
-        self.South = BoxSide("South", self, Normal=-y_axis, Orient=z_axis,
-                             Depth=depth, Material=material, Color="yellow")
-        self.East = BoxSide("East", self, Normal=x_axis, Orient=y_axis,
-                            Depth=depth, Material=material, Color="pink")
-        self.West = BoxSide("West", self, Normal=-x_axis, Orient=y_axis,
-                            Depth=depth, Material=material, Color="cyan")
+
+        enabled: str = "TBNSEW"
+        self.Enabled = enabled
+        self.Top = (None if "T" not in enabled else
+                    BoxSide("Top", self, Normal=z_axis, Orient=y_axis,
+                            Depth=depth, Material=material, Color="lime", Contour=True))
+        self.Bottom = (None if "B" not in enabled else
+                       BoxSide("Bottom", self, Normal=-z_axis, Orient=y_axis,
+                               Depth=depth, Material=material, Color="green"))
+        self.North = (None if "N" not in enabled else
+                      BoxSide("North", self, Normal=y_axis, Orient=-z_axis,
+                              Depth=depth, Material=material, Color="orange"))
+        self.South = (None if "S" not in enabled else
+                      BoxSide("South", self, Normal=-y_axis, Orient=z_axis,
+                              Depth=depth, Material=material, Color="yellow"))
+        self.East = (None if "E" not in enabled else
+                     BoxSide("East", self, Normal=x_axis, Orient=y_axis,
+                             Depth=depth, Material=material, Color="pink"))
+        self.West = (None if "W" not in enabled else
+                     BoxSide("West", self, Normal=-x_axis, Orient=y_axis,
+                             Depth=depth, Material=material, Color="cyan"))
         # self.Fasten = FabFasten("BoxFasten", "M3x.5", ())  # No options yet.
         self.Fasten = FabFasten("BoxFasten", "#4-40", ())  # No options yet.
 
@@ -252,35 +261,41 @@ class Box(FabAssembly):
         dwyv: Vector = Vector(0, dw, 0)
         dwzv: Vector = Vector(0, 0, dw)
 
-        top: BoxSide = cast(BoxSide, self.Top)  # TODO Remove casts's
-        top.Contact = center + dzv
-        top.HalfLength = dyv
-        top.HalfWidth = dxv
+        top: Optional[BoxSide] = self.Top
+        if top is not None:
+            top.Contact = center + dzv
+            top.HalfLength = dyv
+            top.HalfWidth = dxv
 
-        bottom: BoxSide = cast(BoxSide, self.Bottom)
-        bottom.Contact = center - dzv
-        bottom.HalfLength = dyv
-        bottom.HalfWidth = dxv
+        bottom: Optional[BoxSide] = self.Bottom
+        if bottom is not None:
+            bottom.Contact = center - dzv
+            bottom.HalfLength = dyv
+            bottom.HalfWidth = dxv
 
-        north: BoxSide = cast(BoxSide, self.North)
-        north.Contact = center + dyv
-        north.HalfLength = dxv
-        north.HalfWidth = dzv - dwzv
+        north: Optional[BoxSide] = self.North
+        if north is not None:
+            north.Contact = center + dyv
+            north.HalfLength = dxv
+            north.HalfWidth = dzv - dwzv
 
-        south: BoxSide = cast(BoxSide, self.South)
-        south.Contact = center - dyv
-        south.HalfLength = dxv
-        south.HalfWidth = dzv - dwzv
+        south: Optional[BoxSide] = self.South
+        if south is not None:
+            south.Contact = center - dyv
+            south.HalfLength = dxv
+            south.HalfWidth = dzv - dwzv
 
-        east: BoxSide = cast(BoxSide, self.East)
-        east.Contact = center + dxv
-        east.HalfLength = dyv - dwyv
-        east.HalfWidth = dzv - dwzv
+        east: Optional[BoxSide] = self.East
+        if east is not None:
+            east.Contact = center + dxv
+            east.HalfLength = dyv - dwyv
+            east.HalfWidth = dzv - dwzv
 
-        west: BoxSide = cast(BoxSide, self.West)
-        west.Contact = center - dxv
-        west.HalfLength = dyv - dwyv
-        west.HalfWidth = dzv - dwzv
+        west: Optional[BoxSide] = self.West
+        if west is not None:
+            west.Contact = center - dxv
+            west.HalfLength = dyv - dwyv
+            west.HalfWidth = dzv - dwzv
 
         if tracing:
             print(f"{tracing}<=Box({self.Label}.produce())")
@@ -289,10 +304,14 @@ class Box(FabAssembly):
     def get_all_screws(self) -> Tuple[FabJoin, ...]:
         """Return all Box screws."""
         screws: List[FabJoin] = []
-        screws.extend(self.Top.Screws)
-        screws.extend(self.Bottom.Screws)
-        screws.extend(self.North.Screws)
-        screws.extend(self.South.Screws)
+        if self.Top is not None:
+            screws.extend(self.Top.Screws)
+        if self.Bottom is not None:
+            screws.extend(self.Bottom.Screws)
+        if self.North is not None:
+            screws.extend(self.North.Screws)
+        if self.South is not None:
+            screws.extend(self.South.Screws)
         return tuple(screws)
 
 
@@ -426,17 +445,21 @@ class TestSolid(FabSolid):
 class TestAssembly(FabAssembly):
     """TestAssembly: A Class to test an assembly."""
 
-    Solid: TestSolid = field(init=False, repr=False, default=cast(TestSolid, None))
-    Box: Box = field(init=False, repr=False, default=cast(Box, None))
+    # Solid: Optional[TestSolid] = field(init=False, repr=False)
+    TestSolid: Optional["TestSolid"] = field(init=False, repr=False)
+    Box: Optional["Box"] = field(init=False, repr=False)
 
     # TestAssembly.__post_init__():
     def __post_init__(self):
         """Initialize Test Assembly."""
         super().__post_init__()
+        enabled: Set[str] = {"box", "test_solid"}
         material: FabMaterial = FabMaterial(("Plastic", "HDPE"), "red")
-        self.Solid = TestSolid("TestSolid", self, material, "red")
+        self.Solid = (None if "test_solid" not in enabled else
+                      TestSolid("TestSolid", self, material, "red"))
         center: Vector = Vector(0, 0, -100.0)
-        self.Box = Box("TestBox", self, 200.0, 150.0, 75.0, 6.0, material, center)
+        self.Box = (None if "box" not in enabled else
+                    Box("TestBox", self, 200.0, 150.0, 75.0, 6.0, material, center))
 
 
 # TestDocument:

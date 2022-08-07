@@ -1409,7 +1409,7 @@ class Fab_Hole(Fab_Operation):
 
         # Create a new solid that encloses all of the holes:
         z_axis: Vector = Vector(0.0, 0.0, 1.0)
-        if (solid_plane.UnitNormal - z_axis).Length > 1.0e-8:  # TODO: ENABLE off Z axis holes.
+        if False or (solid_plane.UnitNormal - z_axis).Length > 1.0e-8:
             self.JsonEnabled = False
         else:
             # Collect the min/max x/y of the each *rotated_center* and drill the holes :
