@@ -28,7 +28,7 @@ This internal classes are managed by FabMount methods.
   * 2.5 [pre_produce()](#fabsolids----pre-produce): Perform FabSolid pre production.
   * 2.6 [post_produce1()](#fabsolids----post-produce1): Perform FabSolid pre production.
   * 2.7 [getHash()](#fabsolids----gethash): Return FabSolid hash.
-  * 2.8 [mount()](#fabsolids----mount): Add a new FabMount to ae FabSolid.
+  * 2.8 [mount()](#fabsolids----mount): Add a new FabMount to a FabSolid.
   * 2.9 [drill_joins()](#fabsolids----drill-joins): Apply drill FabJoin holes for a FabSolid.
   * 2.10 [post_produce2()](#fabsolids----post-produce2): Perform FabSolid Phase2 post production.
 * 3 Class: [FabStock](#fabsolids--fabstock):
@@ -81,17 +81,39 @@ This internal classes are managed by FabMount methods.
 An operations plane that can be oriented for subsequent machine operations.
 This class basically corresponds to a FreeCad Datum Plane.  It is basically the surface
 to which the 2D FabGeometry's are mapped onto prior to performing each operation.
+While this is a public class, it is expected that people will use the FabSolid.mount()
+to actually create a FabMount.
 
-Attributes:
+Constructor Attributes:
 * *Name*: (str): The name of the FabPlane.
 * *Solid*: (FabSolid): The FabSolid to work on.
 * *Contact* (Vector): A point on the mount plane.
 * *Normal* (Vector): A normal to the mount plane
-* *Orient* (Vector):
-  A vector that is projected onto the mount plane to specify orientation
-  when mounted for CNC operations.
+
+
+
 * *Depth* (float): The maximum depth limit for all operations.
+* *OrientStart* (Vector): The starting point of the orientation vector used for CNC operations.
+* *OrientEnd* (Vector): The ending point of the orientation vector used for CNC operations.
 * *WorkPlane* (Fab_Query): The CadQuery workplane wrapper class object.
+
+Constructor:
+* FabMount("Name", Solid, Contact, Normal, Depth, OrientStart, OrientEnd, WorkPlane)
+
+Additional Property Attributes:
+* OrientAngle (float):
+  The amount the part is rotated to align the orient vector with the CNC +X axis.
+  This angle is applied after the mount plane has been rotated to be parallel with CNC XY plane.
+* OrientTranslate (float):
+  The amount the part is translated to get the origin to match CNC origin.
+  This translation is applied after the mount plane has been rotated to be parallel with
+  CNC XY plane.
+
+The orient vector is used to ensure that a part is properly oriented on a CNC machine
+prior to machining.  Is specifies two points called *OrientStart* and *OrientEnd*.
+These two points are first projected onto the mount plane and then the mount plane is
+rotated to align with the CNC XY plane.  The part is rotated on the CNC machine until
+the projected orientation vector points in same the CNC machine +X axis.
 
 ### <a name="fabsolids----lookup-prefix"></a>1.1 `FabMount.`lookup_prefix():
 
@@ -242,14 +264,27 @@ Return FabSolid hash.
 
 FabSolid.mount(self, name: str, plane: FabGeometries.FabPlane, orient: cadquery.occ_impl.geom.Vector, depth: float, tracing: str = '') -> FabSolids.FabMount:
 
-Add a new FabMount to ae FabSolid.
+Add a new FabMount to a FabSolid.
 Arguments:
 * *name* (str): The name of the mount.
 * *plane* (FabPlane): The FabMount plane.
-* *orient* (Vector): The orientation of the FabMount for CNC operations.
+* *depth* (float): The amount of space needed under the mount to perform CNC operations.
+* *orient_start* (Vector):
+  The starting point of the CNC orientation vector.  (See discuss CNC orient vector below.)
+* *orient_end* (Vector):
+  The ending point of the CNC orientation vector.  (See discuss CNC orient vector below.)
 
 Returns:
 * (FabMount): The Resulting FabMount object.
+
+The following steps are performed using *orient_start* and *orient_end*:
+1. A CNC orient vector is computed as *orient_end* - *orient_start*.
+2. The CNC orient vector is projected onto the mount plane.
+3. The mount plane is rotated about the origin to be parallel to the XY plane.
+4. The solid is rotated so that the orient vector points in the same direction as the
+   CNC +X axis.
+Thus, the CNC orientation specifies the solid orientation when it is mounted to the CNC
+table prior to machining.
 
 ### <a name="fabsolids----drill-joins"></a>2.9 `FabSolid.`drill_joins():
 
