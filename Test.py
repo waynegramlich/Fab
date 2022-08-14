@@ -37,8 +37,6 @@ class BoxSide(FabSolid):
        The center "top" of the side.  (Default: (0, 0, 0))
     * *Normal* (Vector):
       The normal of the side (away from box center). (Default: (0, 0, 1))
-    * *Orient* (Vector):
-      The orientation vector.  (Default: (0, 1, 0))
     * *HalfLength* (Vector):
       A vector of half the length in the length direction. (Default: (1, 0, 0))
     * *HalfWidth* (Vector):
@@ -54,7 +52,6 @@ class BoxSide(FabSolid):
 
     Contact: Vector = Vector()
     Normal: Vector = Vector(0, 0, 1)
-    Orient: Vector = Vector(0, 1, 0)
     HalfLength: Vector = Vector(1, 0, 0)
     HalfWidth: Vector = Vector(0, 1, 0)
     Depth: float = 5.0
@@ -71,7 +68,7 @@ class BoxSide(FabSolid):
             print(f"{tracing}=>BoxSide({self.Label}).__post_init__()")
             print(f"{tracing}{self.Contact=}")
             print(f"{tracing}{self.Normal=}")
-            print(f"{tracing}{self.Orient=}")
+            # print(f"{tracing}{self.Orient=}")
             print(f"{tracing}=>BoxSide({self.Label}).__post_init__()")
         self.Screws = []
 
@@ -90,19 +87,26 @@ class BoxSide(FabSolid):
         contact: Vector = self.Contact
         copy: Vector = Vector()
         depth: float = self.Depth
-        normal_direction: Vector = self.Normal / self.Normal.Length
-        length_direction: Vector = self.HalfLength / self.HalfLength.Length
+
+        normal: Vector = self.Normal
+        normal_direction: Vector = normal / normal.Length
+
+        half_length: Vector = self.HalfLength
+        length_direction: Vector = self.HalfLength / half_length.Length
         length: float = self.HalfLength.Length
-        width_direction: Vector = self.HalfWidth / self.HalfWidth.Length
+
+        half_width: Vector = self.HalfWidth
+        width_direction: Vector = half_width / half_width.Length
         width: float = self.HalfWidth.Length
 
         # Extrude the side:
-        half_length: Vector = self.HalfLength
-        half_width: Vector = self.HalfWidth
         radius: float = 0.5
         all_screws: Tuple[FabJoin, ...] = box.get_all_screws()
         plane: FabPlane = FabPlane(contact, self.Normal)
-        mount: FabMount = self.mount(f"{name}FaceMount", plane, depth, self.Orient, self.Orient)
+        orient_start: Vector = self.Contact
+        orient_end: Vector = half_length if length > width else half_width
+
+        mount: FabMount = self.mount(f"{name}FaceMount", plane, depth, orient_start, orient_end)
         corners: Tuple[Vector, ...] = (
             (contact + half_length + half_width, radius),
             (contact + half_length - half_width, radius),
@@ -137,7 +141,7 @@ class BoxSide(FabSolid):
             random_orient: Vector = (self.Normal + copy).cross(direction + copy)
             plane = FabPlane(contact + direction, edge_normal)
             edge_mount: FabMount = self.mount(
-                f"{name}Edge{edge_index}Mount", plane, depth, random_orient, random_orient)
+                f"{name}Edge{edge_index}Mount", plane, depth, contact, contact + random_orient)
             edge_mounts.append(edge_mount)
             edge_index += 1
         if self.Drill:
@@ -209,22 +213,22 @@ class Box(FabAssembly):
         enabled: str = "TBNSEW"
         self.Enabled = enabled
         self.Top = (None if "T" not in enabled else
-                    BoxSide("Top", self, Normal=z_axis, Orient=y_axis,
+                    BoxSide("Top", self, Normal=z_axis,
                             Depth=depth, Material=material, Color="lime", Contour=True))
         self.Bottom = (None if "B" not in enabled else
-                       BoxSide("Bottom", self, Normal=-z_axis, Orient=y_axis,
+                       BoxSide("Bottom", self, Normal=-z_axis,
                                Depth=depth, Material=material, Color="green", Contour=True))
         self.North = (None if "N" not in enabled else
-                      BoxSide("North", self, Normal=y_axis, Orient=-z_axis,
+                      BoxSide("North", self, Normal=y_axis,
                               Depth=depth, Material=material, Color="orange", Contour=False))
         self.South = (None if "S" not in enabled else
-                      BoxSide("South", self, Normal=-y_axis, Orient=z_axis,
+                      BoxSide("South", self, Normal=-y_axis,
                               Depth=depth, Material=material, Color="yellow", Contour=False))
         self.East = (None if "E" not in enabled else
-                     BoxSide("East", self, Normal=x_axis, Orient=y_axis,
+                     BoxSide("East", self, Normal=x_axis,
                              Depth=depth, Material=material, Color="pink", Contour=False))
         self.West = (None if "W" not in enabled else
-                     BoxSide("West", self, Normal=-x_axis, Orient=y_axis,
+                     BoxSide("West", self, Normal=-x_axis,
                              Depth=depth, Material=material, Color="cyan", Contour=False))
         # self.Fasten = FabFasten("BoxFasten", "M3x.5", ())  # No options yet.
         self.Fasten = FabFasten("BoxFasten", "#4-40", ())  # No options yet.
@@ -353,7 +357,8 @@ class TestSolid(FabSolid):
         dt: Vector = self.DT
         de: Vector = self.DE
         top_plane: FabPlane = FabPlane(top_origin, dt)
-        top_mount: FabMount = self.mount("Top", top_plane, depth, de, de, tracing=tracing)
+        top_mount: FabMount = self.mount(
+            "Top", top_plane, depth, de, top_origin + de, tracing=tracing)
 
         wx: float = -40.0
         ex: float = 40.0
@@ -430,9 +435,10 @@ class TestSolid(FabSolid):
             north_end: Vector = self.C
             n: Vector = self.N
             dn: Vector = self.DN
-            dy: Vector = self.YMax - self.YMin  # FIXME: use self.DY instead.
+            dy: Vector = self.DY
             north_plane: FabPlane = FabPlane(n, dn)
-            north_mount: FabMount = self.mount("NorthX", north_plane, dy, de, de, tracing=tracing)
+            north_mount: FabMount = self.mount(
+                "NorthX", north_plane, dy, n, n + de, tracing=tracing)
             self.ScrewN: FabJoin = FabJoin("ScrewN", self.I4_40Fasten, north_start, north_end)
             north_mount.drill_joins("ScrewN", (self.ScrewN,), tracing=next_tracing)
 

@@ -67,8 +67,6 @@ Additional Constructor Attributes:
    The center "top" of the side.  (Default: (0, 0, 0))
 * *Normal* (Vector):
   The normal of the side (away from box center). (Default: (0, 0, 1))
-* *Orient* (Vector):
-  The orientation vector.  (Default: (0, 1, 0))
 * *HalfLength* (Vector):
   A vector of half the length in the length direction. (Default: (1, 0, 0))
 * *HalfWidth* (Vector):
