@@ -2338,8 +2338,8 @@ class FabSolid(FabNode):
         return tuple(hashes)
 
     # FabSolid.mount():
-    def mount(self, name: str, plane: FabPlane, orient: Vector,
-              depth: float, tracing: str = "") -> FabMount:
+    def mount(self, name: str, plane: FabPlane, depth: float,
+              orient: Vector, tracing: str = "") -> FabMount:
         """Add a new FabMount to a FabSolid.
 
         Arguments:
@@ -2366,6 +2366,7 @@ class FabSolid(FabNode):
         """
         if tracing:
             print(f"{tracing}=>FabSolid({self.Label}).mount('{name}', ...)")
+        assert check_argument_types()
 
         mounts: List[FabMount] = self._Mounts
         self.LastMountPrefix = None

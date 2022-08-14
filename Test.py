@@ -102,7 +102,7 @@ class BoxSide(FabSolid):
         radius: float = 0.5
         all_screws: Tuple[FabJoin, ...] = box.get_all_screws()
         plane: FabPlane = FabPlane(contact, self.Normal)
-        mount: FabMount = self.mount(f"{name}FaceMount", plane, self.Orient, depth)
+        mount: FabMount = self.mount(f"{name}FaceMount", plane, depth, self.Orient)
         corners: Tuple[Vector, ...] = (
             (contact + half_length + half_width, radius),
             (contact + half_length - half_width, radius),
@@ -137,7 +137,7 @@ class BoxSide(FabSolid):
             random_orient: Vector = (self.Normal + copy).cross(direction + copy)
             plane = FabPlane(contact + direction, edge_normal)
             edge_mount: FabMount = self.mount(
-                f"{name}Edge{edge_index}Mount", plane, random_orient, depth)
+                f"{name}Edge{edge_index}Mount", plane, depth, random_orient)
             edge_mounts.append(edge_mount)
             edge_index += 1
         if self.Drill:
@@ -353,7 +353,7 @@ class TestSolid(FabSolid):
         dt: Vector = self.DT
         de: Vector = self.DE
         top_plane: FabPlane = FabPlane(top_origin, dt)
-        top_mount: FabMount = self.mount("Top", top_plane, de, depth, tracing=tracing)
+        top_mount: FabMount = self.mount("Top", top_plane, depth, de, tracing=tracing)
 
         wx: float = -40.0
         ex: float = 40.0
@@ -432,7 +432,7 @@ class TestSolid(FabSolid):
             dn: Vector = self.DN
             dy: Vector = self.YMax - self.YMin  # FIXME: use self.DY instead.
             north_plane: FabPlane = FabPlane(n, dn)
-            north_mount: FabMount = self.mount("NorthX", north_plane, de, dy, tracing=tracing)
+            north_mount: FabMount = self.mount("NorthX", north_plane, dy, de, tracing=tracing)
             self.ScrewN: FabJoin = FabJoin("ScrewN", self.I4_40Fasten, north_start, north_end)
             north_mount.drill_joins("ScrewN", (self.ScrewN,), tracing=next_tracing)
 
