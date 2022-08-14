@@ -213,19 +213,19 @@ class Box(FabAssembly):
                             Depth=depth, Material=material, Color="lime", Contour=True))
         self.Bottom = (None if "B" not in enabled else
                        BoxSide("Bottom", self, Normal=-z_axis, Orient=y_axis,
-                               Depth=depth, Material=material, Color="green"))
+                               Depth=depth, Material=material, Color="green", Contour=True))
         self.North = (None if "N" not in enabled else
                       BoxSide("North", self, Normal=y_axis, Orient=-z_axis,
-                              Depth=depth, Material=material, Color="orange"))
+                              Depth=depth, Material=material, Color="orange", Contour=False))
         self.South = (None if "S" not in enabled else
                       BoxSide("South", self, Normal=-y_axis, Orient=z_axis,
-                              Depth=depth, Material=material, Color="yellow"))
+                              Depth=depth, Material=material, Color="yellow", Contour=False))
         self.East = (None if "E" not in enabled else
                      BoxSide("East", self, Normal=x_axis, Orient=y_axis,
-                             Depth=depth, Material=material, Color="pink"))
+                             Depth=depth, Material=material, Color="pink", Contour=False))
         self.West = (None if "W" not in enabled else
                      BoxSide("West", self, Normal=-x_axis, Orient=y_axis,
-                             Depth=depth, Material=material, Color="cyan"))
+                             Depth=depth, Material=material, Color="cyan", Contour=False))
         # self.Fasten = FabFasten("BoxFasten", "M3x.5", ())  # No options yet.
         self.Fasten = FabFasten("BoxFasten", "#4-40", ())  # No options yet.
 
