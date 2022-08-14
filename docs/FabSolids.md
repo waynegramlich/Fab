@@ -89,6 +89,9 @@ Constructor Attributes:
 * *Solid*: (FabSolid): The FabSolid to work on.
 * *Contact* (Vector): A point on the mount plane.
 * *Normal* (Vector): A normal to the mount plane
+
+
+
 * *Depth* (float): The maximum depth limit for all operations.
 * *OrientStart* (Vector): The starting point of the orientation vector used for CNC operations.
 * *OrientEnd* (Vector): The ending point of the orientation vector used for CNC operations.

@@ -1409,7 +1409,7 @@ class Fab_Hole(Fab_Operation):
 
         # Create a new solid that encloses all of the holes:
         z_axis: Vector = Vector(0.0, 0.0, 1.0)
-        if False and (solid_plane.UnitNormal - z_axis).Length > 1.0e-8:
+        if False or (solid_plane.UnitNormal - z_axis).Length > 1.0e-8:
             self.JsonEnabled = False
         else:
             # Collect the min/max x/y of the each *rotated_center* and drill the holes :
@@ -1544,6 +1544,9 @@ class FabMount(object):
     * *Solid*: (FabSolid): The FabSolid to work on.
     * *Contact* (Vector): A point on the mount plane.
     * *Normal* (Vector): A normal to the mount plane
+
+
+
     * *Depth* (float): The maximum depth limit for all operations.
     * *OrientStart* (Vector): The starting point of the orientation vector used for CNC operations.
     * *OrientEnd* (Vector): The ending point of the orientation vector used for CNC operations.
@@ -1573,9 +1576,8 @@ class FabMount(object):
     _Solid: "FabSolid"
     _Contact: Vector
     _Normal: Vector
-    _Depth: float
     _Orient: Vector
-    _OrientEnd: Vector
+    _Depth: float
     _Query: Fab_Query
     _Operations: List[Fab_Operation] = field(init=False, repr=False)
     _Fence: int = field(init=False, repr=False)  # Used to group operations
@@ -1796,8 +1798,8 @@ class FabMount(object):
                 if len(expanded_mounts) == 0:
                     new_name = f"{self._Name}{len(expanded_mounts)+1:03d}"
                 new_mount: FabMount = FabMount(
-                    new_name, self._Solid, self._Contact, self._Normal, self.Depth,
-                    self._Orient, self._OrientEnd, self._Query)
+                    new_name, self._Solid, self._Contact, self._Normal, self._Orient,
+                    self._Depth, self._Query)
                 new_mount._Operations = copied_operations
                 expanded_mounts.append(new_mount)
 
@@ -2369,7 +2371,7 @@ class FabSolid(FabNode):
         mounts: List[FabMount] = self._Mounts
         self.LastMountPrefix = None
         fab_mount: FabMount = FabMount(
-            name, self, plane.Contact, plane.Normal, depth, orient_start, orient_end, self._Query)
+            name, self, plane.Contact, plane.Normal, orient_start, depth, self._Query)
         mounts.append(fab_mount)
 
         if tracing:
