@@ -262,7 +262,7 @@ Return FabSolid hash.
 
 ### <a name="fabsolids----mount"></a>2.8 `FabSolid.`mount():
 
-FabSolid.mount(self, name: str, plane: FabGeometries.FabPlane, depth: float, orient: cadquery.occ_impl.geom.Vector, tracing: str = '') -> FabSolids.FabMount:
+FabSolid.mount(self, name: str, plane: FabGeometries.FabPlane, depth: float, orient_start: cadquery.occ_impl.geom.Vector, orient_end: cadquery.occ_impl.geom.Vector, tracing: str = '') -> FabSolids.FabMount:
 
 Add a new FabMount to a FabSolid.
 Arguments:

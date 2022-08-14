@@ -2339,7 +2339,7 @@ class FabSolid(FabNode):
 
     # FabSolid.mount():
     def mount(self, name: str, plane: FabPlane, depth: float,
-              orient: Vector, tracing: str = "") -> FabMount:
+              orient_start: Vector, orient_end: Vector, tracing: str = "") -> FabMount:
         """Add a new FabMount to a FabSolid.
 
         Arguments:
@@ -2371,7 +2371,7 @@ class FabSolid(FabNode):
         mounts: List[FabMount] = self._Mounts
         self.LastMountPrefix = None
         fab_mount: FabMount = FabMount(
-            name, self, plane.Contact, plane.Normal, orient, depth, self._Query)
+            name, self, plane.Contact, plane.Normal, orient_start, depth, self._Query)
         mounts.append(fab_mount)
 
         if tracing:
