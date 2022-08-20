@@ -1026,15 +1026,19 @@ class FabCQtoFC(object):
             list, self.key_verify("_Contact", json_dict, list, tree_path, "Solid._Contact"))
         normal_list: List[float] = cast(
             list, self.key_verify("_Normal", json_dict, list, tree_path, "Solid._Normal"))
-        orient_list: List[float] = cast(
+        orient_start_list: List[float] = cast(
             list, self.key_verify("_OrientStart", json_dict, list, tree_path, "Solid._OrientStart"))
+        orient_end_list: List[float] = cast(
+            list, self.key_verify("_OrientEnd", json_dict, list, tree_path, "Solid._OrientEnd"))
         contact: Vector = Vector(contact_list)
         normal = Vector(normal_list)
-        orient: Vector = Vector(orient_list)
+        orient_start: Vector = Vector(orient_start_list)
+        orient_end: Vector = Vector(orient_end_list)
         if indent:
             trace(f"{indent} _Contact: {contact}")
             trace(f"{indent} _Normal: {normal}")
-            trace(f"{indent} _Orient: {orient}")
+            trace(f"{indent} _OrientStart: {orient_start}")
+            trace(f"{indent} _OrientEnd: {orient_end}")
 
         self.flush_job(tracing=next_tracing)  # Force previous job to be done.
 

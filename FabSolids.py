@@ -1908,14 +1908,15 @@ class FabMount(object):
         contact: Vector = self._Contact
         normal: Vector = self._Normal
         orient_start: Vector = self._OrientStart
+        orient_end: Vector = self._OrientStart  # TODO: fix.
         json_dict: Dict[str, Any] = {
             "Kind": "Mount",
             "Label": self.Name,
             # "_Contact": [contact.x, contact.y, contact.z],  # TODO: fix
             "_Contact": [contact.x, contact.y, 0.0],
             "_Normal": [normal.x, normal.y, normal.z],
-            # "_OrientStart": [orient.x, orient.y, orient.z],
             "_OrientStart": [orient_start.x, orient_start.y, 0.0],
+            "_OrientEnd": [orient_end.x, orient_end.y, 0.0],
             "children": json_operations,
         }
         return json_dict
