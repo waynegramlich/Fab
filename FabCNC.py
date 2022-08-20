@@ -1027,7 +1027,7 @@ class FabCQtoFC(object):
         normal_list: List[float] = cast(
             list, self.key_verify("_Normal", json_dict, list, tree_path, "Solid._Normal"))
         orient_list: List[float] = cast(
-            list, self.key_verify("_Orient", json_dict, list, tree_path, "Solid._Orient"))
+            list, self.key_verify("_OrientStart", json_dict, list, tree_path, "Solid._OrientStart"))
         contact: Vector = Vector(contact_list)
         normal = Vector(normal_list)
         orient: Vector = Vector(orient_list)
