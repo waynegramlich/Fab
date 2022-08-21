@@ -5,6 +5,7 @@
 
 # Python library imports:
 from dataclasses import dataclass, field
+from typeguard import check_type
 from typing import Any, cast, List, Optional, Set, Tuple
 from pathlib import Path as PathFile
 
@@ -48,28 +49,38 @@ class BoxSide(FabSolid):
     * *Drill* (bool):
       Force holes to be drilled. (Default: True)
 
+    Constructor:
+    The constructor is largely done using keywords
+    * BoxSide("Name", Parent, Material=..., Color=..., Contact=..., Normal=...,
+              HalfLength=..., HalfWidth=..., Depth=..., Contour=..., Drill=...)
     """
-
     Contact: Vector = Vector()
     Normal: Vector = Vector(0, 0, 1)
     HalfLength: Vector = Vector(1, 0, 0)
     HalfWidth: Vector = Vector(0, 1, 0)
     Depth: float = 5.0
-    Screws: List[FabJoin] = field(init=False, repr=False)
     Contour: bool = False
     Drill: bool = True
+    Screws: List[FabJoin] = field(init=False, repr=False)
 
     # BoxSide.__post_init__():
     def __post_init__(self) -> None:
         """Initialize Box Side."""
         super().__post_init__()
+        check_type("BoxSide.Contact", self.Contact, Vector)
+        check_type("BoxSide.Normal", self.Normal, Vector)
+        check_type("BoxSide.HalfLength", self.HalfLength, Vector)
+        check_type("BoxSide.HalfWidth", self.HalfWidth, Vector)
+        check_type("BoxSide.Depth", self.Depth, float)
+        check_type("BoxSide.Contour", self.Contour, bool)
+        check_type("BoxSide.Drill", self.Drill, bool)
+
         tracing: str = self.Tracing
         if tracing:
             print(f"{tracing}=>BoxSide({self.Label}).__post_init__()")
             print(f"{tracing}{self.Contact=}")
             print(f"{tracing}{self.Normal=}")
-            # print(f"{tracing}{self.Orient=}")
-            print(f"{tracing}=>BoxSide({self.Label}).__post_init__()")
+            print(f"{tracing}<=BoxSide({self.Label}).__post_init__()")
         self.Screws = []
 
     # BoxSide.produce():

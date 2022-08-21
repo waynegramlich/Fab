@@ -78,6 +78,11 @@ Additional Constructor Attributes:
 * *Drill* (bool):
   Force holes to be drilled. (Default: True)
 
+Constructor:
+The constructor is largely done using keywords
+* BoxSide("Name", Parent, Material=..., Color=..., Contact=..., Normal=...,
+          HalfLength=..., HalfWidth=..., Depth=..., Contour=..., Drill=...)
+
 ### <a name="test----produce"></a>2.1 `BoxSide.`produce():
 
 BoxSide.produce(self) -> None:
