@@ -1573,8 +1573,9 @@ class FabMount(object):
     _Solid: "FabSolid"
     _Contact: Vector
     _Normal: Vector
-    _OrientStart: Vector
     _Depth: float
+    _OrientStart: Vector
+    _OrientEnd: Vector
     _Query: Fab_Query
     _Operations: List[Fab_Operation] = field(init=False, repr=False)
     _Fence: int = field(init=False, repr=False)  # Used to group operations
@@ -1602,8 +1603,9 @@ class FabMount(object):
         check_type("FabMount.Solid", self._Solid, FabSolid)
         check_type("FabMount.Contact", self._Contact, Vector)
         check_type("FabMount.Normal", self._Normal, Vector)
-        check_type("FabMount.OrientStart", self._OrientStart, Vector)
         check_type("FabMount.Depth", self._Depth, float)
+        check_type("FabMount.OrientStart", self._OrientStart, Vector)
+        check_type("FabMount.OrientEnd", self._OrientEnd, Vector)
         check_type("FabMount.Query", self._Query, Fab_Query)
 
         copy: Vector = Vector()  # Make private copy of Vector's.
@@ -1614,7 +1616,6 @@ class FabMount(object):
         # Vector metheds like to modify Vector contents; force copies beforehand:
         self._Fence = 0
         self._Plane: FabPlane = FabPlane(self._Contact, self._Normal)  # , tracing=next_tracing)
-        self._OrientStart = self._Plane.projectPoint(self._OrientStart)
         self._GeometryContext = Fab_GeometryContext(self._Plane, self._Query)
         self._AppDatumPlane = None
         self._GuiDatumPlane = None
@@ -1622,11 +1623,11 @@ class FabMount(object):
 
         # Compute the *rotate* angle needed to orient the plane along the +X axis:
         plane: FabPlane = self._Plane
-        orient_start: Vector = self._OrientStart
-        z_aligned_orient: Vector = plane.rotateToZAxis(orient_start)
+        z_aligned_orient_start: Vector = plane.rotateToZAxis(self._OrientStart)
+        z_aligned_orient_end: Vector = plane.rotateToZAxis(self._OrientEnd)
+        z_aligned_orient: Vector = z_aligned_orient_end - z_aligned_orient_start
         # The minus sign is needed to rotate from off +X to align with +X axis:
         self._OrientAngle: float = math.atan2(z_aligned_orient.y, z_aligned_orient.x)
-        self._OrientAngle = 0.0  # TODO: fix!
         self._OrientTranslate: Vector = Vector(0.0, 0.0, 0.0)  # Computed after extrude.
 
         if tracing:
@@ -1675,6 +1676,12 @@ class FabMount(object):
     def OrientStart(self) -> Vector:
         """Return the FabMount Orient Start point."""
         return self._OrientStart + self._Copy  # pragma: no unit cover
+
+    # FabMount.OrientEnd:
+    @property
+    def OrientEnd(self) -> Vector:
+        """Return the FabMount Orient End point."""
+        return self._OrientEnd + self._Copy  # pragma: no unit cover
 
     # FabMount.OrientAngle:
     @property
@@ -1795,8 +1802,8 @@ class FabMount(object):
                 if len(expanded_mounts) == 0:
                     new_name = f"{self._Name}{len(expanded_mounts)+1:03d}"
                 new_mount: FabMount = FabMount(
-                    new_name, self._Solid, self._Contact, self._Normal, self._OrientStart,
-                    self._Depth, self._Query)
+                    new_name, self._Solid, self._Contact, self._Normal, self._Depth,
+                    self._OrientStart, self._OrientEnd, self._Query)
                 new_mount._Operations = copied_operations
                 expanded_mounts.append(new_mount)
 
@@ -1908,15 +1915,16 @@ class FabMount(object):
         contact: Vector = self._Contact
         normal: Vector = self._Normal
         orient_start: Vector = self._OrientStart
-        orient_end: Vector = self._OrientStart  # TODO: fix.
+        orient_end: Vector = self._OrientEnd
+        orient_angle: Vector = self._OrientAngle
         json_dict: Dict[str, Any] = {
             "Kind": "Mount",
             "Label": self.Name,
-            # "_Contact": [contact.x, contact.y, contact.z],  # TODO: fix
-            "_Contact": [contact.x, contact.y, 0.0],
+            "_Contact": [contact.x, contact.y, contact.z],  # TODO: fix
             "_Normal": [normal.x, normal.y, normal.z],
-            "_OrientStart": [orient_start.x, orient_start.y, 0.0],
-            "_OrientEnd": [orient_end.x, orient_end.y, 0.0],
+            "_OrientAngle": math.degrees(orient_angle),
+            "_OrientEnd": [orient_end.x, orient_end.y, orient_end.z],
+            "_OrientStart": [orient_start.x, orient_start.y, orient_start.z],
             "children": json_operations,
         }
         return json_dict
@@ -2369,7 +2377,7 @@ class FabSolid(FabNode):
         mounts: List[FabMount] = self._Mounts
         self.LastMountPrefix = None
         fab_mount: FabMount = FabMount(
-            name, self, plane.Contact, plane.Normal, orient_start, depth, self._Query)
+            name, self, plane.Contact, plane.Normal, depth, orient_start, orient_end, self._Query)
         mounts.append(fab_mount)
 
         if tracing:
