@@ -103,19 +103,19 @@ class BoxSide(FabSolid):
         normal_direction: Vector = normal / normal.Length
 
         half_length: Vector = self.HalfLength
-        length_direction: Vector = self.HalfLength / half_length.Length
-        length: float = self.HalfLength.Length
+        length: float = half_length.Length
+        length_direction: Vector = self.HalfLength / length
 
         half_width: Vector = self.HalfWidth
-        width_direction: Vector = half_width / half_width.Length
-        width: float = self.HalfWidth.Length
+        width: float = half_width.Length
+        width_direction: Vector = half_width / width
 
         # Extrude the side:
         radius: float = 0.5
         all_screws: Tuple[FabJoin, ...] = box.get_all_screws()
         plane: FabPlane = FabPlane(contact, self.Normal)
         orient_start: Vector = self.Contact
-        orient_end: Vector = half_length if length > width else half_width
+        orient_end: Vector = contact + (half_length if length > width else half_width)
 
         mount: FabMount = self.mount(f"{name}FaceMount", plane, depth, orient_start, orient_end)
         corners: Tuple[Vector, ...] = (
