@@ -2345,7 +2345,9 @@ class FabSolid(FabNode):
 
     # FabSolid.mount():
     def mount(self, name: str, plane: FabPlane, depth: float,
-              orient_start: Vector, orient_end: Vector, tracing: str = "") -> FabMount:
+              orient_start: Vector, orient_end: Vector,
+              cnc_origin: Optional[Vector] = None, cnc_orient: Optional[Vector] = None,
+              tracing: str = "") -> FabMount:
         """Add a new FabMount to a FabSolid.
 
         Arguments:
@@ -2356,18 +2358,37 @@ class FabSolid(FabNode):
           The starting point of the CNC orientation vector.  (See discuss CNC orient vector below.)
         * *orient_end* (Vector):
           The ending point of the CNC orientation vector.  (See discuss CNC orient vector below.)
+        * *cnc_origin* (Optional[Vector]):
+          This optionally specifies a point specifies where the CNC origin will occur.  If not
+          specified (i.e. None), the system will attempt go choose a reasonable value.  See CNC
+          Positioning below for more detail.  (Default: None)
+        * *cnc_orient* (Optional[Vector]):
+          This optionally specifies an orientation Vector used to reorient the part for CNC
+          operations.  If not specified (i.e. None), the system will attempt to choose a reasonable
+          value.  See CNC positioning below for more detail. (Default: None)
 
         Returns:
         * (FabMount): The Resulting FabMount object.
 
-        The following steps are performed using *orient_start* and *orient_end*:
-        1. A CNC orient vector is computed as *orient_end* - *orient_start*.
-        2. The CNC orient vector is projected onto the mount plane.
-        3. The mount plane is rotated about the origin to be parallel to the XY plane.
-        4. The solid is rotated so that the orient vector points in the same direction as the
-           CNC +X axis.
-        Thus, the CNC orientation specifies the solid orientation when it is mounted to the CNC
-        table prior to machining.
+        CNC Positioning:
+          *cnc_origin* and *cnc_orient* are used to orient the part in CNC machine frame of
+          reference.  The following steps occur:
+           1. Both points are project onto the mount plane specified by *plane*.
+           2. These points are rotated from *plane* to be parallel to the XY plane.
+           3. The resulting projection of *cnc_origin* is used as the (X, Y) origin for the
+              CNC machine.
+           4. For CNC operations, the part is further rotated around the Z axis so that
+              projected *cnc_orient* is aligned with the +X axis.
+
+           When *cnc_origin* and *cnc_orient* are not specified (i.e. None), the values are
+           determined by the system after the initial extrude() operation occurs.  After the
+           extrude occurs, the resulting bounding box is used.
+           1. The bounding extrude geometry is rotated so that mount plane is parallel to the
+              XY plane.
+           2. The bounding box is computed for this rotated extrude geometry.
+           3. The box is rotated around the +Z axis so that the longest dimension box dimension
+              is along the +X axis.
+           4. The top north east corner of the rotated box (i.e. TNE) is the CNC origin.
 
         """
         if tracing:
