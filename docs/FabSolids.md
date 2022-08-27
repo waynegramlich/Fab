@@ -90,6 +90,10 @@ Constructor Attributes:
 * *Contact* (Vector): A point on the mount plane.
 * *Normal* (Vector): A normal to the mount plane
 * *Depth* (float): The maximum depth limit for all operations.
+* *CNC_Origin*: (Optional[Vector]):
+   The point corresponding to the CNC origin.  See FabSolid.mount() for more details.
+* *CNC_Orient: (Optional[Vector]):
+   The CNC orientation vector.  See FabSolid.mount() for more details.
 * *OrientStart* (Vector): The starting point of the orientation vector used for CNC operations.
 * *OrientEnd* (Vector): The ending point of the orientation vector used for CNC operations.
 * *WorkPlane* (Fab_Query): The CadQuery workplane wrapper class object.

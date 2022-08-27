@@ -1545,6 +1545,10 @@ class FabMount(object):
     * *Contact* (Vector): A point on the mount plane.
     * *Normal* (Vector): A normal to the mount plane
     * *Depth* (float): The maximum depth limit for all operations.
+    * *CNC_Origin*: (Optional[Vector]):
+       The point corresponding to the CNC origin.  See FabSolid.mount() for more details.
+    * *CNC_Orient: (Optional[Vector]):
+       The CNC orientation vector.  See FabSolid.mount() for more details.
     * *OrientStart* (Vector): The starting point of the orientation vector used for CNC operations.
     * *OrientEnd* (Vector): The ending point of the orientation vector used for CNC operations.
     * *WorkPlane* (Fab_Query): The CadQuery workplane wrapper class object.
@@ -1576,6 +1580,8 @@ class FabMount(object):
     _Depth: float
     _OrientStart: Vector
     _OrientEnd: Vector
+    _CNCOrigin: Optional[Vector]
+    _CNCOrient: Optional[Vector]
     _Query: Fab_Query
     _Operations: List[Fab_Operation] = field(init=False, repr=False)
     _Fence: int = field(init=False, repr=False)  # Used to group operations
@@ -1606,6 +1612,8 @@ class FabMount(object):
         check_type("FabMount.Depth", self._Depth, float)
         check_type("FabMount.OrientStart", self._OrientStart, Vector)
         check_type("FabMount.OrientEnd", self._OrientEnd, Vector)
+        check_type("FabMount.CNCOrigin", self._CNCOrigin, Optional[Vector])
+        check_type("FabMount.CNCOrient", self._CNCOrient, Optional[Vector])
         check_type("FabMount.Query", self._Query, Fab_Query)
 
         copy: Vector = Vector()  # Make private copy of Vector's.
@@ -1803,7 +1811,8 @@ class FabMount(object):
                     new_name = f"{self._Name}{len(expanded_mounts)+1:03d}"
                 new_mount: FabMount = FabMount(
                     new_name, self._Solid, self._Contact, self._Normal, self._Depth,
-                    self._OrientStart, self._OrientEnd, self._Query)
+                    self._OrientStart, self._OrientEnd, self._CNCOrigin, self._CNCOrient,
+                    self._Query)
                 new_mount._Operations = copied_operations
                 expanded_mounts.append(new_mount)
 
@@ -2398,7 +2407,8 @@ class FabSolid(FabNode):
         mounts: List[FabMount] = self._Mounts
         self.LastMountPrefix = None
         fab_mount: FabMount = FabMount(
-            name, self, plane.Contact, plane.Normal, depth, orient_start, orient_end, self._Query)
+            name, self, plane.Contact, plane.Normal, depth, orient_start, orient_end,
+            cnc_origin, cnc_orient, self._Query)
         mounts.append(fab_mount)
 
         if tracing:
