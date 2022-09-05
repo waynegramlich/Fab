@@ -216,6 +216,8 @@ Inherited Attributes:
 Attributes:
 * *Material* (str): The material to use.
 * *Color* (str): The color to use.
+* *CNCBox* (Optional[FabBox]):
+  The FabBox the encloses the initial FabSolid extrusion.  (Default: None)
 
 Constructor:
 * FabSolid("Name", Parent, Material, Color)

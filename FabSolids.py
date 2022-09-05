@@ -786,6 +786,12 @@ class Fab_Extrude(Fab_Operation):
         _, cnc_geometry = contour_geometry.xyPlaneReorient(
             orient_angle, cnc_translate, tracing=next_tracing)
 
+        # Compute the CNCBox attribute for the associated FabSolid if one is not already present.
+        if mount.Solid.CNCBox is None:
+            cnc_box: FabBox = rotated_xy_geometry.Box
+            cnc_box.enclose((cnc_geometry.Box,))
+            mount.Solid.CNCBox = cnc_box
+
         cnc_prefix: Fab_Prefix = self.Prefix
         cnc_prefix_text: str = cnc_prefix.to_string()
         cnc_name: str = f"{cnc_prefix_text}__{self.Name}__extrude"
@@ -2130,6 +2136,8 @@ class FabSolid(FabNode):
     Attributes:
     * *Material* (str): The material to use.
     * *Color* (str): The color to use.
+    * *CNCBox* (Optional[FabBox]):
+      The FabBox the encloses the initial FabSolid extrusion.  (Default: None)
 
     Constructor:
     * FabSolid("Name", Parent, Material, Color)
@@ -2145,6 +2153,7 @@ class FabSolid(FabNode):
     _Assembly: Any = field(init=False, repr=False)
     _StepFile: Optional[PathFile] = field(init=False, repr=False)
     _Color: Optional[Tuple[float, ...]] = field(init=False, repr=False)
+    _CNCBox: Optional[FabBox] = field(init=False, repr=False)
     Prefix: Fab_Prefix = field(init=False, repr=False)
     MountOperationPrefixes: Dict[str, Dict[str, Fab_Prefix]] = field(init=False, repr=False)
 
@@ -2170,6 +2179,7 @@ class FabSolid(FabNode):
         self._Assembly = None
         self._StepFile = None
         self._Color = None
+        self._CNCBox = None
         # See FabSolid.lookup_prefix() for an explanation of MountOperationPrefixes.
         self.MountOperationPrefixes = {}
 
@@ -2278,6 +2288,18 @@ class FabSolid(FabNode):
             raise RuntimeError(
                 f"FabSolid.Body({self.Label}).Body(): body not set yet")
         return self._Body
+
+    # FabSolid.CNCBox:
+    @property
+    def CNCBox(self) -> Optional[FabBox]:  # pragma: no unit cover
+        """Return the Box associated with the initial extrusion."""
+        return self._CNCBox
+
+    @CNCBox.setter
+    def CNCBox(self, cnc_box: FabBox) -> None:  # pragma: no unit cover
+        """Set the CNC Box for FabSolid."""
+        assert self._CNCBox is None, "CNCBox is already set"
+        self._CNCBox = cnc_box
 
     # FabSolid.to_json():
     def to_json(self) -> Dict[str, Any]:
