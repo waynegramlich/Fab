@@ -37,7 +37,7 @@ This internal classes are managed by FabMount methods.
   * 4.1 [get_kind()](#fabsolids----get-kind): Return Fab_Extrude kind.
   * 4.2 [getOperationOrder()](#fabsolids----getoperationorder): Return the Fab_OperationOrder for a Fab_Operation.
   * 4.3 [getHash()](#fabsolids----gethash): Return hash for Fab_Extrude operation.
-  * 4.4 [post_produce1()](#fabsolids----post-produce1): Expand simple operations as approprated.
+  * 4.4 [post_produce1()](#fabsolids----post-produce1): Expand simple operations as appropriate.
   * 4.5 [post_produce2()](#fabsolids----post-produce2): Produce the Extrude.
   * 4.6 [to_json()](#fabsolids----to-json): Return JSON dictionary for Fab_Extrude.
 * 5 Class: [Fab_Hole](#fabsolids--fab-hole):
@@ -397,7 +397,7 @@ Return hash for Fab_Extrude operation.
 
 Fab_Extrude.post_produce1(self, produce_state: FabNodes.Fab_ProduceState, expanded_operations: 'List[Fab_Operation]', tracing: str = '') -> None:
 
-Expand simple operations as approprated.
+Expand simple operations as appropriate.
 
 ### <a name="fabsolids----post-produce2"></a>4.5 `Fab_Extrude.`post_produce2():
 

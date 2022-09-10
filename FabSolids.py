@@ -674,7 +674,7 @@ class Fab_Extrude(Fab_Operation):
     def post_produce1(
             self, produce_state: Fab_ProduceState,
             expanded_operations: "List[Fab_Operation]", tracing: str = "") -> None:
-        """Expand simple operations as approprated."""
+        """Expand simple operations as appropriate."""
         tracing = "      "
         # next_tracing: str = tracing + " " if tracing else ""
         if tracing:

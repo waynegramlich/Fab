@@ -27,7 +27,7 @@ Private Classes:
 
 from dataclasses import dataclass, field
 import math
-from typeguard import check_type
+from typeguard import check_argument_types, check_type
 from typing import Any, cast, Callable, List, Optional, Sequence, Tuple, Union
 
 import cadquery as cq  # type: ignore
@@ -86,14 +86,14 @@ class FabPlane(object):
     """FabPlane: An public immutable class specifying a plane via point in the plane and a normal.
 
     Constructor Attributes:
-    * *Contact* (Vector):  Some contact point that anywhere in the plane.
+    * *Contact* (Vector): Some contact point that anywhere in the plane.
     * *Normal* (Vector): The normal to the plane.
 
     Computed Attributes:
     * *UnitNormal* (Vector): The unit normal vector.
     * *Distance* (float): The distance from the origin using normal to a point on the plane.
     * *Origin* (Vector):
-      The location on the plane where the from origin along normal intersects the plane.
+      The location on the plane where the vector from origin along normal intersects the plane.
 
     Constructor:
     * FabPlane(Contact, Normal)
@@ -247,12 +247,24 @@ class FabPlane(object):
 
     # FabPlane.adjust():
     def adjust(self, delta: float) -> "FabPlane":
-        """Return a new FabPlane that has been adjusted up/down the normal by a delta."""
+        """Return a new FabPlane that has been adjusted up/down the normal by a delta.
+
+        Arguments:
+        * delta (float): The amount to move the plane up/down along the normal.
+
+        Returns:
+        * (FabPlane): The new FabPlane that is adjusted up/down along the normal.
+          Note that the contact point for the new FabPlane is moved to be along the normal.
+          Thus, for the returned FabPlane, the Contact and Origin properties are equal.
+          Also, the Normal and UnitNormal properties are equal.
+
+        """
+        assert check_argument_types()
         origin: Vector = self.Origin
         unit_normal: Vector = self.UnitNormal
         new_origin: Vector = origin + delta * unit_normal
         # Both the contact and the normal can be *new_origin*:
-        adjusted_plane: FabPlane = FabPlane(new_origin, new_origin)
+        adjusted_plane: FabPlane = FabPlane(new_origin, unit_normal)
         return adjusted_plane
 
     # FabPlane.CQ_Plane():
@@ -408,6 +420,30 @@ class FabPlane(object):
             print(f"{tracing}<=FabPlane.rotateToZAxis({point})=>{rotated_point}")
         return rotated_point
 
+    # FabPlane.rotateBoxToZAxis():
+    def rotateBoxToZAxis(self, box: FabBox, tracing: str = "") -> FabBox:
+        """Rotate a FabBox around the origin until the plane normal aligns with the +Z axis.
+
+        Arguments:
+        * *point* (Vector): The point to rotate.
+
+        Returns:
+        * (FabBox): The rotated Box.
+
+        """
+        # Extract the 8 box corners:
+        unrotated_corners: Tuple[Vector, ...] = (
+            box.BSE, box.BSW, box.BNE, box.BNW,
+            box.TSE, box.TSW, box.TNE, box.TNW,
+        )
+        corner: Vector
+        rotated_corners: Tuple[Vector, ...] = tuple([
+            self.rotateToZAxis(corner) for corner in unrotated_corners
+        ])
+        rotated_box: FabBox = FabBox()
+        rotated_box.enclose(rotated_corners)
+        return rotated_box
+
     # FabPlane.projectPointToXY():
     def projectPointToXY(self, unrotated_point: Vector) -> Vector:
         """Project a rotated point onto the X/Y plane.
@@ -464,6 +500,59 @@ class FabPlane(object):
             print(f"{tracing}<=FabPlane.xyPlaneReorient(*, "
                   f"{point}, {math.degrees(rotate):.3f}°, {translate})=>*, {translated_point}")
         return translated_plane, translated_point
+
+    # FabPlane._unitTests():
+    @staticmethod
+    def _unitTests(tracing: str = ""):
+        """Run FabPlane unit tests."""
+        # next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabPlane._unitTests()")
+
+        # X/Y plane defined with with contact offset and non unit vector normal:
+        z_axis: Vector = Vector(0.0, 0.0, 1.0)
+        xy_contact: Vector = Vector(1.0, 2.0, 3.0)  # Not (0.0, 0.0, 0.0)
+        xy_normal: Vector = Vector(0.0, 0.0, 2.0)  # Not a unit vectora
+        xy_plane: FabPlane = FabPlane(xy_contact, xy_normal)
+        assert xy_plane.Contact == xy_contact
+        assert xy_plane.Normal == xy_normal
+        assert xy_plane.Distance == 3.0
+        assert xy_plane.UnitNormal == z_axis
+        assert xy_plane.Origin == Vector(0.0, 0.0, 3.0)
+        want_hash: Tuple[str, ...] = (
+            "FabPlane", "1.000000", "2.000000", "3.000000", "0.000000", "0.000000", "2.000000")
+        got_hash: Tuple[str, ...] = xy_plane.getHash()
+        assert want_hash == got_hash, f"\n{want_hash=}\n {got_hash=}"
+        assert xy_plane.projectPoint(Vector(2.0, 3.0, 4.0)) == Vector(2.0, 3.0, 3.0)
+        assert xy_plane.rotateToZAxis(Vector(-1.0, -2.0, -3.0)) == Vector(-1.0, -2.0, -3.0)
+        assert xy_plane.rotateToZAxis(
+            Vector(-1.0, -2.0, -3.0), reversed=True) == Vector(-1.0, -2.0, -3.0)
+
+        # Test rotateBoxToZAxis().
+        box: FabBox = FabBox()
+        box.enclose((Vector(-1.0, -2.0, -3.0), Vector(1.0, 2.0, 3.0)))
+        rotated_box: FabBox = xy_plane.rotateBoxToZAxis(box)
+        assert box.TNE == rotated_box.TNE
+        assert box.BSW == rotated_box.BSW
+
+        # Test adjust() method.
+        adjusted_xy_plane: FabPlane = xy_plane.adjust(-7.0)
+        assert adjusted_xy_plane.Contact == Vector(0.0, 0.0, -4.0)
+        assert adjusted_xy_plane.Normal == z_axis
+        assert adjusted_xy_plane.Distance == -4.0
+        assert adjusted_xy_plane.UnitNormal == z_axis
+        assert adjusted_xy_plane.Origin == Vector(0.0, 0.0, -4.0)
+        assert adjusted_xy_plane.projectPoint(Vector(2.0, 3.0, 4.0)) == Vector(2.0, 3.0, -4.0)
+        assert adjusted_xy_plane.rotateToZAxis(Vector(-1.0, -2.0, -3.0)) == Vector(-1.0, -2.0, -3.0)
+        assert adjusted_xy_plane.rotateToZAxis(
+            Vector(-1.0, -2.0, -3.0), reversed=True) == Vector(-1.0, -2.0, -3.0)
+
+        # Test rotateToZAxis()
+        # Test rotateBoxToZAxis()
+        # Test xyPlaneReorient()
+
+        if tracing:
+            print(f"{tracing}<=FabPlane._unitTests()")
 
 
 # Fab_GeometryContext:
@@ -2711,6 +2800,7 @@ def main(tracing: str = "") -> None:
     next_tracing: str = tracing + " " if tracing else ""
     if tracing:
         print(f"{tracing}=>FabGeometries.main()")
+    FabPlane._unitTests(tracing=next_tracing)
     Fab_Fillet._unitTests(tracing=next_tracing)
     FabCircle._unitTests(tracing=next_tracing)
     FabPolygon._unitTests(tracing=next_tracing)

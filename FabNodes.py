@@ -132,7 +132,7 @@ class FabBox(object):
     _YMax: float = field(init=False, repr=False)
     _ZMax: float = field(init=False, repr=False)
 
-    # FabBox.__init__():
+    # FabBox.__post_init__():
     def __post_init__(self) -> None:
         self._XMin = -1.0
         self._XMax = 1.0

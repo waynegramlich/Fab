@@ -35,8 +35,9 @@ Private Classes:
   * 4.2 [projectPoint()](#fabgeometries----projectpoint): Project a point onto a plane.
   * 4.3 [adjust()](#fabgeometries----adjust): Return a new FabPlane that has been adjusted up/down the normal by a delta.
   * 4.4 [rotateToZAxis()](#fabgeometries----rotatetozaxis): Rotate a point around the origin until the normal aligns with the +Z axis.
-  * 4.5 [projectPointToXY()](#fabgeometries----projectpointtoxy): Project a rotated point onto the X/Y plane.
-  * 4.6 [xyPlaneReorient()](#fabgeometries----xyplanereorient): Return (Plane, Point) that has been reoriented, rotated, translated to an X/Y plane.
+  * 4.5 [rotateBoxToZAxis()](#fabgeometries----rotateboxtozaxis): Rotate a FabBox around the origin until the plane normal aligns with the +Z axis.
+  * 4.6 [projectPointToXY()](#fabgeometries----projectpointtoxy): Project a rotated point onto the X/Y plane.
+  * 4.7 [xyPlaneReorient()](#fabgeometries----xyplanereorient): Return (Plane, Point) that has been reoriented, rotated, translated to an X/Y plane.
 * 5 Class: [FabPolygon](#fabgeometries--fabpolygon):
   * 5.1 [getHash()](#fabgeometries----gethash): Return the FabPolygon Hash.
   * 5.2 [projectToPlane()](#fabgeometries----projecttoplane): Return nre FabPolygon projected onto a plane.
@@ -204,14 +205,14 @@ Constructor:
 
 An public immutable class specifying a plane via point in the plane and a normal.
 Constructor Attributes:
-* *Contact* (Vector):  Some contact point that anywhere in the plane.
+* *Contact* (Vector): Some contact point that anywhere in the plane.
 * *Normal* (Vector): The normal to the plane.
 
 Computed Attributes:
 * *UnitNormal* (Vector): The unit normal vector.
 * *Distance* (float): The distance from the origin using normal to a point on the plane.
 * *Origin* (Vector):
-  The location on the plane where the from origin along normal intersects the plane.
+  The location on the plane where the vector from origin along normal intersects the plane.
 
 Constructor:
 * FabPlane(Contact, Normal)
@@ -233,6 +234,14 @@ Project a point onto a plane.
 FabPlane.adjust(self, delta: float) -> 'FabPlane':
 
 Return a new FabPlane that has been adjusted up/down the normal by a delta.
+Arguments:
+* delta (float): The amount to move the plane up/down along the normal.
+
+Returns:
+* (FabPlane): The new FabPlane that is adjusted up/down along the normal.
+  Note that the contact point for the new FabPlane is moved to be along the normal.
+  Thus, for the returned FabPlane, the Contact and Origin properties are equal.
+  Also, the Normal and UnitNormal properties are equal.
 
 ### <a name="fabgeometries----rotatetozaxis"></a>4.4 `FabPlane.`rotateToZAxis():
 
@@ -246,7 +255,18 @@ Arguments:
 Returns:
 * (Vector): The rotated vector position.
 
-### <a name="fabgeometries----projectpointtoxy"></a>4.5 `FabPlane.`projectPointToXY():
+### <a name="fabgeometries----rotateboxtozaxis"></a>4.5 `FabPlane.`rotateBoxToZAxis():
+
+FabPlane.rotateBoxToZAxis(self, box: FabNodes.FabBox, tracing: str = '') -> FabNodes.FabBox:
+
+Rotate a FabBox around the origin until the plane normal aligns with the +Z axis.
+Arguments:
+* *point* (Vector): The point to rotate.
+
+Returns:
+* (FabBox): The rotated Box.
+
+### <a name="fabgeometries----projectpointtoxy"></a>4.6 `FabPlane.`projectPointToXY():
 
 FabPlane.projectPointToXY(self, unrotated_point: cadquery.occ_impl.geom.Vector) -> cadquery.occ_impl.geom.Vector:
 
@@ -262,7 +282,7 @@ Arguments:
 Returns:
 * (Vector): The point projected point.
 
-### <a name="fabgeometries----xyplanereorient"></a>4.6 `FabPlane.`xyPlaneReorient():
+### <a name="fabgeometries----xyplanereorient"></a>4.7 `FabPlane.`xyPlaneReorient():
 
 FabPlane.xyPlaneReorient(self, point: cadquery.occ_impl.geom.Vector, rotate: float, translate: cadquery.occ_impl.geom.Vector, tracing: str = '') -> Tuple[ForwardRef('FabPlane'), cadquery.occ_impl.geom.Vector]:
 
