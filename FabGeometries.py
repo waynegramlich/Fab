@@ -156,9 +156,9 @@ class FabPlane(object):
 
         # Computing the xDir argument to the Plane() constructor is a bit convoluted.
         # This requires taking a unit vector in the +X axis direction and reverse mapping it back
-        # to original plane.  This requires the *reversed* option of the *rotateToZAxis*
+        # to original plane.  This requires the *reversed* option of the *rotatePointToZAxis*
         # method.  Thus, all fields except _Plane are filled in first so that that
-        # *rotateToZAxis* method can be invoked (since it does not access the _Plane field.)
+        # *rotatePointToZAxis* method can be invoked (since it does not access the _Plane field.)
         self._UnitNormal = unit_normal
         self._Contact = contact
         self._Distance = distance
@@ -175,7 +175,7 @@ class FabPlane(object):
 
         # *x_direction* is computed by rotating it back to align with the *normal* and
         # offsetting against *origin*:
-        unrotated_x_direction: Vector = self.rotateToZAxis(
+        unrotated_x_direction: Vector = self.rotatePointToZAxis(
             rotated_x_direction, reversed=True, tracing=next_tracing)
         assert isinstance(unrotated_x_direction, Vector), unrotated_x_direction
         x_direction: Vector = unrotated_x_direction - origin
@@ -362,8 +362,9 @@ class FabPlane(object):
         rotated_point: Vector = Vector(rx, ry, rz)
         return (rotated_point, ((m00, m10, m20), (m01, m11, m21), (m02, m12, m22)))
 
-    # FabPlane.rotateToZAxis():
-    def rotateToZAxis(self, point: Vector, reversed: bool = False, tracing: str = "") -> Vector:
+    # FabPlane.rotatePointToZAxis():
+    def rotatePointToZAxis(
+            self, point: Vector, reversed: bool = False, tracing: str = "") -> Vector:
         """Rotate a point around the origin until the normal aligns with the +Z axis.
 
         Arguments:
@@ -376,7 +377,7 @@ class FabPlane(object):
         """
 
         if tracing:
-            print(f"{tracing}=>FabPlane.rotateToZAxis({point})")
+            print(f"{tracing}=>FabPlane.rotatePointToZAxis({point})")
         rotated_point: Vector = cast(Vector, None)  # Force failure if something is broken.
 
         z_axis: Vector = Vector(0.0, 0.0, 1.)
@@ -417,7 +418,7 @@ class FabPlane(object):
         rotated_point, rotate_matrix = FabPlane._rotate(point, rotate_axis, rotate_angle)
 
         if tracing:
-            print(f"{tracing}<=FabPlane.rotateToZAxis({point})=>{rotated_point}")
+            print(f"{tracing}<=FabPlane.rotatePointToZAxis({point})=>{rotated_point}")
         return rotated_point
 
     # FabPlane.rotateBoxToZAxis():
@@ -438,7 +439,7 @@ class FabPlane(object):
         )
         corner: Vector
         rotated_corners: Tuple[Vector, ...] = tuple([
-            self.rotateToZAxis(corner) for corner in unrotated_corners
+            self.rotatePointToZAxis(corner) for corner in unrotated_corners
         ])
         rotated_box: FabBox = FabBox()
         rotated_box.enclose(rotated_corners)
@@ -459,7 +460,7 @@ class FabPlane(object):
         Returns:
         * (Vector): The point projected point.
         """
-        projected_point: Vector = self.rotateToZAxis(unrotated_point)
+        projected_point: Vector = self.rotatePointToZAxis(unrotated_point)
         # Shift down to X/Y plane:
         projected_point.z = 0.0
         return projected_point
@@ -483,7 +484,7 @@ class FabPlane(object):
             print(f"{tracing}=>FabPlane.xyPlaneReorient(*, "
                   f"{point}, {math.degrees(rotate):.3f}°, {translate})")
 
-        z_axis_aligned_point: Vector = self.rotateToZAxis(point)
+        z_axis_aligned_point: Vector = self.rotatePointToZAxis(point)
         x: float = z_axis_aligned_point.x
         y: float = z_axis_aligned_point.y
         z: float = z_axis_aligned_point.z
@@ -529,8 +530,8 @@ class FabPlane(object):
         got_hash: Tuple[str, ...] = xy_plane.getHash()
         assert want_hash == got_hash, f"\n{want_hash=}\n {got_hash=}"
         assert xy_plane.projectPoint(Vector(2.0, 3.0, 4.0)) == Vector(2.0, 3.0, 3.0)
-        assert xy_plane.rotateToZAxis(Vector(-1.0, -2.0, -3.0)) == Vector(-1.0, -2.0, -3.0)
-        assert xy_plane.rotateToZAxis(
+        assert xy_plane.rotatePointToZAxis(Vector(-1.0, -2.0, -3.0)) == Vector(-1.0, -2.0, -3.0)
+        assert xy_plane.rotatePointToZAxis(
             Vector(-1.0, -2.0, -3.0), reversed=True) == Vector(-1.0, -2.0, -3.0)
 
         # Test xyPlaneReorient():
@@ -558,8 +559,9 @@ class FabPlane(object):
         assert adjusted_xy_plane.UnitNormal == z_axis
         assert adjusted_xy_plane.Origin == Vector(0.0, 0.0, -4.0)
         assert adjusted_xy_plane.projectPoint(Vector(2.0, 3.0, 4.0)) == Vector(2.0, 3.0, -4.0)
-        assert adjusted_xy_plane.rotateToZAxis(Vector(-1.0, -2.0, -3.0)) == Vector(-1.0, -2.0, -3.0)
-        assert adjusted_xy_plane.rotateToZAxis(
+        assert adjusted_xy_plane.rotatePointToZAxis(
+            Vector(-1.0, -2.0, -3.0)) == Vector(-1.0, -2.0, -3.0)
+        assert adjusted_xy_plane.rotatePointToZAxis(
             Vector(-1.0, -2.0, -3.0), reversed=True) == Vector(-1.0, -2.0, -3.0)
 
         if tracing:
@@ -740,8 +742,8 @@ class Fab_Arc(Fab_Geometry):
 
         part_arc: Any = None
         plane: FabPlane = geometry_context._Plane
-        rotated_middle: Vector = plane.rotateToZAxis(self.Middle, tracing=next_tracing)
-        rotated_finish: Vector = plane.rotateToZAxis(self.Finish, tracing=next_tracing)
+        rotated_middle: Vector = plane.rotatePointToZAxis(self.Middle, tracing=next_tracing)
+        rotated_finish: Vector = plane.rotatePointToZAxis(self.Finish, tracing=next_tracing)
         geometry_context.Query.threePointArc(
             rotated_middle, rotated_finish, tracing=next_tracing)
 
@@ -842,7 +844,7 @@ class Fab_Line(Fab_Geometry):
 
         line_segment: Any = None
         plane: FabPlane = geometry_context._Plane
-        rotated_finish: Vector = plane.rotateToZAxis(self.Finish, tracing=next_tracing)
+        rotated_finish: Vector = plane.rotatePointToZAxis(self.Finish, tracing=next_tracing)
         if tracing:
             print(f"{tracing}{self.Finish} ==> {rotated_finish}")
         geometry_context.Query.line_to(rotated_finish, tracing=next_tracing)
@@ -2040,7 +2042,7 @@ class FabPolygon(FabGeometry):
             raise RuntimeError("FabPolygon.produce(): empty geometries.")  # pragma: no unit cover
         geometry0: Fab_Geometry = geometries[0]
         start: Vector = geometry0.getStart()
-        rotated_start: Vector = geometry_context._Plane.rotateToZAxis(
+        rotated_start: Vector = geometry_context._Plane.rotatePointToZAxis(
             start, tracing=next_tracing)
         geometry_context.Query.move_to(rotated_start, tracing=next_tracing)
         # TODO: Does this loop do anything anymore?
@@ -2639,7 +2641,7 @@ class Fab_Query(object):
         """Draw a circle to a point."""
         if tracing:
             print(f"{tracing}<=>Fab_Query.circle({center}, {radius}, {for_construction})")
-        rotated_center: Vector = self._Plane.rotateToZAxis(center)
+        rotated_center: Vector = self._Plane.rotatePointToZAxis(center)
         self._Query = (
             cast(cq.Workplane, self._Query)
             .moveTo(rotated_center.x, rotated_center.y)

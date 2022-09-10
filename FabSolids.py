@@ -1409,7 +1409,7 @@ class Fab_Hole(Fab_Operation):
             solid_circle = FabCircle(solid_plane, solid_center, diameter)
             projected_circle = solid_circle.projectToPlane(solid_plane, tracing=next_tracing)
             projected_center = projected_circle.Center
-            rotated_center = solid_plane.rotateToZAxis(projected_center, tracing=next_tracing)
+            rotated_center = solid_plane.rotatePointToZAxis(projected_center, tracing=next_tracing)
             solid_query.move_to(rotated_center, tracing=next_tracing)
             solid_query.hole(diameter, depth, tracing=next_tracing)
 
@@ -1638,8 +1638,8 @@ class FabMount(object):
 
         # Compute the *rotate* angle needed to orient the plane along the +X axis:
         plane: FabPlane = self._Plane
-        z_aligned_orient_start: Vector = plane.rotateToZAxis(self._OrientStart)
-        z_aligned_orient_end: Vector = plane.rotateToZAxis(self._OrientEnd)
+        z_aligned_orient_start: Vector = plane.rotatePointToZAxis(self._OrientStart)
+        z_aligned_orient_end: Vector = plane.rotatePointToZAxis(self._OrientEnd)
         z_aligned_orient: Vector = z_aligned_orient_end - z_aligned_orient_start
         # The minus sign is needed to rotate from off +X to align with +X axis:
         self._OrientAngle: float = math.atan2(z_aligned_orient.y, z_aligned_orient.x)

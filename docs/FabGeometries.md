@@ -34,7 +34,7 @@ Private Classes:
   * 4.1 [getHash()](#fabgeometries----gethash): Return a FabPlane hash value.
   * 4.2 [projectPoint()](#fabgeometries----projectpoint): Project a point onto a plane.
   * 4.3 [adjust()](#fabgeometries----adjust): Return a new FabPlane that has been adjusted up/down the normal by a delta.
-  * 4.4 [rotateToZAxis()](#fabgeometries----rotatetozaxis): Rotate a point around the origin until the normal aligns with the +Z axis.
+  * 4.4 [rotatePointToZAxis()](#fabgeometries----rotatepointtozaxis): Rotate a point around the origin until the normal aligns with the +Z axis.
   * 4.5 [rotateBoxToZAxis()](#fabgeometries----rotateboxtozaxis): Rotate a FabBox around the origin until the plane normal aligns with the +Z axis.
   * 4.6 [projectPointToXY()](#fabgeometries----projectpointtoxy): Project a rotated point onto the X/Y plane.
   * 4.7 [xyPlaneReorient()](#fabgeometries----xyplanereorient): Return (Plane, Point) that has been reoriented, rotated, translated to an X/Y plane.
@@ -243,9 +243,9 @@ Returns:
   Thus, for the returned FabPlane, the Contact and Origin properties are equal.
   Also, the Normal and UnitNormal properties are equal.
 
-### <a name="fabgeometries----rotatetozaxis"></a>4.4 `FabPlane.`rotateToZAxis():
+### <a name="fabgeometries----rotatepointtozaxis"></a>4.4 `FabPlane.`rotatePointToZAxis():
 
-FabPlane.rotateToZAxis(self, point: cadquery.occ_impl.geom.Vector, reversed: bool = False, tracing: str = '') -> cadquery.occ_impl.geom.Vector:
+FabPlane.rotatePointToZAxis(self, point: cadquery.occ_impl.geom.Vector, reversed: bool = False, tracing: str = '') -> cadquery.occ_impl.geom.Vector:
 
 Rotate a point around the origin until the normal aligns with the +Z axis.
 Arguments:
