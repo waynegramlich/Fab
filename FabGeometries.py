@@ -491,7 +491,12 @@ class FabPlane(object):
         cos_rotate: float = math.cos(rotate)
         rotated_x: float = x * cos_rotate + y * sin_rotate
         rotated_y: float = -x * sin_rotate + y * cos_rotate
-        translated_point: Vector = Vector(rotated_x, rotated_y, z) + translate
+        rotated_point: Vector = Vector(rotated_x, rotated_y, z)
+        translated_point: Vector = rotated_point + translate
+        if tracing:
+            print(f"{tracing}{z_axis_aligned_point=}")
+            print(f"{tracing}{rotated_point=}")
+            print(f"{tracing}{translated_point=}")
 
         z_axis: Vector = Vector(0.0, 0.0, 1.0)
         translated_plane: FabPlane = FabPlane(translated_point, z_axis)
@@ -528,14 +533,24 @@ class FabPlane(object):
         assert xy_plane.rotateToZAxis(
             Vector(-1.0, -2.0, -3.0), reversed=True) == Vector(-1.0, -2.0, -3.0)
 
-        # Test rotateBoxToZAxis().
+        # Test xyPlaneReorient():
+        # reoriented_plane: FabPlane
+        # reoriented_point: Vector
+        # degrees90: float = math.radians(90.0)
+        # reoriented_plane, reoriented_point = xy_plane.xyPlaneReorient(
+        #     Vector(1.0, 2.0, 3.0), 0.0, Vector(2.0, 3.0, 4.0), tracing=next_tracing)
+        # assert reoriented_plane.Origin == Vector(0.0, 0.0, 3.0), reoriented_plane.Origin
+        # assert reoriented_plane.UnitNormal == z_axis
+        # assert reoriented_point == Vector(0.0, 0.0, 0.0), reoriented_point
+
+        # Test rotateBoxToZAxis():
         box: FabBox = FabBox()
         box.enclose((Vector(-1.0, -2.0, -3.0), Vector(1.0, 2.0, 3.0)))
         rotated_box: FabBox = xy_plane.rotateBoxToZAxis(box)
         assert box.TNE == rotated_box.TNE
         assert box.BSW == rotated_box.BSW
 
-        # Test adjust() method.
+        # Test adjust() method:
         adjusted_xy_plane: FabPlane = xy_plane.adjust(-7.0)
         assert adjusted_xy_plane.Contact == Vector(0.0, 0.0, -4.0)
         assert adjusted_xy_plane.Normal == z_axis
@@ -546,10 +561,6 @@ class FabPlane(object):
         assert adjusted_xy_plane.rotateToZAxis(Vector(-1.0, -2.0, -3.0)) == Vector(-1.0, -2.0, -3.0)
         assert adjusted_xy_plane.rotateToZAxis(
             Vector(-1.0, -2.0, -3.0), reversed=True) == Vector(-1.0, -2.0, -3.0)
-
-        # Test rotateToZAxis()
-        # Test rotateBoxToZAxis()
-        # Test xyPlaneReorient()
 
         if tracing:
             print(f"{tracing}<=FabPlane._unitTests()")
