@@ -362,63 +362,6 @@ class FabPlane(object):
         rotated_point: Vector = Vector(rx, ry, rz)
         return (rotated_point, ((m00, m10, m20), (m01, m11, m21), (m02, m12, m22)))
 
-    # FabPlane.rotatePointToZAxis():
-    def rotatePointToZAxis(
-            self, point: Vector, reversed: bool = False, tracing: str = "") -> Vector:
-        """Rotate a point around the origin until the normal aligns with the +Z axis.
-
-        Arguments:
-        * *point* (Vector): The point to rotate.
-        * *reversed* (bool = False): If True, do the inverse rotation.
-
-        Returns:
-        * (Vector): The rotated vector position.
-
-        """
-        if tracing:
-            print(f"{tracing}=>FabPlane.rotatePointToZAxis({point}, {reversed})")
-        assert check_argument_types()
-
-        z_axis: Vector = Vector(0.0, 0.0, 1.0)
-        plane_normal: Vector = self._Normal
-        plane_normal = plane_normal / plane_normal.Length
-
-        if tracing:
-            print(f"{tracing}{plane_normal=}")
-
-        to_axis: Vector = plane_normal if reversed else z_axis
-        from_axis: Vector = z_axis if reversed else plane_normal
-        if tracing:
-            print(f"{tracing}{to_axis=}{from_axis=}")
-
-        epsilon: float = 1.0e-5
-        rotate_axis: Vector
-        rotate_angle: float
-        if abs((from_axis - to_axis).Length) < epsilon:
-            if tracing:
-                print(f"{tracing}Aligned with +Z axis")
-            rotate_angle = 0.0
-            rotate_axis = Vector(0.0, 0.0, 1.0)
-        elif abs((from_axis + to_axis).Length) < epsilon:
-            if tracing:
-                print(f"{tracing}Aligned with -Z axis")
-            y_axis: Vector = Vector(0.0, 1.0, 0.0)
-            rotate_axis = y_axis
-            rotate_angle = -math.pi  # 180 degrees
-        else:
-            rotate_axis = to_axis.cross(from_axis)
-            rotate_angle = to_axis.getAngle(from_axis)
-            if tracing:
-                rotate_degrees: float = math.degrees(rotate_angle)
-                print(f"{tracing}{rotate_axis=} {rotate_degrees=}")
-
-        # Rotate the point:
-        rotated_point, rotate_matrix = FabPlane._rotate(point, rotate_axis, rotate_angle)
-
-        if tracing:
-            print(f"{tracing}<=FabPlane.rotatePointToZAxis({point}, {reversed})=>{rotated_point}")
-        return rotated_point
-
     # FabPlane.rotatePointsToZAxis():
     def rotatePointsToZAxis(self, points: Sequence[Vector],
                             reversed: bool = False, tracing: str = "") -> Tuple[Vector, ...]:
@@ -482,6 +425,32 @@ class FabPlane(object):
             print(f"{tracing}<=FabPlane.rotatePointsToZAxis({points}, "
                   f"{reversed})=>{final_rotated_points}")
         return final_rotated_points
+
+    # FabPlane.rotatePointToZAxis():
+    def rotatePointToZAxis(
+            self, point: Vector, reversed: bool = False, tracing: str = "") -> Vector:
+        """Rotate a point around the origin until the normal aligns with the +Z axis.
+
+        Arguments:
+        * *point* (Vector): The point to rotate.
+        * *reversed* (bool = False): If True, do the inverse rotation.
+
+        Returns:
+        * (Vector): The rotated vector position.
+
+        """
+        next_tracing: str = tracing + " " if tracing else ""
+        if tracing:
+            print(f"{tracing}=>FabPlane.rotatePointToZAxis({point}, {reversed})")
+        assert check_argument_types()
+
+        rotated_points: Tuple[Vector, ...] = self.rotatePointsToZAxis(
+            (point,), reversed=reversed, tracing=next_tracing)
+        rotated_point: Vector = rotated_points[0]
+
+        if tracing:
+            print(f"{tracing}<=FabPlane.rotatePointToZAxis({point}, {reversed})=>{rotated_point}")
+        return rotated_point
 
     # FabPlane.rotateToZAxis():
     def rotateToZAxis(self, tracing: str = "") -> "FabPlane":
