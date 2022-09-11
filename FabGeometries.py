@@ -380,7 +380,7 @@ class FabPlane(object):
             print(f"{tracing}=>FabPlane.rotatePointToZAxis({point})")
         rotated_point: Vector = cast(Vector, None)  # Force failure if something is broken.
 
-        z_axis: Vector = Vector(0.0, 0.0, 1.)
+        z_axis: Vector = Vector(0.0, 0.0, 1.0)
         plane_normal: Vector = self._Normal
         plane_normal = plane_normal / plane_normal.Length
 
@@ -400,19 +400,18 @@ class FabPlane(object):
                 print(f"{tracing}Aligned with +Z axis")
             rotate_angle = 0.0
             rotate_axis = Vector(0.0, 0.0, 1.0)
+        elif abs((from_axis + to_axis).Length) < epsilon:
+            if tracing:
+                print(f"{tracing}Aligned with -Z axis")
+            y_axis: Vector = Vector(0.0, 1.0, 0.0)
+            rotate_axis = y_axis
+            rotate_angle = -math.pi  # 180 degrees
         else:
-            if abs((from_axis + to_axis).Length) < epsilon:
-                if tracing:
-                    print(f"{tracing}Aligned with -Z axis")
-                y_axis: Vector = Vector(0.0, 1.0, 0.0)
-                rotate_axis = y_axis
-                rotate_angle = -math.pi  # 180 degrees
-            else:
-                rotate_axis = to_axis.cross(from_axis)
-                rotate_angle = to_axis.getAngle(from_axis)
-                if tracing:
-                    rotate_degrees: float = math.degrees(rotate_angle)
-                    print(f"{tracing}{rotate_axis=} {rotate_degrees=}")
+            rotate_axis = to_axis.cross(from_axis)
+            rotate_angle = to_axis.getAngle(from_axis)
+            if tracing:
+                rotate_degrees: float = math.degrees(rotate_angle)
+                print(f"{tracing}{rotate_axis=} {rotate_degrees=}")
 
         # Rotate the point:
         rotated_point, rotate_matrix = FabPlane._rotate(point, rotate_axis, rotate_angle)
@@ -420,6 +419,18 @@ class FabPlane(object):
         if tracing:
             print(f"{tracing}<=FabPlane.rotatePointToZAxis({point})=>{rotated_point}")
         return rotated_point
+
+    # FabPlane.rotateToZAxis():
+    def rotateToZAxis(self, tracing: str = "") -> "FabPlane":
+        """Return a FabPlane that has been rotated so that plane normal is the +Z axis."""
+        if tracing:
+            print(f"{tracing}=>FabPlane.rotateToZAxis()")
+        rotated_contact: Vector = self.rotatePointToZAxis(self._Contact)
+        z_axis: Vector = Vector(0.0, 0.0, 1.0)
+        rotated_plane: FabPlane = FabPlane(rotated_contact, z_axis)
+        if tracing:
+            print(f"{tracing}<=FabPlane.rotateToZAxis()=>{rotated_plane}")
+        return rotated_plane
 
     # FabPlane.rotateBoxToZAxis():
     def rotateBoxToZAxis(self, box: FabBox, tracing: str = "") -> FabBox:
@@ -518,7 +529,7 @@ class FabPlane(object):
         # X/Y plane defined with with contact offset and non unit vector normal:
         z_axis: Vector = Vector(0.0, 0.0, 1.0)
         xy_contact: Vector = Vector(1.0, 2.0, 3.0)  # Not (0.0, 0.0, 0.0)
-        xy_normal: Vector = Vector(0.0, 0.0, 2.0)  # Not a unit vectora
+        xy_normal: Vector = Vector(0.0, 0.0, 2.0)  # Not a unit vector
         xy_plane: FabPlane = FabPlane(xy_contact, xy_normal)
         assert xy_plane.Contact == xy_contact
         assert xy_plane.Normal == xy_normal
@@ -530,6 +541,8 @@ class FabPlane(object):
         got_hash: Tuple[str, ...] = xy_plane.getHash()
         assert want_hash == got_hash, f"\n{want_hash=}\n {got_hash=}"
         assert xy_plane.projectPoint(Vector(2.0, 3.0, 4.0)) == Vector(2.0, 3.0, 3.0)
+        assert xy_plane.rotateToZAxis().Origin == Vector(0.0, 0.0, 3.0)
+        assert xy_plane.rotateToZAxis().UnitNormal == Vector(0.0, 0.0, 1.0)
         assert xy_plane.rotatePointToZAxis(Vector(-1.0, -2.0, -3.0)) == Vector(-1.0, -2.0, -3.0)
         assert xy_plane.rotatePointToZAxis(
             Vector(-1.0, -2.0, -3.0), reversed=True) == Vector(-1.0, -2.0, -3.0)
@@ -639,9 +652,9 @@ class Fab_GeometryContext(object):
         # next_tracing: str = tracing + " " if tracing else ""
         if tracing:
             print(f"{tracing}<=>Fab_GeometryContext.copy()")
-        adjusted_plane: FabPlane = self._Plane.adjust(delta)
-        new_query: Fab_Query = Fab_Query(adjusted_plane)
-        return Fab_GeometryContext(adjusted_plane, new_query)
+        adjusted_plane: FabPlane = self._Plane.adjust(delta)  # pragma: no unit cover
+        new_query: Fab_Query = Fab_Query(adjusted_plane)  # pragma: no unit cover
+        return Fab_GeometryContext(adjusted_plane, new_query)  # pragma: no unit cover
 
     # Fab_GeometryContext.setGeometryGroup():
     def setGeometryGroup(self, geometry_group: Any) -> None:

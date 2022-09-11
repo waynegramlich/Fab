@@ -35,9 +35,10 @@ Private Classes:
   * 4.2 [projectPoint()](#fabgeometries----projectpoint): Project a point onto a plane.
   * 4.3 [adjust()](#fabgeometries----adjust): Return a new FabPlane that has been adjusted up/down the normal by a delta.
   * 4.4 [rotatePointToZAxis()](#fabgeometries----rotatepointtozaxis): Rotate a point around the origin until the normal aligns with the +Z axis.
-  * 4.5 [rotateBoxToZAxis()](#fabgeometries----rotateboxtozaxis): Rotate a FabBox around the origin until the plane normal aligns with the +Z axis.
-  * 4.6 [projectPointToXY()](#fabgeometries----projectpointtoxy): Project a rotated point onto the X/Y plane.
-  * 4.7 [xyPlaneReorient()](#fabgeometries----xyplanereorient): Return (Plane, Point) that has been reoriented, rotated, translated to an X/Y plane.
+  * 4.5 [rotateToZAxis()](#fabgeometries----rotatetozaxis): Return a FabPlane that has been rotated so that plane normal is the +Z axis.
+  * 4.6 [rotateBoxToZAxis()](#fabgeometries----rotateboxtozaxis): Rotate a FabBox around the origin until the plane normal aligns with the +Z axis.
+  * 4.7 [projectPointToXY()](#fabgeometries----projectpointtoxy): Project a rotated point onto the X/Y plane.
+  * 4.8 [xyPlaneReorient()](#fabgeometries----xyplanereorient): Return (Plane, Point) that has been reoriented, rotated, translated to an X/Y plane.
 * 5 Class: [FabPolygon](#fabgeometries--fabpolygon):
   * 5.1 [getHash()](#fabgeometries----gethash): Return the FabPolygon Hash.
   * 5.2 [projectToPlane()](#fabgeometries----projecttoplane): Return nre FabPolygon projected onto a plane.
@@ -255,7 +256,13 @@ Arguments:
 Returns:
 * (Vector): The rotated vector position.
 
-### <a name="fabgeometries----rotateboxtozaxis"></a>4.5 `FabPlane.`rotateBoxToZAxis():
+### <a name="fabgeometries----rotatetozaxis"></a>4.5 `FabPlane.`rotateToZAxis():
+
+FabPlane.rotateToZAxis(self, tracing: str = '') -> 'FabPlane':
+
+Return a FabPlane that has been rotated so that plane normal is the +Z axis.
+
+### <a name="fabgeometries----rotateboxtozaxis"></a>4.6 `FabPlane.`rotateBoxToZAxis():
 
 FabPlane.rotateBoxToZAxis(self, box: FabNodes.FabBox, tracing: str = '') -> FabNodes.FabBox:
 
@@ -266,7 +273,7 @@ Arguments:
 Returns:
 * (FabBox): The rotated Box.
 
-### <a name="fabgeometries----projectpointtoxy"></a>4.6 `FabPlane.`projectPointToXY():
+### <a name="fabgeometries----projectpointtoxy"></a>4.7 `FabPlane.`projectPointToXY():
 
 FabPlane.projectPointToXY(self, unrotated_point: cadquery.occ_impl.geom.Vector) -> cadquery.occ_impl.geom.Vector:
 
@@ -282,7 +289,7 @@ Arguments:
 Returns:
 * (Vector): The point projected point.
 
-### <a name="fabgeometries----xyplanereorient"></a>4.7 `FabPlane.`xyPlaneReorient():
+### <a name="fabgeometries----xyplanereorient"></a>4.8 `FabPlane.`xyPlaneReorient():
 
 FabPlane.xyPlaneReorient(self, point: cadquery.occ_impl.geom.Vector, rotate: float, translate: cadquery.occ_impl.geom.Vector, tracing: str = '') -> Tuple[ForwardRef('FabPlane'), cadquery.occ_impl.geom.Vector]:
 
